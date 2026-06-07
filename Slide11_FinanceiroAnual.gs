@@ -55,7 +55,7 @@ function gerarSlideFinanceiroAnual() {
 // LEITURA DA PLANILHA - FINANCEIRO ANUAL
 // ==========================================
 function obterDadosFinanceiroAnual() {
-  const ss  = SpreadsheetApp.openById(ID_PLANILHA_FINANCEIRO);
+  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
   const aba = ss.getSheetByName(NOME_ABA_FINANCEIRO_ANUAL);
 
   if (!aba) {
