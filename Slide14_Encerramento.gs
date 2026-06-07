@@ -3,7 +3,7 @@
 // ==========================================
 
 function gerarSlideEncerramento() {
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill('#151E49'); // Brand Dark Blue
 

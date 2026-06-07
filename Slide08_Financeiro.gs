@@ -1,21 +1,21 @@
 // ==========================================
 // CONFIGURAÇÃO DA FONTE DE DADOS
 // ==========================================
-const ID_PLANILHA_FINANCEIRO = '1SijkGK7mVZEyN9tZ15ZGzirTQZjrXovxR3vbNp14B-g';
+
 const NOME_ABA_FINANCEIRO    = 'FINANCEIRO';
 
 // ==========================================
 // SLIDE 8: RESULTADO OPERACIONAL (FINANCEIRO - MENSAL)
 // ==========================================
 function gerarSlideFinanceiro() {
-  const dados = obterDadosFinanceiro();
+  const dados = obterDadosFinanceiroSlide08_();
 
   if (!dados) {
     Logger.log('Sem dados para o Slide 8.');
     return;
   }
 
-  const deck      = SlidesApp.getActivePresentation();
+  const deck      = getDeckAtivo();
   const slide     = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
@@ -55,8 +55,8 @@ function gerarSlideFinanceiro() {
 // ==========================================
 // LEITURA DA PLANILHA
 // ==========================================
-function obterDadosFinanceiro() {
-  const ss  = SpreadsheetApp.openById(ID_PLANILHA_FINANCEIRO);
+function obterDadosFinanceiroSlide08_() {
+  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
   const aba = ss.getSheetByName(NOME_ABA_FINANCEIRO);
 
   if (!aba) {
@@ -131,7 +131,7 @@ function obterDadosFinanceiro() {
     .map(i => ({ label: i.natureza, orcado: i.orcado, realizado: i.realizado, diff: i.diff }));
 
   return {
-    nomeEmpreendimento: 'Mega Itajaí',
+    nomeEmpreendimento: getProjetoAtivo().nome,
     periodo           : 'Mês Atual',
     totalOrcado,
     totalRealizado,
@@ -419,7 +419,7 @@ function normalizarTexto(valor) {
 }
 
 function testarAcessoPlanilhaFinanceiro() {
-  const ss  = SpreadsheetApp.openById(ID_PLANILHA_FINANCEIRO);
+  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
   const aba = ss.getSheetByName(NOME_ABA_FINANCEIRO);
   if (!aba) throw new Error('A aba ' + NOME_ABA_FINANCEIRO + ' não foi encontrada.');
   Logger.log('Planilha: ' + ss.getName());

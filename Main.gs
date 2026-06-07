@@ -4,15 +4,10 @@
  *            Lê PROJETO_ATIVO em Config.gs e gera TODOS os slides em sequência
  *            na apresentação correspondente à cidade ativa.
  *
- * IMPORTANTE: os arquivos de slide ainda usam SlidesApp.getActivePresentation().
- *             Para o orquestrador funcionar com qualquer cidade, este arquivo
- *             define setActivePresentation_() — mas o Apps Script NÃO permite
- *             trocar a apresentação ativa programaticamente.
- *             Por isso, este script deve ser executado DENTRO da apresentação
- *             da cidade ativa (Extensões → Apps Script na própria apresentação).
- *
- *             Alternativa: rodar gerarApresentacaoPorCidade('CURITIBA') etc.,
- *             após refator dos slides para usar openById (próximo passo).
+ * Todos os slides abrem a apresentação via getDeckAtivo() (Config.gs), que
+ * resolve o ID pela config PROJETOS + PROJETO_ATIVO. Por isso este script
+ * pode ser executado de QUALQUER editor vinculado ao projeto — a geração
+ * sempre acontece na apresentação da cidade configurada em PROJETO_ATIVO.
  */
 
 
@@ -54,7 +49,7 @@ function gerarApresentacaoCompleta() {
 // LIMPAR SLIDES GERADOS (mantém o slide 1 = capa)
 // ==========================================
 function limparApresentacao() {
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const slides = deck.getSlides();
   for (let i = slides.length - 1; i >= 1; i--) {
     slides[i].remove();

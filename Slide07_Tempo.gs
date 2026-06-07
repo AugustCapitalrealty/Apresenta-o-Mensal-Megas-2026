@@ -10,7 +10,7 @@ function gerarSlideTempo() {
     return;
   }
 
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
 

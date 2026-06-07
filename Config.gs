@@ -39,6 +39,11 @@ function getProjetoAtivo() {
 function getSpreadsheetIdAtivo()  { return getProjetoAtivo().spreadsheetId;  }
 function getPresentationIdAtivo() { return getProjetoAtivo().presentationId; }
 
+// Abre sempre a apresentação da cidade ativa, independente de qual estiver aberta no editor
+function getDeckAtivo() {
+  return SlidesApp.openById(getPresentationIdAtivo());
+}
+
 
 // Paleta de Cores Global
 const CORES = {
@@ -62,7 +67,7 @@ const CORES = {
 // Função para criar o cabeçalho padrão azul
 function criarHeaderPadrao(slide, titulo, subtitulo) {
   // Pega a apresentação ativa diretamente para evitar erros
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const W = deck.getPageWidth();
 
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, 60);

@@ -5,7 +5,7 @@
 function gerarSlidePreventivas() {
   const dados = obterDadosPreventivas();
   
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
   const PageWidth = deck.getPageWidth(), PageHeight = deck.getPageHeight();

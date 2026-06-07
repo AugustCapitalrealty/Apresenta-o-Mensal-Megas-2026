@@ -7,7 +7,7 @@ function gerarSlideDashboard() {
   const valoresMap = dados.map;
   const dynamicHeaders = dados.headers;
 
-  const deck = SlidesApp.getActivePresentation();
+  const deck = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
   
