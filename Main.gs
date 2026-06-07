@@ -73,6 +73,8 @@ function gerarApresentacaoCompleta_() {
 
   Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
   if (erros.length) Logger.log(erros.join('\n'));
+
+  registrarRevisaoAutomatica_();
 }
 
 function limparApresentacao_() {
