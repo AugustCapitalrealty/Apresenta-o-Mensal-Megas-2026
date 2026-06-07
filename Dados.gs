@@ -1,14 +1,8 @@
 /**
  * ARQUIVO: Dados.gs
- * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (PROJETO_ATIVO em Config.gs).
+ * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (setProjetoAtivo em Config.gs/Main.gs).
+ *            As abas são localizadas pelo NOME (cada cópia da planilha tem GIDs próprios).
  */
-
-// IDs das Abas Específicas
-const TARGET_GID      = 1065766606;  // Aba DADOS
-const CORRETIVAS_GID  = 1348159690;  // Aba INDICADORES
-const TEMPO_GID       = 1698414762;  // Aba TEMPO
-const FINANCEIRO_GID  = 467389249;   // Aba FINANCEIRO
-
 
 // ==========================================
 // DADOS DASHBOARD (Slide 4)
@@ -20,12 +14,7 @@ function obterDadosDashboard() {
 
   try {
     const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    let sheet = null;
-    const sheets = ss.getSheets();
-    for (let i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === TARGET_GID) { sheet = sheets[i]; break; }
-    }
-    if (!sheet) sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+    const sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
 
     const data = sheet.getDataRange().getValues();
     if (data.length > 0) {
@@ -132,13 +121,9 @@ function obterDadosPreventivas() {
 // ==========================================
 function obterDadosCorretivasV6() {
   try {
-    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    let sheet = null;
-    const sheets = ss.getSheets();
-    for (let i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === CORRETIVAS_GID) { sheet = sheets[i]; break; }
-    }
-    if (!sheet) throw new Error('Aba Corretivas (GID ' + CORRETIVAS_GID + ') não encontrada.');
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('INDICADORES');
+    if (!sheet) throw new Error('Aba INDICADORES não encontrada.');
 
     const data = sheet.getDataRange().getDisplayValues();
 
@@ -190,13 +175,9 @@ function obterDadosCorretivasV6() {
 // ==========================================
 function obterDadosTempo() {
   try {
-    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    let sheet = null;
-    const sheets = ss.getSheets();
-    for (let i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === TEMPO_GID) { sheet = sheets[i]; break; }
-    }
-    if (!sheet) throw new Error('Aba Tempo/Segurança (GID ' + TEMPO_GID + ') não encontrada.');
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('TEMPO');
+    if (!sheet) throw new Error('Aba TEMPO não encontrada.');
 
     const data = sheet.getDataRange().getDisplayValues();
     const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
@@ -249,13 +230,9 @@ function obterDadosTempo() {
 // ==========================================
 function obterDadosFinanceiro() {
   try {
-    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    let sheet = null;
-    const sheets = ss.getSheets();
-    for (let i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === FINANCEIRO_GID) { sheet = sheets[i]; break; }
-    }
-    if (!sheet) throw new Error('Aba Financeiro (GID ' + FINANCEIRO_GID + ') não encontrada.');
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('FINANCEIRO');
+    if (!sheet) throw new Error('Aba FINANCEIRO não encontrada.');
 
     const data = sheet.getDataRange().getValues();
 
