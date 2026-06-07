@@ -1,7 +1,44 @@
 /**
- * ARQUIVO: Config.gs (CORES ATUALIZADAS)
- * DESCRIÇÃO: Paleta ajustada para Azul, Verde, Amarelo e Azul Claro.
+ * ARQUIVO: Config.gs
+ * DESCRIÇÃO: Paleta de cores, projetos por cidade e header padrão.
  */
+
+// ==========================================
+// PROJETOS POR CIDADE
+// ==========================================
+// Para gerar a apresentação de outra cidade, troque PROJETO_ATIVO
+// para 'CURITIBA', 'ITAJAI' ou 'ESTEIO' e rode o orquestrador.
+// ==========================================
+
+const PROJETOS = {
+  CURITIBA: {
+    nome           : 'Mega Curitiba',
+    spreadsheetId  : '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',
+    presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0'
+  },
+  ITAJAI: {
+    nome           : 'Mega Itajaí',
+    spreadsheetId  : '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
+    presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY'
+  },
+  ESTEIO: {
+    nome           : 'Mega Esteio',
+    spreadsheetId  : '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
+    presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc'
+  }
+};
+
+const PROJETO_ATIVO = 'CURITIBA';
+
+function getProjetoAtivo() {
+  const p = PROJETOS[PROJETO_ATIVO];
+  if (!p) throw new Error('PROJETO_ATIVO inválido: ' + PROJETO_ATIVO);
+  return p;
+}
+
+function getSpreadsheetIdAtivo()  { return getProjetoAtivo().spreadsheetId;  }
+function getPresentationIdAtivo() { return getProjetoAtivo().presentationId; }
+
 
 // Paleta de Cores Global
 const CORES = {

@@ -1,11 +1,7 @@
 /**
  * ARQUIVO: Dados.gs
- * DESCRIÇÃO: Busca os dados na planilha Google.
- * VERSÃO FINAL: SPREADSHEET_ID incluso e Top 10 Financeiro (Ordenado por Gasto Realizado).
+ * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (PROJETO_ATIVO em Config.gs).
  */
-
-// ID DA PLANILHA
-const SPREADSHEET_ID = '1SijkGK7mVZEyN9tZ15ZGzirTQZjrXovxR3vbNp14B-g';
 
 // IDs das Abas Específicas
 const TARGET_GID      = 1065766606;  // Aba DADOS
@@ -23,7 +19,7 @@ function obterDadosDashboard() {
   let headers = ['DEZ', 'NOV', "DEZ'24"];
 
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     let sheet = null;
     const sheets = ss.getSheets();
     for (let i = 0; i < sheets.length; i++) {
@@ -63,7 +59,7 @@ function obterDadosDashboard() {
 // ==========================================
 function obterDadosPreventivas() {
   try {
-    const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('PREVENTIVAS');
     if (!sheet) throw new Error('Aba PREVENTIVAS não encontrada.');
 
@@ -136,7 +132,7 @@ function obterDadosPreventivas() {
 // ==========================================
 function obterDadosCorretivasV6() {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     let sheet = null;
     const sheets = ss.getSheets();
     for (let i = 0; i < sheets.length; i++) {
@@ -194,7 +190,7 @@ function obterDadosCorretivasV6() {
 // ==========================================
 function obterDadosTempo() {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     let sheet = null;
     const sheets = ss.getSheets();
     for (let i = 0; i < sheets.length; i++) {
@@ -253,7 +249,7 @@ function obterDadosTempo() {
 // ==========================================
 function obterDadosFinanceiro() {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     let sheet = null;
     const sheets = ss.getSheets();
     for (let i = 0; i < sheets.length; i++) {
@@ -329,7 +325,7 @@ function obterDadosFinanceiro() {
 // ==========================================
 function obterDadosCustoM2() {
   try {
-    const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('METRO QUADRADO');
     if (!sheet) throw new Error('Aba METRO QUADRADO não encontrada');
 
