@@ -28,12 +28,21 @@ const PROJETOS = {
   }
 };
 
-const PROJETO_ATIVO = 'CURITIBA';
+// Projeto ativo é setado em tempo de execução pelas funções do Main.gs
+// (gerarCuritiba, gerarItajai, gerarEsteio, gerarTodas, etc.)
+let _projetoAtivoChave = null;
+
+function setProjetoAtivo(chave) {
+  if (!PROJETOS[chave]) throw new Error('Projeto inválido: ' + chave + '. Use CURITIBA, ITAJAI ou ESTEIO.');
+  _projetoAtivoChave = chave;
+  Logger.log('▸ Projeto ativo: ' + PROJETOS[chave].nome);
+}
 
 function getProjetoAtivo() {
-  const p = PROJETOS[PROJETO_ATIVO];
-  if (!p) throw new Error('PROJETO_ATIVO inválido: ' + PROJETO_ATIVO);
-  return p;
+  if (!_projetoAtivoChave) {
+    throw new Error('Nenhum projeto ativo. Rode uma função do Main.gs (gerarCuritiba, gerarItajai, gerarEsteio ou gerarTodas).');
+  }
+  return PROJETOS[_projetoAtivoChave];
 }
 
 function getSpreadsheetIdAtivo()  { return getProjetoAtivo().spreadsheetId;  }

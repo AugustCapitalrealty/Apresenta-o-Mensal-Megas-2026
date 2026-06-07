@@ -1,22 +1,53 @@
 /**
  * ARQUIVO: Main.gs
- * DESCRIÇÃO: Orquestrador da geração da apresentação.
- *            Lê PROJETO_ATIVO em Config.gs e gera TODOS os slides em sequência
- *            na apresentação correspondente à cidade ativa.
+ * DESCRIÇÃO: Pontos de entrada da geração de slides.
  *
- * Todos os slides abrem a apresentação via getDeckAtivo() (Config.gs), que
- * resolve o ID pela config PROJETOS + PROJETO_ATIVO. Por isso este script
- * pode ser executado de QUALQUER editor vinculado ao projeto — a geração
- * sempre acontece na apresentação da cidade configurada em PROJETO_ATIVO.
+ *   Para rodar UMA cidade:
+ *     ▸ gerarCuritiba()   / gerarItajai()   / gerarEsteio()
+ *     ▸ regerarCuritiba() / regerarItajai() / regerarEsteio()   (limpa antes)
+ *
+ *   Para rodar AS TRÊS de uma vez:
+ *     ▸ gerarTodas()      → gera (acrescenta)
+ *     ▸ regerarTodas()    → limpa e gera
  */
 
 
 // ==========================================
-// ORQUESTRADOR PRINCIPAL
+// PONTOS DE ENTRADA — POR CIDADE
 // ==========================================
-function gerarApresentacaoCompleta() {
+function gerarCuritiba()   { setProjetoAtivo('CURITIBA'); gerarApresentacaoCompleta_();   }
+function gerarItajai()     { setProjetoAtivo('ITAJAI');   gerarApresentacaoCompleta_();   }
+function gerarEsteio()     { setProjetoAtivo('ESTEIO');   gerarApresentacaoCompleta_();   }
+
+function regerarCuritiba() { setProjetoAtivo('CURITIBA'); regerarApresentacaoCompleta_(); }
+function regerarItajai()   { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); }
+function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — TODAS AS CIDADES
+// ==========================================
+function gerarTodas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => {
+    setProjetoAtivo(c);
+    gerarApresentacaoCompleta_();
+  });
+}
+
+function regerarTodas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => {
+    setProjetoAtivo(c);
+    regerarApresentacaoCompleta_();
+  });
+}
+
+
+// ==========================================
+// FLUXOS INTERNOS (usam o projeto já setado)
+// ==========================================
+function gerarApresentacaoCompleta_() {
   const projeto = getProjetoAtivo();
-  Logger.log('▶ Gerando apresentação de ' + projeto.nome + ' (' + PROJETO_ATIVO + ')');
+  Logger.log('▶ Gerando apresentação de ' + projeto.nome);
 
   const passos = [
     { nome: 'Slide 04 - Dashboard',         fn: gerarSlideDashboard       },
@@ -40,28 +71,18 @@ function gerarApresentacaoCompleta() {
     }
   });
 
-  Logger.log('✔ Concluído. ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
+  Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
   if (erros.length) Logger.log(erros.join('\n'));
 }
 
-
-// ==========================================
-// LIMPAR SLIDES GERADOS (mantém o slide 1 = capa)
-// ==========================================
-function limparApresentacao() {
+function limparApresentacao_() {
   const deck = getDeckAtivo();
   const slides = deck.getSlides();
-  for (let i = slides.length - 1; i >= 1; i--) {
-    slides[i].remove();
-  }
-  Logger.log('Apresentação limpa (' + (slides.length - 1) + ' slides removidos).');
+  for (let i = slides.length - 1; i >= 1; i--) slides[i].remove();
+  Logger.log('  Apresentação limpa (' + (slides.length - 1) + ' slides removidos).');
 }
 
-
-// ==========================================
-// FLUXO COMPLETO: LIMPA E REGERA
-// ==========================================
-function regerarApresentacaoCompleta() {
-  limparApresentacao();
-  gerarApresentacaoCompleta();
+function regerarApresentacaoCompleta_() {
+  limparApresentacao_();
+  gerarApresentacaoCompleta_();
 }
