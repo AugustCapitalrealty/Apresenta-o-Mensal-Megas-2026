@@ -1,6 +1,8 @@
 /**
  * ARQUIVO: Historico.gs
- * DESCRIÇÃO: Versionamento das apresentações (estratégia híbrida).
+ * DESCRIÇÃO: Versionamento VISUAL das apresentações (estratégia híbrida).
+ *            Para o histórico CONSULTÁVEL dos números/indicadores,
+ *            veja RegistroDados.gs (aba HISTORICO na planilha).
  *
  *   AUTOMÁTICO (toda execução):
  *     ▸ A revisão atual da apresentação é marcada como "manter para sempre"

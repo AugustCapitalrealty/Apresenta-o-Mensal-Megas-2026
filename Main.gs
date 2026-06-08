@@ -75,6 +75,7 @@ function gerarApresentacaoCompleta_() {
   if (erros.length) Logger.log(erros.join('\n'));
 
   registrarRevisaoAutomatica_();
+  registrarHistoricoDados_();
 }
 
 function limparApresentacao_() {
