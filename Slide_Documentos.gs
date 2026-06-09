@@ -146,7 +146,7 @@ function desenharPaginaResumoDocumentos_(dados) {
   bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
 
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 18, listaY + 8, listaW - 36, 20);
-  titulo.getText().setText('⚠ ATENÇÃO PRIORITÁRIA — VENCIDOS E A VENCER EM ' + LIMITE_CRITICO_DIAS + ' DIAS')
+  titulo.getText().setText('VENCIDOS E A VENCER EM ' + LIMITE_CRITICO_DIAS + ' DIAS')
     .getTextStyle().setFontSize(11).setBold(true).setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
 
   if (!criticos.length) {
