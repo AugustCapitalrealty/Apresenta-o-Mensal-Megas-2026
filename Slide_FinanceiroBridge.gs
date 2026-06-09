@@ -417,19 +417,13 @@ function gerarSlideBridgeGrafico() {
 
   passos.push({ tipo: 'TOTAL', label: 'REAL./PROJ.', topo: acumulado, base: acumulado, valor: acumulado, cor: CORES.darkBlue });
 
-  // ── Escala com ZOOM ───────────────────────────────────────────────────────
-  // Em vez de partir de zero (o que tornaria as variações invisíveis frente a
-  // um orçado de milhões), enquadramos a faixa entre o menor e o maior valor
-  // acumulado, com folga de 12% em cima e embaixo.
-  let vMin = Infinity, vMax = -Infinity;
-  passos.forEach(p => {
-    vMin = Math.min(vMin, p.base, p.topo);
-    vMax = Math.max(vMax, p.base, p.topo);
-  });
-  const span    = Math.max(vMax - vMin, 1);
-  const folga   = span * 0.12;
-  const escMin  = vMin - folga;
-  const escMax  = vMax + folga;
+  // ── Escala a partir do ZERO ───────────────────────────────────────────────
+  // Base em zero (intuitiva): as barras-total mostram a proporção real e os
+  // valores de cada variação ficam legíveis pelos rótulos acima das barras.
+  let vMax = -Infinity;
+  passos.forEach(p => { vMax = Math.max(vMax, p.base, p.topo); });
+  const escMin  = 0;
+  const escMax  = vMax * 1.08;
   const escSpan = escMax - escMin;
 
   const plotX = marginX + 30;
