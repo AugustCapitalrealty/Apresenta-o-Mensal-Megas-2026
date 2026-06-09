@@ -362,3 +362,149 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     _totCel(pct, cols[5], corTot);
   }
 }
+
+
+// ==========================================
+// SLIDE GRÁFICO WATERFALL (BRIDGE)
+// ==========================================
+// Parte do Orçado anual e aplica a variação de cada mês, terminando no
+// Realizado/Projetado. Barras descem (verde = abaixo) ou sobem (vermelho =
+// acima); meses de RITMO ficam em âmbar (projeção).
+function gerarSlideBridgeGrafico() {
+  const d = obterDadosBridge();
+  if (!d || !d.meses.length) {
+    Logger.log('Sem dados para o Gráfico Bridge.');
+    return;
+  }
+
+  const deck  = getDeckAtivo();
+  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  slide.getBackground().setSolidFill(CORES.bgSlide);
+
+  const pageW = deck.getPageWidth();
+  const pageH = deck.getPageHeight();
+
+  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO',
+    'Do Orçado ao Realizado/Projetado — ' + d.projeto);
+
+  // ── Card de fundo ──────────────────────────────────────────────────────
+  const marginX = 20;
+  const topY    = 78;
+  const cardW   = pageW - 2 * marginX;
+  const cardH   = pageH - topY - 15;
+  const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, topY, cardW, cardH);
+  card.getFill().setSolidFill(CORES.white); card.getBorder().setTransparent();
+
+  // ── Legenda ────────────────────────────────────────────────────────────
+  _bridgeLegenda(slide, marginX + 20, topY + 10);
+
+  // ── Sequência de barras: [Orçado] + meses + [Realizado/Projetado] ──────
+  const inicio = d.totalOrcAnual;     // orçado anual
+  const passos = [];
+  let acumulado = inicio;
+  passos.push({ tipo: 'TOTAL', label: 'ORÇADO', topo: inicio, base: 0, valor: inicio, cor: '#94A3B8' });
+
+  d.meses.forEach(m => {
+    const delta = m.real - m.orc;     // >0 gastou mais (sobe) ; <0 economizou (desce)
+    const antes = acumulado;
+    acumulado  += delta;
+    const topo  = Math.max(antes, acumulado);
+    const base  = Math.min(antes, acumulado);
+    const subiu = delta > 0;          // subir = acima do orçado (ruim)
+    const cor   = m.tipo === 'RITMO' ? '#F59E0B' : (subiu ? '#EF4444' : '#10B981');
+    passos.push({ tipo: 'STEP', label: m.label, topo, base, valor: delta, cor, subiu, ritmo: m.tipo === 'RITMO' });
+  });
+
+  passos.push({ tipo: 'TOTAL', label: 'REALIZ./PROJ.', topo: acumulado, base: 0, valor: acumulado, cor: CORES.darkBlue });
+
+  // ── Escala ──────────────────────────────────────────────────────────────
+  let maxVal = 0;
+  passos.forEach(p => { if (p.topo > maxVal) maxVal = p.topo; });
+  if (maxVal === 0) maxVal = 1;
+
+  const plotX = marginX + 30;
+  const plotY = topY + 40;
+  const plotW = cardW - 60;
+  const plotH = cardH - 95;
+  const baseY = plotY + plotH;                         // linha de base (zero)
+
+  const n     = passos.length;
+  const slotW = plotW / n;
+  const barW  = Math.min(slotW * 0.62, 46);
+  const vToH  = v => (v / maxVal) * plotH;             // valor → altura em pt
+
+  // Linha de base
+  const linhaBase = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, baseY, plotW, 1.2);
+  linhaBase.getFill().setSolidFill('#CBD5E1'); linhaBase.getBorder().setTransparent();
+
+  let prevConnX = null, prevConnY = null;
+
+  passos.forEach((p, i) => {
+    const cx   = plotX + i * slotW + (slotW - barW) / 2;
+    const yTop = baseY - vToH(p.topo);
+    const yBot = baseY - vToH(p.base);
+    const hBar = Math.max(yBot - yTop, 2);
+
+    // Conector tracejado do passo anterior até este (na altura do acumulado)
+    if (prevConnX !== null) {
+      const conn = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, prevConnX, yTop, cx - prevConnX, 1);
+      conn.getFill().setSolidFill('#CBD5E1'); conn.getBorder().setTransparent();
+    }
+
+    // Barra
+    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yTop, barW, hBar);
+    bar.getFill().setSolidFill(p.cor); bar.getBorder().setTransparent();
+
+    // Valor acima da barra
+    const lblVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - slotW * 0.2, yTop - 16, barW + slotW * 0.4, 14);
+    let txtVal;
+    if (p.tipo === 'TOTAL') txtVal = formatarMoedaCompacta(p.valor);
+    else txtVal = (p.subiu ? '+' : '−') + formatarMoedaCompacta(Math.abs(p.valor));
+    const tv = lblVal.getText();
+    tv.setText(txtVal).getTextStyle()
+      .setFontSize(6).setBold(true).setForegroundColor(p.tipo === 'TOTAL' ? CORES.textDark : p.cor).setFontFamily('Montserrat');
+    tv.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // Rótulo do mês/etapa abaixo da base
+    const lblCat = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW, baseY + 4, slotW, 22);
+    const tc = lblCat.getText();
+    tc.setText(p.label).getTextStyle()
+      .setFontSize(p.tipo === 'TOTAL' ? 6.5 : 6).setBold(p.tipo === 'TOTAL')
+      .setForegroundColor(p.tipo === 'TOTAL' ? CORES.darkBlue : CORES.textGray).setFontFamily('Montserrat');
+    tc.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    prevConnX = cx + barW;
+    prevConnY = (p.tipo === 'TOTAL' && i === n - 1) ? null : yTop;
+  });
+
+  // ── Rodapé resumo ─────────────────────────────────────────────────────
+  const abAnual = d.varAnual >= 0;
+  const corR    = abAnual ? '#166534' : '#DC2626';
+  const resumo  = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 20, topY + cardH - 26, cardW - 40, 18);
+  const rt = resumo.getText();
+  rt.setText('Projeção anual ' + (abAnual ? 'ABAIXO' : 'ACIMA') + ' do orçado em ' +
+             formatarMoeda(Math.abs(d.varAnual)) +
+             ' (' + (d.totalOrcAnual > 0 ? (Math.abs(d.varAnual / d.totalOrcAnual) * 100).toFixed(1) : '0') + '%).')
+    .getTextStyle().setFontSize(9).setBold(true).setItalic(true).setForegroundColor(corR).setFontFamily('Montserrat');
+  rt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  Logger.log('Slide Gráfico Bridge gerado (' + d.meses.length + ' meses).');
+}
+
+// Legenda do gráfico
+function _bridgeLegenda(slide, x, y) {
+  const itens = [
+    { cor: '#10B981', txt: 'Abaixo (economia)' },
+    { cor: '#EF4444', txt: 'Acima (atenção)' },
+    { cor: '#F59E0B', txt: 'Ritmo (projeção)' }
+  ];
+  let cx = x;
+  itens.forEach(it => {
+    const box = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y + 2, 9, 9);
+    box.getFill().setSolidFill(it.cor); box.getBorder().setTransparent();
+    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 12, y - 2, 110, 14);
+    tb.getText().setText(it.txt).getTextStyle()
+      .setFontSize(7).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+    cx += 130;
+  });
+}
