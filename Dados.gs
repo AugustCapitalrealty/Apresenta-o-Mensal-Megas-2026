@@ -358,18 +358,29 @@ function obterDadosCustoM2() {
     });
 
     // ── Mês de referência ─────────────────────────────────────────────────
-    // Prioriza o MÊS CORRENTE (se tiver dados); senão cai para o último mês
-    // com Orç e Real preenchidos. Evita travar em Dezembro quando a planilha
-    // já tem projeções lançadas para o ano inteiro.
+    // Prioridade:
+    //   1. Mês escrito na célula A1 da aba (ex: "MAIO", "Abril") — controle manual
+    //   2. Mês corrente (se tiver dados)
+    //   3. Último mês com Orç e Real preenchidos
     const temDados = i => tabela['Orç 2026'][i] !== null && tabela['Real 2026'][i] !== null;
     let mesRef = null;
 
-    const mesAtualIdx = new Date().getMonth();   // 0 = Jan … 11 = Dez
-    if (mesAtualIdx < meses.length && temDados(mesAtualIdx)) {
-      mesRef = { ...meses[mesAtualIdx], index: mesAtualIdx };
-    } else {
-      for (let i = meses.length - 1; i >= 0; i--) {
-        if (temDados(i)) { mesRef = { ...meses[i], index: i }; break; }
+    const mesesIdx = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const a1 = normalizarTextoCusto_(data[0][0]).substring(0, 3);
+    const idxManual = mesesIdx.indexOf(a1);
+    if (idxManual >= 0 && idxManual < meses.length && temDados(idxManual)) {
+      mesRef = { ...meses[idxManual], index: idxManual };
+      Logger.log('obterDadosCustoM2: mês definido manualmente em A1 → ' + data[0][0]);
+    }
+
+    if (!mesRef) {
+      const mesAtualIdx = new Date().getMonth();   // 0 = Jan … 11 = Dez
+      if (mesAtualIdx < meses.length && temDados(mesAtualIdx)) {
+        mesRef = { ...meses[mesAtualIdx], index: mesAtualIdx };
+      } else {
+        for (let i = meses.length - 1; i >= 0; i--) {
+          if (temDados(i)) { mesRef = { ...meses[i], index: i }; break; }
+        }
       }
     }
 
