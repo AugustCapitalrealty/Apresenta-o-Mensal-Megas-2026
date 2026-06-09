@@ -356,12 +356,19 @@ function obterDadosCustoM2() {
       );
     });
 
-    // ── Mês de referência: último com Orç e Real preenchidos ──────────────
+    // ── Mês de referência ─────────────────────────────────────────────────
+    // Prioriza o MÊS CORRENTE (se tiver dados); senão cai para o último mês
+    // com Orç e Real preenchidos. Evita travar em Dezembro quando a planilha
+    // já tem projeções lançadas para o ano inteiro.
+    const temDados = i => tabela['Orç 2026'][i] !== null && tabela['Real 2026'][i] !== null;
     let mesRef = null;
-    for (let i = meses.length - 1; i >= 0; i--) {
-      if (tabela['Orç 2026'][i] !== null && tabela['Real 2026'][i] !== null) {
-        mesRef = { ...meses[i], index: i };
-        break;
+
+    const mesAtualIdx = new Date().getMonth();   // 0 = Jan … 11 = Dez
+    if (mesAtualIdx < meses.length && temDados(mesAtualIdx)) {
+      mesRef = { ...meses[mesAtualIdx], index: mesAtualIdx };
+    } else {
+      for (let i = meses.length - 1; i >= 0; i--) {
+        if (temDados(i)) { mesRef = { ...meses[i], index: i }; break; }
       }
     }
 
