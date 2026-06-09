@@ -82,17 +82,22 @@ function obterDadosBridge() {
   const hdr = data[hdrRow];
 
   // ── Detecta grupos de colunas (triplets: Orç | Real/Ritmo | Variação) ────
+  const MESES_VALIDOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const grupos = [];
   for (let c = 1; c + 1 < hdr.length; c += 3) {
     const h0 = normTxt(hdr[c]);
     if (!/^or[cç]/.test(h0)) break;                    // sem mais triplets
 
-    const h1    = normTxt(hdr[c + 1] || '');
-    const tipo  = h1.includes('ritmo') ? 'RITMO' : 'REAL';
+    // Extrai mês/ano: "Orç Jan/26" → mês "jan", rótulo "JAN/26"
+    const m = String(hdr[c]).match(/([A-Za-zçÇ]{3})\/(\d{2,4})/);
+    if (!m) continue;
+    const mesKey = m[1].toLowerCase();
+    if (MESES_VALIDOS.indexOf(mesKey) < 0) continue;   // ignora "Ano/26" e afins
 
-    // Extrai rótulo do mês: "Orç Jan/26" → "JAN/26"
-    const m = String(hdr[c]).match(/([A-Za-zçÇ]{3}\/\d{2,4})/);
-    const label = m ? m[1].toUpperCase() : ('M' + grupos.length + 1);
+    const h1   = normTxt(hdr[c + 1] || '');
+    const tipo = h1.includes('ritmo') ? 'RITMO' : 'REAL';
+    const ano  = m[2].length === 2 ? m[2] : m[2].slice(-2);
+    const label = m[1].toUpperCase() + '/' + ano;
 
     grupos.push({ label, tipo, cOrc: c, cReal: c + 1, cVar: c + 2 });
   }
@@ -238,12 +243,12 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
   const useW = w - (2 * pad);
   const cAcc = (() => { let a = 0; return f => { const px = x0 + a * useW; a += f; return px; }; })();
   const cols = [
-    { t: 'MÊS',       x: cAcc(0.10), w: useW * 0.10, a: 'C' },
-    { t: 'TIPO',      x: cAcc(0.10), w: useW * 0.10, a: 'C' },
-    { t: 'ORÇADO',    x: cAcc(0.22), w: useW * 0.22, a: 'R' },
-    { t: 'REAL/RITMO',x: cAcc(0.22), w: useW * 0.22, a: 'R' },
-    { t: 'VARIAÇÃO',  x: cAcc(0.22), w: useW * 0.22, a: 'R' },
-    { t: 'VAR %',     x: cAcc(0.14), w: useW * 0.14, a: 'C' }
+    { t: 'MÊS',       x: cAcc(0.13), w: useW * 0.13, a: 'C' },
+    { t: 'TIPO',      x: cAcc(0.11), w: useW * 0.11, a: 'C' },
+    { t: 'ORÇADO',    x: cAcc(0.21), w: useW * 0.21, a: 'R' },
+    { t: 'REAL/RITMO',x: cAcc(0.21), w: useW * 0.21, a: 'R' },
+    { t: 'VARIAÇÃO',  x: cAcc(0.21), w: useW * 0.21, a: 'R' },
+    { t: 'VAR %',     x: cAcc(0.13), w: useW * 0.13, a: 'C' }
   ];
 
   // ── Cabeçalho ─────────────────────────────────────────────────────────────
@@ -274,7 +279,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     const bgVarPill = m.tipo === 'RITMO' ? '#FFF7ED' : (abaixo ? '#F0FDF4' : '#FEF2F2');
     const bgRow  = i % 2 === 0 ? '#F8FAFC' : CORES.white;
     const varPct = m.orc > 0 ? (Math.abs(m.var / m.orc) * 100).toFixed(1) + '%' : '-';
-    const sinal  = m.tipo === 'RITMO' ? '' : (abaixo ? '-' : '+');
+    const seta   = abaixo ? '▼ ' : '▲ ';   // ▼ abaixo do orçado (bom) · ▲ acima (atenção)
 
     // Fundo zebrado
     const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, ry, w - 8, rowH);
@@ -295,7 +300,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     _cel(m.label,                      cols[0], CORES.darkBlue,  true);
     _cel(formatarMoeda(m.orc),         cols[2], CORES.textDark,  false);
     _cel(formatarMoeda(m.real),        cols[3], CORES.textDark,  false);
-    _cel(sinal + formatarMoeda(Math.abs(m.var)), cols[4], corVar, true);
+    _cel(seta + formatarMoeda(Math.abs(m.var)), cols[4], corVar, true);
 
     // Pill TIPO (REAL / RITMO)
     const pillH = Math.min(rowH - 4, 14);
@@ -352,7 +357,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     _totCel('PERÍODO', cols[0], CORES.darkBlue);
     _totCel(formatarMoeda(d.totalOrc),  cols[2], CORES.darkBlue);
     _totCel(formatarMoeda(d.totalReal), cols[3], CORES.darkBlue);
-    _totCel((abTot ? '-' : '+') + formatarMoeda(Math.abs(d.totalVar)), cols[4], corTot);
+    _totCel((abTot ? '▼ ' : '▲ ') + formatarMoeda(Math.abs(d.totalVar)), cols[4], corTot);
     const pct = d.totalOrc > 0 ? (Math.abs(d.totalVar / d.totalOrc) * 100).toFixed(1) + '%' : '-';
     _totCel(pct, cols[5], corTot);
   }
