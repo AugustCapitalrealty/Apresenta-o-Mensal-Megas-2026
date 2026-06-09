@@ -271,6 +271,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     const ry  = startY + i * rowH;
     const abaixo = m.var >= 0;
     const corVar = m.tipo === 'RITMO' ? '#D97706' : (abaixo ? '#166534' : '#DC2626');
+    const bgVarPill = m.tipo === 'RITMO' ? '#FFF7ED' : (abaixo ? '#F0FDF4' : '#FEF2F2');
     const bgRow  = i % 2 === 0 ? '#F8FAFC' : CORES.white;
     const varPct = m.orc > 0 ? (Math.abs(m.var / m.orc) * 100).toFixed(1) + '%' : '-';
     const sinal  = m.tipo === 'RITMO' ? '' : (abaixo ? '-' : '+');
@@ -317,7 +318,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     const vPillX = cols[5].x + 2;
     const vPillY = ry + (rowH - vPillH) / 2;
     const vBg    = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, vPillX, vPillY, vPillW, vPillH);
-    vBg.getFill().setSolidFill(corVar + '22'); vBg.getBorder().setTransparent();
+    vBg.getFill().setSolidFill(bgVarPill); vBg.getBorder().setTransparent();
     const vt = vBg.getText();
     vt.setText(varPct)
       .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(corVar).setFontFamily('Montserrat');
@@ -332,7 +333,7 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
     sep.getFill().setSolidFill(CORES.lineSeparator); sep.getBorder().setTransparent();
 
     const totBar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 4, totY + 3, w - 8, 22);
-    totBar.getFill().setSolidFill(CORES.darkBlue + '18'); totBar.getBorder().setTransparent();
+    totBar.getFill().setSolidFill('#EEF2F7'); totBar.getBorder().setTransparent();
 
     const _totCel = (txt, col, cor) => {
       const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, totY + 3, col.w, 22);
