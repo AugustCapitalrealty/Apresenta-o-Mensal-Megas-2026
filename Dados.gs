@@ -566,6 +566,25 @@ function obterDadosDocumentos() {
     }
     if (hdr < 0) throw new Error('Cabeçalho (EMPRESA/DOCUMENTOS) não encontrado.');
 
+    // ── Detecta coluna de status real varrendo primeiras linhas de dados ─────
+    // Esteio: header "Status" (col E) é obs; status real (VENCIDO/DIAS...) fica
+    // na última coluna sem header. Curitiba/Itajaí: col.status = -1, sem problema.
+    {
+      const statusKw = ['vencido', 'dias para vencer', 'prazo indeterminado'];
+      let realStatusCol = -1;
+      for (let ri = hdr + 1; ri < Math.min(hdr + 15, data.length) && realStatusCol < 0; ri++) {
+        for (let ci = 0; ci < data[ri].length; ci++) {
+          const v = norm(data[ri][ci] || '');
+          if (statusKw.some(k => v.includes(k))) { realStatusCol = ci; break; }
+        }
+      }
+      if (realStatusCol >= 0 && realStatusCol !== col.status) {
+        // A coluna do header "Status" é na verdade observações
+        if (col.obs < 0) col.obs = col.status;
+        col.status = realStatusCol;
+      }
+    }
+
     // Identifica linha de cabeçalho REPETIDA (Itajaí repete o header por empresa)
     const eHeaderRepetido = row => {
       const empVal = norm(row[col.empresa] || '');
