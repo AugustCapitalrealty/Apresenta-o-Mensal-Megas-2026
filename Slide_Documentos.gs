@@ -264,7 +264,9 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
 // ==========================================
 function desenharCelulaDoc_(slide, x, y, w, h, texto, fontSize, bold, cor) {
   const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
-  box.getText().setText(texto || '')
+  const t = (texto === null || texto === undefined) ? '' : String(texto);
+  if (t === '') return;  // texto vazio: não estiliza (evita "object has no text")
+  box.getText().setText(t)
     .getTextStyle().setFontSize(fontSize).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }

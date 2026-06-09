@@ -75,8 +75,9 @@ function gerarApresentacaoCompleta_() {
   Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
   if (erros.length) Logger.log(erros.join('\n'));
 
-  registrarRevisaoAutomatica_();
-  registrarHistoricoDados_();
+  // Registros opcionais — só rodam se os respectivos arquivos estiverem no projeto
+  if (typeof registrarRevisaoAutomatica_ === 'function') registrarRevisaoAutomatica_();
+  if (typeof registrarHistoricoDados_   === 'function') registrarHistoricoDados_();
 }
 
 function limparApresentacao_() {
