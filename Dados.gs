@@ -535,7 +535,7 @@ function obterDadosDocumentos() {
     const data = sheet.getDataRange().getDisplayValues();
     const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-    // Localizar a linha de cabeçalho e os índices reais de cada coluna
+    // ── Localiza o PRIMEIRO cabeçalho (linha com "empresa" + "documento") ────
     let hdr = -1, col = {};
     for (let i = 0; i < data.length; i++) {
       const linha = data[i].map(norm);
@@ -553,6 +553,13 @@ function obterDadosDocumentos() {
     }
     if (hdr < 0) throw new Error('Cabeçalho (EMPRESA/DOCUMENTOS) não encontrado.');
 
+    // Identifica linha de cabeçalho REPETIDA (Itajaí repete o header por empresa)
+    const eHeaderRepetido = row => {
+      const empVal = norm(row[col.empresa] || '');
+      const docVal = norm(row[col.documento] || '');
+      return empVal === 'empresa' || docVal === 'documentos' || docVal === 'documento';
+    };
+
     const itens   = [];
     const resumo  = { vencido: 0, critico: 0, emDia: 0, pendente: 0, total: 0 };
     let empresaAtual = '';
@@ -564,13 +571,17 @@ function obterDadosDocumentos() {
       const row = data[i];
       const cell = idx => (idx >= 0 ? String(row[idx] || '').trim() : '');
 
+      // Pula cabeçalhos repetidos (Itajaí repete header por empresa)
+      if (eHeaderRepetido(row)) continue;
+
       const empresa   = cell(col.empresa);
       const documento = cell(col.documento);
       const venc      = cell(col.venc);
       const obs       = cell(col.obs);
       const statusRaw = cell(col.status);
 
-      if (empresa) empresaAtual = empresa;
+      // Atualiza empresa atual (ignora se contiver texto de cabeçalho)
+      if (empresa && norm(empresa) !== 'empresa') empresaAtual = empresa;
       if (!documento) continue;  // pula linhas sem documento
 
       // Calcula dias a partir da data de vencimento (dd/MM/aaaa) vs. hoje
