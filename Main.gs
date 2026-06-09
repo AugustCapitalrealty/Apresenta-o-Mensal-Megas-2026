@@ -57,6 +57,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Slide 08 - Financeiro',        fn: gerarSlideFinanceiro      },
     { nome: 'Slide 11 - Financeiro Anual',  fn: gerarSlideFinanceiroAnual },
     { nome: 'Slide 26 - Custo M²',          fn: gerarSlideCustoM2         },
+    { nome: 'Slide -- Documentação Legal',  fn: gerarSlideDocumentos      },
     { nome: 'Slide 14 - Encerramento',      fn: gerarSlideEncerramento    }
   ];
 

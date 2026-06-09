@@ -494,3 +494,94 @@ function formatarPorcentagem(val) {
   }
   return s;
 }
+
+
+// ==========================================
+// DADOS DOCUMENTOS INQUILINOS (Slide Documentação Legal)
+// ==========================================
+//
+// Aba 'DOCUMENTOS INQUILINOS':
+//   linha de título (mesclada) + linha de cabeçalho + linhas de dados.
+//   Colunas: EMPRESA | DOCUMENTOS | VENC. | HISTÓRICO/OBSERVAÇÕES | DIAS PARA VENCER | STATUS
+//   - EMPRESA em branco = repete a empresa da linha anterior.
+//   - DIAS PARA VENCER: número (negativo = vencido) ou '**' quando sem data.
+//
+// Classificação por dias até o vencimento:
+//   VENCIDO  : dias < 0
+//   CRITICO  : 0 <= dias <= LIMITE_CRITICO_DIAS  (vence em breve)
+//   EM_DIA   : dias > LIMITE_CRITICO_DIAS
+//   PENDENTE : sem data (Não Enviado, Protocolo, **, etc.)
+// ==========================================
+
+const LIMITE_CRITICO_DIAS = 60;
+
+function obterDadosDocumentos() {
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('DOCUMENTOS INQUILINOS');
+    if (!sheet) throw new Error('Aba DOCUMENTOS INQUILINOS não encontrada.');
+
+    const data = sheet.getDataRange().getDisplayValues();
+    const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    // Localizar a linha de cabeçalho (contém EMPRESA e DOCUMENTOS)
+    let hdr = -1;
+    for (let i = 0; i < data.length; i++) {
+      const linha = data[i].map(norm);
+      if (linha.indexOf('empresa') >= 0 && linha.some(c => c.includes('documento'))) { hdr = i; break; }
+    }
+    if (hdr < 0) throw new Error('Cabeçalho (EMPRESA/DOCUMENTOS) não encontrado.');
+
+    const itens   = [];
+    const resumo  = { vencido: 0, critico: 0, emDia: 0, pendente: 0, total: 0 };
+    let empresaAtual = '';
+
+    for (let i = hdr + 1; i < data.length; i++) {
+      const row = data[i];
+      const empresa   = String(row[0] || '').trim();
+      const documento = String(row[1] || '').trim();
+      const venc      = String(row[2] || '').trim();
+      const obs       = String(row[3] || '').trim();
+      const diasRaw   = String(row[4] || '').trim();
+      const statusRaw = String(row[5] || '').trim();
+
+      if (empresa) empresaAtual = empresa;
+      if (!documento) continue;  // pula linhas vazias
+
+      // Interpreta os dias (pode ser '**', '-103', '0', '349'...)
+      const diasNum = parseInt(String(diasRaw).replace(/[^\d-]/g, ''), 10);
+      const temData = !isNaN(diasNum) && diasRaw !== '**' && diasRaw !== '';
+
+      let categoria;
+      if (!temData)              categoria = 'PENDENTE';
+      else if (diasNum < 0)      categoria = 'VENCIDO';
+      else if (diasNum <= LIMITE_CRITICO_DIAS) categoria = 'CRITICO';
+      else                       categoria = 'EM_DIA';
+
+      switch (categoria) {
+        case 'VENCIDO':  resumo.vencido++;  break;
+        case 'CRITICO':  resumo.critico++;  break;
+        case 'EM_DIA':   resumo.emDia++;    break;
+        case 'PENDENTE': resumo.pendente++; break;
+      }
+      resumo.total++;
+
+      itens.push({
+        empresa   : empresaAtual,
+        documento : documento,
+        venc      : venc || '-',
+        obs       : obs,
+        dias      : temData ? diasNum : null,
+        diasTexto : temData ? String(diasNum) : (venc || '--'),
+        status    : statusRaw || (categoria === 'VENCIDO' ? 'VENCIDO' : 'DIAS PARA VENCER'),
+        categoria : categoria
+      });
+    }
+
+    return { itens, resumo };
+
+  } catch (e) {
+    Logger.log('Erro Documentos: ' + e.message);
+    return null;
+  }
+}

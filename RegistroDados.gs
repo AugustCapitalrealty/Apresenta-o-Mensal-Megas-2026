@@ -41,6 +41,7 @@ function registrarHistoricoDados_() {
     coletarTempo_(add);
     coletarFinanceiro_(add);
     coletarCustoM2_(add);
+    coletarDocumentos_(add);
 
     if (!linhas.length) {
       Logger.log('  ⓘ Histórico de dados: nada para registrar.');
@@ -112,6 +113,16 @@ function coletarCustoM2_(add) {
   const ref = d.referencia.mesExtenso + ' ' + d.referencia.ano;
   add('Custo M²', 'Custo (R$/m²)', d.kpis.custo, ref);
   add('Custo M²', 'Meta orçada',   d.kpis.meta,  ref);
+}
+
+
+function coletarDocumentos_(add) {
+  const d = obterDadosDocumentos();
+  if (!d || !d.resumo) return;
+  add('Documentos', 'Vencidos',     d.resumo.vencido,  'Mês atual');
+  add('Documentos', 'Vence em 60d', d.resumo.critico,  'Mês atual');
+  add('Documentos', 'Em dia',       d.resumo.emDia,    'Mês atual');
+  add('Documentos', 'Pendentes',    d.resumo.pendente, 'Mês atual');
 }
 
 
