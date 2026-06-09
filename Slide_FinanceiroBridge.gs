@@ -402,7 +402,7 @@ function gerarSlideBridgeGrafico() {
   const inicio = d.totalOrcAnual;     // orçado anual
   const passos = [];
   let acumulado = inicio;
-  passos.push({ tipo: 'TOTAL', label: 'ORÇADO', topo: inicio, base: 0, valor: inicio, cor: '#94A3B8' });
+  passos.push({ tipo: 'TOTAL', label: 'ORÇADO', topo: inicio, base: inicio, valor: inicio, cor: '#94A3B8' });
 
   d.meses.forEach(m => {
     const delta = m.real - m.orc;     // >0 gastou mais (sobe) ; <0 economizou (desce)
@@ -415,39 +415,65 @@ function gerarSlideBridgeGrafico() {
     passos.push({ tipo: 'STEP', label: m.label, topo, base, valor: delta, cor, subiu, ritmo: m.tipo === 'RITMO' });
   });
 
-  passos.push({ tipo: 'TOTAL', label: 'REALIZ./PROJ.', topo: acumulado, base: 0, valor: acumulado, cor: CORES.darkBlue });
+  passos.push({ tipo: 'TOTAL', label: 'REAL./PROJ.', topo: acumulado, base: acumulado, valor: acumulado, cor: CORES.darkBlue });
 
-  // ── Escala ──────────────────────────────────────────────────────────────
-  let maxVal = 0;
-  passos.forEach(p => { if (p.topo > maxVal) maxVal = p.topo; });
-  if (maxVal === 0) maxVal = 1;
+  // ── Escala com ZOOM ───────────────────────────────────────────────────────
+  // Em vez de partir de zero (o que tornaria as variações invisíveis frente a
+  // um orçado de milhões), enquadramos a faixa entre o menor e o maior valor
+  // acumulado, com folga de 12% em cima e embaixo.
+  let vMin = Infinity, vMax = -Infinity;
+  passos.forEach(p => {
+    vMin = Math.min(vMin, p.base, p.topo);
+    vMax = Math.max(vMax, p.base, p.topo);
+  });
+  const span    = Math.max(vMax - vMin, 1);
+  const folga   = span * 0.12;
+  const escMin  = vMin - folga;
+  const escMax  = vMax + folga;
+  const escSpan = escMax - escMin;
 
   const plotX = marginX + 30;
-  const plotY = topY + 40;
+  const plotY = topY + 44;
   const plotW = cardW - 60;
-  const plotH = cardH - 95;
-  const baseY = plotY + plotH;                         // linha de base (zero)
+  const plotH = cardH - 100;
+  const baseY = plotY + plotH;                          // base do plot (= escMin)
 
   const n     = passos.length;
   const slotW = plotW / n;
-  const barW  = Math.min(slotW * 0.62, 46);
-  const vToH  = v => (v / maxVal) * plotH;             // valor → altura em pt
+  const barW  = Math.min(slotW * 0.58, 44);
+  // valor (absoluto, no eixo) → coordenada Y na tela
+  const vToY  = v => baseY - ((v - escMin) / escSpan) * plotH;
 
-  // Linha de base
-  const linhaBase = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, baseY, plotW, 1.2);
-  linhaBase.getFill().setSolidFill('#CBD5E1'); linhaBase.getBorder().setTransparent();
+  // ── Linhas de grade horizontais (4 faixas) + rótulos do eixo ──────────────
+  for (let g = 0; g <= 4; g++) {
+    const val = escMin + (escSpan * g / 4);
+    const gy  = vToY(val);
+    const grid = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, gy, plotW, 0.75);
+    grid.getFill().setSolidFill(g === 0 ? '#CBD5E1' : '#EEF2F7'); grid.getBorder().setTransparent();
+    const gl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX - 30, gy - 7, 28, 14);
+    gl.getText().setText(formatarMoedaCompacta(val)).getTextStyle()
+      .setFontSize(5.5).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
+    gl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  }
 
   let prevConnX = null, prevConnY = null;
 
   passos.forEach((p, i) => {
     const cx   = plotX + i * slotW + (slotW - barW) / 2;
-    const yTop = baseY - vToH(p.topo);
-    const yBot = baseY - vToH(p.base);
-    const hBar = Math.max(yBot - yTop, 2);
+    let yTop, yBot;
+    if (p.tipo === 'TOTAL') {
+      // barra cheia: do topo do valor até a base do plot
+      yTop = vToY(p.topo);
+      yBot = baseY;
+    } else {
+      yTop = vToY(p.topo);
+      yBot = vToY(p.base);
+    }
+    const hBar = Math.max(yBot - yTop, 3);
 
-    // Conector tracejado do passo anterior até este (na altura do acumulado)
-    if (prevConnX !== null) {
-      const conn = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, prevConnX, yTop, cx - prevConnX, 1);
+    // Conector horizontal do passo anterior até este (na altura do acumulado)
+    if (prevConnX !== null && prevConnY !== null) {
+      const conn = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, prevConnX, prevConnY, cx - prevConnX, 1);
       conn.getFill().setSolidFill('#CBD5E1'); conn.getBorder().setTransparent();
     }
 
@@ -456,7 +482,7 @@ function gerarSlideBridgeGrafico() {
     bar.getFill().setSolidFill(p.cor); bar.getBorder().setTransparent();
 
     // Valor acima da barra
-    const lblVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - slotW * 0.2, yTop - 16, barW + slotW * 0.4, 14);
+    const lblVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - slotW * 0.25, yTop - 15, barW + slotW * 0.5, 13);
     let txtVal;
     if (p.tipo === 'TOTAL') txtVal = formatarMoedaCompacta(p.valor);
     else txtVal = (p.subiu ? '+' : '−') + formatarMoedaCompacta(Math.abs(p.valor));
@@ -466,15 +492,17 @@ function gerarSlideBridgeGrafico() {
     tv.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     // Rótulo do mês/etapa abaixo da base
-    const lblCat = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW, baseY + 4, slotW, 22);
+    const lblCat = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.15, baseY + 4, slotW * 1.3, 14);
     const tc = lblCat.getText();
     tc.setText(p.label).getTextStyle()
-      .setFontSize(p.tipo === 'TOTAL' ? 6.5 : 6).setBold(p.tipo === 'TOTAL')
+      .setFontSize(p.tipo === 'TOTAL' ? 6 : 5.5).setBold(p.tipo === 'TOTAL')
       .setForegroundColor(p.tipo === 'TOTAL' ? CORES.darkBlue : CORES.textGray).setFontFamily('Montserrat');
     tc.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     prevConnX = cx + barW;
-    prevConnY = (p.tipo === 'TOTAL' && i === n - 1) ? null : yTop;
+    // conector sai da altura do acumulado final deste passo
+    prevConnY = (p.tipo === 'TOTAL' && i === n - 1) ? null
+              : (p.tipo === 'TOTAL' ? vToY(p.topo) : (p.subiu ? yTop : yBot));
   });
 
   // ── Rodapé resumo ─────────────────────────────────────────────────────
