@@ -224,10 +224,10 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     h.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   });
 
-  const rowH   = Math.min(24, Math.floor((tableH - 50) / DOC_LINHAS_POR_PAGINA));
-  const startY = headY + 24;
+  const startY  = headY + 24;
+  const CARD_GAP = 6;  // respiro vertical entre os cards de cliente
 
-  // ── Agrupa as linhas por empresa para dar ênfase visual a cada cliente ──
+  // ── Agrupa as linhas por empresa (cada grupo vira um card) ──────────────
   const grupos = [];
   itens.forEach((it, i) => {
     const ult = grupos[grupos.length - 1];
@@ -235,35 +235,41 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     else grupos.push({ empresa: it.empresa, itens: [{ it, i }] });
   });
 
-  // Dois tons suaves alternados por grupo (faixa de cliente)
-  const FAIXA = ['#FFFFFF', '#EEF2F7'];
+  // Altura de linha: cabe DOC_LINHAS_POR_PAGINA linhas + os gaps entre cards
+  const availableH = tableH - (startY - topY) - 12;
+  const rowH = Math.min(24, Math.floor((availableH - (grupos.length - 1) * CARD_GAP) / DOC_LINHAS_POR_PAGINA));
 
-  grupos.forEach((g, gi) => {
-    const primeiroI = g.itens[0].i;
-    const grupoY    = startY + primeiroI * rowH;
-    const grupoH    = g.itens.length * rowH;
+  // Layout: posiciona cada card e guarda o Y de cada linha (com os gaps)
+  const itemY = {};
+  let cursorY = startY;
 
-    // Faixa de fundo do grupo (alternada)
-    const faixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, tableW - 16, grupoH);
-    faixa.getFill().setSolidFill(FAIXA[gi % 2]); faixa.getBorder().setTransparent();
+  grupos.forEach(g => {
+    const cardY = cursorY;
+    const cardH = g.itens.length * rowH;
 
-    // Barra de destaque à esquerda do grupo
-    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, 4, grupoH);
+    // Sombra
+    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX + 10, cardY + 2, tableW - 20, cardH);
+    sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
+
+    // Card branco
+    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX + 8, cardY, tableW - 16, cardH);
+    card.getFill().setSolidFill(CORES.white); card.getBorder().setTransparent();
+
+    // Barra de destaque à esquerda
+    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, cardY + 3, 4, cardH - 6);
     barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
 
-    // Linha divisória acima do grupo (menos no primeiro)
-    if (gi > 0) {
-      const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, tableW - 16, 1);
-      linha.getFill().setSolidFill('#CBD5E1'); linha.getBorder().setTransparent();
-    }
+    // Nome da empresa centralizado no card
+    desenharCelulaDoc_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, true, CORES.darkBlue);
 
-    // Nome da empresa: uma vez, centralizado verticalmente no bloco do grupo
-    desenharCelulaDoc_(slide, cols[0].x, grupoY, cols[0].w, grupoH, g.empresa, 9, true, CORES.darkBlue);
+    // Guarda o Y de cada documento e avança o cursor
+    g.itens.forEach(({ i }, li) => { itemY[i] = cardY + li * rowH; });
+    cursorY += cardH + CARD_GAP;
   });
 
-  // Desenha o conteúdo de cada documento (após as faixas, para ficar por cima)
+  // ── Conteúdo dos documentos (por cima dos cards) ────────────────────────
   itens.forEach((it, i) => {
-    const ry  = startY + i * rowH;
+    const ry  = itemY[i];
     const cor = DOC_CORES_CATEGORIA[it.categoria];
 
     desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 7,   false, CORES.textDark);
