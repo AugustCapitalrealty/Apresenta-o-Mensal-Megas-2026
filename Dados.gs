@@ -627,6 +627,12 @@ function obterDadosDocumentos() {
       else if (dias <= LIMITE_CRITICO_DIAS)  categoria = 'CRITICO';
       else                                   categoria = 'EM_DIA';
 
+      // O status escrito na planilha tem prioridade sobre o cálculo por data
+      // (ex.: Esteio marca VENCIDO sem preencher a data de vencimento)
+      const stNorm = norm(statusRaw);
+      if (stNorm.includes('vencido'))            categoria = 'VENCIDO';
+      else if (stNorm.includes('indeterminado')) categoria = 'EM_DIA';
+
       switch (categoria) {
         case 'VENCIDO':  resumo.vencido++;  break;
         case 'CRITICO':  resumo.critico++;  break;
@@ -661,6 +667,11 @@ function parseDataBR_(txt) {
   if (!m) return null;
   let d = parseInt(m[1], 10), mes = parseInt(m[2], 10), ano = parseInt(m[3], 10);
   if (ano < 100) ano += 2000;
+
+  // Formato americano (MM/DD/aaaa): se o "mês" for > 12, inverte dia e mês
+  // (ex.: Esteio usa "12/31/2030")
+  if (mes > 12 && d <= 12) { const tmp = d; d = mes; mes = tmp; }
+
   const dt = new Date(ano, mes - 1, d);
   dt.setHours(0, 0, 0, 0);
   if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== d) return null;
