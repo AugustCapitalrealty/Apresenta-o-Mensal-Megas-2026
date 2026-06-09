@@ -501,10 +501,11 @@ function formatarPorcentagem(val) {
 // ==========================================
 //
 // Aba 'DOCUMENTOS INQUILINOS':
-//   linha de título (mesclada) + linha de cabeçalho + linhas de dados.
-//   Colunas: EMPRESA | DOCUMENTOS | VENC. | HISTÓRICO/OBSERVAÇÕES | DIAS PARA VENCER | STATUS
-//   - EMPRESA em branco = repete a empresa da linha anterior.
-//   - DIAS PARA VENCER: número (negativo = vencido) ou '**' quando sem data.
+//   título + cabeçalho + dados. Pode ter coluna(s) em branco à esquerda —
+//   as colunas são localizadas PELO NOME do cabeçalho, nunca por posição fixa.
+//   - EMPRESA em branco / mesclada = repete a empresa da linha anterior.
+//   - VENC.: data dd/MM/aaaa OU texto (Não Enviado, Protocolo, **, DISPENSA...).
+//   - Os dias são CALCULADOS de VENC. vs. hoje (não dependem de fórmula).
 //
 // Classificação por dias até o vencimento:
 //   VENCIDO  : dias < 0
@@ -524,11 +525,21 @@ function obterDadosDocumentos() {
     const data = sheet.getDataRange().getDisplayValues();
     const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-    // Localizar a linha de cabeçalho (contém EMPRESA e DOCUMENTOS)
-    let hdr = -1;
+    // Localizar a linha de cabeçalho e os índices reais de cada coluna
+    let hdr = -1, col = {};
     for (let i = 0; i < data.length; i++) {
       const linha = data[i].map(norm);
-      if (linha.indexOf('empresa') >= 0 && linha.some(c => c.includes('documento'))) { hdr = i; break; }
+      const iEmp = linha.findIndex(c => c === 'empresa');
+      const iDoc = linha.findIndex(c => c.includes('documento'));
+      if (iEmp >= 0 && iDoc >= 0) {
+        hdr = i;
+        col.empresa   = iEmp;
+        col.documento = iDoc;
+        col.venc      = linha.findIndex(c => c.includes('venc'));
+        col.obs       = linha.findIndex(c => c.includes('observ') || c.includes('historico'));
+        col.status    = linha.findIndex(c => c.includes('status'));
+        break;
+      }
     }
     if (hdr < 0) throw new Error('Cabeçalho (EMPRESA/DOCUMENTOS) não encontrado.');
 
@@ -536,27 +547,32 @@ function obterDadosDocumentos() {
     const resumo  = { vencido: 0, critico: 0, emDia: 0, pendente: 0, total: 0 };
     let empresaAtual = '';
 
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
     for (let i = hdr + 1; i < data.length; i++) {
       const row = data[i];
-      const empresa   = String(row[0] || '').trim();
-      const documento = String(row[1] || '').trim();
-      const venc      = String(row[2] || '').trim();
-      const obs       = String(row[3] || '').trim();
-      const diasRaw   = String(row[4] || '').trim();
-      const statusRaw = String(row[5] || '').trim();
+      const cell = idx => (idx >= 0 ? String(row[idx] || '').trim() : '');
+
+      const empresa   = cell(col.empresa);
+      const documento = cell(col.documento);
+      const venc      = cell(col.venc);
+      const obs       = cell(col.obs);
+      const statusRaw = cell(col.status);
 
       if (empresa) empresaAtual = empresa;
-      if (!documento) continue;  // pula linhas vazias
+      if (!documento) continue;  // pula linhas sem documento
 
-      // Interpreta os dias (pode ser '**', '-103', '0', '349'...)
-      const diasNum = parseInt(String(diasRaw).replace(/[^\d-]/g, ''), 10);
-      const temData = !isNaN(diasNum) && diasRaw !== '**' && diasRaw !== '';
+      // Calcula dias a partir da data de vencimento (dd/MM/aaaa) vs. hoje
+      const dataVenc = parseDataBR_(venc);
+      const temData  = dataVenc !== null;
+      const dias     = temData ? Math.round((dataVenc - hoje) / 86400000) : null;
 
       let categoria;
-      if (!temData)              categoria = 'PENDENTE';
-      else if (diasNum < 0)      categoria = 'VENCIDO';
-      else if (diasNum <= LIMITE_CRITICO_DIAS) categoria = 'CRITICO';
-      else                       categoria = 'EM_DIA';
+      if (!temData)                          categoria = 'PENDENTE';
+      else if (dias < 0)                     categoria = 'VENCIDO';
+      else if (dias <= LIMITE_CRITICO_DIAS)  categoria = 'CRITICO';
+      else                                   categoria = 'EM_DIA';
 
       switch (categoria) {
         case 'VENCIDO':  resumo.vencido++;  break;
@@ -571,8 +587,8 @@ function obterDadosDocumentos() {
         documento : documento,
         venc      : venc || '-',
         obs       : obs,
-        dias      : temData ? diasNum : null,
-        diasTexto : temData ? String(diasNum) : (venc || '--'),
+        dias      : dias,
+        diasTexto : temData ? String(dias) : (venc || '--'),
         status    : statusRaw || (categoria === 'VENCIDO' ? 'VENCIDO' : 'DIAS PARA VENCER'),
         categoria : categoria
       });
@@ -584,4 +600,16 @@ function obterDadosDocumentos() {
     Logger.log('Erro Documentos: ' + e.message);
     return null;
   }
+}
+
+// Converte 'dd/MM/aaaa' em Date (meia-noite). Retorna null se não for data válida.
+function parseDataBR_(txt) {
+  const m = String(txt || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  let d = parseInt(m[1], 10), mes = parseInt(m[2], 10), ano = parseInt(m[3], 10);
+  if (ano < 100) ano += 2000;
+  const dt = new Date(ano, mes - 1, d);
+  dt.setHours(0, 0, 0, 0);
+  if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== d) return null;
+  return dt;
 }
