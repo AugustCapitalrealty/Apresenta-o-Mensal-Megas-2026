@@ -224,24 +224,48 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     h.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   });
 
-  const rowH    = Math.min(24, Math.floor((tableH - 50) / DOC_LINHAS_POR_PAGINA));
-  const startY  = headY + 24;
-  let empresaPrev = null;
+  const rowH   = Math.min(24, Math.floor((tableH - 50) / DOC_LINHAS_POR_PAGINA));
+  const startY = headY + 24;
 
+  // ── Agrupa as linhas por empresa para dar ênfase visual a cada cliente ──
+  const grupos = [];
+  itens.forEach((it, i) => {
+    const ult = grupos[grupos.length - 1];
+    if (ult && ult.empresa === it.empresa) ult.itens.push({ it, i });
+    else grupos.push({ empresa: it.empresa, itens: [{ it, i }] });
+  });
+
+  // Dois tons suaves alternados por grupo (faixa de cliente)
+  const FAIXA = ['#FFFFFF', '#EEF2F7'];
+
+  grupos.forEach((g, gi) => {
+    const primeiroI = g.itens[0].i;
+    const grupoY    = startY + primeiroI * rowH;
+    const grupoH    = g.itens.length * rowH;
+
+    // Faixa de fundo do grupo (alternada)
+    const faixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, tableW - 16, grupoH);
+    faixa.getFill().setSolidFill(FAIXA[gi % 2]); faixa.getBorder().setTransparent();
+
+    // Barra de destaque à esquerda do grupo
+    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, 4, grupoH);
+    barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
+
+    // Linha divisória acima do grupo (menos no primeiro)
+    if (gi > 0) {
+      const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, grupoY, tableW - 16, 1);
+      linha.getFill().setSolidFill('#CBD5E1'); linha.getBorder().setTransparent();
+    }
+
+    // Nome da empresa: uma vez, centralizado verticalmente no bloco do grupo
+    desenharCelulaDoc_(slide, cols[0].x, grupoY, cols[0].w, grupoH, g.empresa, 9, true, CORES.darkBlue);
+  });
+
+  // Desenha o conteúdo de cada documento (após as faixas, para ficar por cima)
   itens.forEach((it, i) => {
     const ry  = startY + i * rowH;
     const cor = DOC_CORES_CATEGORIA[it.categoria];
 
-    if (i % 2 === 0) {
-      const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, ry, tableW - 16, rowH);
-      zebra.getFill().setSolidFill('#F8FAFC'); zebra.getBorder().setTransparent();
-    }
-
-    // Só mostra o nome da empresa quando muda (agrupa visualmente)
-    const empresaTexto = (it.empresa !== empresaPrev) ? it.empresa : '';
-    empresaPrev = it.empresa;
-
-    desenharCelulaDoc_(slide, cols[0].x, ry, cols[0].w, rowH, empresaTexto, 7.5, true,  CORES.darkBlue);
     desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 7,   false, CORES.textDark);
     desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      7,   false, CORES.textDark);
     desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.obs,       6.5, false, CORES.textGray);
