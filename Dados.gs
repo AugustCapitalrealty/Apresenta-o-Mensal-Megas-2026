@@ -472,6 +472,7 @@ function parseNumeroCusto_(valor) {
   s = s
     .replace(/\s/g, '')
     .replace('R$', '')
+    .replace(/[()]/g, '')     // negativos como "(432.621,10)" → "432.621,10"
     .replace(/\./g, '')
     .replace(',', '.');
   const n = parseFloat(s);
