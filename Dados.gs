@@ -313,6 +313,7 @@ function obterDadosCustoM2() {
     // ── Localizar linhas pela estrutura, não por índice fixo ──────────────
     const normLbl = s => String(s || '')
       .replace(/ /g, ' ')
+      .replace(/[-–—]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
       .toUpperCase();
@@ -323,7 +324,7 @@ function obterDadosCustoM2() {
     for (let r = 0; r < data.length; r++) {
       const lbl = normLbl(data[r][0]);
 
-      if (lbl === 'TOTAL ÁREA COM IPTU E SEGURO') {
+      if (lbl.includes('TOTAL ÁREA') && lbl.includes('IPTU E SEGURO')) {
         idxComIptu = r + 1;   // R$/m² está sempre na linha imediatamente seguinte
       }
       if (lbl.includes('TOTAL ÁREA') && lbl.includes('SEM IPTU')) {
