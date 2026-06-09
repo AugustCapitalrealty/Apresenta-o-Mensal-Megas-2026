@@ -294,11 +294,20 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
 // ==========================================
 function desenharCelulaDoc_(slide, x, y, w, h, texto, fontSize, bold, cor) {
   const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
-  const t = (texto === null || texto === undefined) ? '' : String(texto);
+  let t = (texto === null || texto === undefined) ? '' : String(texto);
   if (t === '') return;  // texto vazio: não estiliza (evita "object has no text")
-  // Desabilita redimensionamento automático para evitar quebra de linha
-  box.setAutoFit(SlidesApp.AutoFitType.NONE);
+  // Trunca para caber em uma única linha (evita quebra para a 2ª linha)
+  t = truncarParaLargura_(t, w, fontSize);
   box.getText().setText(t)
     .getTextStyle().setFontSize(fontSize).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+}
+
+// Estima quantos caracteres cabem na largura (pt) e corta com reticências.
+function truncarParaLargura_(texto, larguraPt, fontSize) {
+  // Largura média aproximada de um caractere ≈ 0.52 * fontSize (Montserrat)
+  const larguraUtil = larguraPt - 6;  // padding interno
+  const maxChars = Math.max(3, Math.floor(larguraUtil / (fontSize * 0.52)));
+  if (texto.length <= maxChars) return texto;
+  return texto.substring(0, maxChars - 1).trim() + '…';
 }
