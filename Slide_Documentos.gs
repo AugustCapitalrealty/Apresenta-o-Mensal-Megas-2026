@@ -9,7 +9,13 @@
 //   2) Tabela completa paginada (várias páginas conforme o volume)
 // ==========================================
 
-const DOC_LINHAS_POR_PAGINA = 14;
+// Parâmetros de layout da tabela — usados na paginação e no desenho
+const DOC_ROW_H   = 20;   // altura de cada linha de documento (pt)
+const DOC_CARD_GAP = 5;   // espaço vertical entre cards de empresa
+const DOC_HEAD_H  = 22;   // altura do cabeçalho azul
+const DOC_TOP_Y   = 85;   // Y onde a tabela começa (abaixo do header do slide)
+const DOC_MARGIN_X = 30;  // margem lateral
+const DOC_PAD_X   = 14;   // padding interno esquerdo/direito da tabela
 
 const DOC_CORES_CATEGORIA = {
   VENCIDO  : '#EF4444',  // vermelho
@@ -36,16 +42,43 @@ function gerarSlideDocumentos() {
   // ── Página 1: resumo + críticos ──────────────────────────────────────────
   desenharPaginaResumoDocumentos_(dados);
 
-  // ── Páginas seguintes: tabela completa paginada ──────────────────────────
-  const total = dados.itens.length;
-  const totalPaginas = Math.ceil(total / DOC_LINHAS_POR_PAGINA);
+  // ── Páginas seguintes: tabela paginada por grupos completos ─────────────
+  // Agrupa itens por empresa
+  const grupos = [];
+  dados.itens.forEach(it => {
+    const ult = grupos[grupos.length - 1];
+    if (ult && ult.empresa === it.empresa) ult.itens.push(it);
+    else grupos.push({ empresa: it.empresa, itens: [it] });
+  });
 
-  for (let p = 0; p < totalPaginas; p++) {
-    const fatia = dados.itens.slice(p * DOC_LINHAS_POR_PAGINA, (p + 1) * DOC_LINHAS_POR_PAGINA);
-    desenharPaginaTabelaDocumentos_(fatia, p + 1, totalPaginas);
-  }
+  // Calcula altura útil por página e monta fatias de grupos que cabem inteiros
+  const deck   = getDeckAtivo();
+  const pageH  = deck.getPageHeight();
+  const startY = DOC_TOP_Y + DOC_HEAD_H + 6;       // Y de onde começam os cards
+  const limitY = pageH - 20;                        // limite inferior seguro
+  const maxH   = limitY - startY;                   // espaço disponível para cards
 
-  Logger.log('Slide Documentação Legal gerado (' + total + ' documentos, ' + (totalPaginas + 1) + ' páginas).');
+  const paginas = [];   // array de arrays de itens (cada elemento = 1 página)
+  let paginaAtual = [];
+  let alturaAtual = 0;
+
+  grupos.forEach(g => {
+    const altGrupo = g.itens.length * DOC_ROW_H + (paginaAtual.length > 0 ? DOC_CARD_GAP : 0);
+    if (alturaAtual + altGrupo > maxH && paginaAtual.length > 0) {
+      // Não cabe: fecha página atual e abre nova
+      paginas.push(paginaAtual);
+      paginaAtual = [];
+      alturaAtual = 0;
+    }
+    paginaAtual = paginaAtual.concat(g.itens);
+    alturaAtual += g.itens.length * DOC_ROW_H + (alturaAtual > 0 ? DOC_CARD_GAP : 0);
+  });
+  if (paginaAtual.length) paginas.push(paginaAtual);
+
+  const totalPaginas = paginas.length;
+  paginas.forEach((fatia, p) => desenharPaginaTabelaDocumentos_(fatia, p + 1, totalPaginas));
+
+  Logger.log('Slide Documentação Legal gerado (' + dados.itens.length + ' documentos, ' + (totalPaginas + 1) + ' páginas).');
 }
 
 
@@ -190,23 +223,14 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   const pageW = deck.getPageWidth();
-  const pageH = deck.getPageHeight();
+  const tableW = pageW - (2 * DOC_MARGIN_X);
 
   criarHeaderPadrao(slide, 'DOCUMENTAÇÃO LEGAL', 'Mapa Completo de Documentos — página ' + pagina + '/' + totalPaginas);
 
-  const marginX = 30;
-  const topY    = 85;
-  const tableW  = pageW - (2 * marginX);
-  const tableH  = pageH - topY - 20;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, topY, tableW, tableH);
-  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
-
-  // ── Colunas — largura útil com padding interno simétrico (14pt cada lado) ─
-  // Proporções: EMPRESA 17 | DOCUMENTO 27 | VENC 12 | OBS 22 | DIAS 8 | STATUS 14 = 100%
-  const padX     = 14;
-  const x0       = marginX + padX;
-  const usableW  = tableW - (2 * padX);
+  // ── Colunas — largura útil com padding simétrico ────────────────────────
+  // EMPRESA 17 | DOCUMENTO 27 | VENC 12 | OBS 22 | DIAS 8 | STATUS 14 = 100%
+  const x0      = DOC_MARGIN_X + DOC_PAD_X;
+  const usableW = tableW - (2 * DOC_PAD_X);
   const acc = (() => { let a = 0; return f => { const x = x0 + a * usableW; a += f; return x; }; })();
   const cols = [
     { t: 'EMPRESA',     x: acc(0.17), w: usableW * 0.17, align: 'L' },
@@ -217,18 +241,15 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     { t: 'STATUS',      x: acc(0.14), w: usableW * 0.14, align: 'C' }
   ];
 
-  // Cabeçalho
-  const headY = topY + 10;
-  const headBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, headY, tableW - 16, 22);
+  // ── Cabeçalho azul ───────────────────────────────────────────────────────
+  const headY   = DOC_TOP_Y + 10;
+  const headBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, headY, tableW - 16, DOC_HEAD_H);
   headBar.getFill().setSolidFill(CORES.darkBlue); headBar.getBorder().setTransparent();
-  cols.forEach(c => {
-    desenharCelulaDoc_(slide, c.x, headY + 2, c.w, 18, c.t, 7.5, true, CORES.white, c.align);
-  });
+  cols.forEach(c => desenharCelulaDoc_(slide, c.x, headY + 2, c.w, DOC_HEAD_H - 4, c.t, 7.5, true, CORES.white, c.align));
 
-  const startY  = headY + 24;
-  const CARD_GAP = 5;  // respiro vertical entre os cards de cliente
+  const startY = headY + DOC_HEAD_H + 4;
 
-  // ── Agrupa as linhas por empresa (cada grupo vira um card) ──────────────
+  // ── Agrupa itens por empresa ─────────────────────────────────────────────
   const grupos = [];
   itens.forEach((it, i) => {
     const ult = grupos[grupos.length - 1];
@@ -236,56 +257,49 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     else grupos.push({ empresa: it.empresa, itens: [{ it, i }] });
   });
 
-  // ── Altura de linha ADAPTATIVA — garante que NUNCA ultrapasse o slide ────
-  const bottomLimit = topY + tableH - 8;          // limite inferior do conteúdo
-  const availH      = bottomLimit - startY;        // espaço vertical disponível
-  const totalGaps   = (grupos.length - 1) * CARD_GAP;
-  const rowH        = Math.max(14, Math.min(22, (availH - totalGaps) / itens.length));
-
-  // Layout: posiciona cada card e guarda o Y de cada linha (com os gaps)
+  // ── Desenha os cards (SEM fundo branco geral — só os cards individuais) ──
   const itemY = {};
   let cursorY = startY;
 
   grupos.forEach(g => {
     const cardY = cursorY;
-    const cardH = g.itens.length * rowH;
+    const cardH = g.itens.length * DOC_ROW_H;
 
     // Sombra
-    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX + 10, cardY + 2, tableW - 20, cardH);
+    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, DOC_MARGIN_X + 10, cardY + 2, tableW - 20, cardH);
     sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
 
     // Card branco
-    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX + 8, cardY, tableW - 16, cardH);
+    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, DOC_MARGIN_X + 8, cardY, tableW - 16, cardH);
     card.getFill().setSolidFill(CORES.white); card.getBorder().setTransparent();
 
-    // Barra de destaque à esquerda
-    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, cardY + 3, 4, cardH - 6);
+    // Barra colorida à esquerda
+    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, cardY + 3, 4, cardH - 6);
     barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
 
-    // Nome da empresa centralizado no card
+    // Nome da empresa verticalmente centralizado no card
     desenharCelulaDoc_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, true, CORES.darkBlue, 'L');
 
-    // Guarda o Y de cada documento e avança o cursor
-    g.itens.forEach(({ i }, li) => { itemY[i] = cardY + li * rowH; });
-    cursorY += cardH + CARD_GAP;
+    g.itens.forEach(({ i }, li) => { itemY[i] = cardY + li * DOC_ROW_H; });
+    cursorY += cardH + DOC_CARD_GAP;
   });
 
-  // ── Conteúdo dos documentos (por cima dos cards) ────────────────────────
+  // ── Conteúdo de cada documento (por cima dos cards) ─────────────────────
   itens.forEach((it, i) => {
     const ry  = itemY[i];
     const cor = DOC_CORES_CATEGORIA[it.categoria];
 
-    desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 7,   false, CORES.textDark, 'L');
-    desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      7,   false, CORES.textDark, 'C');
-    desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.obs,       6.5, false, CORES.textGray, 'L');
-    desenharCelulaDoc_(slide, cols[4].x, ry, cols[4].w, rowH, it.diasTexto, 7.5, true,  cor,            'C');
+    desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, DOC_ROW_H, it.documento, 7,   false, CORES.textDark, 'L');
+    desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, DOC_ROW_H, it.venc,      7,   false, CORES.textDark, 'C');
+    desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, DOC_ROW_H, it.obs,       6.5, false, CORES.textGray, 'L');
+    desenharCelulaDoc_(slide, cols[4].x, ry, cols[4].w, DOC_ROW_H, it.diasTexto, 7.5, true,  cor,            'C');
 
-    // Pílula de status — centralizada na coluna
+    // Pílula de status centrada na coluna
+    const pillH = 14;
     const pillW = cols[5].w * 0.92;
     const pillX = cols[5].x + (cols[5].w - pillW) / 2;
-    const pillH = Math.min(rowH - 6, 14);
-    const pillY = ry + (rowH - pillH) / 2;
-    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
+    const pillY = ry + (DOC_ROW_H - pillH) / 2;
+    const pill  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pill.getFill().setSolidFill(cor); pill.getBorder().setTransparent();
     const pt = pill.getText();
     pt.setText(DOC_LABEL_CATEGORIA[it.categoria])
