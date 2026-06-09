@@ -202,16 +202,19 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, topY, tableW, tableH);
   bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
 
-  // Colunas: EMPRESA | DOCUMENTO | VENC. | OBSERVAÇÕES | DIAS | STATUS
-  // Proporções: 16 + 25 + 12 + 20 + 11 + 16 = 100%
-  const x0 = marginX + 14;
+  // ── Colunas — largura útil com padding interno simétrico (14pt cada lado) ─
+  // Proporções: EMPRESA 17 | DOCUMENTO 27 | VENC 12 | OBS 22 | DIAS 8 | STATUS 14 = 100%
+  const padX     = 14;
+  const x0       = marginX + padX;
+  const usableW  = tableW - (2 * padX);
+  const acc = (() => { let a = 0; return f => { const x = x0 + a * usableW; a += f; return x; }; })();
   const cols = [
-    { t: 'EMPRESA',       x: x0,                   w: tableW * 0.16 },
-    { t: 'DOCUMENTO',     x: x0 + tableW * 0.16,   w: tableW * 0.25 },
-    { t: 'VENC.',         x: x0 + tableW * 0.41,   w: tableW * 0.12 },
-    { t: 'OBSERVAÇÕES',   x: x0 + tableW * 0.53,   w: tableW * 0.20 },
-    { t: 'DIAS',          x: x0 + tableW * 0.73,   w: tableW * 0.11 },
-    { t: 'STATUS',        x: x0 + tableW * 0.84,   w: tableW * 0.16 }
+    { t: 'EMPRESA',     x: acc(0.17), w: usableW * 0.17, align: 'L' },
+    { t: 'DOCUMENTO',   x: acc(0.27), w: usableW * 0.27, align: 'L' },
+    { t: 'VENC.',       x: acc(0.12), w: usableW * 0.12, align: 'C' },
+    { t: 'OBSERVAÇÕES', x: acc(0.22), w: usableW * 0.22, align: 'L' },
+    { t: 'DIAS',        x: acc(0.08), w: usableW * 0.08, align: 'C' },
+    { t: 'STATUS',      x: acc(0.14), w: usableW * 0.14, align: 'C' }
   ];
 
   // Cabeçalho
@@ -219,14 +222,11 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
   const headBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX + 8, headY, tableW - 16, 22);
   headBar.getFill().setSolidFill(CORES.darkBlue); headBar.getBorder().setTransparent();
   cols.forEach(c => {
-    const h = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, c.x, headY + 2, c.w, 18);
-    h.getText().setText(c.t)
-      .getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
-    h.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    desenharCelulaDoc_(slide, c.x, headY + 2, c.w, 18, c.t, 7.5, true, CORES.white, c.align);
   });
 
   const startY  = headY + 24;
-  const CARD_GAP = 6;  // respiro vertical entre os cards de cliente
+  const CARD_GAP = 5;  // respiro vertical entre os cards de cliente
 
   // ── Agrupa as linhas por empresa (cada grupo vira um card) ──────────────
   const grupos = [];
@@ -236,8 +236,11 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     else grupos.push({ empresa: it.empresa, itens: [{ it, i }] });
   });
 
-  // Altura de linha fixa — garante que tudo fique em uma linha sem quebra
-  const rowH = 22;
+  // ── Altura de linha ADAPTATIVA — garante que NUNCA ultrapasse o slide ────
+  const bottomLimit = topY + tableH - 8;          // limite inferior do conteúdo
+  const availH      = bottomLimit - startY;        // espaço vertical disponível
+  const totalGaps   = (grupos.length - 1) * CARD_GAP;
+  const rowH        = Math.max(14, Math.min(22, (availH - totalGaps) / itens.length));
 
   // Layout: posiciona cada card e guarda o Y de cada linha (com os gaps)
   const itemY = {};
@@ -260,7 +263,7 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
 
     // Nome da empresa centralizado no card
-    desenharCelulaDoc_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, true, CORES.darkBlue);
+    desenharCelulaDoc_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, true, CORES.darkBlue, 'L');
 
     // Guarda o Y de cada documento e avança o cursor
     g.itens.forEach(({ i }, li) => { itemY[i] = cardY + li * rowH; });
@@ -272,13 +275,17 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     const ry  = itemY[i];
     const cor = DOC_CORES_CATEGORIA[it.categoria];
 
-    desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 7,   false, CORES.textDark);
-    desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      7,   false, CORES.textDark);
-    desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.obs,       6.5, false, CORES.textGray);
-    desenharCelulaDoc_(slide, cols[4].x, ry, cols[4].w, rowH, it.diasTexto, 7.5, true,  cor);
+    desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 7,   false, CORES.textDark, 'L');
+    desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      7,   false, CORES.textDark, 'C');
+    desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.obs,       6.5, false, CORES.textGray, 'L');
+    desenharCelulaDoc_(slide, cols[4].x, ry, cols[4].w, rowH, it.diasTexto, 7.5, true,  cor,            'C');
 
-    // Pílula de status
-    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cols[5].x, ry + 3, cols[5].w - 4, rowH - 6);
+    // Pílula de status — centralizada na coluna
+    const pillW = cols[5].w * 0.92;
+    const pillX = cols[5].x + (cols[5].w - pillW) / 2;
+    const pillH = Math.min(rowH - 6, 14);
+    const pillY = ry + (rowH - pillH) / 2;
+    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pill.getFill().setSolidFill(cor); pill.getBorder().setTransparent();
     const pt = pill.getText();
     pt.setText(DOC_LABEL_CATEGORIA[it.categoria])
@@ -292,22 +299,28 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
 // ==========================================
 // HELPER: célula de texto
 // ==========================================
-function desenharCelulaDoc_(slide, x, y, w, h, texto, fontSize, bold, cor) {
+function desenharCelulaDoc_(slide, x, y, w, h, texto, fontSize, bold, cor, align) {
   const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
   let t = (texto === null || texto === undefined) ? '' : String(texto);
   if (t === '') return;  // texto vazio: não estiliza (evita "object has no text")
   // Trunca para caber em uma única linha (evita quebra para a 2ª linha)
   t = truncarParaLargura_(t, w, fontSize);
-  box.getText().setText(t)
+  const txt = box.getText();
+  txt.setText(t)
     .getTextStyle().setFontSize(fontSize).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
+  // Alinhamento horizontal: 'C' centro, 'R' direita, qualquer outro = esquerda
+  const pAlign = align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
+               : align === 'R' ? SlidesApp.ParagraphAlignment.END
+               : SlidesApp.ParagraphAlignment.START;
+  txt.getParagraphStyle().setParagraphAlignment(pAlign);
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }
 
 // Estima quantos caracteres cabem na largura (pt) e corta com reticências.
 function truncarParaLargura_(texto, larguraPt, fontSize) {
-  // Largura média aproximada de um caractere ≈ 0.52 * fontSize (Montserrat)
+  // Largura média aproximada de um caractere ≈ 0.60 * fontSize (Montserrat, conservador)
   const larguraUtil = larguraPt - 6;  // padding interno
-  const maxChars = Math.max(3, Math.floor(larguraUtil / (fontSize * 0.52)));
+  const maxChars = Math.max(3, Math.floor(larguraUtil / (fontSize * 0.60)));
   if (texto.length <= maxChars) return texto;
   return texto.substring(0, maxChars - 1).trim() + '…';
 }
