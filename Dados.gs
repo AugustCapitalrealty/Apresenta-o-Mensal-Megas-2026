@@ -630,8 +630,9 @@ function obterDadosDocumentos() {
       // O status escrito na planilha tem prioridade sobre o cálculo por data
       // (ex.: Esteio marca VENCIDO sem preencher a data de vencimento)
       const stNorm = norm(statusRaw);
+      const vencNorm = norm(venc);
       if (stNorm.includes('vencido'))            categoria = 'VENCIDO';
-      else if (stNorm.includes('indeterminado')) categoria = 'EM_DIA';
+      else if (stNorm.includes('indeterminado') || vencNorm.includes('indeterminado')) categoria = 'EM_DIA';
 
       switch (categoria) {
         case 'VENCIDO':  resumo.vencido++;  break;
@@ -644,7 +645,7 @@ function obterDadosDocumentos() {
       itens.push({
         empresa   : empresaAtual,
         documento : documento,
-        venc      : venc || '-',
+        venc      : vencNorm.includes('indeterminado') ? 'INDETERM.' : (venc || '-'),
         obs       : obs,
         dias      : dias,
         diasTexto : temData ? String(dias) : '--',
