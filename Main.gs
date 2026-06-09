@@ -55,6 +55,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Slide 06 - Corretivas',        fn: gerarSlideCorretivas      },
     { nome: 'Slide 07 - Tempo',             fn: gerarSlideTempo           },
     { nome: 'Slide 08 - Financeiro',        fn: gerarSlideFinanceiro      },
+    { nome: 'Slide 09 - Bridge Variação',   fn: gerarSlideBridge          },
     { nome: 'Slide 11 - Financeiro Anual',  fn: gerarSlideFinanceiroAnual },
     { nome: 'Slide 26 - Custo M²',          fn: gerarSlideCustoM2         },
     { nome: 'Slide -- Documentação Legal',  fn: gerarSlideDocumentos      },

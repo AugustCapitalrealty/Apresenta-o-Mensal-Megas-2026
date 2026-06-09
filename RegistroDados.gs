@@ -40,6 +40,7 @@ function registrarHistoricoDados_() {
     coletarCorretivas_(add);
     coletarTempo_(add);
     coletarFinanceiro_(add);
+    coletarBridge_(add);
     coletarCustoM2_(add);
     coletarDocumentos_(add);
 
@@ -123,6 +124,22 @@ function coletarDocumentos_(add) {
   add('Documentos', 'Vence em 60d', d.resumo.critico,  'Mês atual');
   add('Documentos', 'Em dia',       d.resumo.emDia,    'Mês atual');
   add('Documentos', 'Pendentes',    d.resumo.pendente, 'Mês atual');
+}
+
+
+function coletarBridge_(add) {
+  try {
+    const d = obterDadosBridge();
+    if (!d) return;
+    add('Bridge', 'Orçado do Período',   d.totalOrc,       'Mês atual');
+    add('Bridge', 'Realizado do Período', d.totalReal,      'Mês atual');
+    add('Bridge', 'Variação do Período',  d.totalVar,       'Mês atual');
+    add('Bridge', 'Orçado Anual',         d.totalOrcAnual,  'Anual');
+    add('Bridge', 'Projeção Anual',       d.totalProjetado, 'Anual');
+    add('Bridge', 'Variação Anual',       d.varAnual,       'Anual');
+  } catch (e) {
+    // aba pode não existir em todas as cidades ainda
+  }
 }
 
 
