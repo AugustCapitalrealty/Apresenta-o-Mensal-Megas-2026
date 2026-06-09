@@ -156,31 +156,26 @@ function desenharPaginaResumoDocumentos_(dados) {
     return;
   }
 
-  // Cabeçalho da mini-tabela de críticos
-  const colX = {
-    empresa : marginX + 18,
-    doc     : marginX + 18 + listaW * 0.22,
-    venc    : marginX + 18 + listaW * 0.55,
-    dias    : marginX + 18 + listaW * 0.72,
-    status  : marginX + 18 + listaW * 0.84
-  };
-  const headY = listaY + 32;
-  const colHeaders = [
-    { x: colX.empresa, t: 'EMPRESA' },
-    { x: colX.doc,     t: 'DOCUMENTO' },
-    { x: colX.venc,    t: 'VENC.' },
-    { x: colX.dias,    t: 'DIAS' },
-    { x: colX.status,  t: 'STATUS' }
+  // ── Colunas — mesma lógica da tabela principal (largura útil com padding) ─
+  // EMPRESA 20 | DOCUMENTO 34 | VENC 16 | DIAS 12 | STATUS 18 = 100%
+  const padX    = 18;
+  const x0      = marginX + padX;
+  const usableW = listaW - (2 * padX);
+  const acc = (() => { let a = 0; return f => { const x = x0 + a * usableW; a += f; return x; }; })();
+  const cols = [
+    { t: 'EMPRESA',   x: acc(0.20), w: usableW * 0.20, align: 'L' },
+    { t: 'DOCUMENTO', x: acc(0.34), w: usableW * 0.34, align: 'L' },
+    { t: 'VENC.',     x: acc(0.16), w: usableW * 0.16, align: 'C' },
+    { t: 'DIAS',      x: acc(0.12), w: usableW * 0.12, align: 'C' },
+    { t: 'STATUS',    x: acc(0.18), w: usableW * 0.18, align: 'C' }
   ];
-  colHeaders.forEach(c => {
-    const h = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, c.x, headY, listaW * 0.18, 16);
-    h.getText().setText(c.t)
-      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-  });
 
-  const maxLinhas = Math.floor((listaH - 60) / 22);
+  const headY = listaY + 32;
+  cols.forEach(c => desenharCelulaDoc_(slide, c.x, headY, c.w, 16, c.t, 8, true, CORES.textGray, c.align));
+
+  const rowH      = 22;
+  const maxLinhas = Math.floor((listaH - 60) / rowH);
   const visiveis  = criticos.slice(0, maxLinhas);
-  const rowH = 22;
 
   visiveis.forEach((it, i) => {
     const ry  = headY + 20 + i * rowH;
@@ -191,13 +186,17 @@ function desenharPaginaResumoDocumentos_(dados) {
       zebra.getFill().setSolidFill('#F8FAFC'); zebra.getBorder().setTransparent();
     }
 
-    desenharCelulaDoc_(slide, colX.empresa, ry, listaW * 0.30, rowH, it.empresa, 8, true,  CORES.textDark);
-    desenharCelulaDoc_(slide, colX.doc,     ry, listaW * 0.32, rowH, it.documento, 8, false, CORES.textDark);
-    desenharCelulaDoc_(slide, colX.venc,    ry, listaW * 0.16, rowH, it.venc, 8, false, CORES.textDark);
-    desenharCelulaDoc_(slide, colX.dias,    ry, listaW * 0.10, rowH, it.diasTexto, 8, true, cor);
+    desenharCelulaDoc_(slide, cols[0].x, ry, cols[0].w, rowH, it.empresa,   8, true,  CORES.textDark, 'L');
+    desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 8, false, CORES.textDark, 'L');
+    desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      8, false, CORES.textDark, 'C');
+    desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.diasTexto, 8, true,  cor,            'C');
 
-    // Pílula de status
-    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, colX.status, ry + 2, listaW * 0.14, rowH - 4);
+    // Pílula de status — centralizada na coluna, altura fixa
+    const pillH = 15;
+    const pillW = cols[4].w * 0.92;
+    const pillX = cols[4].x + (cols[4].w - pillW) / 2;
+    const pillY = ry + (rowH - pillH) / 2;
+    const pill  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pill.getFill().setSolidFill(cor); pill.getBorder().setTransparent();
     const pillTxt = pill.getText();
     pillTxt.setText(DOC_LABEL_CATEGORIA[it.categoria])
