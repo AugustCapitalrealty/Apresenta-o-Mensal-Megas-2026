@@ -4,13 +4,8 @@
 // obterDadosCustoM2() está no arquivo Dados.gs
 // ==========================================
 
-
-// ==========================================
-// SLIDE 26: gerarSlideCustoM2
-// ==========================================
 function gerarSlideCustoM2() {
   const dados = obterDadosCustoM2();
-
   if (!dados) {
     Logger.log('Sem dados para o Slide 26 (Custo do M²).');
     return;
@@ -23,102 +18,62 @@ function gerarSlideCustoM2() {
   const pageW = deck.getPageWidth();
   const pageH = deck.getPageHeight();
 
-  const subtitulo = dados.referencia.cidade
-    ? 'Monitoramento de Custo - ' + dados.referencia.mesExtenso + ' ' + dados.referencia.ano +
-      ' | ' + dados.referencia.cidade
-    : 'Monitoramento de Custo - ' + dados.referencia.mesExtenso + ' ' + dados.referencia.ano;
+  criarHeaderPadrao(slide, 'CUSTO DO M²', 'Monitoramento de Custo');
 
-  criarHeaderPadrao(slide, 'CUSTO DO M²', subtitulo);
+  const marginX = 30;
+  const topY    = 85;
+  const gap     = 14;
+  const kpiH    = 72;
+  const tableH  = pageH - topY - kpiH - gap - 18;
 
-  // ── KPIs ─────────────────────────────────────────────────────────────────
-  const idx = dados.referencia.index || 0;
+  _custoDesenharKPIs  (slide, marginX, topY,              pageW - 2 * marginX, kpiH,   dados);
+  _custoDesenharTabela(slide, marginX, topY + kpiH + gap, pageW - 2 * marginX, tableH, dados);
 
-  const parseSafe = val => {
-    if (val === null || val === undefined || val === '') return NaN;
-    if (typeof val === 'number') return val;
-    return Number(String(val).replace(',', '.'));
-  };
-
-  const keyOrc  = Object.keys(dados.tabela).find(
-    k => k.toLowerCase().includes('orç') || k.toLowerCase().includes('orc')
-  );
-  const keyReal = Object.keys(dados.tabela).find(
-    k => k.toLowerCase().includes('real') && !k.toLowerCase().includes('sem iptu')
-  );
-
-  const valOrc  = (keyOrc  && dados.tabela[keyOrc])  ? parseSafe(dados.tabela[keyOrc][idx])  : NaN;
-  const valReal = (keyReal && dados.tabela[keyReal])  ? parseSafe(dados.tabela[keyReal][idx]) : NaN;
-
-  const diff        = valOrc - valReal;
-  const isFavoravel = diff >= 0;
-
-  dados.kpis = {
-    custo    : isNaN(valReal) ? null : valReal,
-    meta     : isNaN(valOrc)  ? null : valOrc,
-    variacao : isNaN(diff)    ? null : Math.abs(diff),
-    status   : isNaN(diff)    ? 'VARIAÇÃO'
-             : isFavoravel    ? 'ABAIXO DO ORÇADO'
-             :                  'ACIMA DO ORÇADO',
-    corStatus: isNaN(diff)    ? CORES.textGray
-             : isFavoravel    ? '#10B981'
-             :                  '#EF4444'
-  };
-
-  // ── Layout ────────────────────────────────────────────────────────────────
-  const marginX      = 30;
-  const topY         = 85;
-  const gap          = 15;
-  const bottomMargin = 20;
-  const totalH       = pageH - topY - bottomMargin;
-  const kpiH         = 70;
-  const tableH       = totalH - kpiH - gap;
-
-  desenharKPIsCustoM2(slide, marginX, topY, pageW - (2 * marginX), kpiH, dados);
-  desenharTabelaCustoM2(slide, marginX, topY + kpiH + gap, pageW - (2 * marginX), tableH, dados);
-
-  Logger.log('Slide 26 (Custo do M²) gerado → ' + subtitulo);
+  Logger.log('Slide 26 (Custo do M²) gerado → ' + dados.referencia.mesExtenso + ' ' + dados.referencia.ano);
 }
 
 
 // ==========================================
 // COMPONENTE: CARDS DE KPI
 // ==========================================
-function desenharKPIsCustoM2(slide, x, y, containerW, h, dados) {
-  const gap   = 20;
-  const cardW = (containerW - (2 * gap)) / 3;
+function _custoDesenharKPIs(slide, x, y, w, h, dados) {
+  const gap   = 18;
+  const cardW = (w - 2 * gap) / 3;
+  const k     = dados.kpis;
 
   const kpis = [
-    { label: 'CUSTO (R$/m²)', valor: formatarMoedaSlide(dados.kpis.custo),    cor: CORES.darkBlue      },
-    { label: 'META ORÇADA',   valor: formatarMoedaSlide(dados.kpis.meta),     cor: CORES.textGray      },
-    { label: dados.kpis.status, valor: formatarMoedaSlide(dados.kpis.variacao), cor: dados.kpis.corStatus }
+    { label: 'CUSTO (R$/m²)', valor: formatarMoedaSlide(k.custo),    cor: CORES.darkBlue,   strip: CORES.lightBlue },
+    { label: 'META ORÇADA',   valor: formatarMoedaSlide(k.meta),     cor: CORES.textGray,   strip: '#94A3B8'       },
+    { label: k.status,        valor: formatarMoedaSlide(k.variacao), cor: k.corStatus,      strip: k.corStatus     }
   ];
 
   kpis.forEach((kpi, i) => {
-    const cx = x + (i * (cardW + gap));
+    const cx = x + i * (cardW + gap);
 
+    // sombra
     const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx + 3, y + 3, cardW, h);
-    sombra.getFill().setSolidFill(CORES.shadow);
-    sombra.getBorder().setTransparent();
-    sombra.sendToBack();
+    sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
 
+    // fundo
     const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y, cardW, h);
-    bg.getFill().setSolidFill(CORES.white);
-    bg.getBorder().setTransparent();
+    bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
 
+    // franja lateral
     const strip = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, y + 8, 4, h - 16);
-    strip.getFill().setSolidFill(kpi.cor);
-    strip.getBorder().setTransparent();
+    strip.getFill().setSolidFill(kpi.strip); strip.getBorder().setTransparent();
 
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 18, y + 10, cardW - 30, 20);
-    lbl.getText().setText(kpi.label)
-      .getTextStyle().setFontSize(9).setBold(true)
-      .setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+    const _t = (txt, tx, ty, tw, th, size, bold, cor, align) => {
+      const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, ty, tw, th);
+      const t = b.getText();
+      t.setText(txt).getTextStyle().setFontSize(size).setBold(!!bold)
+        .setForegroundColor(cor).setFontFamily('Montserrat');
+      if (align === 'C') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      return b;
+    };
 
-    const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 18, y + 30, cardW - 30, 30);
-    val.getText().setText(kpi.valor)
-      .getTextStyle().setFontSize(18).setBold(true)
-      .setForegroundColor(kpi.cor).setFontFamily('Montserrat');
-    val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    _t(kpi.label, cx + 18, y + 8,  cardW - 26, 16, 8,  true,  CORES.textGray, '');
+    _t(kpi.valor, cx + 18, y + 26, cardW - 26, 34, 22, true,  kpi.cor,        '');
   });
 }
 
@@ -126,175 +81,154 @@ function desenharKPIsCustoM2(slide, x, y, containerW, h, dados) {
 // ==========================================
 // COMPONENTE: TABELA DE DETALHAMENTO
 // ==========================================
-function desenharTabelaCustoM2(slide, x, y, w, h, dados) {
-
+function _custoDesenharTabela(slide, x, y, w, h, dados) {
+  // Card de fundo
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white);
-  bg.getBorder().setTransparent();
+  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
 
-  const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, y + 8, w - 40, 20);
-  title.getText().setText('DETALHAMENTO MENSAL (CUSTO R$/m²)')
-    .getTextStyle().setFontSize(10).setBold(true)
+  // Título
+  const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 16, y + 8, w - 32, 18);
+  title.getText().setText('DETALHAMENTO MENSAL (TABELA)')
+    .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
 
-  // ── Remover coluna "Ano" da tabela visual ─────────────────────────────────
+  // ── Montar colunas (remove "Ano" se existir) ──────────────────────────────
   let meses  = [...dados.meses];
-  let tabela = {};
-  for (let k in dados.tabela) { tabela[k] = [...dados.tabela[k]]; }
+  const tabela = {};
+  for (const k in dados.tabela) { tabela[k] = [...dados.tabela[k]]; }
 
   const idxAno = meses.findIndex(m => m.toLowerCase().trim() === 'ano');
   if (idxAno !== -1) {
     meses.splice(idxAno, 1);
-    for (let k in tabela) { tabela[k].splice(idxAno, 1); }
+    for (const k in tabela) { tabela[k].splice(idxAno, 1); }
   }
 
-  // ── Calcular IPTU/m² = Real − Real sem IPTU ───────────────────────────────
-  const parseNum = val => {
-    if (val === null || val === undefined || val === '') return NaN;
-    return typeof val === 'number' ? val : Number(String(val).replace(',', '.'));
+  // ── IPTU/m² = Real − Real sem IPTU ───────────────────────────────────────
+  const parseNum = v => {
+    if (v === null || v === undefined || v === '') return NaN;
+    return typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
   };
-
   const keySemIptu = Object.keys(tabela).find(k => k.toLowerCase().includes('sem iptu'));
-
-  if (keySemIptu && tabela[keySemIptu]) {
-    const anoMatch = keySemIptu.match(/\d{4}/);
-    const ano      = anoMatch ? anoMatch[0] : '';
-    const keyReal  = Object.keys(tabela).find(
-      k => k.toLowerCase().includes('real') &&
-           !k.toLowerCase().includes('sem iptu') &&
-           (ano === '' || k.includes(ano))
+  if (keySemIptu) {
+    const ano     = (keySemIptu.match(/\d{4}/) || [''])[0];
+    const keyReal = Object.keys(tabela).find(
+      k => k.toLowerCase().includes('real') && !k.toLowerCase().includes('sem iptu') && (!ano || k.includes(ano))
     );
-
-    if (keyReal && tabela[keyReal]) {
+    if (keyReal) {
       const iptuRow = [];
-      let   temIptu = false;
-      for (let i = 0; i < meses.length; i++) {
-        const valReal    = parseNum(tabela[keyReal][i]);
-        const valSemIptu = parseNum(tabela[keySemIptu][i]);
-        if (!isNaN(valReal) && !isNaN(valSemIptu)) {
-          const diff = valReal - valSemIptu;
-          if (diff > 0.01) { iptuRow.push(diff); temIptu = true; }
-          else             { iptuRow.push(null); }
-        } else {
-          iptuRow.push(null);
-        }
-      }
+      let temIptu = false;
+      meses.forEach((_, i) => {
+        const diff = parseNum(tabela[keyReal][i]) - parseNum(tabela[keySemIptu][i]);
+        if (!isNaN(diff) && diff > 0.005) { iptuRow.push(diff); temIptu = true; }
+        else iptuRow.push(null);
+      });
       if (temIptu) tabela['IPTU/m²'] = iptuRow;
     }
   }
 
-  // ── TODAS as linhas, sem filtro e sem limite ───────────────────────────────
-  const linhas = Object.keys(tabela);
+  const linhas  = Object.keys(tabela);
+  const mesRef  = dados.referencia.index;   // índice do mês atual (já sem "Ano")
 
   // ── Dimensões ─────────────────────────────────────────────────────────────
-  const areaX = x + 10;
-  const areaY = y + 35;
-  const areaW = w - 20;
-  const areaH = h - 50;
+  const areaX  = x + 10;
+  const areaY  = y + 32;
+  const areaW  = w - 20;
+  const areaH  = h - 42;
+  const labelW = 120;
+  const mediaW = 52;
+  const useW   = areaW - labelW - mediaW - 14;
+  const monthW = useW / (meses.length || 12);
+  const rowH   = Math.min(26, Math.floor((areaH - 30) / Math.max(linhas.length, 1)));
+  const startX = areaX + 5;
+  const startY = areaY + 8;
 
+  // Moldura da área
   const moldura = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, areaX, areaY, areaW, areaH);
-  moldura.getFill().setSolidFill('#FFFFFF');
-  moldura.getBorder()
-    .setDashStyle(SlidesApp.DashStyle.DASH)
-    .setWeight(1)
-    .getLineFill().setSolidFill('#CBD5E1');
+  moldura.getFill().setSolidFill('#F8FAFC'); moldura.getBorder().setTransparent();
 
-  const labelW   = 115;
-  const mediaW   = 55;
-  const monthGap = 1;
-  const usableW  = areaW - labelW - mediaW - 10;
-  const monthW   = usableW / (meses.length || 12);
-  const rowH     = Math.min(28, Math.floor((areaH - 55) / (linhas.length || 1)));
-  const startX   = areaX + 5;
-  const startY   = areaY + 18;
+  // ── Destaque vertical do mês de referência ────────────────────────────────
+  if (mesRef >= 0 && mesRef < meses.length) {
+    const hx = startX + labelW + mesRef * monthW;
+    const hl = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, hx, areaY, monthW - 1, areaH);
+    hl.getFill().setSolidFill('#EFF6FF'); hl.getBorder().setTransparent();
+  }
 
   // ── Cabeçalho dos meses ───────────────────────────────────────────────────
   meses.forEach((mes, i) => {
-    const cellX = startX + labelW + (i * monthW);
+    const cellX  = startX + labelW + i * monthW;
+    const isRef  = i === mesRef;
+    const corBg  = isRef ? CORES.darkBlue : CORES.lightBlue;
 
-    const head = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cellX, startY, monthW - monthGap, 20);
-    head.getFill().setSolidFill(CORES.lightBlue);
-    head.getBorder().setTransparent();
+    const head = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cellX, startY, monthW - 1, 20);
+    head.getFill().setSolidFill(corBg); head.getBorder().setTransparent();
 
-    const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, startY + 1, monthW - monthGap, 18);
-    txt.getText().setText(mes)
-      .getTextStyle().setFontSize(8).setBold(true)
-      .setForegroundColor(CORES.white).setFontFamily('Montserrat');
+    const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, startY + 1, monthW - 1, 18);
+    txt.getText().setText(mes).getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
     txt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   });
 
   // Cabeçalho "Média"
-  const mediaX    = startX + labelW + (meses.length * monthW) + 5;
-  const mediaHead = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, mediaX, startY, mediaW, 20);
-  mediaHead.getFill().setSolidFill(CORES.lightBlue);
-  mediaHead.getBorder().setTransparent();
-
-  const mediaTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mediaX, startY + 1, mediaW, 18);
-  mediaTxt.getText().setText('Média')
-    .getTextStyle().setFontSize(8).setBold(true)
-    .setForegroundColor(CORES.white).setFontFamily('Montserrat');
-  mediaTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  mediaTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const mediaX = startX + labelW + meses.length * monthW + 5;
+  const mHead  = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, mediaX, startY, mediaW, 20);
+  mHead.getFill().setSolidFill(CORES.darkBlue); mHead.getBorder().setTransparent();
+  const mTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mediaX, startY + 1, mediaW, 18);
+  mTxt.getText().setText('Média').getTextStyle()
+    .setFontSize(7.5).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
+  mTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  mTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
   // ── Linhas de dados ───────────────────────────────────────────────────────
   linhas.forEach((label, r) => {
-    const rowY   = startY + 28 + (r * rowH);
-    const valores = tabela[label];
+    const rowY   = startY + 28 + r * rowH;
+    const valores = tabela[label] || [];
+    const isIptu  = label === 'IPTU/m²';
 
     // Zebrado
     if (r % 2 === 0) {
-      const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, areaX + 2, rowY - 2, areaW - 4, rowH);
-      zebra.getFill().setSolidFill('#F8FAFC');
-      zebra.getBorder().setTransparent();
+      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, areaX + 2, rowY - 1, areaW - 4, rowH);
+      z.getFill().setSolidFill(CORES.white); z.getBorder().setTransparent();
     }
 
     // Label
-    const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, startX, rowY, labelW - 5, rowH);
-    lab.getText().setText(label)
-      .getTextStyle().setFontSize(8).setBold(true)
-      .setForegroundColor('#111827').setFontFamily('Montserrat');
+    const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, startX + 4, rowY, labelW - 10, rowH);
+    lab.getText().setText(label).getTextStyle()
+      .setFontSize(7.5).setBold(!isIptu).setItalic(isIptu)
+      .setForegroundColor(isIptu ? CORES.textGray : '#111827').setFontFamily('Montserrat');
     lab.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-    // Células de valor por mês
+    // Células por mês
     valores.forEach((v, i) => {
-      const cellX = startX + labelW + (i * monthW);
+      const cellX = startX + labelW + i * monthW;
+      const isRef = i === mesRef;
 
-      const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, rowY, monthW - monthGap, rowH);
-      txt.getText().setText(formatarNumeroTabela(v))
-        .getTextStyle().setFontSize(8)
-        .setForegroundColor('#111827').setFontFamily('Montserrat');
+      const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, rowY, monthW - 1, rowH);
+      txt.getText().setText(formatarNumeroTabela(v)).getTextStyle()
+        .setFontSize(7.5).setBold(isRef)
+        .setForegroundColor(isRef ? CORES.darkBlue : '#374151').setFontFamily('Montserrat');
       txt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-      // Destaque no mês de referência
-      if (i === dados.referencia.index) {
-        const destaque = slide.insertShape(
-          SlidesApp.ShapeType.RECTANGLE,
-          cellX - 1, rowY - 2,
-          monthW - monthGap + 2, rowH + 2
-        );
-        destaque.getFill().setTransparent();
-        destaque.getBorder().setWeight(2).getLineFill().setSolidFill('#EF4444');
-      }
     });
 
     // Média
-    const media    = calcularMediaSlide(valores);
-    const mediaBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mediaX, rowY, mediaW, rowH);
-    mediaBox.getText().setText(formatarNumeroTabela(media))
-      .getTextStyle().setFontSize(8).setBold(true)
-      .setForegroundColor('#111827').setFontFamily('Montserrat');
-    mediaBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    mediaBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    const media = _calcularMedia(valores);
+    const mBox  = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mediaX, rowY, mediaW, rowH);
+    mBox.getText().setText(formatarNumeroTabela(media)).getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
+    mBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    mBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   });
+
+  // Linha separadora debaixo do cabeçalho
+  const sep = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, areaX, startY + 20, areaW, 1);
+  sep.getFill().setSolidFill(CORES.lineSeparator); sep.getBorder().setTransparent();
 }
 
 
 // ==========================================
 // HELPERS
 // ==========================================
-
 function formatarMoedaSlide(valor) {
   if (valor === null || valor === undefined || valor === '') return '-';
   const num = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));
@@ -309,13 +243,11 @@ function formatarNumeroTabela(valor) {
   return num.toFixed(2).replace('.', ',');
 }
 
-function calcularMediaSlide(arr) {
-  const nums = arr
-    .map(v => {
-      if (v === null || v === undefined || v === '') return NaN;
-      return typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
-    })
-    .filter(v => !isNaN(v));
+function _calcularMedia(arr) {
+  const nums = (arr || []).map(v => {
+    if (v === null || v === undefined || v === '') return NaN;
+    return typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  }).filter(v => !isNaN(v));
   if (!nums.length) return null;
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }

@@ -412,6 +412,7 @@ function extrairMesesCustoM2_(headerRow) {
     mai: 'Mai', jun: 'Jun', jul: 'Jul', ago: 'Ago',
     set: 'Set', out: 'Out', nov: 'Nov', dez: 'Dez'
   };
+  const MESES_VALIDOS = Object.keys(mapaMes);
 
   for (let c = 1; c < headerRow.length; c += 3) {
     const txt = String(headerRow[c] || '').trim();
@@ -419,10 +420,12 @@ function extrairMesesCustoM2_(headerRow) {
     if (!m) continue;
 
     const mesKey = normalizarTextoCusto_(m[1]).substring(0, 3);
-    const ano    = normalizarAnoCusto_(m[2]);
+    if (MESES_VALIDOS.indexOf(mesKey) < 0) continue;   // ignora "Ano/26" e afins
+
+    const ano = normalizarAnoCusto_(m[2]);
 
     meses.push({
-      nome           : mapaMes[mesKey] || m[1],
+      nome           : mapaMes[mesKey],
       nomeMesExtenso : nomeMesExtensoCusto_(mesKey),
       ano,
       colOrc  : c,
