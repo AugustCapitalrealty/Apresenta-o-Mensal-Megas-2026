@@ -588,7 +588,7 @@ function obterDadosDocumentos() {
         venc      : venc || '-',
         obs       : obs,
         dias      : dias,
-        diasTexto : temData ? String(dias) : (venc || '--'),
+        diasTexto : temData ? String(dias) : '--',
         status    : statusRaw || (categoria === 'VENCIDO' ? 'VENCIDO' : 'DIAS PARA VENCER'),
         categoria : categoria
       });

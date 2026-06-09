@@ -203,14 +203,15 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
   bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
 
   // Colunas: EMPRESA | DOCUMENTO | VENC. | OBSERVAÇÕES | DIAS | STATUS
+  // Proporções: 16 + 25 + 12 + 20 + 11 + 16 = 100%
   const x0 = marginX + 14;
   const cols = [
     { t: 'EMPRESA',       x: x0,                   w: tableW * 0.16 },
-    { t: 'DOCUMENTO',     x: x0 + tableW * 0.16,   w: tableW * 0.24 },
-    { t: 'VENC.',         x: x0 + tableW * 0.40,   w: tableW * 0.12 },
-    { t: 'OBSERVAÇÕES',   x: x0 + tableW * 0.52,   w: tableW * 0.22 },
-    { t: 'DIAS',          x: x0 + tableW * 0.74,   w: tableW * 0.08 },
-    { t: 'STATUS',        x: x0 + tableW * 0.82,   w: tableW * 0.16 }
+    { t: 'DOCUMENTO',     x: x0 + tableW * 0.16,   w: tableW * 0.25 },
+    { t: 'VENC.',         x: x0 + tableW * 0.41,   w: tableW * 0.12 },
+    { t: 'OBSERVAÇÕES',   x: x0 + tableW * 0.53,   w: tableW * 0.20 },
+    { t: 'DIAS',          x: x0 + tableW * 0.73,   w: tableW * 0.11 },
+    { t: 'STATUS',        x: x0 + tableW * 0.84,   w: tableW * 0.16 }
   ];
 
   // Cabeçalho
@@ -235,9 +236,8 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     else grupos.push({ empresa: it.empresa, itens: [{ it, i }] });
   });
 
-  // Altura de linha: cabe DOC_LINHAS_POR_PAGINA linhas + os gaps entre cards
-  const availableH = tableH - (startY - topY) - 12;
-  const rowH = Math.min(24, Math.floor((availableH - (grupos.length - 1) * CARD_GAP) / DOC_LINHAS_POR_PAGINA));
+  // Altura de linha fixa — garante que tudo fique em uma linha sem quebra
+  const rowH = 22;
 
   // Layout: posiciona cada card e guarda o Y de cada linha (com os gaps)
   const itemY = {};
@@ -296,6 +296,8 @@ function desenharCelulaDoc_(slide, x, y, w, h, texto, fontSize, bold, cor) {
   const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
   const t = (texto === null || texto === undefined) ? '' : String(texto);
   if (t === '') return;  // texto vazio: não estiliza (evita "object has no text")
+  // Desabilita redimensionamento automático para evitar quebra de linha
+  box.setAutoFit(SlidesApp.AutoFitType.NONE);
   box.getText().setText(t)
     .getTextStyle().setFontSize(fontSize).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
