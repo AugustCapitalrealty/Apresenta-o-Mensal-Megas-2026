@@ -28,8 +28,8 @@ function gerarSlideEnergiaSolar() {
   const gap     = 10;
   const cardW   = (W - marginX * 2 - gap * 3) / 4;
 
-  const COR_GER = '#3B82F6';  // azul médio — geração
-  const COR_CON = '#10B981';  // verde — consumo
+  const COR_GER = '#10B981';  // verde — geração
+  const COR_CON = '#F87171';  // vermelho claro — consumo
 
   const kpis = [
     { label: 'CO² neutralizado (t)',  val: atual.co2,     ant: anterior ? anterior.co2     : null, fmt: v => _solarFmtDec(v, 2), icon: '🌿' },
@@ -134,7 +134,8 @@ function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
     if (gH > 1) {
       const gb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, bBase - gH, barW, gH);
       gb.getFill().setSolidFill(corGer); gb.getBorder().setTransparent();
-      _sTxt(slide, sx - 1, bBase - gH - 12, barW + 2, 11,
+      // Label centralizada no slot inteiro para não quebrar
+      _sTxt(slide, plotX + i * slotW, bBase - gH - 12, slotW / 2, 11,
         _solarFmtKwh(m.geracao), 6.5, false, corGer, 'center');
     }
 
@@ -144,7 +145,7 @@ function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
     if (cH > 1) {
       const cb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, bBase - cH, barW, cH);
       cb.getFill().setSolidFill(corCon); cb.getBorder().setTransparent();
-      _sTxt(slide, cx - 1, bBase - cH - 12, barW + 2, 11,
+      _sTxt(slide, plotX + i * slotW + slotW / 2, bBase - cH - 12, slotW / 2, 11,
         _solarFmtKwh(m.consumo), 6.5, false, corCon, 'center');
     }
 
