@@ -712,7 +712,10 @@ function obterDadosEnergiaSolar() {
     const cKm   = hdr.findIndex(h => h.includes('km'));
 
     const _num = v => {
-      const s = String(v || '').replace(/[^\d,.-]/g, '').replace(',', '.');
+      let s = String(v || '').replace(/[^\d,.-]/g, '');
+      // Formato BR: "7.572,21" — ponto é milhar, vírgula é decimal
+      if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(',', '.');
       const n = parseFloat(s);
       return isNaN(n) ? null : n;
     };
