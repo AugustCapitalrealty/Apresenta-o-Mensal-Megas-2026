@@ -687,7 +687,10 @@ function parseDataBR_(txt) {
 // Linha 1 = cabeçalho: Mês | Geração (kWh) | Consumo (kWh) | CO² (t) | Carvão (t) | Árvores | KM neutro
 function obterDadosEnergiaSolar() {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    // Energia Solar só existe para Curitiba
+    if (_projetoAtivoChave !== 'CURITIBA') return null;
+    const ENERGIA_SOLAR_ID = '1eRvNopH-6U87xyy9chERsROvyHf9ZpDs5veoB9H671I';
+    const ss    = SpreadsheetApp.openById(ENERGIA_SOLAR_ID);
     const sheet = ss.getSheetByName('ENERGIA SOLAR');
     if (!sheet) {
       Logger.log('Energia Solar: aba "ENERGIA SOLAR" não encontrada.');
