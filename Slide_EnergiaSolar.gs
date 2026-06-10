@@ -129,22 +129,24 @@ function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
     const sx    = plotX + i * slotW + barPad;
     const bBase = plotY + plotH;
 
-    // Barra Geração
+    // Barra Geração — label centralizada na barra, largura = slotW inteiro
     const gH = escMax > 0 ? (m.geracao / escMax) * plotH : 0;
     if (gH > 1) {
       const gb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, bBase - gH, barW, gH);
       gb.getFill().setSolidFill(corGer); gb.getBorder().setTransparent();
-      _sTxt(slide, plotX + i * slotW, bBase - gH - 15, slotW / 2, 15,
+      const gLabelX = sx + barW / 2 - slotW / 2;
+      _sTxt(slide, gLabelX, bBase - gH - 16, slotW, 14,
         _solarFmtKwh(m.geracao), 7, true, corGer, 'center');
     }
 
-    // Barra Consumo
+    // Barra Consumo — label centralizada na barra, largura = slotW inteiro
     const cH = escMax > 0 ? (m.consumo / escMax) * plotH : 0;
     const cx  = sx + barW + barPad;
     if (cH > 1) {
       const cb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, bBase - cH, barW, cH);
       cb.getFill().setSolidFill(corCon); cb.getBorder().setTransparent();
-      _sTxt(slide, plotX + i * slotW + slotW / 2, bBase - cH - 15, slotW / 2, 15,
+      const cLabelX = cx + barW / 2 - slotW / 2;
+      _sTxt(slide, cLabelX, bBase - cH - 16, slotW, 14,
         _solarFmtKwh(m.consumo), 7, true, corCon, 'center');
     }
 
