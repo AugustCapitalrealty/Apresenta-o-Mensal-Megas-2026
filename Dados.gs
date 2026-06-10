@@ -596,7 +596,10 @@ function obterDadosDocumentos() {
     const resumo  = { vencido: 0, critico: 0, emDia: 0, pendente: 0, total: 0 };
     let empresaAtual = '';
 
+    // Data de referência = último dia do mês anterior (a apresentação é espelho do mês passado)
     const hoje = new Date();
+    hoje.setDate(1);       // dia 1 do mês atual
+    hoje.setDate(0);       // volta para o último dia do mês anterior
     hoje.setHours(0, 0, 0, 0);
 
     for (let i = hdr + 1; i < data.length; i++) {
@@ -631,8 +634,9 @@ function obterDadosDocumentos() {
       // (ex.: Esteio marca VENCIDO sem preencher a data de vencimento)
       const stNorm = norm(statusRaw);
       const vencNorm = norm(venc);
-      if (stNorm.includes('vencido'))            categoria = 'VENCIDO';
+      if (stNorm.includes('vencido'))                                                    categoria = 'VENCIDO';
       else if (stNorm.includes('indeterminado') || vencNorm.includes('indeterminado')) categoria = 'EM_DIA';
+      else if (vencNorm.includes('dispensa') || stNorm.includes('dispensa'))           categoria = 'EM_DIA';
 
       switch (categoria) {
         case 'VENCIDO':  resumo.vencido++;  break;
@@ -645,7 +649,9 @@ function obterDadosDocumentos() {
       itens.push({
         empresa   : empresaAtual,
         documento : documento,
-        venc      : vencNorm.includes('indeterminado') ? 'INDETERM.' : (venc || '-'),
+        venc      : vencNorm.includes('indeterminado') ? 'INDETERM.'
+                  : vencNorm.includes('dispensa')     ? 'DISPENSA'
+                  : (venc || '-'),
         obs       : obs,
         dias      : dias,
         diasTexto : temData ? String(dias) : '--',
