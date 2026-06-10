@@ -678,3 +678,66 @@ function parseDataBR_(txt) {
   if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== d) return null;
   return dt;
 }
+
+
+// ==========================================
+// DADOS ENERGIA SOLAR (Slide Energia Solar)
+// ==========================================
+// Aba esperada: "ENERGIA SOLAR"
+// Linha 1 = cabeçalho: Mês | Geração (kWh) | Consumo (kWh) | CO² (t) | Carvão (t) | Árvores | KM neutro
+function obterDadosEnergiaSolar() {
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('ENERGIA SOLAR');
+    if (!sheet) {
+      Logger.log('Energia Solar: aba "ENERGIA SOLAR" não encontrada.');
+      return null;
+    }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return null;
+
+    // Detecta colunas pelo cabeçalho (linha 1, case-insensitive)
+    const hdr  = data[0].map(c => c.toLowerCase());
+    const cMes  = hdr.findIndex(h => h.includes('mês') || h.includes('mes'));
+    const cGer  = hdr.findIndex(h => h.includes('gera'));
+    const cCon  = hdr.findIndex(h => h.includes('consumo'));
+    const cCo2  = hdr.findIndex(h => h.includes('co') && h.includes('2'));
+    const cCarv = hdr.findIndex(h => h.includes('carv'));
+    const cArv  = hdr.findIndex(h => h.includes('rvore'));
+    const cKm   = hdr.findIndex(h => h.includes('km'));
+
+    const _num = v => {
+      const s = String(v || '').replace(/[^\d,.-]/g, '').replace(',', '.');
+      const n = parseFloat(s);
+      return isNaN(n) ? null : n;
+    };
+
+    const meses = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const mes = String(row[cMes >= 0 ? cMes : 0] || '').trim();
+      if (!mes) continue;
+      meses.push({
+        mes    : mes,
+        geracao: _num(cGer  >= 0 ? row[cGer]  : null),
+        consumo: _num(cCon  >= 0 ? row[cCon]  : null),
+        co2    : _num(cCo2  >= 0 ? row[cCo2]  : null),
+        carvao : _num(cCarv >= 0 ? row[cCarv] : null),
+        arvores: _num(cArv  >= 0 ? row[cArv]  : null),
+        km     : _num(cKm   >= 0 ? row[cKm]   : null)
+      });
+    }
+
+    if (meses.length === 0) return null;
+
+    const atual    = meses[meses.length - 1];
+    const anterior = meses.length >= 2 ? meses[meses.length - 2] : null;
+
+    return { atual, anterior, meses };
+
+  } catch (e) {
+    Logger.log('Erro Energia Solar: ' + e.message);
+    return null;
+  }
+}

@@ -59,6 +59,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Slide 10 - Bridge Gráfico',    fn: gerarSlideBridgeGrafico   },
     { nome: 'Slide 11 - Financeiro Anual',  fn: gerarSlideFinanceiroAnual },
     { nome: 'Slide 26 - Custo M²',          fn: gerarSlideCustoM2         },
+    { nome: 'Slide -- Energia Solar',       fn: gerarSlideEnergiaSolar    },
     { nome: 'Slide -- Documentação Legal',  fn: gerarSlideDocumentos      },
     { nome: 'Slide 14 - Encerramento',      fn: gerarSlideEncerramento    }
   ];
