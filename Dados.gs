@@ -705,7 +705,8 @@ function obterDadosEnergiaSolar() {
     const cMes  = hdr.findIndex(h => h.includes('mês') || h.includes('mes'));
     const cGer  = hdr.findIndex(h => h.includes('gera'));
     const cCon  = hdr.findIndex(h => h.includes('consumo'));
-    const cCo2  = hdr.findIndex(h => h.includes('co') && h.includes('2'));
+    // CO² usa caractere superscript ² (U+00B2), não o dígito "2"
+    const cCo2  = hdr.findIndex(h => h.includes('co') && (h.includes('2') || h.includes('²')));
     const cCarv = hdr.findIndex(h => h.includes('carv'));
     const cArv  = hdr.findIndex(h => h.includes('rvore'));
     const cKm   = hdr.findIndex(h => h.includes('km'));
