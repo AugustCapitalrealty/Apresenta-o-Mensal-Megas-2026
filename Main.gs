@@ -27,6 +27,15 @@ function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCom
 // ==========================================
 // PONTOS DE ENTRADA — TODAS AS CIDADES
 // ==========================================
+// ==========================================
+// SLIDES INDIVIDUAIS
+// ==========================================
+function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — TODAS AS CIDADES
+// ==========================================
 function gerarTodas() {
   ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => {
     setProjetoAtivo(c);
