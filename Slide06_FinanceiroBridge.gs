@@ -160,12 +160,8 @@ function obterDadosBridge() {
 // PAINEL ESQUERDO: RESUMO
 // ==========================================
 function _bridgeDesenharResumo(slide, x, y, w, h, d) {
-  // Card fundo
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
-
-  const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + 6, 4, h - 12);
-  barra.getFill().setSolidFill(CORES.darkBlue); barra.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs)
+  criarCardPainel(slide, x, y, w, h, null, CORES.darkBlue);
 
   const _txt = (texto, fx, fy, fw, fh, size, bold, cor, align) => {
     const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, fh);
@@ -394,8 +390,10 @@ function gerarSlideBridgeGrafico() {
   const topY    = 78;
   const cardW   = pageW - 2 * marginX;
   const cardH   = pageH - topY - 15;
-  const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, topY, cardW, cardH);
-  card.getFill().setSolidFill(CORES.white); card.getBorder().setTransparent();
+  const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX, topY, cardW, cardH);
+  card.getFill().setSolidFill(CORES.white);
+  card.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
+  card.getBorder().setWeight(1);
 
   // ── Legenda ────────────────────────────────────────────────────────────
   _bridgeLegenda(slide, marginX + 20, topY + 10);

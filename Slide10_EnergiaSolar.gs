@@ -57,48 +57,38 @@ function gerarSlideEnergiaSolar() {
 // ── Card KPI ────────────────────────────────────────────────────────────
 
 function _solarCard(slide, x, y, w, h, kpi) {
-  // Sombra
-  const sh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 2, y + 2, w, h);
-  sh.getFill().setSolidFill('#CBD5E1'); sh.getBorder().setTransparent(); sh.sendToBack();
-
-  // Fundo
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
-
-  // Barra topo escura
-  const strip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, 22);
-  strip.getFill().setSolidFill(CORES.darkBlue); strip.getBorder().setTransparent();
-  const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + 16, w, 8);
-  mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
-
-  // Label
-  _sTxt(slide, x + 4, y + 3, w - 8, 16, kpi.label, 7.5, true, CORES.white, 'center');
-
-  // Valor principal
+  // Card KPI padrão do design system (01_Config.gs)
   const valStr = kpi.val != null ? kpi.fmt(kpi.val) : '—';
-  _sTxt(slide, x + 4, y + 18, w - 8, 28, valStr, 22, true, CORES.darkBlue, 'center');
+  const opts = {
+    label: kpi.label, valor: valStr,
+    cor: CORES.lightBlue, corValor: CORES.darkBlue, tamValor: 20
+  };
 
-  // Delta
   if (kpi.ant != null && kpi.val != null) {
     const diff   = kpi.val - kpi.ant;
     const pct    = kpi.ant !== 0 ? (diff / Math.abs(kpi.ant)) * 100 : null;
     const seta   = diff >= 0 ? '▲' : '▼';
-    const cor    = diff >= 0 ? '#10B981' : '#EF4444';
     const pctStr = pct != null ? ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(1) + '%)' : '';
-    _sTxt(slide, x + 4, y + 47, w - 8, 14, seta + ' ' + kpi.fmt(Math.abs(diff)) + pctStr, 8, true, cor, 'center');
-    _sTxt(slide, x + 4, y + 59, w - 8, 12, 'vs mês anterior', 6.5, false, CORES.textGray, 'center');
+    opts.sub    = seta + ' ' + kpi.fmt(Math.abs(diff)) + pctStr;
+    opts.corSub = diff >= 0 ? CORES.cardGreen : CORES.cardRed;
+    opts.nota   = 'vs mês anterior';
   } else if (kpi.val == null) {
-    _sTxt(slide, x + 4, y + 52, w - 8, 14, 'sem dado', 7, false, '#94A3B8', 'center');
+    opts.sub    = 'sem dado';
+    opts.corSub = '#94A3B8';
   }
+
+  criarCardKPI(slide, x, y, w, h, opts);
 }
 
 
 // ── Gráfico de barras ───────────────────────────────────────────────────
 
 function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
-  // Fundo branco arredondado
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
+  // Moldura padrão do design system
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(CORES.white);
+  bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
+  bg.getBorder().setWeight(1);
 
   if (!meses || meses.length === 0) return;
 

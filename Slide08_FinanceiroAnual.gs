@@ -163,13 +163,8 @@ function detectarPeriodoAnual_(headerRow) {
 // CARD RESUMO
 // ==========================================
 function desenharCardResumoAnual(slide, x, y, w, h, CORES, dados) {
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white);
-  bg.getBorder().setTransparent();
-
-  const strip = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 2, y + 6, 4, h - 12);
-  strip.getFill().setSolidFill(CORES.darkBlue);
-  strip.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs)
+  criarCardPainel(slide, x, y, w, h, null, CORES.darkBlue);
 
   const badge = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + w - 75, y + 6, 68, 14);
   badge.getFill().setSolidFill(CORES.darkBlue);
@@ -240,9 +235,8 @@ function desenharCardResumoAnual(slide, x, y, w, h, CORES, dados) {
 // CARD DRIVERS
 // ==========================================
 function desenharCardDriversAnual(slide, x, y, w, h, CORES, dados) {
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white);
-  bg.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs)
+  criarCardPainel(slide, x, y, w, h, null, CORES.mediumBlue);
 
   const sectionH = (h - 50) / 2;
 
@@ -282,9 +276,10 @@ function desenharCardDriversAnual(slide, x, y, w, h, CORES, dados) {
 // GRÁFICO DE BARRAS
 // ==========================================
 function desenharGraficoBarrasReaisAnual(slide, x, y, w, h, CORES, dadosGrafico) {
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
-  bg.getBorder().setTransparent();
+  bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
+  bg.getBorder().setWeight(1);
 
   const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 260, 20);
   title.getText().setText('ORÇADO vs REALIZADO (ACUMULADO)')
@@ -357,17 +352,8 @@ function desenharGraficoBarrasReaisAnual(slide, x, y, w, h, CORES, dadosGrafico)
 // ÁREA DE JUSTIFICATIVA
 // ==========================================
 function desenharAreaJustificativaAnual(slide, x, y, w, h, CORES) {
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(CORES.white);
-  bg.getBorder().setTransparent();
-
-  const headerStrip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, 20);
-  headerStrip.getFill().setSolidFill('#FFF7ED');
-  headerStrip.getBorder().setTransparent();
-
-  const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + 10, w, 10);
-  mask.getFill().setSolidFill('#FFF7ED');
-  mask.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs) — tema âmbar (notas)
+  criarCardPainel(slide, x, y, w, h, null, CORES.textOrange);
 
   const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 3, w - 20, 15);
   title.getText().setText('📝 NOTAS EXPLICATIVAS / JUSTIFICATIVAS (ACUMULADO)')

@@ -47,33 +47,12 @@ function _custoDesenharKPIs(slide, x, y, w, h, dados) {
     { label: k.status,        valor: formatarMoedaSlide(k.variacao), cor: k.corStatus,      strip: k.corStatus     }
   ];
 
+  // Card KPI padrão do design system (01_Config.gs)
   kpis.forEach((kpi, i) => {
     const cx = x + i * (cardW + gap);
-
-    // sombra
-    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx + 3, y + 3, cardW, h);
-    sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
-
-    // fundo
-    const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y, cardW, h);
-    bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
-
-    // franja lateral
-    const strip = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, y + 8, 4, h - 16);
-    strip.getFill().setSolidFill(kpi.strip); strip.getBorder().setTransparent();
-
-    const _t = (txt, tx, ty, tw, th, size, bold, cor, align) => {
-      const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, ty, tw, th);
-      const t = b.getText();
-      t.setText(txt).getTextStyle().setFontSize(size).setBold(!!bold)
-        .setForegroundColor(cor).setFontFamily('Montserrat');
-      if (align === 'C') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-      b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      return b;
-    };
-
-    _t(kpi.label, cx + 18, y + 8,  cardW - 26, 16, 8,  true,  CORES.textGray, '');
-    _t(kpi.valor, cx + 18, y + 26, cardW - 26, 34, 22, true,  kpi.cor,        '');
+    criarCardKPI(slide, cx, y, cardW, h, {
+      label: kpi.label, valor: kpi.valor, cor: kpi.strip, corValor: kpi.cor
+    });
   });
 }
 

@@ -57,33 +57,14 @@ function gerarSlideTempo() {
 
 // Função Auxiliar Local (CORRIGIDA PARA EVITAR ERRO DE TEXTO)
 function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
-  // Sombra e Fundo
-  const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+2, y+2, w, h);
-  cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
-
-  const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
-
-  // Cabeçalho colorido
-  const headerH = 35;
-  const headerRound = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, headerH + 10);
-  headerRound.getFill().setSolidFill(corTema); headerRound.getBorder().setTransparent();
-
-  // Máscara branca
-  const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + headerH - 2, w, 25);
-  mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
-
-  const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 2, w - 30, headerH);
-  
+  // Painel padrão do design system (01_Config.gs)
   // FIX: Garante que o título não seja nulo
-  let tituloTexto = dados.titulo ? String(dados.titulo) : "VISÃO GERAL";
-  titleTxt.getText().setText(tituloTexto)
-    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
-  titleTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const tituloTexto = dados.titulo ? String(dados.titulo) : "VISÃO GERAL";
+  const startContentY = criarCardPainel(slide, x, y, w, h, tituloTexto, corTema);
+  const DS = CR_DESIGN_SYSTEM;
 
-  const startContentY = y + headerH + 5;
-  const usableH = h - headerH - 15;
-  
+  const usableH = h - (startContentY - y) - 8;
+
   // Proteção: se kpis não existir, cria array vazio
   const listaKPIs = dados.kpis || [];
   const rowH = usableH / (listaKPIs.length || 1);
@@ -95,15 +76,15 @@ function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
     // FIX: Converte label para String e garante valor
     let labelTexto = kpi.l ? String(kpi.l) : "-";
     lblBox.getText().setText(labelTexto)
-      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
     const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.75, ry, w * 0.20, rowH);
     // FIX CRÍTICO: Verifica se valor existe, converte para String e define padrão "-" se vazio
     let valorTexto = (kpi.v !== undefined && kpi.v !== null && kpi.v !== "") ? String(kpi.v) : "-";
-    
+
     valBox.getText().setText(valorTexto)
-      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     valBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });

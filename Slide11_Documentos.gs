@@ -112,26 +112,12 @@ function desenharPaginaResumoDocumentos_(dados) {
   const cardW = (pageW - (2 * marginX) - (3 * gap)) / 4;
   const cardH = 70;
 
+  // Card KPI padrão do design system (01_Config.gs)
   cards.forEach((c, i) => {
     const cx = marginX + i * (cardW + gap);
-
-    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx + 3, topY + 3, cardW, cardH);
-    sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
-
-    const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, topY, cardW, cardH);
-    bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
-
-    const strip = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, topY + 8, 4, cardH - 16);
-    strip.getFill().setSolidFill(c.cor); strip.getBorder().setTransparent();
-
-    const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 14, topY + 8, cardW - 24, 35);
-    val.getText().setText(String(c.valor))
-      .getTextStyle().setFontSize(26).setBold(true).setForegroundColor(c.cor).setFontFamily('Montserrat');
-    val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 14, topY + 44, cardW - 24, 18);
-    lbl.getText().setText(c.label)
-      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+    criarCardKPI(slide, cx, topY, cardW, cardH, {
+      label: c.label, valor: c.valor, cor: c.cor
+    });
   });
 
   // ── Lista de críticos (vencidos + vence em breve) ────────────────────────
@@ -143,8 +129,8 @@ function desenharPaginaResumoDocumentos_(dados) {
   const listaH = pageH - listaY - 20;
   const listaW = pageW - (2 * marginX);
 
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, listaY, listaW, listaH);
-  bg.getFill().setSolidFill(CORES.white); bg.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs) — tema vermelho (críticos)
+  criarCardPainel(slide, marginX, listaY, listaW, listaH, null, DOC_CORES_CATEGORIA.VENCIDO);
 
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 18, listaY + 8, listaW - 36, 20);
   titulo.getText().setText('VENCIDOS E A VENCER EM ' + LIMITE_CRITICO_DIAS + ' DIAS')
@@ -265,16 +251,14 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     const cardY = cursorY;
     const cardH = g.itens.length * DOC_ROW_H;
 
-    // Sombra
-    const sombra = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, DOC_MARGIN_X + 10, cardY + 2, tableW - 20, cardH);
-    sombra.getFill().setSolidFill(CORES.shadow); sombra.getBorder().setTransparent(); sombra.sendToBack();
-
-    // Card branco
-    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, DOC_MARGIN_X + 8, cardY, tableW - 16, cardH);
-    card.getFill().setSolidFill(CORES.white); card.getBorder().setTransparent();
+    // Card branco padrão (borda fina + barra lateral, sem sombra)
+    const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, cardY, tableW - 16, cardH);
+    card.getFill().setSolidFill(CORES.white);
+    card.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
+    card.getBorder().setWeight(1);
 
     // Barra colorida à esquerda
-    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, cardY + 3, 4, cardH - 6);
+    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, cardY, 4, cardH);
     barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
 
     // Nome da empresa verticalmente centralizado no card

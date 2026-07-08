@@ -185,3 +185,93 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
   acc.getLineFill().setSolidFill(DS.colors.brandLight);
   acc.setWeight(3);
 }
+
+/**
+ * Card de KPI padrão (padrão do boletim): card branco com borda fina,
+ * barra lateral colorida, label pequeno em cima e valor grande embaixo.
+ *
+ * opts = {
+ *   label    : rótulo pequeno superior (obrigatório)
+ *   valor    : valor em destaque (obrigatório)
+ *   cor      : cor da barra lateral (default brandLight)
+ *   corValor : cor do valor (default = cor da barra)
+ *   tamValor : tamanho da fonte do valor (default 22)
+ *   sub      : linha auxiliar sob o valor, ex.: '▲ 1,2 (+4%)' (opcional)
+ *   corSub   : cor da linha auxiliar (default textBody)
+ *   nota     : nota menor sob a linha auxiliar, ex.: 'vs mês anterior' (opcional)
+ * }
+ */
+function criarCardKPI(slide, x, y, w, h, opts) {
+  const DS = CR_DESIGN_SYSTEM;
+  const corBarra = opts.cor || DS.colors.brandLight;
+
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(DS.colors.cardBg);
+  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  bg.getBorder().setWeight(1);
+
+  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
+  side.getFill().setSolidFill(corBarra);
+  side.getBorder().setTransparent();
+
+  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20, 13);
+  lbl.getText().setText(String(opts.label)).getTextStyle()
+    .setFontSize(7.5).setBold(true)
+    .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
+
+  // Área do valor ocupa o meio; sub/nota reservam o rodapé do card
+  const footH = (opts.sub ? 13 : 0) + (opts.nota ? 11 : 0);
+  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 18, w - 20, h - 22 - footH);
+  val.getText().setText(String(opts.valor)).getTextStyle()
+    .setFontSize(opts.tamValor || 22).setBold(true)
+    .setForegroundColor(opts.corValor || corBarra)
+    .setFontFamily(DS.typography.titles);
+  val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
+  let fy = y + h - footH - 4;
+  if (opts.sub) {
+    const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 13);
+    sub.getText().setText(String(opts.sub)).getTextStyle()
+      .setFontSize(8).setBold(true)
+      .setForegroundColor(opts.corSub || DS.colors.textBody).setFontFamily(DS.typography.titles);
+    fy += 13;
+  }
+  if (opts.nota) {
+    const nota = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 11);
+    nota.getText().setText(String(opts.nota)).getTextStyle()
+      .setFontSize(6.5).setBold(false)
+      .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
+  }
+}
+
+/**
+ * Painel padrão (contêiner de conteúdo): card branco com borda fina, barra
+ * lateral e título opcional na cor do tema, com linha divisória.
+ * Retorna o Y onde o conteúdo interno deve começar.
+ */
+function criarCardPainel(slide, x, y, w, h, titulo, cor) {
+  const DS = CR_DESIGN_SYSTEM;
+  const corTema = cor || DS.colors.brandLight;
+
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(DS.colors.cardBg);
+  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  bg.getBorder().setWeight(1);
+
+  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
+  side.getFill().setSolidFill(corTema);
+  side.getBorder().setTransparent();
+
+  if (titulo) {
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, y + 6, w - 24, 18);
+    t.getText().setText(String(titulo)).getTextStyle()
+      .setFontSize(10).setBold(true)
+      .setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+
+    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 26, w - 28, 1);
+    div.getFill().setSolidFill(DS.colors.lines);
+    div.getBorder().setTransparent();
+    return y + 32;
+  }
+  return y + 10;
+}

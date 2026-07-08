@@ -57,27 +57,11 @@ function gerarSlideCorretivas() {
 
 // Função Auxiliar Local
 function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
-  const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+2, y+2, w, h);
-  cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
+  // Painel padrão do design system (01_Config.gs)
+  const startContentY = criarCardPainel(slide, x, y, w, h, dados.titulo, corTema);
+  const DS = CR_DESIGN_SYSTEM;
 
-  const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
-
-  const headerH = 35;
-  const headerRound = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, headerH + 10);
-  headerRound.getFill().setSolidFill(corTema); headerRound.getBorder().setTransparent();
-
-  // AJUSTE: Aumentei a altura para 25 e subi o ponto de início (-2) para "puxar o branco para baixo" visualmente
-  const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + headerH - 2, w, 25);
-  mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
-
-  const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 2, w - 30, headerH);
-  titleTxt.getText().setText(dados.titulo)
-    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
-  titleTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-  const startContentY = y + headerH + 5;
-  const usableH = h - headerH - 15;
+  const usableH = h - (startContentY - y) - 8;
   const rowH = usableH / 4;
 
   dados.kpis.forEach((kpi, i) => {
@@ -85,12 +69,12 @@ function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
 
     const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.75, rowH);
     lblBox.getText().setText(kpi.l)
-      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
     const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.75, ry, w * 0.20, rowH);
     valBox.getText().setText(String(kpi.v))
-      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     valBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });

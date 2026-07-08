@@ -40,22 +40,9 @@ function gerarSlideDashboard() {
   structure.forEach((cat, i) => {
     const row = Math.floor(i / 2), col = i % 2;
     const x = marginX + (col * (cardW + gap)), y = marginY + (row * (cardH + gap));
-    const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+3, y+3, cardW, cardH);
-    cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
-    const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cardW, cardH);
-    cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
 
-    const stripH = 35;
-    const headerRound = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cardW, stripH + 10);
-    headerRound.getFill().setSolidFill(cat.color); headerRound.getBorder().setTransparent();
-    const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + stripH, cardW, 10);
-    mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
-    const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 2, cardW - 20, 30);
-    let tRun = titleTxt.getText(); tRun.setText(`${cat.icon}  ${cat.title}`);
-    tRun.getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
-    titleTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-    const tableY = y + stripH + 10;
+    // Painel padrão do design system (01_Config.gs) — título na cor do tema
+    const tableY = criarCardPainel(slide, x, y, cardW, cardH, `${cat.icon}  ${cat.title}`, cat.color) + 2;
     const colNameW = cardW * 0.45, colDataW = (cardW - colNameW - 20) / 3;
     dynamicHeaders.forEach((h, idx) => {
       let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW + (idx * colDataW), tableY, colDataW, 20);
@@ -64,7 +51,7 @@ function gerarSlideDashboard() {
     });
 
     const startDataY = tableY + 20;
-    const rowH = (cardH - stripH - 40) / cat.rows.length;
+    const rowH = (y + cardH - startDataY - 10) / cat.rows.length;
 
     cat.rows.forEach((r, rIdx) => {
       let ry = startDataY + (rIdx * rowH);

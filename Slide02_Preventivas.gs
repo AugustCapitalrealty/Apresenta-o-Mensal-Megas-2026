@@ -31,41 +31,30 @@ function gerarSlidePreventivas() {
 }
 
 function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {
-  const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+3, y+3, w, h); cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
-  const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h); cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
-  const sideStrip = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 6, h); sideStrip.getFill().setSolidFill(corTema); sideStrip.getBorder().setTransparent();
-  
-  const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 20, 25);
-  titleTxt.getText().setText(dados.titulo).getTextStyle().setFontSize(11).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-  
-  const divLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, y + 30, w - 30, 1); divLine.getFill().setSolidFill('#E2E8F0'); divLine.getBorder().setTransparent();
-  
-  const contentY = y + 40, colW = (w - 20) / 3; 
+  // Painel padrão do design system (01_Config.gs)
+  const contentY = criarCardPainel(slide, x, y, w, h, dados.titulo, corTema) + 6;
+  const colW = (w - 20) / 3;
   _itemSimples(slide, x + 10, contentY, colW, 'PREVISTAS', dados.previstas, CORES.textGray, CORES.textDark);
   _itemSimples(slide, x + 10 + colW, contentY, colW, 'REALIZADAS', dados.realizadas, CORES.textGray, CORES.textDark);
   _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA', dados.sla, CORES.textGray, corTema);
 }
 
 function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal) {
+  const DS = CR_DESIGN_SYSTEM;
   const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
-  lbl.getText().setText(label).getTextStyle().setFontSize(8).setBold(true).setForegroundColor(colorLabel).setFontFamily('Montserrat');
+  lbl.getText().setText(label).getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(colorLabel).setFontFamily(DS.typography.body);
   lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
-  val.getText().setText(valor).getTextStyle().setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily('Montserrat');
+  val.getText().setText(valor).getTextStyle().setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
   val.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 
 function _desenharListaServicos(slide, x, y, w, h, dadosGerais) {
   const counts = dadosGerais.counts;
-  const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+3, y+3, w, h); cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
-  const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h); cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
-  
-  const headerH = 30;
-  const headerBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, headerH + 10); headerBg.getFill().setSolidFill('#FEF2F2'); headerBg.getBorder().setTransparent();
-  
-  // AJUSTE: Máscara melhorada (altura 25, recuo -2) para remover linha indesejada
-  const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + headerH - 2, w, 25); mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
+  // Painel padrão do design system (01_Config.gs) — tema vermelho (desvios de SLA)
+  criarCardPainel(slide, x, y, w, h, null, CORES.cardRed);
 
+  const headerH = 30;
   const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 30, 25);
   const titleString = '⚠️ RELAÇÃO DE SERVIÇOS QUE NÃO CUMPRIRAM O SLA';
   const facString = `   Facilities: ${counts.facilities}`;
