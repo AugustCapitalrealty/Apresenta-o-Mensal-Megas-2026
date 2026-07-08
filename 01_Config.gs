@@ -1,5 +1,6 @@
 /**
- * ARQUIVO: Config.gs
+ * ARQUIVO: 01_Config.gs
+ * SEÇÃO:   NÚCLEO — Configuração
  * DESCRIÇÃO: Paleta de cores, projetos por cidade e header padrão.
  */
 
@@ -28,7 +29,7 @@ const PROJETOS = {
   }
 };
 
-// Projeto ativo é setado em tempo de execução pelas funções do Main.gs
+// Projeto ativo é setado em tempo de execução pelas funções do 00_Main.gs
 // (gerarCuritiba, gerarItajai, gerarEsteio, gerarTodas, etc.)
 let _projetoAtivoChave = null;
 
@@ -40,7 +41,7 @@ function setProjetoAtivo(chave) {
 
 function getProjetoAtivo() {
   if (!_projetoAtivoChave) {
-    throw new Error('Nenhum projeto ativo. Rode uma função do Main.gs (gerarCuritiba, gerarItajai, gerarEsteio ou gerarTodas).');
+    throw new Error('Nenhum projeto ativo. Rode uma função do 00_Main.gs (gerarCuritiba, gerarItajai, gerarEsteio ou gerarTodas).');
   }
   return PROJETOS[_projetoAtivoChave];
 }
@@ -68,7 +69,7 @@ const CORES = {
   themeCorr: '#F59E0B',   // 3. AMARELO (Alerta/Corretiva) - Tom Âmbar para leitura
   themeAcesso: '#0EA5E9', // 4. AZUL CLARO (Céu/Acesso)
 
-  // Cores Específicas Slide 5 (Mantive compatibilidade)
+  // Cores Específicas Slide 02 - Preventivas (Mantive compatibilidade)
   cardBlue: '#065CA9', cardGreen: '#10B981', cardRed: '#EF4444',
   textPurple: '#9333EA', textOrange: '#D97706'
 };

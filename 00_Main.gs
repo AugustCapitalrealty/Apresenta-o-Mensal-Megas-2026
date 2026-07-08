@@ -1,5 +1,6 @@
 /**
- * ARQUIVO: Main.gs
+ * ARQUIVO: 00_Main.gs
+ * SEÇÃO:   NÚCLEO — Orquestrador
  * DESCRIÇÃO: Pontos de entrada da geração de slides.
  *
  *   Para rodar UMA cidade:
@@ -25,10 +26,7 @@ function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCom
 
 
 // ==========================================
-// PONTOS DE ENTRADA — TODAS AS CIDADES
-// ==========================================
-// ==========================================
-// SLIDES INDIVIDUAIS
+// PONTOS DE ENTRADA — SLIDES INDIVIDUAIS
 // ==========================================
 function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
 
@@ -58,19 +56,20 @@ function gerarApresentacaoCompleta_() {
   const projeto = getProjetoAtivo();
   Logger.log('▶ Gerando apresentação de ' + projeto.nome);
 
+  // Ordem oficial da apresentação — os arquivos SlideNN_*.gs seguem esta numeração
   const passos = [
-    { nome: 'Slide 04 - Dashboard',         fn: gerarSlideDashboard       },
-    { nome: 'Slide 05 - Preventivas',       fn: gerarSlidePreventivas     },
-    { nome: 'Slide 06 - Corretivas',        fn: gerarSlideCorretivas      },
-    { nome: 'Slide 07 - Tempo',             fn: gerarSlideTempo           },
-    { nome: 'Slide 08 - Financeiro',        fn: gerarSlideFinanceiro      },
-    { nome: 'Slide 09 - Bridge Variação',   fn: gerarSlideBridge          },
-    { nome: 'Slide 10 - Bridge Gráfico',    fn: gerarSlideBridgeGrafico   },
-    { nome: 'Slide 11 - Financeiro Anual',  fn: gerarSlideFinanceiroAnual },
-    { nome: 'Slide 26 - Custo M²',          fn: gerarSlideCustoM2         },
-    { nome: 'Slide -- Energia Solar',       fn: gerarSlideEnergiaSolar    },
-    { nome: 'Slide -- Documentação Legal',  fn: gerarSlideDocumentos      },
-    { nome: 'Slide 14 - Encerramento',      fn: gerarSlideEncerramento    }
+    { nome: 'Slide 01 - Dashboard',          fn: gerarSlideDashboard       },
+    { nome: 'Slide 02 - Preventivas',        fn: gerarSlidePreventivas     },
+    { nome: 'Slide 03 - Corretivas',         fn: gerarSlideCorretivas      },
+    { nome: 'Slide 04 - Acesso e Segurança', fn: gerarSlideTempo           },
+    { nome: 'Slide 05 - Financeiro Mensal',  fn: gerarSlideFinanceiro      },
+    { nome: 'Slide 06 - Bridge Variação',    fn: gerarSlideBridge          },
+    { nome: 'Slide 07 - Bridge Gráfico',     fn: gerarSlideBridgeGrafico   },
+    { nome: 'Slide 08 - Financeiro Anual',   fn: gerarSlideFinanceiroAnual },
+    { nome: 'Slide 09 - Custo M²',           fn: gerarSlideCustoM2         },
+    { nome: 'Slide 10 - Energia Solar',      fn: gerarSlideEnergiaSolar    },
+    { nome: 'Slide 11 - Documentação Legal', fn: gerarSlideDocumentos      },
+    { nome: 'Slide 12 - Encerramento',       fn: gerarSlideEncerramento    }
   ];
 
   const erros = [];

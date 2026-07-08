@@ -1,6 +1,8 @@
 /**
- * ARQUIVO: Slide_FinanceiroBridge.gs
- * DESCRIÇÃO: Slide de Análise de Variação (Bridge) Financeiro Mensal
+ * ARQUIVO: Slide06_FinanceiroBridge.gs
+ * SLIDES 06 e 07 — ANÁLISE DE VARIAÇÃO (BRIDGE) FINANCEIRA
+ * DESCRIÇÃO: Gera dois slides — 06: tabela de variação (gerarSlideBridge)
+ *            e 07: gráfico bridge (gerarSlideBridgeGrafico).
  *
  * Aba esperada: 'FINANCEIRO BRIDGE'
  * Estrutura da aba:

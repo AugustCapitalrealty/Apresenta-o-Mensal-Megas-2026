@@ -1,5 +1,6 @@
 /**
- * ARQUIVO: RegistroDados.gs
+ * ARQUIVO: Suporte_RegistroDados.gs
+ * SEÇÃO:   SUPORTE — Histórico de indicadores
  * DESCRIÇÃO: Histórico CONSULTÁVEL dos números de cada geração.
  *
  *   A cada execução (chamado pelo Main após gerar a apresentação),

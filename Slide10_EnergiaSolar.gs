@@ -1,6 +1,8 @@
 /**
- * ARQUIVO: Slide_EnergiaSolar.gs
- * DESCRIÇÃO: Slide de Energia Solar — KPIs + variação vs mês anterior + gráfico barras duplo.
+ * ARQUIVO: Slide10_EnergiaSolar.gs
+ * SLIDE 10 — ENERGIA SOLAR
+ * DESCRIÇÃO: KPIs + variação vs mês anterior + gráfico barras duplo.
+ *            Dados: obterDadosEnergiaSolar() em 02_Dados.gs (só gera para Curitiba).
  */
 
 function gerarSlideEnergiaSolar() {

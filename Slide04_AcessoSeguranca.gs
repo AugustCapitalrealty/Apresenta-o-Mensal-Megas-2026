@@ -1,12 +1,14 @@
 // ==========================================
-// SLIDE 6: INDICADORES DE CORRETIVAS
+// ARQUIVO: Slide04_AcessoSeguranca.gs
+// SLIDE 04 — INDICADORES DE ACESSO E SEGURANÇA
+// Dados: obterDadosTempo() em 02_Dados.gs
 // ==========================================
 
-function gerarSlideCorretivas() {
-  const dados = obterDadosCorretivasV6();
+function gerarSlideTempo() {
+  const dados = obterDadosTempo();
   
   if (!dados) {
-    Logger.log("Sem dados para o Slide 6.");
+    Logger.log("Sem dados para o Slide 04 (Acesso/Segurança).");
     return;
   }
 
@@ -16,33 +18,33 @@ function gerarSlideCorretivas() {
 
   const PageWidth = deck.getPageWidth();
   const PageHeight = deck.getPageHeight();
+  const anoAtual = new Date().getFullYear();
 
-  // Usa o cabeçalho padrão do Config.gs
-  criarHeaderPadrao(slide, 'INDICADORES DE CORRETIVAS', 'Backlog e Performance');
+  // 1. Cabeçalho
+  criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', `Fluxo, Segurança e Turnover - ${anoAtual}`);
 
   const marginX = 40;
-  // AJUSTE PADRONIZAÇÃO: Alterado de 90 para 80 (Alinhado com Slides 3 e 4)
   const topY = 80;
   const gap = 30;
 
   const cardW = (PageWidth - (2 * marginX) - gap) / 2;
-  // Mantivemos a altura aumentada
-  const cardH = 145;
+  const cardH = 120; 
 
-  desenharCardListaKPIs(slide, marginX, topY, cardW, cardH, CORES, dados.mensal, CORES.lightBlue);
-  desenharCardListaKPIs(slide, marginX + cardW + gap, topY, cardW, cardH, CORES, dados.anual, CORES.cardGreen);
+  // Desenha os cards com dados (Mensal = Azul, Anual = Verde)
+  desenharCardTempo(slide, marginX, topY, cardW, cardH, CORES, dados.mensal, CORES.lightBlue);
+  desenharCardTempo(slide, marginX + cardW + gap, topY, cardW, cardH, CORES, dados.anual, CORES.cardGreen);
 
-  // Espaço para Gráfico
-  const chartY = topY + cardH + 20;
+  // Espaço para Gráfico (Placeholder)
+  const chartY = topY + cardH + 15;
   const chartW = PageWidth - (2 * marginX);
-  const footerH = PageHeight - chartY - 20;
+  const footerH = PageHeight - chartY - 10;
 
   const ph = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, chartY, chartW, footerH);
   ph.getFill().setSolidFill(CORES.white);
   ph.getBorder().setDashStyle(SlidesApp.DashStyle.DASH).setWeight(1).getLineFill().setSolidFill('#CBD5E1');
 
   const chartTitle = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 15, chartY + 10, chartW - 30, 25);
-  chartTitle.getText().setText("BACKLOG DE CHAMADOS EMERGÊNCIAS")
+  chartTitle.getText().setText("EVOLUÇÃO DOS ACESSOS")
     .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.lightBlue).setFontFamily('Montserrat');
 
   const phTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, chartY + (footerH/2), chartW, 30);
@@ -50,44 +52,57 @@ function gerarSlideCorretivas() {
     .getTextStyle().setFontSize(10).setBold(true).setForegroundColor('#CBD5E1').setFontFamily('Montserrat');
   phTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   
-  Logger.log("Slide 6 (Corretivas) gerado com sucesso.");
+  Logger.log("Slide 04 (Acesso/Segurança) gerado com sucesso.");
 }
 
-// Função Auxiliar Local
-function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
+// Função Auxiliar Local (CORRIGIDA PARA EVITAR ERRO DE TEXTO)
+function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
+  // Sombra e Fundo
   const cSh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x+2, y+2, w, h);
   cSh.getFill().setSolidFill(CORES.shadow); cSh.getBorder().setTransparent(); cSh.sendToBack();
 
   const cBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
   cBg.getFill().setSolidFill(CORES.white); cBg.getBorder().setTransparent();
 
+  // Cabeçalho colorido
   const headerH = 35;
   const headerRound = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, headerH + 10);
   headerRound.getFill().setSolidFill(corTema); headerRound.getBorder().setTransparent();
 
-  // AJUSTE: Aumentei a altura para 25 e subi o ponto de início (-2) para "puxar o branco para baixo" visualmente
+  // Máscara branca
   const mask = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + headerH - 2, w, 25);
   mask.getFill().setSolidFill(CORES.white); mask.getBorder().setTransparent();
 
   const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 2, w - 30, headerH);
-  titleTxt.getText().setText(dados.titulo)
+  
+  // FIX: Garante que o título não seja nulo
+  let tituloTexto = dados.titulo ? String(dados.titulo) : "VISÃO GERAL";
+  titleTxt.getText().setText(tituloTexto)
     .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
   titleTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
   const startContentY = y + headerH + 5;
   const usableH = h - headerH - 15;
-  const rowH = usableH / 4;
+  
+  // Proteção: se kpis não existir, cria array vazio
+  const listaKPIs = dados.kpis || [];
+  const rowH = usableH / (listaKPIs.length || 1);
 
-  dados.kpis.forEach((kpi, i) => {
+  listaKPIs.forEach((kpi, i) => {
     const ry = startContentY + (i * rowH);
 
     const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.75, rowH);
-    lblBox.getText().setText(kpi.l)
+    // FIX: Converte label para String e garante valor
+    let labelTexto = kpi.l ? String(kpi.l) : "-";
+    lblBox.getText().setText(labelTexto)
       .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
     const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.75, ry, w * 0.20, rowH);
-    valBox.getText().setText(String(kpi.v))
+    // FIX CRÍTICO: Verifica se valor existe, converte para String e define padrão "-" se vazio
+    let valorTexto = (kpi.v !== undefined && kpi.v !== null && kpi.v !== "") ? String(kpi.v) : "-";
+    
+    valBox.getText().setText(valorTexto)
       .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     valBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);

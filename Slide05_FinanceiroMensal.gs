@@ -1,17 +1,22 @@
 // ==========================================
+// ARQUIVO: Slide05_FinanceiroMensal.gs
+// SLIDE 05 — RESULTADO OPERACIONAL (FINANCEIRO MENSAL)
+// ==========================================
+
+// ==========================================
 // CONFIGURAÇÃO DA FONTE DE DADOS
 // ==========================================
 
 const NOME_ABA_FINANCEIRO    = 'FINANCEIRO';
 
 // ==========================================
-// SLIDE 8: RESULTADO OPERACIONAL (FINANCEIRO - MENSAL)
+// PONTO DE ENTRADA
 // ==========================================
 function gerarSlideFinanceiro() {
-  const dados = obterDadosFinanceiroSlide08_();
+  const dados = obterDadosFinanceiroMensal_();
 
   if (!dados) {
-    Logger.log('Sem dados para o Slide 8.');
+    Logger.log('Sem dados para o Slide 05 (Financeiro Mensal).');
     return;
   }
 
@@ -48,14 +53,14 @@ function gerarSlideFinanceiro() {
   desenharGraficoBarrasReais(slide, rightColX, topY, rightColW, chartH, CORES, dados.dadosGrafico);
   desenharAreaJustificativa(slide, rightColX, topY + chartH + gap, rightColW, justifH, CORES);
 
-  Logger.log('Slide 8 (Financeiro) gerado com sucesso.');
+  Logger.log('Slide 05 (Financeiro Mensal) gerado com sucesso.');
 }
 
 
 // ==========================================
 // LEITURA DA PLANILHA
 // ==========================================
-function obterDadosFinanceiroSlide08_() {
+function obterDadosFinanceiroMensal_() {
   const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
   const aba = ss.getSheetByName(NOME_ABA_FINANCEIRO);
 

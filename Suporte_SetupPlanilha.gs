@@ -1,5 +1,6 @@
 /**
- * ARQUIVO: Setup_Planilha.gs
+ * ARQUIVO: Suporte_SetupPlanilha.gs
+ * SEÇÃO:   SUPORTE — Setup inicial (uso único)
  * DESCRIÇÃO: Script para rodar 1 ÚNICA VEZ no editor da planilha.
  *            Duplica as abas-modelo para cada cidade (CURITIBA, ITAJAI, ESTEIO),
  *            mantendo formatação, fórmulas e formatos.

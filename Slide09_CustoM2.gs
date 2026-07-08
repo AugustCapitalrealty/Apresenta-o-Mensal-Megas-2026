@@ -1,13 +1,13 @@
 // ==========================================
-// SLIDE 26: CUSTO DO M² (COMPLETO)
-// ==========================================
-// obterDadosCustoM2() está no arquivo Dados.gs
+// ARQUIVO: Slide09_CustoM2.gs
+// SLIDE 09 — CUSTO DO M² (COMPLETO)
+// Dados: obterDadosCustoM2() em 02_Dados.gs
 // ==========================================
 
 function gerarSlideCustoM2() {
   const dados = obterDadosCustoM2();
   if (!dados) {
-    Logger.log('Sem dados para o Slide 26 (Custo do M²).');
+    Logger.log('Sem dados para o Slide 09 (Custo do M²).');
     return;
   }
 
@@ -29,7 +29,7 @@ function gerarSlideCustoM2() {
   _custoDesenharKPIs  (slide, marginX, topY,              pageW - 2 * marginX, kpiH,   dados);
   _custoDesenharTabela(slide, marginX, topY + kpiH + gap, pageW - 2 * marginX, tableH, dados);
 
-  Logger.log('Slide 26 (Custo do M²) gerado → ' + dados.referencia.mesExtenso + ' ' + dados.referencia.ano);
+  Logger.log('Slide 09 (Custo do M²) gerado → ' + dados.referencia.mesExtenso + ' ' + dados.referencia.ano);
 }
 
 

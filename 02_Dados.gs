@@ -1,11 +1,12 @@
 /**
- * ARQUIVO: Dados.gs
- * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (setProjetoAtivo em Config.gs/Main.gs).
+ * ARQUIVO: 02_Dados.gs
+ * SEÇÃO:   NÚCLEO — Camada de dados
+ * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (setProjetoAtivo em 01_Config.gs/00_Main.gs).
  *            As abas são localizadas pelo NOME (cada cópia da planilha tem GIDs próprios).
  */
 
 // ==========================================
-// DADOS DASHBOARD (Slide 4)
+// DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {
   const SHEET_NAME = 'DADOS';
@@ -44,7 +45,7 @@ function obterDadosDashboard() {
 
 
 // ==========================================
-// DADOS PREVENTIVAS (Slide 5)
+// DADOS PREVENTIVAS (Slide 02)
 // ==========================================
 function obterDadosPreventivas() {
   try {
@@ -117,7 +118,7 @@ function obterDadosPreventivas() {
 
 
 // ==========================================
-// DADOS CORRETIVAS (Slide 6)
+// DADOS CORRETIVAS (Slide 03)
 // ==========================================
 function obterDadosCorretivasV6() {
   try {
@@ -164,14 +165,14 @@ function obterDadosCorretivasV6() {
     };
 
   } catch (e) {
-    Logger.log('Erro planilha Slide 6: ' + e.message);
+    Logger.log('Erro planilha Slide 03 (Corretivas): ' + e.message);
     return null;
   }
 }
 
 
 // ==========================================
-// DADOS TEMPO/SEGURANÇA (Slide 7)
+// DADOS ACESSO/SEGURANÇA (Slide 04)
 // ==========================================
 function obterDadosTempo() {
   try {
@@ -219,14 +220,14 @@ function obterDadosTempo() {
     };
 
   } catch (e) {
-    Logger.log('Erro planilha Slide 7: ' + e.message);
+    Logger.log('Erro planilha Slide 04 (Acesso/Segurança): ' + e.message);
     return null;
   }
 }
 
 
 // ==========================================
-// DADOS FINANCEIROS (Slide 8)
+// DADOS FINANCEIROS (Slide 05 - Financeiro Mensal)
 // ==========================================
 function obterDadosFinanceiro() {
   try {
@@ -276,7 +277,7 @@ function obterDadosFinanceiro() {
 
 
 // ==========================================
-// DADOS CUSTO M² (Slide Custo do m²)
+// DADOS CUSTO M² (Slide 09 - Custo do m²)
 // ==========================================
 //
 // Estrutura fixa da aba METRO QUADRADO (cidade na col A pode variar):
@@ -520,7 +521,7 @@ function formatarPorcentagem(val) {
 
 
 // ==========================================
-// DADOS DOCUMENTOS INQUILINOS (Slide Documentação Legal)
+// DADOS DOCUMENTOS INQUILINOS (Slide 11 - Documentação Legal)
 // ==========================================
 //
 // Aba 'DOCUMENTOS INQUILINOS':
@@ -687,7 +688,7 @@ function parseDataBR_(txt) {
 
 
 // ==========================================
-// DADOS ENERGIA SOLAR (Slide Energia Solar)
+// DADOS ENERGIA SOLAR (Slide 10 - Energia Solar)
 // ==========================================
 // Aba esperada: "ENERGIA SOLAR"
 // Linha 1 = cabeçalho: Mês | Geração (kWh) | Consumo (kWh) | CO² (t) | Carvão (t) | Árvores | KM neutro

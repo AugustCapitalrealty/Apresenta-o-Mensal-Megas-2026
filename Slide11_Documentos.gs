@@ -1,7 +1,8 @@
 // ==========================================
-// SLIDE: DOCUMENTAÇÃO LEGAL (DOCUMENTOS INQUILINOS)
+// ARQUIVO: Slide11_Documentos.gs
+// SLIDE 11 — DOCUMENTAÇÃO LEGAL (DOCUMENTOS INQUILINOS)
 // ==========================================
-// obterDadosDocumentos() está em Dados.gs
+// Dados: obterDadosDocumentos() em 02_Dados.gs
 //
 // Gera:
 //   1) Painel de resumo (contadores: Vencidos / Críticos / Em dia / Pendentes)

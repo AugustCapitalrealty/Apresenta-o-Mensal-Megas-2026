@@ -1,5 +1,7 @@
 // ==========================================
-// SLIDE 5: PREVENTIVAS (PADRONIZADO)
+// ARQUIVO: Slide02_Preventivas.gs
+// SLIDE 02 — PREVENTIVAS (PADRONIZADO)
+// Dados: obterDadosPreventivas() em 02_Dados.gs
 // ==========================================
 
 function gerarSlidePreventivas() {
@@ -25,7 +27,7 @@ function gerarSlidePreventivas() {
   const slaY = topY + cardH + 25, slaH = PageHeight - slaY - 20, slaW = PageWidth - (2 * marginX);
   _desenharListaServicos(slide, marginX, slaY, slaW, slaH, dados);
   
-  Logger.log("Slide 5 (Preventivas) gerado com sucesso.");
+  Logger.log("Slide 02 (Preventivas) gerado com sucesso.");
 }
 
 function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {

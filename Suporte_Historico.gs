@@ -1,8 +1,9 @@
 /**
- * ARQUIVO: Historico.gs
+ * ARQUIVO: Suporte_Historico.gs
+ * SEÇÃO:   SUPORTE — Versionamento
  * DESCRIÇÃO: Versionamento VISUAL das apresentações (estratégia híbrida).
  *            Para o histórico CONSULTÁVEL dos números/indicadores,
- *            veja RegistroDados.gs (aba HISTORICO na planilha).
+ *            veja Suporte_RegistroDados.gs (aba HISTORICO na planilha).
  *
  *   AUTOMÁTICO (toda execução):
  *     ▸ A revisão atual da apresentação é marcada como "manter para sempre"

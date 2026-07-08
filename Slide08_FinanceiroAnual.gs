@@ -1,10 +1,15 @@
 // ==========================================
+// ARQUIVO: Slide08_FinanceiroAnual.gs
+// SLIDE 08 — RESULTADO OPERACIONAL ANUAL (ACUMULADO)
+// ==========================================
+
+// ==========================================
 // CONFIGURAÇÃO DA FONTE DE DADOS - ANUAL
 // ==========================================
 const NOME_ABA_FINANCEIRO_ANUAL = 'FINANCEIRO ANUAL';
 
 // ==========================================
-// SLIDE RESULTADO OPERACIONAL ANUAL (ACUMULADO)
+// PONTO DE ENTRADA
 // ==========================================
 function gerarSlideFinanceiroAnual() {
   const dados = obterDadosFinanceiroAnual();

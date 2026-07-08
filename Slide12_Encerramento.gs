@@ -1,5 +1,6 @@
 // ==========================================
-// SLIDE 14: ENCERRAMENTO (CAPA FINAL)
+// ARQUIVO: Slide12_Encerramento.gs
+// SLIDE 12 — ENCERRAMENTO (CAPA FINAL)
 // ==========================================
 
 function gerarSlideEncerramento() {
@@ -105,7 +106,7 @@ function gerarSlideEncerramento() {
   logoBox.getText().setText("CAPITAL REALTY").getTextStyle().setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
   logoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  Logger.log("Slide 14 (Encerramento) gerado com sucesso.");
+  Logger.log("Slide 12 (Encerramento) gerado com sucesso.");
 }
 
 // --- FUNÇÃO AUXILIAR: CARD DE CONTATO (DIMENSÕES AJUSTADAS) ---

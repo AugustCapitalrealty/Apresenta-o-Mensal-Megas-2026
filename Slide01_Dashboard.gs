@@ -1,5 +1,7 @@
 // ==========================================
-// SLIDE 4: DASHBOARD
+// ARQUIVO: Slide01_Dashboard.gs
+// SLIDE 01 — DASHBOARD
+// Dados: obterDadosDashboard() em 02_Dados.gs
 // ==========================================
 
 function gerarSlideDashboard() {
@@ -88,5 +90,5 @@ function gerarSlideDashboard() {
     });
   });
   
-  Logger.log("Slide 4 (Dashboard) gerado com sucesso.");
+  Logger.log("Slide 01 (Dashboard) gerado com sucesso.");
 }
