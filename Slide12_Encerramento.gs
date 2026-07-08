@@ -79,21 +79,19 @@ function gerarSlideEncerramento() {
   thanksBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
 
-  // --- 4. SEÇÃO DE CONTATOS (CARDS MENORES) ---
+  // --- 4. SEÇÃO DE CONTATOS (por cidade, definidos em 01_Config.gs) ---
   const contactY = sloganY + 90;
-  // Reduzido W: 320->260, H: 80->60
   const cardW = 260;
   const cardH = 60;
   const cardGap = 30;
 
-  // Calcular posição X para centralizar os dois cards
-  const startX = (PageWidth - (cardW * 2) - cardGap) / 2;
+  const contatos = getProjetoAtivo().contatos || [];
+  const totalW = (cardW * contatos.length) + (cardGap * Math.max(contatos.length - 1, 0));
+  const startX = (PageWidth - totalW) / 2;
 
-  // Contato 1: Dionatan
-  desenharCardContato(slide, startX, contactY, cardW, cardH, "Dionatan Rek", "Supervisor de Facilities", "👔");
-
-  // Contato 2: Amanda
-  desenharCardContato(slide, startX + cardW + cardGap, contactY, cardW, cardH, "Amanda de Campos", "Analista de Facilities", "👤");
+  contatos.forEach((c, i) => {
+    desenharCardContato(slide, startX + i * (cardW + cardGap), contactY, cardW, cardH, c.nome, c.cargo, c.icone || '👤');
+  });
 
 
   // --- 5. LOGO RODAPÉ ---

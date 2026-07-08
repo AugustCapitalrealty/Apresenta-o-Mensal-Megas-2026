@@ -50,21 +50,37 @@ const CR_DESIGN_SYSTEM = {
 // para 'CURITIBA', 'ITAJAI' ou 'ESTEIO' e rode o orquestrador.
 // ==========================================
 
+// capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
+// capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
 const PROJETOS = {
   CURITIBA: {
     nome           : 'Mega Curitiba',
     spreadsheetId  : '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',
-    presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0'
+    presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
+    capaFotoId     : '',
+    contatos       : [
+      { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities', icone: '👔' },
+      { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities',   icone: '👤' }
+    ]
   },
   ITAJAI: {
     nome           : 'Mega Itajaí',
     spreadsheetId  : '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
-    presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY'
+    presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
+    capaFotoId     : '',
+    contatos       : [
+      { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities', icone: '👔' },
+      { nome: 'Amanda de Campos', cargo: 'Analista de Facilities',   icone: '👤' }
+    ]
   },
   ESTEIO: {
     nome           : 'Mega Esteio',
     spreadsheetId  : '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
-    presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc'
+    presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
+    capaFotoId     : '',
+    contatos       : [
+      { nome: 'José Ernesto', cargo: 'Responsável Facilities', icone: '👔' }
+    ]
   }
 };
 

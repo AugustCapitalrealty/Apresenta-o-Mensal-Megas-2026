@@ -34,19 +34,26 @@ segue a **ordem real de geração** definida em `00_Main.gs`.
 
 ### Slides (ordem da apresentação)
 
-| Arquivo | Slide | Fonte de dados (aba) |
+A ordem completa do deck (com capas de seção e slides de fotos intercalados)
+está no array `passos` do `00_Main.gs`. Arquivos:
+
+| Arquivo | Conteúdo | Fonte de dados (aba) |
 |---|---|---|
-| `Slide01_Dashboard.gs` | 01 — Dashboard geral | `DADOS` |
-| `Slide02_Preventivas.gs` | 02 — Manutenções preventivas | `PREVENTIVAS` |
-| `Slide03_Corretivas.gs` | 03 — Manutenções corretivas | `CORRETIVAS` |
-| `Slide04_AcessoSeguranca.gs` | 04 — Acesso e segurança | `TEMPO/SEGURANÇA` |
-| `Slide05_FinanceiroMensal.gs` | 05 — Resultado operacional mensal | `FINANCEIRO` |
-| `Slide06_FinanceiroBridge.gs` | 06 e 07 — Bridge de variação (tabela + gráfico) | `FINANCEIRO BRIDGE` |
-| `Slide08_FinanceiroAnual.gs` | 08 — Resultado operacional anual acumulado | `FINANCEIRO ANUAL` |
-| `Slide09_CustoM2.gs` | 09 — Custo do m² | `CUSTO M2` |
-| `Slide10_EnergiaSolar.gs` | 10 — Energia solar (só Curitiba) | `ENERGIA SOLAR` (planilha própria) |
-| `Slide11_Documentos.gs` | 11 — Documentação legal dos inquilinos (paginado) | `DOCUMENTOS INQUILINOS` |
-| `Slide12_Encerramento.gs` | 12 — Capa final / contatos | — |
+| `Slide00_Capa.gs` | Capa de abertura (mês de referência automático) | — |
+| `Slide00_Destaques.gs` | Destaques do Período — 4 painéis editáveis | texto do apresentador |
+| `Slide01_Dashboard.gs` | Dashboard geral | `DADOS` |
+| `Slide02_Preventivas.gs` | Manutenções preventivas | `PREVENTIVAS` |
+| `Slide03_Corretivas.gs` | Manutenções corretivas | `CORRETIVAS` |
+| `Slide04_AcessoSeguranca.gs` | Acesso e segurança | `TEMPO/SEGURANÇA` |
+| `Slide05_FinanceiroMensal.gs` | Resultado operacional mensal | `FINANCEIRO` |
+| `Slide06_FinanceiroBridge.gs` | Bridge de variação (tabela + gráfico) | `FINANCEIRO BRIDGE` |
+| `Slide08_FinanceiroAnual.gs` | Resultado operacional anual acumulado | `FINANCEIRO ANUAL` |
+| `Slide09_CustoM2.gs` | Custo do m² | `CUSTO M2` |
+| `Slide10_EnergiaSolar.gs` | Energia solar (só Curitiba) | `ENERGIA SOLAR` (planilha própria) |
+| `Slide11_Documentos.gs` | Documentação legal dos inquilinos (paginado) | `DOCUMENTOS INQUILINOS` |
+| `Slide12_Encerramento.gs` | Capa final / contatos por cidade | `contatos` em `01_Config.gs` |
+| `Slide_CapaSecao.gs` | Componente: capa de seção (chamado 6× pelo Main) | — |
+| `Slide_RegistroFotos.gs` | Componente: fotos + descrição do serviço (chamado 3×) | fotos do apresentador |
 
 ### Suporte
 

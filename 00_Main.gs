@@ -56,20 +56,32 @@ function gerarApresentacaoCompleta_() {
   const projeto = getProjetoAtivo();
   Logger.log('▶ Gerando apresentação de ' + projeto.nome);
 
-  // Ordem oficial da apresentação — os arquivos SlideNN_*.gs seguem esta numeração
+  // Ordem oficial da apresentação (espelha o relatório manual):
+  // capas de seção e slides de fotos são gerados entre os slides de dados.
   const passos = [
-    { nome: 'Slide 01 - Dashboard',          fn: gerarSlideDashboard       },
-    { nome: 'Slide 02 - Preventivas',        fn: gerarSlidePreventivas     },
-    { nome: 'Slide 03 - Corretivas',         fn: gerarSlideCorretivas      },
-    { nome: 'Slide 04 - Acesso e Segurança', fn: gerarSlideTempo           },
-    { nome: 'Slide 05 - Financeiro Mensal',  fn: gerarSlideFinanceiro      },
-    { nome: 'Slide 06 - Bridge Variação',    fn: gerarSlideBridge          },
-    { nome: 'Slide 07 - Bridge Gráfico',     fn: gerarSlideBridgeGrafico   },
-    { nome: 'Slide 08 - Financeiro Anual',   fn: gerarSlideFinanceiroAnual },
-    { nome: 'Slide 09 - Custo M²',           fn: gerarSlideCustoM2         },
-    { nome: 'Slide 10 - Energia Solar',      fn: gerarSlideEnergiaSolar    },
-    { nome: 'Slide 11 - Documentação Legal', fn: gerarSlideDocumentos      },
-    { nome: 'Slide 12 - Encerramento',       fn: gerarSlideEncerramento    }
+    { nome: 'Capa de Abertura',                    fn: gerarSlideCapa },
+    { nome: 'Destaques do Período',                fn: gerarSlideDestaques },
+    { nome: 'Dashboard',                           fn: gerarSlideDashboard },
+    { nome: 'Capa Seção - Manutenção Preventiva',  fn: () => gerarCapaSecao('MANUTENÇÃO', 'PREVENTIVA') },
+    { nome: 'Preventivas',                         fn: gerarSlidePreventivas },
+    { nome: 'Capa Seção - Manutenção Corretiva',   fn: () => gerarCapaSecao('MANUTENÇÃO', 'CORRETIVA') },
+    { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
+    { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS') },
+    { nome: 'Fotos - Serviços Contratados',        fn: () => gerarSlideRegistroFotos('SERVIÇOS CONTRATADOS') },
+    { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS') },
+    { nome: 'Fotos - Serviços Internos',           fn: () => gerarSlideRegistroFotos('SERVIÇOS INTERNOS') },
+    { nome: 'Capa Seção - Segurança Patrimonial',  fn: () => gerarCapaSecao('SEGURANÇA', 'PATRIMONIAL') },
+    { nome: 'Acesso e Segurança',                  fn: gerarSlideTempo },
+    { nome: 'Fotos - Serviços Segurança',          fn: () => gerarSlideRegistroFotos('SERVIÇOS SEGURANÇA') },
+    { nome: 'Capa Seção - Resultado Operacional',  fn: () => gerarCapaSecao('RESULTADO', 'OPERACIONAL') },
+    { nome: 'Financeiro Mensal',                   fn: gerarSlideFinanceiro },
+    { nome: 'Bridge Variação',                     fn: gerarSlideBridge },
+    { nome: 'Bridge Gráfico',                      fn: gerarSlideBridgeGrafico },
+    { nome: 'Financeiro Anual',                    fn: gerarSlideFinanceiroAnual },
+    { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
+    { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
+    { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
+    { nome: 'Encerramento',                        fn: gerarSlideEncerramento }
   ];
 
   const erros = [];
@@ -101,4 +113,12 @@ function limparApresentacao_() {
 function regerarApresentacaoCompleta_() {
   limparApresentacao_();
   gerarApresentacaoCompleta_();
+
+  // A capa agora é GERADA (gerarSlideCapa), então o primeiro slide antigo
+  // que limparApresentacao_ preservou fica obsoleto — remove se sobrou.
+  const slides = getDeckAtivo().getSlides();
+  if (slides.length > 1) {
+    slides[0].remove();
+    Logger.log('  Capa antiga (slide 1) removida — capa gerada assumiu o lugar.');
+  }
 }
