@@ -56,6 +56,23 @@ segue a **ordem real de geração** definida em `00_Main.gs`.
 | `Suporte_Historico.gs` | Versionamento visual no Drive + cópias "VERSÃO FINAL" sob demanda |
 | `Suporte_SetupPlanilha.gs` | Setup inicial (uso único): duplica abas-modelo por cidade |
 
+## Design system
+
+O visual segue o **design system Capital Realty** portado do Boletim Propriedades &
+Facilities (repo `Boletim-2026`). A fonte única de verdade é o objeto
+`CR_DESIGN_SYSTEM` em `01_Config.gs`:
+
+- **Cores:** azuis institucionais (`brandDark #151E49`, `brandMed #003D7B`,
+  `brandLight #065CA9`), fundo claro `#F8FAFC`, cards brancos com borda `#E2E8F0`
+  e acentos semânticos (verde/laranja/vermelho) para status.
+- **Tipografia:** Montserrat para títulos, Open Sans para corpo.
+- **Cabeçalho padrão (`criarHeaderPadrao`):** estilo "aberto" — título escuro sobre
+  fundo claro com barra de destaque, subtítulo, logo Capital Realty à direita,
+  linha separadora com segmento de accent e elipse decorativa suave ao fundo.
+- O objeto legado `CORES` foi mantido por compatibilidade: as chaves antigas agora
+  derivam dos tokens do `CR_DESIGN_SYSTEM`, então todos os slides herdam o tema
+  automaticamente.
+
 ## Convenções
 
 - Cada arquivo `SlideNN_*.gs` expõe uma função `gerarSlideXxx()` chamada pelo

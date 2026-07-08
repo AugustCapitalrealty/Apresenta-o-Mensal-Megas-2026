@@ -1,8 +1,47 @@
 /**
  * ARQUIVO: 01_Config.gs
- * SEÇÃO:   NÚCLEO — Configuração
- * DESCRIÇÃO: Paleta de cores, projetos por cidade e header padrão.
+ * SEÇÃO:   NÚCLEO — Configuração e Design System
+ * DESCRIÇÃO: Design system Capital Realty (portado do Boletim-2026),
+ *            projetos por cidade e componentes visuais padrão.
  */
+
+// ==========================================
+// DESIGN SYSTEM — CAPITAL REALTY
+// ==========================================
+// Portado do Boletim Propriedades & Facilities (repo Boletim-2026).
+// Fonte única de verdade visual: os slides consomem estes tokens
+// diretamente ou através do objeto legado CORES (mais abaixo).
+// ==========================================
+const CR_DESIGN_SYSTEM = {
+  colors: {
+    brandDark:  '#151E49',  // azul institucional — títulos, barras escuras
+    brandMed:   '#003D7B',  // azul médio — bandas de grupo, subtítulos fortes
+    brandLight: '#065CA9',  // azul claro — accent principal, barras laterais
+    brandSoft:  '#93C5FD',  // azul suave — séries secundárias de gráfico
+    bgSlide:    '#F8FAFC',  // fundo padrão dos slides
+    cardBg:     '#FFFFFF',  // fundo de cards e molduras de gráfico
+    textMain:   '#151E49',  // texto principal
+    textBody:   '#475569',  // texto de apoio / corpo
+    lines:      '#E2E8F0',  // bordas de card e linhas separadoras
+    accentGreen:  '#10B981',  // status positivo
+    accentOrange: '#F97316',  // status de atenção
+    accentRed:    '#EF4444'   // status negativo
+  },
+  typography: {
+    titles: 'Montserrat',
+    body:   'Open Sans'
+  },
+  layout: {
+    marginX: 30,   // margem lateral padrão dos slides
+    headerH: 64    // altura reservada pelo cabeçalho padrão
+  },
+  assets: {
+    logoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4',  // logo Capital Realty (mesmo do boletim)
+    logoW: 112,
+    logoH: 32
+  }
+};
+
 
 // ==========================================
 // PROJETOS POR CIDADE
@@ -55,42 +94,94 @@ function getDeckAtivo() {
 }
 
 
-// Paleta de Cores Global
+// ==========================================
+// PALETA LEGADA (COMPATIBILIDADE)
+// ==========================================
+// As chaves são mantidas porque todos os slides as referenciam;
+// os valores agora derivam do CR_DESIGN_SYSTEM acima.
+// ==========================================
 const CORES = {
   // Cores Base
-  darkBlue: '#151E49', mediumBlue: '#003D7B', lightBlue: '#065CA9',
-  bgSlide: '#F4F6F9', white: '#FFFFFF', shadow: '#D1D5DB',
-  textHeader: '#FFFFFF', textDark: '#1E293B', textGray: '#64748B', textPrev: '#9CA3AF',
-  lineSeparator: '#E2E8F0',
+  darkBlue:   CR_DESIGN_SYSTEM.colors.brandDark,
+  mediumBlue: CR_DESIGN_SYSTEM.colors.brandMed,
+  lightBlue:  CR_DESIGN_SYSTEM.colors.brandLight,
+  softBlue:   CR_DESIGN_SYSTEM.colors.brandSoft,
+  bgSlide:    CR_DESIGN_SYSTEM.colors.bgSlide,
+  white: '#FFFFFF', shadow: '#D1D5DB',
+  textHeader: '#FFFFFF',
+  textDark:   CR_DESIGN_SYSTEM.colors.textMain,
+  textGray:   CR_DESIGN_SYSTEM.colors.textBody,
+  textPrev:   '#9CA3AF',
+  lineSeparator: CR_DESIGN_SYSTEM.colors.lines,
 
-  // --- CORES TEMÁTICAS (SLIDE 4 - DASHBOARD) ---
+  // --- CORES TEMÁTICAS (SLIDE 01 - DASHBOARD) ---
   themeAtivos: '#1E3A8A', // 1. AZUL (Forte/Institucional)
-  themePrev: '#10B981',   // 2. VERDE (Sucesso/Preventiva)
-  themeCorr: '#F59E0B',   // 3. AMARELO (Alerta/Corretiva) - Tom Âmbar para leitura
+  themePrev:   CR_DESIGN_SYSTEM.colors.accentGreen, // 2. VERDE (Sucesso/Preventiva)
+  themeCorr:   '#F59E0B', // 3. AMARELO (Alerta/Corretiva) - Tom Âmbar para leitura
   themeAcesso: '#0EA5E9', // 4. AZUL CLARO (Céu/Acesso)
 
   // Cores Específicas Slide 02 - Preventivas (Mantive compatibilidade)
-  cardBlue: '#065CA9', cardGreen: '#10B981', cardRed: '#EF4444',
+  cardBlue:  CR_DESIGN_SYSTEM.colors.brandLight,
+  cardGreen: CR_DESIGN_SYSTEM.colors.accentGreen,
+  cardRed:   CR_DESIGN_SYSTEM.colors.accentRed,
   textPurple: '#9333EA', textOrange: '#D97706'
 };
 
-// Função para criar o cabeçalho padrão azul
+
+// ==========================================
+// COMPONENTES VISUAIS PADRÃO
+// ==========================================
+
+/**
+ * Cabeçalho padrão — estilo "aberto" do boletim: título escuro sobre fundo
+ * claro com barra de destaque, subtítulo, logo à direita e linha separadora.
+ * Ocupa a mesma faixa vertical do header antigo (0 a ~64pt), então os slides
+ * existentes não precisam reposicionar conteúdo.
+ */
 function criarHeaderPadrao(slide, titulo, subtitulo) {
-  // Pega a apresentação ativa diretamente para evitar erros
   const deck = getDeckAtivo();
-  const W = deck.getPageWidth();
+  const W  = deck.getPageWidth();
+  const DS = CR_DESIGN_SYSTEM;
+  const mX = DS.layout.marginX;
 
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, 60);
-  bg.getFill().setSolidFill(CORES.darkBlue); bg.getBorder().setTransparent();
+  // Grafismo de fundo — elipse suave no canto superior direito (assinatura do boletim)
+  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 350, -80, 450, 450);
+  ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.03);
+  ellipse.getBorder().setTransparent();
 
-  const b = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 60, W, 4);
-  b.getFill().setSolidFill(CORES.lightBlue); b.getBorder().setTransparent();
+  // Barra de destaque à esquerda do título
+  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, mX, 13, 5, 36);
+  bar.getFill().setSolidFill(DS.colors.brandLight);
+  bar.getBorder().setTransparent();
 
-  const txt1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 30, 8, 400, 25);
-  txt1.getText().setText(titulo).getTextStyle().setFontSize(18).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
+  // Título
+  const txt1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mX + 14, 6, W - mX - 200, 30);
+  txt1.getText().setText(titulo).getTextStyle()
+    .setFontSize(19).setBold(true)
+    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
 
-  if(subtitulo) {
-    const txt2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 30, 32, 500, 20);
-    txt2.getText().setText(subtitulo).getTextStyle().setFontSize(9).setBold(true).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
+  // Subtítulo
+  if (subtitulo) {
+    const txt2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mX + 14, 34, W - mX - 200, 18);
+    txt2.getText().setText(subtitulo).getTextStyle()
+      .setFontSize(9.5).setBold(false)
+      .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
   }
+
+  // Logo no canto superior direito (não quebra a geração se indisponível)
+  try {
+    const logoBlob = DriveApp.getFileById(DS.assets.logoId).getBlob();
+    slide.insertImage(logoBlob, W - mX - DS.assets.logoW, 14, DS.assets.logoW, DS.assets.logoH);
+  } catch (e) {
+    Logger.log('Aviso (Header): logo não carregado. ' + e.message);
+  }
+
+  // Linha separadora de largura total + segmento de destaque
+  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 0, 62, W, 62);
+  sep.getLineFill().setSolidFill(DS.colors.lines);
+  sep.setWeight(1);
+
+  const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, mX, 62, mX + 110, 62);
+  acc.getLineFill().setSolidFill(DS.colors.brandLight);
+  acc.setWeight(3);
 }
