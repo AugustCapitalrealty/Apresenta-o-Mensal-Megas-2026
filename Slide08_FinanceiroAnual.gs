@@ -140,7 +140,7 @@ function obterDadosFinanceiroAnual() {
   const periodoDetectado = detectarPeriodoAnual_(valores[0]);
 
   return {
-    nomeEmpreendimento: 'Mega Itajaí',
+    nomeEmpreendimento: getProjetoAtivo().nome,
     periodo           : periodoDetectado || 'Acumulado Anual',
     totalOrcado,
     totalRealizado,
@@ -241,8 +241,10 @@ function desenharCardDriversAnual(slide, x, y, w, h, CORES, dados) {
   const sectionH = (h - 50) / 2;
 
   const yAcima = y + 8;
-  const tAcima = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, yAcima, w - 20, 20);
-  tAcima.getText().setText('🔴 ACIMA DO ORÇADO (ACUMULADO)')
+  const dotA = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 12, yAcima + 5, 8, 8);
+  dotA.getFill().setSolidFill('#DC2626'); dotA.getBorder().setTransparent();
+  const tAcima = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 24, yAcima, w - 34, 20);
+  tAcima.getText().setText('ACIMA DO ORÇADO (ACUMULADO)')
     .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor('#DC2626').setFontFamily('Montserrat');
 
@@ -256,8 +258,10 @@ function desenharCardDriversAnual(slide, x, y, w, h, CORES, dados) {
   lAcima.getText().getParagraphStyle().setLineSpacing(120);
 
   const yAbaixo = y + (h / 2) + 5;
-  const tAbaixo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, yAbaixo, w - 20, 20);
-  tAbaixo.getText().setText('🟢 ABAIXO DO ORÇADO (ACUMULADO)')
+  const dotB = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 12, yAbaixo + 5, 8, 8);
+  dotB.getFill().setSolidFill('#16A34A'); dotB.getBorder().setTransparent();
+  const tAbaixo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 24, yAbaixo, w - 34, 20);
+  tAbaixo.getText().setText('ABAIXO DO ORÇADO (ACUMULADO)')
     .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor('#16A34A').setFontFamily('Montserrat');
 
@@ -281,9 +285,10 @@ function desenharGraficoBarrasReaisAnual(slide, x, y, w, h, CORES, dadosGrafico)
   bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
   bg.getBorder().setWeight(1);
 
-  const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 260, 20);
-  title.getText().setText('ORÇADO vs REALIZADO (ACUMULADO)')
-    .getTextStyle().setFontSize(10).setBold(true)
+  // Título em linha única (largura até a legenda) para não sobrepor as barras
+  const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 200, 20);
+  title.getText().setText('ORÇADO vs REALIZADO — ACUMULADO')
+    .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
 
   desenharItemLegendaPosicionado(slide, 19.13, 3.56, 19.54, 3.25, '#E2E8F0', 'Orçado',           CORES);
@@ -356,7 +361,7 @@ function desenharAreaJustificativaAnual(slide, x, y, w, h, CORES) {
   criarCardPainel(slide, x, y, w, h, null, CORES.textOrange);
 
   const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 3, w - 20, 15);
-  title.getText().setText('📝 NOTAS EXPLICATIVAS / JUSTIFICATIVAS (ACUMULADO)')
+  title.getText().setText('NOTAS EXPLICATIVAS / JUSTIFICATIVAS (ACUMULADO)')
     .getTextStyle().setFontSize(8).setBold(true)
     .setForegroundColor(CORES.textOrange).setFontFamily('Montserrat');
 

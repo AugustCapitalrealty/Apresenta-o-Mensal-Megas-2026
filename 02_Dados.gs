@@ -6,6 +6,54 @@
  */
 
 // ==========================================
+// MÊS DE REFERÊNCIA DA APRESENTAÇÃO
+// ==========================================
+// Lê o mês do cabeçalho da aba DADOS (ex.: 'MAI') — o mesmo que alimenta o
+// Dashboard — para que capa, subtítulos e rodapé falem do MESMO mês dos
+// dados. Fallback: mês anterior ao calendário. Resultado em cache por cidade.
+// ==========================================
+const MESES_NOME_REF = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
+                        'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+const MESES_3_REF    = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+let _mesRefCache = {};
+
+function obterMesReferencia_() {
+  const chave = getProjetoAtivo().nome;
+  if (_mesRefCache[chave]) return _mesRefCache[chave];
+
+  const hoje = new Date();
+  let idx = -1;
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('DADOS') || ss.getSheets()[0];
+    const cab   = String(sheet.getRange(1, 2).getDisplayValue() || '').toUpperCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    idx = MESES_3_REF.findIndex(m => cab.indexOf(m) === 0);
+  } catch (e) {
+    Logger.log('Mês de referência: usando fallback de calendário. ' + e.message);
+  }
+  if (idx < 0) {
+    const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior
+    idx = ant.getMonth();
+  }
+  // Se o mês de referência for "maior" que o mês atual, é do ano passado
+  const ano  = idx > hoje.getMonth() ? hoje.getFullYear() - 1 : hoje.getFullYear();
+  const nome = MESES_NOME_REF[idx];
+
+  const ref = {
+    index : idx,
+    nome  : nome,                                              // MAIO
+    curto : nome.charAt(0) + nome.slice(1).toLowerCase(),      // Maio
+    ano   : ano,
+    label : nome + ' / ' + ano,                                // MAIO / 2026
+    rodape: nome.charAt(0) + nome.slice(1, 3).toLowerCase() + '/' + ano  // Mai/2026
+  };
+  _mesRefCache[chave] = ref;
+  return ref;
+}
+
+
+// ==========================================
 // DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {
@@ -61,9 +109,13 @@ function obterDadosPreventivas() {
       counts          : { facilities: 0, terceiros: 0 }
     };
 
-    let mesAtual = (data.length > 0 && data[0][1]) ? String(data[0][1]).toUpperCase() : 'MÊS';
-    res.mensal.titulo = 'VISÃO MENSAL (' + mesAtual + ')';
-    res.anual.titulo  = 'VISÃO ACUMULADA (2025)';
+    // Só acrescenta o mês entre parênteses se o cabeçalho for de fato um mês
+    // (planilhas com cabeçalho "MENSAL" geravam "VISÃO MENSAL (MENSAL)")
+    const mesAtual = (data.length > 0 && data[0][1]) ? String(data[0][1]).toUpperCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') : '';
+    const ehMes = MESES_3_REF.some(m => mesAtual.indexOf(m) === 0);
+    res.mensal.titulo = ehMes ? 'VISÃO MENSAL (' + mesAtual + ')' : 'VISÃO MENSAL';
+    res.anual.titulo  = 'VISÃO ACUMULADA (' + obterMesReferencia_().ano + ')';
 
     const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     let rawServices = [];
@@ -503,8 +555,10 @@ function nomeMesExtensoCusto_(mes3) {
 function formatarTempo(val) {
   if (!val || val === '-' || val === '') return '-';
   let s = String(val).trim();
-  if (s.toLowerCase().includes('h') || s.includes(':')) return s;
-  if (!isNaN(parseFloat(s.replace(',', '.')))) return s + 'h';
+  // Já formatado como tempo ("5m45s", "08:30", "12h") → devolve como está.
+  // Só anexa "h" quando o valor é PURAMENTE numérico.
+  if (/[hms:]/i.test(s)) return s;
+  if (/^-?\d+([.,]\d+)?$/.test(s)) return s + 'h';
   return s;
 }
 
@@ -619,6 +673,8 @@ function obterDadosDocumentos() {
       // Atualiza empresa atual (ignora se contiver texto de cabeçalho)
       if (empresa && norm(empresa) !== 'empresa') empresaAtual = empresa;
       if (!documento) continue;  // pula linhas sem documento
+      // pula "documentos" sem nenhuma letra/número (célula com traço, ponto etc.)
+      if (!/[0-9a-z]/.test(norm(documento))) continue;
 
       // Calcula dias a partir da data de vencimento (dd/MM/aaaa) vs. hoje
       const dataVenc = parseDataBR_(venc);

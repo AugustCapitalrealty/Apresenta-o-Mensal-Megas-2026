@@ -31,13 +31,13 @@ function gerarSlideEnergiaSolar() {
   const cardW   = (W - marginX * 2 - gap * 3) / 4;
 
   const COR_GER = '#10B981';  // verde — geração
-  const COR_CON = '#F87171';  // vermelho claro — consumo
+  const COR_CON = '#94A3B8';  // cinza-ardósia — consumo (neutro; vermelho lia como alarme)
 
   const kpis = [
-    { label: 'CO² neutralizado (t)',  val: atual.co2,     ant: anterior ? anterior.co2     : null, fmt: v => _solarFmtDec(v, 2), icon: '🌿' },
-    { label: 'Carvão evitado (t)',    val: atual.carvao,  ant: anterior ? anterior.carvao  : null, fmt: v => _solarFmtDec(v, 2), icon: '♻️' },
-    { label: 'Árvores plantadas',     val: atual.arvores, ant: anterior ? anterior.arvores : null, fmt: v => _solarFmtInt(v),    icon: '🌳' },
-    { label: 'KM neutro veículo',     val: atual.km,      ant: anterior ? anterior.km      : null, fmt: v => _solarFmtInt(v),    icon: '🚗' }
+    { label: 'CO² neutralizado (t)',  val: atual.co2,     ant: anterior ? anterior.co2     : null, fmt: v => _solarFmtDec(v, 2) },
+    { label: 'Carvão evitado (t)',    val: atual.carvao,  ant: anterior ? anterior.carvao  : null, fmt: v => _solarFmtDec(v, 2) },
+    { label: 'Árvores plantadas',     val: atual.arvores, ant: anterior ? anterior.arvores : null, fmt: v => _solarFmtInt(v) },
+    { label: 'KM neutro veículo',     val: atual.km,      ant: anterior ? anterior.km      : null, fmt: v => _solarFmtInt(v) }
   ];
 
   kpis.forEach((k, i) => {
@@ -127,8 +127,8 @@ function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
       const gb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, bBase - gH, barW, gH);
       gb.getFill().setSolidFill(corGer); gb.getBorder().setTransparent();
       const gLabelX = sx + barW / 2 - slotW / 2;
-      _sTxt(slide, gLabelX, bBase - gH - 16, slotW, 14,
-        _solarFmtKwh(m.geracao), 7, true, corGer, 'center');
+      _sTxt(slide, gLabelX, bBase - gH - 14, slotW, 12,
+        _solarFmtKwh(m.geracao), 6, true, corGer, 'center');
     }
 
     // Barra Consumo — label centralizada na barra, largura = slotW inteiro
@@ -138,17 +138,17 @@ function _solarGrafico(slide, x, y, w, h, meses, corGer, corCon) {
       const cb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, bBase - cH, barW, cH);
       cb.getFill().setSolidFill(corCon); cb.getBorder().setTransparent();
       const cLabelX = cx + barW / 2 - slotW / 2;
-      _sTxt(slide, cLabelX, bBase - cH - 16, slotW, 14,
-        _solarFmtKwh(m.consumo), 7, true, corCon, 'center');
+      _sTxt(slide, cLabelX, bBase - cH - 14, slotW, 12,
+        _solarFmtKwh(m.consumo), 6, true, '#64748B', 'center');
     }
 
     // Label X
     _sTxt(slide, plotX + i * slotW, bBase + 4, slotW, 12, m.mes, 6.5, false, CORES.textDark, 'center');
   });
 
-  // Legenda
-  const legY = y + h - 10;
-  const legX = x + mL;
+  // Legenda no topo direito (não disputa espaço com os rótulos do eixo X)
+  const legY = y + 6;
+  const legX = x + w - 200;
   _solarRect(slide, legX,      legY, 10, 8, corGer);
   _sTxt(slide, legX + 12, legY - 1, 80, 11, 'Geração (kWh)',  7, false, CORES.textDark, 'left');
   _solarRect(slide, legX + 95, legY, 10, 8, corCon);

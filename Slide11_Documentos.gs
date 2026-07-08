@@ -186,7 +186,7 @@ function desenharPaginaResumoDocumentos_(dados) {
     const pill  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pill.getFill().setSolidFill(cor); pill.getBorder().setTransparent();
     const pillTxt = pill.getText();
-    pillTxt.setText(DOC_LABEL_CATEGORIA[it.categoria])
+    pillTxt.setText(DOC_LABEL_CATEGORIA[it.categoria] || 'PENDENTE')
       .getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
     pillTxt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     pill.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
@@ -286,7 +286,7 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     const pill  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pill.getFill().setSolidFill(cor); pill.getBorder().setTransparent();
     const pt = pill.getText();
-    pt.setText(DOC_LABEL_CATEGORIA[it.categoria])
+    pt.setText(DOC_LABEL_CATEGORIA[it.categoria] || 'PENDENTE')
       .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(CORES.white).setFontFamily('Montserrat');
     pt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     pill.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);

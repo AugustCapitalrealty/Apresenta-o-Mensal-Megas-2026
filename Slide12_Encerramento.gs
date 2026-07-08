@@ -80,7 +80,7 @@ function gerarSlideEncerramento() {
 
 
   // --- 4. SEÇÃO DE CONTATOS (por cidade, definidos em 01_Config.gs) ---
-  const contactY = sloganY + 90;
+  const contactY = sloganY + 78;   // respiro entre os cards e o logo do rodapé
   const cardW = 260;
   const cardH = 60;
   const cardGap = 30;
@@ -90,7 +90,7 @@ function gerarSlideEncerramento() {
   const startX = (PageWidth - totalW) / 2;
 
   contatos.forEach((c, i) => {
-    desenharCardContato(slide, startX + i * (cardW + cardGap), contactY, cardW, cardH, c.nome, c.cargo, c.icone || '👤');
+    desenharCardContato(slide, startX + i * (cardW + cardGap), contactY, cardW, cardH, c.nome, c.cargo);
   });
 
 
@@ -107,22 +107,25 @@ function gerarSlideEncerramento() {
   Logger.log("Slide 12 (Encerramento) gerado com sucesso.");
 }
 
-// --- FUNÇÃO AUXILIAR: CARD DE CONTATO (DIMENSÕES AJUSTADAS) ---
-function desenharCardContato(slide, x, y, w, h, nome, cargo, icone) {
+// --- FUNÇÃO AUXILIAR: CARD DE CONTATO ---
+function desenharCardContato(slide, x, y, w, h, nome, cargo) {
   // Fundo
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill('#FFFFFF', 0.1);
   bg.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.2);
   bg.getBorder().setWeight(1);
 
-  // Ícone (Menor: 45->35)
+  // Círculo com as iniciais do nome (duas primeiras palavras)
   const iconSize = 35;
   const iconBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 15, y + (h - iconSize)/2, iconSize, iconSize);
   iconBg.getFill().setSolidFill('#065CA9');
   iconBg.getBorder().setTransparent();
 
+  const iniciais = String(nome || '').trim().split(/\s+/).slice(0, 2)
+    .map(p => p.charAt(0).toUpperCase()).join('');
   const iconTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + (h - iconSize)/2, iconSize, iconSize);
-  iconTxt.getText().setText(icone).getTextStyle().setFontSize(16); // Fonte ícone menor
+  iconTxt.getText().setText(iniciais).getTextStyle()
+    .setFontSize(12).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
   iconTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   iconTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 

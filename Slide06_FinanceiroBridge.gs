@@ -101,9 +101,23 @@ function obterDadosBridge() {
     const ano  = m[2].length === 2 ? m[2] : m[2].slice(-2);
     const label = m[1].toUpperCase() + '/' + ano;
 
-    grupos.push({ label, tipo, cOrc: c, cReal: c + 1, cVar: c + 2 });
+    grupos.push({ label, mes: m[1].toUpperCase(), ano, tipo, cOrc: c, cReal: c + 1, cVar: c + 2 });
   }
   if (!grupos.length) throw new Error('Nenhuma coluna de mês encontrada em "' + NOME_ABA_BRIDGE + '".');
+
+  // ── Blindagem: normaliza anos fora do padrão pelo ano predominante ────────
+  // (célula com "Fev/25" no meio de um bloco 2026 gerava rótulo FEV/25)
+  {
+    const contagem = {};
+    grupos.forEach(g => { contagem[g.ano] = (contagem[g.ano] || 0) + 1; });
+    const anoModa = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a])[0];
+    grupos.forEach(g => {
+      if (g.ano !== anoModa) {
+        g.ano   = anoModa;
+        g.label = g.mes + '/' + anoModa;
+      }
+    });
+  }
 
   // ── Localiza linha TOTAL (ou soma tudo) ───────────────────────────────────
   let vetor = null;
@@ -395,120 +409,90 @@ function gerarSlideBridgeGrafico() {
   card.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
   card.getBorder().setWeight(1);
 
-  // ── Legenda ────────────────────────────────────────────────────────────
-  _bridgeLegenda(slide, marginX + 20, topY + 10);
+  // ── Chips de resumo no topo (a mensagem-chave do slide) ─────────────────
+  const chip = (cx, cw, titulo, valor, positivo) => {
+    const bgC  = positivo ? '#F0FDF4' : '#FEF2F2';
+    const txtC = positivo ? '#166534' : '#DC2626';
+    const box = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, topY + 9, cw, 30);
+    box.getFill().setSolidFill(bgC); box.getBorder().setTransparent();
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 10, topY + 9, cw - 20, 30);
+    const tr = t.getText();
+    tr.setText(titulo + '  ' + valor);
+    tr.getTextStyle().setFontSize(8.5).setBold(true).setForegroundColor(txtC).setFontFamily('Montserrat');
+    tr.getRange(0, titulo.length).getTextStyle().setFontSize(7).setForegroundColor(positivo ? '#15803D' : '#B91C1C');
+    t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  };
 
-  // ── Sequência de barras: [Orçado] + meses + [Realizado/Projetado] ──────
-  const inicio = d.totalOrcAnual;     // orçado anual
-  const passos = [];
-  let acumulado = inicio;
-  passos.push({ tipo: 'TOTAL', label: 'ORÇADO', topo: inicio, base: inicio, valor: inicio, cor: '#94A3B8' });
+  const pctReal  = d.totalOrc > 0 ? (Math.abs(d.totalVar / d.totalOrc) * 100).toFixed(1) : '0';
+  const pctAnual = d.totalOrcAnual > 0 ? (Math.abs(d.varAnual / d.totalOrcAnual) * 100).toFixed(1) : '0';
+  chip(marginX + 16, 300, 'REALIZADO ATÉ AGORA',
+       (d.totalVar >= 0 ? '▼ ' : '▲ ') + formatarMoeda(Math.abs(d.totalVar)) + ' ' +
+       (d.totalVar >= 0 ? 'abaixo' : 'acima') + ' do orçado (' + pctReal + '%)', d.totalVar >= 0);
+  chip(marginX + 16 + 312, 280, 'PROJEÇÃO ANUAL',
+       (d.varAnual >= 0 ? '▼ ' : '▲ ') + formatarMoeda(Math.abs(d.varAnual)) + ' ' +
+       (d.varAnual >= 0 ? 'abaixo' : 'acima') + ' (' + pctAnual + '%)', d.varAnual >= 0);
 
-  d.meses.forEach(m => {
-    const delta = m.real - m.orc;     // >0 gastou mais (sobe) ; <0 economizou (desce)
-    const antes = acumulado;
-    acumulado  += delta;
-    const topo  = Math.max(antes, acumulado);
-    const base  = Math.min(antes, acumulado);
-    const subiu = delta > 0;          // subir = acima do orçado (ruim)
-    const cor   = m.tipo === 'RITMO' ? '#F59E0B' : (subiu ? '#EF4444' : '#10B981');
-    passos.push({ tipo: 'STEP', label: m.label, topo, base, valor: delta, cor, subiu, ritmo: m.tipo === 'RITMO' });
+  // ── Barras divergentes: variação mensal vs orçado ────────────────────────
+  // Acima do orçado (real > orç) = barra p/ CIMA em vermelho;
+  // economia = barra p/ BAIXO em verde; meses de RITMO = âmbar.
+  const meses = d.meses.map(m => {
+    const delta = m.real - m.orc;    // >0 = acima do orçado
+    return {
+      label: m.label, delta,
+      cor: m.tipo === 'RITMO' ? '#F59E0B' : (delta > 0 ? '#EF4444' : '#10B981'),
+      ritmo: m.tipo === 'RITMO'
+    };
   });
 
-  passos.push({ tipo: 'TOTAL', label: 'REAL./PROJ.', topo: acumulado, base: acumulado, valor: acumulado, cor: CORES.darkBlue });
+  const maxUp   = Math.max(1, ...meses.filter(m => m.delta > 0).map(m => m.delta));
+  const maxDown = Math.max(1, ...meses.filter(m => m.delta < 0).map(m => -m.delta));
 
-  // ── Escala a partir do ZERO ───────────────────────────────────────────────
-  // Base em zero (intuitiva): as barras-total mostram a proporção real e os
-  // valores de cada variação ficam legíveis pelos rótulos acima das barras.
-  let vMax = -Infinity;
-  passos.forEach(p => { vMax = Math.max(vMax, p.base, p.topo); });
-  const escMin  = 0;
-  const escMax  = vMax * 1.08;
-  const escSpan = escMax - escMin;
+  const plotX = marginX + 24;
+  const plotY = topY + 56;
+  const plotW = cardW - 48;
+  const plotH = cardH - 56 - 44;      // reserva topo (chips) e rodapé (legenda)
 
-  const plotX = marginX + 30;
-  const plotY = topY + 44;
-  const plotW = cardW - 60;
-  const plotH = cardH - 100;
-  const baseY = plotY + plotH;                          // base do plot (= escMin)
+  // Divide o plot entre lado positivo e negativo na proporção dos dados
+  let fracUp = maxUp / (maxUp + maxDown);
+  fracUp = Math.max(0.25, Math.min(0.75, fracUp));
+  const upH   = (plotH - 30) * fracUp;      // 30pt reservados p/ rótulos nas pontas
+  const downH = (plotH - 30) * (1 - fracUp);
+  const zeroY = plotY + 15 + upH;
 
-  const n     = passos.length;
-  const slotW = plotW / n;
-  const barW  = Math.min(slotW * 0.58, 44);
-  // valor (absoluto, no eixo) → coordenada Y na tela
-  const vToY  = v => baseY - ((v - escMin) / escSpan) * plotH;
+  // Linha do zero (eixo)
+  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, zeroY, plotW, 1.4);
+  eixo.getFill().setSolidFill('#94A3B8'); eixo.getBorder().setTransparent();
 
-  // ── Linhas de grade horizontais (4 faixas) + rótulos do eixo ──────────────
-  for (let g = 0; g <= 4; g++) {
-    const val = escMin + (escSpan * g / 4);
-    const gy  = vToY(val);
-    const grid = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, gy, plotW, 0.75);
-    grid.getFill().setSolidFill(g === 0 ? '#CBD5E1' : '#EEF2F7'); grid.getBorder().setTransparent();
-    const gl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX - 30, gy - 7, 28, 14);
-    gl.getText().setText(formatarMoedaCompacta(val)).getTextStyle()
-      .setFontSize(5.5).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
-    gl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-  }
+  const n     = meses.length;
+  const slotW = plotW / Math.max(n, 1);
+  const barW  = Math.min(slotW * 0.5, 34);
 
-  let prevConnX = null, prevConnY = null;
-
-  passos.forEach((p, i) => {
+  meses.forEach((m, i) => {
     const cx   = plotX + i * slotW + (slotW - barW) / 2;
-    let yTop, yBot;
-    if (p.tipo === 'TOTAL') {
-      // barra cheia: do topo do valor até a base do plot
-      yTop = vToY(p.topo);
-      yBot = baseY;
-    } else {
-      yTop = vToY(p.topo);
-      yBot = vToY(p.base);
-    }
-    const hBar = Math.max(yBot - yTop, 3);
+    const mag  = Math.abs(m.delta);
+    const hBar = Math.max(m.delta > 0 ? (mag / maxUp) * upH : (mag / maxDown) * downH, 3);
+    const yBar = m.delta > 0 ? zeroY - hBar : zeroY + 1.4;
 
-    // Conector horizontal do passo anterior até este (na altura do acumulado)
-    if (prevConnX !== null && prevConnY !== null) {
-      const conn = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, prevConnX, prevConnY, cx - prevConnX, 1);
-      conn.getFill().setSolidFill('#CBD5E1'); conn.getBorder().setTransparent();
-    }
+    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
+    bar.getFill().setSolidFill(m.cor); bar.getBorder().setTransparent();
 
-    // Barra
-    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yTop, barW, hBar);
-    bar.getFill().setSolidFill(p.cor); bar.getBorder().setTransparent();
+    // Valor na ponta da barra
+    const lblY = m.delta > 0 ? yBar - 14 : yBar + hBar + 2;
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, lblY, slotW * 1.4, 12);
+    lbl.getText().setText((m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag)).getTextStyle()
+      .setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
+    lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Valor acima da barra
-    const lblVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - slotW * 0.25, yTop - 15, barW + slotW * 0.5, 13);
-    let txtVal;
-    if (p.tipo === 'TOTAL') txtVal = formatarMoedaCompacta(p.valor);
-    else txtVal = (p.subiu ? '+' : '−') + formatarMoedaCompacta(Math.abs(p.valor));
-    const tv = lblVal.getText();
-    tv.setText(txtVal).getTextStyle()
-      .setFontSize(6).setBold(true).setForegroundColor(p.tipo === 'TOTAL' ? CORES.textDark : p.cor).setFontFamily('Montserrat');
-    tv.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    // Rótulo do mês/etapa abaixo da base
-    const lblCat = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.15, baseY + 4, slotW * 1.3, 14);
-    const tc = lblCat.getText();
-    tc.setText(p.label).getTextStyle()
-      .setFontSize(p.tipo === 'TOTAL' ? 6 : 5.5).setBold(p.tipo === 'TOTAL')
-      .setForegroundColor(p.tipo === 'TOTAL' ? CORES.darkBlue : CORES.textGray).setFontFamily('Montserrat');
-    tc.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    prevConnX = cx + barW;
-    // conector sai da altura do acumulado final deste passo
-    prevConnY = (p.tipo === 'TOTAL' && i === n - 1) ? null
-              : (p.tipo === 'TOTAL' ? vToY(p.topo) : (p.subiu ? yTop : yBot));
+    // Mês junto ao eixo, do lado oposto ao da barra
+    const mesY = m.delta > 0 ? zeroY + 4 : zeroY - 15;
+    const mes = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, mesY, slotW * 1.4, 12);
+    mes.getText().setText(m.label).getTextStyle()
+      .setFontSize(6).setBold(m.ritmo).setForegroundColor(m.ritmo ? '#B45309' : CORES.textGray).setFontFamily('Montserrat');
+    mes.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   });
 
-  // ── Rodapé resumo ─────────────────────────────────────────────────────
-  const abAnual = d.varAnual >= 0;
-  const corR    = abAnual ? '#166534' : '#DC2626';
-  const resumo  = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 20, topY + cardH - 26, cardW - 40, 18);
-  const rt = resumo.getText();
-  rt.setText('Projeção anual ' + (abAnual ? 'ABAIXO' : 'ACIMA') + ' do orçado em ' +
-             formatarMoeda(Math.abs(d.varAnual)) +
-             ' (' + (d.totalOrcAnual > 0 ? (Math.abs(d.varAnual / d.totalOrcAnual) * 100).toFixed(1) : '0') + '%).')
-    .getTextStyle().setFontSize(9).setBold(true).setItalic(true).setForegroundColor(corR).setFontFamily('Montserrat');
-  rt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  // ── Legenda centralizada no rodapé do card ───────────────────────────────
+  _bridgeLegenda(slide, marginX + (cardW - 390) / 2, topY + cardH - 26);
 
   Logger.log('Slide Gráfico Bridge gerado (' + d.meses.length + ' meses).');
 }

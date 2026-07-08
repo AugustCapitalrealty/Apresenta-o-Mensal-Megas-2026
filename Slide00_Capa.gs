@@ -3,11 +3,8 @@
  * SLIDE 00 — CAPA DE ABERTURA
  * Baseada na capa do relatório manual ("RESULTADOS FACILITIES"),
  * redesenhada no design system Capital Realty.
- * O mês de referência é o mês ANTERIOR ao da geração (mês fechado).
+ * O mês de referência vem dos DADOS (obterMesReferencia_ em 02_Dados.gs).
  */
-
-const MESES_CAPA = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
-                    'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
 function gerarSlideCapa() {
   const deck  = getDeckAtivo();
@@ -56,8 +53,9 @@ function gerarSlideCapa() {
   pillTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   pillTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-  const ref = new Date(); ref.setDate(0);   // último dia do mês anterior
-  const mesLabel = MESES_CAPA[ref.getMonth()] + ' / ' + ref.getFullYear();
+  // Mês de referência = o mesmo mês dos DADOS (obterMesReferencia_ em 02_Dados.gs),
+  // para a capa nunca divergir do conteúdo apresentado.
+  const mesLabel = obterMesReferencia_().label;
   const data = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 212, pillY, 220, 26);
   data.getText().setText(mesLabel).getTextStyle()
     .setFontSize(12).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);

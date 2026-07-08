@@ -60,6 +60,7 @@ function gerarApresentacaoCompleta_() {
   // capas de seção e slides de fotos são gerados entre os slides de dados.
   const passos = [
     { nome: 'Capa de Abertura',                    fn: gerarSlideCapa },
+    { nome: 'Agenda',                              fn: gerarSlideAgenda },
     { nome: 'Destaques do Período',                fn: gerarSlideDestaques },
     { nome: 'Dashboard',                           fn: gerarSlideDashboard },
     { nome: 'Capa Seção - Manutenção Preventiva',  fn: () => gerarCapaSecao('MANUTENÇÃO', 'PREVENTIVA') },

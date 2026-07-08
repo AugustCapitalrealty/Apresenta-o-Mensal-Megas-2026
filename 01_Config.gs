@@ -59,8 +59,8 @@ const PROJETOS = {
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
     contatos       : [
-      { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities', icone: '👔' },
-      { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities',   icone: '👤' }
+      { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
+      { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
     ]
   },
   ITAJAI: {
@@ -69,8 +69,8 @@ const PROJETOS = {
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
     contatos       : [
-      { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities', icone: '👔' },
-      { nome: 'Amanda de Campos', cargo: 'Analista de Facilities',   icone: '👤' }
+      { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
+      { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
     ]
   },
   ESTEIO: {
@@ -79,7 +79,7 @@ const PROJETOS = {
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
     contatos       : [
-      { nome: 'José Ernesto', cargo: 'Responsável Facilities', icone: '👔' }
+      { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
   }
 };
@@ -200,6 +200,48 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
   const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, mX, 62, mX + 110, 62);
   acc.getLineFill().setSolidFill(DS.colors.brandLight);
   acc.setWeight(3);
+
+  // Rodapé discreto: cidade · mês de referência · nº do slide
+  try {
+    const H   = deck.getPageHeight();
+    const ref = obterMesReferencia_();
+    const pag = String(deck.getSlides().length).padStart(2, '0');
+    const foot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, W - 270, H - 14, 240, 12);
+    foot.getText().setText(getProjetoAtivo().nome + ' · ' + ref.rodape + ' · ' + pag)
+      .getTextStyle().setFontSize(6.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+    foot.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  } catch (e) {
+    Logger.log('Aviso (Rodapé): ' + e.message);
+  }
+}
+
+/**
+ * Formata número no padrão brasileiro quando o valor for numérico
+ * (66336 → "66.336"; 27.91 → "27,91"). Valores não numéricos passam direto.
+ */
+function formatarNumeroBR(valor) {
+  if (valor === null || valor === undefined || valor === '' || valor === '-') return '-';
+  const s = String(valor).trim();
+  if (/[^\d.,\-\s]/.test(s)) return s;   // tem %, h, letras etc. → já formatado
+  const n = s.includes(',') ? Number(s.replace(/\./g, '').replace(',', '.')) : Number(s);
+  if (isNaN(n)) return s;
+  const temDecimal = Math.abs(n % 1) > 1e-9;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: temDecimal ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
+
+/**
+ * Cor semântica para percentuais de SLA (regra do boletim):
+ * ≥95 verde, ≥90 âmbar, <90 vermelho. Sem número → cor padrão.
+ */
+function corPorSLA(valor, corPadrao) {
+  const n = parseFloat(String(valor == null ? '' : valor).replace('%', '').replace(',', '.'));
+  if (isNaN(n)) return corPadrao || CR_DESIGN_SYSTEM.colors.textMain;
+  if (n < 90) return CR_DESIGN_SYSTEM.colors.accentRed;
+  if (n < 95) return '#F59E0B';
+  return CR_DESIGN_SYSTEM.colors.accentGreen;
 }
 
 /**
@@ -279,7 +321,12 @@ function criarCardPainel(slide, x, y, w, h, titulo, cor) {
   side.getBorder().setTransparent();
 
   if (titulo) {
-    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, y + 6, w - 24, 18);
+    // Marcador quadrado na cor do tema antes do título (substitui emojis)
+    const marca = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 11, 7, 7);
+    marca.getFill().setSolidFill(corTema);
+    marca.getBorder().setTransparent();
+
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 27, y + 6, w - 37, 18);
     t.getText().setText(String(titulo)).getTextStyle()
       .setFontSize(10).setBold(true)
       .setForegroundColor(corTema).setFontFamily(DS.typography.titles);

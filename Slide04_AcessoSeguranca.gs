@@ -72,19 +72,18 @@ function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
   listaKPIs.forEach((kpi, i) => {
     const ry = startContentY + (i * rowH);
 
-    const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.75, rowH);
+    const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.58, rowH);
     // FIX: Converte label para String e garante valor
     let labelTexto = kpi.l ? String(kpi.l) : "-";
     lblBox.getText().setText(labelTexto)
       .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.75, ry, w * 0.20, rowH);
-    // FIX CRÍTICO: Verifica se valor existe, converte para String e define padrão "-" se vazio
-    let valorTexto = (kpi.v !== undefined && kpi.v !== null && kpi.v !== "") ? String(kpi.v) : "-";
-
-    valBox.getText().setText(valorTexto)
-      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+    // Coluna de valor larga (0.34 da largura) para não quebrar textos da planilha
+    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.60, ry, w * 0.34, rowH);
+    let valorTexto = (kpi.v !== undefined && kpi.v !== null && kpi.v !== "") ? String(kpi.v) : "—";
+    valBox.getText().setText(formatarNumeroBR(valorTexto))
+      .getTextStyle().setFontSize(9.5).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     valBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });

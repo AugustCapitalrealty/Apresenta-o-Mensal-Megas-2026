@@ -12,7 +12,7 @@ function gerarSlidePreventivas() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
   const PageWidth = deck.getPageWidth(), PageHeight = deck.getPageHeight();
 
-  criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA', 'Aderência ao Cronograma e Desvios - 2025');
+  criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA', 'Aderência ao Cronograma e Desvios — ' + obterMesReferencia_().ano);
 
   const marginX = 50;
   // AJUSTE: Alterado para 80px (antes era 90) para alinhar com os outros slides
@@ -36,7 +36,27 @@ function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {
   const colW = (w - 20) / 3;
   _itemSimples(slide, x + 10, contentY, colW, 'PREVISTAS', dados.previstas, CORES.textGray, CORES.textDark);
   _itemSimples(slide, x + 10 + colW, contentY, colW, 'REALIZADAS', dados.realizadas, CORES.textGray, CORES.textDark);
-  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA', dados.sla, CORES.textGray, corTema);
+  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA', dados.sla, CORES.textGray, corPorSLA(dados.sla, corTema));
+
+  // Barra de progresso Realizadas/Previstas (preenche o espaço inferior do card)
+  const prev = parseInt(String(dados.previstas).replace(/\D/g, ''), 10);
+  const real = parseInt(String(dados.realizadas).replace(/\D/g, ''), 10);
+  if (prev > 0 && !isNaN(real)) {
+    const pct = Math.max(0, Math.min(1, real / prev));
+    const bx = x + 15, bw = w - 105, by = y + h - 24, bh = 8;
+
+    const trilho = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, bx, by, bw, bh);
+    trilho.getFill().setSolidFill('#EEF2F7'); trilho.getBorder().setTransparent();
+
+    if (pct > 0.02) {
+      const fill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, bx, by, Math.max(bw * pct, 10), bh);
+      fill.getFill().setSolidFill(corTema); fill.getBorder().setTransparent();
+    }
+
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx + bw + 6, by - 4, 80, 16);
+    lbl.getText().setText(Math.round(pct * 100) + '% realizado').getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+  }
 }
 
 function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal) {
@@ -55,16 +75,25 @@ function _desenharListaServicos(slide, x, y, w, h, dadosGerais) {
   criarCardPainel(slide, x, y, w, h, null, CORES.cardRed);
 
   const headerH = 30;
-  const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 30, 25);
-  const titleString = '⚠️ RELAÇÃO DE SERVIÇOS QUE NÃO CUMPRIRAM O SLA';
-  const facString = `   Facilities: ${counts.facilities}`;
-  const tercString = `   |   Terceiros: ${counts.terceiros}`;
-  
-  const textRange = titleTxt.getText();
-  textRange.setText(titleString + facString + tercString);
-  textRange.getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.cardRed).setFontFamily('Montserrat');
-  textRange.getRange(titleString.length, titleString.length + facString.length).getTextStyle().setForegroundColor(CORES.textPurple);
-  textRange.getRange(titleString.length + facString.length, titleString.length + facString.length + tercString.length).getTextStyle().setForegroundColor(CORES.textOrange);
+  const titleTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 5, w - 250, 25);
+  titleTxt.getText().setText('RELAÇÃO DE SERVIÇOS QUE NÃO CUMPRIRAM O SLA').getTextStyle()
+    .setFontSize(10).setBold(true).setForegroundColor(CORES.cardRed).setFontFamily('Montserrat');
+
+  // Chips de legenda com bolinha colorida (Facilities / Terceiros)
+  const chips = [
+    { txt: 'Facilities: ' + counts.facilities, cor: CORES.lightBlue },
+    { txt: 'Terceiros: ' + counts.terceiros,   cor: CORES.textOrange }
+  ];
+  let chipX = x + w - 220;
+  chips.forEach(c => {
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, chipX, y + 11, 8, 8);
+    dot.getFill().setSolidFill(c.cor); dot.getBorder().setTransparent();
+    const ct = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, chipX + 12, y + 5, 90, 20);
+    ct.getText().setText(c.txt).getTextStyle()
+      .setFontSize(8.5).setBold(true).setForegroundColor(c.cor).setFontFamily('Montserrat');
+    ct.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    chipX += 108;
+  });
 
   const listY = y + headerH + 15, listH = h - headerH - 25;
   const servicos = dadosGerais.servicosForaSla;
@@ -93,8 +122,8 @@ function _colunaTexto(slide, x, y, w, h, items) {
     bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(9).setBold(true);
     const textPart = textRange.appendText(item.text + '\n');
     const style = textPart.getTextStyle();
-    style.setFontSize(9).setFontFamily('Montserrat').setBold(true); 
-    if (item.type === 'FACILITIES') style.setForegroundColor(CORES.textPurple);
+    style.setFontSize(9).setFontFamily('Montserrat').setBold(true);
+    if (item.type === 'FACILITIES') style.setForegroundColor(CORES.lightBlue);
     else style.setForegroundColor(CORES.textOrange);
   });
   box.getText().getParagraphStyle().setLineSpacing(130);

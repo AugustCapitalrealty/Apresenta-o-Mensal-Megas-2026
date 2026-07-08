@@ -105,7 +105,10 @@ function _custoDesenharTabela(slide, x, y, w, h, dados) {
     }
   }
 
-  const linhas  = Object.keys(tabela);
+  // Remove linhas sem nenhum valor numérico (sobras de formatação da planilha)
+  const linhas = Object.keys(tabela).filter(k =>
+    (tabela[k] || []).some(v => v !== '' && v !== null && v !== undefined && !isNaN(parseNum(v)))
+  );
   const mesRef  = dados.referencia.index;   // índice do mês atual (já sem "Ano")
 
   // ── Dimensões ─────────────────────────────────────────────────────────────

@@ -137,7 +137,7 @@ function obterDadosFinanceiroMensal_() {
 
   return {
     nomeEmpreendimento: getProjetoAtivo().nome,
-    periodo           : 'Mês Atual',
+    periodo           : obterMesReferencia_().curto + ' ' + obterMesReferencia_().ano,
     totalOrcado,
     totalRealizado,
     acimaDoOrcado,
@@ -218,8 +218,10 @@ function desenharCardDrivers(slide, x, y, w, h, CORES, dados) {
   const sectionH = (h - 50) / 2;
 
   const yAcima = y + 8;
-  const tAcima = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, yAcima, w - 20, 20);
-  tAcima.getText().setText('🔴 ACIMA DO ORÇADO')
+  const dotA = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 12, yAcima + 5, 8, 8);
+  dotA.getFill().setSolidFill('#DC2626'); dotA.getBorder().setTransparent();
+  const tAcima = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 24, yAcima, w - 34, 20);
+  tAcima.getText().setText('ACIMA DO ORÇADO')
     .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor('#DC2626').setFontFamily('Montserrat');
 
@@ -233,8 +235,10 @@ function desenharCardDrivers(slide, x, y, w, h, CORES, dados) {
   lAcima.getText().getParagraphStyle().setLineSpacing(120);
 
   const yAbaixo = y + (h / 2) + 5;
-  const tAbaixo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, yAbaixo, w - 20, 20);
-  tAbaixo.getText().setText('🟢 ABAIXO DO ORÇADO')
+  const dotB = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 12, yAbaixo + 5, 8, 8);
+  dotB.getFill().setSolidFill('#16A34A'); dotB.getBorder().setTransparent();
+  const tAbaixo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 24, yAbaixo, w - 34, 20);
+  tAbaixo.getText().setText('ABAIXO DO ORÇADO')
     .getTextStyle().setFontSize(9).setBold(true)
     .setForegroundColor('#16A34A').setFontFamily('Montserrat');
 
@@ -365,7 +369,7 @@ function desenharAreaJustificativa(slide, x, y, w, h, CORES) {
   criarCardPainel(slide, x, y, w, h, null, CORES.textOrange);
 
   const title = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 3, w - 20, 15);
-  title.getText().setText('📝 NOTAS EXPLICATIVAS / JUSTIFICATIVAS')
+  title.getText().setText('NOTAS EXPLICATIVAS / JUSTIFICATIVAS')
     .getTextStyle().setFontSize(8).setBold(true)
     .setForegroundColor(CORES.textOrange).setFontFamily('Montserrat');
 
