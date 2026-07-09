@@ -5,11 +5,22 @@
 // ==========================================
 
 function gerarSlideCorretivas() {
-  const dados = obterDadosCorretivasV6();
-  
+  // A aba de indicadores de corretivas pode não existir na planilha da cidade.
+  // Ainda assim o slide DEVE aparecer (com os cards em placeholder e o espaço
+  // reservado para o gráfico) — no futuro os KPIs virão da planilha validada.
+  let dados = obterDadosCorretivasV6();
   if (!dados) {
-    Logger.log("Sem dados para o Slide 03 (Corretivas).");
-    return;
+    const linhas = () => [
+      { l: 'Chamados criados',                    v: '—' },
+      { l: 'Chamados fechados',                    v: '—' },
+      { l: 'Tempo médio entre criado e fechado',   v: '—' },
+      { l: 'Índice de disponibilidade',            v: '—' }
+    ];
+    dados = {
+      mensal: { titulo: 'VISÃO MENSAL',    kpis: linhas() },
+      anual:  { titulo: 'VISÃO ACUMULADA', kpis: linhas() }
+    };
+    Logger.log('Corretivas: sem aba de indicadores — cards em placeholder.');
   }
 
   const deck = getDeckAtivo();

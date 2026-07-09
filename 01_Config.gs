@@ -212,19 +212,6 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
   const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, mX, 62, mX + 110, 62);
   acc.getLineFill().setSolidFill(DS.colors.brandLight);
   acc.setWeight(3);
-
-  // Rodapé discreto: cidade · mês de referência · nº do slide
-  try {
-    const H   = deck.getPageHeight();
-    const ref = obterMesReferencia_();
-    const pag = String(deck.getSlides().length).padStart(2, '0');
-    const foot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, W - 270, H - 14, 240, 12);
-    foot.getText().setText(getProjetoAtivo().nome + ' · ' + ref.rodape + ' · ' + pag)
-      .getTextStyle().setFontSize(6.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
-    foot.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-  } catch (e) {
-    Logger.log('Aviso (Rodapé): ' + e.message);
-  }
 }
 
 /**
