@@ -605,7 +605,10 @@ function obterDadosFinanceiro() {
 //    IPTU/m² = Real 2026 − Real 2026 sem IPTU  (só aparece nos meses com IPTU)
 //
 // ==========================================
+let _custoM2Cache = {};
 function obterDadosCustoM2() {
+  const _ckCusto = getProjetoAtivo().nome;
+  if (_custoM2Cache[_ckCusto]) return _custoM2Cache[_ckCusto];
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('METRO QUADRADO');
@@ -699,7 +702,7 @@ function obterDadosCustoM2() {
                ' | mês=' + mesRef.nomeMesExtenso + ' ' + mesRef.ano +
                ' | Orç=' + orcado + ' Real=' + realizado);
 
-    return {
+    const _resCusto = {
       referencia: {
         mes        : mesRef.nome,
         mesExtenso : mesRef.nomeMesExtenso,
@@ -717,11 +720,70 @@ function obterDadosCustoM2() {
       tabela,
       meses: meses.map(m => m.nome)
     };
+    _custoM2Cache[_ckCusto] = _resCusto;
+    return _resCusto;
 
   } catch (e) {
     Logger.log('Erro Custo M2: ' + e.message);
     return null;
   }
+}
+
+// ==========================================
+// HELPERS DE m² DERIVADOS (para o financeiro e o bridge)
+// ==========================================
+
+// Custo por m² ACUMULADO = MÉDIA dos R$/m² mensais até o mês de referência
+// (soma dos m² de cada mês ÷ nº de meses). Fonte: aba METRO QUADRADO.
+// Retorna { orcado, realizado, meses } (números) ou null.
+function obterCustoM2Acumulado_() {
+  const cm = obterDadosCustoM2();
+  if (!cm || !cm.tabela) return null;
+
+  const keys  = Object.keys(cm.tabela);
+  const kOrc  = keys.find(k => /^or[cç]/i.test(k));
+  const kReal = keys.find(k => /^real/i.test(k) && !/sem iptu/i.test(k));
+  const refIdx = cm.referencia.index;
+
+  const media = arr => {
+    if (!arr) return NaN;
+    let soma = 0, n = 0;
+    for (let i = 0; i <= refIdx && i < arr.length; i++) {
+      const v = arr[i];
+      if (v != null && !isNaN(v) && v > 0) { soma += Number(v); n++; }
+    }
+    return n > 0 ? soma / n : NaN;
+  };
+
+  const orc  = media(cm.tabela[kOrc]);
+  const real = media(cm.tabela[kReal]);
+  return {
+    orcado    : isNaN(orc)  ? null : orc,
+    realizado : isNaN(real) ? null : real,
+    meses     : refIdx + 1
+  };
+}
+
+// R$/m² Orçado e Real de CADA mês, indexado pelas 3 primeiras letras do mês
+// ('jan' → { orc, real }). Usado pelo bridge para mostrar o m² por mês.
+function obterCustoM2PorMes_() {
+  const cm = obterDadosCustoM2();
+  if (!cm || !cm.tabela) return {};
+
+  const keys  = Object.keys(cm.tabela);
+  const kOrc  = keys.find(k => /^or[cç]/i.test(k));
+  const kReal = keys.find(k => /^real/i.test(k) && !/sem iptu/i.test(k));
+
+  const mapa = {};
+  (cm.meses || []).forEach((nome, i) => {
+    const chave = String(nome || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').substring(0, 3);
+    if (!chave) return;
+    mapa[chave] = {
+      orc  : cm.tabela[kOrc]  ? cm.tabela[kOrc][i]  : null,
+      real : cm.tabela[kReal] ? cm.tabela[kReal][i] : null
+    };
+  });
+  return mapa;
 }
 
 

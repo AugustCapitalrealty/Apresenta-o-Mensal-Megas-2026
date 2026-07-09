@@ -297,6 +297,17 @@ function formatarReaisM2_(valor, area) {
 }
 
 /**
+ * Formata um valor JÁ em R$/m² (ex.: 4,62 → "R$ 4,62/m²"). '' se inválido.
+ * Com sinal opcional para variações (+/−).
+ */
+function formatarRsM2_(v, comSinal) {
+  if (v == null || isNaN(v)) return '';
+  const abs = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sinal = comSinal ? (v >= 0 ? '+' : '−') : '';
+  return sinal + 'R$ ' + abs + '/m²';
+}
+
+/**
  * Cor semântica para percentuais de SLA (regra do boletim):
  * ≥95 verde, ≥90 âmbar, <90 vermelho. Sem número → cor padrão.
  */

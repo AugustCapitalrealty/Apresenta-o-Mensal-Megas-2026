@@ -284,8 +284,13 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
   const availH   = h - headH - 10;
   const rowH     = Math.max(14, Math.min(22, availH / d.meses.length));
 
+  // m² por mês → segunda linha (cinza) nas células Orçado e Real
+  const m2Mes = obterCustoM2PorMes_();
+  const key3  = lbl => String(lbl || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').substring(0, 3);
+
   d.meses.forEach((m, i) => {
-    const ry  = startY + i * rowH;
+    const ry   = startY + i * rowH;
+    const cmM2 = m2Mes[key3(m.label)];
     const abaixo = m.var >= 0;
     const corVar = m.tipo === 'RITMO' ? '#D97706' : (abaixo ? '#166534' : '#DC2626');
     const bgVarPill = m.tipo === 'RITMO' ? '#FFF7ED' : (abaixo ? '#F0FDF4' : '#FEF2F2');
@@ -309,9 +314,20 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     };
 
+    // Célula com R$ em cima e R$/m² (cinza, menor) embaixo
+    const _celM2 = (valorStr, m2Str, col, cor) => {
+      const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, ry, col.w, rowH);
+      const t = b.getText();
+      const txt = m2Str ? valorStr + '\n' + m2Str : valorStr;
+      t.setText(txt).getTextStyle().setFontSize(7.5).setBold(false).setForegroundColor(cor).setFontFamily('Montserrat');
+      if (m2Str) t.getRange(valorStr.length + 1, txt.length).getTextStyle().setFontSize(5.5).setForegroundColor('#94A3B8');
+      t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+      b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    };
+
     _cel(m.label,                      cols[0], CORES.darkBlue,  true);
-    _cel(formatarMoeda(m.orc),         cols[2], CORES.textDark,  false);
-    _cel(formatarMoeda(m.real),        cols[3], CORES.textDark,  false);
+    _celM2(formatarMoeda(m.orc),  cmM2 && cmM2.orc  != null && !isNaN(cmM2.orc)  ? formatarRsM2_(Number(cmM2.orc))  : '', cols[2], CORES.textDark);
+    _celM2(formatarMoeda(m.real), cmM2 && cmM2.real != null && !isNaN(cmM2.real) ? formatarRsM2_(Number(cmM2.real)) : '', cols[3], CORES.textDark);
     _cel(seta + formatarMoeda(Math.abs(m.var)), cols[4], corVar, true);
 
     // Pill TIPO (REAL / RITMO)
@@ -458,17 +474,46 @@ function gerarSlideBridgeGrafico() {
   const upH   = (plotH - 30) * fracUp;      // 30pt reservados p/ rótulos nas pontas
   const downH = (plotH - 30) * (1 - fracUp);
   const zeroY = plotY + 15 + upH;
+  const baseBottom = zeroY + downH;         // base das barras (fim da zona de variação)
 
-  // Linha do zero (eixo)
-  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX, zeroY, plotW, 1.4);
-  eixo.getFill().setSolidFill('#94A3B8'); eixo.getBorder().setTransparent();
+  // m² por mês (para o rótulo de variação por m²)
+  const m2Mes = obterCustoM2PorMes_();
+  const key3  = lbl => String(lbl || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').substring(0, 3);
 
   const n     = meses.length;
-  const slotW = plotW / Math.max(n, 1);
+  const slotW = plotW / (n + 2);            // +2 slots para as pontas (orçado / projetado)
   const barW  = Math.min(slotW * 0.5, 34);
 
+  // Linha do zero (eixo) — apenas sob a zona das variações mensais
+  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW, zeroY, plotW - 2 * slotW, 1.4);
+  eixo.getFill().setSolidFill('#94A3B8'); eixo.getBorder().setTransparent();
+
+  // ── Pontas do waterfall: ORÇADO ANUAL (início) e PROJETADO (fim) ─────────
+  const orcAnual  = d.totalOrcAnual;
+  const projAnual = d.totalProjetado;
+  const fullH  = upH + downH;
+  const maxEnd = Math.max(orcAnual, projAnual, 1);
+  const drawEndpoint = (slotIdx, val, cor, linha1, linha2) => {
+    const h  = Math.max((val / maxEnd) * fullH, 4);
+    const cx = plotX + slotIdx * slotW + (slotW - barW) / 2;
+    const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseBottom - h, barW, h);
+    bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+    const tot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom - h - 14, slotW * 1.5, 12);
+    tot.getText().setText(formatarMoedaCompacta(val)).getTextStyle()
+      .setFontSize(7).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+    tot.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    const cap = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom + 3, slotW * 1.5, 22);
+    cap.getText().setText(linha1 + (linha2 ? '\n' + linha2 : '')).getTextStyle()
+      .setFontSize(6).setBold(true).setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
+    cap.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  };
+  drawEndpoint(0,     orcAnual,  '#94A3B8',       'ORÇADO', 'ANUAL');
+  drawEndpoint(n + 1, projAnual, CORES.darkBlue,  'PROJETADO', '');
+
+  // ── Barras de variação mensal (slots 1..n) ──────────────────────────────
   meses.forEach((m, i) => {
-    const cx   = plotX + i * slotW + (slotW - barW) / 2;
+    const slotIdx = i + 1;
+    const cx   = plotX + slotIdx * slotW + (slotW - barW) / 2;
     const mag  = Math.abs(m.delta);
     const hBar = Math.max(m.delta > 0 ? (mag / maxUp) * upH : (mag / maxDown) * downH, 3);
     const yBar = m.delta > 0 ? zeroY - hBar : zeroY + 1.4;
@@ -476,16 +521,26 @@ function gerarSlideBridgeGrafico() {
     const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
     bar.getFill().setSolidFill(m.cor); bar.getBorder().setTransparent();
 
-    // Valor na ponta da barra
-    const lblY = m.delta > 0 ? yBar - 14 : yBar + hBar + 2;
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, lblY, slotW * 1.4, 12);
-    lbl.getText().setText((m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag)).getTextStyle()
-      .setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
-    lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    // Variação por m² do mês (real − orç), mesmo sinal do R$
+    const cm = m2Mes[key3(m.label)];
+    let m2Str = '';
+    if (cm && cm.orc != null && cm.real != null && !isNaN(cm.orc) && !isNaN(cm.real)) {
+      m2Str = formatarRsM2_(Number(cm.real) - Number(cm.orc), true);
+    }
+
+    // Rótulo: R$ (linha 1) + R$/m² (linha 2, menor)
+    const bloco   = (m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag) + (m2Str ? '\n' + m2Str : '');
+    const blocoH  = m2Str ? 22 : 12;
+    const lblY    = m.delta > 0 ? yBar - blocoH - 2 : yBar + hBar + 2;
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
+    const lr  = lbl.getText();
+    lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
+    if (m2Str) lr.getRange(bloco.indexOf('\n') + 1, bloco.length).getTextStyle().setFontSize(5.5).setBold(false);
+    lr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     // Mês junto ao eixo, do lado oposto ao da barra
     const mesY = m.delta > 0 ? zeroY + 4 : zeroY - 15;
-    const mes = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, mesY, slotW * 1.4, 12);
+    const mes = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, mesY, slotW * 1.5, 12);
     mes.getText().setText(m.label).getTextStyle()
       .setFontSize(6).setBold(m.ritmo).setForegroundColor(m.ritmo ? '#B45309' : CORES.textGray).setFontFamily('Montserrat');
     mes.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
