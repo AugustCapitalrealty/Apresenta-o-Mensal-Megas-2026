@@ -25,7 +25,14 @@ const HISTORICO_CABECALHO = ['Timestamp', 'Categoria', 'Indicador', 'Valor', 'Re
 // REGISTRA OS NÚMEROS DA GERAÇÃO ATUAL
 // ==========================================
 function registrarHistoricoDados_() {
-  try {
+  // DESATIVADO: o histórico numérico automático podia gravar dados errados.
+  // O histórico validado agora é mantido à mão na planilha HISTORICO_VALIDADO_ID
+  // (01_Config.gs) e lido por consultarHistoricoIndicador(). Mantemos a função
+  // aqui (não chamada pelo Main) para preservar os coletores como referência.
+  Logger.log('  ▤ Histórico automático desativado — usar planilha validada.');
+  return;
+
+  try {                                                    // eslint-disable-line no-unreachable
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = obterOuCriarAbaHistorico_(ss);
     const ts    = new Date();
@@ -148,9 +155,10 @@ function coletarBridge_(add) {
 // CONSULTA — evolução de um indicador ao longo do tempo
 // ==========================================
 // Uso no editor: Logger.log(JSON.stringify(consultarHistoricoIndicador('SLA (mensal)')));
+// Lê da planilha de HISTÓRICO VALIDADO (mantida à mão), não mais da aba local.
 function consultarHistoricoIndicador(nomeIndicador) {
-  const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const sheet = ss.getSheetByName(ABA_HISTORICO);
+  const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+  const sheet = ss.getSheets()[0];
   if (!sheet) return [];
 
   const data = sheet.getDataRange().getValues();

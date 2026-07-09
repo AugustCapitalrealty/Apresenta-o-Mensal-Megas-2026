@@ -54,6 +54,37 @@ function obterMesReferencia_() {
 
 
 // ==========================================
+// ÁREA (m²) DERIVADA DO CUSTO M²
+// ==========================================
+// área = Total Realizado (Financeiro Mensal) ÷ Custo R$/m² do mês.
+// Permite expressar qualquer valor financeiro em R$/m² (a diretoria gosta).
+// Retorna null se faltar alguma das abas → os slides simplesmente omitem
+// o R$/m² sem quebrar. Resultado em cache por cidade.
+// ==========================================
+let _areaM2Cache = {};
+
+function obterAreaM2_() {
+  const chave = getProjetoAtivo().nome;
+  if (chave in _areaM2Cache) return _areaM2Cache[chave];
+
+  let area = null;
+  try {
+    const custo = obterDadosCustoM2();
+    const fin   = obterDadosFinanceiroMensal_();
+    if (custo && custo.kpis && custo.kpis.custo > 0 && fin && fin.totalRealizado > 0) {
+      area = fin.totalRealizado / custo.kpis.custo;
+      Logger.log('Área m² derivada: ' + Math.round(area).toLocaleString('pt-BR') +
+                 ' m² (Real ' + fin.totalRealizado + ' ÷ Custo ' + custo.kpis.custo + ')');
+    }
+  } catch (e) {
+    Logger.log('Área m²: não foi possível derivar. ' + e.message);
+  }
+  _areaM2Cache[chave] = area;
+  return area;
+}
+
+
+// ==========================================
 // DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {

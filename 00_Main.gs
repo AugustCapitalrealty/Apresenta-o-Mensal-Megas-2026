@@ -99,9 +99,12 @@ function gerarApresentacaoCompleta_() {
   Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
   if (erros.length) Logger.log(erros.join('\n'));
 
-  // Registros opcionais — só rodam se os respectivos arquivos estiverem no projeto
+  // Versionamento visual no Drive (mantido)
   if (typeof registrarRevisaoAutomatica_ === 'function') registrarRevisaoAutomatica_();
-  if (typeof registrarHistoricoDados_   === 'function') registrarHistoricoDados_();
+
+  // NÃO gravamos mais o histórico numérico automático: os dados podiam sair
+  // errados. O histórico agora é mantido manualmente na planilha validada
+  // (HISTORICO_VALIDADO_ID, em 01_Config.gs). Ver Suporte_RegistroDados.gs.
 }
 
 function limparApresentacao_() {

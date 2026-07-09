@@ -50,6 +50,11 @@ const CR_DESIGN_SYSTEM = {
 // para 'CURITIBA', 'ITAJAI' ou 'ESTEIO' e rode o orquestrador.
 // ==========================================
 
+// Planilha de HISTÓRICO VALIDADO (mantida manualmente pelo time).
+// Fonte confiável de evolução de indicadores — usada no lugar dos números
+// gravados automaticamente (que podiam sair errados). Ver Suporte_RegistroDados.gs.
+const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
+
 // capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
 // capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
 const PROJETOS = {
@@ -230,6 +235,71 @@ function formatarNumeroBR(valor) {
     minimumFractionDigits: temDecimal ? 2 : 0,
     maximumFractionDigits: 2
   });
+}
+
+/**
+ * Padroniza o nome de uma rubrica contábil que vem "sujo" da planilha:
+ * sentence-case (1ª letra maiúscula, resto minúsculo), corrige acentos de um
+ * dicionário de termos contábeis comuns, mantém preposições em minúsculo e
+ * siglas conhecidas em maiúsculo. Ex.: 'energia eletrica' → 'Energia elétrica';
+ * 'SEGURO' → 'Seguro'; 'manutenção imóveis' → 'Manutenção imóveis';
+ * 'iptu' → 'IPTU'.
+ */
+const RUBRICA_ACENTOS = {
+  eletrica: 'elétrica', eletrico: 'elétrico', eletricas: 'elétricas',
+  juridica: 'jurídica', juridico: 'jurídico', juridicos: 'jurídicos',
+  informatica: 'informática', imoveis: 'imóveis', imovel: 'imóvel',
+  moveis: 'móveis', movel: 'móvel', assistencia: 'assistência',
+  agua: 'água', condominio: 'condomínio', condominios: 'condomínios',
+  seguranca: 'segurança', vigilancia: 'vigilância', manutencao: 'manutenção',
+  conservacao: 'conservação', servicos: 'serviços', servico: 'serviço',
+  locacao: 'locação', depreciacao: 'depreciação', predios: 'prédios',
+  predio: 'prédio', predial: 'predial', tributaria: 'tributária',
+  tributarias: 'tributárias', tributos: 'tributos', telefonia: 'telefonia',
+  administrativa: 'administrativa', administrativas: 'administrativas',
+  utilidades: 'utilidades', combustivel: 'combustível', veiculos: 'veículos',
+  refeicao: 'refeição', alimentacao: 'alimentação', comunicacao: 'comunicação',
+  reparacao: 'reparação', operacao: 'operação', gestao: 'gestão',
+  jardinagem: 'jardinagem', dedetizacao: 'dedetização', energia: 'energia'
+};
+const RUBRICA_PREPOSICOES = ['de','da','do','das','dos','e','com','sem','a','o','em','para','por','no','na'];
+const RUBRICA_SIGLAS = ['IPTU','IPVA','GLP','TI','EPI','EPIS','CIPA','ART','CNPJ','ISS','PIS','COFINS','FGTS','INSS','CPFL','GNV'];
+
+function padronizarRubrica_(txt) {
+  let s = String(txt || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return s;
+
+  const semAcento = w => w.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const palavras = s.split(' ');
+
+  const out = palavras.map((w, i) => {
+    const bare = semAcento(w).toLowerCase();
+
+    // Sigla conhecida → maiúsculo
+    if (RUBRICA_SIGLAS.indexOf(bare.toUpperCase()) >= 0) return bare.toUpperCase();
+
+    // Correção de acento pelo dicionário
+    let base = RUBRICA_ACENTOS[bare] || w.toLowerCase();
+
+    // Preposição (não sendo a primeira palavra) → minúsculo
+    if (i > 0 && RUBRICA_PREPOSICOES.indexOf(bare) >= 0) return base.toLowerCase();
+
+    // 1ª palavra recebe inicial maiúscula; demais ficam minúsculas
+    if (i === 0) return base.charAt(0).toUpperCase() + base.slice(1);
+    return base;
+  });
+
+  return out.join(' ');
+}
+
+/**
+ * Formata um valor absoluto (R$) como custo por m²: "R$ 4,62/m²".
+ * Retorna '' se a área não estiver disponível.
+ */
+function formatarReaisM2_(valor, area) {
+  if (!area || area <= 0 || valor == null || isNaN(valor)) return '';
+  const v = valor / area;
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '/m²';
 }
 
 /**

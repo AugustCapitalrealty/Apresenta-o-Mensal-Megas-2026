@@ -95,12 +95,14 @@ function obterDadosFinanceiroMensal_() {
   let   totalRealizado = 0;
 
   for (let i = 1; i < valores.length; i++) {
-    const linha    = valores[i];
-    const natureza = limparTexto(linha[idxNatureza]);
-    if (!natureza) continue;
+    const linha        = valores[i];
+    const naturezaRaw  = limparTexto(linha[idxNatureza]);
+    if (!naturezaRaw) continue;
 
-    const norm = normalizarTexto(natureza);
+    const norm = normalizarTexto(naturezaRaw);
     if (norm === 'total geral' || norm === 'total' || norm.indexOf('resultado total') >= 0) continue;
+
+    const natureza = padronizarRubrica_(naturezaRaw);   // corrige acentos/capitalização
 
     const orcado    = converterNumero(linha[idxOrcado]);
     const realizado = converterNumero(linha[idxRealizado]);
@@ -164,28 +166,21 @@ function desenharCardResumo(slide, x, y, w, h, CORES, dados) {
   const diff      = orcado - realizado;
   const diffP     = orcado !== 0 ? (Math.abs(diff) / orcado) * 100 : 0;
   const labelY    = y + 25;
+  const areaM2    = obterAreaM2_();   // R$/m² por rubrica (diretoria gosta)
 
   const l1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY, 70, 15);
   l1.getText().setText('ORÇADO')
     .getTextStyle().setFontSize(6).setBold(true)
     .setForegroundColor('#94A3B8').setFontFamily('Montserrat');
 
-  const v1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 80, labelY - 5, 140, 25);
-  v1.getText().setText(formatarMoeda(orcado))
-    .getTextStyle().setFontSize(11).setBold(true)
-    .setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-  v1.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  _resumoValorComM2(slide, x + 80, labelY - 5, 140, formatarMoeda(orcado), formatarReaisM2_(orcado, areaM2), CORES);
 
   const l2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY + 22, 70, 15);
   l2.getText().setText('REALIZADO')
     .getTextStyle().setFontSize(6).setBold(true)
     .setForegroundColor('#94A3B8').setFontFamily('Montserrat');
 
-  const v2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 80, labelY + 17, 140, 25);
-  v2.getText().setText(formatarMoeda(realizado))
-    .getTextStyle().setFontSize(11).setBold(true)
-    .setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-  v2.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  _resumoValorComM2(slide, x + 80, labelY + 17, 140, formatarMoeda(realizado), formatarReaisM2_(realizado, areaM2), CORES);
 
   const isAbaixo  = diff >= 0;
   const colorBg   = isAbaixo ? '#F0FDF4' : '#FEF2F2';
@@ -205,6 +200,22 @@ function desenharCardResumo(slide, x, y, w, h, CORES, dados) {
     .setForegroundColor(colorTxt).setFontFamily('Montserrat');
   varTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   varTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+}
+
+// Valor grande (R$) com o R$/m² logo depois, menor e cinza, na mesma linha.
+// Usado nos cards de resumo (mensal e acumulado). Se m2Str vazio, só o valor.
+function _resumoValorComM2(slide, x, y, w, valorStr, m2Str, CORES) {
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 25);
+  const txt = m2Str ? valorStr + '   ' + m2Str : valorStr;
+  const tr  = box.getText();
+  tr.setText(txt);
+  tr.getTextStyle().setFontSize(11).setBold(true)
+    .setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+  if (m2Str) {
+    tr.getRange(valorStr.length, txt.length).getTextStyle()
+      .setFontSize(6.5).setBold(false).setForegroundColor('#94A3B8');
+  }
+  tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 }
 
 
