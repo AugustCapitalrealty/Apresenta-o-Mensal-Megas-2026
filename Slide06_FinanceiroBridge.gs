@@ -188,6 +188,27 @@ function _bridgeDesenharResumo(slide, x, y, w, h, d) {
     return b;
   };
 
+  // Valor em R$ com o R$/m² menor e cinza na sequência (alinhado à direita)
+  const _valM2 = (valorStr, m2Str, fx, fy, fw, size, cor) => {
+    const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, size + 11);
+    const t = b.getText();
+    const txt = m2Str ? valorStr + '  ' + m2Str : valorStr;
+    t.setText(txt).getTextStyle()
+      .setFontSize(size).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+    if (m2Str) t.getRange(valorStr.length, txt.length).getTextStyle()
+      .setFontSize(Math.max(size - 4, 5.5)).setBold(false).setForegroundColor('#94A3B8');
+    t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+    b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  };
+
+  // R$/m² médio por mês: valor ÷ (área × nº de meses). A área vem calibrada
+  // do Custo M², então a média bate com a aba METRO QUADRADO.
+  const area  = obterAreaM2_();
+  const nReal = d.meses.filter(m => m.tipo === 'REAL').length || 1;
+  const nTot  = d.meses.length || 12;
+  const m2Periodo = v => area ? formatarReaisM2_(v, area * nReal) : '';
+  const m2Anual   = v => area ? formatarReaisM2_(v, area * nTot)  : '';
+
   let cy = y + 10;
   _txt('RESUMO DO PERÍODO', x + 12, cy, w - 20, 16, 7.5, true, CORES.textGray);
   cy += 20;
@@ -195,28 +216,30 @@ function _bridgeDesenharResumo(slide, x, y, w, h, d) {
   // ── Orçado do Período ─────────────────────────────────────────────────────
   _txt('ORÇADO', x + 12, cy, w - 20, 13, 6, true, '#94A3B8');
   cy += 13;
-  _txt(formatarMoeda(d.totalOrc), x + 12, cy, w - 20, 22, 11, true, CORES.textDark, 'R');
+  _valM2(formatarMoeda(d.totalOrc), m2Periodo(d.totalOrc), x + 12, cy, w - 24, 11, CORES.textDark);
   cy += 24;
 
   // ── Realizado ─────────────────────────────────────────────────────────────
   _txt('REALIZADO', x + 12, cy, w - 20, 13, 6, true, '#94A3B8');
   cy += 13;
-  _txt(formatarMoeda(d.totalReal), x + 12, cy, w - 20, 22, 11, true, CORES.textDark, 'R');
+  _valM2(formatarMoeda(d.totalReal), m2Periodo(d.totalReal), x + 12, cy, w - 24, 11, CORES.textDark);
   cy += 24;
 
-  // ── Pill variação do período ──────────────────────────────────────────────
+  // ── Pill variação do período (R$, % e R$/m²) ──────────────────────────────
   const abaixo    = d.totalVar >= 0;
   const corVar    = abaixo ? '#166534' : '#DC2626';
   const bgVar     = abaixo ? '#F0FDF4' : '#FEF2F2';
   const varLabel  = abaixo ? '▼ ABAIXO DO ORÇADO' : '▲ ACIMA DO ORÇADO';
   const varPctStr = d.totalOrc > 0 ? (Math.abs(d.totalVar / d.totalOrc) * 100).toFixed(1) + '%' : '0%';
+  const varM2Str  = m2Periodo(Math.abs(d.totalVar));
 
   cy += 4;
   const pillBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 10, cy, w - 20, 52);
   pillBox.getFill().setSolidFill(bgVar); pillBox.getBorder().setTransparent();
 
   _txt(varLabel, x + 10, cy + 4, w - 20, 16, 7, true, corVar, 'C');
-  _txt(formatarMoeda(Math.abs(d.totalVar)), x + 10, cy + 20, w - 20, 18, 12, true, corVar, 'C');
+  _txt(formatarMoeda(Math.abs(d.totalVar)) + (varM2Str ? '  |  ' + varM2Str : ''),
+       x + 10, cy + 20, w - 20, 18, 11, true, corVar, 'C');
   _txt(varPctStr + ' do orçado do período', x + 10, cy + 38, w - 20, 13, 7, false, corVar, 'C');
   cy += 62;
 
@@ -230,17 +253,17 @@ function _bridgeDesenharResumo(slide, x, y, w, h, d) {
   cy += 14;
 
   _txt('ORÇADO', x + 12, cy, 60, 13, 6, true, '#94A3B8');
-  _txt(formatarMoeda(d.totalOrcAnual), x + 12, cy, w - 24, 18, 9, true, CORES.textDark, 'R');
+  _valM2(formatarMoeda(d.totalOrcAnual), m2Anual(d.totalOrcAnual), x + 12, cy, w - 24, 9, CORES.textDark);
   cy += 20;
 
   _txt('PROJETADO', x + 12, cy, 60, 13, 6, true, '#94A3B8');
-  _txt(formatarMoeda(d.totalProjetado), x + 12, cy, w - 24, 18, 9, true, CORES.textDark, 'R');
+  _valM2(formatarMoeda(d.totalProjetado), m2Anual(d.totalProjetado), x + 12, cy, w - 24, 9, CORES.textDark);
   cy += 20;
 
   const abaixoAnual = d.varAnual >= 0;
   const corAnual    = abaixoAnual ? '#166534' : '#DC2626';
   const sinalAnual  = abaixoAnual ? '▼ ' : '▲ ';
-  _txt(sinalAnual + formatarMoeda(Math.abs(d.varAnual)), x + 12, cy, w - 24, 18, 9, true, corAnual, 'R');
+  _valM2(sinalAnual + formatarMoeda(Math.abs(d.varAnual)), m2Anual(Math.abs(d.varAnual)), x + 12, cy, w - 24, 9, corAnual);
 }
 
 

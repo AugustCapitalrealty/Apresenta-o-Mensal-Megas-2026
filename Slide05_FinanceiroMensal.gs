@@ -193,9 +193,11 @@ function desenharCardResumo(slide, x, y, w, h, CORES, dados) {
   varBox.getFill().setSolidFill(colorBg);
   varBox.getBorder().setTransparent();
 
+  const varM2Str = formatarReaisM2_(Math.abs(diff), areaM2);   // variação também em R$/m²
   const varTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, varBoxY + 3, w - 20, varBoxH - 6);
   varTxt.getText()
-    .setText(labelText + '\n' + formatarMoeda(Math.abs(diff)) + ' | ' + diffP.toFixed(1) + '%')
+    .setText(labelText + '\n' + formatarMoeda(Math.abs(diff)) + ' | ' + diffP.toFixed(1) + '%' +
+             (varM2Str ? ' | ' + varM2Str : ''))
     .getTextStyle().setFontSize(11).setBold(true)
     .setForegroundColor(colorTxt).setFontFamily('Montserrat');
   varTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);

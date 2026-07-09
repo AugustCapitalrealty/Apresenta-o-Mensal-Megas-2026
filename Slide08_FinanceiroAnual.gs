@@ -217,9 +217,13 @@ function desenharCardResumoAnual(slide, x, y, w, h, CORES, dados) {
   varBox.getFill().setSolidFill(colorBg);
   varBox.getBorder().setTransparent();
 
+  // Variação também em R$/m² (diferença das médias mensais acumuladas)
+  const varM2Acum = (cm2 && cm2.orcado != null && cm2.realizado != null)
+    ? formatarRsM2_(Math.abs(cm2.realizado - cm2.orcado)) : '';
   const varTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, varBoxY + 3, w - 20, varBoxH - 6);
   varTxt.getText()
-    .setText(labelText + '\n' + formatarMoeda(Math.abs(diff)) + ' | ' + diffP.toFixed(1) + '%')
+    .setText(labelText + '\n' + formatarMoeda(Math.abs(diff)) + ' | ' + diffP.toFixed(1) + '%' +
+             (varM2Acum ? ' | ' + varM2Acum : ''))
     .getTextStyle().setFontSize(11).setBold(true)
     .setForegroundColor(colorTxt).setFontFamily('Montserrat');
   varTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
