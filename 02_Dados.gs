@@ -85,6 +85,93 @@ function obterAreaM2_() {
 
 
 // ==========================================
+// LEITOR DO HISTÓRICO VALIDADO
+// ==========================================
+// Lê a planilha HISTORICO_VALIDADO_ID (mantida à mão pelo time), no formato:
+//   Mês (MM/AAAA) | Empreendimento | INDICADOR | DADO
+// distribuído em uma ou mais abas (DADOS, PREVENTIVAS, CHAMADOS...).
+//
+//   lerHistoricoValidado('Fluxo de VISITANTES')            → série da cidade ativa
+//   lerHistoricoValidado('SLA MENSAL', { aba: 'PREVENTIVAS' })
+//   lerHistoricoValidado('Disponibilidade', { empreendimento: 'Mega Itajaí' })
+//
+// Retorna a série ORDENADA por mês: [{ mes:'04/2026', ord:202604, valor:31572, bruto:'31.572' }]
+// Só entram linhas com valor numérico. Vazio se a planilha/indicador não existir.
+// ==========================================
+function _histNorm_(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function _histEmpChave_(s) {
+  return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function _histParseMes_(txt) {
+  const m = String(txt || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const mes = parseInt(m[1], 10), ano = parseInt(m[2], 10);
+  if (mes < 1 || mes > 12) return null;
+  return { label: String(mes).padStart(2, '0') + '/' + ano, ord: ano * 100 + mes };
+}
+
+// Converte "66.408" → 66408, "27,91" → 27.91, "100" → 100, "5m45s" → NaN
+function _histNum_(v) {
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).replace(/R\$/gi, '').replace(/\s/g, '').trim();
+  if (/[a-z]/i.test(s)) return NaN;                      // tempo (5m45s) etc. → não numérico
+  s = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/\./g, '');
+  const n = Number(s);
+  return isNaN(n) ? NaN : n;
+}
+
+function lerHistoricoValidado(indicador, opts) {
+  opts = opts || {};
+  const alvoEmp = _histEmpChave_(opts.empreendimento || getProjetoAtivo().nome);
+  const alvoInd = _histNorm_(indicador);
+  const saida   = [];
+
+  try {
+    const ss   = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const abas = opts.aba ? [ss.getSheetByName(opts.aba)] : ss.getSheets();
+
+    abas.forEach(sheet => {
+      if (!sheet) return;
+      const data = sheet.getDataRange().getDisplayValues();
+      if (data.length < 2) return;
+
+      const hdr  = data[0].map(_histNorm_);
+      const cMes = hdr.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
+      const cEmp = hdr.findIndex(h => h.indexOf('empreend') >= 0);
+      const cInd = hdr.findIndex(h => h.indexOf('indicador') >= 0);
+      const cVal = hdr.findIndex(h => h.indexOf('dado') >= 0 || h.indexOf('valor') >= 0);
+      if (cMes < 0 || cInd < 0 || cVal < 0) return;
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (cEmp >= 0 && _histEmpChave_(row[cEmp]) !== alvoEmp) continue;
+        if (_histNorm_(row[cInd]) !== alvoInd) continue;
+        const mes = _histParseMes_(row[cMes]);
+        const val = _histNum_(row[cVal]);
+        if (!mes || isNaN(val)) continue;
+        saida.push({ mes: mes.label, ord: mes.ord, valor: val, bruto: String(row[cVal]).trim() });
+      }
+    });
+  } catch (e) {
+    Logger.log('lerHistoricoValidado("' + indicador + '"): ' + e.message);
+  }
+
+  // ordena por mês e remove meses duplicados (mantém a última ocorrência)
+  saida.sort((a, b) => a.ord - b.ord);
+  const vistos = {};
+  const unico  = [];
+  saida.forEach(p => { vistos[p.ord] = p; });
+  Object.keys(vistos).sort((a, b) => a - b).forEach(k => unico.push(vistos[k]));
+  return unico;
+}
+
+
+// ==========================================
 // DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {

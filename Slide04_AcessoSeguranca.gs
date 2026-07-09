@@ -34,25 +34,20 @@ function gerarSlideTempo() {
   desenharCardTempo(slide, marginX, topY, cardW, cardH, CORES, dados.mensal, CORES.lightBlue);
   desenharCardTempo(slide, marginX + cardW + gap, topY, cardW, cardH, CORES, dados.anual, CORES.cardGreen);
 
-  // Espaço para Gráfico (Placeholder)
+  // Gráfico de Evolução dos Acessos — alimentado pelo histórico validado
+  // (indicador "Fluxo de VISITANTES" na aba DADOS). Ver Slide_GraficosHistorico.gs.
   const chartY = topY + cardH + 15;
   const chartW = PageWidth - (2 * marginX);
-  const footerH = PageHeight - chartY - 10;
+  const chartH = PageHeight - chartY - 10;
 
-  const ph = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, chartY, chartW, footerH);
-  ph.getFill().setSolidFill(CORES.white);
-  ph.getBorder().setDashStyle(SlidesApp.DashStyle.DASH).setWeight(1).getLineFill().setSolidFill('#CBD5E1');
+  const serieAcessos = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
+  desenharGraficoHistorico(slide, marginX, chartY, chartW, chartH, serieAcessos, {
+    titulo   : 'EVOLUÇÃO DOS ACESSOS — FLUXO DE VISITANTES',
+    cor      : CORES.lightBlue,
+    formatar : v => formatarNumeroBR(Math.round(v))
+  });
 
-  const chartTitle = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 15, chartY + 10, chartW - 30, 25);
-  chartTitle.getText().setText("EVOLUÇÃO DOS ACESSOS")
-    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.lightBlue).setFontFamily('Montserrat');
-
-  const phTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, chartY + (footerH/2), chartW, 30);
-  phTxt.getText().setText("[ ESPAÇO RESERVADO PARA COLAR O GRÁFICO ]")
-    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor('#CBD5E1').setFontFamily('Montserrat');
-  phTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  
-  Logger.log("Slide 04 (Acesso/Segurança) gerado com sucesso.");
+  Logger.log('Slide 04 (Acesso/Segurança) gerado — série de acessos: ' + serieAcessos.length + ' mes(es).');
 }
 
 // Função Auxiliar Local (CORRIGIDA PARA EVITAR ERRO DE TEXTO)
