@@ -192,14 +192,14 @@ function desenharCardResumoAnual(slide, x, y, w, h, CORES, dados) {
   // R$/m² ACUMULADO = média dos m² mensais até o mês de referência
   const cm2 = obterCustoM2Acumulado_();
 
-  const l1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY, 70, 15);
+  const l1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY, 105, 15);
   l1.getText().setText('ORÇADO ACUM.')
     .getTextStyle().setFontSize(6).setBold(true)
     .setForegroundColor('#94A3B8').setFontFamily('Montserrat');
 
   _resumoValorComM2(slide, x + 80, labelY - 5, 140, formatarMoeda(orcado), cm2 ? formatarRsM2_(cm2.orcado) : '', CORES);
 
-  const l2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY + 22, 70, 15);
+  const l2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, labelY + 22, 105, 15);
   l2.getText().setText('REALIZADO ACUM.')
     .getTextStyle().setFontSize(6).setBold(true)
     .setForegroundColor('#94A3B8').setFontFamily('Montserrat');

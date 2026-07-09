@@ -222,7 +222,10 @@ function formatarNumeroBR(valor) {
   if (valor === null || valor === undefined || valor === '' || valor === '-') return '-';
   const s = String(valor).trim();
   if (/[^\d.,\-\s]/.test(s)) return s;   // tem %, h, letras etc. → já formatado
-  const n = s.includes(',') ? Number(s.replace(/\./g, '').replace(',', '.')) : Number(s);
+  let n;
+  if (s.includes(',')) n = Number(s.replace(/\./g, '').replace(',', '.'));
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) n = Number(s.replace(/\./g, ''));  // "61.245" = milhar pt-BR
+  else n = Number(s);
   if (isNaN(n)) return s;
   const temDecimal = Math.abs(n % 1) > 1e-9;
   return n.toLocaleString('pt-BR', {

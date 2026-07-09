@@ -254,12 +254,13 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
   const x0   = x + pad;
   const useW = w - (2 * pad);
   const cAcc = (() => { let a = 0; return f => { const px = x0 + a * useW; a += f; return px; }; })();
+  // Todas as colunas centralizadas
   const cols = [
     { t: 'MÊS',       x: cAcc(0.13), w: useW * 0.13, a: 'C' },
     { t: 'TIPO',      x: cAcc(0.11), w: useW * 0.11, a: 'C' },
-    { t: 'ORÇADO',    x: cAcc(0.21), w: useW * 0.21, a: 'R' },
-    { t: 'REAL/RITMO',x: cAcc(0.21), w: useW * 0.21, a: 'R' },
-    { t: 'VARIAÇÃO',  x: cAcc(0.21), w: useW * 0.21, a: 'R' },
+    { t: 'ORÇADO',    x: cAcc(0.21), w: useW * 0.21, a: 'C' },
+    { t: 'REAL/RITMO',x: cAcc(0.21), w: useW * 0.21, a: 'C' },
+    { t: 'VARIAÇÃO',  x: cAcc(0.21), w: useW * 0.21, a: 'C' },
     { t: 'VAR %',     x: cAcc(0.13), w: useW * 0.13, a: 'C' }
   ];
 
@@ -314,21 +315,24 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     };
 
-    // Célula com R$ em cima e R$/m² (cinza, menor) embaixo
-    const _celM2 = (valorStr, m2Str, col, cor) => {
+    // Célula com R$ em cima e R$/m² (cinza, menor) embaixo — centralizada
+    const _celM2 = (valorStr, m2Str, col, cor, bold) => {
       const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, ry, col.w, rowH);
       const t = b.getText();
       const txt = m2Str ? valorStr + '\n' + m2Str : valorStr;
-      t.setText(txt).getTextStyle().setFontSize(7.5).setBold(false).setForegroundColor(cor).setFontFamily('Montserrat');
-      if (m2Str) t.getRange(valorStr.length + 1, txt.length).getTextStyle().setFontSize(5.5).setForegroundColor('#94A3B8');
-      t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+      t.setText(txt).getTextStyle().setFontSize(7.5).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
+      if (m2Str) t.getRange(valorStr.length + 1, txt.length).getTextStyle().setFontSize(5.5).setBold(false).setForegroundColor('#94A3B8');
+      t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     };
 
-    _cel(m.label,                      cols[0], CORES.darkBlue,  true);
-    _celM2(formatarMoeda(m.orc),  cmM2 && cmM2.orc  != null && !isNaN(cmM2.orc)  ? formatarRsM2_(Number(cmM2.orc))  : '', cols[2], CORES.textDark);
-    _celM2(formatarMoeda(m.real), cmM2 && cmM2.real != null && !isNaN(cmM2.real) ? formatarRsM2_(Number(cmM2.real)) : '', cols[3], CORES.textDark);
-    _cel(seta + formatarMoeda(Math.abs(m.var)), cols[4], corVar, true);
+    const temM2  = cmM2 && cmM2.orc != null && cmM2.real != null && !isNaN(cmM2.orc) && !isNaN(cmM2.real);
+    const varM2  = temM2 ? formatarRsM2_(Number(cmM2.real) - Number(cmM2.orc), true) : '';
+
+    _cel(m.label, cols[0], CORES.darkBlue, true);
+    _celM2(formatarMoeda(m.orc),  temM2 ? formatarRsM2_(Number(cmM2.orc))  : '', cols[2], CORES.textDark);
+    _celM2(formatarMoeda(m.real), temM2 ? formatarRsM2_(Number(cmM2.real)) : '', cols[3], CORES.textDark);
+    _celM2(seta + formatarMoeda(Math.abs(m.var)), varM2, cols[4], corVar, true);
 
     // Pill TIPO (REAL / RITMO)
     const pillH = Math.min(rowH - 4, 14);
@@ -498,7 +502,7 @@ function gerarSlideBridgeGrafico() {
     const cx = plotX + slotIdx * slotW + (slotW - barW) / 2;
     const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseBottom - h, barW, h);
     bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
-    const tot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom - h - 14, slotW * 1.5, 12);
+    const tot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom - h - 18, slotW * 1.5, 12);
     tot.getText().setText(formatarMoedaCompacta(val)).getTextStyle()
       .setFontSize(7).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
     tot.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
@@ -528,10 +532,10 @@ function gerarSlideBridgeGrafico() {
       m2Str = formatarRsM2_(Number(cm.real) - Number(cm.orc), true);
     }
 
-    // Rótulo: R$ (linha 1) + R$/m² (linha 2, menor)
+    // Rótulo: R$ (linha 1) + R$/m² (linha 2, menor) — afastado da barra
     const bloco   = (m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag) + (m2Str ? '\n' + m2Str : '');
     const blocoH  = m2Str ? 22 : 12;
-    const lblY    = m.delta > 0 ? yBar - blocoH - 2 : yBar + hBar + 2;
+    const lblY    = m.delta > 0 ? yBar - blocoH - 8 : yBar + hBar + 8;
     const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
     const lr  = lbl.getText();
     lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
