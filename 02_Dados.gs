@@ -415,8 +415,10 @@ function obterDadosPreventivas() {
 function obterDadosCorretivasV6() {
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('INDICADORES');
-    if (!sheet) throw new Error('Aba INDICADORES não encontrada.');
+    // Os indicadores de corretivas ficam na aba CHAMADOS (INDICADOR | MÊS | ANO).
+    // 'INDICADORES' é mantido como fallback para cidades com o nome antigo.
+    const sheet = ss.getSheetByName('CHAMADOS') || ss.getSheetByName('INDICADORES');
+    if (!sheet) throw new Error('Aba CHAMADOS (indicadores de corretivas) não encontrada.');
 
     const data = sheet.getDataRange().getDisplayValues();
 
