@@ -224,6 +224,74 @@ function obterSerieFluxoAcessos_(maxMeses) {
   return uniq.slice(-maxMeses);
 }
 
+// "05:45" → "5m45s"; segundos (345) → "5m45s"; vazio → ''.
+function _fmtTempoAcesso_(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  const mm = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (mm) return parseInt(mm[1], 10) + 'm' + mm[2] + 's';
+  if (/^\d+([.,]\d+)?$/.test(s)) {
+    const seg = Math.round(Number(s.replace(',', '.')));
+    return Math.floor(seg / 60) + 'm' + String(seg % 60).padStart(2, '0') + 's';
+  }
+  return s;
+}
+
+// KPIs de acesso (Fluxo e Tempo médio, mensal e acumulado) do mês mais recente
+// da cidade ativa, lidos da planilha dedicada de Controle de Acessos.
+// Retorna null se indisponível. Colunas: Fluxo Total | Tempo Médio (MM:SS) |
+// Fluxo Acum. (ano) | Tempo Acum. (ano).
+function obterKpisAcessos_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(ACESSOS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Dados');
+    if (!sheet) return null;
+
+    const data = sheet.getDataRange().getDisplayValues();
+    let hRow = -1, c = {};
+    for (let i = 0; i < Math.min(6, data.length); i++) {
+      const norm = data[i].map(_histNorm_);
+      const iEmp = norm.findIndex(h => h.indexOf('empreend') >= 0);
+      const iFlx = norm.findIndex(h => h.indexOf('fluxo') >= 0 && h.indexOf('total') >= 0);
+      if (iEmp >= 0 && iFlx >= 0) {
+        hRow = i; c.emp = iEmp; c.fluxo = iFlx;
+        c.mes    = norm.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
+        c.tempo  = norm.findIndex(h => h.indexOf('tempo medio') >= 0);
+        c.fluxoA = norm.findIndex(h => h.indexOf('fluxo acum') >= 0);
+        c.tempoA = norm.findIndex(h => h.indexOf('tempo acum') >= 0);
+        break;
+      }
+    }
+    if (hRow < 0 || c.mes < 0) return null;
+
+    let melhor = null, melhorOrd = -1;
+    for (let i = hRow + 1; i < data.length; i++) {
+      const row = data[i];
+      if (_histEmpChave_(row[c.emp]) !== alvoEmp) continue;
+      const mes = _histParseMes_(row[c.mes]);
+      if (mes && mes.ord > melhorOrd) { melhorOrd = mes.ord; melhor = row; }
+    }
+    if (!melhor) return null;
+
+    const fluxoM = c.fluxo  >= 0 ? _histNum_(melhor[c.fluxo])  : NaN;
+    const fluxoA = c.fluxoA >= 0 ? _histNum_(melhor[c.fluxoA]) : NaN;
+    return {
+      mensal: {
+        fluxo: isNaN(fluxoM) ? '' : formatarNumeroBR(Math.round(fluxoM)),
+        tempo: c.tempo  >= 0 ? _fmtTempoAcesso_(melhor[c.tempo])  : ''
+      },
+      anual: {
+        fluxo: isNaN(fluxoA) ? '' : formatarNumeroBR(Math.round(fluxoA)),
+        tempo: c.tempoA >= 0 ? _fmtTempoAcesso_(melhor[c.tempoA]) : ''
+      }
+    };
+  } catch (e) {
+    Logger.log('obterKpisAcessos_: ' + e.message);
+    return null;
+  }
+}
+
 
 // ==========================================
 // DADOS DASHBOARD (Slide 01)
@@ -422,23 +490,33 @@ function obterDadosTempo() {
       else if (ind.includes('ocorrencia') || ind.includes('seguranca')) { kpis.seguranca   = row[1]; kpis.aSeguranca   = row[2]; }
     });
 
+    // Fluxo e Tempo médio vêm da planilha validada de Controle de Acessos
+    // (fonte autoritativa). Turnover fica EM BRANCO (a pedido). Ocorrências
+    // continua vindo da aba TEMPO. Se a planilha de acessos estiver
+    // indisponível, cai nos valores da aba TEMPO.
+    const acc = obterKpisAcessos_();
+    const fluxoMensal = acc && acc.mensal.fluxo ? acc.mensal.fluxo : kpis.fluxo;
+    const tempoMensal = acc && acc.mensal.tempo ? acc.mensal.tempo : kpis.tempoAcesso;
+    const fluxoAnual  = acc && acc.anual.fluxo  ? acc.anual.fluxo  : kpis.aFluxo;
+    const tempoAnual  = acc && acc.anual.tempo  ? acc.anual.tempo  : kpis.aTempoAcesso;
+
     return {
       mensal: {
         titulo: 'VISÃO MENSAL',
         kpis: [
-          { l: 'Fluxo de pessoas',         v: kpis.fluxo       },
-          { l: 'Tempo médio de acesso',    v: kpis.tempoAcesso },
-          { l: 'Turnover de equipe',       v: kpis.turnover    },
-          { l: 'Ocorrências de segurança', v: kpis.seguranca   }
+          { l: 'Fluxo de pessoas',         v: fluxoMensal    },
+          { l: 'Tempo médio de acesso',    v: tempoMensal    },
+          { l: 'Turnover de equipe',       v: ''             },
+          { l: 'Ocorrências de segurança', v: kpis.seguranca }
         ]
       },
       anual: {
         titulo: 'VISÃO ACUMULADA',
         kpis: [
-          { l: 'Fluxo de pessoas',         v: kpis.aFluxo       },
-          { l: 'Tempo médio de acesso',    v: kpis.aTempoAcesso },
-          { l: 'Turnover de equipe',       v: kpis.aTurnover    },
-          { l: 'Ocorrências de segurança', v: kpis.aSeguranca   }
+          { l: 'Fluxo de pessoas',         v: fluxoAnual      },
+          { l: 'Tempo médio de acesso',    v: tempoAnual      },
+          { l: 'Turnover de equipe',       v: ''              },
+          { l: 'Ocorrências de segurança', v: kpis.aSeguranca }
         ]
       }
     };
