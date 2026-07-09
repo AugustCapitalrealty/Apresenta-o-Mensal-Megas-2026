@@ -172,6 +172,60 @@ function lerHistoricoValidado(indicador, opts) {
 
 
 // ==========================================
+// SÉRIE DE FLUXO DE ACESSOS (planilha dedicada de Controle de Acessos)
+// ==========================================
+// Lê a aba "Dados" da planilha ACESSOS_SPREADSHEET_ID (formato largo:
+// Mês | Empreendimento | Fluxo Total | ...) e devolve o fluxo mensal da
+// cidade ativa nos últimos `maxMeses` meses, no mesmo formato do histórico:
+//   [{ mes:'05/2026', ord:202605, valor:66408 }]
+// A linha de cabeçalho é localizada por conteúdo (a linha 1 costuma ser
+// instrução mesclada). Vazio se a planilha/aba não existir.
+// ==========================================
+function obterSerieFluxoAcessos_(maxMeses) {
+  maxMeses = maxMeses || 13;
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  const saida   = [];
+
+  try {
+    const ss    = SpreadsheetApp.openById(ACESSOS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Dados');
+    if (!sheet) { Logger.log('Fluxo acessos: aba "Dados" não encontrada.'); return []; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    let hRow = -1, cMes = -1, cEmp = -1, cFlx = -1;
+    for (let i = 0; i < Math.min(6, data.length); i++) {
+      const norm = data[i].map(_histNorm_);
+      const iEmp = norm.findIndex(h => h.indexOf('empreend') >= 0);
+      const iFlx = norm.findIndex(h => h.indexOf('fluxo') >= 0 && h.indexOf('total') >= 0);
+      if (iEmp >= 0 && iFlx >= 0) {
+        hRow = i; cEmp = iEmp; cFlx = iFlx;
+        cMes = norm.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
+        break;
+      }
+    }
+    if (hRow < 0 || cMes < 0) { Logger.log('Fluxo acessos: cabeçalho não localizado.'); return []; }
+
+    for (let i = hRow + 1; i < data.length; i++) {
+      const row = data[i];
+      if (_histEmpChave_(row[cEmp]) !== alvoEmp) continue;
+      const mes = _histParseMes_(row[cMes]);
+      const val = _histNum_(row[cFlx]);
+      if (!mes || isNaN(val)) continue;
+      saida.push({ mes: mes.label, ord: mes.ord, valor: val });
+    }
+  } catch (e) {
+    Logger.log('obterSerieFluxoAcessos_: ' + e.message);
+  }
+
+  saida.sort((a, b) => a.ord - b.ord);
+  const vistos = {};
+  saida.forEach(p => { vistos[p.ord] = p; });
+  const uniq = Object.keys(vistos).sort((a, b) => a - b).map(k => vistos[k]);
+  return uniq.slice(-maxMeses);
+}
+
+
+// ==========================================
 // DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {

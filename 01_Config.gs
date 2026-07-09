@@ -55,6 +55,13 @@ const CR_DESIGN_SYSTEM = {
 // gravados automaticamente (que podiam sair errados). Ver Suporte_RegistroDados.gs.
 const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 
+// Planilha do sistema "Controle de Acessos — Megas" (repo próprio). É a fonte
+// AUTORITATIVA dos dados de acesso — aba "Dados" no formato
+//   Mês (MM/AAAA) | Empreendimento | Fluxo Total | ...
+// (mantida todo mês para o relatório dedicado de acessos). Usada para desenhar
+// a Evolução dos Acessos. Se indisponível, cai no HISTORICO_VALIDADO_ID.
+const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
+
 // capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
 // capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
 const PROJETOS = {

@@ -40,14 +40,23 @@ function gerarSlideTempo() {
   const chartW = PageWidth - (2 * marginX);
   const chartH = PageHeight - chartY - 10;
 
-  const serieAcessos = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
+  // Fonte autoritativa: planilha dedicada de Controle de Acessos (Fluxo Total).
+  // Se estiver indisponível, cai no histórico validado (Fluxo de VISITANTES).
+  let serieAcessos = obterSerieFluxoAcessos_(13);
+  let fonte = 'Controle de Acessos';
+  if (!serieAcessos || serieAcessos.length < 2) {
+    serieAcessos = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
+    fonte = 'Histórico validado';
+  }
+
   desenharGraficoHistorico(slide, marginX, chartY, chartW, chartH, serieAcessos, {
-    titulo   : 'EVOLUÇÃO DOS ACESSOS — FLUXO DE VISITANTES',
+    titulo   : 'EVOLUÇÃO DOS ACESSOS — FLUXO DE PESSOAS',
     cor      : CORES.lightBlue,
     formatar : v => formatarNumeroBR(Math.round(v))
   });
 
-  Logger.log('Slide 04 (Acesso/Segurança) gerado — série de acessos: ' + serieAcessos.length + ' mes(es).');
+  Logger.log('Slide 04 (Acesso/Segurança) — série de acessos: ' +
+             serieAcessos.length + ' mes(es), fonte: ' + fonte + '.');
 }
 
 // Função Auxiliar Local (CORRIGIDA PARA EVITAR ERRO DE TEXTO)
