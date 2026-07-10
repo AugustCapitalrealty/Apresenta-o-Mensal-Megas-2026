@@ -68,6 +68,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Capa Seção - Manutenção Corretiva',   fn: () => gerarCapaSecao('MANUTENÇÃO', 'CORRETIVA') },
     { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
     { nome: 'Chamados por Prioridade',             fn: () => gerarSlideReservaGraficos('CHAMADOS POR PRIORIDADE', 'Abertos x Fechados', [{ titulo: 'ABERTOS' }, { titulo: 'FECHADOS' }]) },
+    { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: () => gerarSlideReservaGraficos('BACKLOG FACILITIES', 'Evolução mensal do backlog', [{ titulo: '' }]) },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS') },
     { nome: 'Fotos - Serviços Contratados',        fn: () => gerarSlideRegistroFotos('SERVIÇOS CONTRATADOS') },

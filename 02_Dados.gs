@@ -294,6 +294,112 @@ function obterKpisAcessos_() {
 
 
 // ==========================================
+// CHAMADOS PENDENTES (BACKLOG) POR ESTADO
+// ==========================================
+// Lê a aba 'CHAMADOS PENDENTES (BACKLOG)' da planilha da cidade:
+//   MÊS (MM/AAAA) | ESTADO | QUANTIDADE
+// Usa o mês de referência (ou o mais recente disponível na aba).
+//
+// CONCILIAÇÃO: o Total Geral oficial é o 'Chamados geral' da aba DADOS
+// (o mesmo número do Dashboard). Como os direcionados podem estar
+// defasados no tempo, 'Em resolução' = Total oficial − soma dos
+// direcionados — assim o total SEMPRE bate com a aba DADOS.
+// ==========================================
+function obterDadosBacklogPendentes_() {
+  try {
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    let sheet = ss.getSheetByName('CHAMADOS PENDENTES (BACKLOG)');
+    if (!sheet) {
+      sheet = ss.getSheets().find(s => {
+        const n = _histNorm_(s.getName());
+        return n.includes('backlog') || n.includes('pendentes');
+      });
+    }
+    if (!sheet) { Logger.log('Backlog pendentes: aba não encontrada.'); return null; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return null;
+
+    const hdr  = data[0].map(_histNorm_);
+    const cMes = hdr.findIndex(h => h.indexOf('mes') === 0);
+    const cEst = hdr.findIndex(h => h.includes('estado'));
+    const cQtd = hdr.findIndex(h => h.includes('quantidade') || h.includes('qtd'));
+    if (cMes < 0 || cEst < 0 || cQtd < 0) {
+      Logger.log('Backlog pendentes: cabeçalho MÊS/ESTADO/QUANTIDADE não encontrado.');
+      return null;
+    }
+
+    // Agrupa linhas por mês (preservando a ordem da planilha dentro do mês)
+    const porMes = {};
+    for (let i = 1; i < data.length; i++) {
+      const mes    = _histParseMes_(data[i][cMes]);
+      const estado = String(data[i][cEst] || '').trim();
+      const qtd    = _histNum_(data[i][cQtd]);
+      if (!mes || !estado || isNaN(qtd)) continue;
+      if (!porMes[mes.ord]) porMes[mes.ord] = { label: mes.label, itens: [] };
+      porMes[mes.ord].itens.push({ estado, qtd });
+    }
+    const ords = Object.keys(porMes).map(Number).sort((a, b) => a - b);
+    if (!ords.length) return null;
+
+    // Mês de referência se existir na aba; senão o mais recente
+    let alvo = null;
+    try {
+      const ref    = obterMesReferencia_();
+      const ordRef = ref.ano * 100 + (ref.index + 1);
+      if (porMes[ordRef]) alvo = porMes[ordRef];
+    } catch (e) {}
+    if (!alvo) alvo = porMes[ords[ords.length - 1]];
+
+    // Separa 'Em resolução' dos estados direcionados
+    const direcionados = [];
+    let emResolucaoAba = 0;
+    alvo.itens.forEach(it => {
+      if (_histNorm_(it.estado).includes('em resolucao')) emResolucaoAba += it.qtd;
+      else direcionados.push(it);
+    });
+    const somaDir = direcionados.reduce((s, it) => s + it.qtd, 0);
+
+    // Total oficial: 'Chamados geral' da aba DADOS (mesmo número do Dashboard)
+    let totalOficial = null;
+    try {
+      const dash = obterDadosDashboard();
+      dash.map.forEach((val, chave) => {
+        const k = _histNorm_(chave);
+        if (totalOficial === null && k.includes('chamados') && k.includes('geral')) {
+          const n = _histNum_(val.atual);
+          if (!isNaN(n)) totalOficial = n;
+        }
+      });
+    } catch (e) {}
+
+    // Conciliação
+    let emResolucao, total;
+    if (totalOficial !== null && totalOficial >= somaDir) {
+      emResolucao = totalOficial - somaDir;
+      total       = totalOficial;
+      if (emResolucao !== emResolucaoAba) {
+        Logger.log('Backlog: "Em resolução" ajustado de ' + emResolucaoAba + ' para ' +
+                   emResolucao + ' (concilia com o total da aba DADOS = ' + totalOficial + ').');
+      }
+    } else {
+      emResolucao = emResolucaoAba;
+      total       = somaDir + emResolucaoAba;
+      if (totalOficial !== null) {
+        Logger.log('Backlog: total da aba DADOS (' + totalOficial + ') é MENOR que a soma dos ' +
+                   'direcionados (' + somaDir + ') — usando a soma da própria aba. Confira os dados.');
+      }
+    }
+
+    return { mesLabel: alvo.label, direcionados, emResolucao, total };
+  } catch (e) {
+    Logger.log('obterDadosBacklogPendentes_: ' + e.message);
+    return null;
+  }
+}
+
+
+// ==========================================
 // DADOS DASHBOARD (Slide 01)
 // ==========================================
 function obterDadosDashboard() {
