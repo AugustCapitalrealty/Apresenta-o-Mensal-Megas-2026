@@ -78,11 +78,29 @@ function desenharGraficoHistorico(slide, x, y, w, h, serie, opts) {
     const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, baseY - bh, barW, bh);
     bar.getFill().setSolidFill(barCor); bar.getBorder().setTransparent();
 
-    // Valor no topo da barra
-    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY - bh - 14, slotW * 1.3, 12);
-    vl.getText().setText(fmt(s.valor)).getTextStyle()
+    // Valor no topo da barra (com respiro). Na última barra (mês atual),
+    // 2ª linha com a tendência vs o mês anterior (▲ subiu · ▼ caiu).
+    const temDelta = ultimo && i >= 1 && opts.deltaMesAnterior !== false;
+    const boxH = temDelta ? 24 : 12;
+    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY - bh - boxH - 6, slotW * 1.3, boxH);
+    const vt = vl.getText();
+    let txt = fmt(s.valor);
+    if (temDelta) {
+      const delta = s.valor - serie[i - 1].valor;
+      const seta  = delta > 0 ? '▲' : (delta < 0 ? '▼' : '■');
+      txt += '\n' + seta + ' ' + (delta > 0 ? '+' : delta < 0 ? '−' : '') + fmt(Math.abs(delta));
+    }
+    vt.setText(txt).getTextStyle()
       .setFontSize(6.5).setBold(true).setForegroundColor(barCor).setFontFamily(DS.typography.titles);
-    vl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    if (temDelta) {
+      const delta = s.valor - serie[i - 1].valor;
+      // maior = melhor por padrão (mais fluxo); inverte se opts.deltaMenorMelhor
+      const bom = opts.deltaMenorMelhor ? delta < 0 : delta > 0;
+      const corDelta = delta === 0 ? CORES.textGray : (bom ? CORES.cardGreen : CORES.cardRed);
+      vt.getRange(fmt(s.valor).length + 1, txt.length).getTextStyle()
+        .setFontSize(5.5).setForegroundColor(corDelta);
+    }
+    vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     // Rótulo do mês
     const ml = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY + 3, slotW * 1.3, 12);

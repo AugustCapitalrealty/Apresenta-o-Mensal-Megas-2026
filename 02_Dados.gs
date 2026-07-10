@@ -360,8 +360,9 @@ function obterDadosBacklogPendentes_() {
     });
     const somaDir = direcionados.reduce((s, it) => s + it.qtd, 0);
 
-    // Total oficial: 'Chamados geral' da aba DADOS (mesmo número do Dashboard)
-    let totalOficial = null;
+    // Total oficial: 'Chamados geral' da aba DADOS (mesmo número do Dashboard).
+    // Captura também o total do mês anterior (coluna mesAnt) para a tendência.
+    let totalOficial = null, totalAnterior = null;
     try {
       const dash = obterDadosDashboard();
       dash.map.forEach((val, chave) => {
@@ -369,6 +370,8 @@ function obterDadosBacklogPendentes_() {
         if (totalOficial === null && k.includes('chamados') && k.includes('geral')) {
           const n = _histNum_(val.atual);
           if (!isNaN(n)) totalOficial = n;
+          const p = _histNum_(val.mesAnt);
+          if (!isNaN(p)) totalAnterior = p;
         }
       });
     } catch (e) {}
@@ -391,7 +394,7 @@ function obterDadosBacklogPendentes_() {
       }
     }
 
-    return { mesLabel: alvo.label, direcionados, emResolucao, total };
+    return { mesLabel: alvo.label, direcionados, emResolucao, total, totalAnterior };
   } catch (e) {
     Logger.log('obterDadosBacklogPendentes_: ' + e.message);
     return null;

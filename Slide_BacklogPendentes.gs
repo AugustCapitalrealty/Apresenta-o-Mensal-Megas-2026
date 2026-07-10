@@ -36,14 +36,17 @@ function gerarSlideBacklogPendentes() {
   card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
   card.getBorder().setWeight(1);
 
+  // Tendência do total vs mês anterior (backlog subindo = atenção)
+  const deltaTot = (d.totalAnterior != null && !isNaN(d.totalAnterior)) ? d.total - d.totalAnterior : null;
+
   // ── Barras: Em resolução | direcionados... | Total Geral ────────────────
   const barras = [{ estado: 'Em resolução', qtd: d.emResolucao, cor: '#CBD5E1', corVal: CORES.textGray }]
     .concat(d.direcionados.map(it => ({ estado: it.estado, qtd: it.qtd, cor: '#BFDBFE', corVal: CORES.darkBlue })))
-    .concat([{ estado: 'Total Geral', qtd: d.total, cor: CORES.lightBlue, corVal: CORES.darkBlue, destaque: true }]);
+    .concat([{ estado: 'Total Geral', qtd: d.total, cor: CORES.lightBlue, corVal: CORES.darkBlue, destaque: true, delta: deltaTot }]);
 
   const plotX  = marginX + 14;
   const plotW  = W - 2 * marginX - 28;
-  const labelH = 26;                          // rótulos de estado (até 3 linhas em 5.5pt)
+  const labelH = 28;                          // rótulos de estado (até 3 linhas em 5.5pt)
   const baseY  = topY + cardH - labelH - 10;  // linha de base das barras
   const plotTop = topY + 40;
   const plotH  = baseY - plotTop;
@@ -75,15 +78,29 @@ function gerarSlideBacklogPendentes() {
     const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseY - hBar, barW, hBar);
     bar.getFill().setSolidFill(b.cor); bar.getBorder().setTransparent();
 
-    // Valor acima da barra
-    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, baseY - hBar - 15, slotW * 1.4, 13);
-    vl.getText().setText(formatarNumeroBR(b.qtd)).getTextStyle()
+    // Valor acima da barra (com respiro). No Total Geral, 2ª linha com a
+    // tendência vs mês anterior (▲ subiu = atenção · ▼ caiu = melhora).
+    const temDelta = b.destaque && b.delta != null && b.delta !== 0;
+    const boxH  = temDelta ? 24 : 13;
+    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, baseY - hBar - boxH - 8, slotW * 1.4, boxH);
+    const vt = vl.getText();
+    let txt = formatarNumeroBR(b.qtd);
+    if (temDelta) {
+      const seta = b.delta > 0 ? '▲' : '▼';
+      txt += '\n' + seta + ' ' + (b.delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(b.delta)) + ' vs mês ant.';
+    }
+    vt.setText(txt).getTextStyle()
       .setFontSize(b.destaque ? 8.5 : 7.5).setBold(true)
       .setForegroundColor(b.corVal).setFontFamily(DS.typography.titles);
-    vl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    if (temDelta) {
+      const corDelta = b.delta > 0 ? CORES.cardRed : CORES.cardGreen;  // backlog: subir é ruim
+      vt.getRange(formatarNumeroBR(b.qtd).length + 1, txt.length).getTextStyle()
+        .setFontSize(6).setBold(true).setForegroundColor(corDelta);
+    }
+    vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Rótulo do estado abaixo da base
-    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.05, baseY + 3, slotW * 1.1, labelH);
+    // Rótulo do estado abaixo da base — caixa larga p/ não quebrar palavra no meio
+    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.15, baseY + 3, slotW * 1.3, labelH);
     el.getText().setText(b.estado).getTextStyle()
       .setFontSize(5.5).setBold(true)
       .setForegroundColor(b.destaque ? CORES.darkBlue : CORES.textDark).setFontFamily(DS.typography.body);
