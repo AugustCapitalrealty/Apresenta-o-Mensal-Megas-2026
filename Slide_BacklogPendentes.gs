@@ -46,8 +46,8 @@ function gerarSlideBacklogPendentes() {
 
   const plotX  = marginX + 14;
   const plotW  = W - 2 * marginX - 28;
-  const labelH = 28;                          // rótulos de estado (até 3 linhas em 5.5pt)
-  const baseY  = topY + cardH - labelH - 10;  // linha de base das barras
+  const labelH = 46;                          // rótulos de estado — bastante altura p/ quebrar por palavra
+  const baseY  = topY + cardH - labelH - 8;   // linha de base das barras
   const plotTop = topY + 40;
   const plotH  = baseY - plotTop;
 
@@ -99,12 +99,13 @@ function gerarSlideBacklogPendentes() {
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Rótulo do estado abaixo da base — caixa larga p/ não quebrar palavra no meio
-    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.15, baseY + 3, slotW * 1.3, labelH);
+    // Rótulo do estado abaixo da base — caixa bem larga (1.5×) e fonte 5pt
+    // para quebrar por palavra, não no meio (ex.: "Responsabilidade").
+    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.25, baseY + 3, slotW * 1.5, labelH);
     el.getText().setText(b.estado).getTextStyle()
-      .setFontSize(5.5).setBold(true)
+      .setFontSize(5).setBold(true)
       .setForegroundColor(b.destaque ? CORES.darkBlue : CORES.textDark).setFontFamily(DS.typography.body);
-    el.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    el.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
     el.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   });
 

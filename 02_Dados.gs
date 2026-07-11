@@ -343,13 +343,20 @@ function obterDadosBacklogPendentes_() {
     if (!ords.length) return null;
 
     // Mês de referência se existir na aba; senão o mais recente
-    let alvo = null;
+    let alvoOrd = null;
     try {
       const ref    = obterMesReferencia_();
       const ordRef = ref.ano * 100 + (ref.index + 1);
-      if (porMes[ordRef]) alvo = porMes[ordRef];
+      if (porMes[ordRef]) alvoOrd = ordRef;
     } catch (e) {}
-    if (!alvo) alvo = porMes[ords[ords.length - 1]];
+    if (alvoOrd == null) alvoOrd = ords[ords.length - 1];
+    const alvo = porMes[alvoOrd];
+
+    // Total do mês anterior NA PRÓPRIA ABA (fallback da tendência)
+    const idxAlvo  = ords.indexOf(alvoOrd);
+    const prevOrd  = idxAlvo > 0 ? ords[idxAlvo - 1] : null;
+    const totalAnteriorAba = prevOrd != null
+      ? porMes[prevOrd].itens.reduce((s, it) => s + it.qtd, 0) : null;
 
     // Separa 'Em resolução' dos estados direcionados
     const direcionados = [];
@@ -375,6 +382,9 @@ function obterDadosBacklogPendentes_() {
         }
       });
     } catch (e) {}
+
+    // Se a aba DADOS não trouxe o mês anterior, usa a soma do mês anterior da própria aba
+    if (totalAnterior == null) totalAnterior = totalAnteriorAba;
 
     // Conciliação
     let emResolucao, total;
