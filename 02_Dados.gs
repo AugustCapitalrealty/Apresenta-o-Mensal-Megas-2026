@@ -352,18 +352,28 @@ function obterDadosBacklogPendentes_() {
     if (alvoOrd == null) alvoOrd = ords[ords.length - 1];
     const alvo = porMes[alvoOrd];
 
-    // Total do mês anterior NA PRÓPRIA ABA (fallback da tendência)
+    // Mês anterior na PRÓPRIA aba: total, valor por estado e Em resolução
     const idxAlvo  = ords.indexOf(alvoOrd);
     const prevOrd  = idxAlvo > 0 ? ords[idxAlvo - 1] : null;
     const totalAnteriorAba = prevOrd != null
       ? porMes[prevOrd].itens.reduce((s, it) => s + it.qtd, 0) : null;
 
-    // Separa 'Em resolução' dos estados direcionados
+    const prevMap = {};                 // estado normalizado → qtd do mês anterior
+    let prevEmResRaw = 0, prevSomaDir = 0;
+    if (prevOrd != null) {
+      porMes[prevOrd].itens.forEach(it => {
+        const k = _histNorm_(it.estado);
+        if (k.includes('em resolucao')) prevEmResRaw += it.qtd;
+        else { prevMap[k] = (prevMap[k] || 0) + it.qtd; prevSomaDir += it.qtd; }
+      });
+    }
+
+    // Separa 'Em resolução' dos estados direcionados (com valor do mês anterior)
     const direcionados = [];
     let emResolucaoAba = 0;
     alvo.itens.forEach(it => {
       if (_histNorm_(it.estado).includes('em resolucao')) emResolucaoAba += it.qtd;
-      else direcionados.push(it);
+      else direcionados.push({ estado: it.estado, qtd: it.qtd, anterior: prevMap[_histNorm_(it.estado)] });
     });
     const somaDir = direcionados.reduce((s, it) => s + it.qtd, 0);
 
@@ -404,7 +414,11 @@ function obterDadosBacklogPendentes_() {
       }
     }
 
-    return { mesLabel: alvo.label, direcionados, emResolucao, total, totalAnterior };
+    // Em resolução do mês anterior (derivado igual ao atual, p/ variação coerente)
+    const emResolucaoAnterior = prevOrd == null ? null
+      : (totalAnterior != null ? Math.max(totalAnterior - prevSomaDir, 0) : prevEmResRaw);
+
+    return { mesLabel: alvo.label, direcionados, emResolucao, total, totalAnterior, emResolucaoAnterior };
   } catch (e) {
     Logger.log('obterDadosBacklogPendentes_: ' + e.message);
     return null;

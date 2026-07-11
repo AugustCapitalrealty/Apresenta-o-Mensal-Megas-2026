@@ -26,7 +26,7 @@ function gerarSlideBacklogPendentes() {
   const DS = CR_DESIGN_SYSTEM;
 
   criarHeaderPadrao(slide, 'CHAMADOS PENDENTES (BACKLOG)',
-    'Chamados por estado — ' + d.mesLabel + ' · Total Geral conciliado com a aba DADOS');
+    'Chamados por estado — ' + d.mesLabel + ' · ▲/▼ vs mês anterior · Total conciliado com a aba DADOS');
 
   // ── Moldura padrão ────────────────────────────────────────────────────────
   const marginX = 30, topY = 76;
@@ -36,13 +36,11 @@ function gerarSlideBacklogPendentes() {
   card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
   card.getBorder().setWeight(1);
 
-  // Tendência do total vs mês anterior (backlog subindo = atenção)
-  const deltaTot = (d.totalAnterior != null && !isNaN(d.totalAnterior)) ? d.total - d.totalAnterior : null;
-
   // ── Barras: Em resolução | direcionados... | Total Geral ────────────────
-  const barras = [{ estado: 'Em resolução', qtd: d.emResolucao, cor: '#CBD5E1', corVal: CORES.textGray }]
-    .concat(d.direcionados.map(it => ({ estado: it.estado, qtd: it.qtd, cor: '#BFDBFE', corVal: CORES.darkBlue })))
-    .concat([{ estado: 'Total Geral', qtd: d.total, cor: CORES.lightBlue, corVal: CORES.darkBlue, destaque: true, delta: deltaTot }]);
+  // Cada barra carrega o valor do mês anterior (anterior) p/ a tendência ▲/▼.
+  const barras = [{ estado: 'Em resolução', qtd: d.emResolucao, anterior: d.emResolucaoAnterior, cor: '#CBD5E1', corVal: CORES.textGray }]
+    .concat(d.direcionados.map(it => ({ estado: it.estado, qtd: it.qtd, anterior: it.anterior, cor: '#BFDBFE', corVal: CORES.darkBlue })))
+    .concat([{ estado: 'Total Geral', qtd: d.total, anterior: d.totalAnterior, cor: CORES.lightBlue, corVal: CORES.darkBlue, destaque: true }]);
 
   const plotX  = marginX + 14;
   const plotW  = W - 2 * marginX - 28;
@@ -78,24 +76,27 @@ function gerarSlideBacklogPendentes() {
     const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseY - hBar, barW, hBar);
     bar.getFill().setSolidFill(b.cor); bar.getBorder().setTransparent();
 
-    // Valor acima da barra (com respiro). No Total Geral, 2ª linha com a
-    // tendência vs mês anterior (▲ subiu = atenção · ▼ caiu = melhora).
-    const temDelta = b.destaque && b.delta != null && b.delta !== 0;
-    const boxH  = temDelta ? 24 : 13;
-    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.2, baseY - hBar - boxH - 8, slotW * 1.4, boxH);
+    // Valor acima da barra (com respiro) + 2ª linha com a tendência vs mês
+    // anterior em TODAS as barras (▲ subiu = atenção · ▼ caiu = melhora).
+    const temDelta = b.anterior != null && !isNaN(b.anterior);
+    const delta    = temDelta ? b.qtd - b.anterior : 0;
+    const boxH  = temDelta ? 22 : 13;
+    const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.25, baseY - hBar - boxH - 8, slotW * 1.5, boxH);
     const vt = vl.getText();
-    let txt = formatarNumeroBR(b.qtd);
+    const valStr = formatarNumeroBR(b.qtd);
+    let txt = valStr;
     if (temDelta) {
-      const seta = b.delta > 0 ? '▲' : '▼';
-      txt += '\n' + seta + ' ' + (b.delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(b.delta)) + ' vs mês ant.';
+      const seta = delta > 0 ? '▲' : (delta < 0 ? '▼' : '▬');
+      const dnum = delta === 0 ? '0' : (delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(delta));
+      txt += '\n' + seta + ' ' + dnum + (b.destaque ? ' vs mês ant.' : '');
     }
     vt.setText(txt).getTextStyle()
       .setFontSize(b.destaque ? 8.5 : 7.5).setBold(true)
       .setForegroundColor(b.corVal).setFontFamily(DS.typography.titles);
     if (temDelta) {
-      const corDelta = b.delta > 0 ? CORES.cardRed : CORES.cardGreen;  // backlog: subir é ruim
-      vt.getRange(formatarNumeroBR(b.qtd).length + 1, txt.length).getTextStyle()
-        .setFontSize(6).setBold(true).setForegroundColor(corDelta);
+      const corDelta = delta === 0 ? CORES.textGray : (delta > 0 ? CORES.cardRed : CORES.cardGreen);
+      vt.getRange(valStr.length + 1, txt.length).getTextStyle()
+        .setFontSize(b.destaque ? 6 : 5.5).setBold(true).setForegroundColor(corDelta);
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
