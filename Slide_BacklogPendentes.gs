@@ -71,10 +71,13 @@ function gerarSlideBacklogPendentes() {
   // ── Desenho das barras ────────────────────────────────────────────────────
   barras.forEach((b, i) => {
     const cx   = plotX + i * slotW + (slotW - barW) / 2;
-    const hBar = Math.max((b.qtd / maxVal) * plotH, b.qtd > 0 ? 3 : 1.5);
+    const hBar = b.qtd > 0 ? Math.max((b.qtd / maxVal) * plotH, 3) : 0;
 
-    const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseY - hBar, barW, hBar);
-    bar.getFill().setSolidFill(b.cor); bar.getBorder().setTransparent();
+    // Estado com quantidade 0 não desenha barra — só o número 0
+    if (hBar > 0) {
+      const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseY - hBar, barW, hBar);
+      bar.getFill().setSolidFill(b.cor); bar.getBorder().setTransparent();
+    }
 
     // Valor acima da barra (com respiro) + 2ª linha com a tendência vs mês
     // anterior em TODAS as barras (▲ subiu = atenção · ▼ caiu = melhora).
@@ -88,7 +91,7 @@ function gerarSlideBacklogPendentes() {
     if (temDelta) {
       const seta = delta > 0 ? '▲' : (delta < 0 ? '▼' : '▬');
       const dnum = delta === 0 ? '0' : (delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(delta));
-      txt += '\n' + seta + ' ' + dnum + (b.destaque ? ' vs mês ant.' : '');
+      txt += '\n' + seta + ' ' + dnum;   // compacto em todas as barras (subtítulo explica)
     }
     vt.setText(txt).getTextStyle()
       .setFontSize(b.destaque ? 8.5 : 7.5).setBold(true)
@@ -100,11 +103,12 @@ function gerarSlideBacklogPendentes() {
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Rótulo do estado abaixo da base — caixa bem larga (1.5×) e fonte 5pt
-    // para quebrar por palavra, não no meio (ex.: "Responsabilidade").
-    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.25, baseY + 3, slotW * 1.5, labelH);
+    // Rótulo do estado abaixo da base — fonte 4.5pt e caixa ~1 slot (sem
+    // invadir o vizinho), com bastante altura p/ quebrar por palavra
+    // (ex.: "Responsabilidade" cabe numa linha).
+    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.075, baseY + 3, slotW * 1.15, labelH);
     el.getText().setText(b.estado).getTextStyle()
-      .setFontSize(5).setBold(true)
+      .setFontSize(4.5).setBold(true)
       .setForegroundColor(b.destaque ? CORES.darkBlue : CORES.textDark).setFontFamily(DS.typography.body);
     el.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
     el.setContentAlignment(SlidesApp.ContentAlignment.TOP);
