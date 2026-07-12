@@ -573,11 +573,14 @@ function obterDadosPreventivas() {
       return { text: txt, type: g.type };
     });
 
-    // Tendência do SLA: valor atual (do slide) vs mês anterior no histórico validado
-    const dM = deltaVsMesAnterior_(res.mensal.sla, 'SLA MENSAL', 'PREVENTIVAS');
-    const dA = deltaVsMesAnterior_(res.anual.sla, 'SLA ACUMULADO', 'PREVENTIVAS');
-    res.mensal.slaDelta = dM ? dM.delta : null;   // SLA maior = melhor
-    res.anual.slaDelta  = dA ? dA.delta : null;
+    // Tendências: valor atual (do slide) vs mês anterior no histórico validado.
+    // Aba PREVENTIVAS tem PREVISTAS/REALIZADAS/SLA MENSAL (mensal) e SLA ACUMULADO.
+    // Acumulado de previstas/realizadas não existe no histórico → sem tendência.
+    const _dp = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'PREVENTIVAS'); return r ? r.delta : null; };
+    res.mensal.previstasDelta  = _dp(res.mensal.previstas,  'PREVISTAS');
+    res.mensal.realizadasDelta = _dp(res.mensal.realizadas, 'REALIZADAS');
+    res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
+    res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
 
     return res;
 

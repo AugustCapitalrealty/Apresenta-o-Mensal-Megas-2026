@@ -31,7 +31,7 @@ function gerarSlideCorretivas() {
   const PageHeight = deck.getPageHeight();
 
   // Usa o cabeçalho padrão do 01_Config.gs
-  criarHeaderPadrao(slide, 'INDICADORES DE CORRETIVAS', 'Backlog e Performance');
+  criarHeaderPadrao(slide, 'INDICADORES DE CORRETIVAS', 'Backlog e Performance · ▲/▼ vs mês anterior');
 
   const marginX = 40;
   // AJUSTE PADRONIZAÇÃO: Alterado de 90 para 80 (Alinhado com Slides 3 e 4)

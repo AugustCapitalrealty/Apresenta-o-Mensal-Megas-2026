@@ -315,15 +315,14 @@ function formatarRsM2_(v, comSinal) {
  * menorMelhor=true → cair é bom (verde). Retorna { txt:'▲ +1,2', cor }.
  * Sem variação → '▬ 0' cinza. delta null → txt vazio.
  */
-function tendenciaTexto_(delta, menorMelhor) {
+function tendenciaTexto_(delta, menorMelhor, neutro) {
   if (delta == null || isNaN(delta)) return { txt: '', cor: CORES.textGray };
   if (delta === 0) return { txt: '▬ 0', cor: CORES.textGray };
-  const bom  = menorMelhor ? delta < 0 : delta > 0;
   const seta = delta > 0 ? '▲' : '▼';
-  return {
-    txt: seta + ' ' + (delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(delta)),
-    cor: bom ? CORES.cardGreen : CORES.cardRed
-  };
+  const txt  = seta + ' ' + (delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(delta));
+  if (neutro) return { txt: txt, cor: CORES.textGray };   // sem juízo de valor
+  const bom = menorMelhor ? delta < 0 : delta > 0;
+  return { txt: txt, cor: bom ? CORES.cardGreen : CORES.cardRed };
 }
 
 /**
