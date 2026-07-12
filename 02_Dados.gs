@@ -171,6 +171,19 @@ function lerHistoricoValidado(indicador, opts) {
 }
 
 
+// Variação de um indicador vs o mês anterior, lida do HISTÓRICO VALIDADO.
+// Retorna { atual, anterior, delta } (números; delta arredondado) ou null.
+//   deltaHistorico_('SLA MENSAL', 'PREVENTIVAS')
+//   deltaHistorico_('Chamados criados', 'CHAMADOS')
+function deltaHistorico_(indicador, aba) {
+  const serie = lerHistoricoValidado(indicador, aba ? { aba } : {});
+  if (serie.length < 2) return null;
+  const atual    = serie[serie.length - 1].valor;
+  const anterior = serie[serie.length - 2].valor;
+  return { atual, anterior, delta: Math.round((atual - anterior) * 100) / 100 };
+}
+
+
 // ==========================================
 // SÉRIE DE FLUXO DE ACESSOS (planilha dedicada de Controle de Acessos)
 // ==========================================
@@ -533,6 +546,12 @@ function obterDadosPreventivas() {
       return { text: txt, type: g.type };
     });
 
+    // Tendência do SLA vs mês anterior (histórico validado, aba PREVENTIVAS)
+    const dM = deltaHistorico_('SLA MENSAL', 'PREVENTIVAS');
+    const dA = deltaHistorico_('SLA ACUMULADO', 'PREVENTIVAS');
+    res.mensal.slaDelta = dM ? dM.delta : null;   // SLA maior = melhor
+    res.anual.slaDelta  = dA ? dA.delta : null;
+
     return res;
 
   } catch (e) {
@@ -570,14 +589,24 @@ function obterDadosCorretivasV6() {
       else if (ind.includes('disponibilidade'))                    { kpiData.mDisp    = row[1]; kpiData.aDisp     = row[2]; }
     });
 
+    // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
+    // menor = quanto MENOR melhor. Acumulado só tem disponibilidade no histórico
+    // (contadores acumulados só crescem — comparação não é útil).
+    const _d = (ind) => { const r = deltaHistorico_(ind, 'CHAMADOS'); return r ? r.delta : null; };
+    const dCri = _d('Chamados criados');
+    const dFec = _d('Chamados fechados');
+    const dTmp = _d('Tempo médio entre criado e fechado');
+    const dDisp = _d('Índice de disponibilidade');
+    const dDispAc = _d('Índice de disponibilidade - ACUMULADO');
+
     return {
       mensal: {
         titulo: 'VISÃO MENSAL',
         kpis: [
-          { l: 'Chamados criados',                   v: kpiData.mCriados  },
-          { l: 'Chamados fechados',                  v: kpiData.mFechados },
-          { l: 'Tempo médio entre criado e fechado', v: kpiData.mTempo    },
-          { l: 'Índice de disponibilidade',          v: kpiData.mDisp     }
+          { l: 'Chamados criados',                   v: kpiData.mCriados,  delta: dCri,  menor: true  },
+          { l: 'Chamados fechados',                  v: kpiData.mFechados, delta: dFec,  menor: false },
+          { l: 'Tempo médio entre criado e fechado', v: kpiData.mTempo,    delta: dTmp,  menor: true  },
+          { l: 'Índice de disponibilidade',          v: kpiData.mDisp,     delta: dDisp, menor: false }
         ]
       },
       anual: {
@@ -586,7 +615,7 @@ function obterDadosCorretivasV6() {
           { l: 'Chamados criados',                   v: kpiData.aCriados  },
           { l: 'Chamados fechados',                  v: kpiData.aFechados },
           { l: 'Tempo médio entre criado e fechado', v: kpiData.aTempo    },
-          { l: 'Índice de disponibilidade',          v: kpiData.aDisp     }
+          { l: 'Índice de disponibilidade',          v: kpiData.aDisp,  delta: dDispAc, menor: false }
         ]
       }
     };

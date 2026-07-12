@@ -36,7 +36,9 @@ function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {
   const colW = (w - 20) / 3;
   _itemSimples(slide, x + 10, contentY, colW, 'PREVISTAS', dados.previstas, CORES.textGray, CORES.textDark);
   _itemSimples(slide, x + 10 + colW, contentY, colW, 'REALIZADAS', dados.realizadas, CORES.textGray, CORES.textDark);
-  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA', dados.sla, CORES.textGray, corPorSLA(dados.sla, corTema));
+  // SLA maior = melhor → tendência vs mês anterior (histórico validado)
+  const slaTrend = tendenciaTexto_(dados.slaDelta, false);
+  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA', dados.sla, CORES.textGray, corPorSLA(dados.sla, corTema), slaTrend);
 
   // Barra de progresso Realizadas/Previstas (preenche o espaço inferior do card)
   const prev = parseInt(String(dados.previstas).replace(/\D/g, ''), 10);
@@ -59,7 +61,7 @@ function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {
   }
 }
 
-function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal) {
+function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal, trend) {
   const DS = CR_DESIGN_SYSTEM;
   const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
   lbl.getText().setText(label).getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(colorLabel).setFontFamily(DS.typography.body);
@@ -67,6 +69,14 @@ function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal) {
   const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
   val.getText().setText(valor).getTextStyle().setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
   val.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // Tendência vs mês anterior (opcional), logo abaixo do valor
+  if (trend && trend.txt) {
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 58, w, 14);
+    t.getText().setText(trend.txt + ' vs mês ant.').getTextStyle()
+      .setFontSize(7).setBold(true).setForegroundColor(trend.cor).setFontFamily(DS.typography.titles);
+    t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
 }
 
 function _desenharListaServicos(slide, x, y, w, h, dadosGerais) {

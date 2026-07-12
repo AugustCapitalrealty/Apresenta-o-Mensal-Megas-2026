@@ -311,6 +311,22 @@ function formatarRsM2_(v, comSinal) {
 }
 
 /**
+ * Texto e cor da tendência vs mês anterior a partir de um delta numérico.
+ * menorMelhor=true → cair é bom (verde). Retorna { txt:'▲ +1,2', cor }.
+ * Sem variação → '▬ 0' cinza. delta null → txt vazio.
+ */
+function tendenciaTexto_(delta, menorMelhor) {
+  if (delta == null || isNaN(delta)) return { txt: '', cor: CORES.textGray };
+  if (delta === 0) return { txt: '▬ 0', cor: CORES.textGray };
+  const bom  = menorMelhor ? delta < 0 : delta > 0;
+  const seta = delta > 0 ? '▲' : '▼';
+  return {
+    txt: seta + ' ' + (delta > 0 ? '+' : '−') + formatarNumeroBR(Math.abs(delta)),
+    cor: bom ? CORES.cardGreen : CORES.cardRed
+  };
+}
+
+/**
  * Cor semântica para percentuais de SLA (regra do boletim):
  * ≥95 verde, ≥90 âmbar, <90 vermelho. Sem número → cor padrão.
  */

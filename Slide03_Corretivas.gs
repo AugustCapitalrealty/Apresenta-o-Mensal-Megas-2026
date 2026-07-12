@@ -78,15 +78,22 @@ function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
   dados.kpis.forEach((kpi, i) => {
     const ry = startContentY + (i * rowH);
 
-    const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.75, rowH);
+    const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.50, rowH);
     lblBox.getText().setText(kpi.l)
-      .getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
+      .getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.75, ry, w * 0.20, rowH);
-    valBox.getText().setText(String(kpi.v))
-      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+    // Valor + tendência vs mês anterior (histórico validado)
+    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.52, ry, w * 0.43, rowH);
+    const valStr = String(kpi.v);
+    const trend  = tendenciaTexto_(kpi.delta, kpi.menor);
+    const txt    = trend.txt ? valStr + '   ' + trend.txt : valStr;
+    const vr = valBox.getText();
+    vr.setText(txt).getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+    if (trend.txt) {
+      vr.getRange(valStr.length, txt.length).getTextStyle().setFontSize(7).setForegroundColor(trend.cor);
+    }
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    valBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+    vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });
 }
