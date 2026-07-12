@@ -171,16 +171,43 @@ function lerHistoricoValidado(indicador, opts) {
 }
 
 
-// Variação de um indicador vs o mês anterior, lida do HISTÓRICO VALIDADO.
-// Retorna { atual, anterior, delta } (números; delta arredondado) ou null.
-//   deltaHistorico_('SLA MENSAL', 'PREVENTIVAS')
-//   deltaHistorico_('Chamados criados', 'CHAMADOS')
-function deltaHistorico_(indicador, aba) {
+// Número tolerante: "11h"→11, "95%"→95, "97,47"→97.47, "66.408"→66408.
+function _numLenient_(v) {
+  if (v == null) return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).replace(/[^\d,.-]/g, '');
+  if (!s) return NaN;
+  s = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/\.(?=\d{3}\b)/g, '');
+  const n = Number(s);
+  return isNaN(n) ? NaN : n;
+}
+
+// Variação do valor ATUAL (do slide) vs o mês anterior no HISTÓRICO VALIDADO.
+// O histórico guarda os meses fechados (ex.: 05/2026); o mês atual (06/2026)
+// vem do próprio slide. Compara com o maior mês do histórico ANTES do mês de
+// referência. Retorna { atual, anterior, delta } ou null.
+//   deltaVsMesAnterior_('95%', 'SLA MENSAL', 'PREVENTIVAS')
+//   deltaVsMesAnterior_('17',  'Chamados criados', 'CHAMADOS')
+function deltaVsMesAnterior_(atual, indicador, aba) {
+  const atualN = _numLenient_(atual);
+  if (isNaN(atualN)) return null;
   const serie = lerHistoricoValidado(indicador, aba ? { aba } : {});
-  if (serie.length < 2) return null;
-  const atual    = serie[serie.length - 1].valor;
-  const anterior = serie[serie.length - 2].valor;
-  return { atual, anterior, delta: Math.round((atual - anterior) * 100) / 100 };
+  if (!serie.length) return null;
+
+  let ordRef = Infinity;
+  try { const r = obterMesReferencia_(); ordRef = r.ano * 100 + (r.index + 1); } catch (e) {}
+
+  // Mês anterior = maior mês do histórico ESTRITAMENTE antes do mês de referência
+  let prev = null;
+  serie.forEach(p => { if (p.ord < ordRef && (!prev || p.ord > prev.ord)) prev = p; });
+  // Fallback: nada antes da referência → usa o mais recente que não seja o próprio mês
+  if (!prev) {
+    const outros = serie.filter(p => p.ord !== ordRef);
+    if (outros.length) prev = outros[outros.length - 1];
+  }
+  if (!prev) return null;
+
+  return { atual: atualN, anterior: prev.valor, delta: Math.round((atualN - prev.valor) * 100) / 100 };
 }
 
 
@@ -546,9 +573,9 @@ function obterDadosPreventivas() {
       return { text: txt, type: g.type };
     });
 
-    // Tendência do SLA vs mês anterior (histórico validado, aba PREVENTIVAS)
-    const dM = deltaHistorico_('SLA MENSAL', 'PREVENTIVAS');
-    const dA = deltaHistorico_('SLA ACUMULADO', 'PREVENTIVAS');
+    // Tendência do SLA: valor atual (do slide) vs mês anterior no histórico validado
+    const dM = deltaVsMesAnterior_(res.mensal.sla, 'SLA MENSAL', 'PREVENTIVAS');
+    const dA = deltaVsMesAnterior_(res.anual.sla, 'SLA ACUMULADO', 'PREVENTIVAS');
     res.mensal.slaDelta = dM ? dM.delta : null;   // SLA maior = melhor
     res.anual.slaDelta  = dA ? dA.delta : null;
 
@@ -592,12 +619,12 @@ function obterDadosCorretivasV6() {
     // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
     // menor = quanto MENOR melhor. Acumulado só tem disponibilidade no histórico
     // (contadores acumulados só crescem — comparação não é útil).
-    const _d = (ind) => { const r = deltaHistorico_(ind, 'CHAMADOS'); return r ? r.delta : null; };
-    const dCri = _d('Chamados criados');
-    const dFec = _d('Chamados fechados');
-    const dTmp = _d('Tempo médio entre criado e fechado');
-    const dDisp = _d('Índice de disponibilidade');
-    const dDispAc = _d('Índice de disponibilidade - ACUMULADO');
+    const _d = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'CHAMADOS'); return r ? r.delta : null; };
+    const dCri = _d(kpiData.mCriados, 'Chamados criados');
+    const dFec = _d(kpiData.mFechados, 'Chamados fechados');
+    const dTmp = _d(kpiData.mTempo, 'Tempo médio entre criado e fechado');
+    const dDisp = _d(kpiData.mDisp, 'Índice de disponibilidade');
+    const dDispAc = _d(kpiData.aDisp, 'Índice de disponibilidade - ACUMULADO');
 
     return {
       mensal: {
