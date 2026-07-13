@@ -1,117 +1,99 @@
 /**
  * ARQUIVO: Slide_Metas.gs
  * SLIDE — METAS (scorecard por papel: Supervisor / Analista)
- * DESCRIÇÃO: Portado do sistema "Gestão à Vista TV" (mesmo grupo, mesmas
- * planilhas e pessoas), adaptado para a apresentação mensal.
+ * DESCRIÇÃO: Puxa DIRETO da planilha do sistema irmão "Gestão à Vista TV"
+ * (GESTAO_TV_METAS_SPREADSHEET_ID em 01_Config.gs), que já é alimentada
+ * todo mês para os painéis de TV — nada novo para preencher aqui. Redesenha
+ * a mesma informação no design system da apresentação mensal.
  *
- * FONTE DOS DADOS: aba "METAS" na planilha da cidade ativa — uma linha por
- * indicador. Colunas:
- *   Papel | Título | Descrição | Pontos | Direcionador | Unidade | Sentido |
- *   Meta Mês | Real Mês | Status Mês | Meta Acum. | Real Acum. | Status Acum.
- *
- * AUTO-PREENCHIMENTO: escreva "AUTO" em Real Mês / Real Acum. para os
- * indicadores que já calculamos em outros slides — SLA (Preventivas), Custo
- * M² (Realizado) e Índice de Disponibilidade (Corretivas). Ver
- * obterAutoMetaValor_() em 02_Dados.gs. Os demais (Projeto Sim/Não,
- * Orçamento, Documentos, Taxa de Reabertura...) são preenchidos à mão todo mês.
+ * FONTE DOS DADOS: aba "METAS" da planilha da Gestão à Vista TV — uma linha
+ * por indicador, com colunas:
+ *   Mega | Papel | Título | Descrição | Pontos | Direcionador | Unidade |
+ *   Sentido | Meta Mês | Real Mês | Status Mês | Meta Acum. | Real Acum. |
+ *   Status Acum.
+ * A coluna "Mega" (ex.: "Curitiba", "MEGA CURITIBA") é casada com a cidade
+ * ativa; "Papel" (Supervisor/Analista) define em qual slide a linha entra.
  *
  * STATUS: se a coluna Status Mês/Acum. estiver em branco, é calculado
  * automaticamente comparando Real x Meta pelo Sentido (<=, >=, =). SIM/NÃO
  * vira Verde/Amarelo. Metas compostas (duas medidas separadas por "/") só
- * ficam Verdes se AMBAS baterem. Para forçar (ex.: Vermelho após o prazo),
- * escreva Verde/Amarelo/Vermelho direto na coluna de Status.
+ * ficam Verdes se AMBAS baterem. Se a coluna de Status já tiver um valor
+ * (Verde/Amarelo/Vermelho), ele prevalece (override manual).
  *
  * PONTUAÇÃO: soma os pontos das linhas com Status Acum. = Verde, mostrada
  * no rodapé do slide com selo de elegibilidade (>= METAS_PONTOS_ELEGIVEL).
+ *
+ * PRÓXIMO PASSO (automação): hoje os valores Real vêm como estão na
+ * planilha da TV. obterAutoMetaValor_() (02_Dados.gs) já sabe calcular SLA
+ * (Preventivas), Custo M² (Realizado) e Índice de Disponibilidade
+ * (Corretivas) — quando quisermos automatizar, essas células passam a
+ * aceitar "AUTO" e o valor é resolvido sozinho (ver comentário em
+ * obterDadosMetas_ abaixo).
  */
 
-const ABA_METAS = 'METAS';
 const METAS_PONTOS_ELEGIVEL = 50;
 
 const METAS_COLS_FULL = [
-  'Papel', 'Título', 'Descrição', 'Pontos', 'Direcionador', 'Unidade', 'Sentido',
+  'Mega', 'Papel', 'Título', 'Descrição', 'Pontos', 'Direcionador', 'Unidade', 'Sentido',
   'Meta Mês', 'Real Mês', 'Status Mês', 'Meta Acum.', 'Real Acum.', 'Status Acum.'
 ];
 
 // Colunas exibidas na tabela (Descrição → Status Acum.) — 11 colunas
-const METAS_COLS = METAS_COLS_FULL.slice(2);
+const METAS_COLS = METAS_COLS_FULL.slice(3);
 
 
 // ==========================================
-// CRIAÇÃO DA ABA (rodar 1x por cidade)
+// LEITURA / FILTRO (planilha da Gestão à Vista TV)
 // ==========================================
-function CRIAR_ABA_METAS() {
-  const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const DS = CR_DESIGN_SYSTEM;
-
-  let aba = ss.getSheetByName(ABA_METAS);
-  if (!aba) aba = ss.insertSheet(ABA_METAS);
-
-  const temCabecalho = aba.getRange(1, 1).getValue() === 'Papel';
-  if (!temCabecalho) {
-    aba.getRange(1, 1, 1, METAS_COLS_FULL.length).setValues([METAS_COLS_FULL]);
-  }
-  aba.getRange(1, 1, 1, METAS_COLS_FULL.length)
-    .setBackground(DS.colors.brandDark).setFontColor('#FFFFFF')
-    .setFontWeight('bold').setHorizontalAlignment('center').setWrap(true);
-  aba.setFrozenRows(1);
-  aba.setColumnWidth(1, 90);   // Papel
-  aba.setColumnWidth(2, 240);  // Título
-  aba.setColumnWidth(3, 280);  // Descrição
-  for (let c = 4; c <= METAS_COLS_FULL.length; c++) aba.setColumnWidth(c, 85);
-
-  Logger.log('✅ Aba METAS pronta em ' + getProjetoAtivo().nome +
-             '. Preencha Papel/Título/Descrição/Pontos/... e rode regerar' + getProjetoAtivo().nome.replace(/\s/g, '') + '().');
-}
-
-function criarAbaMetasCuritiba() { setProjetoAtivo('CURITIBA'); CRIAR_ABA_METAS(); }
-function criarAbaMetasItajai()   { setProjetoAtivo('ITAJAI');   CRIAR_ABA_METAS(); }
-function criarAbaMetasEsteio()   { setProjetoAtivo('ESTEIO');   CRIAR_ABA_METAS(); }
-
-
-// ==========================================
-// LEITURA / FILTRO
-// ==========================================
+function _metasNormMega_(s)  { return String(s || '').toUpperCase().replace(/^MEGA\s+/, '').trim(); }
 function _metasNormPapel_(s) { return String(s || '').toUpperCase().trim(); }
 
-// Distintos "Papel" com linhas preenchidas na aba METAS da cidade ativa.
+// Distintos "Papel" com linhas preenchidas para a cidade ativa.
 function obterPapeisMetas_() {
-  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const aba = ss.getSheetByName(ABA_METAS);
+  const ss  = SpreadsheetApp.openById(GESTAO_TV_METAS_SPREADSHEET_ID);
+  const aba = ss.getSheetByName('METAS');
   if (!aba) return [];
   const ultima = aba.getLastRow();
   if (ultima < 2) return [];
 
+  const alvoMega = _metasNormMega_(getProjetoAtivo().nome);
   const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
   const papeis = [];
   dados.forEach(l => {
-    const papel = _metasNormPapel_(l[0]);
-    if (papel && String(l[2] || '').trim() !== '' && papeis.indexOf(papel) < 0) papeis.push(papel);
+    const papel = _metasNormPapel_(l[1]);
+    if (_metasNormMega_(l[0]) === alvoMega && papel && String(l[3] || '').trim() !== '' && papeis.indexOf(papel) < 0) {
+      papeis.push(papel);
+    }
   });
   return papeis;
 }
 
-// { titulo, papel, linhas } para o papel informado, ou null se não houver dados.
-// Resolve "AUTO" em Real Mês/Real Acum. usando obterAutoMetaValor_ (02_Dados.gs).
+// { titulo, papel, linhas } para o papel informado (cidade ativa), ou null.
+// AUTO em Real Mês/Real Acum. (quando existir) resolve via obterAutoMetaValor_
+// — reservado para o próximo passo de automação; hoje as células da planilha
+// da TV trazem o valor literal, então o AUTO já funciona se você quiser testar.
 function obterDadosMetas_(papel) {
-  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const aba = ss.getSheetByName(ABA_METAS);
+  const ss  = SpreadsheetApp.openById(GESTAO_TV_METAS_SPREADSHEET_ID);
+  const aba = ss.getSheetByName('METAS');
   if (!aba) return null;
   const ultima = aba.getLastRow();
   if (ultima < 2) return null;
 
-  const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
+  const alvoMega  = _metasNormMega_(getProjetoAtivo().nome);
   const alvoPapel = _metasNormPapel_(papel);
+  const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
 
   const filtradas = dados.filter(l =>
-    _metasNormPapel_(l[0]) === alvoPapel && String(l[2] || '').trim() !== ''
+    _metasNormMega_(l[0]) === alvoMega &&
+    _metasNormPapel_(l[1]) === alvoPapel &&
+    String(l[3] || '').trim() !== ''
   );
   if (!filtradas.length) return null;
 
-  const titulo = String(filtradas[0][1] || '').trim() || ('METAS ' + alvoPapel + ' — ' + getProjetoAtivo().nome);
+  const titulo = String(filtradas[0][2] || '').trim() || ('METAS ' + alvoPapel + ' — ' + getProjetoAtivo().nome);
 
   const linhas = filtradas.map(l => {
-    const linha = l.slice(2, 2 + METAS_COLS.length);  // 11 colunas exibidas
+    const linha = l.slice(3, 3 + METAS_COLS.length);  // 11 colunas exibidas
     const descricao = linha[0];
     [6, 9].forEach((idx, i) => {  // índices de Real Mês (6) e Real Acum (9) dentro de `linha`
       if (String(linha[idx] || '').trim().toUpperCase() === 'AUTO') {
@@ -226,20 +208,20 @@ function _gerarSlideMetasSemDados_() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
   const W = deck.getPageWidth();
 
-  criarHeaderPadrao(slide, 'METAS', 'Configure a aba METAS para habilitar este slide');
+  criarHeaderPadrao(slide, 'METAS', 'Sem linhas para ' + getProjetoAtivo().nome + ' na planilha da Gestão à Vista TV');
 
   const marginX = 30, topY = 90;
-  const y = criarCardPainel(slide, marginX, topY, W - 2 * marginX, 140, 'COMO CONFIGURAR', CORES.lightBlue);
-  const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 14, y, W - 2 * marginX - 28, 100);
+  const y = criarCardPainel(slide, marginX, topY, W - 2 * marginX, 120, 'DE ONDE VÊM OS DADOS', CORES.lightBlue);
+  const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 14, y, W - 2 * marginX - 28, 80);
   txt.getText().setText(
-    '1. No editor do Apps Script, rode criarAbaMetasCuritiba() / criarAbaMetasItajai() / criarAbaMetasEsteio() — cria a aba METAS nesta planilha.\n' +
-    '2. Preencha uma linha por indicador (Papel, Título, Descrição, Pontos, Direcionador, Unidade, Sentido, Meta Mês, Real Mês, Meta Acum., Real Acum.).\n' +
-    '3. Em Real Mês/Real Acum., escreva "AUTO" para SLA, Custo M² e Disponibilidade — os demais são manuais.\n' +
-    '4. Rode a geração novamente.'
+    'Este slide lê a aba METAS da planilha da Gestão à Vista TV (a mesma que já ' +
+    'alimenta os painéis de TV — nada novo para preencher). Não encontrei nenhuma ' +
+    'linha com Mega = "' + getProjetoAtivo().nome + '" nessa aba. Confira lá se o ' +
+    'papel (Supervisor/Analista) desta cidade está preenchido e rode a geração de novo.'
   ).getTextStyle().setFontSize(10).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
   txt.getText().getParagraphStyle().setLineSpacing(130);
 
-  Logger.log('Slide Metas: aba METAS ainda não configurada — slide de instruções gerado.');
+  Logger.log('Slide Metas: nenhuma linha para ' + getProjetoAtivo().nome + ' na planilha da Gestão à Vista TV — slide de instruções gerado.');
 }
 
 

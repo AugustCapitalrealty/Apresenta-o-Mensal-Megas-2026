@@ -55,6 +55,12 @@ const CR_DESIGN_SYSTEM = {
 // gravados automaticamente (que podiam sair errados). Ver Suporte_RegistroDados.gs.
 const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 
+// Planilha do sistema irmão "Gestão à Vista TV" — já mantém a aba METAS
+// (Mega | Papel | Título | Descrição | Pontos | ...) todo mês para os
+// painéis de TV. O slide de Metas lê direto daqui: nada novo para
+// preencher, evita duplicar o trabalho mensal. Ver Slide_Metas.gs.
+const GESTAO_TV_METAS_SPREADSHEET_ID = '1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1WiRA';
+
 // Planilha do sistema "Controle de Acessos — Megas" (repo próprio). É a fonte
 // AUTORITATIVA dos dados de acesso — aba "Dados" no formato
 //   Mês (MM/AAAA) | Empreendimento | Fluxo Total | ...
