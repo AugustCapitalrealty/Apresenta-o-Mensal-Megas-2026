@@ -986,6 +986,46 @@ function obterCustoM2PorMes_() {
 
 
 // ==========================================
+// AUTO-PREENCHIMENTO DO SLIDE DE METAS (Slide_Metas.gs)
+// ==========================================
+// Alguns indicadores da tabela de Metas já são calculados em outros slides.
+// Quando o usuário escreve "AUTO" na célula Real Mês/Real Acum. da aba METAS,
+// este helper resolve o valor a partir do Descrição da linha (casamento por
+// palavra-chave, sem acento). Cobre: SLA (Preventivas), Custo M² (Realizado)
+// e Índice de Disponibilidade (Corretivas). Sem correspondência → null
+// (a célula fica em branco e o usuário preenche à mão).
+function obterAutoMetaValor_(descricao, qual) {
+  const d = _histNorm_(descricao);
+  const ehMensal = qual === 'mes';
+
+  try {
+    if (d.includes('sla') && !d.includes('terceiro') && !d.includes('acesso')) {
+      const p = obterDadosPreventivas();
+      return ehMensal ? (p.mensal.sla || null) : (p.anual.sla || null);
+    }
+    if (d.includes('custo') && (d.includes('m2') || d.includes('m²'))) {
+      if (ehMensal) {
+        const cm = obterDadosCustoM2();
+        return cm ? formatarMoedaSlide(cm.kpis.custo) : null;
+      }
+      const ac = obterCustoM2Acumulado_();
+      return (ac && ac.realizado != null) ? formatarMoedaSlide(ac.realizado) : null;
+    }
+    if (d.includes('disponibilidade')) {
+      const c = obterDadosCorretivasV6();
+      if (!c) return null;
+      const kpis = ehMensal ? c.mensal.kpis : c.anual.kpis;
+      const kpi  = kpis.find(k => _histNorm_(k.l).includes('disponibilidade'));
+      return kpi ? String(kpi.v) : null;
+    }
+  } catch (e) {
+    Logger.log('obterAutoMetaValor_("' + descricao + '"): ' + e.message);
+  }
+  return null;
+}
+
+
+// ==========================================
 // HELPERS INTERNOS - CUSTO M²
 // ==========================================
 

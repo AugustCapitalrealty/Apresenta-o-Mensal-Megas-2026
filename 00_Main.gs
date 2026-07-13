@@ -63,6 +63,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Agenda',                              fn: gerarSlideAgenda },
     { nome: 'Destaques do Período',                fn: gerarSlideDestaques },
     { nome: 'Dashboard',                           fn: gerarSlideDashboard },
+    { nome: 'Metas',                               fn: gerarSlidesMetas },
     { nome: 'Capa Seção - Manutenção Preventiva',  fn: () => gerarCapaSecao('MANUTENÇÃO', 'PREVENTIVA') },
     { nome: 'Preventivas',                         fn: gerarSlidePreventivas },
     { nome: 'Capa Seção - Manutenção Corretiva',   fn: () => gerarCapaSecao('MANUTENÇÃO', 'CORRETIVA') },
