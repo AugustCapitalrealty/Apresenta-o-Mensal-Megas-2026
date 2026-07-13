@@ -34,11 +34,11 @@ function _desenharCardMetrica(slide, x, y, w, h, dados, corTema) {
   // Painel padrão do design system (01_Config.gs)
   const contentY = criarCardPainel(slide, x, y, w, h, dados.titulo, corTema) + 6;
   const colW = (w - 20) / 3;
-  // Tendência vs mês anterior sob CADA indicador (histórico validado):
+  // Tendência vs mês anterior ao lado de CADA indicador (histórico validado):
   // Previstas = neutro; Realizadas e SLA = maior é melhor.
-  _itemSimples(slide, x + 10,            contentY, colW, 'PREVISTAS',  dados.previstas,  CORES.textGray, CORES.textDark,                     tendenciaTexto_(dados.previstasDelta,  false, true));
-  _itemSimples(slide, x + 10 + colW,     contentY, colW, 'REALIZADAS', dados.realizadas, CORES.textGray, CORES.textDark,                     tendenciaTexto_(dados.realizadasDelta, false));
-  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA',        dados.sla,        CORES.textGray, corPorSLA(dados.sla, corTema),      tendenciaTexto_(dados.slaDelta,        false));
+  _itemSimples(slide, x + 10,            contentY, colW, 'PREVISTAS',  dados.previstas,  CORES.textGray, CORES.textDark,                tendenciaTexto_(dados.previstasDelta,  false, true));
+  _itemSimples(slide, x + 10 + colW,     contentY, colW, 'REALIZADAS', dados.realizadas, CORES.textGray, CORES.textDark,                tendenciaTexto_(dados.realizadasDelta, false));
+  _itemSimples(slide, x + 10 + (colW*2), contentY, colW, 'SLA',        dados.sla,        CORES.textGray, corPorSLA(dados.sla, corTema), tendenciaTexto_(dados.slaDelta,        false));
 
   // Barra de progresso Realizadas/Previstas (preenche o espaço inferior do card)
   const prev = parseInt(String(dados.previstas).replace(/\D/g, ''), 10);
@@ -66,18 +66,24 @@ function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal, trend)
   const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
   lbl.getText().setText(label).getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(colorLabel).setFontFamily(DS.typography.body);
   lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
-  val.getText().setText(valor).getTextStyle().setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
-  val.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  // Tendência vs mês anterior (compacta), logo abaixo do valor.
-  // O "vs mês anterior" fica no subtítulo do slide, para não repetir 3×.
-  if (trend && trend.txt) {
-    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 58, w, 14);
-    t.getText().setText(trend.txt).getTextStyle()
-      .setFontSize(7.5).setBold(true).setForegroundColor(trend.cor).setFontFamily(DS.typography.titles);
-    t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  // Valor com a tendência AO LADO DIREITO, na mesma linha (▲/▼ vs mês ant. —
+  // o "vs mês anterior" fica no subtítulo do slide).
+  const temTrend = trend && trend.txt;
+  const valStr   = String(valor);
+  const txt      = temTrend ? valStr + '  ' + trend.txt : valStr;
+
+  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
+  const vt  = val.getText();
+  vt.setText(txt).getTextStyle()
+    .setFontSize(temTrend ? 20 : 22).setBold(true)
+    .setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
+  if (temTrend) {
+    vt.getRange(valStr.length, txt.length).getTextStyle()
+      .setFontSize(7.5).setForegroundColor(trend.cor);
   }
+  vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }
 
 function _desenharListaServicos(slide, x, y, w, h, dadosGerais) {

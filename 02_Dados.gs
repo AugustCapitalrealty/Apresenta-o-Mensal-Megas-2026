@@ -582,6 +582,12 @@ function obterDadosPreventivas() {
     res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
     res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
 
+    // Acumulado de previstas/realizadas: o acumulado cresce exatamente o valor
+    // do mês atual (acum. anterior = acum. atual − mensal atual) → delta = mensal.
+    const _n = v => { const n = _numLenient_(v); return isNaN(n) ? null : n; };
+    res.anual.previstasDelta  = _n(res.mensal.previstas);
+    res.anual.realizadasDelta = _n(res.mensal.realizadas);
+
     return res;
 
   } catch (e) {
