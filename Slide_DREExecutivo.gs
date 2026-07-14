@@ -1,9 +1,11 @@
 /**
  * ARQUIVO: Slide_DREExecutivo.gs
  * SLIDES — DRE EXECUTIVO (um do MÊS + um do ACUMULADO)
- * DESCRIÇÃO: Visão de diretoria das despesas operacionais, cruzando as abas
- * DRE (Planejado + Realizado do Ano Anterior) e FORECAST (Realizado) da
- * planilha da cidade — obterDadosDreDetalhado_() em 02_Dados.gs.
+ * DESCRIÇÃO: Visão de diretoria das despesas operacionais, cruzando 3 abas
+ * da planilha da cidade — obterDadosDreDetalhado_() em 02_Dados.gs:
+ *   REALIZADO = FINANCEIRO BRIDGE (meses fechados; Ritmo não conta)
+ *   PLANEJADO = aba DRE (plano de contas da controladoria)
+ *   ANO ANTERIOR = aba "Financeiro 2025" (opcional — sem ela, vs AA = '—')
  *
  * FOCO NAS GRANDES LINHAS: as rubricas são ranqueadas pelo maior valor
  * (realizado ou planejado) do recorte; as TOP 7 aparecem individualmente e
@@ -16,8 +18,8 @@
  * KPIs DO TOPO: Realizado, Planejado, Abaixo/Acima do planejado (R$ e %),
  * vs Ano Anterior (R$ e %).
  *
- * FALLBACK: cidades ainda sem as abas DRE/FORECAST (Itajaí/Esteio) caem na
- * versão consolidada antiga (gerarSlideDRE, baseada no FINANCEIRO BRIDGE).
+ * FALLBACK: cidades ainda sem a aba DRE (Itajaí/Esteio) caem na versão
+ * consolidada antiga (gerarSlideDRE, baseada só no FINANCEIRO BRIDGE).
  */
 
 function gerarSlideDREMes()       { _gerarSlideDREExec_('mes');  }
@@ -26,12 +28,12 @@ function gerarSlideDREAcumulado() { _gerarSlideDREExec_('acum'); }
 function _gerarSlideDREExec_(qual) {
   const d = obterDadosDreDetalhado_();
   if (!d) {
-    // Sem as abas novas: gera a DRE consolidada antiga uma única vez (no 'mes')
+    // Sem a aba DRE: gera a DRE consolidada antiga uma única vez (no 'mes')
     if (qual === 'mes' && typeof gerarSlideDRE === 'function') {
-      Logger.log('DRE Executivo: abas DRE/FORECAST não encontradas — usando a versão consolidada (FINANCEIRO BRIDGE).');
+      Logger.log('DRE Executivo: aba DRE não encontrada — usando a versão consolidada (FINANCEIRO BRIDGE).');
       gerarSlideDRE();
     } else {
-      Logger.log('DRE Executivo (' + qual + '): abas DRE/FORECAST não encontradas — pulado.');
+      Logger.log('DRE Executivo (' + qual + '): aba DRE não encontrada — pulado.');
     }
     return;
   }
@@ -60,7 +62,7 @@ function _gerarSlideDREExec_(qual) {
 
   // ── Dataset: TOP 7 rubricas + "Outras despesas" ───────────────────────────
   const tot = rec(d.total);
-  let linhas = d.folhas
+  let linhas = d.linhas
     .map(f => { const r = rec(f); return { nome: padronizarRubrica_(f.nome), real: r.real, plan: r.plan, aa: r.aa }; })
     .filter(l => l.real > 0.005 || l.plan > 0.005 || l.aa > 0.005);
   linhas.sort((a, b) => Math.max(b.real, b.plan) - Math.max(a.real, a.plan));

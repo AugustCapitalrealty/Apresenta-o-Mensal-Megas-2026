@@ -1305,81 +1305,147 @@ function obterDadosTaxaReabertura_() {
 }
 
 // ==========================================
-// DRE EXECUTIVO — abas DRE + FORECAST (Slide_DREExecutivo.gs)
+// DRE EXECUTIVO — 3 fontes (Slide_DREExecutivo.gs)
 // ==========================================
-// A planilha da cidade ganhou duas abas espelhando os relatórios da
-// controladoria (plano de contas hierárquico "06.04.15 - manutenção imóveis"):
-//   ▸ DRE      → por mês, o par [Realizado ANO ANTERIOR | Planejado 2026]
-//   ▸ FORECAST → um valor por mês: Realizado nos meses fechados, Planejado
-//                nos futuros (o rótulo "Planejado" na linha 1 marca onde
-//                começa o bloco futuro)
-// Junta as duas por código do plano de contas e devolve, por linha:
-//   { cod, nome, aa[12], plan[12], real[12] }   (valores positivos)
-// real[] só é preenchido nos meses realizados. total = código 06;
-// folhas = linhas sem filhos (06.01, 06.03 e todos os 06.xx.yy).
-// Retorna null se as abas não existirem (cidades ainda sem DRE/FORECAST).
+// As três informações vêm de abas que a planilha da cidade já mantém:
+//   ▸ REALIZADO     → aba FINANCEIRO BRIDGE (colunas Real dos meses fechados;
+//                     meses futuros são "Ritmo" e NÃO contam como realizado)
+//   ▸ PLANEJADO     → aba DRE (plano de contas "06.04.15 - manutenção
+//                     imóveis"; usa só a coluna Planejado de cada mês)
+//   ▸ ANO ANTERIOR  → aba "Financeiro 2025" (mesma estrutura do BRIDGE,
+//                     colunas Real /25; opcional — sem ela o vs AA fica '—')
+// As linhas são casadas pelo NOME normalizado (com apelidos p/ diferenças
+// conhecidas: SEGURO→seguros, IPTU→despesas fiscais). Linhas presentes em
+// só uma fonte aparecem com as outras dimensões zeradas (ex.: "Seguros"
+// planejado sem realizado ainda).
+// Retorna { cidade, ref, mesesRealizados, total, linhas:[{nome, real[12],
+// plan[12], aa[12]}] } (valores positivos) ou null se faltar BRIDGE ou DRE.
 function obterDadosDreDetalhado_() {
   try {
-    const ss     = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const abaDre = ss.getSheetByName('DRE');
-    const abaFc  = ss.getSheetByName('FORECAST');
-    if (!abaDre || !abaFc) return null;
-
-    const dre = abaDre.getDataRange().getValues();
-    const fc  = abaFc.getDataRange().getValues();
-    if (dre.length < 3 || fc.length < 3) return null;
+    const ss        = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const abaDre    = ss.getSheetByName('DRE');
+    const abaBridge = ss.getSheetByName('FINANCEIRO BRIDGE');
+    const aba2025   = ss.getSheetByName('Financeiro 2025');   // opcional
+    if (!abaDre || !abaBridge) return null;
 
     const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    const mes3 = s => { const m = _histNorm_(s).match(/^([a-z]{3})\//); return m ? MES3.indexOf(m[1]) : -1; };
+    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
 
-    // DRE: pares [Realizado AA | Planejado] — o rótulo do mês fica na 1ª coluna do par
-    const pares = {};
-    dre[0].forEach((cell, c) => { const mi = mes3(cell); if (mi >= 0 && !(mi in pares)) pares[mi] = { cAA: c, cPlan: c + 1 }; });
-    if (Object.keys(pares).length < 4) return null;
-
-    // FORECAST: um mês por coluna (linha 2); meses realizados = colunas antes
-    // do rótulo "Planejado" da linha 1
-    const fcCols = {};
-    fc[1].forEach((cell, c) => { const mi = mes3(cell); if (mi >= 0 && !(mi in fcCols)) fcCols[mi] = c; });
-    let realizadosFc = 12;
-    for (let c = 1; c < fc[0].length; c++) {
-      if (_histNorm_(fc[0][c]) === 'planejado') { realizadosFc = c - 1; break; }
-    }
+    // Apelidos para casar nomes que diferem entre as fontes
+    const ALIAS = { 'seguro': 'seguros', 'iptu': 'despesas fiscais' };
+    const chave = nome => { const n = _histNorm_(nome); return ALIAS[n] || n; };
 
     const ref = obterMesReferencia_();
-    const mesesRealizados = Math.max(1, Math.min(realizadosFc, ref.index + 1, 12));
+
+    // ── Leitor genérico de aba estilo BRIDGE (trincas Orç|Real|Var por mês).
+    //    soRealizado=true → ignora colunas cujo cabeçalho é "Ritmo" e meses
+    //    além do mês de referência (só realizado de verdade).
+    const lerBridge = (sheet, soRealizado) => {
+      const data = sheet.getDataRange().getValues();
+      if (data.length < 2) return null;
+      let hdrRow = -1;
+      for (let r = 0; r < Math.min(5, data.length); r++) {
+        if (data[r].some(c => /^or[cç]/i.test(_histNorm_(c)))) { hdrRow = r; break; }
+      }
+      if (hdrRow < 0) return null;
+      const hdr = data[hdrRow];
+
+      const grupos = [];
+      for (let c = 1; c + 1 < hdr.length; c += 3) {
+        if (!/^or[cç]/.test(_histNorm_(hdr[c]))) break;
+        const m = String(hdr[c]).match(/([A-Za-zçÇ]{3})\//);
+        if (!m) continue;
+        const mi = MES3.indexOf(m[1].toLowerCase());
+        if (mi < 0) continue;
+        const ehRitmo = _histNorm_(hdr[c + 1] || '').includes('ritmo');
+        if (soRealizado && (ehRitmo || mi > ref.index)) continue;
+        grupos.push({ mi, cReal: c + 1 });
+      }
+      if (!grupos.length) return null;
+
+      const porChave = {}; let total = null;
+      for (let r = hdrRow + 1; r < data.length; r++) {
+        const nome = String(data[r][0] || '').trim();
+        if (!nome) continue;
+        const norm = _histNorm_(nome);
+        if (norm.indexOf('r$ m') === 0) continue;              // linhas de R$/m² não são rubricas
+        const vals = new Array(12).fill(0);
+        grupos.forEach(g => { vals[g.mi] = toAbs(data[r][g.cReal]); });
+        if (norm.includes('total')) { total = vals; continue; }
+        if (!vals.some(v => v !== 0)) continue;
+        porChave[chave(nome)] = { nome, vals };
+      }
+      const mis = grupos.map(g => g.mi);
+      return { porChave, total, maxMes: Math.max(...mis) };
+    };
+
+    // ── REALIZADO (BRIDGE, só meses fechados) e ANO ANTERIOR (2025) ─────────
+    const bridge = lerBridge(abaBridge, true);
+    if (!bridge) return null;
+    const ant = aba2025 ? lerBridge(aba2025, false) : null;
+
+    const mesesRealizados = bridge.maxMes + 1;
+
+    // ── PLANEJADO (aba DRE: pares [Realizado AA | Planejado] por mês) ───────
+    const dre = abaDre.getDataRange().getValues();
+    if (dre.length < 3) return null;
+    const pares = {};
+    dre[0].forEach((cell, c) => {
+      const m = _histNorm_(cell).match(/^([a-z]{3})\//);
+      const mi = m ? MES3.indexOf(m[1]) : -1;
+      if (mi >= 0 && !(mi in pares)) pares[mi] = c + 1;        // Planejado = 2ª coluna do par
+    });
+    if (Object.keys(pares).length < 4) return null;
 
     const parseCod = s => {
       const m = String(s || '').trim().match(/^(\d{2}(?:\.\d{2})*)\s*-\s*(.+)$/);
       return m ? { cod: m[1], nome: m[2].trim() } : null;
     };
-    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
-
-    const fcPorCod = {};
-    for (let r = 2; r < fc.length; r++) { const p = parseCod(fc[r][0]); if (p) fcPorCod[p.cod] = fc[r]; }
-
-    const itens = [];
+    const itensDre = [];
     for (let r = 2; r < dre.length; r++) {
       const p = parseCod(dre[r][0]);
-      if (!p || p.cod.indexOf('06') !== 0) continue;   // só as despesas operacionais
-      const linhaFc = fcPorCod[p.cod] || [];
-      const aa = [], plan = [], real = [];
-      for (let mi = 0; mi < 12; mi++) {
-        aa[mi]   = pares[mi] ? toAbs(dre[r][pares[mi].cAA])   : 0;
-        plan[mi] = pares[mi] ? toAbs(dre[r][pares[mi].cPlan]) : 0;
-        real[mi] = (mi in fcCols && mi < mesesRealizados) ? toAbs(linhaFc[fcCols[mi]]) : 0;
-      }
-      itens.push({ cod: p.cod, nome: p.nome, aa, plan, real });
+      if (!p || p.cod.indexOf('06') !== 0) continue;
+      const plan = new Array(12).fill(0);
+      for (let mi = 0; mi < 12; mi++) if (mi in pares) plan[mi] = toAbs(dre[r][pares[mi]]);
+      itensDre.push({ cod: p.cod, nome: p.nome, plan });
     }
-    if (!itens.length) return null;
-
-    const total  = itens.find(i => i.cod === '06') || null;
-    const folhas = itens.filter(i =>
-      i.cod !== '06' && !itens.some(o => o.cod !== i.cod && o.cod.indexOf(i.cod + '.') === 0)
+    const totalDre = itensDre.find(i => i.cod === '06') || null;
+    const folhasDre = itensDre.filter(i =>
+      i.cod !== '06' && !itensDre.some(o => o.cod !== i.cod && o.cod.indexOf(i.cod + '.') === 0)
     );
-    if (!total || !folhas.length) return null;
+    if (!totalDre || !folhasDre.length) return null;
 
-    return { cidade: getProjetoAtivo().nome, ref, mesesRealizados, total, folhas };
+    // ── União das linhas por chave (real + plan + aa) ───────────────────────
+    const zero12 = () => new Array(12).fill(0);
+    const mapa = {};
+    const garantir = (k, nome) => {
+      if (!mapa[k]) mapa[k] = { nome, real: zero12(), plan: zero12(), aa: zero12() };
+      return mapa[k];
+    };
+    Object.keys(bridge.porChave).forEach(k => { garantir(k, bridge.porChave[k].nome).real = bridge.porChave[k].vals; });
+    folhasDre.forEach(f => {
+      const k = chave(f.nome);
+      if (f.plan.some(v => v !== 0)) garantir(k, mapa[k] ? mapa[k].nome : f.nome).plan = f.plan;
+    });
+    if (ant) Object.keys(ant.porChave).forEach(k => { garantir(k, mapa[k] ? mapa[k].nome : ant.porChave[k].nome).aa = ant.porChave[k].vals; });
+
+    const linhas = Object.keys(mapa).map(k => mapa[k]);
+    if (!linhas.length) return null;
+
+    // ── Totais: cada dimensão da sua fonte (linha TOTAL / código 06) ────────
+    const somaLinhas = campo => {
+      const t = zero12();
+      linhas.forEach(l => l[campo].forEach((v, i) => t[i] += v));
+      return t;
+    };
+    const total = {
+      nome: 'DESPESAS OPERACIONAIS',
+      real: bridge.total || somaLinhas('real'),
+      plan: totalDre.plan,
+      aa  : (ant && ant.total) || somaLinhas('aa')
+    };
+
+    return { cidade: getProjetoAtivo().nome, ref, mesesRealizados, total, linhas };
   } catch (e) {
     Logger.log('obterDadosDreDetalhado_: ' + e.message);
     return null;
