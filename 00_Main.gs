@@ -90,6 +90,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Bridge Variação',                     fn: gerarSlideBridge },
     { nome: 'Bridge Gráfico',                      fn: gerarSlideBridgeGrafico },
     { nome: 'Financeiro Anual',                    fn: gerarSlideFinanceiroAnual },
+    { nome: 'DRE',                                 fn: gerarSlideDRE },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
     { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },

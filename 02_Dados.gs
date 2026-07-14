@@ -1304,6 +1304,102 @@ function obterDadosTaxaReabertura_() {
   }
 }
 
+// ==========================================
+// DRE — DEMONSTRATIVO DE RESULTADO (Slide_DRE.gs)
+// ==========================================
+// Lê a aba FINANCEIRO BRIDGE POR RUBRICA (as outras leituras usam só o
+// TOTAL) e consolida três recortes por linha contábil:
+//   mes   → Orç/Real do mês de referência da apresentação
+//   acum  → soma Jan..mês de referência
+//   anual → soma dos 12 meses (Real dos passados + Ritmo dos futuros
+//           = "Realizado + Orçado", a projeção do ano)
+// Retorna { mesLabel, mesesAcum, rubricas:[{nome, mes, acum, anual}], total }
+// ou null. Rubricas 100% zeradas ficam de fora. Nomes normalizados via
+// padronizarRubrica_ (01_Config.gs).
+function obterDadosDRE_() {
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('FINANCEIRO BRIDGE');
+    if (!sheet) return null;
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return null;
+
+    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+
+    let hdrRow = -1;
+    for (let r = 0; r < Math.min(5, data.length); r++) {
+      if (data[r].some(c => /^or[cç]/i.test(_histNorm_(c)))) { hdrRow = r; break; }
+    }
+    if (hdrRow < 0) return null;
+    const hdr = data[hdrRow];
+
+    const MESES_VALIDOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const grupos = [];
+    for (let c = 1; c + 1 < hdr.length; c += 3) {
+      if (!/^or[cç]/.test(_histNorm_(hdr[c]))) break;
+      const m = String(hdr[c]).match(/([A-Za-zçÇ]{3})\/(\d{2,4})/);
+      if (!m) continue;
+      const idxMes = MESES_VALIDOS.indexOf(m[1].toLowerCase());
+      if (idxMes < 0) continue;
+      const ano2 = m[2].length === 2 ? m[2] : m[2].slice(-2);
+      grupos.push({ ord: (2000 + parseInt(ano2, 10)) * 100 + (idxMes + 1), cOrc: c, cReal: c + 1 });
+    }
+    if (!grupos.length) return null;
+    grupos.sort((a, b) => a.ord - b.ord);
+
+    const ref    = obterMesReferencia_();
+    let   refOrd = ref.ano * 100 + (ref.index + 1);
+    // Fallback: se o mês de referência não existir na aba, usa o último mês disponível
+    if (!grupos.some(g => g.ord === refOrd)) refOrd = grupos[grupos.length - 1].ord;
+
+    const consolidar = linha => {
+      const blocos = { mes: { orc: 0, real: 0 }, acum: { orc: 0, real: 0 }, anual: { orc: 0, real: 0 } };
+      grupos.forEach(g => {
+        const orc = toAbs(linha[g.cOrc]), real = toAbs(linha[g.cReal]);
+        blocos.anual.orc += orc; blocos.anual.real += real;
+        if (g.ord <= refOrd) { blocos.acum.orc += orc; blocos.acum.real += real; }
+        if (g.ord === refOrd) { blocos.mes.orc = orc; blocos.mes.real = real; }
+      });
+      return blocos;
+    };
+
+    const rubricas = [];
+    let totalLinha = null;
+    for (let r = hdrRow + 1; r < data.length; r++) {
+      const nome = String(data[r][0] || '').trim();
+      if (!nome) continue;
+      if (_histNorm_(nome).includes('total')) { totalLinha = consolidar(data[r]); continue; }
+      const b = consolidar(data[r]);
+      const temValor = b.anual.orc !== 0 || b.anual.real !== 0;
+      if (!temValor) continue;
+      rubricas.push({ nome: padronizarRubrica_(nome), mes: b.mes, acum: b.acum, anual: b.anual });
+    }
+    if (!rubricas.length) return null;
+
+    // TOTAL: linha da planilha se existir; senão soma das rubricas
+    if (!totalLinha) {
+      totalLinha = { mes: { orc: 0, real: 0 }, acum: { orc: 0, real: 0 }, anual: { orc: 0, real: 0 } };
+      rubricas.forEach(rb => {
+        ['mes', 'acum', 'anual'].forEach(k => {
+          totalLinha[k].orc += rb[k].orc; totalLinha[k].real += rb[k].real;
+        });
+      });
+    }
+
+    const mesesAcum = grupos.filter(g => g.ord <= refOrd).length;
+    return {
+      cidade   : getProjetoAtivo().nome,
+      mesLabel : ref.curto + '/' + String(ref.ano).slice(-2),
+      mesesAcum,
+      rubricas,
+      total    : totalLinha
+    };
+  } catch (e) {
+    Logger.log('obterDadosDRE_: ' + e.message);
+    return null;
+  }
+}
+
 // Soma, por mês, o Orçado e o Real das rubricas "Energia Elétrica", "Água",
 // "Telefone", "Material de Consumo" e "Materiais de Informática" na aba
 // FINANCEIRO BRIDGE (mesma estrutura de colunas usada por obterDadosBridge,
