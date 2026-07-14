@@ -620,26 +620,26 @@ function gerarSlideBridgeGrafico() {
     mes.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   });
 
-  // ── Legenda centralizada no rodapé do card ───────────────────────────────
-  _bridgeLegenda(slide, marginX + (cardW - 390) / 2, topY + cardH - 26);
+  // ── Legenda centralizada no rodapé do card (itens juntos) ────────────────
+  _bridgeLegenda(slide, marginX + (cardW - 240) / 2, topY + cardH - 26);
 
   Logger.log('Slide Gráfico Bridge gerado (' + d.meses.length + ' meses).');
 }
 
-// Legenda do gráfico
+// Legenda do gráfico — rótulos curtos e itens próximos uns dos outros
 function _bridgeLegenda(slide, x, y) {
   const itens = [
-    { cor: '#10B981', txt: 'Abaixo (economia)' },
-    { cor: '#EF4444', txt: 'Acima (atenção)' },
-    { cor: '#F59E0B', txt: 'Ritmo (projeção)' }
+    { cor: '#10B981', txt: 'Abaixo' },
+    { cor: '#EF4444', txt: 'Acima' },
+    { cor: '#F59E0B', txt: 'Projetado' }
   ];
   let cx = x;
   itens.forEach(it => {
     const box = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y + 2, 9, 9);
     box.getFill().setSolidFill(it.cor); box.getBorder().setTransparent();
-    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 12, y - 2, 110, 14);
+    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 12, y - 2, 60, 14);
     tb.getText().setText(it.txt).getTextStyle()
       .setFontSize(7).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-    cx += 130;
+    cx += 80;
   });
 }
