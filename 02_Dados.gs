@@ -1285,14 +1285,14 @@ function obterDadosOrcamentoAnalista_() {
     if (!grupos.length) return null;
 
     // Rubricas-alvo: casamento por palavras-chave (radical "materia" cobre
-    // "material" E "materiais"; evita "Assistência informática" colidir
-    // com "Materiais de Informática", por exemplo).
+    // "material" E "materiais"). Informática entra nas DUAS formas —
+    // "Materiais de Informática" e "Assistência de Informática".
     const bateRubrica = norm => {
-      if (norm.includes('energia') && norm.includes('eletric'))      return true;
-      if (norm === 'agua' || norm.indexOf('agua') === 0)             return true;
-      if (norm.includes('telefon'))                                  return true;
-      if (norm.includes('materia') && norm.includes('consumo'))      return true;
-      if (norm.includes('materia') && norm.includes('informatic'))   return true;
+      if (norm.includes('energia') && norm.includes('eletric'))          return true;
+      if (norm === 'agua' || norm.indexOf('agua') === 0)                 return true;
+      if (norm.includes('telefon'))                                     return true;
+      if (norm.includes('materia') && norm.includes('consumo'))         return true;
+      if (norm.includes('informatic'))                                  return true;  // materiais e assistência de informática
       return false;
     };
 
