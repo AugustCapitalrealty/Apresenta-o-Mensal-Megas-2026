@@ -251,13 +251,13 @@ function gerarSlideMetas(papel) {
   criarHeaderPadrao(slide, 'METAS', 'Objetivos e Resultados · ' + metas.papel);
 
   // Larguras das colunas — a tabela ocupa o slide inteiro (margem de 10pt).
-  // Dimensionadas para o conteúdo caber em UMA linha, já contando o recuo
-  // interno (~7pt) das caixas de texto do Slides: "Direcionador"/
-  // "Procedimentos" pedem ~74pt, "SIM/NÃO" ~50pt, "Pontos"/"Status" ~40pt,
-  // "R$ 302.613" ~66pt. Só a Descrição quebra linha (é esperado).
-  // O comparativo ▲/▼ NÃO entra na largura: é uma caixa sobreposta no
-  // canto da célula (ver loop das linhas).
-  const pesos  = [126, 40, 74, 50, 46, 66, 70, 46, 66, 70, 46];
+  // Dimensionadas para o conteúdo caber em UMA linha (fonte 7,5pt nos
+  // dados), já contando o recuo interno (~7pt) das caixas de texto do
+  // Slides: "Procedimentos" pede ~76pt, "R$ 4,21/80%" ~68pt, "SIM/NÃO"
+  // ~50pt, "Pontos" ~42pt. Só a Descrição quebra linha (é esperado).
+  // O comparativo ▲/▼ NÃO entra na largura: é uma caixa sobreposta,
+  // centralizada ACIMA do valor (ver loop das linhas).
+  const pesos  = [130, 42, 76, 50, 46, 68, 66, 44, 68, 66, 44];
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
   const totalW = W - 20;
   const larg = pesos.map(p => p / somaPesos * totalW);
@@ -326,28 +326,26 @@ function gerarSlideMetas(papel) {
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
         const temTrend = !!(trend && trend.txt && valStr !== '');
 
-        // Valor centralizado na célula (sem o comparativo junto — ele vai
-        // numa caixa própria sobreposta, para nunca quebrar o valor). Com
-        // selo, o valor desce um pouco para não colidir com ele.
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-          xs[c] + 3, temTrend ? ry + 9 : ry, larg[c] - 6, temTrend ? rowH - 9 : rowH);
+        // Valor na caixa padrão da célula (célula inteira, centralizado) —
+        // o comparativo NÃO entra junto para nunca quebrar o valor.
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         const tr = t.getText();
         tr.setText(valStr);
-        tr.getTextStyle().setFontSize(8).setBold(c === 0).setFontFamily(DS.typography.body)
+        tr.getTextStyle().setFontSize(c === 0 ? 8 : 7.5).setBold(c === 0).setFontFamily(DS.typography.body)
           .setForegroundColor(DS.colors.textMain);
         tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
 
-        // Comparativo ▲/▼ vs mês anterior: caixinha sobreposta no canto
-        // superior direito da célula de Real Mês (6) / Real Acum. (9) —
-        // um selo pequeno sobre o indicador principal.
+        // Comparativo ▲/▼ vs mês anterior: caixa própria sobreposta,
+        // CENTRALIZADA no topo da célula — um em cima do outro com o
+        // valor (Real Mês [6] / Real Acum. [9]).
         if (temTrend) {
           const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-            xs[c] + larg[c] - 46, ry, 44, 12);
+            xs[c], ry + 2, larg[c], 11);
           selo.getText().setText(trend.txt).getTextStyle()
             .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor)
             .setFontFamily(DS.typography.titles);
-          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         }
       }
     });
