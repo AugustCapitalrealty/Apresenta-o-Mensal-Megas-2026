@@ -92,7 +92,7 @@ const PROJETOS = {
     spreadsheetId  : '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
-    reaberturaId   : '',
+    reaberturaId   : '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
