@@ -85,34 +85,42 @@ function gerarSlideDashboard() {
       let vals = { atual: '-', mesAnt: '-', anoAnt: '-' };
       if (valoresMap.has(r.lookup)) vals = valoresMap.get(r.lookup);
 
-      // Seta de tendência vs mês anterior, colorida pelo sentido da métrica
+      // Comparativo vs mês anterior (diretriz nova): caixa própria
+      // sobreposta, centralizada ACIMA do valor atual — ▲/▼ + delta,
+      // colorido pelo sentido da métrica (verde melhorou / vermelho piorou).
       const nAtual = paraNumero(vals.atual), nAnt = paraNumero(vals.mesAnt);
-      let seta = '', corSeta = CORES.textGray;
+      let trend = null;
       if (!isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
-        const subiu   = nAtual > nAnt;
-        const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
-        seta    = subiu ? ' ▲' : ' ▼';
-        corSeta = melhorou ? CORES.cardGreen : CORES.cardRed;
+        const delta = Math.round((nAtual - nAnt) * 100) / 100;
+        trend = tendenciaTexto_(delta, r.sentido === 'menor');
       }
 
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
-        let vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW + (vIdx * colDataW), ry, colDataW, rowH);
+        const cellX = x + 10 + colNameW + (vIdx * colDataW);
+        const temSelo = vIdx === 0 && trend && trend.txt;
+
+        // Com selo, o valor desce um pouco para os dois não colidirem
+        let vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+          cellX, temSelo ? ry + 8 : ry, colDataW, temSelo ? rowH - 8 : rowH);
         const valStr = formatarNumeroBR(val);
         let vText = vBox.getText();
-        vText.setText(vIdx === 0 ? valStr + seta : valStr);
+        vText.setText(valStr);
         let vStyle = vText.getTextStyle(); vStyle.setFontSize(9).setBold(true).setFontFamily('Montserrat');
         if (vIdx === 0) {
           const corAtual = r.sla ? corPorSLA(valStr, cat.color) : cat.color;
           vStyle.setForegroundColor(corAtual);
-          if (seta) {
-            vText.getRange(valStr.length, valStr.length + seta.length)
-              .getTextStyle().setFontSize(7).setForegroundColor(corSeta);
-          }
         } else {
           vStyle.setForegroundColor(CORES.textGray);
         }
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
+        if (temSelo) {
+          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, ry, colDataW, 10);
+          selo.getText().setText(trend.txt).getTextStyle()
+            .setFontSize(8).setBold(true).setForegroundColor(trend.cor).setFontFamily('Montserrat');
+          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        }
       });
     });
   });
