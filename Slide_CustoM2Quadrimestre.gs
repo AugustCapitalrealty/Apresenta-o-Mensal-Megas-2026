@@ -30,6 +30,7 @@ function gerarSlideCustoM2Quadrimestre() {
 
   criarHeaderPadrao(slide, 'CUSTO DO M² — 1º QUADRIMESTRE',
     'Janeiro a Abril / ' + dados.ano + ' · ' + dados.cidade);
+  _custoQuadDesenharLogosParceiras(slide, pageW);
 
   const marginX = 30;
   const topY    = 85;
@@ -41,6 +42,37 @@ function gerarSlideCustoM2Quadrimestre() {
   _custoQuadDesenharTabela(slide, marginX, topY + kpiH + gap, pageW - 2 * marginX, tableH, dados);
 
   Logger.log('Slide Custo M² — 1º Quadrimestre gerado → ' + dados.cidade + ' ' + dados.ano);
+}
+
+
+// ==========================================
+// LOGOS PARCEIRAS NO CABEÇALHO (logo do Mega + marca-mãe quando não é a
+// Capital Realty — ex.: Mega Curitiba pertence à Demercado). Desenhadas à
+// esquerda do logo da Capital Realty que o cabeçalho padrão já coloca.
+// Graceful: se algum ID faltar ou não carregar, simplesmente não desenha.
+// ==========================================
+function _custoQuadDesenharLogosParceiras(slide, pageW) {
+  const DS = CR_DESIGN_SYSTEM;
+  const mX = DS.layout.marginX;
+  const proj = getProjetoAtivo();
+
+  const logoW = 58, logoH = 26, gap = 10, y = 17;
+  let xDireita = pageW - mX - DS.assets.logoW - gap;   // início logo à esq. da Capital Realty
+
+  const desenhar = id => {
+    if (!id) return;
+    try {
+      const blob = DriveApp.getFileById(id).getBlob();
+      const x = xDireita - logoW;
+      slide.insertImage(blob, x, y, logoW, logoH);
+      xDireita = x - gap;
+    } catch (e) {
+      Logger.log('Aviso (logo parceira): não carregado (' + id + '). ' + e.message);
+    }
+  };
+
+  desenhar(proj.unitLogoId);       // logo do próprio Mega
+  desenhar(proj.coBrandLogoId);    // marca-mãe (só quando ≠ Capital Realty)
 }
 
 

@@ -75,6 +75,13 @@ const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
 // "TAXA DE ABERTURA" (linhas FECHADOS/REABERTOS por mês) — fonte da meta
 // TAXA DE REABERTURA do Analista (ver obterDadosTaxaReabertura_ em
 // 02_Dados.gs). Sem ele, a meta cai no valor da planilha da TV.
+//
+// unitLogoId (opcional): logo do próprio Mega (mesmos IDs do repositório
+// da Gestão à Vista TV — Config.gs, UNITS[].unitLogoId).
+// coBrandLogoId (opcional): logo da marca-mãe do empreendimento quando NÃO
+// é a Capital Realty (ex.: Mega Curitiba pertence à Demercado). Nos outros
+// (Itajaí/Esteio) a marca-mãe já É a Capital Realty — mesmo logo do
+// cabeçalho padrão — então fica em branco.
 const PROJETOS = {
   CURITIBA: {
     nome           : 'Mega Curitiba',
@@ -82,6 +89,8 @@ const PROJETOS = {
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
     reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
+    unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
+    coBrandLogoId  : '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',   // logo Demercado
     contatos       : [
       { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
@@ -93,6 +102,8 @@ const PROJETOS = {
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
     reaberturaId   : '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
+    unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
+    coBrandLogoId  : '',
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -104,6 +115,8 @@ const PROJETOS = {
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
     reaberturaId   : '18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0',
+    unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio
+    coBrandLogoId  : '',
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
