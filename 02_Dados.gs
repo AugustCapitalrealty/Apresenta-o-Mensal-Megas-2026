@@ -1305,6 +1305,89 @@ function obterDadosTaxaReabertura_() {
 }
 
 // ==========================================
+// DRE EXECUTIVO — abas DRE + FORECAST (Slide_DREExecutivo.gs)
+// ==========================================
+// A planilha da cidade ganhou duas abas espelhando os relatórios da
+// controladoria (plano de contas hierárquico "06.04.15 - manutenção imóveis"):
+//   ▸ DRE      → por mês, o par [Realizado ANO ANTERIOR | Planejado 2026]
+//   ▸ FORECAST → um valor por mês: Realizado nos meses fechados, Planejado
+//                nos futuros (o rótulo "Planejado" na linha 1 marca onde
+//                começa o bloco futuro)
+// Junta as duas por código do plano de contas e devolve, por linha:
+//   { cod, nome, aa[12], plan[12], real[12] }   (valores positivos)
+// real[] só é preenchido nos meses realizados. total = código 06;
+// folhas = linhas sem filhos (06.01, 06.03 e todos os 06.xx.yy).
+// Retorna null se as abas não existirem (cidades ainda sem DRE/FORECAST).
+function obterDadosDreDetalhado_() {
+  try {
+    const ss     = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const abaDre = ss.getSheetByName('DRE');
+    const abaFc  = ss.getSheetByName('FORECAST');
+    if (!abaDre || !abaFc) return null;
+
+    const dre = abaDre.getDataRange().getValues();
+    const fc  = abaFc.getDataRange().getValues();
+    if (dre.length < 3 || fc.length < 3) return null;
+
+    const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const mes3 = s => { const m = _histNorm_(s).match(/^([a-z]{3})\//); return m ? MES3.indexOf(m[1]) : -1; };
+
+    // DRE: pares [Realizado AA | Planejado] — o rótulo do mês fica na 1ª coluna do par
+    const pares = {};
+    dre[0].forEach((cell, c) => { const mi = mes3(cell); if (mi >= 0 && !(mi in pares)) pares[mi] = { cAA: c, cPlan: c + 1 }; });
+    if (Object.keys(pares).length < 4) return null;
+
+    // FORECAST: um mês por coluna (linha 2); meses realizados = colunas antes
+    // do rótulo "Planejado" da linha 1
+    const fcCols = {};
+    fc[1].forEach((cell, c) => { const mi = mes3(cell); if (mi >= 0 && !(mi in fcCols)) fcCols[mi] = c; });
+    let realizadosFc = 12;
+    for (let c = 1; c < fc[0].length; c++) {
+      if (_histNorm_(fc[0][c]) === 'planejado') { realizadosFc = c - 1; break; }
+    }
+
+    const ref = obterMesReferencia_();
+    const mesesRealizados = Math.max(1, Math.min(realizadosFc, ref.index + 1, 12));
+
+    const parseCod = s => {
+      const m = String(s || '').trim().match(/^(\d{2}(?:\.\d{2})*)\s*-\s*(.+)$/);
+      return m ? { cod: m[1], nome: m[2].trim() } : null;
+    };
+    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+
+    const fcPorCod = {};
+    for (let r = 2; r < fc.length; r++) { const p = parseCod(fc[r][0]); if (p) fcPorCod[p.cod] = fc[r]; }
+
+    const itens = [];
+    for (let r = 2; r < dre.length; r++) {
+      const p = parseCod(dre[r][0]);
+      if (!p || p.cod.indexOf('06') !== 0) continue;   // só as despesas operacionais
+      const linhaFc = fcPorCod[p.cod] || [];
+      const aa = [], plan = [], real = [];
+      for (let mi = 0; mi < 12; mi++) {
+        aa[mi]   = pares[mi] ? toAbs(dre[r][pares[mi].cAA])   : 0;
+        plan[mi] = pares[mi] ? toAbs(dre[r][pares[mi].cPlan]) : 0;
+        real[mi] = (mi in fcCols && mi < mesesRealizados) ? toAbs(linhaFc[fcCols[mi]]) : 0;
+      }
+      itens.push({ cod: p.cod, nome: p.nome, aa, plan, real });
+    }
+    if (!itens.length) return null;
+
+    const total  = itens.find(i => i.cod === '06') || null;
+    const folhas = itens.filter(i =>
+      i.cod !== '06' && !itens.some(o => o.cod !== i.cod && o.cod.indexOf(i.cod + '.') === 0)
+    );
+    if (!total || !folhas.length) return null;
+
+    return { cidade: getProjetoAtivo().nome, ref, mesesRealizados, total, folhas };
+  } catch (e) {
+    Logger.log('obterDadosDreDetalhado_: ' + e.message);
+    return null;
+  }
+}
+
+
+// ==========================================
 // DRE — DEMONSTRATIVO DE RESULTADO (Slide_DRE.gs)
 // ==========================================
 // Lê a aba FINANCEIRO BRIDGE POR RUBRICA (as outras leituras usam só o

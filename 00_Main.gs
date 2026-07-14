@@ -90,7 +90,10 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Bridge Variação',                     fn: gerarSlideBridge },
     { nome: 'Bridge Gráfico',                      fn: gerarSlideBridgeGrafico },
     { nome: 'Financeiro Anual',                    fn: gerarSlideFinanceiroAnual },
-    { nome: 'DRE',                                 fn: gerarSlideDRE },
+    // DRE executivo (abas DRE + FORECAST). Cidades sem as abas caem na
+    // versão consolidada (gerarSlideDRE, base FINANCEIRO BRIDGE) no passo Mês.
+    { nome: 'DRE — Mês',                           fn: gerarSlideDREMes },
+    { nome: 'DRE — Acumulado',                     fn: gerarSlideDREAcumulado },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
     { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
