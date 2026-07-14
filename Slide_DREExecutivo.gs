@@ -11,9 +11,12 @@
  * (realizado ou planejado) do recorte; as TOP 7 aparecem individualmente e
  * o resto é agrupado em "Outras despesas".
  *
- * CADA LINHA mostra: Realizado | Planejado | barras comparativas (realizado
- * colorido vs planejado cinza, mesma escala em todas as linhas) | % do
- * planejado (pill verde ≤100% / vermelho >100%) | variação vs ano anterior.
+ * CADA LINHA mostra: Realizado | Planejado | Ritmo do ANO (projeção de
+ * fechamento: Real dos meses fechados + Ritmo dos futuros no BRIDGE;
+ * vermelho se projeta estourar o planejado anual) | barras comparativas
+ * (realizado colorido vs planejado cinza, mesma escala em todas as linhas)
+ * | % do planejado (pill verde ≤100% / vermelho >100%) | variação vs ano
+ * anterior.
  *
  * KPIs DO TOPO: Realizado, Planejado, Abaixo/Acima do planejado (R$ e %),
  * vs Ano Anterior (R$ e %).
@@ -63,7 +66,13 @@ function _gerarSlideDREExec_(qual) {
   // ── Dataset: TOP 7 rubricas + "Outras despesas" ───────────────────────────
   const tot = rec(d.total);
   let linhas = d.linhas
-    .map(f => { const r = rec(f); return { nome: padronizarRubrica_(f.nome), real: r.real, plan: r.plan, aa: r.aa }; })
+    .map(f => {
+      const r = rec(f);
+      return {
+        nome: padronizarRubrica_(f.nome), real: r.real, plan: r.plan, aa: r.aa,
+        ritmoAno: soma(f.ritmo, 11), planAno: soma(f.plan, 11)
+      };
+    })
     .filter(l => l.real > 0.005 || l.plan > 0.005 || l.aa > 0.005);
   linhas.sort((a, b) => Math.max(b.real, b.plan) - Math.max(a.real, a.plan));
 
@@ -72,11 +81,13 @@ function _gerarSlideDREExec_(qual) {
   linhas = linhas.slice(0, TOP);
   if (resto.length) {
     linhas.push({
-      nome  : 'Outras despesas (' + resto.length + ' linhas)',
-      real  : resto.reduce((s, l) => s + l.real, 0),
-      plan  : resto.reduce((s, l) => s + l.plan, 0),
-      aa    : resto.reduce((s, l) => s + l.aa,   0),
-      outras: true
+      nome    : 'Outras despesas (' + resto.length + ' linhas)',
+      real    : resto.reduce((s, l) => s + l.real, 0),
+      plan    : resto.reduce((s, l) => s + l.plan, 0),
+      aa      : resto.reduce((s, l) => s + l.aa,   0),
+      ritmoAno: resto.reduce((s, l) => s + l.ritmoAno, 0),
+      planAno : resto.reduce((s, l) => s + l.planAno,  0),
+      outras  : true
     });
   }
 
@@ -120,13 +131,14 @@ function _gerarSlideDREExec_(qual) {
   card.getFill().setSolidFill('#FFFFFF'); card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
   card.getBorder().setWeight(1);
 
-  // Colunas: nome | Realizado | Planejado | barras | % plan | vs AA
+  // Colunas: nome | Realizado | Planejado | Ritmo (ano) | barras | % plan | vs AA
   const aX = marginX + 12, aW = W - 2 * marginX - 24;
-  const cNomeW = 148, cValW = 74, cPctW = 52, cAAW = 68;
-  const cBarW  = aW - cNomeW - 2 * cValW - cPctW - cAAW - 20;
+  const cNomeW = 132, cValW = 70, cPctW = 50, cAAW = 64;
+  const cBarW  = aW - cNomeW - 3 * cValW - cPctW - cAAW - 20;
   const xReal  = aX + cNomeW;
   const xPlan  = xReal + cValW;
-  const xBar   = xPlan + cValW + 10;
+  const xRitmo = xPlan + cValW;
+  const xBar   = xRitmo + cValW + 10;
   const xPct   = xBar + cBarW + 10;
   const xAA    = xPct + cPctW;
 
@@ -142,7 +154,8 @@ function _gerarSlideDREExec_(qual) {
   _cab(aX, cNomeW, 'RUBRICA', SlidesApp.ParagraphAlignment.START);
   _cab(xReal, cValW, 'REALIZADO');
   _cab(xPlan, cValW, 'PLANEJADO');
-  _cab(xBar, cBarW, 'REALIZADO (COR) vs PLANEJADO (CINZA)', SlidesApp.ParagraphAlignment.CENTER);
+  _cab(xRitmo, cValW, 'RITMO (ANO)');
+  _cab(xBar, cBarW, 'REAL (COR) vs PLAN (CINZA)', SlidesApp.ParagraphAlignment.CENTER);
   _cab(xPct, cPctW, '% PLAN.', SlidesApp.ParagraphAlignment.CENTER);
   _cab(xAA, cAAW, 'VS ' + (anoRef - 1), SlidesApp.ParagraphAlignment.CENTER);
 
@@ -176,6 +189,11 @@ function _gerarSlideDREExec_(qual) {
     const estourou = l.plan > 0 ? l.real > l.plan : l.real > 0;
     _val(xReal, l.real, estourou ? DS.colors.accentRed : DS.colors.textMain, true);
     _val(xPlan, l.plan, CORES.textGray, false);
+
+    // Ritmo do ANO (projeção de fechamento): vermelho se projeta estourar
+    // o planejado anual da rubrica
+    const ritmoEstoura = l.planAno > 0 ? l.ritmoAno > l.planAno : l.ritmoAno > 0;
+    _val(xRitmo, l.ritmoAno, ritmoEstoura ? DS.colors.accentRed : CORES.textGray, false);
 
     // Barras comparativas (mesma escala em todas as linhas)
     const bH = Math.min(7, (rowH - 8) / 2);

@@ -1386,10 +1386,13 @@ function obterDadosDreDetalhado_() {
       return { porChave, total, maxMes: Math.max(...mis) };
     };
 
-    // ── REALIZADO (BRIDGE, só meses fechados) e ANO ANTERIOR (2025) ─────────
-    const bridge = lerBridge(abaBridge, true);
+    // ── REALIZADO (BRIDGE, só meses fechados), RITMO (BRIDGE ano inteiro:
+    //    Real dos fechados + Ritmo dos futuros = projeção de fechamento) e
+    //    ANO ANTERIOR (2025) ────────────────────────────────────────────────
+    const bridge    = lerBridge(abaBridge, true);
     if (!bridge) return null;
-    const ant = aba2025 ? lerBridge(aba2025, false) : null;
+    const bridgeAno = lerBridge(abaBridge, false);
+    const ant       = aba2025 ? lerBridge(aba2025, false) : null;
 
     const mesesRealizados = bridge.maxMes + 1;
 
@@ -1422,14 +1425,17 @@ function obterDadosDreDetalhado_() {
     );
     if (!totalDre || !folhasDre.length) return null;
 
-    // ── União das linhas por chave (real + plan + aa) ───────────────────────
+    // ── União das linhas por chave (real + plan + aa + ritmo) ───────────────
     const zero12 = () => new Array(12).fill(0);
     const mapa = {};
     const garantir = (k, nome) => {
-      if (!mapa[k]) mapa[k] = { nome, real: zero12(), plan: zero12(), aa: zero12() };
+      if (!mapa[k]) mapa[k] = { nome, real: zero12(), plan: zero12(), aa: zero12(), ritmo: zero12() };
       return mapa[k];
     };
     Object.keys(bridge.porChave).forEach(k => { garantir(k, bridge.porChave[k].nome).real = bridge.porChave[k].vals; });
+    if (bridgeAno) Object.keys(bridgeAno.porChave).forEach(k => {
+      garantir(k, mapa[k] ? mapa[k].nome : bridgeAno.porChave[k].nome).ritmo = bridgeAno.porChave[k].vals;
+    });
     folhasDre.forEach(f => {
       const k = chave(f.nome);
       if (f.plan.some(v => v !== 0)) garantir(k, mapa[k] ? mapa[k].nome : f.nome).plan = f.plan;
@@ -1446,10 +1452,11 @@ function obterDadosDreDetalhado_() {
       return t;
     };
     const total = {
-      nome: 'DESPESAS OPERACIONAIS',
-      real: bridge.total || somaLinhas('real'),
-      plan: totalDre.plan,
-      aa  : (ant && ant.total) || somaLinhas('aa')
+      nome : 'DESPESAS OPERACIONAIS',
+      real : bridge.total || somaLinhas('real'),
+      plan : totalDre.plan,
+      aa   : (ant && ant.total) || somaLinhas('aa'),
+      ritmo: (bridgeAno && bridgeAno.total) || somaLinhas('ritmo')
     };
 
     return { cidade: getProjetoAtivo().nome, ref, mesesRealizados, total, linhas };

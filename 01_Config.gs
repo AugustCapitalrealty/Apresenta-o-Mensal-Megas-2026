@@ -393,6 +393,7 @@ function criarCardKPI(slide, x, y, w, h, opts) {
   side.getBorder().setTransparent();
 
   const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20, 13);
+  lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   lbl.getText().setText(String(opts.label)).getTextStyle()
     .setFontSize(7.5).setBold(true)
     .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
@@ -409,6 +410,7 @@ function criarCardKPI(slide, x, y, w, h, opts) {
   let fy = y + h - footH - 4;
   if (opts.sub) {
     const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 13);
+    sub.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     sub.getText().setText(String(opts.sub)).getTextStyle()
       .setFontSize(8).setBold(true)
       .setForegroundColor(opts.corSub || DS.colors.textBody).setFontFamily(DS.typography.titles);
@@ -416,6 +418,7 @@ function criarCardKPI(slide, x, y, w, h, opts) {
   }
   if (opts.nota) {
     const nota = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 11);
+    nota.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     nota.getText().setText(String(opts.nota)).getTextStyle()
       .setFontSize(6.5).setBold(false)
       .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
