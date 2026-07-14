@@ -80,7 +80,7 @@ function _itemSimples(slide, x, y, w, label, valor, colorLabel, colorVal, trend)
     .setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
   if (temTrend) {
     vt.getRange(valStr.length, txt.length).getTextStyle()
-      .setFontSize(7.5).setForegroundColor(trend.cor);
+      .setFontSize(11).setBold(true).setForegroundColor(trend.cor);
   }
   vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);

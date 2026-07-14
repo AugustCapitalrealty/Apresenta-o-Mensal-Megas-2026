@@ -91,7 +91,7 @@ function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
     const vr = valBox.getText();
     vr.setText(txt).getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
     if (trend.txt) {
-      vr.getRange(valStr.length, txt.length).getTextStyle().setFontSize(7).setForegroundColor(trend.cor);
+      vr.getRange(valStr.length, txt.length).getTextStyle().setFontSize(9.5).setBold(true).setForegroundColor(trend.cor);
     }
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);

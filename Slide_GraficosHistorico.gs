@@ -81,7 +81,7 @@ function desenharGraficoHistorico(slide, x, y, w, h, serie, opts) {
     // Valor no topo da barra (com respiro). Na última barra (mês atual),
     // 2ª linha com a tendência vs o mês anterior (▲ subiu · ▼ caiu).
     const temDelta = ultimo && i >= 1 && opts.deltaMesAnterior !== false;
-    const boxH = temDelta ? 24 : 12;
+    const boxH = temDelta ? 28 : 12;
     const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY - bh - boxH - 6, slotW * 1.3, boxH);
     const vt = vl.getText();
     let txt = fmt(s.valor);
@@ -98,7 +98,7 @@ function desenharGraficoHistorico(slide, x, y, w, h, serie, opts) {
       const bom = opts.deltaMenorMelhor ? delta < 0 : delta > 0;
       const corDelta = delta === 0 ? CORES.textGray : (bom ? CORES.cardGreen : CORES.cardRed);
       vt.getRange(fmt(s.valor).length + 1, txt.length).getTextStyle()
-        .setFontSize(5.5).setForegroundColor(corDelta);
+        .setFontSize(8).setBold(true).setForegroundColor(corDelta);
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 

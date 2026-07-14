@@ -107,7 +107,7 @@ function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
     if (temDelta) {
       const corDelta = kpi.delta > 0 ? CORES.cardGreen : CORES.cardRed;  // fluxo subindo = verde
       vr.getRange(valBase.length, vtxt.length).getTextStyle()
-        .setFontSize(6.5).setForegroundColor(corDelta);
+        .setFontSize(9).setBold(true).setForegroundColor(corDelta);
     }
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);

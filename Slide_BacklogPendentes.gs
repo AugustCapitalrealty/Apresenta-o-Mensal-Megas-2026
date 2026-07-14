@@ -83,7 +83,7 @@ function gerarSlideBacklogPendentes() {
     // anterior em TODAS as barras (▲ subiu = atenção · ▼ caiu = melhora).
     const temDelta = b.anterior != null && !isNaN(b.anterior);
     const delta    = temDelta ? b.qtd - b.anterior : 0;
-    const boxH  = temDelta ? 22 : 13;
+    const boxH  = temDelta ? 26 : 13;
     const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.25, baseY - hBar - boxH - 8, slotW * 1.5, boxH);
     const vt = vl.getText();
     const valStr = formatarNumeroBR(b.qtd);
@@ -99,7 +99,7 @@ function gerarSlideBacklogPendentes() {
     if (temDelta) {
       const corDelta = delta === 0 ? CORES.textGray : (delta > 0 ? CORES.cardRed : CORES.cardGreen);
       vt.getRange(valStr.length + 1, txt.length).getTextStyle()
-        .setFontSize(b.destaque ? 6 : 5.5).setBold(true).setForegroundColor(corDelta);
+        .setFontSize(b.destaque ? 8.5 : 7.5).setBold(true).setForegroundColor(corDelta);
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
