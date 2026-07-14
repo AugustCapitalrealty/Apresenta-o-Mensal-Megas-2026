@@ -62,9 +62,13 @@ function gerarSlideDashboard() {
 
     // Painel padrão do design system (01_Config.gs) — título na cor do tema
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
-    const colNameW = cardW * 0.45, colDataW = (cardW - colNameW - 20) / 3;
+    // Faixa do comparativo ▲/▼ entre o rótulo e a coluna JUN (sem cabeçalho):
+    // o selo fica À ESQUERDA do valor atual, na altura padrão da linha.
+    const colNameW = cardW * 0.40, seloW = 44;
+    const dataX0   = x + 10 + colNameW + seloW;
+    const colDataW = (cardW - 20 - colNameW - seloW) / 3;
     dynamicHeaders.forEach((h, idx) => {
-      let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW + (idx * colDataW), tableY, colDataW, 20);
+      let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW), tableY, colDataW, 20);
       t.getText().setText(h).getTextStyle().setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
       t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     });
@@ -85,23 +89,26 @@ function gerarSlideDashboard() {
       let vals = { atual: '-', mesAnt: '-', anoAnt: '-' };
       if (valoresMap.has(r.lookup)) vals = valoresMap.get(r.lookup);
 
-      // Comparativo vs mês anterior (diretriz nova): caixa própria
-      // sobreposta, centralizada ACIMA do valor atual — ▲/▼ + delta,
-      // colorido pelo sentido da métrica (verde melhorou / vermelho piorou).
+      // Comparativo vs mês anterior: selo À ESQUERDA do valor atual, na
+      // faixa própria entre o rótulo e a coluna JUN, altura padrão da
+      // linha. A seta já dá a direção, então o delta vai sem sinal
+      // (ex.: "▼ 5.163"), colorido pelo sentido da métrica.
       const nAtual = paraNumero(vals.atual), nAnt = paraNumero(vals.mesAnt);
-      let trend = null;
       if (!isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
-        const delta = Math.round((nAtual - nAnt) * 100) / 100;
-        trend = tendenciaTexto_(delta, r.sentido === 'menor');
+        const delta    = Math.round((nAtual - nAnt) * 100) / 100;
+        const subiu    = delta > 0;
+        const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
+        const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+          x + 10 + colNameW, ry, seloW - 4, rowH);
+        selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        selo.getText().setText((subiu ? '▲ ' : '▼ ') + formatarNumeroBR(Math.abs(delta)))
+          .getTextStyle().setFontSize(8).setBold(true)
+          .setForegroundColor(melhorou ? CORES.cardGreen : CORES.cardRed).setFontFamily('Montserrat');
+        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       }
 
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
-        const cellX = x + 10 + colNameW + (vIdx * colDataW);
-        const temSelo = vIdx === 0 && trend && trend.txt;
-
-        // Com selo, o valor desce um pouco para os dois não colidirem
-        let vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-          cellX, temSelo ? ry + 8 : ry, colDataW, temSelo ? rowH - 8 : rowH);
+        let vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW), ry, colDataW, rowH);
         const valStr = formatarNumeroBR(val);
         let vText = vBox.getText();
         vText.setText(valStr);
@@ -114,13 +121,6 @@ function gerarSlideDashboard() {
         }
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-        if (temSelo) {
-          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cellX, ry, colDataW, 10);
-          selo.getText().setText(trend.txt).getTextStyle()
-            .setFontSize(8).setBold(true).setForegroundColor(trend.cor).setFontFamily('Montserrat');
-          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-        }
       });
     });
   });
