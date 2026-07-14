@@ -103,7 +103,7 @@ const PROJETOS = {
     spreadsheetId  : '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
-    reaberturaId   : '',
+    reaberturaId   : '18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0',
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
