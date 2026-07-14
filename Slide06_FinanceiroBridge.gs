@@ -487,8 +487,12 @@ function gerarSlideBridgeGrafico() {
     };
   });
 
-  const maxUp   = Math.max(1, ...meses.filter(m => m.delta > 0).map(m => m.delta));
-  const maxDown = Math.max(1, ...meses.filter(m => m.delta < 0).map(m => -m.delta));
+  // Desvio PROJETADO vs orçado anual (>0 = projeta estourar o orçamento).
+  // Entra na escala junto com os meses para a barra da ponta nunca vazar.
+  const deltaProj = d.totalProjetado - d.totalOrcAnual;
+
+  const maxUp   = Math.max(1, deltaProj > 0 ?  deltaProj : 0, ...meses.filter(m => m.delta > 0).map(m => m.delta));
+  const maxDown = Math.max(1, deltaProj < 0 ? -deltaProj : 0, ...meses.filter(m => m.delta < 0).map(m => -m.delta));
 
   const plotX = marginX + 24;
   const plotY = topY + 56;
@@ -511,31 +515,74 @@ function gerarSlideBridgeGrafico() {
   const slotW = plotW / (n + 2);            // +2 slots para as pontas (orçado / projetado)
   const barW  = Math.min(slotW * 0.5, 34);
 
-  // Linha do zero (eixo) — apenas sob a zona das variações mensais
-  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW, zeroY, plotW - 2 * slotW, 1.4);
+  // Linha do zero (eixo) — o ORÇADO É o ponto zero, então a linha começa
+  // já no slot do orçado e vai até o slot do projetado
+  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.4);
   eixo.getFill().setSolidFill('#94A3B8'); eixo.getBorder().setTransparent();
 
-  // ── Pontas do waterfall: ORÇADO ANUAL (início) e PROJETADO (fim) ─────────
-  const orcAnual  = d.totalOrcAnual;
-  const projAnual = d.totalProjetado;
-  const fullH  = upH + downH;
-  const maxEnd = Math.max(orcAnual, projAnual, 1);
-  const drawEndpoint = (slotIdx, val, cor, linha1, linha2) => {
-    const h  = Math.max((val / maxEnd) * fullH, 4);
-    const cx = plotX + slotIdx * slotW + (slotW - barW) / 2;
-    const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, baseBottom - h, barW, h);
-    bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
-    const tot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom - h - 18, slotW * 1.5, 12);
-    tot.getText().setText(formatarMoedaCompacta(val)).getTextStyle()
-      .setFontSize(7).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
-    tot.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    const cap = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, baseBottom + 3, slotW * 1.5, 22);
-    cap.getText().setText(linha1 + (linha2 ? '\n' + linha2 : '')).getTextStyle()
+  // R$/m² médio mensal dos valores anuais (mesma convenção do card de
+  // resumo do Bridge: valor ÷ (área × nº de meses do ano))
+  const areaBg = obterAreaM2_();
+  const nTotBg = Math.max(d.meses.length, 1);
+  const m2AnualBg = v => areaBg ? formatarReaisM2_(v, areaBg * nTotBg) : '';
+
+  // ── Ponta esquerda: ORÇADO ANUAL = ponto zero (sem barra, só o valor) ────
+  {
+    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      plotX - slotW * 0.25, zeroY - 30, slotW * 1.5, 24);
+    const m2Orc = m2AnualBg(d.totalOrcAnual);
+    const txtOrc = formatarMoedaCompacta(d.totalOrcAnual) + (m2Orc ? '\n' + m2Orc : '');
+    const vr = valBox.getText();
+    vr.setText(txtOrc).getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor('#475569').setFontFamily('Montserrat');
+    if (m2Orc) vr.getRange(txtOrc.indexOf('\n') + 1, txtOrc.length)
+      .getTextStyle().setFontSize(5.5).setBold(false).setForegroundColor('#94A3B8');
+    vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const cap = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      plotX - slotW * 0.25, zeroY + 4, slotW * 1.5, 22);
+    cap.getText().setText('ORÇADO\nANUAL').getTextStyle()
       .setFontSize(6).setBold(true).setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
     cap.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  };
-  drawEndpoint(0,     orcAnual,  '#94A3B8',       'ORÇADO', 'ANUAL');
-  drawEndpoint(n + 1, projAnual, CORES.darkBlue,  'PROJETADO', '');
+  }
+
+  // ── Ponta direita: PROJETADO como DESVIO do zero (mesma lógica dos meses:
+  //    p/ cima = projeta gastar acima do orçado; p/ baixo = economia) ───────
+  {
+    const slotIdx = n + 1;
+    const mag  = Math.abs(deltaProj);
+    const hBar = Math.max(deltaProj > 0 ? (mag / maxUp) * upH : (mag / maxDown) * downH, 3);
+    const yBar = deltaProj > 0 ? zeroY - hBar : zeroY + 1.4;
+    const cor  = deltaProj > 0 ? '#EF4444' : '#10B981';
+    const cx   = plotX + slotIdx * slotW + (slotW - barW) / 2;
+
+    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
+    bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+
+    // Rótulo do desvio: R$ + R$/m² (padrão dos meses)
+    const m2Proj  = m2AnualBg(mag);
+    const bloco   = (deltaProj > 0 ? '+' : '−') + formatarMoedaCompacta(mag) +
+                    (m2Proj ? '\n' + (deltaProj > 0 ? '+' : '−') + m2Proj : '');
+    const blocoH  = m2Proj ? 22 : 12;
+    const lblY    = deltaProj > 0 ? yBar - blocoH - 8 : yBar + hBar + 8;
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
+    const lr  = lbl.getText();
+    lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+    if (m2Proj) lr.getRange(bloco.indexOf('\n') + 1, bloco.length).getTextStyle().setFontSize(5.5).setBold(false);
+    lr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // Rótulo "PROJETADO" + total anual projetado, do lado oposto ao da barra
+    const capH = 22;
+    const capY = deltaProj > 0 ? zeroY + 4 : zeroY - capH - 3;
+    const cap = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, capY, slotW * 1.5, capH);
+    const capTxt = 'PROJETADO\n' + formatarMoedaCompacta(d.totalProjetado);
+    const cr = cap.getText();
+    cr.setText(capTxt).getTextStyle()
+      .setFontSize(6).setBold(true).setForegroundColor(CORES.darkBlue).setFontFamily('Montserrat');
+    cr.getRange(capTxt.indexOf('\n') + 1, capTxt.length)
+      .getTextStyle().setBold(false).setForegroundColor('#64748B');
+    cr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
 
   // ── Barras de variação mensal (slots 1..n) ──────────────────────────────
   meses.forEach((m, i) => {

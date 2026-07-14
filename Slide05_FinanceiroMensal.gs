@@ -404,8 +404,9 @@ function formatarMoeda(valor) {
 
 function formatarMoedaCompacta(valor) {
   valor = Number(valor || 0);
-  if (Math.abs(valor) >= 1000) return 'R$ ' + Math.round(valor / 1000) + ' mil';
-  return 'R$ ' + Math.round(valor);
+  // Separador de milhar também no formato compacto: "R$ 6.084 mil"
+  if (Math.abs(valor) >= 1000) return 'R$ ' + Math.round(valor / 1000).toLocaleString('pt-BR') + ' mil';
+  return 'R$ ' + Math.round(valor).toLocaleString('pt-BR');
 }
 
 function converterNumero(valor) {
