@@ -1061,10 +1061,261 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       if (String(metaStr || '').indexOf('/') >= 0) valor += ' / 0%';
       return { valor, delta, menorMelhor: true };
     }
+
+    // CHECK-LIST/SLA - TERCEIROS (Analista) — aba META da própria planilha da cidade
+    if (d.includes('terceiro')) {
+      const serie = _lerSerieMetaAnalista_(txt => _histNorm_(txt).includes('terceiro'));
+      if (!serie.length) return null;
+      const ref = obterMesReferencia_();
+      const refOrd = ref.ano * 100 + (ref.index + 1);
+      const atual = serie.find(s => s.ord === refOrd);
+      if (!atual) return null;
+      const val = ehMensal ? atual.mes : atual.acum;
+      if (val == null || isNaN(val)) return null;
+
+      const anteriores = serie.filter(s => s.ord < refOrd);
+      let delta = null;
+      if (anteriores.length) {
+        const prev = anteriores[anteriores.length - 1];
+        const pval = ehMensal ? prev.mes : prev.acum;
+        if (pval != null && !isNaN(pval)) delta = Math.round((val - pval) * 100) / 100;
+      }
+      return { valor: formatarNumeroBR(val), delta, menorMelhor: false };
+    }
+
+    // TAXA DE REABERTURA (Analista) — planilha "MEGA <CIDADE> FACILITIES"
+    // (reaberturaId em 01_Config.gs), aba TAXA DE ABERTURA (FECHADOS/REABERTOS por mês)
+    if (d.includes('reabertura')) {
+      const serie = obterDadosTaxaReabertura_();
+      if (!serie || !serie.length) return null;
+      const ref = obterMesReferencia_();
+      const refOrd = ref.ano * 100 + (ref.index + 1);
+      const idx = serie.findIndex(s => s.ord === refOrd);
+      if (idx < 0) return null;
+
+      const pctAte = fim => {
+        let f = 0, r = 0;
+        for (let j = 0; j <= fim; j++) {
+          if (!isNaN(serie[j].fechados))  f += serie[j].fechados;
+          if (!isNaN(serie[j].reabertos)) r += serie[j].reabertos;
+        }
+        return f > 0 ? (r / f) * 100 : null;
+      };
+
+      let valorNum, valorPrevNum = null;
+      if (ehMensal) {
+        const f = serie[idx].fechados, r = serie[idx].reabertos;
+        valorNum = (!isNaN(f) && f > 0) ? (r / f) * 100 : (f === 0 ? 0 : null);
+        if (idx > 0) {
+          const fp = serie[idx - 1].fechados, rp = serie[idx - 1].reabertos;
+          valorPrevNum = (!isNaN(fp) && fp > 0) ? (rp / fp) * 100 : (fp === 0 ? 0 : null);
+        }
+      } else {
+        valorNum = pctAte(idx);
+        if (idx > 0) valorPrevNum = pctAte(idx - 1);
+      }
+      if (valorNum == null) return null;
+
+      let delta = null;
+      if (valorPrevNum != null) delta = Math.round((valorNum - valorPrevNum) * 100) / 100;
+
+      return { valor: formatarNumeroBR(Math.round(valorNum * 100) / 100), delta, menorMelhor: true };
+    }
+
+    // CUMPRIR ORÇAMENTO (Analista) — soma de rubricas na aba FINANCEIRO BRIDGE
+    // (Energia Elétrica, Água, Telefone, Material de Consumo, Materiais de
+    // Informática); acima do orçado = vermelho, abaixo = verde (feito pelo
+    // motor de status existente, comparando Real vs Meta pelo Sentido "<=").
+    if (d.includes('orcamento') || d.includes('orçamento')) {
+      const od = obterDadosOrcamentoAnalista_();
+      if (!od || !od.serie.length) return null;
+      const ref = obterMesReferencia_();
+      const refOrd = ref.ano * 100 + (ref.index + 1);
+      const idx = od.serie.findIndex(s => s.ord === refOrd);
+      if (idx < 0) return null;
+
+      const somaAte = (campo, fim) => od.serie.slice(0, fim + 1).reduce((s, m) => s + m[campo], 0);
+
+      let orcVal, realVal, orcPrev = null, realPrev = null;
+      if (ehMensal) {
+        orcVal = od.serie[idx].orc; realVal = od.serie[idx].real;
+        if (idx > 0) { orcPrev = od.serie[idx - 1].orc; realPrev = od.serie[idx - 1].real; }
+      } else {
+        orcVal = somaAte('orc', idx); realVal = somaAte('real', idx);
+        if (idx > 0) { orcPrev = somaAte('orc', idx - 1); realPrev = somaAte('real', idx - 1); }
+      }
+
+      let delta = null;
+      if (realPrev != null) delta = Math.round((realVal - realPrev) * 100) / 100;
+
+      return {
+        valor: formatarMoedaSlide(realVal),
+        metaValor: formatarMoedaSlide(orcVal),
+        delta,
+        menorMelhor: true
+      };
+    }
   } catch (e) {
     Logger.log('obterMetaAuto_("' + descricao + '"): ' + e.message);
   }
   return null;
+}
+
+
+// ==========================================
+// FONTES AUXILIARES — METAS DO ANALISTA (obterMetaAuto_ acima)
+// ==========================================
+
+// Lê a aba META da PRÓPRIA planilha da cidade (mesma de DADOS/PREVENTIVAS):
+// colunas MÊS (MM/AAAA) | CARGO | META | RESULTADO MÊS | RESULTADO ACUMULADO.
+// Filtra por CARGO contendo "analista" e pela descrição (matchFn). Quando há
+// mais de uma linha para o mesmo mês, a ÚLTIMA da planilha vence (correção).
+// Retorna [{ord, mes, acum}] ordenado por mês.
+function _lerSerieMetaAnalista_(matchFn) {
+  const saida = [];
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('META');
+    if (!sheet) return saida;
+    const ultima = sheet.getLastRow();
+    if (ultima < 2) return saida;
+
+    const dados  = sheet.getRange(2, 1, ultima - 1, 5).getDisplayValues();
+    const porOrd = {};
+    dados.forEach(l => {
+      const cargo = _histNorm_(l[1]);
+      if (!cargo.includes('analista')) return;
+      if (!matchFn(l[2])) return;
+      const pm = _histParseMes_(String(l[0] || '').trim());
+      if (!pm) return;
+      const vMes  = _histNum_(l[3]);
+      const vAcum = _histNum_(l[4]);
+      if (isNaN(vMes) && isNaN(vAcum)) return;
+      porOrd[pm.ord] = { ord: pm.ord, mes: vMes, acum: vAcum };   // última linha vence
+    });
+    Object.keys(porOrd).forEach(k => saida.push(porOrd[k]));
+    saida.sort((a, b) => a.ord - b.ord);
+  } catch (e) {
+    Logger.log('_lerSerieMetaAnalista_: ' + e.message);
+  }
+  return saida;
+}
+
+// Lê a planilha externa "MEGA <CIDADE> FACILITIES" (reaberturaId em
+// 01_Config.gs), aba TAXA DE ABERTURA: uma linha FECHADOS e uma REABERTOS,
+// um mês por coluna (cabeçalho tipo "jan. de 2026"). Retorna
+// [{ord, fechados, reabertos}] ordenado por mês, ou null se a cidade não
+// tiver reaberturaId configurado ou a aba não existir.
+function obterDadosTaxaReabertura_() {
+  const id = getProjetoAtivo().reaberturaId;
+  if (!id) return null;
+  try {
+    const ss    = SpreadsheetApp.openById(id);
+    const sheet = ss.getSheetByName('TAXA DE ABERTURA') || ss.getSheetByName('TAXA DE REABERTURA');
+    if (!sheet) return null;
+    const data = sheet.getDataRange().getDisplayValues();
+
+    let rFechados = -1, rReabertos = -1;
+    for (let r = 0; r < data.length; r++) {
+      const lbl = _histNorm_(data[r][0] || data[r][1] || '');
+      if (rFechados < 0  && lbl.includes('fechado'))  rFechados  = r;
+      if (rReabertos < 0 && lbl.includes('reaberto')) rReabertos = r;
+    }
+    if (rFechados < 0 || rReabertos < 0) return null;
+    const hdrRow = Math.min(rFechados, rReabertos) - 1;
+    if (hdrRow < 0) return null;
+
+    const MESES_VALIDOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const cols = [];
+    data[hdrRow].forEach((cell, c) => {
+      const norm = _histNorm_(cell);
+      const m = norm.match(/^([a-z]{3})[a-z]*\.?\s*de\s*(\d{4})/);
+      if (!m) return;
+      const idxMes = MESES_VALIDOS.indexOf(m[1]);
+      if (idxMes < 0) return;
+      cols.push({ c, ord: parseInt(m[2], 10) * 100 + (idxMes + 1) });
+    });
+    if (!cols.length) return null;
+    cols.sort((a, b) => a.ord - b.ord);
+
+    return cols.map(g => ({
+      ord      : g.ord,
+      fechados : _histNum_(data[rFechados][g.c]),
+      reabertos: _histNum_(data[rReabertos][g.c])
+    }));
+  } catch (e) {
+    Logger.log('obterDadosTaxaReabertura_: ' + e.message);
+    return null;
+  }
+}
+
+// Soma, por mês, o Orçado e o Real das rubricas "Energia Elétrica", "Água",
+// "Telefone", "Material de Consumo" e "Materiais de Informática" na aba
+// FINANCEIRO BRIDGE (mesma estrutura de colunas usada por obterDadosBridge,
+// em Slide06_FinanceiroBridge.gs: trincas Orç|Real|Variação por mês).
+// Retorna { serie: [{ord, orc, real}] } ordenado por mês, ou null.
+function obterDadosOrcamentoAnalista_() {
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('FINANCEIRO BRIDGE');
+    if (!sheet) return null;
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return null;
+
+    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+
+    let hdrRow = -1;
+    for (let r = 0; r < Math.min(5, data.length); r++) {
+      if (data[r].some(c => /^or[cç]/i.test(_histNorm_(c)))) { hdrRow = r; break; }
+    }
+    if (hdrRow < 0) return null;
+    const hdr = data[hdrRow];
+
+    const MESES_VALIDOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const grupos = [];
+    for (let c = 1; c + 1 < hdr.length; c += 3) {
+      if (!/^or[cç]/.test(_histNorm_(hdr[c]))) break;
+      const m = String(hdr[c]).match(/([A-Za-zçÇ]{3})\/(\d{2,4})/);
+      if (!m) continue;
+      const idxMes = MESES_VALIDOS.indexOf(m[1].toLowerCase());
+      if (idxMes < 0) continue;
+      const ano2 = m[2].length === 2 ? m[2] : m[2].slice(-2);
+      grupos.push({ ord: (2000 + parseInt(ano2, 10)) * 100 + (idxMes + 1), cOrc: c, cReal: c + 1 });
+    }
+    if (!grupos.length) return null;
+
+    // Rubricas-alvo: casamento por palavras-chave (radical "materia" cobre
+    // "material" E "materiais"; evita "Assistência informática" colidir
+    // com "Materiais de Informática", por exemplo).
+    const bateRubrica = norm => {
+      if (norm.includes('energia') && norm.includes('eletric'))      return true;
+      if (norm === 'agua' || norm.indexOf('agua') === 0)             return true;
+      if (norm.includes('telefon'))                                  return true;
+      if (norm.includes('materia') && norm.includes('consumo'))      return true;
+      if (norm.includes('materia') && norm.includes('informatic'))   return true;
+      return false;
+    };
+
+    const linhasAlvo = [];
+    for (let r = hdrRow + 1; r < data.length; r++) {
+      const norm = _histNorm_(data[r][0]);
+      if (norm && bateRubrica(norm)) linhasAlvo.push(r);
+    }
+    if (!linhasAlvo.length) return null;
+
+    const serie = grupos
+      .map(g => {
+        let orc = 0, real = 0;
+        linhasAlvo.forEach(r => { orc += toAbs(data[r][g.cOrc]); real += toAbs(data[r][g.cReal]); });
+        return { ord: g.ord, orc, real };
+      })
+      .sort((a, b) => a.ord - b.ord);
+
+    return { serie };
+  } catch (e) {
+    Logger.log('obterDadosOrcamentoAnalista_: ' + e.message);
+    return null;
+  }
 }
 
 

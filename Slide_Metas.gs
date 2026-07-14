@@ -100,14 +100,19 @@ function obterDadosMetas_(papel) {
 
     // Indicadores que já calculamos: sobrescreve o Real com o valor da
     // apresentação e guarda a tendência vs mês anterior para renderizar.
-    // [6]=Real Mês (meta em [5]) · [9]=Real Acum. (meta em [8])
+    // [6]=Real Mês (meta em [5]) · [9]=Real Acum. (meta em [8]). Alguns
+    // indicadores (Cumprir Orçamento) também calculam a própria Meta
+    // (metaValor) — nesse caso sobrescrevemos [5]/[8] também, e o motor de
+    // status (Real vs Meta pelo Sentido) já sai correto sem digitação manual.
     const autoMes = obterMetaAuto_(descricao, linha[5], 'mes');
     if (autoMes) {
+      if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
       linha[6] = autoMes.valor;
       linha._trendMes = tendenciaTexto_(autoMes.delta, autoMes.menorMelhor);
     }
     const autoAcum = obterMetaAuto_(descricao, linha[8], 'acum');
     if (autoAcum) {
+      if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
       linha[9] = autoAcum.valor;
       linha._trendAcum = tendenciaTexto_(autoAcum.delta, autoAcum.menorMelhor);
     }

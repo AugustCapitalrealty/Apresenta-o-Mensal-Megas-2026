@@ -70,12 +70,18 @@ const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
 
 // capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
 // capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
+//
+// reaberturaId (opcional): planilha "MEGA <CIDADE> FACILITIES" com a aba
+// "TAXA DE ABERTURA" (linhas FECHADOS/REABERTOS por mês) — fonte da meta
+// TAXA DE REABERTURA do Analista (ver obterDadosTaxaReabertura_ em
+// 02_Dados.gs). Sem ele, a meta cai no valor da planilha da TV.
 const PROJETOS = {
   CURITIBA: {
     nome           : 'Mega Curitiba',
     spreadsheetId  : '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
+    reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
     contatos       : [
       { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
@@ -86,6 +92,7 @@ const PROJETOS = {
     spreadsheetId  : '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
+    reaberturaId   : '',
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -96,6 +103,7 @@ const PROJETOS = {
     spreadsheetId  : '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
+    reaberturaId   : '',
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
