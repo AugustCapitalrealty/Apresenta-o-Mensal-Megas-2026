@@ -962,6 +962,61 @@ function obterCustoM2Acumulado_() {
   };
 }
 
+// Recorte FIXO do 1º Quadrimestre (Jan–Abr), independente do mês de
+// referência corrente — para o slide avulso Slide_CustoM2Quadrimestre.gs.
+// O valor do quadrimestre é a MÉDIA dos 4 meses (mesma regra do acumulado
+// anual: soma os R$/m² de cada mês e divide pelos meses com dado válido).
+function obterDadosCustoM2Quadrimestre_() {
+  const cm = obterDadosCustoM2();
+  if (!cm || !cm.tabela || !cm.meses || cm.meses.length < 4) return null;
+
+  const keys  = Object.keys(cm.tabela);
+  const kOrc  = keys.find(k => /^or[cç]/i.test(k));
+  const kReal = keys.find(k => /^real/i.test(k) && !/sem iptu/i.test(k));
+  if (!kOrc || !kReal) return null;
+
+  const arrOrc  = cm.tabela[kOrc]  || [];
+  const arrReal = cm.tabela[kReal] || [];
+
+  const numOu = v => (v != null && v !== '' && !isNaN(Number(v))) ? Number(v) : null;
+
+  const NOMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril'];
+  const meses = NOMES.map((nome, i) => {
+    const orc  = numOu(arrOrc[i]);
+    const real = numOu(arrReal[i]);
+    return {
+      nome,
+      curto    : cm.meses[i] || nome.substring(0, 3).toUpperCase(),
+      orc, real,
+      variacao : (orc != null && real != null) ? real - orc : null
+    };
+  });
+
+  const media = arr => {
+    let soma = 0, n = 0;
+    for (let i = 0; i < 4; i++) {
+      const v = arr[i];
+      if (v != null && v !== '' && !isNaN(Number(v)) && Number(v) > 0) { soma += Number(v); n++; }
+    }
+    return n > 0 ? soma / n : null;
+  };
+
+  const orcQuad  = media(arrOrc);
+  const realQuad = media(arrReal);
+  const varQuad  = (orcQuad != null && realQuad != null) ? realQuad - orcQuad : null;
+
+  return {
+    cidade: cm.referencia.cidade || getProjetoAtivo().nome,
+    ano   : cm.referencia.ano || new Date().getFullYear(),
+    meses,
+    quadrimestre: {
+      orc: orcQuad, real: realQuad, variacao: varQuad,
+      status    : varQuad == null ? '-'                : (varQuad <= 0 ? 'ABAIXO DO ORÇADO' : 'ACIMA DO ORÇADO'),
+      corStatus : varQuad == null ? CORES.textGray      : (varQuad <= 0 ? '#00B050'          : '#D32F2F')
+    }
+  };
+}
+
 // R$/m² Orçado e Real de CADA mês, indexado pelas 3 primeiras letras do mês
 // ('jan' → { orc, real }). Usado pelo bridge para mostrar o m² por mês.
 function obterCustoM2PorMes_() {

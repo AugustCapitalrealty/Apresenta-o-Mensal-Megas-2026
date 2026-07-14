@@ -30,6 +30,13 @@ function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCom
 // ==========================================
 function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
 
+// Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
+// geração mensal automática (é um recorte de período fixo, não do mês de
+// referência corrente). Troque a cidade e rode a função correspondente.
+function gerarSoCustoM2QuadrimestreCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideCustoM2Quadrimestre(); }
+function gerarSoCustoM2QuadrimestreItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCustoM2Quadrimestre(); }
+function gerarSoCustoM2QuadrimestreEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCustoM2Quadrimestre(); }
+
 
 // ==========================================
 // PONTOS DE ENTRADA — TODAS AS CIDADES
