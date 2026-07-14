@@ -250,14 +250,18 @@ function gerarSlideMetas(papel) {
 
   criarHeaderPadrao(slide, 'METAS', 'Objetivos e Resultados · ' + metas.papel);
 
-  // Larguras das colunas (Descrição mais larga; cabeçalhos curtos largos o bastante)
-  const larg = [166, 46, 78, 56, 54, 44, 44, 50, 44, 44, 50];
-  const totalW = larg.reduce((a, b) => a + b, 0);
+  // Larguras das colunas — a tabela ocupa o slide inteiro (margem de 10pt);
+  // Real Mês/Real Ac. são as mais largas para caber valor + comparativo ▲/▼
+  // na MESMA linha, sem quebra de texto.
+  const pesos  = [140, 34, 58, 44, 36, 62, 92, 40, 62, 92, 40];
+  const somaPesos = pesos.reduce((a, b) => a + b, 0);
+  const totalW = W - 20;
+  const larg = pesos.map(p => p / somaPesos * totalW);
   const x0 = Math.round((W - totalW) / 2);
   const xs = []; let acc = x0;
   larg.forEach(w => { xs.push(acc); acc += w; });
 
-  let y = 72;
+  let y = 66;
 
   // --- Barra de título ---
   const tituloH = 22;
@@ -292,7 +296,7 @@ function gerarSlideMetas(papel) {
   // --- Linhas de dados ---
   const n = metas.linhas.length;
   const dispH = resumoY - 6 - y;
-  const rowH = Math.max(20, Math.min(48, Math.floor(dispH / Math.max(1, n))));
+  const rowH = Math.max(20, Math.min(58, Math.floor(dispH / Math.max(1, n))));
 
   metas.linhas.forEach((linha, i) => {
     const ry = y + i * rowH;
@@ -311,21 +315,22 @@ function gerarSlideMetas(papel) {
 
       if (!ehStatus) {
         // Real Mês (6) / Real Acum. (9) calculados ganham a tendência
-        // ▲/▼ vs mês anterior numa segunda linha menor, colorida.
+        // ▲/▼ vs mês anterior AO LADO do valor, na mesma linha, colorida.
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
         const valStr = String(linha[c] || '');
         const temTrend = trend && trend.txt && valStr !== '';
+        const txt = temTrend ? valStr + '  ' + trend.txt : valStr;
 
         const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         const tr = t.getText();
-        tr.setText(temTrend ? valStr + '\n' + trend.txt : valStr);
-        tr.getTextStyle().setFontSize(7.5).setBold(c === 0).setFontFamily(DS.typography.body)
+        tr.setText(txt);
+        tr.getTextStyle().setFontSize(8).setBold(c === 0).setFontFamily(DS.typography.body)
           .setForegroundColor(DS.colors.textMain);
         tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
         if (temTrend) {
-          tr.getRange(valStr.length + 1, valStr.length + 1 + trend.txt.length)
-            .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(trend.cor);
+          tr.getRange(valStr.length, txt.length)
+            .getTextStyle().setFontSize(7).setBold(true).setForegroundColor(trend.cor);
         }
       }
     });
