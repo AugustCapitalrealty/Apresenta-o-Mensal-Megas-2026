@@ -250,10 +250,14 @@ function gerarSlideMetas(papel) {
 
   criarHeaderPadrao(slide, 'METAS', 'Objetivos e Resultados · ' + metas.papel);
 
-  // Larguras das colunas — a tabela ocupa o slide inteiro (margem de 10pt);
-  // Real Mês/Real Ac. são as mais largas para caber valor + comparativo ▲/▼
-  // na MESMA linha, sem quebra de texto.
-  const pesos  = [140, 34, 58, 44, 36, 62, 92, 40, 62, 92, 40];
+  // Larguras das colunas — a tabela ocupa o slide inteiro (margem de 10pt).
+  // Dimensionadas para o conteúdo caber em UMA linha, já contando o recuo
+  // interno (~7pt) das caixas de texto do Slides: "Direcionador"/
+  // "Procedimentos" pedem ~74pt, "SIM/NÃO" ~50pt, "Pontos"/"Status" ~40pt,
+  // "R$ 302.613" ~66pt. Só a Descrição quebra linha (é esperado).
+  // O comparativo ▲/▼ NÃO entra na largura: é uma caixa sobreposta no
+  // canto da célula (ver loop das linhas).
+  const pesos  = [126, 40, 74, 50, 46, 66, 70, 46, 66, 70, 46];
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
   const totalW = W - 20;
   const larg = pesos.map(p => p / somaPesos * totalW);
@@ -282,10 +286,10 @@ function gerarSlideMetas(papel) {
     const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], y, larg[c], cabH);
     bg.getFill().setSolidFill(DS.colors.brandDark);
     bg.getBorder().setWeight(1).getLineFill().setSolidFill('#FFFFFF');
-    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 2, y, larg[c] - 4, cabH);
+    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y, larg[c] - 2, cabH);
     tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     tb.getText().setText(t).getTextStyle()
-      .setFontSize(7.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+      .setFontSize(7).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
     tb.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
   });
   y += cabH;
@@ -314,23 +318,36 @@ function gerarSlideMetas(papel) {
       cell.getBorder().setWeight(1).getLineFill().setSolidFill(DS.colors.lines);
 
       if (!ehStatus) {
-        // Real Mês (6) / Real Acum. (9) calculados ganham a tendência
-        // ▲/▼ vs mês anterior AO LADO do valor, na mesma linha, colorida.
-        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        const valStr = String(linha[c] || '');
-        const temTrend = trend && trend.txt && valStr !== '';
-        const txt = temTrend ? valStr + '  ' + trend.txt : valStr;
+        // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
+        // quebrar linha nas colunas de Meta/Real.
+        let valStr = String(linha[c] || '');
+        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
 
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
+        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
+        const temTrend = !!(trend && trend.txt && valStr !== '');
+
+        // Valor centralizado na célula (sem o comparativo junto — ele vai
+        // numa caixa própria sobreposta, para nunca quebrar o valor). Com
+        // selo, o valor desce um pouco para não colidir com ele.
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+          xs[c] + 3, temTrend ? ry + 9 : ry, larg[c] - 6, temTrend ? rowH - 9 : rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         const tr = t.getText();
-        tr.setText(txt);
+        tr.setText(valStr);
         tr.getTextStyle().setFontSize(8).setBold(c === 0).setFontFamily(DS.typography.body)
           .setForegroundColor(DS.colors.textMain);
         tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+
+        // Comparativo ▲/▼ vs mês anterior: caixinha sobreposta no canto
+        // superior direito da célula de Real Mês (6) / Real Acum. (9) —
+        // um selo pequeno sobre o indicador principal.
         if (temTrend) {
-          tr.getRange(valStr.length, txt.length)
-            .getTextStyle().setFontSize(7).setBold(true).setForegroundColor(trend.cor);
+          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+            xs[c] + larg[c] - 46, ry, 44, 12);
+          selo.getText().setText(trend.txt).getTextStyle()
+            .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor)
+            .setFontFamily(DS.typography.titles);
+          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
         }
       }
     });
