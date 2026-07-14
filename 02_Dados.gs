@@ -1310,20 +1310,27 @@ function obterDadosTaxaReabertura_() {
 // As três informações vêm de abas que a planilha da cidade já mantém:
 //   ▸ REALIZADO     → aba FINANCEIRO BRIDGE (colunas Real dos meses fechados;
 //                     meses futuros são "Ritmo" e NÃO contam como realizado)
-//   ▸ PLANEJADO     → aba DRE (plano de contas "06.04.15 - manutenção
-//                     imóveis"; usa só a coluna Planejado de cada mês)
+//   ▸ PLANEJADO     → aba "PLANEJADO 2026" (plano de contas da controladoria
+//                     em até 4 níveis, ex. "06.02.08.04 - limpeza e
+//                     conservação"; usa só a coluna Planejado de cada par
+//                     mensal). Aceita também os nomes antigos DRE/PLANEJADO-2026.
 //   ▸ ANO ANTERIOR  → aba "Financeiro 2025" (mesma estrutura do BRIDGE,
 //                     colunas Real /25; opcional — sem ela o vs AA fica '—')
 // As linhas são casadas pelo NOME normalizado (com apelidos p/ diferenças
-// conhecidas: SEGURO→seguros, IPTU→despesas fiscais). Linhas presentes em
-// só uma fonte aparecem com as outras dimensões zeradas (ex.: "Seguros"
-// planejado sem realizado ainda).
+// conhecidas: SEGURO→seguros, IPTU→despesas fiscais). Como o planejado é
+// lido nas FOLHAS do plano de contas (nível mais fundo de cada ramo), o
+// 4º nível casa direto com os nomes do BRIDGE (limpeza e conservação,
+// serviços diversos, cursos e seminários...). Linhas presentes em só uma
+// fonte aparecem com as outras dimensões zeradas.
 // Retorna { cidade, ref, mesesRealizados, total, linhas:[{nome, real[12],
-// plan[12], aa[12]}] } (valores positivos) ou null se faltar BRIDGE ou DRE.
+// plan[12], aa[12]}] } (valores positivos) ou null se faltar BRIDGE ou
+// a aba de planejado.
 function obterDadosDreDetalhado_() {
   try {
     const ss        = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const abaDre    = ss.getSheetByName('DRE');
+    const abaDre    = ss.getSheetByName('PLANEJADO 2026') ||
+                      ss.getSheetByName('PLANEJADO-2026') ||
+                      ss.getSheetByName('DRE');
     const abaBridge = ss.getSheetByName('FINANCEIRO BRIDGE');
     const aba2025   = ss.getSheetByName('Financeiro 2025');   // opcional
     if (!abaDre || !abaBridge) return null;

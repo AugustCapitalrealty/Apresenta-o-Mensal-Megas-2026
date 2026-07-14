@@ -4,7 +4,7 @@
  * DESCRIÇÃO: Visão de diretoria das despesas operacionais, cruzando 3 abas
  * da planilha da cidade — obterDadosDreDetalhado_() em 02_Dados.gs:
  *   REALIZADO = FINANCEIRO BRIDGE (meses fechados; Ritmo não conta)
- *   PLANEJADO = aba DRE (plano de contas da controladoria)
+ *   PLANEJADO = aba "PLANEJADO 2026" (plano de contas da controladoria)
  *   ANO ANTERIOR = aba "Financeiro 2025" (opcional — sem ela, vs AA = '—')
  *
  * FOCO NAS GRANDES LINHAS: as rubricas são ranqueadas pelo maior valor
@@ -18,8 +18,8 @@
  * KPIs DO TOPO: Realizado, Planejado, Abaixo/Acima do planejado (R$ e %),
  * vs Ano Anterior (R$ e %).
  *
- * FALLBACK: cidades ainda sem a aba DRE (Itajaí/Esteio) caem na versão
- * consolidada antiga (gerarSlideDRE, baseada só no FINANCEIRO BRIDGE).
+ * FALLBACK: cidades ainda sem a aba PLANEJADO 2026 (Itajaí/Esteio) caem na
+ * versão consolidada antiga (gerarSlideDRE, baseada só no FINANCEIRO BRIDGE).
  */
 
 function gerarSlideDREMes()       { _gerarSlideDREExec_('mes');  }
@@ -28,12 +28,12 @@ function gerarSlideDREAcumulado() { _gerarSlideDREExec_('acum'); }
 function _gerarSlideDREExec_(qual) {
   const d = obterDadosDreDetalhado_();
   if (!d) {
-    // Sem a aba DRE: gera a DRE consolidada antiga uma única vez (no 'mes')
+    // Sem a aba de planejado: gera a DRE consolidada antiga uma vez (no 'mes')
     if (qual === 'mes' && typeof gerarSlideDRE === 'function') {
-      Logger.log('DRE Executivo: aba DRE não encontrada — usando a versão consolidada (FINANCEIRO BRIDGE).');
+      Logger.log('DRE Executivo: aba PLANEJADO 2026 não encontrada — usando a versão consolidada (FINANCEIRO BRIDGE).');
       gerarSlideDRE();
     } else {
-      Logger.log('DRE Executivo (' + qual + '): aba DRE não encontrada — pulado.');
+      Logger.log('DRE Executivo (' + qual + '): aba PLANEJADO 2026 não encontrada — pulado.');
     }
     return;
   }
