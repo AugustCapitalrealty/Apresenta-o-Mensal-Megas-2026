@@ -986,40 +986,83 @@ function obterCustoM2PorMes_() {
 
 
 // ==========================================
-// AUTO-PREENCHIMENTO DO SLIDE DE METAS (Slide_Metas.gs)
+// AUTO-VALOR DO SLIDE DE METAS (Slide_Metas.gs)
 // ==========================================
-// Alguns indicadores da tabela de Metas já são calculados em outros slides.
-// Quando o usuário escreve "AUTO" na célula Real Mês/Real Acum. da aba METAS,
-// este helper resolve o valor a partir do Descrição da linha (casamento por
-// palavra-chave, sem acento). Cobre: SLA (Preventivas), Custo M² (Realizado)
-// e Índice de Disponibilidade (Corretivas). Sem correspondência → null
-// (a célula fica em branco e o usuário preenche à mão).
-function obterAutoMetaValor_(descricao, qual) {
+// Três indicadores da tabela de Metas já são calculados pela apresentação:
+//   ▸ CHECK-LIST/SLA        → SLA das Preventivas (mensal e acumulado)
+//   ▸ ÍNDICE DE DISPONIBILIDADE → Corretivas (mensal e acumulado)
+//   ▸ CUSTO M²              → aba METRO QUADRADO (mês ref. e média acumulada);
+//     a parte "% das manutenções planejadas" ainda não tem fonte → fixa em 0%
+//     quando a meta for composta (contém "/"). Quando houver a aba, trocamos.
+// Este helper resolve o valor pelo Descrição da linha e devolve também a
+// TENDÊNCIA vs mês anterior:
+//   { valor:'R$ 4,62 / 0%', delta:+1.07, menorMelhor:true } ou null (sem match
+//   ou sem dado — aí a célula da planilha da TV permanece como está).
+function obterMetaAuto_(descricao, metaStr, qual) {
   const d = _histNorm_(descricao);
   const ehMensal = qual === 'mes';
 
   try {
-    if (d.includes('sla') && !d.includes('terceiro') && !d.includes('acesso')) {
+    // CHECK-LIST / SLA (Preventivas) — exceto o SLA de Terceiros (do Analista)
+    if ((d.includes('check') || d.includes('sla')) && !d.includes('terceiro') && !d.includes('acesso')) {
       const p = obterDadosPreventivas();
-      return ehMensal ? (p.mensal.sla || null) : (p.anual.sla || null);
+      const val = ehMensal ? p.mensal.sla : p.anual.sla;
+      if (!val || val === '-') return null;
+      const dv = deltaVsMesAnterior_(val, ehMensal ? 'SLA MENSAL' : 'SLA ACUMULADO', 'PREVENTIVAS');
+      return { valor: String(val), delta: dv ? dv.delta : null, menorMelhor: false };
     }
-    if (d.includes('custo') && (d.includes('m2') || d.includes('m²'))) {
-      if (ehMensal) {
-        const cm = obterDadosCustoM2();
-        return cm ? formatarMoedaSlide(cm.kpis.custo) : null;
-      }
-      const ac = obterCustoM2Acumulado_();
-      return (ac && ac.realizado != null) ? formatarMoedaSlide(ac.realizado) : null;
-    }
+
+    // ÍNDICE DE DISPONIBILIDADE (Corretivas)
     if (d.includes('disponibilidade')) {
       const c = obterDadosCorretivasV6();
       if (!c) return null;
       const kpis = ehMensal ? c.mensal.kpis : c.anual.kpis;
       const kpi  = kpis.find(k => _histNorm_(k.l).includes('disponibilidade'));
-      return kpi ? String(kpi.v) : null;
+      if (!kpi || kpi.v === '-' || kpi.v === '—') return null;
+      const dv = deltaVsMesAnterior_(kpi.v,
+        ehMensal ? 'Índice de disponibilidade' : 'Índice de disponibilidade - ACUMULADO', 'CHAMADOS');
+      return { valor: String(kpi.v), delta: dv ? dv.delta : null, menorMelhor: false };
+    }
+
+    // CUSTO M² (menor = melhor); tendência vem da própria aba METRO QUADRADO
+    if (d.includes('custo') && (d.includes('m2') || d.includes('m²'))) {
+      const cm = obterDadosCustoM2();
+      if (!cm) return null;
+      const keys  = Object.keys(cm.tabela);
+      const kReal = keys.find(k => /^real/i.test(k) && !/sem iptu/i.test(k));
+      const arr   = (kReal && cm.tabela[kReal]) || [];
+      const i     = cm.referencia.index;
+
+      let valorNum, delta = null;
+      if (ehMensal) {
+        valorNum = cm.kpis.custo;
+        if (i > 0 && arr[i] != null && arr[i - 1] != null) {
+          delta = Math.round((Number(arr[i]) - Number(arr[i - 1])) * 100) / 100;
+        }
+      } else {
+        const ac = obterCustoM2Acumulado_();
+        if (!ac || ac.realizado == null) return null;
+        valorNum = ac.realizado;
+        // média acumulada até o mês ref vs média até o mês anterior
+        const media = fim => {
+          let s = 0, n = 0;
+          for (let j = 0; j <= fim && j < arr.length; j++) {
+            const v = arr[j];
+            if (v != null && !isNaN(v) && v > 0) { s += Number(v); n++; }
+          }
+          return n ? s / n : NaN;
+        };
+        const mPrev = media(i - 1);
+        if (!isNaN(mPrev)) delta = Math.round((valorNum - mPrev) * 100) / 100;
+      }
+
+      let valor = formatarMoedaSlide(valorNum);
+      // Meta composta (ex.: "R$ 4,21 / 80%") → % das manut. planejadas fixo em 0% por enquanto
+      if (String(metaStr || '').indexOf('/') >= 0) valor += ' / 0%';
+      return { valor, delta, menorMelhor: true };
     }
   } catch (e) {
-    Logger.log('obterAutoMetaValor_("' + descricao + '"): ' + e.message);
+    Logger.log('obterMetaAuto_("' + descricao + '"): ' + e.message);
   }
   return null;
 }

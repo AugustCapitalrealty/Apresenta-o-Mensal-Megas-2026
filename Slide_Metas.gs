@@ -23,12 +23,14 @@
  * PONTUAÇÃO: soma os pontos das linhas com Status Acum. = Verde, mostrada
  * no rodapé do slide com selo de elegibilidade (>= METAS_PONTOS_ELEGIVEL).
  *
- * PRÓXIMO PASSO (automação): hoje os valores Real vêm como estão na
- * planilha da TV. obterAutoMetaValor_() (02_Dados.gs) já sabe calcular SLA
- * (Preventivas), Custo M² (Realizado) e Índice de Disponibilidade
- * (Corretivas) — quando quisermos automatizar, essas células passam a
- * aceitar "AUTO" e o valor é resolvido sozinho (ver comentário em
- * obterDadosMetas_ abaixo).
+ * VALORES AUTOMÁTICOS: para os indicadores que a apresentação já calcula
+ * — Check-list/SLA (Preventivas), Índice de Disponibilidade (Corretivas) e
+ * Custo M² (aba METRO QUADRADO; a parte "% manutenções planejadas" fica
+ * fixa em 0% até termos fonte) — o Real Mês/Real Acum. é SOBRESCRITO pelo
+ * valor calculado via obterMetaAuto_() (02_Dados.gs), com comparativo
+ * ▲/▼ vs mês anterior renderizado abaixo do valor. Se o cálculo não
+ * estiver disponível (aba faltando etc.), vale o que está na planilha da
+ * TV — nada quebra.
  */
 
 const METAS_PONTOS_ELEGIVEL = 50;
@@ -69,9 +71,9 @@ function obterPapeisMetas_() {
 }
 
 // { titulo, papel, linhas } para o papel informado (cidade ativa), ou null.
-// AUTO em Real Mês/Real Acum. (quando existir) resolve via obterAutoMetaValor_
-// — reservado para o próximo passo de automação; hoje as células da planilha
-// da TV trazem o valor literal, então o AUTO já funciona se você quiser testar.
+// Real Mês/Real Acum. dos indicadores conhecidos (SLA, Disponibilidade,
+// Custo M²) são sobrescritos pelo valor calculado (obterMetaAuto_) e ganham
+// tendência vs mês anterior (linha._trendMes / linha._trendAcum).
 function obterDadosMetas_(papel) {
   const ss  = SpreadsheetApp.openById(GESTAO_TV_METAS_SPREADSHEET_ID);
   const aba = ss.getSheetByName('METAS');
@@ -95,12 +97,20 @@ function obterDadosMetas_(papel) {
   const linhas = filtradas.map(l => {
     const linha = l.slice(3, 3 + METAS_COLS.length);  // 11 colunas exibidas
     const descricao = linha[0];
-    [6, 9].forEach((idx, i) => {  // índices de Real Mês (6) e Real Acum (9) dentro de `linha`
-      if (String(linha[idx] || '').trim().toUpperCase() === 'AUTO') {
-        const auto = obterAutoMetaValor_(descricao, i === 0 ? 'mes' : 'acum');
-        linha[idx] = auto != null ? auto : '';
-      }
-    });
+
+    // Indicadores que já calculamos: sobrescreve o Real com o valor da
+    // apresentação e guarda a tendência vs mês anterior para renderizar.
+    // [6]=Real Mês (meta em [5]) · [9]=Real Acum. (meta em [8])
+    const autoMes = obterMetaAuto_(descricao, linha[5], 'mes');
+    if (autoMes) {
+      linha[6] = autoMes.valor;
+      linha._trendMes = tendenciaTexto_(autoMes.delta, autoMes.menorMelhor);
+    }
+    const autoAcum = obterMetaAuto_(descricao, linha[8], 'acum');
+    if (autoAcum) {
+      linha[9] = autoAcum.valor;
+      linha._trendAcum = tendenciaTexto_(autoAcum.delta, autoAcum.menorMelhor);
+    }
     return linha;
   });
 
@@ -300,12 +310,23 @@ function gerarSlideMetas(papel) {
       cell.getBorder().setWeight(1).getLineFill().setSolidFill(DS.colors.lines);
 
       if (!ehStatus) {
+        // Real Mês (6) / Real Acum. (9) calculados ganham a tendência
+        // ▲/▼ vs mês anterior numa segunda linha menor, colorida.
+        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
+        const valStr = String(linha[c] || '');
+        const temTrend = trend && trend.txt && valStr !== '';
+
         const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        t.getText().setText(String(linha[c] || ''))
-          .getTextStyle().setFontSize(7.5).setBold(c === 0).setFontFamily(DS.typography.body)
+        const tr = t.getText();
+        tr.setText(temTrend ? valStr + '\n' + trend.txt : valStr);
+        tr.getTextStyle().setFontSize(7.5).setBold(c === 0).setFontFamily(DS.typography.body)
           .setForegroundColor(DS.colors.textMain);
-        t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+        tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+        if (temTrend) {
+          tr.getRange(valStr.length + 1, valStr.length + 1 + trend.txt.length)
+            .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(trend.cor);
+        }
       }
     });
   });
