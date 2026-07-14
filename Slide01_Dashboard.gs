@@ -62,9 +62,11 @@ function gerarSlideDashboard() {
 
     // Painel padrão do design system (01_Config.gs) — título na cor do tema
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
-    // Faixa do comparativo ▲/▼ entre o rótulo e a coluna JUN (sem cabeçalho):
-    // o selo fica À ESQUERDA do valor atual, na altura padrão da linha.
-    const colNameW = cardW * 0.40, seloW = 44;
+    // Faixa do comparativo entre o rótulo e a coluna JUN (sem cabeçalho):
+    // SÓ a seta ▲/▼, grande, à esquerda do valor atual — o quanto variou
+    // já está estratificado nos slides de cada assunto. Faixa estreita
+    // (24pt) devolve largura às colunas de dados (sem quebras de valor).
+    const colNameW = cardW * 0.42, seloW = 24;
     const dataX0   = x + 10 + colNameW + seloW;
     const colDataW = (cardW - 20 - colNameW - seloW) / 3;
     dynamicHeaders.forEach((h, idx) => {
@@ -89,22 +91,19 @@ function gerarSlideDashboard() {
       let vals = { atual: '-', mesAnt: '-', anoAnt: '-' };
       if (valoresMap.has(r.lookup)) vals = valoresMap.get(r.lookup);
 
-      // Comparativo vs mês anterior: selo À ESQUERDA do valor atual, na
-      // faixa própria entre o rótulo e a coluna JUN, altura padrão da
-      // linha. A seta já dá a direção, então o delta vai sem sinal
-      // (ex.: "▼ 5.163"), colorido pelo sentido da métrica.
+      // Comparativo vs mês anterior: SÓ a seta ▲/▼ (subiu/desceu), grande,
+      // à esquerda do valor atual — verde melhorou / vermelho piorou.
       const nAtual = paraNumero(vals.atual), nAnt = paraNumero(vals.mesAnt);
       if (!isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
-        const delta    = Math.round((nAtual - nAnt) * 100) / 100;
-        const subiu    = delta > 0;
+        const subiu    = nAtual > nAnt;
         const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
         const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-          x + 10 + colNameW, ry, seloW - 4, rowH);
+          x + 10 + colNameW, ry, seloW - 2, rowH);
         selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        selo.getText().setText((subiu ? '▲ ' : '▼ ') + formatarNumeroBR(Math.abs(delta)))
-          .getTextStyle().setFontSize(8).setBold(true)
+        selo.getText().setText(subiu ? '▲' : '▼')
+          .getTextStyle().setFontSize(12).setBold(true)
           .setForegroundColor(melhorou ? CORES.cardGreen : CORES.cardRed).setFontFamily('Montserrat');
-        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       }
 
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
