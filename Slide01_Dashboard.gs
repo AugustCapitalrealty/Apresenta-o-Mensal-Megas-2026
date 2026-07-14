@@ -64,9 +64,9 @@ function gerarSlideDashboard() {
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
     // Faixa do comparativo entre o rótulo e a coluna JUN (sem cabeçalho):
     // SÓ a seta ▲/▼, grande, à esquerda do valor atual — o quanto variou
-    // já está estratificado nos slides de cada assunto. Faixa estreita
-    // (24pt) devolve largura às colunas de dados (sem quebras de valor).
-    const colNameW = cardW * 0.42, seloW = 24;
+    // já está estratificado nos slides de cada assunto. Faixa bem estreita
+    // (14pt); a seta é desenhada colada/sobreposta ao valor (ver abaixo).
+    const colNameW = cardW * 0.42, seloW = 14;
     const dataX0   = x + 10 + colNameW + seloW;
     const colDataW = (cardW - 20 - colNameW - seloW) / 3;
     dynamicHeaders.forEach((h, idx) => {
@@ -92,18 +92,20 @@ function gerarSlideDashboard() {
       if (valoresMap.has(r.lookup)) vals = valoresMap.get(r.lookup);
 
       // Comparativo vs mês anterior: SÓ a seta ▲/▼ (subiu/desceu), grande,
-      // à esquerda do valor atual — verde melhorou / vermelho piorou.
+      // colada bem perto do valor atual (a caixa invade um pouco a coluna
+      // de dados de propósito — sobreposição é aceitável aqui e aproxima
+      // a seta do número, como pedido) — verde melhorou / vermelho piorou.
       const nAtual = paraNumero(vals.atual), nAnt = paraNumero(vals.mesAnt);
       if (!isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
         const subiu    = nAtual > nAnt;
         const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
         const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-          x + 10 + colNameW, ry, seloW - 2, rowH);
+          x + 10 + colNameW, ry, seloW + 8, rowH);
         selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         selo.getText().setText(subiu ? '▲' : '▼')
           .getTextStyle().setFontSize(12).setBold(true)
           .setForegroundColor(melhorou ? CORES.cardGreen : CORES.cardRed).setFontFamily('Montserrat');
-        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       }
 
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
