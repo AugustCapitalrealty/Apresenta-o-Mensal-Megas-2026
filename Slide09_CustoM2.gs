@@ -220,6 +220,15 @@ function formatarMoedaSlide(valor) {
   return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Mesma formatação, mas sem casas decimais — usada em metas com valores na
+// casa dos milhares (Cumprir Orçamento), onde o centavo é ruído.
+function formatarMoedaSlideSemCentavos_(valor) {
+  if (valor === null || valor === undefined || valor === '') return '-';
+  const num = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));
+  if (isNaN(num)) return '-';
+  return 'R$ ' + Math.round(num).toLocaleString('pt-BR');
+}
+
 function formatarNumeroTabela(valor) {
   if (valor === null || valor === undefined || valor === '') return ' ';
   const num = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));

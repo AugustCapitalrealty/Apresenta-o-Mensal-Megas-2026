@@ -1149,8 +1149,8 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       if (realPrev != null) delta = Math.round((realVal - realPrev) * 100) / 100;
 
       return {
-        valor: formatarMoedaSlide(realVal),
-        metaValor: formatarMoedaSlide(orcVal),
+        valor: formatarMoedaSlideSemCentavos_(realVal),
+        metaValor: formatarMoedaSlideSemCentavos_(orcVal),
         delta,
         menorMelhor: true
       };
