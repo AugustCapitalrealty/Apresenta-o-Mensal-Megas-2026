@@ -250,16 +250,16 @@ function gerarSlideMetas(papel) {
 
   criarHeaderPadrao(slide, 'METAS', 'Objetivos e Resultados · ' + metas.papel);
 
-  // Larguras das colunas — a tabela ocupa o slide inteiro (margem de 10pt).
-  // Dimensionadas para o conteúdo caber em UMA linha (fonte 7,5pt nos
-  // dados), já contando o recuo interno (~7pt) das caixas de texto do
-  // Slides: "Procedimentos" pede ~76pt, "R$ 4,21/80%" ~68pt, "SIM/NÃO"
-  // ~50pt, "Pontos" ~42pt. Só a Descrição quebra linha (é esperado).
-  // O comparativo ▲/▼ NÃO entra na largura: é uma caixa sobreposta,
-  // centralizada ACIMA do valor (ver loop das linhas).
-  const pesos  = [130, 42, 76, 50, 46, 68, 66, 44, 68, 66, 44];
+  // Larguras das colunas — a tabela usa praticamente o slide inteiro
+  // (margem de 6pt de cada lado). Dimensionadas para o conteúdo caber em
+  // UMA linha (fonte 7,5pt nos dados), já contando o recuo interno (~7pt)
+  // das caixas de texto do Slides: "Pontos" 54pt, "SIM/NÃO" 62pt,
+  // "Procedimentos" 76pt, "R$ 4,21/80%" 68pt. Só a Descrição quebra
+  // linha (é esperado). O comparativo ▲/▼ NÃO entra na largura: é uma
+  // caixa sobreposta, centralizada ACIMA do valor (ver loop das linhas).
+  const pesos  = [114, 54, 76, 62, 46, 68, 66, 44, 68, 66, 44];
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
-  const totalW = W - 20;
+  const totalW = W - 12;
   const larg = pesos.map(p => p / somaPesos * totalW);
   const x0 = Math.round((W - totalW) / 2);
   const xs = []; let acc = x0;
