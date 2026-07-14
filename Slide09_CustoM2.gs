@@ -211,18 +211,20 @@ function _custoDesenharTabela(slide, x, y, w, h, dados) {
 // ==========================================
 // HELPERS
 // ==========================================
+// Sempre com separador de milhar (1.000, 100.000, 1.000.000...) — pedido da
+// diretoria para facilitar a leitura de qualquer valor em R$ no deck.
 function formatarMoedaSlide(valor) {
   if (valor === null || valor === undefined || valor === '') return '-';
   const num = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));
   if (isNaN(num)) return '-';
-  return 'R$ ' + num.toFixed(2).replace('.', ',');
+  return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatarNumeroTabela(valor) {
   if (valor === null || valor === undefined || valor === '') return ' ';
   const num = typeof valor === 'number' ? valor : Number(String(valor).replace(',', '.'));
   if (isNaN(num)) return ' ';
-  return num.toFixed(2).replace('.', ',');
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function _calcularMedia(arr) {
