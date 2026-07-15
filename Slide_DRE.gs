@@ -3,15 +3,19 @@
  * SLIDES — DRE (DEMONSTRATIVO DE RESULTADO), 2 PÁGINAS
  * DESCRIÇÃO: Tabela consolidada por rubrica contábil no estilo DRE da
  * controladoria (versão que a diretoria preferiu), com os dados que a
- * apresentação já tem (aba FINANCEIRO BRIDGE — obterDadosDRE_ em 02_Dados.gs):
+ * apresentação já tem — obterDadosDRE_ em 02_Dados.gs:
  *
- *   Bloco 1 — MÊS (mês de referência) : Meta | Realizado | % Meta
- *   Bloco 2 — ACUMULADO (Jan..mês ref): Meta | Realizado | % Meta
- *   Bloco 3 (varia por página):
+ *   Bloco 1 — MÊS (mês de referência) : Meta | Realizado | % Meta | 2025
+ *   Bloco 2 — ACUMULADO (Jan..mês ref): Meta | Realizado | % Meta | 2025
+ *   Bloco 3 (varia por página)        : Meta | Realizado | % Meta | 2025
  *     ▸ gerarSlideDRE()         → REALIZADO + ORÇADO — ANO
  *       (meses futuros usam o Orçado original, não o ritmo atual)
  *     ▸ gerarSlideDREComRitmo() → REALIZADO + RITMO — ANO
  *       (meses futuros usam o Ritmo — a projeção run-rate)
+ *
+ * A coluna "2025" de CADA bloco mostra o Realizado do ANO ANTERIOR na MESMA
+ * janela daquele bloco (mês de referência / Jan..mês ref. / ano inteiro) —
+ * vem da aba "Financeiro 2025" (opcional; sem ela mostra "—", nunca quebra).
  *
  * Valores em R$ MIL. % Meta = Realizado ÷ Meta: até 100% verde (dentro do
  * orçamento), acima de 100% vermelho (estourou). Linha TOTAL (DESPESAS
@@ -44,19 +48,18 @@ function _gerarSlideDRE_(modo) {
 
   criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', subHeader + d.cidade);
 
-  // ── Grade ─────────────────────────────────────────────────────────────────
+  // ── Grade — 3 blocos × 4 colunas (Meta | Realizado | % Meta | AnoAnt) ─────
   const x0 = 10, tableW = W - 20;
-  const rubricaW = 168, vsAAW = 52;
-  const colW  = (tableW - rubricaW - vsAAW) / 9;   // 3 blocos × (Meta|Real|%)
-  const colX  = i => x0 + rubricaW + i * colW;     // i = 0..8
-  const xVsAA = colX(9);                           // coluna extra no fim: VS 2025
+  const rubricaW = 158;
+  const colW = (tableW - rubricaW) / 12;
+  const colX = i => x0 + rubricaW + i * colW;   // i = 0..11
 
   // ── Barra dos blocos ──────────────────────────────────────────────────────
   const blocoY = 66, blocoH = 14;
   const blocos = [
-    { txt: 'MÊS — ' + d.mesLabel.toUpperCase(),          c0: 0 },
-    { txt: 'ACUMULADO — ' + d.mesesAcum + ' MESES',      c0: 3 },
-    { txt: tituloAnual,                                  c0: 6 }
+    { txt: 'MÊS — ' + d.mesLabel.toUpperCase(),          c0: 0, campo: 'aaMes'  },
+    { txt: 'ACUMULADO — ' + d.mesesAcum + ' MESES',      c0: 4, campo: 'aaAcum' },
+    { txt: tituloAnual,                                  c0: 8, campo: 'aaAno'  }
   ];
 
   const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + 14);
@@ -67,7 +70,7 @@ function _gerarSlideDRE_(modo) {
     .setFontSize(7).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
 
   blocos.forEach(b => {
-    const bx = colX(b.c0), bw = colW * 3 - 1;
+    const bx = colX(b.c0), bw = colW * 4 - 1;
     const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, blocoY, bw, blocoH);
     bg.getFill().setSolidFill(DS.colors.brandMed); bg.getBorder().setTransparent();
     const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx, blocoY, bw, blocoH);
@@ -76,8 +79,8 @@ function _gerarSlideDRE_(modo) {
       .setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
     t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Sub-cabeçalho Meta | Realizado | % Meta
-    ['Meta', 'Realizado', '% Meta'].forEach((s, i) => {
+    // Sub-cabeçalho Meta | Realizado | % Meta | <ano anterior>
+    ['Meta', 'Realizado', '% Meta', String(d.ano - 1)].forEach((s, i) => {
       const sx = colX(b.c0 + i);
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, colW - 1, 14);
       sb.getFill().setSolidFill(DS.colors.brandDark); sb.getBorder().setTransparent();
@@ -88,16 +91,6 @@ function _gerarSlideDRE_(modo) {
       st.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     });
   });
-
-  // Cabeçalho da coluna extra "VS 2025" (altura cheia, igual à da rubrica) —
-  // compara o Acumulado (2026) com o mesmo período (Jan..mês ref.) de 2025
-  const cabVsAA = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xVsAA, blocoY, vsAAW - 1, blocoH + 14);
-  cabVsAA.getFill().setSolidFill(DS.colors.brandDark); cabVsAA.getBorder().setTransparent();
-  const cabVsAAT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xVsAA, blocoY, vsAAW - 1, blocoH + 14);
-  cabVsAAT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  cabVsAAT.getText().setText('VS ' + (d.ano - 1)).getTextStyle()
-    .setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  cabVsAAT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   // ── Linhas: TOTAL primeiro (destaque), depois as rubricas — já vêm
   // ordenadas da maior para a menor (obterDadosDRE_) ─────────────────────
@@ -145,68 +138,47 @@ function _gerarSlideDRE_(modo) {
       .setFontSize(fs).setBold(l.destaque).setForegroundColor(corBase).setFontFamily(DS.typography.body);
 
     // Blocos de valores (o 3º bloco muda com o modo: anualOrc ou anual)
-    [l.b.mes, l.b.acum, l.b[campoAnual]].forEach((bl, bi) => {
-      const c0 = bi * 3;
-      const p  = pct(bl.orc, bl.real);
-      // Sem meta (orçado 0) não dá pra calcular %. Se ainda assim houve gasto,
-      // isso é um gasto 100% fora do previsto — mostra a variação em R$ (não
-      // a %, que seria infinita) em vermelho, em vez do "-" sem informação.
-      let txtPct, corPct;
-      if (p != null) {
-        txtPct = p + '%';
-        corPct = l.destaque ? '#FFFFFF' : (p > 100 ? '#DC2626' : '#166534');
-      } else if (bl.real > 0.005) {
-        txtPct = '+' + mil(bl.real);
-        corPct = l.destaque ? '#FFFFFF' : '#DC2626';
-      } else {
-        txtPct = '-';
-        corPct = l.destaque ? '#FFFFFF' : CORES.textGray;
-      }
-      const celulas = [
-        { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: l.destaque },
-        { txt: mil(bl.real), cor: corBase,                                  bold: true       },
-        { txt: txtPct,       cor: corPct,                                   bold: true       }
-      ];
-      celulas.forEach((cel, i) => {
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX(c0 + i), ry, colW - 1, rowH);
-        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        t.getText().setText(cel.txt).getTextStyle()
-          .setFontSize(fs).setBold(cel.bold).setForegroundColor(cel.cor).setFontFamily(DS.typography.body);
-        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+    [{ bl: l.b.mes, aa: l.b.aaMes }, { bl: l.b.acum, aa: l.b.aaAcum }, { bl: l.b[campoAnual], aa: l.b.aaAno }]
+      .forEach((blk, bi) => {
+        const bl = blk.bl;
+        const c0 = bi * 4;
+        const p  = pct(bl.orc, bl.real);
+        // Sem meta (orçado 0) não dá pra calcular %. Se ainda assim houve gasto,
+        // isso é um gasto 100% fora do previsto — mostra a variação em R$ (não
+        // a %, que seria infinita) em vermelho, em vez do "-" sem informação.
+        let txtPct, corPct;
+        if (p != null) {
+          txtPct = p + '%';
+          corPct = l.destaque ? '#FFFFFF' : (p > 100 ? '#DC2626' : '#166534');
+        } else if (bl.real > 0.005) {
+          txtPct = '+' + mil(bl.real);
+          corPct = l.destaque ? '#FFFFFF' : '#DC2626';
+        } else {
+          txtPct = '-';
+          corPct = l.destaque ? '#FFFFFF' : CORES.textGray;
+        }
+        const celulas = [
+          { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: l.destaque },
+          { txt: mil(bl.real), cor: corBase,                                  bold: true       },
+          { txt: txtPct,       cor: corPct,                                   bold: true       },
+          { txt: mil(blk.aa),  cor: l.destaque ? '#94A3B8' : '#64748B',       bold: false      }
+        ];
+        celulas.forEach((cel, i) => {
+          const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX(c0 + i), ry, colW - 1, rowH);
+          t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+          t.getText().setText(cel.txt).getTextStyle()
+            .setFontSize(fs).setBold(cel.bold).setForegroundColor(cel.cor).setFontFamily(DS.typography.body);
+          t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+        });
       });
-    });
-
-    // VS 2025: Acumulado (2026) x mesmo período de 2025 — ▲ gastou mais
-    // (vermelho) / ▼ gastou menos (verde). "—" quando não há a aba/base.
-    let txtVsAA = '—', corVsAA = l.destaque ? '#94A3B8' : CORES.textGray;
-    if (l.b.aa != null && l.b.aa > 0.005) {
-      const dVsAA = (l.b.acum.real - l.b.aa) / l.b.aa * 100;
-      if (Math.abs(dVsAA) < 0.5) {
-        txtVsAA = '▬ 0%';
-        corVsAA = l.destaque ? '#94A3B8' : CORES.textGray;
-      } else {
-        txtVsAA = (dVsAA > 0 ? '▲ +' : '▼ −') + Math.abs(Math.round(dVsAA)) + '%';
-        corVsAA = dVsAA > 0 ? '#DC2626' : (l.destaque ? '#34D399' : '#166534');
-      }
-    }
-    const tVsAA = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xVsAA, ry, vsAAW - 4, rowH);
-    tVsAA.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tVsAA.getText().setText(txtVsAA).getTextStyle()
-      .setFontSize(fs).setBold(true).setForegroundColor(corVsAA).setFontFamily(DS.typography.body);
-    tVsAA.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   });
 
-  // Separadores verticais entre os blocos (+ a coluna extra VS 2025 no fim)
-  [0, 3, 6, 9].forEach(c => {
-    const vx = colX(c);
+  // Separadores verticais entre os blocos
+  [0, 4, 8, 12].forEach(c => {
+    const vx = c === 12 ? x0 + tableW : colX(c);
     const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + linhas.length * rowH - blocoY);
     v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
   });
-  {
-    const vx = x0 + tableW;
-    const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + linhas.length * rowH - blocoY);
-    v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
-  }
 
   Logger.log('Slide DRE (' + modo + ') gerado: ' + d.rubricas.length + ' rubrica(s), mês ' + d.mesLabel + '.');
 }

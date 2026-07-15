@@ -1426,13 +1426,20 @@ function obterDadosDRE_() {
       });
     }
 
-    // ── VS ANO ANTERIOR (2025): quanto foi gasto no MESMO período (Jan..mês
-    // de referência) em 2025 x 2026, por rubrica — aba "Financeiro 2025"
-    // (opcional; mesma estrutura da FINANCEIRO BRIDGE). Sem ela, aa fica null
-    // e a coluna mostra "—" sem quebrar nada. ──────────────────────────────
-    const aa = _lerAnoAnteriorAcumulado_(ref.index);
-    rubricas.forEach(rb => { rb.aa = aa ? (aa.porChave[rb._chave] || 0) : null; });
-    totalLinha.aa = aa ? aa.total : null;
+    // ── ANO ANTERIOR (2025), na MESMA janela de cada bloco — aba "Financeiro
+    // 2025" (opcional; mesma estrutura da FINANCEIRO BRIDGE). Sem ela, os
+    // três campos ficam null e a coluna "2025" mostra "—" sem quebrar nada.
+    const aa = _lerAnoAnterior_();
+    const somaAA = (arr, ini, fim) => arr ? arr.slice(ini, fim + 1).reduce((s, v) => s + v, 0) : null;
+    rubricas.forEach(rb => {
+      const arr = (aa && aa.porChave[rb._chave]) || null;
+      rb.aaMes  = arr ? arr[ref.index] : null;
+      rb.aaAcum = arr ? somaAA(arr, 0, ref.index) : null;
+      rb.aaAno  = arr ? somaAA(arr, 0, 11) : null;
+    });
+    totalLinha.aaMes  = aa ? aa.total[ref.index]      : null;
+    totalLinha.aaAcum = aa ? somaAA(aa.total, 0, ref.index) : null;
+    totalLinha.aaAno  = aa ? somaAA(aa.total, 0, 11)  : null;
 
     const mesesAcum = grupos.filter(g => g.ord <= refOrd).length;
     return {
@@ -1449,12 +1456,13 @@ function obterDadosDRE_() {
   }
 }
 
-// Soma o Realizado de Janeiro até o mês de referência (mesmo recorte do
-// bloco ACUMULADO) na aba "Financeiro 2025" — mesma estrutura de colunas
-// da FINANCEIRO BRIDGE, só que com o ano 2025. Casa as rubricas pelo NOME
-// normalizado (mesma chave usada em obterDadosDRE_). Opcional: retorna null
-// se a aba não existir (a coluna "VS 2025" simplesmente não aparece).
-function _lerAnoAnteriorAcumulado_(refIndex) {
+// Lê os 12 meses de Realizado na aba "Financeiro 2025" — mesma estrutura de
+// colunas da FINANCEIRO BRIDGE, só que com o ano 2025 — SEM somar, pra que
+// obterDadosDRE_ monte a janela certa pra cada bloco (mês, acumulado, ano
+// inteiro). Casa as rubricas pelo NOME normalizado (mesma chave usada em
+// obterDadosDRE_). Opcional: retorna null se a aba não existir (a coluna
+// "2025" simplesmente mostra "—").
+function _lerAnoAnterior_() {
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('Financeiro 2025');
@@ -1471,33 +1479,35 @@ function _lerAnoAnteriorAcumulado_(refIndex) {
     const hdr = data[hdrRow];
 
     const MESES_VALIDOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    const cols = [];
+    const grupos = [];
     for (let c = 1; c + 1 < hdr.length; c += 3) {
       if (!/^or[cç]/.test(_histNorm_(hdr[c]))) break;
       const m = String(hdr[c]).match(/([A-Za-zçÇ]{3})\//);
       if (!m) continue;
       const idxMes = MESES_VALIDOS.indexOf(m[1].toLowerCase());
-      if (idxMes < 0 || idxMes > refIndex) continue;   // só até o mês de referência (mesma janela do acumulado)
-      cols.push(c + 1);   // coluna Real
+      if (idxMes < 0) continue;
+      grupos.push({ mi: idxMes, cReal: c + 1 });
     }
-    if (!cols.length) return null;
+    if (!grupos.length) return null;
 
-    const porChave = {}; let total = 0;
+    const porChave = {};
+    let total = new Array(12).fill(0);
     for (let r = hdrRow + 1; r < data.length; r++) {
       const nome = String(data[r][0] || '').trim();
       if (!nome) continue;
       const chave = _histNorm_(nome);
       if (chave.indexOf('r$ m') === 0) continue;   // linhas de R$/m² não são rubricas
-      let soma = 0;
-      cols.forEach(c => { soma += toAbs(data[r][c]); });
+      const vals = new Array(12).fill(0);
+      grupos.forEach(g => { vals[g.mi] = toAbs(data[r][g.cReal]); });
       // Para na linha TOTAL — como na FINANCEIRO BRIDGE, pode haver uma
       // tabela auxiliar repetindo as rubricas logo depois (ver obterDadosDRE_).
-      if (chave.includes('total')) { total = soma; break; }
-      porChave[chave] = (porChave[chave] || 0) + soma;
+      if (chave.includes('total')) { total = vals; break; }
+      if (!porChave[chave]) porChave[chave] = new Array(12).fill(0);
+      grupos.forEach(g => { porChave[chave][g.mi] += vals[g.mi]; });
     }
     return { porChave, total };
   } catch (e) {
-    Logger.log('_lerAnoAnteriorAcumulado_: ' + e.message);
+    Logger.log('_lerAnoAnterior_: ' + e.message);
     return null;
   }
 }
