@@ -1088,9 +1088,10 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       const arr   = (kReal && cm.tabela[kReal]) || [];
       const i     = cm.referencia.index;
 
-      let valorNum, delta = null;
+      let valorNum, metaNum, delta = null;
       if (ehMensal) {
         valorNum = cm.kpis.custo;
+        metaNum  = cm.kpis.meta;           // Orçado do mês de referência
         if (i > 0 && arr[i] != null && arr[i - 1] != null) {
           delta = Math.round((Number(arr[i]) - Number(arr[i - 1])) * 100) / 100;
         }
@@ -1098,6 +1099,8 @@ function obterMetaAuto_(descricao, metaStr, qual) {
         const ac = obterCustoM2Acumulado_();
         if (!ac || ac.realizado == null) return null;
         valorNum = ac.realizado;
+        metaNum  = ac.orcado;              // Orçado acumulado (média até o mês ref) — mesma
+                                            // conta usada no card "ORÇADO ACUM." do Financeiro
         // média acumulada até o mês ref vs média até o mês anterior
         const media = fim => {
           let s = 0, n = 0;
@@ -1112,9 +1115,16 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       }
 
       let valor = formatarMoedaSlide(valorNum);
-      // Meta composta (ex.: "R$ 4,21 / 80%") → % das manut. planejadas fixo em 0% por enquanto
-      if (String(metaStr || '').indexOf('/') >= 0) valor += ' / 0%';
-      return { valor, delta, menorMelhor: true };
+      let metaValor = metaNum != null ? formatarMoedaSlide(metaNum) : null;
+      // Meta composta (ex.: "R$ 4,21 / 80%") → mantém o alvo de % das manut.
+      // planejadas que já está na planilha da TV (não temos essa fonte ainda),
+      // só troca o valor em R$ pelo calculado; Real fica com 0% por enquanto.
+      const barra = String(metaStr || '').indexOf('/');
+      if (barra >= 0) {
+        valor += ' / 0%';
+        if (metaValor != null) metaValor += ' / ' + String(metaStr).slice(barra + 1).trim();
+      }
+      return { valor, metaValor, delta, menorMelhor: true };
     }
 
     // CHECK-LIST/SLA - TERCEIROS (Analista) — aba META da própria planilha da cidade
