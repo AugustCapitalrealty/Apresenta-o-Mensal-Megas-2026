@@ -70,6 +70,18 @@ function obterPapeisMetas_() {
   return papeis;
 }
 
+// Tendência de uma célula: um único selo (indicador simples) ou dois selos
+// concatenados com "/" quando o indicador é composto (ex.: Custo M² tem a
+// tendência do R$ e a da % de manutenções planejadas juntas — delta2/
+// menorMelhor2 vindos de obterMetaAuto_).
+function _metasTrend_(auto) {
+  const t1 = tendenciaTexto_(auto.delta, auto.menorMelhor);
+  if (auto.delta2 == null || isNaN(auto.delta2)) return t1;
+  const t2 = tendenciaTexto_(auto.delta2, auto.menorMelhor2);
+  if (!t1.txt && !t2.txt) return t1;
+  return { txt: [t1.txt, t2.txt].filter(Boolean).join(' / '), cor: t1.cor || t2.cor };
+}
+
 // { titulo, papel, linhas } para o papel informado (cidade ativa), ou null.
 // Real Mês/Real Acum. dos indicadores conhecidos (SLA, Disponibilidade,
 // Custo M²) são sobrescritos pelo valor calculado (obterMetaAuto_) e ganham
@@ -108,13 +120,13 @@ function obterDadosMetas_(papel) {
     if (autoMes) {
       if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
       linha[6] = autoMes.valor;
-      linha._trendMes = tendenciaTexto_(autoMes.delta, autoMes.menorMelhor);
+      linha._trendMes = _metasTrend_(autoMes);
     }
     const autoAcum = obterMetaAuto_(descricao, linha[8], 'acum');
     if (autoAcum) {
       if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
       linha[9] = autoAcum.valor;
-      linha._trendAcum = tendenciaTexto_(autoAcum.delta, autoAcum.menorMelhor);
+      linha._trendAcum = _metasTrend_(autoAcum);
     }
     return linha;
   });

@@ -1116,15 +1116,33 @@ function obterMetaAuto_(descricao, metaStr, qual) {
 
       let valor = formatarMoedaSlide(valorNum);
       let metaValor = metaNum != null ? formatarMoedaSlide(metaNum) : null;
-      // Meta composta (ex.: "R$ 4,21 / 80%") → mantém o alvo de % das manut.
-      // planejadas que já está na planilha da TV (não temos essa fonte ainda),
-      // só troca o valor em R$ pelo calculado; Real fica com 0% por enquanto.
+
+      // Meta composta (ex.: "R$ 4,21 / 80%") → a parte "% das manutenções
+      // planejadas" vem da planilha de PPC (obterDadosPPC_, ppcId em
+      // 01_Config.gs). Cidade sem ppcId ainda → mantém o valor digitado
+      // manualmente na planilha da TV (metaStr), como antes.
       const barra = String(metaStr || '').indexOf('/');
+      let delta2 = null, menorMelhor2 = false;
       if (barra >= 0) {
-        valor += ' / 0%';
-        if (metaValor != null) metaValor += ' / ' + String(metaStr).slice(barra + 1).trim();
+        const ppc = obterDadosPPC_();
+        const p   = ppc && ppc[i];
+        if (p && !isNaN(p.aderencia) && !isNaN(p.acumulado)) {
+          const pctAtual = ehMensal ? p.aderencia : p.acumulado;
+          valor += ' / ' + formatarNumeroBR(Math.round(pctAtual * 100) / 100) + '%';
+          metaValor = metaValor != null && !isNaN(p.meta)
+            ? metaValor + ' / ' + formatarNumeroBR(Math.round(p.meta * 100) / 100) + '%'
+            : metaValor;
+
+          const pAnt = i > 0 ? ppc[i - 1] : null;
+          const pctAnt = pAnt ? (ehMensal ? pAnt.aderencia : pAnt.acumulado) : null;
+          if (pctAnt != null && !isNaN(pctAnt)) delta2 = Math.round((pctAtual - pctAnt) * 100) / 100;
+          menorMelhor2 = false;   // % de manutenções planejadas: maior = melhor
+        } else {
+          valor += ' / 0%';
+          if (metaValor != null) metaValor += ' / ' + String(metaStr).slice(barra + 1).trim();
+        }
       }
-      return { valor, metaValor, delta, menorMelhor: true };
+      return { valor, metaValor, delta, delta2, menorMelhor: true, menorMelhor2 };
     }
 
     // CHECK-LIST/SLA - TERCEIROS (Analista) — aba META da própria planilha da cidade
@@ -1310,6 +1328,53 @@ function obterDadosTaxaReabertura_() {
     }));
   } catch (e) {
     Logger.log('obterDadosTaxaReabertura_: ' + e.message);
+    return null;
+  }
+}
+
+// Converte "80,00%" / "200,00%" → 80 / 200 (número, escala 0-100+).
+function _histPct_(v) {
+  return _histNum_(String(v == null ? '' : v).replace('%', ''));
+}
+
+// Lê a planilha externa de PPC — Plano de Preventivas Cumprido (ppcId em
+// 01_Config.gs), aba DASHBOARD: linha 4 = mês (JANEIRO..DEZEMBRO, uma coluna
+// por mês), linha 7 = aderência % do mês, linha 8 = meta %, linha 9 =
+// acumulado %. É a fonte da parte "% das manutenções planejadas" da meta
+// composta Custo M² (ver obterMetaAuto_). Retorna um array indexado por mês
+// (0=Janeiro..11=Dezembro) com { aderencia, meta, acumulado }, ou null se a
+// cidade não tiver ppcId configurado ou a aba não existir/tiver o formato
+// esperado.
+function obterDadosPPC_() {
+  const id = getProjetoAtivo().ppcId;
+  if (!id) return null;
+  try {
+    const ss    = SpreadsheetApp.openById(id);
+    const sheet = ss.getSheetByName('DASHBOARD');
+    if (!sheet) return null;
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 9) return null;
+
+    const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const linhaMes       = data[3];   // linha 4
+    const linhaAderencia = data[6];   // linha 7
+    const linhaMeta      = data[7];   // linha 8
+    const linhaAcumulado = data[8];   // linha 9
+
+    const porMes = [];
+    linhaMes.forEach((cell, c) => {
+      const idxMes = MESES.indexOf(_histNorm_(cell));
+      if (idxMes < 0) return;
+      porMes[idxMes] = {
+        aderencia: _histPct_(linhaAderencia[c]),
+        meta:      _histPct_(linhaMeta[c]),
+        acumulado: _histPct_(linhaAcumulado[c])
+      };
+    });
+    return porMes.length ? porMes : null;
+  } catch (e) {
+    Logger.log('obterDadosPPC_: ' + e.message);
     return null;
   }
 }

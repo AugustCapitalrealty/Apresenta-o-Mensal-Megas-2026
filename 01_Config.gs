@@ -76,6 +76,12 @@ const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
 // TAXA DE REABERTURA do Analista (ver obterDadosTaxaReabertura_ em
 // 02_Dados.gs). Sem ele, a meta cai no valor da planilha da TV.
 //
+// ppcId (opcional): planilha "PPC MEGA <CIDADE> 2026" com a aba "DASHBOARD"
+// (linha 4 = mês, linha 7 = aderência % mensal, linha 8 = meta %, linha 9 =
+// acumulado %) — fonte da parte "% das manutenções planejadas" da meta
+// composta Custo M² (ver obterDadosPPC_ em 02_Dados.gs). Sem ele, essa parte
+// cai no valor digitado manualmente na planilha da TV.
+//
 // unitLogoId (opcional): logo do próprio Mega (mesmos IDs do repositório
 // da Gestão à Vista TV — Config.gs, UNITS[].unitLogoId).
 // coBrandLogoId (opcional): logo da marca-mãe do empreendimento quando NÃO
@@ -89,6 +95,7 @@ const PROJETOS = {
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
     reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
+    ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
     coBrandLogoId  : '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',   // logo Demercado
     contatos       : [
@@ -102,6 +109,7 @@ const PROJETOS = {
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
     reaberturaId   : '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
+    ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
     coBrandLogoId  : '',
     contatos       : [
@@ -115,6 +123,7 @@ const PROJETOS = {
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
     reaberturaId   : '18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0',
+    ppcId          : '1I9DWcd8HXVRkjcv8eTk4UdQ5IZRuqUhFikw8tVfPt2c',   // PPC Mega Esteio 2026
     unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio
     coBrandLogoId  : '',
     contatos       : [
