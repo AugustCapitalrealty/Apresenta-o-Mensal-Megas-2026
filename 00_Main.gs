@@ -29,6 +29,7 @@ function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCom
 // PONTOS DE ENTRADA — SLIDES INDIVIDUAIS
 // ==========================================
 function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
+function gerarSoMetasGuilherme() { setProjetoAtivo('CURITIBA'); gerarSlidesMetasGuilherme(); }
 
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
