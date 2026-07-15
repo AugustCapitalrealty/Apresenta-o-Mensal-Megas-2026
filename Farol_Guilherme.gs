@@ -81,6 +81,96 @@ function _gHeader(slide, W, titulo, subtitulo) {
 
 
 // ==========================================
+// COMPONENTES REUTILIZÁVEIS (slides de detalhe)
+// ==========================================
+
+// Cartão de KPI curto: rótulo + valor em destaque + nota opcional.
+function _gKPI(slide, x, y, w, h, label, valor, cor, sub, bgCor) {
+  const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
+  card.getFill().setSolidFill(bgCor || DS_G.colors.white);
+  card.getBorder().setWeight(1).getLineFill().setSolidFill(DS_G.colors.lineStrong);
+
+  const lb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, y + 11, w - 28, 14);
+  lb.getText().setText(label).getTextStyle()
+    .setFontSize(7.5).setBold(true).setForegroundColor(DS_G.colors.textMuted).setFontFamily(DS_G.typography.titles);
+
+  const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, y + 27, w - 28, 28);
+  vl.getText().setText(valor).getTextStyle()
+    .setFontSize(18).setBold(true).setForegroundColor(cor).setFontFamily(DS_G.typography.titles);
+
+  if (sub) {
+    const sb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, y + h - 22, w - 28, 18);
+    sb.getText().setText(sub).getTextStyle()
+      .setFontSize(7.4).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  }
+}
+
+// Painel com barra de título colorida; devolve o Y onde o conteúdo pode começar.
+function _gPainel(slide, x, y, w, h, titulo, cor) {
+  const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
+  card.getFill().setSolidFill(DS_G.colors.white);
+  card.getBorder().setWeight(1).getLineFill().setSolidFill(DS_G.colors.lineStrong);
+
+  const barH = 22;
+  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, barH);
+  bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+  const bt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y, w - 24, barH);
+  bt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  bt.getText().setText(titulo).getTextStyle()
+    .setFontSize(8).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS_G.typography.titles);
+
+  return y + barH + 10;
+}
+
+// Lista de itens com bolinha colorida à esquerda.
+function _gChecklist(slide, itens, x, y, w, gap, cor) {
+  itens.forEach((item, i) => {
+    const cy = y + i * gap;
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x, cy + 2, 8, 8);
+    dot.getFill().setSolidFill(cor || DS_G.colors.brandLight); dot.getBorder().setTransparent();
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, cy - 3, w - 14, gap);
+    t.getText().setText(item).getTextStyle()
+      .setFontSize(8.4).setForegroundColor(DS_G.colors.textMain).setFontFamily(DS_G.typography.body);
+    t.getText().getParagraphStyle().setLineSpacing(110);
+  });
+}
+
+// Linha do tempo com checkmark nas etapas concluídas e destaque na próxima etapa.
+function _gTimelineCheck(slide, etapas, x, y, w, doneUntil) {
+  const n = etapas.length;
+  const step = n > 1 ? w / (n - 1) : 0;
+  const railY = y + 12;
+  const rail = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, railY, w, 2);
+  rail.getFill().setSolidFill(DS_G.colors.line); rail.getBorder().setTransparent();
+
+  etapas.forEach((txt, i) => {
+    const cx = x + step * i;
+    const done = i <= doneUntil;
+    const proximo = i === doneUntil + 1;
+    const fundo = done ? DS_G.colors.brandLight : (proximo ? DS_G.colors.amberBg : DS_G.colors.white);
+
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 12, y, 24, 24);
+    dot.getFill().setSolidFill(fundo);
+    dot.getBorder().setWeight(done ? 0 : 2).getLineFill().setSolidFill(proximo ? DS_G.colors.amberInk : DS_G.colors.lineStrong);
+
+    const dt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - 12, y, 24, 24);
+    dt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    dt.getText().setText(done ? '✓' : String(i + 1)).getTextStyle()
+      .setFontSize(9).setBold(true).setFontFamily(DS_G.typography.titles)
+      .setForegroundColor(done ? '#FFFFFF' : (proximo ? DS_G.colors.amberInk : DS_G.colors.textMuted));
+    dt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const lw = Math.max(step - 6, 70);
+    const lb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - lw / 2, y + 29, lw, 30);
+    lb.getText().setText(txt).getTextStyle()
+      .setFontSize(7.6).setBold(done || proximo).setFontFamily(DS_G.typography.body)
+      .setForegroundColor(done || proximo ? DS_G.colors.textMain : DS_G.colors.textMuted);
+    lb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(108);
+  });
+}
+
+
+// ==========================================
 // SLIDE 1 — FAROL DE METAS (TABELA)
 // ==========================================
 function _gFarolSlideTabela(deck) {
@@ -184,18 +274,26 @@ function _gFarolSlideMeta1(deck) {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Plataforma de Utilities — Mega Curitiba', 'Meta 1 · 30 pontos · Direcionador Projetos · Prazo Novembro/26');
 
-  const marginX = 30, topY = 92;
-  const lead = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, topY, W - 2 * marginX, 40);
-  lead.getText().setText('Os equipamentos para monitorar as bombas já estão a caminho do Mega Curitiba — a nota fiscal já foi emitida. A instalação depende de três passos, nessa ordem:')
-    .getTextStyle().setFontSize(11).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
-  lead.getText().getParagraphStyle().setLineSpacing(130);
+  const marginX = 30, topY = 76, rowH = 84, gapK = 14;
+  const kpiW = 150;
+
+  _gKPI(slide, marginX, topY, kpiW, rowH, 'STATUS', 'Em trânsito', DS_G.colors.brandLight, 'Equipamentos a caminho do Mega Curitiba');
+  _gKPI(slide, marginX + kpiW + gapK, topY, kpiW, rowH, 'DOCUMENTAÇÃO', 'NF emitida', DS_G.colors.greenInk, 'Nota fiscal já liberada', DS_G.colors.greenBg);
+
+  const leadX = marginX + 2 * (kpiW + gapK);
+  const leadW = W - marginX - leadX;
+  const lead = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, leadX, topY, leadW, rowH);
+  lead.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  lead.getText().setText('Os equipamentos para monitorar as bombas já estão a caminho do Mega Curitiba. A instalação depende de três passos, nessa ordem:')
+    .getTextStyle().setFontSize(10.5).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  lead.getText().getParagraphStyle().setLineSpacing(128);
 
   const steps = [
     'Fechar o orçamento com o João Lenon para a instalação dos equipamentos',
     'Assinar o contrato de instalação',
     'Receber a proposta de monitoramento dos pontos de energia — geração e consumo'
   ];
-  const gap = 20, stepY = topY + 56, stepH = H - stepY - 36;
+  const gap = 20, stepY = topY + rowH + 20, stepH = H - stepY - 30;
   const stepW = (W - 2 * marginX - 2 * gap) / 3;
 
   steps.forEach((txt, i) => {
@@ -233,45 +331,54 @@ function _gFarolSlideMeta2(deck) {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Programa de Excelência 2026', 'Meta 2 · 20 pontos · Direcionador Projetos · Prazo Setembro/26');
 
-  const marginX = 30, topY = 96;
-  const itens = [
-    { tag: 'CONCLUÍDO', txt: 'Vencedor de 2025 divulgado', feito: true },
-    { tag: 'EM ANDAMENTO', txt: 'Finalizando o book 2026', feito: true },
-    { tag: 'INÍCIO DO MÊS QUE VEM', txt: 'Book enviado aos Megas', feito: false },
-    { tag: 'EM SEGUIDA', txt: 'Início da inspeção in loco', feito: false }
-  ];
-  const n = itens.length;
-  const slotW = (W - 2 * marginX) / n;
-  const dotY = topY, dotR = 8;
+  const marginX = 30, topY = 76, gap = 16, rowH = 92;
+  const colW = (W - 2 * marginX - 2 * gap) / 3;
 
-  itens.forEach((it, i) => {
-    const cx = marginX + i * slotW;
-    if (i < n - 1) {
-      const rail = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx + dotR * 2, dotY + dotR - 1, slotW - dotR * 2, 2);
-      rail.getFill().setSolidFill(it.feito ? DS_G.colors.brandLight : DS_G.colors.lineStrong);
-      rail.getBorder().setTransparent();
-    }
-    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, cx, dotY, dotR * 2, dotR * 2);
-    dot.getFill().setSolidFill(it.feito ? DS_G.colors.brandLight : DS_G.colors.white);
-    dot.getBorder().setWeight(2.5).getLineFill().setSolidFill(DS_G.colors.brandLight);
+  // Painel 1 — status geral
+  let py = _gPainel(slide, marginX, topY, colW, rowH, 'STATUS GERAL', DS_G.colors.brandMed);
+  let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 14, py, colW - 28, rowH - (py - topY) - 10);
+  t.getText().setText('Vencedor de 2025 já divulgado. Book 2026 em finalização para envio aos Megas.')
+    .getTextStyle().setFontSize(8.8).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  t.getText().getParagraphStyle().setLineSpacing(126);
 
-    const tag = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx, dotY + 26, slotW - 10, 22);
-    tag.getText().setText(it.tag).getTextStyle().setFontSize(8).setBold(true)
-      .setForegroundColor(it.feito ? DS_G.colors.brandLight : DS_G.colors.textMuted).setFontFamily(DS_G.typography.titles);
+  // Painel 2 — próxima fase
+  const x2 = marginX + colW + gap;
+  py = _gPainel(slide, x2, topY, colW, rowH, 'PRÓXIMA FASE', DS_G.colors.brandMed);
+  t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x2 + 14, py, colW - 28, rowH - (py - topY) - 10);
+  t.getText().setText('Envio do book aos Megas, seguido do início da inspeção in loco.')
+    .getTextStyle().setFontSize(8.8).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  t.getText().getParagraphStyle().setLineSpacing(126);
 
-    const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx, dotY + 48, slotW - 14, 50);
-    txt.getText().setText(it.txt).getTextStyle()
-      .setFontSize(10.5).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
-    txt.getText().getParagraphStyle().setLineSpacing(120);
-  });
+  // Painel 3 — calendário até o prazo (mês 09 em destaque)
+  const x3 = x2 + colW + gap;
+  py = _gPainel(slide, x3, topY, colW, rowH, 'PRAZO — CALENDÁRIO', DS_G.colors.brandLight);
+  const cellGap = 6;
+  const cellW = (colW - 28 - 2 * cellGap) / 3, cellH = 16;
+  for (let i = 1; i <= 9; i++) {
+    const col = (i - 1) % 3, row = Math.floor((i - 1) / 3);
+    const cx = x3 + 14 + col * (cellW + cellGap), cy = py + row * (cellH + 5);
+    const ativo = i === 9;
+    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, cy, cellW, cellH);
+    pill.getFill().setSolidFill(ativo ? DS_G.colors.amberBg : '#EEF2F9'); pill.getBorder().setTransparent();
+    const pt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx, cy, cellW, cellH);
+    pt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    pt.getText().setText(String(i).padStart(2, '0')).getTextStyle()
+      .setFontSize(7.4).setBold(ativo).setFontFamily(DS_G.typography.titles)
+      .setForegroundColor(ativo ? DS_G.colors.amberInk : DS_G.colors.textMuted);
+    pt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
 
-  const alertY = topY + 130;
-  const alert = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, alertY, W - 2 * marginX, 46);
+  // Linha do tempo com checkmark nas etapas concluídas
+  const tlY = topY + rowH + 24;
+  _gTimelineCheck(slide, ['Vencedor 2025 divulgado', 'Book 2026 finalizado', 'Book enviado aos Megas', 'Inspeção in loco'], marginX + 40, tlY, W - 2 * marginX - 80, 0);
+
+  const alertY = tlY + 66;
+  const alert = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, alertY, W - 2 * marginX, 40);
   alert.getFill().setSolidFill(DS_G.colors.amberBg); alert.getBorder().setTransparent();
-  const at = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 16, alertY, W - 2 * marginX - 32, 46);
+  const at = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 16, alertY, W - 2 * marginX - 32, 40);
   at.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   at.getText().setText('⏱  Atenção ao prazo: os pontos da inspeção in loco precisam estar contabilizados até o MÊS 09.')
-    .getTextStyle().setFontSize(10.5).setBold(true).setForegroundColor(DS_G.colors.amberInk).setFontFamily(DS_G.typography.body);
+    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(DS_G.colors.amberInk).setFontFamily(DS_G.typography.body);
 
   Logger.log('Farol — Meta 2 (Programa de Excelência) gerado.');
 }
@@ -285,28 +392,48 @@ function _gFarolSlideMeta3(deck) {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Integração das Áreas — Facilities, Financeiro e Jurídico', 'Meta 3 · 20 pontos · Direcionador Projetos · Prazo Novembro/26');
 
-  const marginX = 30, topY = 90, gap = 20;
-  const colW = (W - 2 * marginX - gap) / 2, colH = H - topY - 30;
+  // Facilities é a área integradora: fica no topo, ligando-se às outras duas.
+  const marginX = 30, topY = 78;
+  const hubW = 230, hubH = 64, hubX = (W - hubW) / 2;
+  const hpy = _gPainel(slide, hubX, topY, hubW, hubH, 'FACILITIES · ÁREA INTEGRADORA', DS_G.colors.brandLight);
+  const hubT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, hubX + 14, hpy, hubW - 28, hubH - (hpy - topY) - 8);
+  hubT.getText().setText('Reúne os dados de Financeiro e Jurídico para consolidar a visão única de gestão.')
+    .getTextStyle().setFontSize(8.2).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  hubT.getText().getParagraphStyle().setLineSpacing(120);
+
+  const gap = 20;
+  const colW = (W - 2 * marginX - gap) / 2, colY = topY + hubH + 34, colH = H - colY - 40;
 
   const _col = (x, cor, corInk, status, titulo, corpo) => {
-    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, topY, colW, colH);
+    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, colY, colW, colH);
     card.getFill().setSolidFill(cor); card.getBorder().setTransparent();
 
-    const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, topY + 18, colW - 40, 16);
+    const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, colY + 18, colW - 40, 16);
     st.getText().setText(status).getTextStyle().setFontSize(9).setBold(true).setForegroundColor(corInk).setFontFamily(DS_G.typography.titles);
 
-    const tt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, topY + 38, colW - 40, 30);
+    const tt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, colY + 38, colW - 40, 30);
     tt.getText().setText(titulo).getTextStyle().setFontSize(16).setBold(true).setForegroundColor(corInk).setFontFamily(DS_G.typography.titles);
 
-    const bd = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, topY + 74, colW - 40, colH - 94);
+    const bd = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 20, colY + 74, colW - 40, colH - 94);
     bd.getText().setText(corpo).getTextStyle().setFontSize(10.5).setForegroundColor(corInk).setFontFamily(DS_G.typography.body);
     bd.getText().getParagraphStyle().setLineSpacing(130);
   };
 
-  _col(marginX, DS_G.colors.greenBg, DS_G.colors.greenInk, '✓ CONCLUÍDO', 'Facilities + Financeiro',
+  // Linhas conectando o hub Facilities às duas colunas
+  const lEsq = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, hubX + hubW * 0.25, topY + hubH, marginX + colW * 0.5, colY);
+  lEsq.getLineFill().setSolidFill(DS_G.colors.lineStrong); lEsq.setWeight(1.5);
+  const lDir = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, hubX + hubW * 0.75, topY + hubH, marginX + colW + gap + colW * 0.5, colY);
+  lDir.getLineFill().setSolidFill(DS_G.colors.lineStrong); lDir.setWeight(1.5);
+
+  _col(marginX, DS_G.colors.greenBg, DS_G.colors.greenInk, '✓ CONCLUÍDO', 'Financeiro',
     'A integração já foi realizada através da plataforma financeira dos Megas — os dados de facilities e financeiro já conversam entre si.');
   _col(marginX + colW + gap, DS_G.colors.amberBg, DS_G.colors.amberInk, '⏳ PENDENTE', 'Jurídico',
     'Ainda não está definido de que forma o jurídico vai liberar os dados para a gente montar essa visualização — é o único bloqueio que falta para fechar a meta.');
+
+  const footY = colY + colH + 8;
+  const foot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, footY, W - 2 * marginX, 22);
+  foot.getText().setText('Próximo passo: alinhar com o Jurídico o formato de liberação dos dados para fechar a integração das três áreas.')
+    .getTextStyle().setFontSize(8.6).setItalic(true).setForegroundColor(DS_G.colors.textMuted).setFontFamily(DS_G.typography.body);
 
   Logger.log('Farol — Meta 3 (Integração das Áreas) gerado.');
 }
@@ -351,18 +478,21 @@ function _gFarolSlideMeta4(deck) {
       .setForegroundColor(p.feito ? DS_G.colors.greenInk : DS_G.colors.textMuted).setFontFamily(DS_G.typography.body);
   });
 
-  const leadY = topY + cardH + 28;
-  const lead = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, leadY, W - 2 * marginX, 30);
-  lead.getText().setText('Faltam duas entrevistas para fechar o mapeamento interno. O próximo passo é puxar o RH para dentro do processo:')
-    .getTextStyle().setFontSize(11).setForegroundColor(DS_G.colors.textBody).setFontFamily(DS_G.typography.body);
+  // Funil estruturado: concluído / pendente / apoio RH — separa o que já
+  // fechou do que falta e de quem precisa entrar no processo a seguir.
+  const y2 = topY + cardH + 24, gap2 = 16, itemGap = 18;
+  const colW2 = (W - 2 * marginX - 2 * gap2) / 3, panelH = 120;
 
-  const alertY = leadY + 38;
-  const alert = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, alertY, W - 2 * marginX, 46);
-  alert.getFill().setSolidFill(DS_G.colors.amberBg); alert.getBorder().setTransparent();
-  const at = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 16, alertY, W - 2 * marginX - 32, 46);
-  at.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  at.getText().setText('🤝  Próximo passo: acionar o RH para ajudar a realizar as entrevistas com o pessoal do financeiro.')
-    .getTextStyle().setFontSize(10.5).setBold(true).setForegroundColor(DS_G.colors.amberInk).setFontFamily(DS_G.typography.body);
+  let py = _gPainel(slide, marginX, y2, colW2, panelH, '✓ CONCLUÍDO', DS_G.colors.greenInk);
+  _gChecklist(slide, ['Wilson entrevistado', 'Cadu entrevistado', 'Jonatas entrevistado'], marginX + 14, py + 4, colW2 - 28, itemGap, DS_G.colors.greenInk);
+
+  const x2b = marginX + colW2 + gap2;
+  py = _gPainel(slide, x2b, y2, colW2, panelH, '⏳ PENDENTE', DS_G.colors.amberInk);
+  _gChecklist(slide, ['Ernani', 'Ricardo'], x2b + 14, py + 4, colW2 - 28, itemGap, DS_G.colors.amberInk);
+
+  const x3b = x2b + colW2 + gap2;
+  py = _gPainel(slide, x3b, y2, colW2, panelH, 'APOIO RH · PRÓXIMOS PASSOS', DS_G.colors.brandLight);
+  _gChecklist(slide, ['Envolver RH no processo', 'Apoiar entrevistas com o financeiro', 'Consolidar aprendizados no novo fluxo'], x3b + 14, py + 4, colW2 - 28, itemGap, DS_G.colors.brandLight);
 
   Logger.log('Farol — Meta 4 (Reembolsos) gerado.');
 }
