@@ -137,11 +137,24 @@ function _gerarSlideDRE_(modo) {
     [l.b.mes, l.b.acum, l.b[campoAnual]].forEach((bl, bi) => {
       const c0 = bi * 3;
       const p  = pct(bl.orc, bl.real);
+      // Sem meta (orçado 0) não dá pra calcular %. Se ainda assim houve gasto,
+      // isso é um gasto 100% fora do previsto — mostra a variação em R$ (não
+      // a %, que seria infinita) em vermelho, em vez do "-" sem informação.
+      let txtPct, corPct;
+      if (p != null) {
+        txtPct = p + '%';
+        corPct = l.destaque ? '#FFFFFF' : (p > 100 ? '#DC2626' : '#166534');
+      } else if (bl.real > 0.005) {
+        txtPct = '+' + mil(bl.real);
+        corPct = l.destaque ? '#FFFFFF' : '#DC2626';
+      } else {
+        txtPct = '-';
+        corPct = l.destaque ? '#FFFFFF' : CORES.textGray;
+      }
       const celulas = [
-        { txt: mil(bl.orc),               cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: l.destaque },
-        { txt: mil(bl.real),              cor: corBase,                                  bold: true       },
-        { txt: p == null ? '-' : p + '%', cor: l.destaque ? '#FFFFFF'
-              : (p > 100 ? '#DC2626' : '#166534'),                                       bold: true       }
+        { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: l.destaque },
+        { txt: mil(bl.real), cor: corBase,                                  bold: true       },
+        { txt: txtPct,       cor: corPct,                                   bold: true       }
       ];
       celulas.forEach((cel, i) => {
         const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX(c0 + i), ry, colW - 1, rowH);
