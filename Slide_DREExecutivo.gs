@@ -1,32 +1,33 @@
 /**
  * ARQUIVO: Slide_DREExecutivo.gs
- * SLIDES — DRE EXECUTIVO (um do MÊS + um do ACUMULADO)
+ * SLIDES — DRE EXECUTIVO (4 recortes, mesmo visual)
  * DESCRIÇÃO: Visão de diretoria das despesas operacionais, cruzando 3 abas
  * da planilha da cidade — obterDadosDreDetalhado_() em 02_Dados.gs:
  *   REALIZADO = FINANCEIRO BRIDGE (meses fechados; Ritmo não conta)
+ *   RITMO     = FINANCEIRO BRIDGE (colunas Ritmo dos meses futuros)
  *   PLANEJADO = aba "PLANEJADO 2026" (plano de contas da controladoria)
  *   ANO ANTERIOR = aba "Financeiro 2025" (opcional — sem ela, vs AA = '—')
  *
- * FOCO NAS GRANDES LINHAS: as rubricas são ranqueadas pelo maior valor
- * (realizado ou planejado) do recorte; as TOP 7 aparecem individualmente e
- * o resto é agrupado em "Outras despesas".
+ * OS 4 RECORTES (cada um compara valor vs planejado DO MESMO PERÍODO):
+ *   ▸ MÊS             → Realizado vs Planejado do mês de referência
+ *   ▸ ACUMULADO       → Realizado vs Planejado de Janeiro ao mês ref.
+ *   ▸ MESES RESTANTES → RITMO vs Planejado dos meses que faltam (ref+1..Dez)
+ *   ▸ PROJEÇÃO ANO    → Realizado + Ritmo vs Planejado de Jan a Dez
  *
- * CADA LINHA mostra: Realizado | Planejado | Ritmo do ANO (projeção de
- * fechamento: Real dos meses fechados + Ritmo dos futuros no BRIDGE;
- * vermelho se projeta estourar o planejado anual) | barras comparativas
- * (realizado colorido vs planejado cinza, mesma escala em todas as linhas)
- * | % do planejado (pill verde ≤100% / vermelho >100%) | variação vs ano
- * anterior.
- *
- * KPIs DO TOPO: Realizado, Planejado, Abaixo/Acima do planejado (R$ e %),
- * vs Ano Anterior (R$ e %).
+ * FOCO NAS GRANDES LINHAS: as rubricas são ranqueadas pelo maior valor do
+ * recorte; as TOP 7 aparecem individualmente e o resto é agrupado em
+ * "Outras despesas". Cada linha: valor | planejado | barras comparativas
+ * (mesma escala) | % do planejado (pill verde ≤100% / vermelho >100%) |
+ * variação vs o mesmo período do ano anterior.
  *
  * FALLBACK: cidades ainda sem a aba PLANEJADO 2026 (Itajaí/Esteio) caem na
  * versão consolidada antiga (gerarSlideDRE, baseada só no FINANCEIRO BRIDGE).
  */
 
-function gerarSlideDREMes()       { _gerarSlideDREExec_('mes');  }
-function gerarSlideDREAcumulado() { _gerarSlideDREExec_('acum'); }
+function gerarSlideDREMes()       { _gerarSlideDREExec_('mes');      }
+function gerarSlideDREAcumulado() { _gerarSlideDREExec_('acum');     }
+function gerarSlideDRERestante()  { _gerarSlideDREExec_('restante'); }
+function gerarSlideDREAno()       { _gerarSlideDREExec_('ano');      }
 
 function _gerarSlideDREExec_(qual) {
   const d = obterDadosDreDetalhado_();
@@ -42,15 +43,33 @@ function _gerarSlideDREExec_(qual) {
   }
 
   const mIdx = d.mesesRealizados - 1;           // último mês com realizado
-  const soma = (arr, ate) => arr.slice(0, ate + 1).reduce((s, v) => s + v, 0);
-  const rec  = it => qual === 'mes'
-    ? { real: it.real[mIdx],        plan: it.plan[mIdx],        aa: it.aa[mIdx] }
-    : { real: soma(it.real, mIdx),  plan: soma(it.plan, mIdx),  aa: soma(it.aa, mIdx) };
+  if (qual === 'restante' && mIdx >= 11) {
+    Logger.log('DRE Meses Restantes: ano já fechado — slide pulado.');
+    return;
+  }
 
-  const nomeMes = MESES_NOME_REF[mIdx];
-  const anoRef  = d.ref.ano;
-  const periodo = qual === 'mes' ? nomeMes + ' / ' + anoRef
-                                 : 'JANEIRO A ' + nomeMes + ' / ' + anoRef;
+  // ── Janela do recorte e campo usado como "valor" ─────────────────────────
+  //   mes/acum  → real (meses fechados)
+  //   restante  → ritmo (só os meses futuros)
+  //   ano       → ritmo do ano inteiro (Real fechados + Ritmo futuros)
+  const ini   = qual === 'restante' ? mIdx + 1 : (qual === 'mes' ? mIdx : 0);
+  const fim   = (qual === 'restante' || qual === 'ano') ? 11 : mIdx;
+  const campo = (qual === 'restante' || qual === 'ano') ? 'ritmo' : 'real';
+  const soma  = arr => arr.slice(ini, fim + 1).reduce((s, v) => s + v, 0);
+  const rec   = it => ({ val: soma(it[campo]), plan: soma(it.plan), aa: soma(it.aa) });
+
+  const anoRef = d.ref.ano;
+  const TITULOS = {
+    mes     : ['DRE — RESULTADO DO MÊS',       MESES_NOME_REF[mIdx] + ' / ' + anoRef],
+    acum    : ['DRE — RESULTADO ACUMULADO',    'JANEIRO A ' + MESES_NOME_REF[mIdx] + ' / ' + anoRef],
+    restante: ['DRE — MESES RESTANTES (RITMO)', MESES_NOME_REF[Math.min(mIdx + 1, 11)] + ' A DEZEMBRO / ' + anoRef],
+    ano     : ['DRE — PROJEÇÃO DE FECHAMENTO', 'JANEIRO A DEZEMBRO / ' + anoRef]
+  };
+  const ROTULO_VALOR = {
+    mes: 'REALIZADO', acum: 'REALIZADO', restante: 'RITMO (PROJEÇÃO)', ano: 'REALIZADO + RITMO'
+  };
+  const periodo    = TITULOS[qual][1];
+  const rotuloVal  = ROTULO_VALOR[qual];
 
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
@@ -59,35 +78,26 @@ function _gerarSlideDREExec_(qual) {
   const H  = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
 
-  criarHeaderPadrao(slide,
-    qual === 'mes' ? 'DRE — RESULTADO DO MÊS' : 'DRE — RESULTADO ACUMULADO',
+  criarHeaderPadrao(slide, TITULOS[qual][0],
     'Despesas operacionais · ' + periodo.charAt(0) + periodo.slice(1).toLowerCase() + ' · ' + d.cidade);
 
   // ── Dataset: TOP 7 rubricas + "Outras despesas" ───────────────────────────
   const tot = rec(d.total);
   let linhas = d.linhas
-    .map(f => {
-      const r = rec(f);
-      return {
-        nome: padronizarRubrica_(f.nome), real: r.real, plan: r.plan, aa: r.aa,
-        ritmoAno: soma(f.ritmo, 11), planAno: soma(f.plan, 11)
-      };
-    })
-    .filter(l => l.real > 0.005 || l.plan > 0.005 || l.aa > 0.005);
-  linhas.sort((a, b) => Math.max(b.real, b.plan) - Math.max(a.real, a.plan));
+    .map(f => { const r = rec(f); return { nome: padronizarRubrica_(f.nome), val: r.val, plan: r.plan, aa: r.aa }; })
+    .filter(l => l.val > 0.005 || l.plan > 0.005 || l.aa > 0.005);
+  linhas.sort((a, b) => Math.max(b.val, b.plan) - Math.max(a.val, a.plan));
 
   const TOP = 7;
   const resto = linhas.slice(TOP);
   linhas = linhas.slice(0, TOP);
   if (resto.length) {
     linhas.push({
-      nome    : 'Outras despesas (' + resto.length + ' linhas)',
-      real    : resto.reduce((s, l) => s + l.real, 0),
-      plan    : resto.reduce((s, l) => s + l.plan, 0),
-      aa      : resto.reduce((s, l) => s + l.aa,   0),
-      ritmoAno: resto.reduce((s, l) => s + l.ritmoAno, 0),
-      planAno : resto.reduce((s, l) => s + l.planAno,  0),
-      outras  : true
+      nome  : 'Outras despesas (' + resto.length + ' linhas)',
+      val   : resto.reduce((s, l) => s + l.val,  0),
+      plan  : resto.reduce((s, l) => s + l.plan, 0),
+      aa    : resto.reduce((s, l) => s + l.aa,   0),
+      outras: true
     });
   }
 
@@ -95,14 +105,14 @@ function _gerarSlideDREExec_(qual) {
   const kpiY = 70, kpiH = 52, kGap = 12, marginX = 30;
   const kW = (W - 2 * marginX - 3 * kGap) / 4;
 
-  const difPlan = tot.real - tot.plan;                    // <0 = economia
+  const difPlan = tot.val - tot.plan;                    // <0 = economia
   const pctPlan = tot.plan > 0 ? (difPlan / tot.plan) * 100 : null;
-  const difAA   = tot.real - tot.aa;                      // <0 = gastou menos que ano passado
+  const difAA   = tot.val - tot.aa;                      // <0 = gastou menos que ano passado
   const pctAA   = tot.aa   > 0 ? (difAA / tot.aa) * 100 : null;
   const fmtPct  = p => (p == null ? '' : (p > 0 ? '+' : '−') + Math.abs(p).toFixed(1).replace('.', ',') + '%');
 
   criarCardKPI(slide, marginX, kpiY, kW, kpiH, {
-    label: 'REALIZADO', valor: formatarMoedaSlideSemCentavos_(tot.real),
+    label: rotuloVal, valor: formatarMoedaSlideSemCentavos_(tot.val),
     cor: CORES.lightBlue, corValor: CORES.darkBlue, tamValor: 14
   });
   criarCardKPI(slide, marginX + (kW + kGap), kpiY, kW, kpiH, {
@@ -131,14 +141,13 @@ function _gerarSlideDREExec_(qual) {
   card.getFill().setSolidFill('#FFFFFF'); card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
   card.getBorder().setWeight(1);
 
-  // Colunas: nome | Realizado | Planejado | Ritmo (ano) | barras | % plan | vs AA
+  // Colunas: nome | valor | planejado | barras | % plan | vs AA
   const aX = marginX + 12, aW = W - 2 * marginX - 24;
-  const cNomeW = 132, cValW = 70, cPctW = 50, cAAW = 64;
-  const cBarW  = aW - cNomeW - 3 * cValW - cPctW - cAAW - 20;
-  const xReal  = aX + cNomeW;
-  const xPlan  = xReal + cValW;
-  const xRitmo = xPlan + cValW;
-  const xBar   = xRitmo + cValW + 10;
+  const cNomeW = 148, cValW = 74, cPctW = 52, cAAW = 68;
+  const cBarW  = aW - cNomeW - 2 * cValW - cPctW - cAAW - 20;
+  const xVal   = aX + cNomeW;
+  const xPlan  = xVal + cValW;
+  const xBar   = xPlan + cValW + 10;
   const xPct   = xBar + cBarW + 10;
   const xAA    = xPct + cPctW;
 
@@ -152,16 +161,15 @@ function _gerarSlideDREExec_(qual) {
     t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   };
   _cab(aX, cNomeW, 'RUBRICA', SlidesApp.ParagraphAlignment.START);
-  _cab(xReal, cValW, 'REALIZADO');
+  _cab(xVal, cValW, rotuloVal);
   _cab(xPlan, cValW, 'PLANEJADO');
-  _cab(xRitmo, cValW, 'RITMO (ANO)');
-  _cab(xBar, cBarW, 'REAL (COR) vs PLAN (CINZA)', SlidesApp.ParagraphAlignment.CENTER);
+  _cab(xBar, cBarW, rotuloVal + ' (COR) vs PLANEJADO (CINZA)', SlidesApp.ParagraphAlignment.CENTER);
   _cab(xPct, cPctW, '% PLAN.', SlidesApp.ParagraphAlignment.CENTER);
   _cab(xAA, cAAW, 'VS ' + (anoRef - 1), SlidesApp.ParagraphAlignment.CENTER);
 
   const rowsY = headY + headH + 4;
   const rowH  = Math.min(30, (tY + tH - 8 - rowsY) / linhas.length);
-  const maxVal = Math.max(1, ...linhas.map(l => Math.max(l.real, l.plan)));
+  const maxVal = Math.max(1, ...linhas.map(l => Math.max(l.val, l.plan)));
 
   linhas.forEach((l, r) => {
     const ry = rowsY + r * rowH;
@@ -186,23 +194,18 @@ function _gerarSlideDREExec_(qual) {
         .setFontSize(8).setBold(!!bold).setForegroundColor(cor).setFontFamily(DS.typography.body);
       t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
     };
-    const estourou = l.plan > 0 ? l.real > l.plan : l.real > 0;
-    _val(xReal, l.real, estourou ? DS.colors.accentRed : DS.colors.textMain, true);
+    const estourou = l.plan > 0 ? l.val > l.plan : l.val > 0;
+    _val(xVal, l.val, estourou ? DS.colors.accentRed : DS.colors.textMain, true);
     _val(xPlan, l.plan, CORES.textGray, false);
-
-    // Ritmo do ANO (projeção de fechamento): vermelho se projeta estourar
-    // o planejado anual da rubrica
-    const ritmoEstoura = l.planAno > 0 ? l.ritmoAno > l.planAno : l.ritmoAno > 0;
-    _val(xRitmo, l.ritmoAno, ritmoEstoura ? DS.colors.accentRed : CORES.textGray, false);
 
     // Barras comparativas (mesma escala em todas as linhas)
     const bH = Math.min(7, (rowH - 8) / 2);
-    const wReal = Math.max((l.real / maxVal) * cBarW, l.real > 0 ? 2 : 0);
+    const wVal  = Math.max((l.val / maxVal) * cBarW,  l.val > 0 ? 2 : 0);
     const wPlan = Math.max((l.plan / maxVal) * cBarW, l.plan > 0 ? 2 : 0);
-    const byReal = ry + rowH / 2 - bH - 1;
+    const byVal  = ry + rowH / 2 - bH - 1;
     const byPlan = ry + rowH / 2 + 1;
-    if (wReal > 0) {
-      const b = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, xBar, byReal, wReal, bH);
+    if (wVal > 0) {
+      const b = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, xBar, byVal, wVal, bH);
       b.getFill().setSolidFill(estourou ? DS.colors.accentRed : DS.colors.accentGreen);
       b.getBorder().setTransparent();
     }
@@ -212,7 +215,7 @@ function _gerarSlideDREExec_(qual) {
     }
 
     // Pill % do planejado
-    const pct = l.plan > 0 ? Math.round(l.real / l.plan * 100) : null;
+    const pct = l.plan > 0 ? Math.round(l.val / l.plan * 100) : null;
     const pillW = 40, pillH = 14;
     const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
       xPct + (cPctW - pillW) / 2, ry + (rowH - pillH) / 2, pillW, pillH);
@@ -227,10 +230,10 @@ function _gerarSlideDREExec_(qual) {
       .setFontFamily(DS.typography.titles);
     pt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // vs Ano Anterior
+    // vs Ano Anterior (mesmo período de 2025)
     let txtAA = '—', corAA = CORES.textGray;
     if (l.aa > 0.005) {
-      const dAA = (l.real - l.aa) / l.aa * 100;
+      const dAA = (l.val - l.aa) / l.aa * 100;
       txtAA = (dAA > 0 ? '▲ +' : '▼ −') + Math.abs(dAA).toFixed(0) + '%';
       corAA = dAA > 0 ? DS.colors.accentRed : DS.colors.accentGreen;
       if (Math.abs(dAA) < 0.5) { txtAA = '▬ 0%'; corAA = CORES.textGray; }
