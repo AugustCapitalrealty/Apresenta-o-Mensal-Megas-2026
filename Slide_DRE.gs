@@ -46,9 +46,10 @@ function _gerarSlideDRE_(modo) {
 
   // ── Grade ─────────────────────────────────────────────────────────────────
   const x0 = 10, tableW = W - 20;
-  const rubricaW = 168;
-  const colW = (tableW - rubricaW) / 9;          // 3 blocos × (Meta|Real|%)
-  const colX = i => x0 + rubricaW + i * colW;    // i = 0..8
+  const rubricaW = 168, vsAAW = 52;
+  const colW  = (tableW - rubricaW - vsAAW) / 9;   // 3 blocos × (Meta|Real|%)
+  const colX  = i => x0 + rubricaW + i * colW;     // i = 0..8
+  const xVsAA = colX(9);                           // coluna extra no fim: VS 2025
 
   // ── Barra dos blocos ──────────────────────────────────────────────────────
   const blocoY = 66, blocoH = 14;
@@ -87,6 +88,16 @@ function _gerarSlideDRE_(modo) {
       st.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     });
   });
+
+  // Cabeçalho da coluna extra "VS 2025" (altura cheia, igual à da rubrica) —
+  // compara o Acumulado (2026) com o mesmo período (Jan..mês ref.) de 2025
+  const cabVsAA = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xVsAA, blocoY, vsAAW - 1, blocoH + 14);
+  cabVsAA.getFill().setSolidFill(DS.colors.brandDark); cabVsAA.getBorder().setTransparent();
+  const cabVsAAT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xVsAA, blocoY, vsAAW - 1, blocoH + 14);
+  cabVsAAT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  cabVsAAT.getText().setText('VS ' + (d.ano - 1)).getTextStyle()
+    .setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  cabVsAAT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   // ── Linhas: TOTAL primeiro (destaque), depois as rubricas — já vêm
   // ordenadas da maior para a menor (obterDadosDRE_) ─────────────────────
@@ -164,14 +175,38 @@ function _gerarSlideDRE_(modo) {
         t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       });
     });
+
+    // VS 2025: Acumulado (2026) x mesmo período de 2025 — ▲ gastou mais
+    // (vermelho) / ▼ gastou menos (verde). "—" quando não há a aba/base.
+    let txtVsAA = '—', corVsAA = l.destaque ? '#94A3B8' : CORES.textGray;
+    if (l.b.aa != null && l.b.aa > 0.005) {
+      const dVsAA = (l.b.acum.real - l.b.aa) / l.b.aa * 100;
+      if (Math.abs(dVsAA) < 0.5) {
+        txtVsAA = '▬ 0%';
+        corVsAA = l.destaque ? '#94A3B8' : CORES.textGray;
+      } else {
+        txtVsAA = (dVsAA > 0 ? '▲ +' : '▼ −') + Math.abs(Math.round(dVsAA)) + '%';
+        corVsAA = dVsAA > 0 ? '#DC2626' : (l.destaque ? '#34D399' : '#166534');
+      }
+    }
+    const tVsAA = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xVsAA, ry, vsAAW - 4, rowH);
+    tVsAA.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    tVsAA.getText().setText(txtVsAA).getTextStyle()
+      .setFontSize(fs).setBold(true).setForegroundColor(corVsAA).setFontFamily(DS.typography.body);
+    tVsAA.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   });
 
-  // Separadores verticais entre os blocos
+  // Separadores verticais entre os blocos (+ a coluna extra VS 2025 no fim)
   [0, 3, 6, 9].forEach(c => {
-    const vx = c === 9 ? x0 + tableW : colX(c);
+    const vx = colX(c);
     const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + linhas.length * rowH - blocoY);
     v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
   });
+  {
+    const vx = x0 + tableW;
+    const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + linhas.length * rowH - blocoY);
+    v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
+  }
 
   Logger.log('Slide DRE (' + modo + ') gerado: ' + d.rubricas.length + ' rubrica(s), mês ' + d.mesLabel + '.');
 }
