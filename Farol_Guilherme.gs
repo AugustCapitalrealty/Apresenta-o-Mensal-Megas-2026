@@ -158,7 +158,11 @@ function _gTimelineCheck(slide, etapas, x, y, w, doneUntil) {
 
     const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 12, y, 24, 24);
     dot.getFill().setSolidFill(fundo);
-    dot.getBorder().setWeight(done ? 0 : 2).getLineFill().setSolidFill(proximo ? DS_G.colors.amberInk : DS_G.colors.lineStrong);
+    if (done) {
+      dot.getBorder().setTransparent();
+    } else {
+      dot.getBorder().setWeight(2).getLineFill().setSolidFill(proximo ? DS_G.colors.amberInk : DS_G.colors.lineStrong);
+    }
 
     const dt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - 12, y, 24, 24);
     dt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
