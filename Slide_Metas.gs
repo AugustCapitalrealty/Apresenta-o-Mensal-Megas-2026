@@ -345,7 +345,13 @@ function gerarSlideMetas(papel) {
 
         // Valor na caixa padrão da célula (célula inteira, centralizado) —
         // o comparativo NÃO entra junto para nunca quebrar o valor.
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
+        // Nas colunas centralizadas a caixa de texto é alargada além da
+        // célula (folga simétrica, sem alterar o retângulo visível nem a
+        // largura da coluna) só para vencer o recuo interno padrão do
+        // Slides, que faz valores como "R$ 6,46/100%" quebrarem linha
+        // mesmo cabendo de sobra no espaço visual da célula.
+        const folga = c === 0 ? 0 : 10;
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         const tr = t.getText();
         tr.setText(valStr);
