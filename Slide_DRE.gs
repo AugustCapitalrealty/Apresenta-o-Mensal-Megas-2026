@@ -1,25 +1,39 @@
 /**
  * ARQUIVO: Slide_DRE.gs
- * SLIDE — DRE (DEMONSTRATIVO DE RESULTADO)
+ * SLIDES — DRE (DEMONSTRATIVO DE RESULTADO), 2 PÁGINAS
  * DESCRIÇÃO: Tabela consolidada por rubrica contábil no estilo DRE da
- * controladoria (inspiração enviada pelo usuário), com os dados que a
+ * controladoria (versão que a diretoria preferiu), com os dados que a
  * apresentação já tem (aba FINANCEIRO BRIDGE — obterDadosDRE_ em 02_Dados.gs):
  *
  *   Bloco 1 — MÊS (mês de referência) : Meta | Realizado | % Meta
  *   Bloco 2 — ACUMULADO (Jan..mês ref): Meta | Realizado | % Meta
- *   Bloco 3 — REALIZADO + ORÇADO (ANO): Meta | Real+Ritmo | % Meta
+ *   Bloco 3 (varia por página):
+ *     ▸ gerarSlideDRE()         → REALIZADO + ORÇADO — ANO
+ *       (meses futuros usam o Orçado original, não o ritmo atual)
+ *     ▸ gerarSlideDREComRitmo() → REALIZADO + RITMO — ANO
+ *       (meses futuros usam o Ritmo — a projeção run-rate)
  *
  * Valores em R$ MIL. % Meta = Realizado ÷ Meta: até 100% verde (dentro do
  * orçamento), acima de 100% vermelho (estourou). Linha TOTAL (DESPESAS
- * OPERACIONAIS) no topo, em destaque, como na inspiração.
+ * OPERACIONAIS) sempre no topo, em destaque; as demais rubricas vêm
+ * ordenadas da MAIOR para a MENOR (obterDadosDRE_ já entrega ordenado).
  */
 
-function gerarSlideDRE() {
+function gerarSlideDRE()         { _gerarSlideDRE_('orcado'); }
+function gerarSlideDREComRitmo() { _gerarSlideDRE_('ritmo');  }
+
+function _gerarSlideDRE_(modo) {
   const d = obterDadosDRE_();
   if (!d) {
     Logger.log('Sem dados para o Slide DRE (aba FINANCEIRO BRIDGE).');
     return;
   }
+
+  const campoAnual  = modo === 'ritmo' ? 'anual' : 'anualOrc';
+  const tituloAnual = modo === 'ritmo' ? 'REALIZADO + RITMO — ANO' : 'REALIZADO + ORÇADO — ANO';
+  const subHeader   = modo === 'ritmo'
+    ? 'Meta vs Realizado (projeção pelo ritmo) · valores em R$ mil · '
+    : 'Meta vs Realizado (projeção pelo orçado) · valores em R$ mil · ';
 
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
@@ -28,8 +42,7 @@ function gerarSlideDRE() {
   const H  = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
 
-  criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS',
-    'Meta vs Realizado · valores em R$ mil · ' + d.cidade);
+  criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', subHeader + d.cidade);
 
   // ── Grade ─────────────────────────────────────────────────────────────────
   const x0 = 10, tableW = W - 20;
@@ -42,7 +55,7 @@ function gerarSlideDRE() {
   const blocos = [
     { txt: 'MÊS — ' + d.mesLabel.toUpperCase(),          c0: 0 },
     { txt: 'ACUMULADO — ' + d.mesesAcum + ' MESES',      c0: 3 },
-    { txt: 'REALIZADO + ORÇADO — ANO',                   c0: 6 }
+    { txt: tituloAnual,                                  c0: 6 }
   ];
 
   const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + 14);
@@ -75,7 +88,8 @@ function gerarSlideDRE() {
     });
   });
 
-  // ── Linhas: TOTAL primeiro (como na inspiração), depois as rubricas ──────
+  // ── Linhas: TOTAL primeiro (destaque), depois as rubricas — já vêm
+  // ordenadas da maior para a menor (obterDadosDRE_) ─────────────────────
   const linhas = [{ nome: 'DESPESAS OPERACIONAIS', b: d.total, destaque: true }]
     .concat(d.rubricas.map(r => ({ nome: r.nome, b: r, destaque: false })));
 
@@ -116,8 +130,8 @@ function gerarSlideDRE() {
     lab.getText().setText(nome).getTextStyle()
       .setFontSize(fs).setBold(l.destaque).setForegroundColor(corBase).setFontFamily(DS.typography.body);
 
-    // Blocos de valores
-    [l.b.mes, l.b.acum, l.b.anual].forEach((bl, bi) => {
+    // Blocos de valores (o 3º bloco muda com o modo: anualOrc ou anual)
+    [l.b.mes, l.b.acum, l.b[campoAnual]].forEach((bl, bi) => {
       const c0 = bi * 3;
       const p  = pct(bl.orc, bl.real);
       const celulas = [
@@ -143,5 +157,5 @@ function gerarSlideDRE() {
     v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
   });
 
-  Logger.log('Slide DRE gerado: ' + d.rubricas.length + ' rubrica(s), mês ' + d.mesLabel + '.');
+  Logger.log('Slide DRE (' + modo + ') gerado: ' + d.rubricas.length + ' rubrica(s), mês ' + d.mesLabel + '.');
 }

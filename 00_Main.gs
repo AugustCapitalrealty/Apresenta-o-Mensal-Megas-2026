@@ -90,13 +90,11 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Bridge Variação',                     fn: gerarSlideBridge },
     { nome: 'Bridge Gráfico',                      fn: gerarSlideBridgeGrafico },
     { nome: 'Financeiro Anual',                    fn: gerarSlideFinanceiroAnual },
-    // DRE executivo — Realizado/Ritmo (FINANCEIRO BRIDGE) + Planejado (aba
-    // PLANEJADO 2026) + Ano Anterior (aba Financeiro 2025). Cidades sem a
-    // aba de planejado caem na versão consolidada (gerarSlideDRE) no passo Mês.
-    { nome: 'DRE — Mês',                           fn: gerarSlideDREMes },
-    { nome: 'DRE — Acumulado',                     fn: gerarSlideDREAcumulado },
-    { nome: 'DRE — Meses Restantes (Ritmo)',       fn: gerarSlideDRERestante },
-    { nome: 'DRE — Projeção de Fechamento',        fn: gerarSlideDREAno },
+    // DRE (aba FINANCEIRO BRIDGE) — Mês + Acumulado sempre pelo Realizado;
+    // a projeção anual (3º bloco) vem em duas páginas: uma pelo Orçado
+    // original, outra pelo Ritmo atual. Linhas ordenadas da maior p/ menor.
+    { nome: 'DRE — Realizado + Orçado',            fn: gerarSlideDRE },
+    { nome: 'DRE — Realizado + Ritmo',             fn: gerarSlideDREComRitmo },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
     { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
