@@ -94,8 +94,11 @@ function _gerarSlideDRE_(modo) {
     .concat(d.rubricas.map(r => ({ nome: r.nome, b: r, destaque: false })));
 
   const tY   = blocoY + blocoH + 14 + 2;
-  const rowH = Math.max(9, Math.min(16, (H - tY - 8) / linhas.length));
-  const fs   = rowH >= 12 ? 7 : 6.3;
+  // SEM piso mínimo: a tabela precisa caber inteira no slide, senão as
+  // últimas linhas (as menores, já que vêm ordenadas da maior p/ menor)
+  // ficam empurradas para fora da área visível e "somem".
+  const rowH = Math.min(16, (H - tY - 8) / linhas.length);
+  const fs   = rowH >= 12 ? 7 : (rowH >= 9 ? 6.3 : (rowH >= 7 ? 5.5 : 4.8));
 
   // Em R$ mil: abaixo de 10 mil mostra 1 decimal, senão inteiro
   const mil = v => {
