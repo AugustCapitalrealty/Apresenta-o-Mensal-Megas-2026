@@ -6,10 +6,19 @@
  */
 
 function gerarSlidesMetasGuilherme() {
+  _mgGarantirProjetoCuritiba_();
   _gerarSlideUtilitiesMegaCuritiba_();
   _gerarSlideProgramaExcelencia2026_();
   _gerarSlideIntegracaoAreas_();
   _gerarSlideControleReembolsos_();
+}
+
+function _mgGarantirProjetoCuritiba_() {
+  try {
+    getProjetoAtivo();
+  } catch (e) {
+    setProjetoAtivo('CURITIBA');
+  }
 }
 
 function _mgCriarSlide_(titulo, subtitulo) {
