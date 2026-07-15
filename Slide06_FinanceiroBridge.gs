@@ -338,24 +338,37 @@ function _bridgeDesenharTabela(slide, x, y, w, h, d) {
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     };
 
-    // Célula com R$ em cima e R$/m² (cinza, menor) embaixo — centralizada
-    const _celM2 = (valorStr, m2Str, col, cor, bold) => {
+    // Célula com R$ em cima e R$/m² (cinza, menor) embaixo — centralizada.
+    // avisoCor (opcional): cor de alerta pra 2ª linha quando o sinal do R$/m²
+    // destoa do sinal do R$ (abas desalinhadas — ver comentário abaixo).
+    const _celM2 = (valorStr, m2Str, col, cor, bold, avisoCor) => {
       const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, ry, col.w, rowH);
       const t = b.getText();
       const txt = m2Str ? valorStr + '\n' + m2Str : valorStr;
       t.setText(txt).getTextStyle().setFontSize(7.5).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
-      if (m2Str) t.getRange(valorStr.length + 1, txt.length).getTextStyle().setFontSize(5.5).setBold(false).setForegroundColor('#94A3B8');
+      if (m2Str) t.getRange(valorStr.length + 1, txt.length).getTextStyle()
+        .setFontSize(5.5).setBold(!!avisoCor).setForegroundColor(avisoCor || '#94A3B8');
       t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     };
 
-    const temM2  = cmM2 && cmM2.orc != null && cmM2.real != null && !isNaN(cmM2.orc) && !isNaN(cmM2.real);
-    const varM2  = temM2 ? formatarRsM2_(Number(cmM2.real) - Number(cmM2.orc), true) : '';
+    const temM2   = cmM2 && cmM2.orc != null && cmM2.real != null && !isNaN(cmM2.orc) && !isNaN(cmM2.real);
+    const deltaM2 = temM2 ? Number(cmM2.real) - Number(cmM2.orc) : null;
+    const varM2   = temM2 ? formatarRsM2_(deltaM2, true) : '';
+    // m.var = orç − real (positivo = abaixo do orçado); deltaM2 = real − orç
+    // (positivo = acima). R$ e R$/m² vêm de abas diferentes (FINANCEIRO
+    // BRIDGE e METRO QUADRADO) — se uma foi atualizada e a outra não, os
+    // sentidos destoam. Sinaliza com ⚠ em vez de mostrar como se batesse.
+    let m2Aviso = false;
+    if (temM2 && Math.abs(m.var) > 0.5 && Math.abs(deltaM2) > 0.005) {
+      m2Aviso = (m.var >= 0) !== (deltaM2 <= 0);
+    }
+    const varM2Txt = m2Aviso ? '⚠ ' + varM2 : varM2;
 
     _cel(m.label, cols[0], CORES.darkBlue, true);
     _celM2(formatarMoeda(m.orc),  temM2 ? formatarRsM2_(Number(cmM2.orc))  : '', cols[2], CORES.textDark);
     _celM2(formatarMoeda(m.real), temM2 ? formatarRsM2_(Number(cmM2.real)) : '', cols[3], CORES.textDark);
-    _celM2(seta + formatarMoeda(Math.abs(m.var)), varM2, cols[4], corVar, true);
+    _celM2(seta + formatarMoeda(Math.abs(m.var)), varM2Txt, cols[4], corVar, true, m2Aviso ? '#B45309' : null);
 
     // Pill TIPO (REAL / RITMO)
     const pillH = Math.min(rowH - 4, 14);
@@ -595,21 +608,33 @@ function gerarSlideBridgeGrafico() {
     const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
     bar.getFill().setSolidFill(m.cor); bar.getBorder().setTransparent();
 
-    // Variação por m² do mês (real − orç), mesmo sinal do R$
+    // Variação por m² do mês (real − orç) — deveria ter o MESMO sinal do R$
+    // (as duas vêm de abas diferentes: R$ da FINANCEIRO BRIDGE, R$/m² da
+    // METRO QUADRADO; se alguém atualiza uma e esquece a outra, os sinais
+    // destoam — sinaliza com ⚠ em vez de mostrar como se estivesse ok)
     const cm = m2Mes[key3(m.label)];
-    let m2Str = '';
+    let m2Str = '', m2Aviso = false;
     if (cm && cm.orc != null && cm.real != null && !isNaN(cm.orc) && !isNaN(cm.real)) {
-      m2Str = formatarRsM2_(Number(cm.real) - Number(cm.orc), true);
+      const deltaM2 = Number(cm.real) - Number(cm.orc);
+      m2Str = formatarRsM2_(deltaM2, true);
+      if (Math.abs(m.delta) > 0.5 && Math.abs(deltaM2) > 0.005) {
+        m2Aviso = (m.delta > 0) !== (deltaM2 > 0);
+      }
     }
 
     // Rótulo: R$ (linha 1) + R$/m² (linha 2, menor) — afastado da barra
-    const bloco   = (m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag) + (m2Str ? '\n' + m2Str : '');
+    const linha2  = m2Str ? (m2Aviso ? '⚠ ' : '') + m2Str : '';
+    const bloco   = (m.delta > 0 ? '+' : '−') + formatarMoedaCompacta(mag) + (linha2 ? '\n' + linha2 : '');
     const blocoH  = m2Str ? 22 : 12;
     const lblY    = m.delta > 0 ? yBar - blocoH - 8 : yBar + hBar + 8;
     const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
     const lr  = lbl.getText();
     lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
-    if (m2Str) lr.getRange(bloco.indexOf('\n') + 1, bloco.length).getTextStyle().setFontSize(5.5).setBold(false);
+    if (m2Str) {
+      const styleM2 = lr.getRange(bloco.indexOf('\n') + 1, bloco.length).getTextStyle()
+        .setFontSize(5.5).setBold(m2Aviso);
+      if (m2Aviso) styleM2.setForegroundColor('#B45309');
+    }
     lr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     // Mês junto ao eixo, do lado oposto ao da barra
