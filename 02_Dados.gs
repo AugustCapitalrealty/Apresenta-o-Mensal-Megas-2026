@@ -1382,17 +1382,18 @@ function obterDadosDRE_() {
       return blocos;
     };
 
-    // Algumas planilhas (ex.: Itajaí) têm a MESMA rubrica em duas linhas —
-    // não somamos (arriscaria contar a mesma despesa em dobro), ficamos com
-    // a ocorrência de dado mais completo (maior |orç|+|real| no ano) e
-    // avisamos no log pra alguém limpar a aba.
+    // Algumas planilhas (ex.: Itajaí) têm uma SEGUNDA tabela auxiliar logo
+    // depois da linha TOTAL, repetindo as mesmas rubricas (valores em
+    // positivo, sem parênteses) — provavelmente uma área de apoio/rascunho.
+    // Por isso PARAMOS de ler assim que a linha TOTAL aparece: nada depois
+    // dela pertence à tabela principal de despesas.
     const porChave = {};
     let totalLinha = null;
     for (let r = hdrRow + 1; r < data.length; r++) {
       const nome = String(data[r][0] || '').trim();
       if (!nome) continue;
       const chave = _histNorm_(nome);
-      if (chave.includes('total')) { totalLinha = consolidar(data[r]); continue; }
+      if (chave.includes('total')) { totalLinha = consolidar(data[r]); break; }
       const b = consolidar(data[r]);
       const temValor = b.anual.orc !== 0 || b.anual.real !== 0;
       if (!temValor) continue;
@@ -1489,7 +1490,9 @@ function _lerAnoAnteriorAcumulado_(refIndex) {
       if (chave.indexOf('r$ m') === 0) continue;   // linhas de R$/m² não são rubricas
       let soma = 0;
       cols.forEach(c => { soma += toAbs(data[r][c]); });
-      if (chave.includes('total')) { total = soma; continue; }
+      // Para na linha TOTAL — como na FINANCEIRO BRIDGE, pode haver uma
+      // tabela auxiliar repetindo as rubricas logo depois (ver obterDadosDRE_).
+      if (chave.includes('total')) { total = soma; break; }
       porChave[chave] = (porChave[chave] || 0) + soma;
     }
     return { porChave, total };
