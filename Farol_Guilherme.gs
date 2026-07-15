@@ -9,12 +9,15 @@
  * projeto Apresentação Mensal Megas (essa apresentação de Farol de Metas
  * é um arquivo do Slides separado, não uma das 3 cidades).
  *
+ * A apresentação de destino é FIXA por ID (constante FAROL_DECK_ID logo
+ * abaixo) — não usa getActivePresentation(), então funciona rodando de
+ * qualquer projeto Apps Script (vinculado ou avulso).
+ *
  * COMO USAR:
- *   1. Abra a apresentação "Farol de Metas" no Google Slides (a mesma que
- *      já tem as abas dos outros analistas, no mesmo layout do print).
- *   2. Extensões → Apps Script → cole este arquivo inteiro num arquivo novo.
- *   3. Rode a função gerarFarolGuilherme() (▶ no topo do editor).
- *   4. Os 5 slides são adicionados no FIM da apresentação ativa.
+ *   1. Em QUALQUER projeto Apps Script (pode ser avulso, script.google.com
+ *      → Novo Projeto), cole este arquivo inteiro.
+ *   2. Rode a função gerarFarolGuilherme() (▶ no topo do editor).
+ *   3. Os 5 slides são adicionados no FIM da apresentação "Farol de Metas".
  */
 
 const DS_G = {
@@ -31,8 +34,12 @@ const DS_G = {
   logoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4', logoW: 112, logoH: 32
 };
 
+// Apresentação "Farol de Metas" — fixa por ID (não depende de o script
+// estar vinculado ao arquivo nem de haver uma apresentação "ativa").
+const FAROL_DECK_ID = '125XfdWiYis2J7nACFLxUVI5f0Tv6Zb85On74Nl2-LZI';
+
 function gerarFarolGuilherme() {
-  const deck = SlidesApp.getActivePresentation();
+  const deck = SlidesApp.openById(FAROL_DECK_ID);
   _gFarolSlideTabela(deck);
   _gFarolSlideMeta1(deck);
   _gFarolSlideMeta2(deck);
