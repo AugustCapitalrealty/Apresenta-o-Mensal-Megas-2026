@@ -1382,7 +1382,11 @@ function obterDadosDRE_() {
       return blocos;
     };
 
-    const rubricas = [];
+    // Algumas planilhas (ex.: Itajaí) têm a MESMA rubrica em duas linhas —
+    // não somamos (arriscaria contar a mesma despesa em dobro), ficamos com
+    // a ocorrência de dado mais completo (maior |orç|+|real| no ano) e
+    // avisamos no log pra alguém limpar a aba.
+    const porChave = {};
     let totalLinha = null;
     for (let r = hdrRow + 1; r < data.length; r++) {
       const nome = String(data[r][0] || '').trim();
@@ -1392,8 +1396,19 @@ function obterDadosDRE_() {
       const b = consolidar(data[r]);
       const temValor = b.anual.orc !== 0 || b.anual.real !== 0;
       if (!temValor) continue;
-      rubricas.push({ nome: padronizarRubrica_(nome), _chave: chave, mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc });
+      const nova = { nome: padronizarRubrica_(nome), _chave: chave, mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc };
+      const existente = porChave[chave];
+      if (!existente) {
+        porChave[chave] = nova;
+      } else {
+        const pesoExistente = Math.abs(existente.anual.orc) + Math.abs(existente.anual.real);
+        const pesoNova      = Math.abs(nova.anual.orc)      + Math.abs(nova.anual.real);
+        Logger.log('obterDadosDRE_: rubrica duplicada na FINANCEIRO BRIDGE — "' + nome +
+                   '" aparece mais de uma vez; usando a linha com dado mais completo.');
+        if (pesoNova > pesoExistente) porChave[chave] = nova;
+      }
     }
+    const rubricas = Object.keys(porChave).map(k => porChave[k]);
     if (!rubricas.length) return null;
 
     // Linhas maiores primeiro (materialidade = maior projeção anual, pelo
