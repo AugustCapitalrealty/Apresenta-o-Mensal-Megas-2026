@@ -317,7 +317,7 @@ function gerarSlideMetas(papel) {
   // --- Linhas de dados ---
   const n = metas.linhas.length;
   const dispH = resumoY - 6 - y;
-  const rowH = Math.max(20, Math.min(58, Math.floor(dispH / Math.max(1, n))));
+  const rowH = Math.max(20, Math.min(64, Math.floor(dispH / Math.max(1, n))));
 
   metas.linhas.forEach((linha, i) => {
     const ry = y + i * rowH;
@@ -349,7 +349,7 @@ function gerarSlideMetas(papel) {
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         const tr = t.getText();
         tr.setText(valStr);
-        tr.getTextStyle().setFontSize(c === 0 ? 8 : 7.5).setBold(c === 0).setFontFamily(DS.typography.body)
+        tr.getTextStyle().setFontSize(c === 0 ? 9.5 : 8.5).setBold(c === 0).setFontFamily(DS.typography.body)
           .setForegroundColor(DS.colors.textMain);
         tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
 
@@ -358,9 +358,9 @@ function gerarSlideMetas(papel) {
         // valor (Real Mês [6] / Real Acum. [9]).
         if (temTrend) {
           const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-            xs[c], ry + 2, larg[c], 11);
+            xs[c], ry + 3, larg[c], 14);
           selo.getText().setText(trend.txt).getTextStyle()
-            .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor)
+            .setFontSize(7.5).setBold(true).setForegroundColor(trend.cor)
             .setFontFamily(DS.typography.titles);
           selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         }
