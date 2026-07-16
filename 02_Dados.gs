@@ -1742,7 +1742,10 @@ function formatarPorcentagem(val) {
   if (!s.includes('%') && !isNaN(parseFloat(s))) {
     let n = parseFloat(s);
     if (n <= 1 && n !== 0) n = n * 100;
-    return Math.round(n) + '%';
+    // Valor cru (ex.: "99,41%"), não arredondado para inteiro — o
+    // comparativo (deltaVsMesAnterior_) parte deste mesmo valor, então
+    // arredondar aqui também distorcia a tendência ▲/▼ mostrada nos slides.
+    return formatarNumeroBR(Math.round(n * 100) / 100) + '%';
   }
   return s;
 }
