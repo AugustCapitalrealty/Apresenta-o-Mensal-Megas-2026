@@ -2,20 +2,22 @@
  * ARQUIVO: Slide_CapaSecao.gs
  * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto), versão premium
  *
- * Cada seção tem sua ESTÉTICA ÚNICA: além da foto de fundo + véu azul, um
- * "motivo" geométrico próprio que remete ao tema (formas desenhadas só com
- * shapes nativos do Slides — nada de ícone externo) e uma cor de acento.
- * As cores de acento vêm TODAS do design system (CR_DESIGN_SYSTEM em
- * 01_Config.gs) — nada de tom fora da paleta oficial:
- *   PREVENTIVA   → grade de plano (calendário)        · accentGreen
- *   CORRETIVA    → alerta/exclamação (ação corretiva) · accentOrange
- *   CONTRATADOS  → anéis entrelaçados (parceria)       · brandLight
- *   INTERNOS     → skyline de barras (predial/time)    · brandSoft
- *   PATRIMONIAL  → cadeado (segurança)                 · accentRed
- *   OPERACIONAL  → barras crescentes + seta (fin.)     · azul-destaque (#60A5FA, já usado em toda a capa)
- *   UTILITIES    → medidor/bateria (energia)           · brandMed
- *   SUSTENTAVEL  → anéis de crescimento + broto (ESG)  · accentGreen
- *   DOCUMENTACAO → pilha de papéis (jurídico)           · brandSoft
+ * Cada seção tem sua ESTÉTICA ÚNICA na FORMA (um "motivo" geométrico
+ * próprio que remete ao tema, desenhado só com shapes nativos do Slides —
+ * nada de ícone externo) e na FOTO de fundo — mas a COR é uma só, padrão,
+ * em todas: o azul #60A5FA, o mesmo destaque já usado na Capa e no
+ * Encerramento. Antes cada categoria tinha uma cor diferente (verde,
+ * laranja, vermelho...) e ficou com cara de "carnaval" — a marca não
+ * autoriza essa variedade toda, então padronizamos:
+ *   PREVENTIVA   → grade de plano (calendário)
+ *   CORRETIVA    → alerta/exclamação (ação corretiva)
+ *   CONTRATADOS  → anéis entrelaçados (parceria)
+ *   INTERNOS     → skyline de barras (predial/time)
+ *   PATRIMONIAL  → cadeado (segurança)
+ *   OPERACIONAL  → barras crescentes + seta (financeiro)
+ *   UTILITIES    → medidor de energia
+ *   SUSTENTAVEL  → anéis de crescimento + broto (ESG)
+ *   DOCUMENTACAO → pilha de papéis (jurídico)
  *
  * Foto de fundo por CATEGORIA (FOTOS_SECAO em 01_Config.gs, chave passada
  * como 3º argumento). Sem foto → capaFotoId da cidade → fundo escuro premium.
@@ -23,23 +25,11 @@
  * PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
  */
 
-// Cor de acento por categoria — só cores do CR_DESIGN_SYSTEM (mais o azul
-// #60A5FA, que já é o destaque padrão usado em toda a Capa/Encerramento).
-// Categoria sem entrada cai nesse mesmo azul.
+// Cor de acento ÚNICA para todas as categorias — o azul #60A5FA, mesmo
+// destaque padrão da Capa e do Encerramento. Não varia por categoria (a
+// diferenciação fica só na forma do motivo e na foto de fundo).
 function _secAcento_(chave) {
-  const DS = CR_DESIGN_SYSTEM.colors;
-  const MAPA = {
-    PREVENTIVA:   DS.accentGreen,
-    CORRETIVA:    DS.accentOrange,
-    CONTRATADOS:  DS.brandLight,
-    INTERNOS:     DS.brandSoft,
-    PATRIMONIAL:  DS.accentRed,
-    OPERACIONAL:  '#60A5FA',
-    UTILITIES:    DS.brandMed,
-    SUSTENTAVEL:  DS.accentGreen,
-    DOCUMENTACAO: DS.brandSoft
-  };
-  return MAPA[chave] || '#60A5FA';
+  return '#60A5FA';
 }
 
 function gerarCapaSecao(linha1, linha2, chave) {
