@@ -1,13 +1,17 @@
 /**
  * ARQUIVO: Slide_CapaSecao.gs
- * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto)
+ * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto), versão premium
  * Replica as capas do relatório manual (MANUTENÇÃO PREVENTIVA, SERVIÇOS
- * CONTRATADOS, etc.): fundo escuro, título em duas linhas (branca + azul),
- * sublinha, subtítulo com a cidade e logo no rodapé.
+ * CONTRATADOS, etc.) na mesma linguagem visual da Capa (Slide00_Capa.gs):
+ * foto de fundo full-bleed + véu azul 50% + scrim de legibilidade + anéis
+ * e triângulo decorativos, título em duas linhas (branca + azul clara).
  *
- * Foto de fundo opcional: defina `capaFotoId` (ID de imagem no Drive) no
- * projeto da cidade em 01_Config.gs — a foto entra com um véu azul-escuro
- * por cima. Sem foto, a capa usa o fundo escuro com grafismos.
+ * Foto de fundo: uma por CATEGORIA (FOTOS_SECAO em 01_Config.gs, chave =
+ * linha2 — ex. 'PREVENTIVA', 'CORRETIVA'...), compartilhada pelas 3 cidades.
+ * Sem foto para a categoria, cai no capaFotoId da cidade (legado) e, por
+ * fim, no fundo escuro premium padrão — nunca quebra a geração.
+ *
+ * PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
  */
 
 function gerarCapaSecao(linha1, linha2) {
@@ -17,34 +21,26 @@ function gerarCapaSecao(linha1, linha2) {
   const projeto = getProjetoAtivo();
   const DS = CR_DESIGN_SYSTEM;
 
-  slide.getBackground().setSolidFill(DS.colors.brandDark);
+  const fotoId = (typeof FOTOS_SECAO !== 'undefined' && FOTOS_SECAO[linha2]) || projeto.capaFotoId;
 
-  // Foto de fundo opcional + véu escuro
-  let temFoto = false;
-  if (projeto.capaFotoId) {
-    try {
-      const blob = DriveApp.getFileById(projeto.capaFotoId).getBlob();
-      slide.insertImage(blob, 0, 0, W, H);
-      const veu = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
-      veu.getFill().setSolidFill(DS.colors.brandDark, 0.78);
-      veu.getBorder().setTransparent();
-      temFoto = true;
-    } catch (e) {
-      Logger.log('Aviso (Capa Seção): foto não carregada. ' + e.message);
-    }
+  // ── Fundo: foto da categoria (ou da cidade) + véu, ou fundo escuro padrão ──
+  let comFoto = false;
+  if (fotoId) {
+    comFoto = _capaFotoFundo_(slide, W, H, fotoId, { cor: DS.colors.brandDark, alpha: 0.5 });
   }
-
-  // Grafismos suaves (apenas quando não há foto)
-  if (!temFoto) {
-    const e1 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 300, -140, 480, 480);
-    e1.getFill().setSolidFill(DS.colors.brandLight, 0.07); e1.getBorder().setTransparent();
-    const e2 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -160, H - 200, 400, 400);
-    e2.getFill().setSolidFill(DS.colors.brandMed, 0.18); e2.getBorder().setTransparent();
+  if (comFoto) {
+    // Scrim lateral esquerdo (escurece p/ o texto ler, some rumo à direita)
+    _capaGradiente_(slide, 0, 0, W * 0.62, H, DS.colors.brandDark, DS.colors.brandDark,
+      { alphaFrom: 0.55, alphaTo: 0.0, steps: 22 });
+    // Anéis + triângulo brancos translúcidos por cima da foto
+    _capaAnel_(slide, W - 260, 60, 420, '#FFFFFF', 1.25, 0.12);
+    _capaAnel_(slide, W - 220, 100, 320, '#FFFFFF', 1,    0.07);
+    _capaTriangulo_(slide, W - 165, 165, 90, '#FFFFFF', 0.08);
+    // Espinha lateral (assinatura), por cima da foto
+    _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
+  } else {
+    _capaFundo_(slide, W, H);
   }
-
-  // Faixa lateral esquerda (elemento de marca das capas antigas)
-  const faixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 8, H);
-  faixa.getFill().setSolidFill(DS.colors.brandLight); faixa.getBorder().setTransparent();
 
   // Título em duas linhas: primeira branca, segunda azul clara
   const tY = H / 2 - 110;
@@ -65,13 +61,8 @@ function gerarCapaSecao(linha1, linha2) {
   st.getText().setText(projeto.nome + ' | Relatório Operacional').getTextStyle()
     .setFontSize(16).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);
 
-  // Logo (texto) no rodapé esquerdo
-  const logo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 58, H - 56, 320, 22);
-  logo.getText().setText('CAPITAL REALTY').getTextStyle()
-    .setFontSize(13).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 58, H - 36, 320, 14);
-  logoSub.getText().setText('infraestrutura logística').getTextStyle()
-    .setFontSize(7.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+  // Wordmark Capital Realty no rodapé esquerdo
+  _capaWordmark_(slide, 58, H - 58, { h: 30 });
 
-  Logger.log('Capa de seção gerada: ' + linha1 + ' ' + linha2);
+  Logger.log('Capa de seção gerada: ' + linha1 + ' ' + linha2 + (fotoId ? ' (com foto)' : ' (sem foto)'));
 }

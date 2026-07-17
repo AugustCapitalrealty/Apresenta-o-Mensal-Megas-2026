@@ -60,6 +60,22 @@ const LOGOS_CR = {
   fullPositivo:  '1XqFtIobiEq7VC2H41sKnFNUuOluw_J4V'
 };
 
+// ==========================================
+// FOTOS DAS CAPAS DE SEÇÃO (por categoria — Slide_CapaSecao.gs)
+// ==========================================
+// Uma foto por CATEGORIA, compartilhada pelas 3 cidades (chave = linha2 do
+// título da capa de seção, ver as chamadas gerarCapaSecao em 00_Main.gs).
+// Categoria sem entrada aqui cai no capaFotoId da cidade (legado) e, por
+// fim, no fundo escuro premium padrão — nunca quebra a geração.
+const FOTOS_SECAO = {
+  PREVENTIVA:   '1KrRNU9iU9FduU6fLbrhHrCeQp4J19_st',   // foto de drone (25 MB) — se travar no Slides, comprimir
+  CORRETIVA:    '1e1nddV6U0KDrAYRMT16s54LAuKRBCC2g',
+  CONTRATADOS:  '1SyVowumHac9e3PxDcmHhwFnfVU4K0hph',
+  INTERNOS:     '1mP_ousYFrNSDV8rwPhPtXdYoOEYaW_3Z',
+  PATRIMONIAL:  '1kua0uho-3-yzLtE4IR2y_epaBYtKttsx',
+  OPERACIONAL:  '1kXwwPWzU6pimR9vSXY6I5M7eNgNjDC_h'
+};
+
 
 // ==========================================
 // PROJETOS POR CIDADE
