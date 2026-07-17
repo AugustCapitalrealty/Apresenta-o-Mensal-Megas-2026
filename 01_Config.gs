@@ -42,6 +42,24 @@ const CR_DESIGN_SYSTEM = {
   }
 };
 
+// ==========================================
+// LOGOS OFICIAIS CAPITAL REALTY (todas as versões)
+// ==========================================
+// Enviadas pela marca. Regra de uso:
+//   ▸ Negativo (logo branco)  → fundos ESCUROS (capas). É o que as capas usam.
+//   ▸ Positivo (logo escuro)  → fundos CLAROS.
+//   ▸ Color (colorido)        → fundos claros, versão institucional.
+//   ▸ full  = símbolo + texto  | abrev = só o símbolo (marca reduzida).
+// As inserções preservam a proporção da imagem (nunca distorcem).
+const LOGOS_CR = {
+  abrevColor:    '1elIm5tGMsZqgSBgUcag5BrG5XGpcMZs5',
+  abrevNegativo: '1rQVs8LALoWb-gVVYoieDooqFpsOjjOVC',
+  abrevPositivo: '1JPDHRzRwvqRvzsl8Cf6AOkm3GEr7SJfd',
+  fullColor:     '1toRVfIgamy4CWBT2Gv2mGd6V_W0OGISS',
+  fullNegativo:  '1Tx9cwk1-1_P1TSGoXLZ828JNQ-rY-w6p',
+  fullPositivo:  '1XqFtIobiEq7VC2H41sKnFNUuOluw_J4V'
+};
+
 
 // ==========================================
 // PROJETOS POR CIDADE
@@ -94,6 +112,9 @@ const PROJETOS = {
     spreadsheetId  : '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
+    // Foto de fundo da CONTRA CAPA (hero) — entra full-bleed com véu azul.
+    // Só Curitiba por enquanto; as outras cidades ficam na contra capa escura.
+    fotoFundoId    : '1kHidIKI27gmqNeY3_Q_RWspxx7GIdnin',
     reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba

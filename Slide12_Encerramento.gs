@@ -49,17 +49,23 @@ function gerarSlideEncerramento() {
     _encCardContato(slide, startX + i * (cardW + cardGap), contatoY, cardW, cardH, c.nome, c.cargo);
   });
 
-  // ── Wordmark rodapé (centralizado) ──────────────────────────────────────
-  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, W / 2 - 60, H - 58, W / 2 + 60, H - 58);
+  // ── Logo oficial (negativo) no rodapé, centralizado ─────────────────────
+  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, W / 2 - 60, H - 62, W / 2 + 60, H - 62);
   sep.getLineFill().setSolidFill('#334155'); sep.setWeight(1);
-  const logoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 50, W - 80, 24);
-  logoBox.getText().setText('CAPITAL REALTY').getTextStyle()
-    .setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  logoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 28, W - 80, 14);
-  logoSub.getText().setText('infraestrutura logística').getTextStyle()
-    .setFontSize(7.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
-  logoSub.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  try {
+    const img = _capaLogoImg_(slide, LOGOS_CR.fullNegativo, 34);
+    img.setLeft((W - img.getWidth()) / 2).setTop(H - 52);
+  } catch (e) {
+    Logger.log('Encerramento: logo negativo indisponível, wordmark em texto. ' + e.message);
+    const logoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 52, W - 80, 24);
+    logoBox.getText().setText('CAPITAL REALTY').getTextStyle()
+      .setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+    logoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 30, W - 80, 14);
+    logoSub.getText().setText('infraestrutura logística').getTextStyle()
+      .setFontSize(7.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+    logoSub.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
 
   Logger.log('Slide 12 (Encerramento premium) gerado.');
 }

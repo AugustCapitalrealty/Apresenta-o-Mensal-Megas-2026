@@ -16,7 +16,21 @@ function gerarSlideContraCapa() {
   const DS = CR_DESIGN_SYSTEM;
   const ref = obterMesReferencia_();
 
-  _capaFundo_(slide, W, H);
+  // Fundo: foto full-bleed + véu azul 50% quando a cidade tem fotoFundoId
+  // (ex.: Mega Curitiba); senão, o fundo escuro premium padrão.
+  let comFoto = false;
+  if (projeto.fotoFundoId) {
+    comFoto = _capaFotoFundo_(slide, W, H, projeto.fotoFundoId, { cor: DS.colors.brandDark, alpha: 0.5 });
+  }
+  if (comFoto) {
+    // Scrim lateral esquerdo (escurece p/ o texto ler, some rumo à direita)
+    _capaGradiente_(slide, 0, 0, W * 0.62, H, DS.colors.brandDark, DS.colors.brandDark,
+      { alphaFrom: 0.55, alphaTo: 0.0, steps: 22 });
+    // Espinha lateral (assinatura), por cima da foto
+    _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
+  } else {
+    _capaFundo_(slide, W, H);
+  }
   _capaWordmark_(slide, 42, 30);
 
   // ── Coluna esquerda: posicionamento da marca ────────────────────────────

@@ -27,20 +27,59 @@ function _capaHexLerp_(a, b, t) {
 }
 
 // Faixa de gradiente simulada por N segmentos justapostos (com leve
-// sobreposição p/ não deixar fresta). horizontal=true por padrão.
+// sobreposição p/ não deixar fresta). horizontal=true por padrão. Suporta
+// gradiente de COR (c1→c2) e/ou de OPACIDADE (alphaFrom→alphaTo) — este
+// último permite véus que "desaparecem" (scrim de legibilidade sobre foto).
 function _capaGradiente_(slide, x, y, w, h, c1, c2, opts) {
   opts = opts || {};
   const steps = opts.steps || 26;
   const vertical = !!opts.vertical;
+  const aF = opts.alphaFrom != null ? opts.alphaFrom : (opts.alpha != null ? opts.alpha : 1);
+  const aT = opts.alphaTo   != null ? opts.alphaTo   : (opts.alpha != null ? opts.alpha : 1);
   for (let i = 0; i < steps; i++) {
     const t = steps === 1 ? 0 : i / (steps - 1);
     const cor = _capaHexLerp_(c1, c2, t);
+    const a = aF + (aT - aF) * t;
     let sx, sy, sw, sh;
     if (vertical) { sh = h / steps; sy = y + i * sh; sx = x; sw = w; sh += 0.8; }
     else          { sw = w / steps; sx = x + i * sw; sy = y; sh = h; sw += 0.8; }
     const r = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, sy, sw, sh);
-    r.getFill().setSolidFill(cor, opts.alpha != null ? opts.alpha : 1);
+    r.getFill().setSolidFill(cor, Math.max(0, Math.min(1, a)));
     r.getBorder().setTransparent();
+  }
+}
+
+// Insere uma imagem preservando a PROPORÇÃO (nunca distorce): escala para a
+// altura alvo e devolve o objeto Image para o chamador posicionar/centralizar.
+function _capaLogoImg_(slide, id, targetH) {
+  const blob = DriveApp.getFileById(id).getBlob();
+  const img = slide.insertImage(blob);
+  const ar = img.getWidth() / img.getHeight();
+  img.setHeight(targetH).setWidth(targetH * ar);
+  return img;
+}
+
+// Foto de fundo full-bleed (cover-fill, sem distorção — sobra é clipada pela
+// borda do slide) + véu de cor por cima. Retorna true se colocou a foto.
+function _capaFotoFundo_(slide, W, H, fotoId, opts) {
+  opts = opts || {};
+  try {
+    const blob = DriveApp.getFileById(fotoId).getBlob();
+    const img = slide.insertImage(blob);
+    const ar = img.getWidth() / img.getHeight();
+    const pageAR = W / H;
+    let w, h;
+    if (ar > pageAR) { h = H; w = H * ar; } else { w = W; h = W / ar; }
+    img.setWidth(w).setHeight(h).setLeft((W - w) / 2).setTop((H - h) / 2);
+
+    const veu = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
+    veu.getFill().setSolidFill(opts.cor || CR_DESIGN_SYSTEM.colors.brandDark,
+                               opts.alpha != null ? opts.alpha : 0.5);
+    veu.getBorder().setTransparent();
+    return true;
+  } catch (e) {
+    Logger.log('Capa: foto de fundo indisponível (' + fotoId + '). ' + e.message);
+    return false;
   }
 }
 
@@ -69,30 +108,36 @@ function _capaFundo_(slide, W, H, opts) {
   }
 }
 
-// Mark geométrico + wordmark da Capital Realty em texto branco (sempre lê no
-// escuro). Retorna a largura aproximada ocupada para posicionar co-brand.
+// Logo oficial da Capital Realty (versão NEGATIVA/branca) sobre o fundo
+// escuro das capas. Preserva a proporção. Se a imagem não carregar, cai para
+// um wordmark em texto branco (nunca quebra a geração). Retorna o X do fim
+// do logo (para posicionar co-brand à direita, se preciso).
 function _capaWordmark_(slide, x, y, opts) {
   opts = opts || {};
   const DS = CR_DESIGN_SYSTEM;
-  const esc = opts.escala || 1;
+  const targetH = opts.h || 34;
 
-  // Mark: dois discos concpenctricos (abstração da marca, sem imitar o logo)
-  const d = 26 * esc;
-  const anel = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x, y, d, d);
-  anel.getFill().setTransparent();
-  anel.getBorder().getLineFill().setSolidFill(DS.colors.brandLight); anel.getBorder().setWeight(2.5 * esc);
-  const nucleo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + d * 0.28, y + d * 0.28, d * 0.44, d * 0.44);
-  nucleo.getFill().setSolidFill('#60A5FA'); nucleo.getBorder().setTransparent();
-
-  const tx = x + d + 12 * esc;
-  const nome = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y - 3 * esc, 340 * esc, 24 * esc);
-  nome.getText().setText('CAPITAL REALTY').getTextStyle()
-    .setFontSize(15 * esc).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 15 * esc, 340 * esc, 16 * esc);
-  sub.getText().setText('infraestrutura logística').getTextStyle()
-    .setFontSize(8 * esc).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
-
-  return tx + 200 * esc;
+  try {
+    const img = _capaLogoImg_(slide, LOGOS_CR.fullNegativo, targetH);
+    img.setLeft(x).setTop(y);
+    return x + img.getWidth();
+  } catch (e) {
+    Logger.log('Capa: logo negativo indisponível, usando wordmark em texto. ' + e.message);
+    const d = 26;
+    const anel = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x, y, d, d);
+    anel.getFill().setTransparent();
+    anel.getBorder().getLineFill().setSolidFill(DS.colors.brandLight); anel.getBorder().setWeight(2.5);
+    const nucleo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + d * 0.28, y + d * 0.28, d * 0.44, d * 0.44);
+    nucleo.getFill().setSolidFill('#60A5FA'); nucleo.getBorder().setTransparent();
+    const tx = x + d + 12;
+    const nome = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y - 3, 340, 24);
+    nome.getText().setText('CAPITAL REALTY').getTextStyle()
+      .setFontSize(15).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+    const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 15, 340, 16);
+    sub.getText().setText('infraestrutura logística').getTextStyle()
+      .setFontSize(8).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+    return tx + 200;
+  }
 }
 
 // Rodapé padrão das capas: hairline + texto à esquerda e slogan à direita.
