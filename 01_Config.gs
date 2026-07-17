@@ -113,8 +113,13 @@ const PROJETOS = {
     presentationId : '1Cd2_D-Ht1nBJJ6dqPcXdvi-osTd_WkMDn3HvRZBdNL0',
     capaFotoId     : '',
     // Foto de fundo da CONTRA CAPA (hero) — entra full-bleed com véu azul.
+    // Reaproveitada do repo "Controle de Acessos Megas" (mesma foto usada
+    // lá nos divisores de seção — já testada, 3,3 MB). A foto de drone que
+    // você mandou (31 MB) estourava o limite do Slides ("imagem inválida
+    // ou corrompida"); se quiser usar ela mesmo assim, me manda comprimida
+    // (~1920px, poucos MB) que eu troco.
     // Só Curitiba por enquanto; as outras cidades ficam na contra capa escura.
-    fotoFundoId    : '1kHidIKI27gmqNeY3_Q_RWspxx7GIdnin',
+    fotoFundoId    : '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
     reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
@@ -129,6 +134,9 @@ const PROJETOS = {
     spreadsheetId  : '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
     presentationId : '1kc23ue7SdKFqIZRJdZaE-X5T2BhdE7eZKFRE4zz_bnY',
     capaFotoId     : '',
+    // Existe uma foto pronta (reaproveitada do Controle de Acessos, mesmo
+    // padrão do Curitiba) — deixei o ID aqui comentado, "vamos pensar" antes
+    // de ligar: fotoFundoId: '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
     reaberturaId   : '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
@@ -143,6 +151,8 @@ const PROJETOS = {
     spreadsheetId  : '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
     presentationId : '15NZFgHNEwuXVijhCFPsNSHnm-cTpXCQho-BuVuG78kc',
     capaFotoId     : '',
+    // Idem Itajaí — foto pronta, só ligar quando decidirmos:
+    // fotoFundoId: '1ed2NujxpCBkk6tMDBC0h3LwB9wu6NEVA',
     reaberturaId   : '18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0',
     ppcId          : '1I9DWcd8HXVRkjcv8eTk4UdQ5IZRuqUhFikw8tVfPt2c',   // PPC Mega Esteio 2026
     unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio

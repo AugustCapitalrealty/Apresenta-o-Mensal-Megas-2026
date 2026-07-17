@@ -83,6 +83,25 @@ function _capaFotoFundo_(slide, W, H, fotoId, opts) {
   }
 }
 
+// Anel decorativo (elipse só com contorno, sem preenchimento) — elemento do
+// brandbook reaproveitado do repo Controle de Acessos Megas. Complementa as
+// manchas preenchidas (_capaFundo_) com uma camada mais fina e gráfica.
+function _capaAnel_(slide, x, y, tamanho, cor, peso, alpha) {
+  const c = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x, y, tamanho, tamanho);
+  c.getFill().setTransparent();
+  c.getBorder().getLineFill().setSolidFill(cor, alpha == null ? 1 : alpha);
+  c.getBorder().setWeight(peso || 1);
+  return c;
+}
+
+// Triângulo decorativo (elemento do brandbook, idem _capaAnel_).
+function _capaTriangulo_(slide, x, y, tamanho, cor, alpha) {
+  const t = slide.insertShape(SlidesApp.ShapeType.TRIANGLE, x, y, tamanho, tamanho * 0.9);
+  t.getFill().setSolidFill(cor, alpha == null ? 1 : alpha);
+  t.getBorder().setTransparent();
+  return t;
+}
+
 // Fundo escuro premium: base + elipses de profundidade + espinha lateral
 // de gradiente (assinatura das capas). opts.espinha=false remove a espinha.
 function _capaFundo_(slide, W, H, opts) {
@@ -101,6 +120,12 @@ function _capaFundo_(slide, W, H, opts) {
   // Brilho pontual (pequeno) para dar "vida" ao canto
   const spark = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 150, -60, 150, 150);
   spark.getFill().setSolidFill(DS.colors.brandSoft, 0.10); spark.getBorder().setTransparent();
+
+  // Anéis finos + triângulo (elementos do brandbook, mesma linguagem do
+  // repo Controle de Acessos) — camada gráfica adicional sobre as manchas.
+  _capaAnel_(slide, W - 250, -130, 420, DS.colors.brandLight, 1.25, 0.16);
+  _capaAnel_(slide, W - 210, -95,  330, DS.colors.brandSoft,  1,    0.10);
+  _capaTriangulo_(slide, W - 130, H - 190, 90, DS.colors.brandLight, 0.08);
 
   // Espinha lateral esquerda — gradiente vertical brandLight → brandSoft
   if (opts.espinha !== false) {

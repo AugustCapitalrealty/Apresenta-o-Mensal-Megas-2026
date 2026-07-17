@@ -26,6 +26,11 @@ function gerarSlideContraCapa() {
     // Scrim lateral esquerdo (escurece p/ o texto ler, some rumo à direita)
     _capaGradiente_(slide, 0, 0, W * 0.62, H, DS.colors.brandDark, DS.colors.brandDark,
       { alphaFrom: 0.55, alphaTo: 0.0, steps: 22 });
+    // Anéis brancos translúcidos por cima da foto (mesma linguagem do repo
+    // Controle de Acessos nos divisores com foto de fundo).
+    _capaAnel_(slide, W - 260, 60, 420, '#FFFFFF', 1.25, 0.12);
+    _capaAnel_(slide, W - 220, 100, 320, '#FFFFFF', 1,    0.07);
+    _capaTriangulo_(slide, W - 165, 165, 90, '#FFFFFF', 0.08);
     // Espinha lateral (assinatura), por cima da foto
     _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
   } else {
