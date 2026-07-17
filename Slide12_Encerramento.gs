@@ -15,6 +15,9 @@ function gerarSlideEncerramento() {
   // Fundo premium (sem espinha lateral — capa final é mais centrada/simétrica)
   _capaFundo_(slide, W, H, { espinha: false });
 
+  // Logo do próprio Mega no topo direito (mesmo padrão das outras capas).
+  _capaMegaLogo_(slide, W, { y: 26, w: 96, h: 32 });
+
   // Overline centralizado
   const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.18, W - 80, 18);
   over.getText().setText(_capaEspacado_('Obrigado')).getTextStyle()

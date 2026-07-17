@@ -28,16 +28,20 @@ function gerarSlideCapa() {
   // Wordmark Capital Realty (topo esquerdo)
   _capaWordmark_(slide, 42, 30);
 
-  // Co-brand: nome do Mega no topo direito (chip discreto)
-  const chipW = 150, chipH = 26, chipX = W - 42 - chipW, chipY = 30;
-  const chip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, chipX, chipY, chipW, chipH);
-  chip.getFill().setSolidFill('#FFFFFF', 0.08);
-  chip.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.18); chip.getBorder().setWeight(1);
-  const chipT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, chipX, chipY, chipW, chipH);
-  chipT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  chipT.getText().setText(projeto.nome.toUpperCase()).getTextStyle()
-    .setFontSize(9).setBold(true).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.titles);
-  chipT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  // Co-brand: logo do próprio Mega no topo direito, em chip branco (contraste
+  // sobre o fundo escuro). Sem unitLogoId ou imagem indisponível → cai no
+  // chip de texto com o nome (nunca quebra a geração).
+  if (!_capaMegaLogo_(slide, W, { y: 26 })) {
+    const chipW = 150, chipH = 26, chipX = W - 42 - chipW, chipY = 30;
+    const chip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, chipX, chipY, chipW, chipH);
+    chip.getFill().setSolidFill('#FFFFFF', 0.08);
+    chip.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.18); chip.getBorder().setWeight(1);
+    const chipT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, chipX, chipY, chipW, chipH);
+    chipT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    chipT.getText().setText(projeto.nome.toUpperCase()).getTextStyle()
+      .setFontSize(9).setBold(true).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.titles);
+    chipT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
 
   // Overline espaçado
   const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, H * 0.30, W - 200, 20);

@@ -59,6 +59,36 @@ function _capaLogoImg_(slide, id, targetH) {
   return img;
 }
 
+// Logo do PRÓPRIO MEGA (unitLogoId, 01_Config.gs — mesmo ID usado no
+// Controle de Acessos Megas, LOGOS_MEGA) fixa no canto superior direito das
+// capas, dentro de um chip branco (garante contraste sobre fundo escuro ou
+// foto — mesmo recurso do addMegaLogo(dark=true) daquele repo). Contain-fit:
+// nunca distorce, encaixa dentro da caixa boxW×boxH. Graceful: sem
+// unitLogoId ou imagem indisponível, simplesmente não desenha nada.
+function _capaMegaLogo_(slide, W, opts) {
+  opts = opts || {};
+  const proj = getProjetoAtivo();
+  const id = proj.unitLogoId;
+  if (!id) return false;
+  const boxW = opts.w || 108, boxH = opts.h || 36;
+  const x = W - 42 - boxW, y = opts.y != null ? opts.y : 26;
+  try {
+    const chip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x - 12, y - 7, boxW + 24, boxH + 14);
+    chip.getFill().setSolidFill('#FFFFFF', 0.95); chip.getBorder().setTransparent();
+
+    const blob = DriveApp.getFileById(id).getBlob();
+    const img = slide.insertImage(blob);
+    const ar = img.getWidth() / img.getHeight();
+    let w = boxW, h = boxW / ar;
+    if (h > boxH) { h = boxH; w = boxH * ar; }
+    img.setWidth(w).setHeight(h).setLeft(x + (boxW - w) / 2).setTop(y + (boxH - h) / 2);
+    return true;
+  } catch (e) {
+    Logger.log('Capa: logo do Mega indisponível (' + id + '). ' + e.message);
+    return false;
+  }
+}
+
 // Foto de fundo full-bleed (cover-fill, sem distorção — sobra é clipada pela
 // borda do slide) + véu de cor por cima. Retorna true se colocou a foto.
 function _capaFotoFundo_(slide, W, H, fotoId, opts) {

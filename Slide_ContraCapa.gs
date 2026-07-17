@@ -38,6 +38,9 @@ function gerarSlideContraCapa() {
   }
   _capaWordmark_(slide, 42, 30);
 
+  // Logo do próprio Mega no topo direito (mesmo padrão da Capa de Abertura).
+  _capaMegaLogo_(slide, W, { y: 26, w: 96, h: 32 });
+
   // ── Coluna esquerda: posicionamento da marca ────────────────────────────
   const colX = 44, colW = W * 0.50 - colX;
   const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, H * 0.30, colW, 20);
