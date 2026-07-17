@@ -67,9 +67,7 @@ function gerarApresentacaoCompleta_() {
   // Ordem oficial da apresentação (espelha o relatório manual):
   // capas de seção e slides de fotos são gerados entre os slides de dados.
   const passos = [
-    { nome: 'Capa de Abertura',                    fn: gerarSlideCapa },
-    { nome: 'Contra Capa',                         fn: gerarSlideContraCapa },
-    { nome: 'Agenda',                              fn: gerarSlideAgenda },
+    { nome: 'Capa',                                fn: gerarSlideCapa },
     { nome: 'Destaques do Período',                fn: gerarSlideDestaques },
     { nome: 'Dashboard',                           fn: gerarSlideDashboard },
     { nome: 'Metas',                               fn: gerarSlidesMetas },
