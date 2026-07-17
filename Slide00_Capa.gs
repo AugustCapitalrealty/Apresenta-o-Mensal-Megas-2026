@@ -4,10 +4,10 @@
  * Capa de abertura e contra capa MESCLADAS numa única capa, por pedido do
  * usuário: manteve a estrutura com FOTO de fundo (que ele preferiu) e o
  * conteúdo funcional (título, Mega, período) — sem o card de "Identificação
- * do Relatório" e com a logo do Mega no topo direito.
+ * do Relatório" e sem logo (o nome do Mega já aparece como herói no texto).
  *
  * Fundo: foto full-bleed + véu azul institucional 50% quando a cidade tem
- * fotoFundoId (Mega Curitiba, por ora); senão, cai no fundo escuro premium
+ * fotoFundoId (as três cidades já têm); senão, cai no fundo escuro premium
  * padrão (mesma linguagem, sem foto). Mês de referência vem dos DADOS
  * (obterMesReferencia_ em 02_Dados.gs) — a capa nunca diverge do conteúdo.
  *
@@ -41,9 +41,9 @@ function gerarSlideCapa() {
     _capaFundo_(slide, W, H);
   }
 
-  // Wordmark Capital Realty (topo esquerdo) + logo do Mega (topo direito)
+  // Wordmark Capital Realty (topo esquerdo). Sem logo do Mega na capa
+  // (removida por pedido — o nome do Mega já aparece como herói abaixo).
   _capaWordmark_(slide, 42, 30);
-  _capaMegaLogo_(slide, W, { y: 26, w: 108, h: 36 });
 
   // Overline espaçado
   const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, H * 0.30, W - 200, 20);
