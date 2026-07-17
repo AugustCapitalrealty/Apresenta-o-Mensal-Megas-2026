@@ -71,7 +71,10 @@ function _capaMegaLogo_(slide, W, opts) {
   const id = proj.unitLogoId;
   if (!id) return false;
   const boxW = opts.w || 108, boxH = opts.h || 36;
-  const x = W - 42 - boxW, y = opts.y != null ? opts.y : 26;
+  // Por padrão fica no canto superior direito; com opts.cx, fica centralizada
+  // nesse x (ex.: cx = W/2 para centralizar no slide, usado na capa final).
+  const x = opts.cx != null ? opts.cx - boxW / 2 : W - 42 - boxW;
+  const y = opts.y != null ? opts.y : 26;
   try {
     const chip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x - 12, y - 7, boxW + 24, boxH + 14);
     chip.getFill().setSolidFill('#FFFFFF', 0.95); chip.getBorder().setTransparent();

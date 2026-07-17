@@ -68,12 +68,14 @@ const LOGOS_CR = {
 // Categoria sem entrada aqui cai no capaFotoId da cidade (legado) e, por
 // fim, no fundo escuro premium padrão — nunca quebra a geração.
 const FOTOS_SECAO = {
-  PREVENTIVA:   '1KrRNU9iU9FduU6fLbrhHrCeQp4J19_st',   // foto de drone (25 MB) — se travar no Slides, comprimir
+  PREVENTIVA:   '1iC0svCXk7jSddAc65Eg0VMjjPtEHJErW',   // trocada (a de drone 25 MB era inválida no Slides)
   CORRETIVA:    '1e1nddV6U0KDrAYRMT16s54LAuKRBCC2g',
   CONTRATADOS:  '1SyVowumHac9e3PxDcmHhwFnfVU4K0hph',
   INTERNOS:     '1mP_ousYFrNSDV8rwPhPtXdYoOEYaW_3Z',
   PATRIMONIAL:  '1kua0uho-3-yzLtE4IR2y_epaBYtKttsx',
-  OPERACIONAL:  '1kXwwPWzU6pimR9vSXY6I5M7eNgNjDC_h'
+  OPERACIONAL:  '1kXwwPWzU6pimR9vSXY6I5M7eNgNjDC_h',
+  UTILITIES:    '16DLJAVLl8xOsRr8Nhi_OTmnXcEx-URVB',   // Mega Curitiba — geração/consumo de energia
+  DOCUMENTACAO: '1fA13cXRur_UbMtLAjRYGbOyjaauNiOZ0'
 };
 
 

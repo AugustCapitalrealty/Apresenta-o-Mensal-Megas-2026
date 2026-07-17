@@ -75,8 +75,8 @@ function gerarSlideCapa() {
   pillBorda.getBorder().getLineFill().setSolidFill('#60A5FA', 0.35); pillBorda.getBorder().setWeight(1);
   const pillT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, pillY, pillW, pillH);
   pillT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  pillT.getText().setText('PERÍODO DE REFERÊNCIA · ' + ref.label).getTextStyle()
-    .setFontSize(10).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  pillT.getText().setText(ref.nome + ' ' + ref.ano).getTextStyle()
+    .setFontSize(11).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
   pillT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   // Rodapé
