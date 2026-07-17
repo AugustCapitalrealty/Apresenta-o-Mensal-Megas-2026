@@ -96,7 +96,16 @@ function gerarApresentacaoCompleta_() {
     { nome: 'DRE — Realizado + Orçado',            fn: gerarSlideDRE },
     { nome: 'DRE — Realizado + Ritmo',             fn: gerarSlideDREComRitmo },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
-    { nome: 'Capa Seção - Utilities',              fn: () => gerarCapaSecao('UTILITIES', 'GERAÇÃO E CONSUMO', 'UTILITIES') },
+    // Mega Curitiba tem o projeto de Utilities (geração/consumo próprios);
+    // Itajaí e Esteio ainda não, então entram com a capa mais genérica de
+    // Gestão Sustentável (mesma seção, foto e título diferentes).
+    { nome: 'Capa Seção - Utilities/Sustentabilidade', fn: () => {
+        if (getProjetoAtivo().nome === 'Mega Curitiba') {
+          gerarCapaSecao('UTILITIES', 'GERAÇÃO E CONSUMO', 'UTILITIES');
+        } else {
+          gerarCapaSecao('GESTÃO', 'SUSTENTÁVEL', 'SUSTENTAVEL');
+        }
+      } },
     { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
     { nome: 'Capa Seção - Documentação',           fn: () => gerarCapaSecao('DOCUMENTAÇÃO', 'LEGAL', 'DOCUMENTACAO') },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },

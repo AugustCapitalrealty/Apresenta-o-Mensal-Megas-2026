@@ -4,16 +4,18 @@
  *
  * Cada seção tem sua ESTÉTICA ÚNICA: além da foto de fundo + véu azul, um
  * "motivo" geométrico próprio que remete ao tema (formas desenhadas só com
- * shapes nativos do Slides — nada de ícone externo) e uma cor de acento
- * específica:
- *   PREVENTIVA   → grade de plano (calendário)     · verde
- *   CORRETIVA    → diamante + barra (reparo/chave)  · laranja
- *   CONTRATADOS  → anéis entrelaçados (parceria)    · azul
- *   INTERNOS     → skyline de barras (predial/time) · azul-céu
- *   PATRIMONIAL  → cadeado (segurança)              · índigo
- *   OPERACIONAL  → barras crescentes + seta (fin.)  · dourado
- *   UTILITIES    → sol com raios (energia)          · âmbar
- *   DOCUMENTACAO → pilha de papéis (jurídico)       · violeta
+ * shapes nativos do Slides — nada de ícone externo) e uma cor de acento.
+ * As cores de acento vêm TODAS do design system (CR_DESIGN_SYSTEM em
+ * 01_Config.gs) — nada de tom fora da paleta oficial:
+ *   PREVENTIVA   → grade de plano (calendário)        · accentGreen
+ *   CORRETIVA    → alerta/exclamação (ação corretiva) · accentOrange
+ *   CONTRATADOS  → anéis entrelaçados (parceria)       · brandLight
+ *   INTERNOS     → skyline de barras (predial/time)    · brandSoft
+ *   PATRIMONIAL  → cadeado (segurança)                 · accentRed
+ *   OPERACIONAL  → barras crescentes + seta (fin.)     · azul-destaque (#60A5FA, já usado em toda a capa)
+ *   UTILITIES    → medidor/bateria (energia)           · brandMed
+ *   SUSTENTAVEL  → anéis de crescimento + broto (ESG)  · accentGreen
+ *   DOCUMENTACAO → pilha de papéis (jurídico)           · brandSoft
  *
  * Foto de fundo por CATEGORIA (FOTOS_SECAO em 01_Config.gs, chave passada
  * como 3º argumento). Sem foto → capaFotoId da cidade → fundo escuro premium.
@@ -21,18 +23,24 @@
  * PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
  */
 
-// Cor de acento por categoria (usada no motivo, na 2ª linha do título e na
-// sublinha). Categoria sem entrada cai no azul-claro padrão da marca.
-const SEC_ACENTO = {
-  PREVENTIVA:   '#4ADE80',
-  CORRETIVA:    '#FB923C',
-  CONTRATADOS:  '#60A5FA',
-  INTERNOS:     '#38BDF8',
-  PATRIMONIAL:  '#818CF8',
-  OPERACIONAL:  '#FCD34D',
-  UTILITIES:    '#FBBF24',
-  DOCUMENTACAO: '#A78BFA'
-};
+// Cor de acento por categoria — só cores do CR_DESIGN_SYSTEM (mais o azul
+// #60A5FA, que já é o destaque padrão usado em toda a Capa/Encerramento).
+// Categoria sem entrada cai nesse mesmo azul.
+function _secAcento_(chave) {
+  const DS = CR_DESIGN_SYSTEM.colors;
+  const MAPA = {
+    PREVENTIVA:   DS.accentGreen,
+    CORRETIVA:    DS.accentOrange,
+    CONTRATADOS:  DS.brandLight,
+    INTERNOS:     DS.brandSoft,
+    PATRIMONIAL:  DS.accentRed,
+    OPERACIONAL:  '#60A5FA',
+    UTILITIES:    DS.brandMed,
+    SUSTENTAVEL:  DS.accentGreen,
+    DOCUMENTACAO: DS.brandSoft
+  };
+  return MAPA[chave] || '#60A5FA';
+}
 
 function gerarCapaSecao(linha1, linha2, chave) {
   const deck  = getDeckAtivo();
@@ -42,7 +50,7 @@ function gerarCapaSecao(linha1, linha2, chave) {
   const DS = CR_DESIGN_SYSTEM;
 
   const k = String(chave || linha2 || '').toUpperCase();
-  const acento = SEC_ACENTO[k] || '#60A5FA';
+  const acento = _secAcento_(k);
   const fotoId = (typeof FOTOS_SECAO !== 'undefined' && FOTOS_SECAO[k]) || projeto.capaFotoId;
 
   // ── Fundo: foto da categoria (+ véu/scrim) ou fundo escuro premium ────────
@@ -103,6 +111,7 @@ function _secDesenharMotivo_(chave, s, cx, cy, cor) {
     case 'PATRIMONIAL':  return _secMotPatrimonial_(s, cx, cy, cor);
     case 'OPERACIONAL':  return _secMotOperacional_(s, cx, cy, cor);
     case 'UTILITIES':    return _secMotUtilities_(s, cx, cy, cor);
+    case 'SUSTENTAVEL':  return _secMotSustentavel_(s, cx, cy, cor);
     case 'DOCUMENTACAO': return _secMotDocumentacao_(s, cx, cy, cor);
     default:
       _capaAnel_(s, cx - 80, cy - 70, 150, '#FFFFFF', 1.25, 0.12);
@@ -133,18 +142,18 @@ function _secMotPreventiva_(s, cx, cy, cor) {
   }
 }
 
-// CORRETIVA — diamante + barra diagonal (reparo/chave), núcleo em destaque.
+// CORRETIVA — sinal de alerta (triângulo + exclamação): ação corretiva
+// nasce de um problema identificado — símbolo universal, direto ao ponto.
 function _secMotCorretiva_(s, cx, cy, cor) {
-  const d = 90;
-  const dia = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - d / 2, cy - d / 2, d, d);
-  dia.getFill().setTransparent();
-  dia.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.5); dia.getBorder().setWeight(2);
-  dia.setRotation(45);
-  const bar = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 2.5, cy - d * 0.72 / 2, 5, d * 0.72);
-  bar.getFill().setSolidFill('#FFFFFF', 0.4); bar.getBorder().setTransparent();
-  bar.setRotation(45);
-  const dot = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 9, cy - 9, 18, 18);
-  dot.getFill().setSolidFill(cor, 0.9); dot.getBorder().setTransparent();
+  const w = 104, h = 92;
+  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - w / 2, cy - h / 2, w, h);
+  tri.getFill().setTransparent();
+  tri.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.55); tri.getBorder().setWeight(2.5);
+
+  const bar = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 4, cy - 8, 8, 26);
+  bar.getFill().setSolidFill(cor, 0.92); bar.getBorder().setTransparent();
+  const dot = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 5, cy + 24, 10, 10);
+  dot.getFill().setSolidFill(cor, 0.92); dot.getBorder().setTransparent();
 }
 
 // CONTRATADOS — dois anéis entrelaçados (parceria/contrato), um em destaque.
@@ -168,7 +177,7 @@ function _secMotInternos_(s, cx, cy, cor) {
 function _secMotPatrimonial_(s, cx, cy, cor) {
   _capaAnel_(s, cx - 20, cy - 42, 40, '#FFFFFF', 3, 0.5);   // arco/shackle
   const body = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 28, cy - 14, 56, 48);
-  body.getFill().setSolidFill(DS_C().brandDark, 0.55);      // corpo semiopaco cobre a base do arco
+  body.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);   // cobre a base do arco
   body.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6); body.getBorder().setWeight(2.5);
   const kh = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 6, cy + 2, 12, 12);
   kh.getFill().setSolidFill(cor, 0.95); kh.getBorder().setTransparent();
@@ -188,19 +197,43 @@ function _secMotOperacional_(s, cx, cy, cor) {
   _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
 }
 
-// UTILITIES — sol com raios (energia), núcleo em destaque.
+// UTILITIES — medidor de energia (corpo + agulha + escala), miolo em
+// destaque. Substitui o sol/raios anterior (não aprovado).
 function _secMotUtilities_(s, cx, cy, cor) {
-  const R = 52;
-  for (let i = 0; i < 8; i++) {
-    const a = i * 45 * Math.PI / 180;
-    const ray = s.insertShape(SlidesApp.ShapeType.RECTANGLE,
-      cx + Math.cos(a) * R - 9, cy + Math.sin(a) * R - 2, 18, 4);
-    ray.getFill().setSolidFill('#FFFFFF', 0.5); ray.getBorder().setTransparent();
-    ray.setRotation(i * 45);
+  const R = 46;
+  // Corpo do medidor (semicírculo aproximado por anel + máscara)
+  _capaAnel_(s, cx - R, cy - R, R * 2, '#FFFFFF', 2.5, 0.5);
+  // Escala: tracinhos ao redor do arco superior
+  for (let i = 0; i <= 6; i++) {
+    const a = (200 - i * 40) * Math.PI / 180;   // varre ~200° a -40°
+    const x1 = cx + Math.cos(a) * (R - 10), y1 = cy - Math.sin(a) * (R - 10);
+    const x2 = cx + Math.cos(a) * (R - 2),  y2 = cy - Math.sin(a) * (R - 2);
+    const tick = s.insertShape(SlidesApp.ShapeType.RECTANGLE, Math.min(x1, x2), Math.min(y1, y2), 2.5, 2.5);
+    tick.getFill().setSolidFill('#FFFFFF', 0.6); tick.getBorder().setTransparent();
   }
-  _capaAnel_(s, cx - 26, cy - 26, 52, '#FFFFFF', 2.5, 0.55);
-  const core = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 16, cy - 16, 32, 32);
-  core.getFill().setSolidFill(cor, 0.85); core.getBorder().setTransparent();
+  // Agulha apontando para cima-direita (consumo alto) na cor de acento
+  const agulha = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 1.5, cy - R * 0.68, 3, R * 0.68);
+  agulha.getFill().setSolidFill(cor, 0.95); agulha.getBorder().setTransparent();
+  agulha.setRotation(35);
+  const eixo = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 8, cy - 8, 16, 16);
+  eixo.getFill().setSolidFill(cor, 0.95); eixo.getBorder().setTransparent();
+  // Base do medidor
+  _secRet_(s, cx - 34, cy + 4, 68, 8, '#FFFFFF', 0.5, true);
+}
+
+// SUSTENTAVEL — anéis de crescimento (troncos) + broto no topo: gestão
+// sustentável / ESG, sem depender de sol/energia literal.
+function _secMotSustentavel_(s, cx, cy, cor) {
+  _capaAnel_(s, cx - 58, cy - 46, 116, '#FFFFFF', 1.25, 0.14);
+  _capaAnel_(s, cx - 40, cy - 28, 80,  '#FFFFFF', 1.25, 0.28);
+  _capaAnel_(s, cx - 20, cy - 8,  40,  cor, 1.75, 0.9);
+
+  const caule = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 2, cy - 66, 4, 22);
+  caule.getFill().setSolidFill(cor, 0.85); caule.getBorder().setTransparent();
+  const f1 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - 20, cy - 80, 20, 18);
+  f1.getFill().setSolidFill(cor, 0.85); f1.getBorder().setTransparent(); f1.setRotation(-25);
+  const f2 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx,      cy - 80, 20, 18);
+  f2.getFill().setSolidFill(cor, 0.85); f2.getBorder().setTransparent(); f2.setRotation(25);
 }
 
 // DOCUMENTACAO — pilha de papéis (jurídico), faixa superior em destaque.
@@ -213,6 +246,3 @@ function _secMotDocumentacao_(s, cx, cy, cor) {
     _secRet_(s, cx - 22, cy - 18 + i * 12, i === 3 ? 24 : 40, 3, '#94A3B8', 0.9, false);
   }
 }
-
-// Atalho para o brandDark (usado no corpo do cadeado).
-function DS_C() { return CR_DESIGN_SYSTEM.colors; }

@@ -74,7 +74,8 @@ const FOTOS_SECAO = {
   INTERNOS:     '1mP_ousYFrNSDV8rwPhPtXdYoOEYaW_3Z',
   PATRIMONIAL:  '1kua0uho-3-yzLtE4IR2y_epaBYtKttsx',
   OPERACIONAL:  '1kXwwPWzU6pimR9vSXY6I5M7eNgNjDC_h',
-  UTILITIES:    '16DLJAVLl8xOsRr8Nhi_OTmnXcEx-URVB',   // Mega Curitiba — geração/consumo de energia
+  UTILITIES:    '16DLJAVLl8xOsRr8Nhi_OTmnXcEx-URVB',   // só Mega Curitiba — geração/consumo de energia
+  SUSTENTAVEL:  '1Sq519lQhsvqVgC1V9w4yVMbIjSDqIVu1',   // Mega Itajaí e Mega Esteio — Gestão Sustentável
   DOCUMENTACAO: '1fA13cXRur_UbMtLAjRYGbOyjaauNiOZ0'
 };
 

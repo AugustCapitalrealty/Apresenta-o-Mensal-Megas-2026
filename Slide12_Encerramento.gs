@@ -75,23 +75,33 @@ function gerarSlideEncerramento() {
   Logger.log('Slide 12 (Encerramento premium) gerado.');
 }
 
-// Card de contato premium (glass): nome + cargo centralizados. Sem avatar de
-// iniciais (removido — o "MC/FE" não ficava legal); um filete azul curto no
-// topo dá o toque de marca sem poluir.
+// Card de contato premium (glass): avatar com as duas iniciais + nome/cargo.
 function _encCardContato(slide, x, y, w, h, nome, cargo) {
   const DS = CR_DESIGN_SYSTEM;
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill('#FFFFFF', 0.06);
   bg.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.18); bg.getBorder().setWeight(1);
 
-  // Filete de destaque no topo do card
-  _capaGradiente_(slide, x + w / 2 - 22, y + 10, 44, 3, DS.colors.brandLight, '#60A5FA', { steps: 12 });
-
-  const nb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 16, w - 24, 22);
-  nb.getText().setText(nome).getTextStyle()
+  const d = 36, ay = y + (h - d) / 2;
+  const av = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 14, ay, d, d);
+  av.getFill().setSolidFill(DS.colors.brandLight); av.getBorder().setTransparent();
+  const iniciais = String(nome || '').trim().split(/\s+/).slice(0, 2)
+    .map(p => p.charAt(0).toUpperCase()).join('');
+  // Caixa de texto mais larga que o círculo (folga simétrica, sem fundo/
+  // borda própria — não altera nada visível): vence o recuo interno padrão
+  // do Slides, que fazia "MC" quebrar em duas linhas (M / C).
+  const folga = 10;
+  const avT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14 - folga, ay, d + folga * 2, d);
+  avT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  avT.getText().setText(iniciais).getTextStyle()
     .setFontSize(13).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  nb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  const rb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 37, w - 24, 16);
+  avT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  const tx = x + 62, tw = w - 74;
+  const nb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 11, tw, 20);
+  nb.getText().setText(nome).getTextStyle()
+    .setFontSize(12).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  const rb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 31, tw, 16);
   rb.getText().setText(cargo).getTextStyle()
     .setFontSize(8.5).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);
   rb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
