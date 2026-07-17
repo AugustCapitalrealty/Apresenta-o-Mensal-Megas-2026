@@ -1,143 +1,92 @@
 // ==========================================
 // ARQUIVO: Slide12_Encerramento.gs
-// SLIDE 12 — ENCERRAMENTO (CAPA FINAL)
+// SLIDE 12 — ENCERRAMENTO (CAPA FINAL, versão premium)
+// Mantém a frase institucional, o slogan, o "Obrigado" e os contatos por
+// cidade — redesenhados na linguagem premium das capas.
+// PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
 // ==========================================
 
 function gerarSlideEncerramento() {
-  const deck = getDeckAtivo();
+  const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill('#151E49'); // Brand Dark Blue
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  const DS = CR_DESIGN_SYSTEM;
 
-  const PageWidth = deck.getPageWidth();
-  const PageHeight = deck.getPageHeight();
+  // Fundo premium (sem espinha lateral — capa final é mais centrada/simétrica)
+  _capaFundo_(slide, W, H, { espinha: false });
 
-  // --- 1. ELEMENTOS DE FUNDO (Formas Geométricas) ---
+  // Overline centralizado
+  const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.18, W - 80, 18);
+  over.getText().setText(_capaEspacado_('Obrigado')).getTextStyle()
+    .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
+  over.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  // Triângulo no canto superior direito
-  const triangle = slide.insertShape(SlidesApp.ShapeType.RIGHT_TRIANGLE, PageWidth - 300, -100, 400, 400);
-  triangle.getFill().setSolidFill('#065CA9'); // Light Blue
-  triangle.getFill().setSolidFill(CORES.lightBlue, 0.1); // 10% Opacidade
-  triangle.getBorder().setTransparent();
-  triangle.setRotation(180); // Rotacionar para encaixar no canto
+  // Mensagem principal
+  const msg = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.18 + 26, W - 80, 100);
+  msg.getText().setText('INFRAESTRUTURA INSPIRA.\nLOGÍSTICA CONECTA.').getTextStyle()
+    .setFontSize(34).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  msg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(102);
+  const tr = msg.getText();
+  tr.getRange(15, 23).getTextStyle().setForegroundColor('#60A5FA');  // "INSPIRA."
+  tr.getRange(34, 42).getTextStyle().setForegroundColor('#60A5FA');  // "CONECTA."
 
-  // Círculo no canto inferior esquerdo
-  const circle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -100, PageHeight - 300, 500, 500);
-  circle.getFill().setSolidFill('#003D7B'); // Medium Blue
-  circle.getFill().setSolidFill(CORES.mediumBlue, 0.15); // 15% Opacidade
-  circle.getBorder().setTransparent();
-
-  // --- 2. TEXTO PRINCIPAL (REDUZIDO) ---
-  const centerY = (PageHeight / 2) - 60; // Ajustado centro visual
-
-  // Mensagem Principal
-  const msgBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 50, centerY - 80, PageWidth - 100, 120);
-  const msgText = msgBox.getText();
-  msgText.setText("INFRAESTRUTURA INSPIRA.\nLOGÍSTICA CONECTA.");
-
-  // Estilização Geral (Fonte Reduzida de 48 -> 36)
-  const style = msgText.getTextStyle();
-  style.setFontSize(36).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
-  msgText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-  // CORREÇÃO: setContentAlignment em vez de getContentAlignment
-  msgBox.setContentAlignment(SlidesApp.ContentAlignment.BOTTOM);
-
-  const highlightColor = '#60A5FA';
-
-  // Destacar palavras chave
-  const textRange = msgBox.getText();
-  const inspiraRange = textRange.getRange(15, 23); // "INSPIRA."
-  inspiraRange.getTextStyle().setForegroundColor(highlightColor);
-
-  const conectaRange = textRange.getRange(34, 42); // "CONECTA."
-  conectaRange.getTextStyle().setForegroundColor(highlightColor);
-
-
-  // --- 3. SLOGAN E AGRADECIMENTO (REDUZIDO) ---
-
-  // Slogan com linhas
-  const sloganY = centerY + 50;
-  const sloganText = "EXPANDIR EFICIÊNCIA";
-
-  const sloganBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, (PageWidth/2) - 150, sloganY, 300, 25);
-  // Fonte Reduzida de 14 -> 12
-  sloganBox.getText().setText(sloganText).getTextStyle().setFontSize(12).setForegroundColor('#CBD5E1').setFontFamily('Montserrat').setBold(true);
+  // Slogan com linhas + faixa de gradiente central
+  const sloganY = H * 0.18 + 132;
+  const sloganBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, (W / 2) - 160, sloganY, 320, 22);
+  sloganBox.getText().setText('EXPANDIR EFICIÊNCIA').getTextStyle()
+    .setFontSize(12).setBold(true).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.titles);
   sloganBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  _capaGradiente_(slide, (W / 2) - 230, sloganY + 11, 55, 2, DS.colors.brandDark, '#60A5FA', { steps: 16 });
+  _capaGradiente_(slide, (W / 2) + 175, sloganY + 11, 55, 2, '#60A5FA', DS.colors.brandDark, { steps: 16 });
 
-  // Linhas ao lado do slogan
-  const lineW = 50; // Reduzido
-  const lineLeft = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, (PageWidth/2) - 210, sloganY + 12, lineW, 1.5);
-  lineLeft.getFill().setSolidFill('#065CA9'); lineLeft.getBorder().setTransparent();
-
-  const lineRight = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, (PageWidth/2) + 160, sloganY + 12, lineW, 1.5);
-  lineRight.getFill().setSolidFill('#065CA9'); lineRight.getBorder().setTransparent();
-
-  // "Obrigado!"
-  const thanksBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 50, sloganY + 40, PageWidth - 100, 30);
-  // Fonte Reduzida de 24 -> 20
-  thanksBox.getText().setText("Obrigado!").getTextStyle().setFontSize(20).setItalic(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
-  thanksBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-
-  // --- 4. SEÇÃO DE CONTATOS (por cidade, definidos em 01_Config.gs) ---
-  const contactY = sloganY + 78;   // respiro entre os cards e o logo do rodapé
-  const cardW = 260;
-  const cardH = 60;
-  const cardGap = 30;
-
+  // ── Contatos (cards glass) ──────────────────────────────────────────────
   const contatos = getProjetoAtivo().contatos || [];
+  const cardW = 250, cardH = 58, cardGap = 26;
+  const contatoY = sloganY + 44;
   const totalW = (cardW * contatos.length) + (cardGap * Math.max(contatos.length - 1, 0));
-  const startX = (PageWidth - totalW) / 2;
-
+  const startX = (W - totalW) / 2;
   contatos.forEach((c, i) => {
-    desenharCardContato(slide, startX + i * (cardW + cardGap), contactY, cardW, cardH, c.nome, c.cargo);
+    _encCardContato(slide, startX + i * (cardW + cardGap), contatoY, cardW, cardH, c.nome, c.cargo);
   });
 
-
-  // --- 5. LOGO RODAPÉ ---
-  const logoW = 180;
-  const logoH = 40;
-  const logoX = (PageWidth - logoW) / 2;
-  const logoY = PageHeight - 60;
-
-  const logoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, logoX, logoY, logoW, logoH);
-  logoBox.getText().setText("CAPITAL REALTY").getTextStyle().setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
+  // ── Wordmark rodapé (centralizado) ──────────────────────────────────────
+  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, W / 2 - 60, H - 58, W / 2 + 60, H - 58);
+  sep.getLineFill().setSolidFill('#334155'); sep.setWeight(1);
+  const logoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 50, W - 80, 24);
+  logoBox.getText().setText('CAPITAL REALTY').getTextStyle()
+    .setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
   logoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 28, W - 80, 14);
+  logoSub.getText().setText('infraestrutura logística').getTextStyle()
+    .setFontSize(7.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+  logoSub.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  Logger.log("Slide 12 (Encerramento) gerado com sucesso.");
+  Logger.log('Slide 12 (Encerramento premium) gerado.');
 }
 
-// --- FUNÇÃO AUXILIAR: CARD DE CONTATO ---
-function desenharCardContato(slide, x, y, w, h, nome, cargo) {
-  // Fundo
+// Card de contato premium (glass): avatar com iniciais + nome + cargo.
+function _encCardContato(slide, x, y, w, h, nome, cargo) {
+  const DS = CR_DESIGN_SYSTEM;
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill('#FFFFFF', 0.1);
-  bg.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.2);
-  bg.getBorder().setWeight(1);
+  bg.getFill().setSolidFill('#FFFFFF', 0.06);
+  bg.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.18); bg.getBorder().setWeight(1);
 
-  // Círculo com as iniciais do nome (duas primeiras palavras)
-  const iconSize = 35;
-  const iconBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 15, y + (h - iconSize)/2, iconSize, iconSize);
-  iconBg.getFill().setSolidFill('#065CA9');
-  iconBg.getBorder().setTransparent();
-
+  const d = 36, ay = y + (h - d) / 2;
+  const av = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 14, ay, d, d);
+  av.getFill().setSolidFill(DS.colors.brandLight); av.getBorder().setTransparent();
   const iniciais = String(nome || '').trim().split(/\s+/).slice(0, 2)
     .map(p => p.charAt(0).toUpperCase()).join('');
-  const iconTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + (h - iconSize)/2, iconSize, iconSize);
-  iconTxt.getText().setText(iniciais).getTextStyle()
-    .setFontSize(12).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
-  iconTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  iconTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const avT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14, ay, d, d);
+  avT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  avT.getText().setText(iniciais).getTextStyle()
+    .setFontSize(13).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  avT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  // Informações de Texto
-  const textX = x + 60; // Recuo ajustado
-  const textW = w - 70;
-
-  // Nome (Fonte 14->11)
-  const nameBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, y + 10, textW, 20);
-  nameBox.getText().setText(nome).getTextStyle().setFontSize(11).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
-
-  // Cargo (Fonte 10->8)
-  const roleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, y + 30, textW, 15);
-  roleBox.getText().setText(cargo).getTextStyle().setFontSize(8).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
+  const tx = x + 62, tw = w - 74;
+  const nb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 11, tw, 20);
+  nb.getText().setText(nome).getTextStyle()
+    .setFontSize(12).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  const rb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 31, tw, 16);
+  rb.getText().setText(cargo).getTextStyle()
+    .setFontSize(8.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
 }

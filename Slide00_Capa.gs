@@ -1,9 +1,11 @@
 /**
  * ARQUIVO: Slide00_Capa.gs
- * SLIDE 00 — CAPA DE ABERTURA
- * Baseada na capa do relatório manual ("RESULTADOS FACILITIES"),
- * redesenhada no design system Capital Realty.
- * O mês de referência vem dos DADOS (obterMesReferencia_ em 02_Dados.gs).
+ * SLIDE 00 — CAPA DE ABERTURA (versão premium)
+ * Redesenhada no design system Capital Realty, com fundo escuro institucional,
+ * profundidade em camadas, faixa de destaque em gradiente e o nome do Mega
+ * como herói. Mês de referência vem dos DADOS (obterMesReferencia_).
+ *
+ * PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
  */
 
 function gerarSlideCapa() {
@@ -12,67 +14,65 @@ function gerarSlideCapa() {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const projeto = getProjetoAtivo();
   const DS = CR_DESIGN_SYSTEM;
+  const ref = obterMesReferencia_();
 
-  slide.getBackground().setSolidFill(DS.colors.brandDark);
+  // Fundo premium + espinha lateral de gradiente
+  _capaFundo_(slide, W, H);
 
-  // Grafismos decorativos
-  const e1 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 260, -160, 520, 520);
-  e1.getFill().setSolidFill(DS.colors.brandLight, 0.08); e1.getBorder().setTransparent();
-  const e2 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -180, H - 190, 430, 430);
-  e2.getFill().setSolidFill(DS.colors.brandMed, 0.2); e2.getBorder().setTransparent();
+  // Marca d'água tonal grande (ano) no canto inferior direito — sutil
+  const wm = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, W - 320, H - 190, 300, 150);
+  wm.getText().setText(String(ref.ano)).getTextStyle()
+    .setFontSize(120).setBold(true).setForegroundColor('#1C2A5E').setFontFamily(DS.typography.titles);
+  wm.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 
-  // Logo (texto) no topo esquerdo
-  const logo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, 24, 320, 26);
-  logo.getText().setText('CAPITAL REALTY').getTextStyle()
-    .setFontSize(15).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, 46, 320, 16);
-  logoSub.getText().setText('infraestrutura logística').getTextStyle()
-    .setFontSize(8).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
+  // Wordmark Capital Realty (topo esquerdo)
+  _capaWordmark_(slide, 42, 30);
 
-  // Linha de destaque acima do título
-  const acc = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 42, 108, 60, 4);
-  acc.getFill().setSolidFill(DS.colors.brandLight); acc.getBorder().setTransparent();
+  // Co-brand: nome do Mega no topo direito (chip discreto)
+  const chipW = 150, chipH = 26, chipX = W - 42 - chipW, chipY = 30;
+  const chip = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, chipX, chipY, chipW, chipH);
+  chip.getFill().setSolidFill('#FFFFFF', 0.08);
+  chip.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.18); chip.getBorder().setWeight(1);
+  const chipT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, chipX, chipY, chipW, chipH);
+  chipT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  chipT.getText().setText(projeto.nome.toUpperCase()).getTextStyle()
+    .setFontSize(9).setBold(true).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.titles);
+  chipT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // Overline espaçado
+  const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, H * 0.30, W - 200, 20);
+  over.getText().setText(_capaEspacado_('Relatório Operacional de Facilities')).getTextStyle()
+    .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
+
+  // Barra de destaque em gradiente acima do título
+  _capaGradiente_(slide, 46, H * 0.30 + 26, 66, 4, DS.colors.brandLight, '#60A5FA', { steps: 12 });
 
   // Título principal
-  const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, 118, W - 120, 110);
+  const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
   titulo.getText().setText('RESULTADOS\nFACILITIES').getTextStyle()
-    .setFontSize(38).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+    .setFontSize(44).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  titulo.getText().getParagraphStyle().setLineSpacing(96);
 
-  // Cidade
-  const cidade = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, 228, W - 120, 36);
+  // Cidade (herói do co-branding)
+  const cidade = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H * 0.30 + 158, W - 120, 40);
   cidade.getText().setText(projeto.nome).getTextStyle()
-    .setFontSize(22).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
+    .setFontSize(24).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
-  // Pill "RELATÓRIO OPERACIONAL" + mês de referência (mês anterior = mês fechado)
-  const pillY = 282;
-  const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 42, pillY, 158, 26);
-  pill.getFill().setSolidFill(DS.colors.brandLight); pill.getBorder().setTransparent();
-  const pillTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, pillY, 158, 26);
-  pillTxt.getText().setText('RELATÓRIO OPERACIONAL').getTextStyle()
-    .setFontSize(8).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  pillTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  pillTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-  // Mês de referência = o mesmo mês dos DADOS (obterMesReferencia_ em 02_Dados.gs),
-  // para a capa nunca divergir do conteúdo apresentado.
-  const mesLabel = obterMesReferencia_().label;
-  const data = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 212, pillY, 220, 26);
-  data.getText().setText(mesLabel).getTextStyle()
-    .setFontSize(12).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);
-  data.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  // Pill de período em gradiente
+  const pillY = H * 0.30 + 202, pillW = 250, pillH = 30;
+  _capaGradiente_(slide, 42, pillY, pillW, pillH, DS.colors.brandMed, DS.colors.brandLight, { steps: 24 });
+  // Cantos arredondados por cima (moldura translúcida)
+  const pillBorda = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 42, pillY, pillW, pillH);
+  pillBorda.getFill().setTransparent();
+  pillBorda.getBorder().getLineFill().setSolidFill('#60A5FA', 0.35); pillBorda.getBorder().setWeight(1);
+  const pillT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, pillY, pillW, pillH);
+  pillT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  pillT.getText().setText('PERÍODO DE REFERÊNCIA · ' + ref.label).getTextStyle()
+    .setFontSize(10).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  pillT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   // Rodapé
-  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 42, H - 42, W - 42, H - 42);
-  sep.getLineFill().setSolidFill('#334155'); sep.setWeight(1);
+  _capaRodape_(slide, W, H, 'CAPITAL REALTY · INFRAESTRUTURA LOGÍSTICA', 'Expandir Eficiência');
 
-  const footL = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H - 36, 340, 18);
-  footL.getText().setText('CAPITAL REALTY INFRAESTRUTURA LOGÍSTICA').getTextStyle()
-    .setFontSize(7).setBold(true).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
-
-  const footR = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, W - 242, H - 36, 200, 18);
-  footR.getText().setText('• Expandir Eficiência').getTextStyle()
-    .setFontSize(9).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  footR.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-
-  Logger.log('Slide 00 (Capa) gerado → ' + mesLabel);
+  Logger.log('Slide 00 (Capa premium) gerado → ' + ref.label);
 }
