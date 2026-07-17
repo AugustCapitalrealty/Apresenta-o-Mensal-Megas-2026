@@ -51,7 +51,10 @@ function gerarSlideCapa() {
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
   titulo.getText().setText('RESULTADOS\nFACILITIES').getTextStyle()
     .setFontSize(44).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  titulo.getText().getParagraphStyle().setLineSpacing(96);
+  // O Slides não aceita lineSpacing abaixo de 100 (mínimo "espaçamento
+  // simples" da própria interface) — usar <100 lança "Invalid argument:
+  // spacing" na API.
+  titulo.getText().getParagraphStyle().setLineSpacing(100);
 
   // Cidade (herói do co-branding)
   const cidade = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H * 0.30 + 158, W - 120, 40);
