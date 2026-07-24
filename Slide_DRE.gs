@@ -107,7 +107,7 @@ function _gerarSlideDRE_(modo) {
     const doCat = d.rubricas.filter(r => r.categoria === nomeCat);
     if (!doCat.length) return;
     linhas.push({ tipo: 'categoria', nome: nomeCat });
-    doCat.forEach(r => linhas.push({ tipo: 'item', nome: r.nome, b: r }));
+    doCat.forEach(r => linhas.push({ tipo: 'item', nome: r.nome, b: r, destaque: false }));
   });
 
   const tY = blocoY + blocoH + 14 + 2;
@@ -171,7 +171,7 @@ function _gerarSlideDRE_(modo) {
     const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + indent, ry, rubricaW - 4 - indent, hAtual);
     lab.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     lab.getText().setText(nome).getTextStyle()
-      .setFontSize(fs).setBold(l.destaque).setForegroundColor(corBase).setFontFamily(DS.typography.body);
+      .setFontSize(fs).setBold(!!l.destaque).setForegroundColor(corBase).setFontFamily(DS.typography.body);
 
     // Blocos de valores (o 3º bloco muda com o modo: anualOrc ou anual)
     [{ bl: l.b.mes, aa: l.b.aaMes }, { bl: l.b.acum, aa: l.b.aaAcum }, { bl: l.b[campoAnual], aa: l.b.aaAno }]
@@ -194,7 +194,7 @@ function _gerarSlideDRE_(modo) {
           corPct = l.destaque ? '#FFFFFF' : CORES.textGray;
         }
         const celulas = [
-          { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: l.destaque },
+          { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: !!l.destaque },
           { txt: mil(bl.real), cor: corBase,                                  bold: true       },
           { txt: txtPct,       cor: corPct,                                   bold: true       },
           { txt: mil(blk.aa),  cor: l.destaque ? '#94A3B8' : '#64748B',       bold: false      }

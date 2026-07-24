@@ -38,6 +38,13 @@ function gerarSoCustoM2QuadrimestreCuritiba() { setProjetoAtivo('CURITIBA'); ger
 function gerarSoCustoM2QuadrimestreItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCustoM2Quadrimestre(); }
 function gerarSoCustoM2QuadrimestreEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCustoM2Quadrimestre(); }
 
+// DRE avulso — só a versão Realizado + Ritmo (a que entra na apresentação
+// completa agora). Gera direto na apresentação do Curitiba, sem rodar o
+// resto do fluxo.
+function gerarSoDRECuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDREComRitmo(); }
+function gerarSoDREItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDREComRitmo(); }
+function gerarSoDREEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDREComRitmo(); }
+
 
 // ==========================================
 // PONTOS DE ENTRADA — TODAS AS CIDADES
@@ -90,10 +97,10 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Bridge Variação',                     fn: gerarSlideBridge },
     { nome: 'Bridge Gráfico',                      fn: gerarSlideBridgeGrafico },
     { nome: 'Financeiro Anual',                    fn: gerarSlideFinanceiroAnual },
-    // DRE (aba FINANCEIRO BRIDGE) — Mês + Acumulado sempre pelo Realizado;
-    // a projeção anual (3º bloco) vem em duas páginas: uma pelo Orçado
-    // original, outra pelo Ritmo atual. Linhas ordenadas da maior p/ menor.
-    { nome: 'DRE — Realizado + Orçado',            fn: gerarSlideDRE },
+    // DRE (aba FINANCEIRO BRIDGE) — Mês + Acumulado sempre pelo Realizado; a
+    // projeção anual (3º bloco) pelo Ritmo atual (projeção run-rate). Só essa
+    // página entra na apresentação (a versão "Realizado + Orçado" continua
+    // disponível via gerarSlideDRE(), avulsa, se precisar).
     { nome: 'DRE — Realizado + Ritmo',             fn: gerarSlideDREComRitmo },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
     // Mega Curitiba tem o projeto de Utilities (geração/consumo próprios);
