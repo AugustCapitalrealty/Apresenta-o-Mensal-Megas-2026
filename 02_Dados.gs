@@ -1395,6 +1395,48 @@ function obterDadosPPC_() {
 // Retorna { mesLabel, mesesAcum, rubricas:[{nome, mes, acum, anual,
 // anualOrc}], total } ou null. Rubricas 100% zeradas ficam de fora. Nomes
 // normalizados via padronizarRubrica_ (01_Config.gs).
+
+// ── Categorias do DRE (agrupamento fixo por rubrica) ────────────────────────
+// A pedido do gestor: mostrar o DRE agrupado por categoria contábil em vez
+// de lista solta ordenada por tamanho. Mapeamento FIXO aqui no código (não
+// vem de planilha — combinado assim porque a categorização em si não muda
+// mês a mês). Rubrica da FINANCEIRO BRIDGE que não constar em nenhuma
+// categoria cai em "Outras Despesas" — nunca some do relatório.
+const DRE_CATEGORIAS = [
+  { nome: 'Despesas com Pessoal e Administrativas', itens: [
+    'Despesa de pessoal', 'cursos e seminarios', 'despesa com passagens',
+    'despesas com hospedagem', 'representação e refeição', 'despesa com taxi',
+    'locação de veículos', 'despesa com combustiveis',
+    'quilometragem, estacionamento e pedágio', 'despesas c/veiculos',
+    'outras despesas administrativas'
+  ] },
+  { nome: 'Serviços de Terceiros', itens: [
+    'Assistência jurídica', 'Segurança vigilância', 'Assistencia informatica',
+    'serviços diversos', 'propaganda e publicidade'
+  ] },
+  { nome: 'Manutenção e Conservação', itens: [
+    'limpeza e conservação', 'manutenção imóveis', 'manutenção de bens móveis',
+    'Materiais de Informática'
+  ] },
+  { nome: 'Utilities, Taxas e Consumo', itens: [
+    'Energia eletrica', 'água', 'telefone', 'material consumo',
+    'outras taxas e impostos', 'IPTU', 'SEGURO'
+  ] }
+];
+
+// chave normalizada (_histNorm_) → nome da categoria. Índice construído uma
+// única vez (cache em módulo) a partir de DRE_CATEGORIAS acima.
+let _dreCategoriaPorChave_ = null;
+function dreCategoriaDe_(chave) {
+  if (!_dreCategoriaPorChave_) {
+    _dreCategoriaPorChave_ = {};
+    DRE_CATEGORIAS.forEach(cat => {
+      cat.itens.forEach(item => { _dreCategoriaPorChave_[_histNorm_(item)] = cat.nome; });
+    });
+  }
+  return _dreCategoriaPorChave_[chave] || 'Outras Despesas';
+}
+
 function obterDadosDRE_() {
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
@@ -1462,7 +1504,7 @@ function obterDadosDRE_() {
       const b = consolidar(data[r]);
       const temValor = b.anual.orc !== 0 || b.anual.real !== 0;
       if (!temValor) continue;
-      const nova = { nome: padronizarRubrica_(nome), _chave: chave, mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc };
+      const nova = { nome: padronizarRubrica_(nome), _chave: chave, categoria: dreCategoriaDe_(chave), mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc };
       const existente = porChave[chave];
       if (!existente) {
         porChave[chave] = nova;
