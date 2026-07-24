@@ -21,14 +21,41 @@
  * orçamento), acima de 100% vermelho (estourou). Linha TOTAL (DESPESAS
  * OPERACIONAIS) sempre no topo, em destaque; as demais rubricas vêm
  * AGRUPADAS POR CATEGORIA (pedido do gestor, mais fácil de visualizar do
- * que lista solta) — categorias fixas em DRE_CATEGORIAS (02_Dados.gs),
- * cada uma como uma faixa, com as rubricas (sub-itens) indentadas embaixo
- * na ordem de materialidade (maior primeiro, obterDadosDRE_ já entrega
- * ordenado); dentro do grupo, a ordem original é preservada pelo filter.
+ * que lista solta) — categorias fixas em DRE_CATEGORIAS (02_Dados.gs).
+ * Cada categoria é uma linha de SUBTOTAL (soma das rubricas dela, mesmas
+ * colunas Meta/Realizado/%Meta/2025 do TOTAL — _dreSomarCategoria_ abaixo),
+ * com as rubricas (sub-itens) indentadas embaixo, na ordem de materialidade
+ * (maior primeiro, obterDadosDRE_ já entrega ordenado).
  */
 
 function gerarSlideDRE()         { _gerarSlideDRE_('orcado'); }
 function gerarSlideDREComRitmo() { _gerarSlideDRE_('ritmo');  }
+
+// Soma Meta (orç) e Realizado das rubricas de uma categoria, nos 4 recortes
+// que obterDadosDRE_ já calcula por rubrica (mes/acum/anual/anualOrc) — vira
+// a linha de SUBTOTAL da categoria. A coluna "2025" (aaMes/aaAcum/aaAno)
+// soma só os valores que existirem (rubrica sem "Financeiro 2025" não conta
+// nem quebra o subtotal); se nenhuma rubrica do grupo tiver 2025, fica null
+// (mostra "-", igual ao resto da tabela quando falta a fonte).
+function _dreSomarCategoria_(itens) {
+  const blocos = {
+    mes: { orc: 0, real: 0 }, acum: { orc: 0, real: 0 },
+    anual: { orc: 0, real: 0 }, anualOrc: { orc: 0, real: 0 }
+  };
+  itens.forEach(r => {
+    ['mes', 'acum', 'anual', 'anualOrc'].forEach(k => {
+      blocos[k].orc += r[k].orc; blocos[k].real += r[k].real;
+    });
+  });
+  const somaAA = campo => {
+    const vals = itens.map(r => r[campo]).filter(v => v != null);
+    return vals.length ? vals.reduce((s, v) => s + v, 0) : null;
+  };
+  blocos.aaMes  = somaAA('aaMes');
+  blocos.aaAcum = somaAA('aaAcum');
+  blocos.aaAno  = somaAA('aaAno');
+  return blocos;
+}
 
 function _gerarSlideDRE_(modo) {
   const d = obterDadosDRE_();
@@ -97,30 +124,27 @@ function _gerarSlideDRE_(modo) {
   });
 
   // ── Linhas: TOTAL primeiro (destaque), depois as rubricas AGRUPADAS POR
-  // CATEGORIA — cada categoria vira uma faixa, com suas rubricas (sub-itens)
-  // logo abaixo, na ordem de materialidade que obterDadosDRE_ já entrega.
-  // Categoria sem nenhuma rubrica neste mês fica de fora (não gera faixa
-  // vazia); rubrica sem categoria mapeada cai em "Outras Despesas" no fim.
+  // CATEGORIA — cada categoria vira uma linha de SUBTOTAL (soma das rubricas
+  // dela, mesmas colunas Meta/Realizado/%Meta/2025 do TOTAL), com suas
+  // rubricas (sub-itens) logo abaixo, na ordem de materialidade que
+  // obterDadosDRE_ já entrega. Categoria sem nenhuma rubrica neste mês fica
+  // de fora (não gera linha vazia); rubrica sem categoria mapeada cai em
+  // "Outras Despesas" no fim.
   const linhas = [{ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', b: d.total, destaque: true }];
   const ordemCategorias = DRE_CATEGORIAS.map(c => c.nome).concat(['Outras Despesas']);
   ordemCategorias.forEach(nomeCat => {
     const doCat = d.rubricas.filter(r => r.categoria === nomeCat);
     if (!doCat.length) return;
-    linhas.push({ tipo: 'categoria', nome: nomeCat });
-    doCat.forEach(r => linhas.push({ tipo: 'item', nome: r.nome, b: r, destaque: false }));
+    linhas.push({ tipo: 'categoria', nome: nomeCat, b: _dreSomarCategoria_(doCat) });
+    doCat.forEach(r => linhas.push({ tipo: 'item', nome: r.nome, b: r }));
   });
 
   const tY = blocoY + blocoH + 14 + 2;
-  const CAT_H = 12;   // altura fixa da faixa de categoria (não "rouba" espaço dos itens)
-  const nCategorias = linhas.filter(l => l.tipo === 'categoria').length;
-  const nDados       = linhas.length - nCategorias;
-  // SEM piso mínimo nas linhas de dado: a tabela precisa caber inteira no
-  // slide, senão as últimas linhas (as menores, já que vêm ordenadas da
-  // maior p/ menor dentro de cada categoria) ficam empurradas pra fora.
-  const rowH = Math.min(16, (H - tY - 8 - nCategorias * CAT_H) / nDados);
+  // SEM piso mínimo: a tabela precisa caber inteira no slide, senão as
+  // últimas linhas (as menores, já que vêm ordenadas da maior p/ menor
+  // dentro de cada categoria) ficam empurradas para fora da área visível.
+  const rowH = Math.min(16, (H - tY - 8) / linhas.length);
   const fs   = rowH >= 12 ? 7 : (rowH >= 9 ? 6.3 : (rowH >= 7 ? 5.5 : 4.8));
-  const alturaLinha = l => l.tipo === 'categoria' ? CAT_H : rowH;
-  const alturaTotal = linhas.reduce((s, l) => s + alturaLinha(l), 0);
 
   // Em R$ mil: abaixo de 10 mil mostra 1 decimal, senão inteiro
   const mil = v => {
@@ -132,46 +156,38 @@ function _gerarSlideDRE_(modo) {
   };
   const pct = (orc, real) => (orc > 0 ? Math.round(real / orc * 100) : null);
 
-  let ry = tY;      // Y acumulado (linhas têm alturas diferentes: CAT_H vs rowH)
-  let di = 0;       // índice só das linhas de DADO (total/item), p/ zebra não contar as faixas de categoria
-  linhas.forEach(l => {
-    const hAtual = alturaLinha(l);
+  linhas.forEach((l, r) => {
+    const ry = tY + r * rowH;
+    const ehCategoria = l.tipo === 'categoria';
+    // TOTAL e categoria seguem o mesmo estilo "resumo" (fundo escuro, tudo
+    // branco/negrito) — só a cor do fundo muda, pra diferenciar hierarquia.
+    const resumo = l.destaque || ehCategoria;
 
-    // ── Faixa de categoria: banner de largura total, só o rótulo ───────────
-    if (l.tipo === 'categoria') {
-      const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, hAtual);
-      bg.getFill().setSolidFill(DS.colors.brandMed); bg.getBorder().setTransparent();
-      const lb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + 6, ry, tableW - 12, hAtual);
-      lb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      lb.getText().setText(l.nome.toUpperCase()).getTextStyle()
-        .setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-      ry += hAtual;
-      return;
-    }
-
-    // Fundo: destaque no TOTAL, zebra nas demais (índice só de linhas de dado)
+    // Fundo: TOTAL escuro, categoria azul-médio, itens em zebra
     if (l.destaque) {
-      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, hAtual);
+      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
       z.getFill().setSolidFill(DS.colors.brandDark); z.getBorder().setTransparent();
-    } else if (di % 2 === 0) {
-      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, hAtual);
+    } else if (ehCategoria) {
+      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
+      z.getFill().setSolidFill(DS.colors.brandMed); z.getBorder().setTransparent();
+    } else if (r % 2 === 0) {
+      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
       z.getFill().setSolidFill('#FFFFFF'); z.getBorder().setTransparent();
     }
-    di++;
 
-    const corBase = l.destaque ? '#FFFFFF' : DS.colors.textMain;
+    const corBase = resumo ? '#FFFFFF' : DS.colors.textMain;
 
     // Rubrica (1 linha; corta com … se não couber). Itens de categoria (sub)
-    // ficam levemente indentados — mostra visualmente que pertencem à faixa
+    // ficam levemente indentados — mostra visualmente que pertencem à linha
     // de cima, sem precisar de mais uma coluna.
-    let nome = l.nome;
+    let nome = l.tipo === 'categoria' ? l.nome.toUpperCase() : l.nome;
     const indent = l.tipo === 'item' ? 12 : 4;
     const maxChars = Math.floor((rubricaW - 6 - indent) / (fs * 0.62));
     if (nome.length > maxChars) nome = nome.substring(0, maxChars - 1) + '…';
-    const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + indent, ry, rubricaW - 4 - indent, hAtual);
+    const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + indent, ry, rubricaW - 4 - indent, rowH);
     lab.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     lab.getText().setText(nome).getTextStyle()
-      .setFontSize(fs).setBold(!!l.destaque).setForegroundColor(corBase).setFontFamily(DS.typography.body);
+      .setFontSize(fs).setBold(resumo).setForegroundColor(corBase).setFontFamily(DS.typography.body);
 
     // Blocos de valores (o 3º bloco muda com o modo: anualOrc ou anual)
     [{ bl: l.b.mes, aa: l.b.aaMes }, { bl: l.b.acum, aa: l.b.aaAcum }, { bl: l.b[campoAnual], aa: l.b.aaAno }]
@@ -185,36 +201,34 @@ function _gerarSlideDRE_(modo) {
         let txtPct, corPct;
         if (p != null) {
           txtPct = p + '%';
-          corPct = l.destaque ? '#FFFFFF' : (p > 100 ? '#DC2626' : '#166534');
+          corPct = resumo ? '#FFFFFF' : (p > 100 ? '#DC2626' : '#166534');
         } else if (bl.real > 0.005) {
           txtPct = '+' + mil(bl.real);
-          corPct = l.destaque ? '#FFFFFF' : '#DC2626';
+          corPct = resumo ? '#FFFFFF' : '#DC2626';
         } else {
           txtPct = '-';
-          corPct = l.destaque ? '#FFFFFF' : CORES.textGray;
+          corPct = resumo ? '#FFFFFF' : CORES.textGray;
         }
         const celulas = [
-          { txt: mil(bl.orc),  cor: l.destaque ? '#CBD5E1' : CORES.textGray, bold: !!l.destaque },
-          { txt: mil(bl.real), cor: corBase,                                  bold: true       },
-          { txt: txtPct,       cor: corPct,                                   bold: true       },
-          { txt: mil(blk.aa),  cor: l.destaque ? '#94A3B8' : '#64748B',       bold: false      }
+          { txt: mil(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
+          { txt: mil(bl.real), cor: corBase,                              bold: true    },
+          { txt: txtPct,       cor: corPct,                               bold: true    },
+          { txt: mil(blk.aa),  cor: resumo ? '#94A3B8' : '#64748B',       bold: false   }
         ];
         celulas.forEach((cel, i) => {
-          const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX(c0 + i), ry, colW - 1, hAtual);
+          const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX(c0 + i), ry, colW - 1, rowH);
           t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
           t.getText().setText(cel.txt).getTextStyle()
             .setFontSize(fs).setBold(cel.bold).setForegroundColor(cel.cor).setFontFamily(DS.typography.body);
           t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
         });
       });
-
-    ry += hAtual;
   });
 
   // Separadores verticais entre os blocos
   [0, 4, 8, 12].forEach(c => {
     const vx = c === 12 ? x0 + tableW : colX(c);
-    const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + alturaTotal - blocoY);
+    const v = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, vx - 1, blocoY, 1, tY + linhas.length * rowH - blocoY);
     v.getFill().setSolidFill(DS.colors.lines); v.getBorder().setTransparent();
   });
 
