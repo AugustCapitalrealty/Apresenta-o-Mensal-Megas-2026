@@ -1402,17 +1402,21 @@ function obterDadosPPC_() {
 // vem de planilha — combinado assim porque a categorização em si não muda
 // mês a mês). Rubrica da FINANCEIRO BRIDGE que não constar em nenhuma
 // categoria cai em "Outras Despesas" — nunca some do relatório.
+// A ORDEM das rubricas dentro de cada categoria aqui é a ORDEM EM QUE ELAS
+// APARECEM NO SLIDE — fixa, igual todo mês. Antes a tabela era ordenada por
+// valor (materialidade), então as linhas trocavam de lugar de um mês pro
+// outro e ficava difícil comparar; agora a posição é sempre a mesma.
 const DRE_CATEGORIAS = [
   { nome: 'Despesas com Pessoal e Administrativas', itens: [
     'Despesa de pessoal', 'cursos e seminarios', 'despesa com passagens',
     'despesas com hospedagem', 'representação e refeição', 'despesa com taxi',
     'locação de veículos', 'despesa com combustiveis',
     'quilometragem, estacionamento e pedágio', 'despesas c/veiculos',
-    'outras despesas administrativas'
+    'bens de pequeno valor', 'outras despesas administrativas'
   ] },
   { nome: 'Serviços de Terceiros', itens: [
     'Assistência jurídica', 'Segurança vigilância', 'Assistencia informatica',
-    'serviços diversos', 'propaganda e publicidade'
+    'consultoria assessoria', 'serviços diversos', 'propaganda e publicidade'
   ] },
   { nome: 'Manutenção e Conservação', itens: [
     'limpeza e conservação', 'manutenção imóveis', 'manutenção de bens móveis',
@@ -1424,17 +1428,52 @@ const DRE_CATEGORIAS = [
   ] }
 ];
 
-// chave normalizada (_histNorm_) → nome da categoria. Índice construído uma
-// única vez (cache em módulo) a partir de DRE_CATEGORIAS acima.
-let _dreCategoriaPorChave_ = null;
-function dreCategoriaDe_(chave) {
-  if (!_dreCategoriaPorChave_) {
-    _dreCategoriaPorChave_ = {};
+// Rede de segurança: cada planilha escreve a rubrica de um jeito ("Consultoria
+// e assessoria", "Consultoria/assessoria"...). Quando a chave exata não bate,
+// tentamos por PALAVRA-CHAVE contida no nome — assim a rubrica cai na
+// categoria certa mesmo com a grafia variando entre as cidades.
+const DRE_CATEGORIA_PALAVRAS = [
+  { termo: 'consultoria',   categoria: 'Serviços de Terceiros' },
+  { termo: 'assessoria',    categoria: 'Serviços de Terceiros' },
+  { termo: 'pequeno valor', categoria: 'Despesas com Pessoal e Administrativas' }
+];
+
+// chave normalizada (_histNorm_) → { categoria, ordem }. Índice construído
+// uma única vez (cache em módulo) a partir de DRE_CATEGORIAS acima. A ordem
+// é o índice global do item no mapa: garante posição fixa no slide.
+let _dreIndicePorChave_ = null;
+function _dreIndice_() {
+  if (!_dreIndicePorChave_) {
+    _dreIndicePorChave_ = {};
+    let ordem = 0;
     DRE_CATEGORIAS.forEach(cat => {
-      cat.itens.forEach(item => { _dreCategoriaPorChave_[_histNorm_(item)] = cat.nome; });
+      cat.itens.forEach(item => {
+        _dreIndicePorChave_[_histNorm_(item)] = { categoria: cat.nome, ordem: ordem++ };
+      });
     });
   }
-  return _dreCategoriaPorChave_[chave] || 'Outras Despesas';
+  return _dreIndicePorChave_;
+}
+
+function dreCategoriaDe_(chave) {
+  const achado = _dreIndice_()[chave];
+  if (achado) return achado.categoria;
+  const porPalavra = DRE_CATEGORIA_PALAVRAS.find(p => String(chave).indexOf(p.termo) >= 0);
+  // Sem categoria conhecida a rubrica ainda aparece (em "Outras Despesas"):
+  // é dado financeiro, sumir em silêncio seria pior do que aparecer solto.
+  return porPalavra ? porPalavra.categoria : 'Outras Despesas';
+}
+
+// Posição fixa da rubrica no slide. Rubrica fora do mapa vai para o fim.
+function dreOrdemDe_(chave) {
+  const achado = _dreIndice_()[chave];
+  if (achado) return achado.ordem;
+  const porPalavra = DRE_CATEGORIA_PALAVRAS.find(p => String(chave).indexOf(p.termo) >= 0);
+  if (!porPalavra) return 9999;
+  // Casou por palavra-chave: entra logo depois do último item da categoria.
+  const cat = DRE_CATEGORIAS.find(c => c.nome === porPalavra.categoria);
+  const ultimo = cat ? _dreIndice_()[_histNorm_(cat.itens[cat.itens.length - 1])] : null;
+  return ultimo ? ultimo.ordem + 0.5 : 9998;
 }
 
 function obterDadosDRE_() {
@@ -1504,7 +1543,7 @@ function obterDadosDRE_() {
       const b = consolidar(data[r]);
       const temValor = b.anual.orc !== 0 || b.anual.real !== 0;
       if (!temValor) continue;
-      const nova = { nome: padronizarRubrica_(nome), _chave: chave, categoria: dreCategoriaDe_(chave), mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc };
+      const nova = { nome: padronizarRubrica_(nome), _chave: chave, categoria: dreCategoriaDe_(chave), _ordem: dreOrdemDe_(chave), mes: b.mes, acum: b.acum, anual: b.anual, anualOrc: b.anualOrc };
       const existente = porChave[chave];
       if (!existente) {
         porChave[chave] = nova;
@@ -1519,9 +1558,11 @@ function obterDadosDRE_() {
     const rubricas = Object.keys(porChave).map(k => porChave[k]);
     if (!rubricas.length) return null;
 
-    // Linhas maiores primeiro (materialidade = maior projeção anual, pelo
-    // ritmo ou pelo orçado, o que for maior — mesma ordem nas duas páginas)
-    rubricas.sort((a, b) => Math.max(b.anual.real, b.anualOrc.real) - Math.max(a.anual.real, a.anualOrc.real));
+    // ORDEM FIXA (posição no mapa DRE_CATEGORIAS), não por valor: assim a
+    // tabela tem sempre as mesmas linhas nos mesmos lugares, mês após mês —
+    // dá pra comparar duas apresentações lado a lado sem procurar a rubrica.
+    // Empate (rubricas fora do mapa) desempata por nome, p/ ficar estável.
+    rubricas.sort((a, b) => (a._ordem - b._ordem) || a.nome.localeCompare(b.nome, 'pt-BR'));
 
     // TOTAL: linha da planilha se existir; senão soma das rubricas
     if (!totalLinha) {
