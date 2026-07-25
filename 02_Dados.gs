@@ -1612,8 +1612,14 @@ function obterDadosDRE_() {
 // "2025" simplesmente mostra "—").
 function _lerAnoAnterior_() {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('Financeiro 2025');
+    const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    // O slide rotula a coluna com (ano de referência − 1), então a aba
+    // procurada acompanha o ano: em 2027 passa a ler "Financeiro 2026".
+    // Mantém "Financeiro 2025" como alternativa para não quebrar hoje.
+    let anoAnterior = 2025;
+    try { anoAnterior = obterMesReferencia_().ano - 1; } catch (e) {}
+    const sheet = ss.getSheetByName('Financeiro ' + anoAnterior)
+               || ss.getSheetByName('Financeiro 2025');
     if (!sheet) return null;
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return null;
@@ -1639,7 +1645,7 @@ function _lerAnoAnterior_() {
     if (!grupos.length) return null;
 
     const porChave = {};
-    let total = new Array(12).fill(0);
+    let total = null;
     for (let r = hdrRow + 1; r < data.length; r++) {
       const nome = String(data[r][0] || '').trim();
       if (!nome) continue;
@@ -1652,6 +1658,15 @@ function _lerAnoAnterior_() {
       if (chave.includes('total')) { total = vals; break; }
       if (!porChave[chave]) porChave[chave] = new Array(12).fill(0);
       grupos.forEach(g => { porChave[chave][g.mi] += vals[g.mi]; });
+    }
+    // Sem linha TOTAL na aba, soma as rubricas (mesma saída de emergência que
+    // obterDadosDRE_ usa). Antes ficava 12 zeros e a linha DESPESAS
+    // OPERACIONAIS — a mais visível do slide — mostrava 2025 = 0.
+    if (!total) {
+      total = new Array(12).fill(0);
+      Object.keys(porChave).forEach(k => {
+        porChave[k].forEach((v, i) => { total[i] += v; });
+      });
     }
     return { porChave, total };
   } catch (e) {

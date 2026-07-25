@@ -92,9 +92,15 @@ function _gerarSlideDRE_(modo) {
   const blocos = [
     { txt: 'MÊS — ' + d.mesLabel.toUpperCase(),     c0: 0,  cor: DS.colors.brandMed },
     { txt: 'ACUMULADO — ' + d.mesesAcum + ' MESES', c0: 5,  cor: DS.colors.brandMed },
-    // Projeção do ano em cor própria: sinaliza que é o FUTURO, não realizado.
-    { txt: tituloAnual,                             c0: 10, cor: COR_FUTURO }
+    // Projeção do ano: cor própria em TODO o cabeçalho do bloco (barra + a
+    // régua Meta/Real/…) e um leve tingido atrás das células — sinaliza que
+    // aquele trecho é FUTURO/projeção, não realizado.
+    { txt: tituloAnual,                             c0: 10, cor: COR_FUTURO, futuro: true }
   ];
+
+  // Faixa tingida atrás das 5 colunas da projeção (desenhada antes das
+  // linhas para ficar por baixo; as linhas de dado cobrem só o que precisam).
+  const futuroX = colX(10), futuroW = colW * NCOL - 1;
 
   const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + 14);
   cabRub.getFill().setSolidFill(DS.colors.brandDark); cabRub.getBorder().setTransparent();
@@ -119,7 +125,10 @@ function _gerarSlideDRE_(modo) {
     ['Meta', 'Real', '% Var', String(d.ano - 1), '% ' + String(d.ano - 1).slice(-2)].forEach((s, i) => {
       const sx = colX(b.c0 + i);
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, colW - 1, 14);
-      sb.getFill().setSolidFill(DS.colors.brandDark); sb.getBorder().setTransparent();
+      // No bloco da projeção a régua também sai na cor do futuro (um pouco
+      // escurecida), para o cabeçalho inteiro daquele trecho destoar.
+      sb.getFill().setSolidFill(b.futuro ? '#0A4C86' : DS.colors.brandDark);
+      sb.getBorder().setTransparent();
       const folga = 10;
       const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, sx - folga, blocoY + blocoH, colW - 1 + folga * 2, 14);
       st.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
@@ -146,6 +155,7 @@ function _gerarSlideDRE_(modo) {
   const rowH = Math.min(16, (H - tY - 8) / linhas.length);
   const fs   = rowH >= 12 ? 7 : (rowH >= 9 ? 6.3 : (rowH >= 7 ? 5.5 : 4.8));
 
+
   // R$ mil, sempre inteiro (a pedido: "0,1" vira "0").
   const mil = v => {
     if (v == null || isNaN(v)) return '-';
@@ -153,22 +163,28 @@ function _gerarSlideDRE_(modo) {
   };
 
   // VARIAÇÃO: Real ÷ base − 1, sempre positiva, com o sentido na seta.
-  // Base zerada com gasto = 100% (a pedido: "orçado 0 e gastei 1 real → 100%").
+  // Base ZERADA com gasto = 100% (a pedido: "orçado 0 e gastei 1 real → 100%").
+  // Base AUSENTE é caso diferente: quando não existe dado de 2025 para a
+  // rubrica não dá para afirmar variação nenhuma — devolve null (mostra "-"),
+  // senão a coluna "% 25" cravaria "▲ 100%" em cima de um dado inexistente.
   const variacao = (base, real) => {
     if (real == null || isNaN(real)) return null;
-    if (base == null || isNaN(base) || base === 0) {
-      return real > 0.005 ? { pct: 100, maior: true } : null;
-    }
+    if (base == null || isNaN(base))  return null;
+    if (base === 0) return real > 0.005 ? { pct: 100, maior: true } : null;
     const v = (real / base - 1) * 100;
     return { pct: Math.abs(v), maior: v > 0 };
   };
 
   // Texto da variação com seta: ▲ gastou mais (ruim), ▼ gastou menos (bom).
+  // Variações de milhares de % são reais aqui (rubrica com orçado pequeno e
+  // gasto alto), então o número é mantido — só acima de 9.999% vira ">9999",
+  // porque aí não caberia na célula e a informação já é só "estourou muito".
   const textoVar = va => {
     if (!va) return '-';
     const p = Math.round(va.pct);
     if (p === 0) return '0%';
-    return (va.maior ? '▲ ' : '▼ ') + p + '%';
+    const seta = va.maior ? '▲ ' : '▼ ';
+    return seta + (p > 9999 ? '>9999' : p.toLocaleString('pt-BR')) + '%';
   };
   const corVar = (va, escuro) => {
     if (!va || Math.round(va.pct) === 0) return escuro ? '#CBD5E1' : CORES.textGray;
@@ -176,20 +192,31 @@ function _gerarSlideDRE_(modo) {
     return escuro ? VERDE_CLARO : VERDE;
   };
 
+  let zebra = 0;   // conta só os ITENS: a zebra reinicia a cada categoria e
+                   // não é bagunçada pelas linhas de TOTAL/subtotal no meio.
   linhas.forEach((l, r) => {
     const ry = tY + r * rowH;
     const ehTotal     = l.tipo === 'total';
     const ehCategoria = l.tipo === 'categoria';
     const resumo      = ehTotal || ehCategoria;   // linhas de fundo escuro
 
-    // Fundo: TOTAL azul escuro, categoria cinza, itens em zebra
-    if (ehTotal || ehCategoria) {
+    // Fundo: TOTAL azul escuro, categoria cinza, itens em zebra. Nos itens, a
+    // faixa das 5 colunas da projeção sai levemente azulada — banda de cor
+    // que percorre a tabela inteira marcando "isto é futuro".
+    if (resumo) {
       const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
       z.getFill().setSolidFill(ehTotal ? DS.colors.brandDark : CINZA_CATEGORIA);
       z.getBorder().setTransparent();
-    } else if (r % 2 === 0) {
-      const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
-      z.getFill().setSolidFill('#FFFFFF'); z.getBorder().setTransparent();
+      if (ehCategoria) zebra = 0;
+    } else {
+      const par = zebra % 2 === 0;
+      if (par) {
+        const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, futuroX - x0, rowH);
+        z.getFill().setSolidFill('#FFFFFF'); z.getBorder().setTransparent();
+      }
+      const zf = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, futuroX, ry, futuroW, rowH);
+      zf.getFill().setSolidFill(par ? '#EFF5FC' : '#E7EEF8'); zf.getBorder().setTransparent();
+      zebra++;
     }
 
     const corBase = resumo ? '#FFFFFF' : DS.colors.textMain;
@@ -202,10 +229,13 @@ function _gerarSlideDRE_(modo) {
     const indent  = l.tipo === 'item' ? 12 : 4;
     const larguraVisual = rubricaW - 4 - indent;
     let nome = ehCategoria ? l.nome.toUpperCase() : l.nome;
-    const maxChars = Math.floor(larguraVisual / (fsLinha * 0.58));
+    // 0,62 em/char é a medida real do Montserrat/Open Sans em CAIXA ALTA
+    // negrito (0,58 subestimava e deixava o texto passar da coluna, indo
+    // parar embaixo do separador vertical).
+    const maxChars = Math.floor(larguraVisual / (fsLinha * 0.62));
     if (nome.length > maxChars) nome = nome.substring(0, maxChars - 1) + '…';
     const lab = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-      x0 + indent, ry, larguraVisual + 14, rowH);
+      x0 + indent, ry, larguraVisual + 10, rowH);
     lab.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     lab.getText().setText(nome).getTextStyle()
       .setFontSize(fsLinha).setBold(resumo).setForegroundColor(corBase).setFontFamily(DS.typography.body);
@@ -222,7 +252,7 @@ function _gerarSlideDRE_(modo) {
           { txt: mil(bl.orc),   cor: resumo ? '#CBD5E1' : CORES.textGray,  bold: resumo },
           { txt: mil(bl.real),  cor: corBase,                              bold: true   },
           { txt: textoVar(vsMeta), cor: corVar(vsMeta, resumo),            bold: true   },
-          { txt: mil(blk.aa),   cor: resumo ? '#94A3B8' : '#64748B',       bold: false  },
+          { txt: mil(blk.aa),   cor: resumo ? '#CBD5E1' : '#64748B',       bold: false  },
           { txt: textoVar(vs25),   cor: corVar(vs25, resumo),              bold: false  }
         ];
         celulas.forEach((cel, i) => {
