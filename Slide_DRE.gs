@@ -90,8 +90,24 @@ function _gerarSlideDRE_(modo) {
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
   const rubricaW = 158;
-  const colW = (tableW - rubricaW) / (3 * NCOL);
-  const colX = i => x0 + rubricaW + i * colW;   // i = 0..14
+  // Colunas NÃO são todas iguais: as de variação carregam seta + número
+  // ("▲ 2.088%") e precisam de mais espaço que as de valor ("2.088"), senão
+  // a seta encosta no número. Os pesos somam 5,00 por bloco, então a largura
+  // total da tabela não muda.
+  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];   // Meta, Real, 2025, %Var, %25
+  const unidade  = (tableW - rubricaW) / (3 * NCOL);
+  const colPos = [], colLarg = [];
+  let _accX = x0 + rubricaW;
+  for (let b = 0; b < 3; b++) {
+    for (let i = 0; i < NCOL; i++) {
+      const w = unidade * PESO_COL[i];
+      colPos.push(_accX); colLarg.push(w); _accX += w;
+    }
+  }
+  const colX = i => colPos[i];                       // i = 0..14
+  const colW = i => colLarg[i];
+  // Largura de um bloco inteiro (5 colunas), usada nas barras de cabeçalho
+  const blocoW = c0 => colLarg.slice(c0, c0 + NCOL).reduce((s, w) => s + w, 0);
 
   // ── Barra dos blocos ──────────────────────────────────────────────────────
   const blocoY = 66, blocoH = 14;
@@ -106,7 +122,7 @@ function _gerarSlideDRE_(modo) {
 
   // Faixa tingida atrás das 5 colunas da projeção (desenhada antes das
   // linhas para ficar por baixo; as linhas de dado cobrem só o que precisam).
-  const futuroX = colX(10), futuroW = colW * NCOL - 1;
+  const futuroX = colX(10), futuroW = blocoW(10) - 1;
 
   const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + 14);
   cabRub.getFill().setSolidFill(DS.colors.brandDark); cabRub.getBorder().setTransparent();
@@ -116,7 +132,7 @@ function _gerarSlideDRE_(modo) {
     .setFontSize(7).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
 
   blocos.forEach(b => {
-    const bx = colX(b.c0), bw = colW * NCOL - 1;
+    const bx = colX(b.c0), bw = blocoW(b.c0) - 1;
     const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, blocoY, bw, blocoH);
     bg.getFill().setSolidFill(b.cor); bg.getBorder().setTransparent();
     const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx, blocoY, bw, blocoH);
@@ -129,14 +145,14 @@ function _gerarSlideDRE_(modo) {
     // sem fundo próprio → invisível) só para vencer o recuo interno padrão do
     // Slides, que quebrava "Realizado" em "Realizad/o".
     ['Meta', 'Real', String(d.ano - 1), '% Var', '% ' + String(d.ano - 1).slice(-2)].forEach((s, i) => {
-      const sx = colX(b.c0 + i);
-      const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, colW - 1, 14);
+      const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
+      const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, 14);
       // No bloco da projeção a régua também sai na cor do futuro (um pouco
       // escurecida), para o cabeçalho inteiro daquele trecho destoar.
       sb.getFill().setSolidFill(b.futuro ? '#0A4C86' : DS.colors.brandDark);
       sb.getBorder().setTransparent();
       const folga = 10;
-      const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, sx - folga, blocoY + blocoH, colW - 1 + folga * 2, 14);
+      const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, sx - folga, blocoY + blocoH, sw + folga * 2, 14);
       st.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       st.getText().setText(s).getTextStyle()
         .setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
@@ -294,7 +310,7 @@ function _gerarSlideDRE_(modo) {
           // desloca e ainda assim ganha espaço para não quebrar linha.
           const folga = 12;
           const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-            colX(c0 + i) - folga, ry, colW - 1 + folga, rowH);
+            colX(c0 + i) - folga, ry, colW(c0 + i) - 1 + folga, rowH);
           t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
           t.getText().setText(cel.txt).getTextStyle()
             .setFontSize(fs).setBold(cel.bold).setForegroundColor(cel.cor).setFontFamily(DS.typography.body);
@@ -302,8 +318,8 @@ function _gerarSlideDRE_(modo) {
         });
 
         // Variações (seta ancorada + número à direita)
-        desenharVar(vsMeta, colX(c0 + 3), ry, colW - 1, resumo);
-        desenharVar(vs25,   colX(c0 + 4), ry, colW - 1, resumo);
+        desenharVar(vsMeta, colX(c0 + 3), ry, colW(c0 + 3) - 1, resumo);
+        desenharVar(vs25,   colX(c0 + 4), ry, colW(c0 + 4) - 1, resumo);
       });
   });
 
