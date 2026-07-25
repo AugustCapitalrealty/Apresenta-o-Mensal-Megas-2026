@@ -3,9 +3,10 @@
  * SLIDE — DRE (DEMONSTRATIVO DE RESULTADO)
  * DESCRIÇÃO: Tabela consolidada por rubrica contábil no estilo DRE da
  * controladoria, com os dados que a apresentação já tem (obterDadosDRE_ em
- * 02_Dados.gs). Três recortes, cada um com 5 colunas:
+ * 02_Dados.gs). Três recortes, cada um com 5 colunas — os VALORES juntos e
+ * as VARIAÇÕES juntas, para não misturar as duas leituras:
  *
- *   Meta | Real | % Var | 2025 | % 25
+ *   Meta | Real | 2025 | % Var | % 25
  *
  *   Bloco 1 — MÊS (mês de referência)
  *   Bloco 2 — ACUMULADO (Jan..mês ref)
@@ -75,12 +76,17 @@ function _gerarSlideDRE_(modo) {
   // Cores das linhas de hierarquia
   const CINZA_CATEGORIA = '#475569';   // subtotal de categoria (destoa do azul)
   const COR_FUTURO      = DS.colors.brandLight;   // bloco da projeção anual
-  const VERM = '#DC2626', VERDE = '#166534';               // sobre fundo claro
-  const VERM_CLARO = '#FCA5A5', VERDE_CLARO = '#86EFAC';   // sobre fundo escuro
+  // Vermelho/verde DESSATURADOS: a tabela tem ~90 variações coloridas e o tom
+  // saturado (#DC2626/#166534) pesava demais na leitura. Estes mantêm o
+  // significado com contraste suficiente (~5:1) sem gritar na tela.
+  const VERM = '#A85450', VERDE = '#4E7B5F';               // sobre fundo claro
+  const VERM_CLARO = '#E0A9A6', VERDE_CLARO = '#9FC4AF';   // sobre fundo escuro
 
   criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', subHeader + d.cidade);
 
-  // ── Grade — 3 blocos × 5 colunas (Meta | Real | % Var | 2025 | % 25) ─────
+  // ── Grade — 3 blocos × 5 colunas ────────────────────────────────────────
+  // Ordem: os VALORES juntos (Meta | Real | 2025), depois as VARIAÇÕES
+  // juntas (% Var | % 25) — números de um lado, comparações do outro.
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
   const rubricaW = 158;
@@ -122,7 +128,7 @@ function _gerarSlideDRE_(modo) {
     // Sub-cabeçalho. As caixas de texto vão além da célula (folga simétrica,
     // sem fundo próprio → invisível) só para vencer o recuo interno padrão do
     // Slides, que quebrava "Realizado" em "Realizad/o".
-    ['Meta', 'Real', '% Var', String(d.ano - 1), '% ' + String(d.ano - 1).slice(-2)].forEach((s, i) => {
+    ['Meta', 'Real', String(d.ano - 1), '% Var', '% ' + String(d.ano - 1).slice(-2)].forEach((s, i) => {
       const sx = colX(b.c0 + i);
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, colW - 1, 14);
       // No bloco da projeção a régua também sai na cor do futuro (um pouco
@@ -175,21 +181,49 @@ function _gerarSlideDRE_(modo) {
     return { pct: Math.abs(v), maior: v > 0 };
   };
 
-  // Texto da variação com seta: ▲ gastou mais (ruim), ▼ gastou menos (bom).
+  // Só o NÚMERO da variação (a seta vai numa caixa separada, ver desenharVar).
   // Variações de milhares de % são reais aqui (rubrica com orçado pequeno e
   // gasto alto), então o número é mantido — só acima de 9.999% vira ">9999",
   // porque aí não caberia na célula e a informação já é só "estourou muito".
-  const textoVar = va => {
+  const numeroVar = va => {
     if (!va) return '-';
     const p = Math.round(va.pct);
     if (p === 0) return '0%';
-    const seta = va.maior ? '▲ ' : '▼ ';
-    return seta + (p > 9999 ? '>9999' : p.toLocaleString('pt-BR')) + '%';
+    return (p > 9999 ? '>9999' : p.toLocaleString('pt-BR')) + '%';
   };
   const corVar = (va, escuro) => {
     if (!va || Math.round(va.pct) === 0) return escuro ? '#CBD5E1' : CORES.textGray;
     if (va.maior) return escuro ? VERM_CLARO : VERM;
     return escuro ? VERDE_CLARO : VERDE;
+  };
+
+  // Célula de variação: a SETA fica numa caixa própria ancorada sempre no
+  // mesmo ponto da célula, então "▲ 1%" e "▲ 100%" têm a seta na mesma
+  // vertical — dá pra varrer a coluna de relance sem a seta dançando conforme
+  // o número de dígitos. O número continua alinhado à direita, para os
+  // dígitos seguirem comparáveis entre as linhas.
+  const SETA_W = 9;
+  const desenharVar = (va, cx, ry, cw, escuro) => {
+    const cor = corVar(va, escuro);
+    const p   = va ? Math.round(va.pct) : null;
+
+    if (va && p !== 0) {
+      // Alinhada à ESQUERDA numa caixa fixa → a folga vai só para a direita
+      // (skill slides-caixa-texto-sem-quebra), senão o glifo se desloca.
+      const sa = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - 5, ry, SETA_W + 10, rowH);
+      sa.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      sa.getText().setText(va.maior ? '▲' : '▼').getTextStyle()
+        .setFontSize(fs).setBold(true).setForegroundColor(cor).setFontFamily(DS.typography.body);
+      sa.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
+    }
+
+    const folga = 12;
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      cx + SETA_W - folga, ry, cw - SETA_W + folga, rowH);
+    t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    t.getText().setText(numeroVar(va)).getTextStyle()
+      .setFontSize(fs).setBold(true).setForegroundColor(cor).setFontFamily(DS.typography.body);
+    t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   };
 
   let zebra = 0;   // conta só os ITENS: a zebra reinicia a cada categoria e
@@ -248,14 +282,13 @@ function _gerarSlideDRE_(modo) {
         const vsMeta = variacao(bl.orc, bl.real);
         const vs25   = variacao(blk.aa, bl.real);
 
-        const celulas = [
-          { txt: mil(bl.orc),   cor: resumo ? '#CBD5E1' : CORES.textGray,  bold: resumo },
-          { txt: mil(bl.real),  cor: corBase,                              bold: true   },
-          { txt: textoVar(vsMeta), cor: corVar(vsMeta, resumo),            bold: true   },
-          { txt: mil(blk.aa),   cor: resumo ? '#CBD5E1' : '#64748B',       bold: false  },
-          { txt: textoVar(vs25),   cor: corVar(vs25, resumo),              bold: false  }
+        // Primeiro os VALORES (Meta | Real | 2025), depois as VARIAÇÕES.
+        const valores = [
+          { txt: mil(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
+          { txt: mil(bl.real), cor: corBase,                             bold: true   },
+          { txt: mil(blk.aa),  cor: resumo ? '#CBD5E1' : '#64748B',      bold: false  }
         ];
-        celulas.forEach((cel, i) => {
+        valores.forEach((cel, i) => {
           // Valores alinhados à direita: a folga da caixa vai só para a
           // ESQUERDA, mantendo a borda direita no lugar — o número não se
           // desloca e ainda assim ganha espaço para não quebrar linha.
@@ -267,6 +300,10 @@ function _gerarSlideDRE_(modo) {
             .setFontSize(fs).setBold(cel.bold).setForegroundColor(cel.cor).setFontFamily(DS.typography.body);
           t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
         });
+
+        // Variações (seta ancorada + número à direita)
+        desenharVar(vsMeta, colX(c0 + 3), ry, colW - 1, resumo);
+        desenharVar(vs25,   colX(c0 + 4), ry, colW - 1, resumo);
       });
   });
 
