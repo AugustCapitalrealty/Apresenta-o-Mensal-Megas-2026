@@ -144,7 +144,9 @@ function _gerarSlideDRE_(modo) {
     // Sub-cabeçalho. As caixas de texto vão além da célula (folga simétrica,
     // sem fundo próprio → invisível) só para vencer o recuo interno padrão do
     // Slides, que quebrava "Realizado" em "Realizad/o".
-    ['Meta', 'Real', String(d.ano - 1), '% Var', '% ' + String(d.ano - 1).slice(-2)].forEach((s, i) => {
+    // "Δ%" deixa explícito que a coluna é a DIFERENÇA percentual, e contra o
+    // quê: Δ% Meta = Real vs Meta; Δ% 2025 = Real vs o realizado do ano anterior.
+    ['Meta', 'Real', String(d.ano - 1), 'Δ% Meta', 'Δ% ' + String(d.ano - 1)].forEach((s, i) => {
       const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, 14);
       // No bloco da projeção a régua também sai na cor do futuro (um pouco
@@ -189,12 +191,15 @@ function _gerarSlideDRE_(modo) {
   // Base AUSENTE é caso diferente: quando não existe dado de 2025 para a
   // rubrica não dá para afirmar variação nenhuma — devolve null (mostra "-"),
   // senão a coluna "% 25" cravaria "▲ 100%" em cima de um dado inexistente.
+  // `nulo` marca a igualdade EXATA (real === base). É diferente de uma
+  // variação pequena que só arredonda para 0%: nesse caso ainda houve
+  // desvio e a seta precisa aparecer indicando para que lado foi.
   const variacao = (base, real) => {
     if (real == null || isNaN(real)) return null;
     if (base == null || isNaN(base))  return null;
-    if (base === 0) return real > 0.005 ? { pct: 100, maior: true } : null;
+    if (base === 0) return real > 0.005 ? { pct: 100, maior: true, nulo: false } : null;
     const v = (real / base - 1) * 100;
-    return { pct: Math.abs(v), maior: v > 0 };
+    return { pct: Math.abs(v), maior: v > 0, nulo: v === 0 };
   };
 
   // Só o NÚMERO da variação (a seta vai numa caixa separada, ver desenharVar).
@@ -208,7 +213,7 @@ function _gerarSlideDRE_(modo) {
     return (p > 9999 ? '>9999' : p.toLocaleString('pt-BR')) + '%';
   };
   const corVar = (va, escuro) => {
-    if (!va || Math.round(va.pct) === 0) return escuro ? '#CBD5E1' : CORES.textGray;
+    if (!va || va.nulo) return escuro ? '#CBD5E1' : CORES.textGray;
     if (va.maior) return escuro ? VERM_CLARO : VERM;
     return escuro ? VERDE_CLARO : VERDE;
   };
@@ -221,9 +226,12 @@ function _gerarSlideDRE_(modo) {
   const SETA_W = 9;
   const desenharVar = (va, cx, ry, cw, escuro) => {
     const cor = corVar(va, escuro);
-    const p   = va ? Math.round(va.pct) : null;
 
-    if (va && p !== 0) {
+    // A seta aparece sempre que houve desvio — inclusive quando o número
+    // arredonda para "0%" (ex.: 6.097 contra meta de 6.084). Aí o número
+    // sozinho não diria para que lado foi; a seta resolve sem precisar abrir
+    // casas decimais. Só na igualdade exata (nulo) não há direção a mostrar.
+    if (va && !va.nulo) {
       // Alinhada à ESQUERDA numa caixa fixa → a folga vai só para a direita
       // (skill slides-caixa-texto-sem-quebra), senão o glifo se desloca.
       const sa = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx - 5, ry, SETA_W + 10, rowH);
