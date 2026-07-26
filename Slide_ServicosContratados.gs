@@ -37,12 +37,12 @@ const SC_ACENTO     = '#065CA9';  // brandLight — legível sobre fundo claro
 const SC_TITULO_COR = '#151E49';  // brandDark
 const SC_LINHA_COR  = '#E2E8F0';  // divisor
 const SC_KEYLINE    = '#CBD5E1';  // filete em volta de cada foto
-const SC_RODAPE_COR = '#94A3B8';
 const SC_TAG_BORDA  = '#93C5FD';
 const SC_TAG_COR    = '#003D7B';
 const SC_GAP        = 10;      // respiro entre fotos do mosaico
-// Banda A (padrão): mosaico ocupa a largura toda, texto no topo.
-const SC_A = { x: 44, y: 138, w: 632, h: 240 };
+// Banda A (padrão): mosaico ocupa a largura toda, texto no topo. Vai até y=390
+// — os 12pt extras são o espaço que o rodapé ocupava.
+const SC_A = { x: 44, y: 138, w: 632, h: 252 };
 // Zona B (fotos estreitas): texto em coluna FIXA à esquerda e as fotos com todo
 // o resto, centralizadas na zona. A primeira versão fazia o contrário — a
 // coluna de texto era a sobra do que as fotos não usavam —, então quanto menor
@@ -378,16 +378,11 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     if (usarB) mos = _scMosaico_(ars, SC_B.w, SC_B.h, SC_GAP);
   }
 
-  const totalArquivos = _scListarFotos_(pastaServico).length;
-  const rodape = projeto.nome.toUpperCase() + ' · FACILITIES · ' + ref.label +
-    (totalArquivos > 4 ? ' · ' + totalArquivos + ' REGISTROS EM ARQUIVO' : '');
-
   if (!ars.length) {
     // Nenhuma foto carregou: placa ainda apresentável, só com o texto.
     _scTexto_(slide, 50, 178, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
     _scTexto_(slide, 50, 192, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
               SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
-    _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
     Logger.log('Slide de ' + secao + ' gerado SEM fotos (todas falharam): ' + info.nome);
     return;
   }
@@ -411,10 +406,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     fotos.forEach((f, i) => _scPosicionar_(f.img, {
       x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
     }));
-
-    // Rodapé sobe para dentro da coluna de texto: as fotos vão até y=400 e só
-    // não colidem porque estão à direita de x=272.
-    _scTexto_(slide, 50, 376, 200, 16, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   } else {
     // ── LAYOUT A — padrão: texto no topo da placa, mosaico na largura toda ─
     const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 76, 3, 30);
@@ -438,7 +429,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     fotos.forEach((f, i) => _scPosicionar_(f.img, {
       x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
     }));
-    _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   }
 
   Logger.log('Slide de ' + secao + ' gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
