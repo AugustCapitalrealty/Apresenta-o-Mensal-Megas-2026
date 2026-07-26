@@ -111,7 +111,12 @@ function _scLayoutSlots_(n, px, py, pw, ph) {
 
 // ── Inserção de imagem com contain-fit (preserva proporção, centraliza) ───
 function _scInserirFotoContain_(slide, blob, x, y, boxW, boxH) {
-  const img = slide.insertImage(blob, x, y);
+  // insertImage só aceita (blob) — tamanho/posição padrão, proporção natural
+  // preservada — ou (blob, left, top, width, height) — tamanho forçado. Não
+  // existe sobrecarga (blob, left, top). Por isso insere com 1 argumento
+  // primeiro (pega a proporção natural via getWidth/getHeight) e só depois
+  // redimensiona/reposiciona para o contain-fit.
+  const img = slide.insertImage(blob);
   const natW = img.getWidth(), natH = img.getHeight();
   const escala = Math.min(boxW / natW, boxH / natH);
   const w = natW * escala, h = natH * escala;
