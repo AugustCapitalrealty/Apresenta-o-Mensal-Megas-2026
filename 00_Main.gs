@@ -45,6 +45,13 @@ function gerarSoDRECuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDREComRit
 function gerarSoDREItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDREComRitmo(); }
 function gerarSoDREEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDREComRitmo(); }
 
+// Fotos de Serviços Contratados avulso — busca automática no Drive (se a
+// cidade tiver servicosContratadosPastaId configurado em 01_Config.gs);
+// senão cai no slide manual de colar foto por foto.
+function gerarSoServicosContratadosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesServicosContratados_(); }
+function gerarSoServicosContratadosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesServicosContratados_(); }
+function gerarSoServicosContratadosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesServicosContratados_(); }
+
 
 // ==========================================
 // PONTOS DE ENTRADA — TODAS AS CIDADES
@@ -86,7 +93,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: () => gerarSlideReservaGraficos('BACKLOG FACILITIES', 'Evolução mensal do backlog', [{ titulo: '' }]) },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
-    { nome: 'Fotos - Serviços Contratados',        fn: () => gerarSlideRegistroFotos('SERVIÇOS CONTRATADOS') },
+    { nome: 'Fotos - Serviços Contratados',        fn: gerarSlidesServicosContratados_ },
     { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS', 'INTERNOS') },
     { nome: 'Fotos - Serviços Internos',           fn: () => gerarSlideRegistroFotos('SERVIÇOS INTERNOS') },
     { nome: 'Capa Seção - Segurança Patrimonial',  fn: () => gerarCapaSecao('SEGURANÇA', 'PATRIMONIAL', 'PATRIMONIAL') },

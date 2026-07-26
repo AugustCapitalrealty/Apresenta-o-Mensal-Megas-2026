@@ -142,6 +142,12 @@ const PROJETOS = {
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
     coBrandLogoId  : '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',   // logo Demercado
+    // Pasta raiz no Drive com uma subpasta por mês ("06-JUNHO", "07-JULHO"...)
+    // e, dentro de cada mês, uma subpasta por serviço contratado com as fotos
+    // do serviço. Usado por gerarSlidesServicosContratados_ (Slide_ServicosContratados.gs)
+    // para montar os slides de fotos automaticamente. Vazio = mantém o slide
+    // manual de colar foto por foto (gerarSlideRegistroFotos).
+    servicosContratadosPastaId : '1yK3H4BsQ_T13j4RLa6Ej7plaiz0DzNpD',
     contatos       : [
       { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
@@ -159,6 +165,7 @@ const PROJETOS = {
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
     coBrandLogoId  : '',
+    servicosContratadosPastaId : '',   // ainda não recebido — mantém slide manual
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -175,6 +182,7 @@ const PROJETOS = {
     ppcId          : '1I9DWcd8HXVRkjcv8eTk4UdQ5IZRuqUhFikw8tVfPt2c',   // PPC Mega Esteio 2026
     unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio
     coBrandLogoId  : '',
+    servicosContratadosPastaId : '',   // ainda não recebido — mantém slide manual
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
