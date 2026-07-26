@@ -127,7 +127,9 @@ function _scListarFotos_(pastaServico, max) {
 // final (ex.: "(PAGO POR SHOPEE)") como tag de governança e limpa o resto.
 function _scNormalizarNome_(raw) {
   let nome = String(raw || '')
-    .replace(/\.[a-z0-9]{2,4}$/i, '')             // extensão acidental
+    // Extensão colada por engano no nome da pasta. Lista fechada de propósito:
+    // um /\.[a-z0-9]{2,4}$/ genérico comia final legítimo ("BLOCO A.10" → "BLOCO A").
+    .replace(/\.(jpe?g|png|gif|webp|heic|bmp|tiff?|pdf|zip)$/i, '')
     .replace(/^\s*\d{1,3}\s*[-–—.)_]\s*/, '')     // prefixo de ordenação "01 - "
     .replace(/_+/g, ' ')
     .replace(/\s{2,}/g, ' ')
