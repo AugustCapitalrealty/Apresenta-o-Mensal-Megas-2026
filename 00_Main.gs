@@ -45,12 +45,20 @@ function gerarSoDRECuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDREComRit
 function gerarSoDREItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDREComRitmo(); }
 function gerarSoDREEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDREComRitmo(); }
 
-// Fotos de Serviços Contratados avulso — busca automática no Drive (se a
-// cidade tiver servicosContratadosPastaId configurado em 01_Config.gs);
-// senão cai no slide manual de colar foto por foto.
+// Slides de fotos avulsos — busca automática no Drive (se a cidade tiver a
+// seção em fotosServicos, no 01_Config.gs); senão cai no slide manual de
+// colar foto por foto.
 function gerarSoServicosContratadosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesServicosContratados_(); }
 function gerarSoServicosContratadosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesServicosContratados_(); }
 function gerarSoServicosContratadosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesServicosContratados_(); }
+
+function gerarSoServicosInternosCuritiba()    { setProjetoAtivo('CURITIBA'); gerarSlidesServicosInternos_(); }
+function gerarSoServicosInternosItajai()      { setProjetoAtivo('ITAJAI');   gerarSlidesServicosInternos_(); }
+function gerarSoServicosInternosEsteio()      { setProjetoAtivo('ESTEIO');   gerarSlidesServicosInternos_(); }
+
+// COMPLEMENTOS ainda não entra na apresentação completa — falta definir em que
+// ponto do fluxo ele aparece. Roda avulso enquanto isso.
+function gerarSoComplementosCuritiba()        { setProjetoAtivo('CURITIBA'); gerarSlidesComplementos_(); }
 
 
 // ==========================================
@@ -95,7 +103,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
     { nome: 'Fotos - Serviços Contratados',        fn: gerarSlidesServicosContratados_ },
     { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS', 'INTERNOS') },
-    { nome: 'Fotos - Serviços Internos',           fn: () => gerarSlideRegistroFotos('SERVIÇOS INTERNOS') },
+    { nome: 'Fotos - Serviços Internos',           fn: gerarSlidesServicosInternos_ },
     { nome: 'Capa Seção - Segurança Patrimonial',  fn: () => gerarCapaSecao('SEGURANÇA', 'PATRIMONIAL', 'PATRIMONIAL') },
     { nome: 'Acesso e Segurança',                  fn: gerarSlideTempo },
     { nome: 'Fotos - Serviços Segurança',          fn: () => gerarSlideRegistroFotos('SERVIÇOS SEGURANÇA') },

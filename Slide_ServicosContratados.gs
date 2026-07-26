@@ -1,10 +1,14 @@
 /**
  * ARQUIVO: Slide_ServicosContratados.gs
- * COMPONENTE — REGISTRO FOTOGRÁFICO AUTOMÁTICO (SERVIÇOS CONTRATADOS)
- * Busca, na pasta do Drive configurada em servicosContratadosPastaId
- * (01_Config.gs), a subpasta do mês de referência (ex.: "06-JUNHO") e, dentro
- * dela, uma subpasta por serviço prestado com as fotos do serviço. Gera um
- * slide por serviço, usando o nome da própria subpasta como manchete.
+ * COMPONENTE — REGISTRO FOTOGRÁFICO AUTOMÁTICO (SEÇÕES DE FOTOS)
+ * Serve TODAS as seções de fotos (Contratados, Internos, Complementos): busca,
+ * na pasta do Drive configurada em fotosServicos[chave] (01_Config.gs), a
+ * subpasta do mês de referência (ex.: "06-JUNHO") e, dentro dela, uma subpasta
+ * por serviço com as fotos. Gera um slide por serviço, usando o nome da própria
+ * subpasta como manchete.
+ *
+ * (O nome do arquivo é herdado de quando só existia a seção Contratados —
+ * mantido para não duplicar declarações no editor do Apps Script.)
  *
  * DESIGN — prancha fotográfica sobre parede clara. As fotos são diagramadas
  * por um MOSAICO JUSTIFICADO: cada foto recebe um retângulo com a proporção
@@ -51,13 +55,18 @@ const SC_LIMIAR_B   = 400;
 const SC_ESCADA_A   = [18, 16.5, 15, 13.5, 12, 11, 10];
 const SC_ESCADA_B   = [24, 21, 18, 16, 14, 12];
 
-function gerarSlidesServicosContratados_() {
-  const secao   = 'SERVIÇOS CONTRATADOS';
+// Pontos de entrada por seção. A chave casa com PROJETOS[cidade].fotosServicos
+// (01_Config.gs); o rótulo é o que aparece no cabeçalho do slide.
+function gerarSlidesServicosContratados_() { return gerarSlidesFotosDrive_('SERVIÇOS CONTRATADOS', 'CONTRATADOS'); }
+function gerarSlidesServicosInternos_()    { return gerarSlidesFotosDrive_('SERVIÇOS INTERNOS',    'INTERNOS');    }
+function gerarSlidesComplementos_()        { return gerarSlidesFotosDrive_('COMPLEMENTOS',         'COMPLEMENTOS'); }
+
+function gerarSlidesFotosDrive_(secao, chavePasta) {
   const projeto = getProjetoAtivo();
-  const pastaId = projeto.servicosContratadosPastaId;
+  const pastaId = (projeto.fotosServicos || {})[chavePasta];
 
   if (!pastaId) {
-    Logger.log('Serviços Contratados: pasta não configurada para ' + projeto.nome + ' — usando slide manual.');
+    Logger.log(secao + ': pasta não configurada para ' + projeto.nome + ' — usando slide manual.');
     return gerarSlideRegistroFotos(secao);
   }
 
@@ -70,20 +79,20 @@ function gerarSlidesServicosContratados_() {
       servicos = _scListarServicos_(pastaMes).filter(f => _scListarFotos_(f, 1).length > 0);
     }
   } catch (e) {
-    Logger.log('Aviso (Serviços Contratados): erro ao acessar a pasta do Drive. ' + e.message);
+    Logger.log('Aviso (' + secao + '): erro ao acessar a pasta do Drive. ' + e.message);
   }
 
   if (!pastaMes) {
-    Logger.log('Serviços Contratados: pasta do mês de referência não encontrada em ' + projeto.nome + ' — usando slide manual.');
+    Logger.log(secao + ': pasta do mês de referência não encontrada em ' + projeto.nome + ' — usando slide manual.');
     return gerarSlideRegistroFotos(secao);
   }
   if (servicos.length === 0) {
-    Logger.log('Serviços Contratados: nenhum serviço com fotos encontrado para o mês — usando slide manual.');
+    Logger.log(secao + ': nenhum serviço com fotos encontrado para o mês — usando slide manual.');
     return gerarSlideRegistroFotos(secao);
   }
 
   servicos.forEach((pastaServico, i) => _scGerarSlideServico_(secao, pastaServico, i + 1, servicos.length));
-  Logger.log('Serviços Contratados: ' + servicos.length + ' slide(s) gerado(s) automaticamente a partir do Drive (' + pastaMes.getName() + ').');
+  Logger.log(secao + ': ' + servicos.length + ' slide(s) gerado(s) automaticamente a partir do Drive (' + pastaMes.getName() + ').');
 }
 
 // ── Descoberta da pasta do mês ────────────────────────────────────────────
@@ -291,7 +300,7 @@ function _scMedirFotos_(slide, arquivos) {
       const ar = w / h;
       fotos.push({ img: img, ar: Math.min(2.2, Math.max(0.5, ar)) });  // clamp de outliers
     } catch (e) {
-      Logger.log('Aviso (Serviços Contratados): falha ao inserir foto "' + file.getName() + '". ' + e.message);
+      Logger.log('Aviso (fotos): falha ao inserir foto "' + file.getName() + '". ' + e.message);
       if (img) { try { img.remove(); } catch (e2) {} }
     }
   });
@@ -304,7 +313,7 @@ function _scPosicionar_(img, r) {
   try {
     img.getBorder().setWeight(0.75).getLineFill().setSolidFill(SC_KEYLINE);
   } catch (e) {
-    Logger.log('Aviso (Serviços Contratados): keyline não aplicado. ' + e.message);
+    Logger.log('Aviso (fotos): keyline não aplicado. ' + e.message);
   }
 }
 
@@ -367,7 +376,7 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     _scTexto_(slide, 50, 192, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
               SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
     _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
-    Logger.log('Slide Serviço Contratado gerado SEM fotos (todas falharam): ' + info.nome);
+    Logger.log('Slide de ' + secao + ' gerado SEM fotos (todas falharam): ' + info.nome);
     return;
   }
 
@@ -420,5 +429,5 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   }
 
-  Logger.log('Slide Serviço Contratado gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
+  Logger.log('Slide de ' + secao + ' gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
 }
