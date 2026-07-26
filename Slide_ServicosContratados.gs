@@ -63,10 +63,22 @@ function gerarSlidesComplementos_()        { return gerarSlidesFotosDrive_('COMP
 
 function gerarSlidesFotosDrive_(secao, chavePasta) {
   const projeto = getProjetoAtivo();
-  const pastaId = (projeto.fotosServicos || {})[chavePasta];
+  let pastaId = (projeto.fotosServicos || {})[chavePasta];
+
+  // Compatibilidade com a config antiga (campo único, só de Contratados). Os
+  // arquivos são colados à mão no editor do Apps Script e é fácil esquecer um
+  // — sem isto, um 01_Config.gs desatualizado derrubava Contratados para o
+  // slide manual sem dizer o porquê.
+  if (!pastaId && chavePasta === 'CONTRATADOS' && projeto.servicosContratadosPastaId) {
+    pastaId = projeto.servicosContratadosPastaId;
+    Logger.log('Aviso (' + secao + '): 01_Config.gs está na versão anterior. ' +
+               'Cole o 01_Config.gs atualizado para habilitar Internos e Complementos.');
+  }
 
   if (!pastaId) {
-    Logger.log(secao + ': pasta não configurada para ' + projeto.nome + ' — usando slide manual.');
+    Logger.log(secao + ': pasta não configurada para ' + projeto.nome + ' — usando slide manual. ' +
+               '(Se você já configurou, confira se o 01_Config.gs colado no Apps Script é o atual: ' +
+               'a seção precisa existir em fotosServicos.)');
     return gerarSlideRegistroFotos(secao);
   }
 
