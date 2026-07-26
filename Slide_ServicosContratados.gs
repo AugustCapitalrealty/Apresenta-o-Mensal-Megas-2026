@@ -6,13 +6,17 @@
  * dela, uma subpasta por serviço prestado com as fotos do serviço. Gera um
  * slide por serviço, usando o nome da própria subpasta como manchete.
  *
- * DESIGN — "placa editorial": o slide é uma prancha fotográfica institucional.
- * Uma placa navy sangrada de borda a borda ocupa 83% da página; as fotos são
- * diagramadas dentro dela por um MOSAICO JUSTIFICADO (cada foto recebe um
- * retângulo com a proporção dela mesma, então não há letterbox, corte nem
- * distorção); o nome do serviço é a manchete. Sem rótulos de painel — eles
- * existiam no template manual (Slide_RegistroFotos.gs) só para guiar quem
- * preenchia à mão, e aqui a geração é automática.
+ * DESIGN — prancha fotográfica sobre parede clara. As fotos são diagramadas
+ * por um MOSAICO JUSTIFICADO: cada foto recebe um retângulo com a proporção
+ * dela mesma, então não há letterbox, corte nem distorção. O nome do serviço é
+ * a manchete. Sem rótulos de painel — eles existiam no template manual
+ * (Slide_RegistroFotos.gs) só para guiar quem preenchia à mão, e aqui a
+ * geração é automática.
+ *
+ * Dois arranjos, escolhidos pela largura final do mosaico:
+ *   ▸ A — fotos largas: manchete no topo, mosaico ocupando a largura toda.
+ *   ▸ B — fotos estreitas (1-2 retratos): coluna de texto fixa à esquerda e as
+ *         fotos, bem maiores, centralizadas no espaço restante.
  *
  * Sem pasta configurada, sem pasta do mês ou sem nenhum serviço com foto:
  * cai de volta no slide manual de colar foto por foto (gerarSlideRegistroFotos),
@@ -35,8 +39,13 @@ const SC_TAG_COR    = '#003D7B';
 const SC_GAP        = 10;      // respiro entre fotos do mosaico
 // Banda A (padrão): mosaico ocupa a largura toda, texto no topo.
 const SC_A = { x: 44, y: 138, w: 632, h: 240 };
-// Banda B (fotos estreitas): mosaico ancorado à direita, texto em coluna à esquerda.
-const SC_B = { xFim: 676, y: 100, w: 380, h: 278 };
+// Zona B (fotos estreitas): texto em coluna FIXA à esquerda e as fotos com todo
+// o resto, centralizadas na zona. A primeira versão fazia o contrário — a
+// coluna de texto era a sobra do que as fotos não usavam —, então quanto menor
+// a foto, maior o vazio à esquerda: com 1 foto sobravam 387pt de coluna para
+// duas palavras. Agora o texto tem largura fixa e a foto é a protagonista.
+const SC_B = { x: 272, y: 72, w: 418, h: 328 };
+const SC_B_TEXTO_W = 190;
 // Abaixo desta largura final o mosaico fica "perdido" na banda A → usa a B.
 const SC_LIMIAR_B   = 400;
 const SC_ESCADA_A   = [18, 16.5, 15, 13.5, 12, 11, 10];
@@ -361,24 +370,28 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
   }
 
   if (usarB) {
-    // ── LAYOUT B — fotos estreitas: mosaico à direita, texto em coluna ─────
-    const px = SC_B.xFim - mos.usedW;
+    // ── LAYOUT B — fotos estreitas: coluna de texto fixa, fotos centralizadas ─
+    const colW = SC_B_TEXTO_W;
+    const px = SC_B.x + (SC_B.w - mos.usedW) / 2;
     const py = SC_B.y + (SC_B.h - mos.usedH) / 2;
-    const colW = px - 80;
 
     const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 50, 104, 40, 2.5);
     filete.getFill().setSolidFill(SC_ACENTO);
     filete.getBorder().setTransparent();
 
     _scTexto_(slide, 50, 116, colW, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
-    _scTexto_(slide, 50, 132, colW, 108, info.nome,
+    _scTexto_(slide, 50, 132, colW, 116, info.nome,
               _scCorpoTexto_(info.nome.length, colW, SC_ESCADA_B, 3.7),
               SC_TITULO_COR, DS.typography.titles, true);
-    if (info.tag) _scTag_(slide, info.tag, 50, 248);
+    if (info.tag) _scTag_(slide, info.tag, 50, 258);
 
     fotos.forEach((f, i) => _scPosicionar_(f.img, {
       x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
     }));
+
+    // Rodapé sobe para dentro da coluna de texto: as fotos vão até y=400 e só
+    // não colidem porque estão à direita de x=272.
+    _scTexto_(slide, 50, 376, 200, 16, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   } else {
     // ── LAYOUT A — padrão: texto no topo da placa, mosaico na largura toda ─
     const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 76, 3, 30);
@@ -402,8 +415,8 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     fotos.forEach((f, i) => _scPosicionar_(f.img, {
       x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
     }));
+    _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   }
 
-  _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   Logger.log('Slide Serviço Contratado gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
 }
