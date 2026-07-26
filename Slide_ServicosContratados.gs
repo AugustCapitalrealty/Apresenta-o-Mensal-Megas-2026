@@ -19,17 +19,24 @@
  * sem quebrar a geração.
  */
 
-// Paleta e medidas da placa (ver comentário de design acima).
-const SC_MAT_Y      = 70;      // topo da placa navy (logo abaixo do header)
-const SC_ACENTO     = '#60A5FA';  // acento único do deck (mesmo das capas de seção)
-const SC_FOLIO_COR  = '#1D2856';  // navy ~8% mais claro que o mat — marca d'água
+// Paleta e medidas (ver comentário de design acima).
+// A página é CLARA de propósito: a placa navy da primeira versão competia com
+// as fotos pela atenção. Ela só existia para fazer o letterbox das fotos em
+// retrato parecer proposital — e o mosaico justificado eliminou o letterbox,
+// então a justificativa caiu junto. Parede clara de galeria: as fotos passam a
+// ser a única coisa saturada da página.
+const SC_ACENTO     = '#065CA9';  // brandLight — legível sobre fundo claro
+const SC_TITULO_COR = '#151E49';  // brandDark
+const SC_LINHA_COR  = '#E2E8F0';  // divisor
+const SC_KEYLINE    = '#CBD5E1';  // filete em volta de cada foto
 const SC_RODAPE_COR = '#94A3B8';
-const SC_TAG_COR    = '#93C5FD';
+const SC_TAG_BORDA  = '#93C5FD';
+const SC_TAG_COR    = '#003D7B';
 const SC_GAP        = 10;      // respiro entre fotos do mosaico
-// Banda A (padrão): mosaico ocupa a largura toda, texto no topo da placa.
-const SC_A = { x: 44, y: 142, w: 632, h: 232 };
+// Banda A (padrão): mosaico ocupa a largura toda, texto no topo.
+const SC_A = { x: 44, y: 138, w: 632, h: 240 };
 // Banda B (fotos estreitas): mosaico ancorado à direita, texto em coluna à esquerda.
-const SC_B = { xFim: 676, y: 104, w: 380, h: 272 };
+const SC_B = { xFim: 676, y: 100, w: 380, h: 278 };
 // Abaixo desta largura final o mosaico fica "perdido" na banda A → usa a B.
 const SC_LIMIAR_B   = 400;
 const SC_ESCADA_A   = [18, 16.5, 15, 13.5, 12, 11, 10];
@@ -282,9 +289,9 @@ function _scMedirFotos_(slide, arquivos) {
 
 function _scPosicionar_(img, r) {
   img.setWidth(r.w).setHeight(r.h).setLeft(r.x).setTop(r.y);
-  // Keyline: filete de impressão que separa foto escura do mat escuro.
+  // Keyline: filete de impressão que assenta a foto sobre a página clara.
   try {
-    img.getBorder().setWeight(0.75).getLineFill().setSolidFill('#FFFFFF', 0.22);
+    img.getBorder().setWeight(0.75).getLineFill().setSolidFill(SC_KEYLINE);
   } catch (e) {
     Logger.log('Aviso (Serviços Contratados): keyline não aplicado. ' + e.message);
   }
@@ -305,8 +312,8 @@ function _scTag_(slide, texto, x, y) {
   // de folga de cada lado (recuo interno do TEXT_BOX quebraria a linha).
   const pw = Math.max(58, Math.min(200, 16 + 4.3 * texto.length));
   const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, pw, 16);
-  pill.getFill().setSolidFill('#FFFFFF', 0.08);
-  pill.getBorder().setWeight(0.75).getLineFill().setSolidFill(SC_TAG_COR, 0.45);
+  pill.getFill().setSolidFill('#FFFFFF');
+  pill.getBorder().setWeight(0.75).getLineFill().setSolidFill(SC_TAG_BORDA);
   _scTexto_(slide, x - 10, y, pw + 20, 16, texto, 7, SC_TAG_COR,
             CR_DESIGN_SYSTEM.typography.body, true, SlidesApp.ParagraphAlignment.CENTER, true);
   return pw;
@@ -317,7 +324,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS  = CR_DESIGN_SYSTEM;
   const ref = obterMesReferencia_();
   const projeto = getProjetoAtivo();
@@ -327,14 +333,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
   const info = _scNormalizarNome_(pastaServico.getName());
   const nn   = String(indice).padStart(2, '0');
   const NN   = String(total).padStart(2, '0');
-
-  // ── Placa navy (sangra até a base do slide) ──────────────────────────────
-  const mat = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, SC_MAT_Y, W, H - SC_MAT_Y);
-  mat.getFill().setSolidFill(DS.colors.brandDark);
-  mat.getBorder().setTransparent();
-
-  // Fólio marca d'água — preenche a margem morta com algo editorial.
-  _scTexto_(slide, 18, 196, 300, 150, nn, 112, SC_FOLIO_COR, DS.typography.titles, true);
 
   // ── Fotos: mede primeiro, diagrama depois ───────────────────────────────
   const arquivos = _scListarFotos_(pastaServico, 4);
@@ -354,11 +352,10 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
 
   if (!ars.length) {
     // Nenhuma foto carregou: placa ainda apresentável, só com o texto.
-    _scTexto_(slide, 44, 180, 3, 30, '', 8, SC_ACENTO, DS.typography.body);
-    _scTexto_(slide, 50, 178, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 7.5, SC_ACENTO, DS.typography.body, true);
+    _scTexto_(slide, 50, 178, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
     _scTexto_(slide, 50, 192, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
-              '#FFFFFF', DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
-    _scTexto_(slide, 50, 379, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
+              SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
+    _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
     Logger.log('Slide Serviço Contratado gerado SEM fotos (todas falharam): ' + info.nome);
     return;
   }
@@ -369,35 +366,35 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     const py = SC_B.y + (SC_B.h - mos.usedH) / 2;
     const colW = px - 80;
 
-    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 50, 108, 40, 2.5);
+    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 50, 104, 40, 2.5);
     filete.getFill().setSolidFill(SC_ACENTO);
     filete.getBorder().setTransparent();
 
-    _scTexto_(slide, 50, 120, colW, 13, 'SERVIÇO ' + nn + ' / ' + NN, 7.5, SC_ACENTO, DS.typography.body, true);
-    _scTexto_(slide, 50, 136, colW, 108, info.nome,
+    _scTexto_(slide, 50, 116, colW, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
+    _scTexto_(slide, 50, 132, colW, 108, info.nome,
               _scCorpoTexto_(info.nome.length, colW, SC_ESCADA_B, 3.7),
-              '#FFFFFF', DS.typography.titles, true);
-    if (info.tag) _scTag_(slide, info.tag, 50, 252);
+              SC_TITULO_COR, DS.typography.titles, true);
+    if (info.tag) _scTag_(slide, info.tag, 50, 248);
 
     fotos.forEach((f, i) => _scPosicionar_(f.img, {
       x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
     }));
   } else {
     // ── LAYOUT A — padrão: texto no topo da placa, mosaico na largura toda ─
-    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 80, 3, 30);
+    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 76, 3, 30);
     filete.getFill().setSolidFill(SC_ACENTO);
     filete.getBorder().setTransparent();
 
-    _scTexto_(slide, 50, 78, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 7.5, SC_ACENTO, DS.typography.body, true);
+    _scTexto_(slide, 50, 74, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
     if (info.tag) {
       const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
-      _scTag_(slide, info.tag, 676 - pw, 77);
+      _scTag_(slide, info.tag, 676 - pw, 74);
     }
-    _scTexto_(slide, 50, 90, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
-              '#FFFFFF', DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
+    _scTexto_(slide, 50, 88, 626, 38, info.nome, _scCorpoManchete_(info.nome.length),
+              SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
 
-    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 132, 632, 0.75);
-    div.getFill().setSolidFill('#FFFFFF', 0.15);
+    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 128, 632, 0.75);
+    div.getFill().setSolidFill(SC_LINHA_COR);
     div.getBorder().setTransparent();
 
     const px = SC_A.x + (SC_A.w - mos.usedW) / 2;
@@ -407,6 +404,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     }));
   }
 
-  _scTexto_(slide, 50, 379, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
+  _scTexto_(slide, 50, 384, 460, 14, rodape, 7.5, SC_RODAPE_COR, DS.typography.body);
   Logger.log('Slide Serviço Contratado gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
 }
