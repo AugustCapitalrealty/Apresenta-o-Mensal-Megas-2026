@@ -75,10 +75,20 @@ function gerarSlidesFotosDrive_(secao, chavePasta) {
                'Cole o 01_Config.gs atualizado para habilitar Internos e Complementos.');
   }
 
+  // Auto-descoberta: se pastaId não foi encontrada explicitamente, tenta encontrar
+  // uma pasta com o nome da seção dentro de fotosRaizId.
+  if (!pastaId && projeto.fotosRaizId) {
+    try {
+      const pastaRaiz = DriveApp.getFolderById(projeto.fotosRaizId);
+      pastaId = _scEncontrarPastaSecao_(pastaRaiz, chavePasta);
+    } catch (e) {
+      // Se a pasta-raiz não existe, pastaId fica null e cai no slide manual.
+    }
+  }
+
   if (!pastaId) {
     Logger.log(secao + ': pasta não configurada para ' + projeto.nome + ' — usando slide manual. ' +
-               '(Se você já configurou, confira se o 01_Config.gs colado no Apps Script é o atual: ' +
-               'a seção precisa existir em fotosServicos.)');
+               '(Configure fotosRaizId em 01_Config.gs para habilitar automação.)');
     return gerarSlideRegistroFotos(secao);
   }
 
@@ -105,6 +115,27 @@ function gerarSlidesFotosDrive_(secao, chavePasta) {
 
   servicos.forEach((pastaServico, i) => _scGerarSlideServico_(secao, pastaServico, i + 1, servicos.length));
   Logger.log(secao + ': ' + servicos.length + ' slide(s) gerado(s) automaticamente a partir do Drive (' + pastaMes.getName() + ').');
+}
+
+// ── Descoberta da pasta da seção (CONTRATADOS, INTERNOS, COMPLEMENTOS) ──────
+// Procura por subpastas cujo nome contenha (normalizado) a chave da seção.
+// Suporta variações: "CONTRATADOS", "Contratados", "contratado", "cont", etc.
+function _scEncontrarPastaSecao_(pastaRaiz, chavePasta) {
+  const palavrasChave = {
+    'CONTRATADOS':  ['contratad', 'cont'],
+    'INTERNOS':     ['intern', 'int'],
+    'COMPLEMENTOS': ['compl', 'comp']
+  };
+  const palavras = palavrasChave[chavePasta] || [];
+  if (palavras.length === 0) return null;
+
+  const it = pastaRaiz.getFolders();
+  while (it.hasNext()) {
+    const f = it.next();
+    const nome = _histNorm_(f.getName());
+    if (palavras.some(p => nome.indexOf(p) >= 0)) return f.getId();
+  }
+  return null;
 }
 
 // ── Descoberta da pasta do mês ────────────────────────────────────────────

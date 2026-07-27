@@ -142,17 +142,12 @@ const PROJETOS = {
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
     coBrandLogoId  : '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',   // logo Demercado
-    // Pastas de FOTOS por seção, dentro de "FOTOS - APRESENTAÇÕES"
-    // (196ZBgMBAv3lLOjebEu2c37UaZIDHjBxb). Cada uma tem uma subpasta por mês
-    // ("06-JUNHO", "07-JULHO"...) e, dentro do mês, uma subpasta por serviço
-    // com as fotos. Usadas por gerarSlidesFotosDrive_
-    // (Slide_ServicosContratados.gs) para montar os slides automaticamente.
-    // Seção ausente/vazia = mantém o slide manual de colar foto por foto.
-    fotosServicos  : {
-      CONTRATADOS  : '1yK3H4BsQ_T13j4RLa6Ej7plaiz0DzNpD',
-      INTERNOS     : '1pxY5nBgc9Xrxm0r_s7lGdxkBd8LauPjL',
-      COMPLEMENTOS : '1aFLXH7zg9ELorXrO_eNro9St08_AXDXd'
-    },
+    // Pasta-raiz de FOTOS (FOTOS - APRESENTAÇÕES). A automação busca
+    // subpastas por nome (CONTRATADOS/INTERNOS/COMPLEMENTOS), depois dentro
+    // de cada uma a subpasta do mês de referência (ex.: "06-JUNHO"), e dentro
+    // do mês as subpastas de serviço com as fotos. Sem pasta-raiz, cai no slide
+    // manual. Ver gerarSlidesFotosDrive_ em Slide_ServicosContratados.gs.
+    fotosRaizId    : '196ZBgMBAv3lLOjebEu2c37UaZIDHjBxb',
     contatos       : [
       { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
@@ -170,7 +165,9 @@ const PROJETOS = {
     ppcId          : '',   // ainda não recebido — % planejado fica manual
     unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
     coBrandLogoId  : '',
-    fotosServicos  : {},   // ainda não recebidas — mantém slides manuais
+    // Pasta-raiz de FOTOS — subpastas por seção são descobertas pelo nome
+    // (CONTRATADOS/INTERNOS/COMPLEMENTOS), depois a subpasta do mês dentro de cada uma.
+    fotosRaizId    : '1OaPX5AC9jk5rXHcCbF1SFFfYVwA-RB5e',
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -187,7 +184,7 @@ const PROJETOS = {
     ppcId          : '1I9DWcd8HXVRkjcv8eTk4UdQ5IZRuqUhFikw8tVfPt2c',   // PPC Mega Esteio 2026
     unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio
     coBrandLogoId  : '',
-    fotosServicos  : {},   // ainda não recebidas — mantém slides manuais
+    fotosRaizId    : '1CQqkWhiAcA6E4o0PIGaobSF18TIEo4jU',
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
