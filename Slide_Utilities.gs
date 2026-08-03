@@ -347,7 +347,11 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
       if (doMes.length === 0) continue;
       doMes.sort((a, b) => a.p.y - b.p.y);   // menor y primeiro = ponto mais alto
 
-      const offset = 13, minGap = 11;
+      // minGap é a distância entre os TOPOS de duas caixas empilhadas; como
+      // cada caixa já tem 11pt de altura, minGap=11 deixava zero espaço em
+      // branco real entre uma e a próxima (só encostavam) — na prática
+      // ficava sobreposto. 17 dá ~6pt de respiro visível.
+      const offset = 13, minGap = 17;
       const labelY = [];
       doMes.forEach((item, i) => {
         const desejado = item.p.y - offset;
@@ -424,7 +428,10 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
   }
 
   // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
-  if (ref.index >= 0 && ref.index <= 11) {
+  // Só no modo barra: no modo linha, todo ponto já tem rótulo próprio no
+  // gráfico, então esse resumo fica redundante (e apertado ao lado da
+  // legenda quando os valores são mais longos, como "5,19 m").
+  if (modo !== 'linha' && ref.index >= 0 && ref.index <= 11) {
     _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque, modo);
   }
 }
