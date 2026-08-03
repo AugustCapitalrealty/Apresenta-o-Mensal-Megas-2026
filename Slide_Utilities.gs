@@ -298,14 +298,20 @@ function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
   const wMes = 16 + rotuloMes.length * 5;
   _sTxt(slide, cx, y, wMes, 12, rotuloMes, 7.5, true, CORES.textDark, 'left');
   cx += wMes;
+
+  // Largura fixa por ano (em vez de estimar pelo tamanho do texto): sem API
+  // de medição real de glifos no Apps Script, a estimativa por caractere é
+  // imprecisa e o erro se acumula item a item — um valor mais longo (ex.:
+  // "R$ 5.268") deixava o próximo quadradinho visualmente desalinhado dos
+  // demais. Com pitch fixo, o espaçamento entre os itens fica sempre igual.
+  const wValor = 58;
   anos.forEach((ano, i) => {
     const val = serie.porAno[ano][ref.index];
     const txt = val != null ? fmt(val) : '—';
     const cor = _utilCorSerie_(i, anos.length, corDestaque);
     _solarRect(slide, cx, y + 3, 7, 7, cor);
-    const tw = 14 + txt.length * 5;
-    _sTxt(slide, cx + 10, y - 1, tw, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
-    cx += 10 + tw + 6;
+    _sTxt(slide, cx + 10, y - 1, wValor, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
+    cx += 10 + wValor + 6;
   });
 }
 
