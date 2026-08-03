@@ -37,6 +37,11 @@ function gerarSoMetasGuilherme() { setProjetoAtivo('CURITIBA'); gerarSlidesMetas
 function gerarSoUtilitiesItajai() { setProjetoAtivo('ITAJAI'); gerarSlidesUtilities_(); }
 function gerarSoUtilitiesEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesUtilities_(); }
 
+// Monitoramento Pluviométrico e Canal de Drenagem — só Mega Esteio, busca
+// automática na planilha externa do sistema de gestão predial (ver
+// Slide_Utilities.gs / monitoramentoId em 01_Config.gs).
+function gerarSoMonitoramentoEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesMonitoramentoEsteio_(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -140,6 +145,11 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Energia Solar / Utilities',           fn: () => {
         if (getProjetoAtivo().nome === 'Mega Curitiba') gerarSlideEnergiaSolar();
         else gerarSlidesUtilities_();
+      } },
+    // Monitoramento Pluviométrico e Canal de Drenagem — só Mega Esteio (aba
+    // de contenção de cheias própria daquele empreendimento).
+    { nome: 'Monitoramento Pluviométrico',         fn: () => {
+        if (getProjetoAtivo().nome === 'Mega Esteio') gerarSlidesMonitoramentoEsteio_();
       } },
     { nome: 'Capa Seção - Documentação',           fn: () => gerarCapaSecao('DOCUMENTAÇÃO', 'LEGAL', 'DOCUMENTACAO') },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },

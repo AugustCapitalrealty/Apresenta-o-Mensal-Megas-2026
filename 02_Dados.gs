@@ -2174,3 +2174,140 @@ function obterDadosUtilities_() {
     return null;
   }
 }
+
+
+// ==========================================
+// DADOS MONITORAMENTO — PLUVIÔMETRO E CANAL DE DRENAGEM (só Mega Esteio)
+// ==========================================
+// Fonte: planilha EXTERNA do sistema de gestão predial (monitoramentoId em
+// 01_Config.gs), aba "BDMEDI" (nome buscado por correspondência parcial —
+// a planilha reúne várias tabelas "BD-*"). Diferente da aba UTILITIES, que
+// já vem pré-agregada por mês, aqui cada linha é um LANÇAMENTO bruto de
+// campo, com data/hora e o texto livre da medição na coluna "Medição". A
+// agregação mensal é feita aqui, filtrando por "Edifício" conter "Esteio"
+// (a aba pode reunir medições de outros empreendimentos/pontos — há também
+// níveis de rio e itens de checklist que não interessam aqui).
+//
+//   Pluviômetro (chuva, mm): cada leitura é o volume acumulado DESDE A
+//     ÚLTIMA LEITURA (não um total corrido do dia) → soma no mês = total.
+//   Canal de Drenagem (nível, m): leitura pontual do nível da água — pode
+//     ser lançada várias vezes num mesmo dia em eventos de chuva forte →
+//     média no mês representa o nível típico; o máximo de cada mês é
+//     rastreado à parte, para o card de pico de cheia.
+function obterDadosMonitoramentoEsteio_() {
+  const projeto = getProjetoAtivo();
+  if (!projeto.monitoramentoId) return null;
+
+  try {
+    const ss    = SpreadsheetApp.openById(projeto.monitoramentoId);
+    const sheet = _monEncontrarAba_(ss);
+    if (!sheet) {
+      Logger.log('Monitoramento: aba "BDMEDI" não encontrada na planilha externa.');
+      return null;
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return null;
+
+    const hdr      = data[0].map(h => _histNorm_(h));
+    const cData    = hdr.indexOf('data');
+    const cEdif    = hdr.indexOf('edificio');
+    const cMedicao = hdr.indexOf('medicao');
+    const cValor   = hdr.indexOf('valor');
+    if (cData < 0 || cMedicao < 0 || cValor < 0) {
+      Logger.log('Monitoramento: colunas esperadas (Data/Medição/Valor) não encontradas na aba.');
+      return null;
+    }
+
+    const chuvaSoma = {}, chuvaN = {};
+    const nivelSoma = {}, nivelN = {}, nivelMax = {};
+
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (cEdif >= 0 && _histNorm_(row[cEdif]).indexOf('esteio') < 0) continue;
+
+      const medicao = _histNorm_(row[cMedicao]);
+      const ehChuva = medicao.indexOf('pluviometro') >= 0;
+      const ehNivel = medicao.indexOf('canal de drenagem') >= 0;
+      if (!ehChuva && !ehNivel) continue;
+
+      const dt = _monParseData_(row[cData]);
+      if (!dt) continue;
+      const valor = _monNum_(row[cValor]);
+      if (isNaN(valor)) continue;
+
+      if (ehChuva) {
+        if (!chuvaSoma[dt.ano]) { chuvaSoma[dt.ano] = new Array(12).fill(0); chuvaN[dt.ano] = new Array(12).fill(0); }
+        chuvaSoma[dt.ano][dt.mes] += valor;
+        chuvaN[dt.ano][dt.mes]++;
+      } else {
+        if (!nivelSoma[dt.ano]) { nivelSoma[dt.ano] = new Array(12).fill(0); nivelN[dt.ano] = new Array(12).fill(0); nivelMax[dt.ano] = new Array(12).fill(null); }
+        nivelSoma[dt.ano][dt.mes] += valor;
+        nivelN[dt.ano][dt.mes]++;
+        if (nivelMax[dt.ano][dt.mes] == null || valor > nivelMax[dt.ano][dt.mes]) nivelMax[dt.ano][dt.mes] = valor;
+      }
+    }
+
+    const chuva = _monSerieSoma_(chuvaSoma, chuvaN);
+    const nivel = _monSerieMedia_(nivelSoma, nivelN);
+    const nivelMaxSerie = _monSerieDireta_(nivelMax);
+
+    if (chuva.anos.length === 0 && nivel.anos.length === 0) return null;
+    return { chuva: chuva, nivel: nivel, nivelMax: nivelMaxSerie };
+
+  } catch (e) {
+    Logger.log('Erro Monitoramento (Esteio): ' + e.message);
+    return null;
+  }
+}
+
+function _monEncontrarAba_(ss) {
+  const abas = ss.getSheets();
+  for (let i = 0; i < abas.length; i++) {
+    if (_histNorm_(abas[i].getName()).indexOf('bdmedi') >= 0) return abas[i];
+  }
+  return null;
+}
+
+// Aceita tanto Date genuíno (coluna de data real na planilha, via
+// getValues()) quanto texto "DD/MM/AAAA..." como respaldo.
+function _monParseData_(cell) {
+  if (cell instanceof Date && !isNaN(cell.getTime())) {
+    return { ano: cell.getFullYear(), mes: cell.getMonth() };
+  }
+  const m = String(cell || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return null;
+  return { ano: parseInt(m[3], 10), mes: parseInt(m[2], 10) - 1 };
+}
+
+// Aceita tanto número genuíno (coluna numérica real) quanto texto "3,90"
+// no formato BR (via _histNum_).
+function _monNum_(cell) {
+  if (typeof cell === 'number') return cell;
+  return _histNum_(cell);
+}
+
+function _monSerieSoma_(soma, n) {
+  const porAno = {};
+  Object.keys(soma).forEach(anoStr => {
+    porAno[Number(anoStr)] = soma[anoStr].map((s, i) => n[anoStr][i] > 0 ? s : null);
+  });
+  const anos = Object.keys(porAno).map(Number).sort((a, z) => a - z);
+  return { anos: anos, porAno: porAno };
+}
+
+function _monSerieMedia_(soma, n) {
+  const porAno = {};
+  Object.keys(soma).forEach(anoStr => {
+    porAno[Number(anoStr)] = soma[anoStr].map((s, i) => n[anoStr][i] > 0 ? s / n[anoStr][i] : null);
+  });
+  const anos = Object.keys(porAno).map(Number).sort((a, z) => a - z);
+  return { anos: anos, porAno: porAno };
+}
+
+function _monSerieDireta_(porAnoRaw) {
+  const porAno = {};
+  Object.keys(porAnoRaw).forEach(anoStr => { porAno[Number(anoStr)] = porAnoRaw[anoStr]; });
+  const anos = Object.keys(porAno).map(Number).sort((a, z) => a - z);
+  return { anos: anos, porAno: porAno };
+}

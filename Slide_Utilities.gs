@@ -1,26 +1,32 @@
 /**
  * ARQUIVO: Slide_Utilities.gs
- * COMPONENTE — GESTÃO DE UTILITIES (consumo e gasto de Energia e Água)
- * DESCRIÇÃO: Gera até 4 slides — Energia (R$), Energia (kWh), Água (R$),
- * Água (m³) — a partir da aba "UTILITIES" da planilha da cidade ativa (ver
- * obterDadosUtilities_ em 02_Dados.gs). Só Itajaí e Esteio por enquanto —
- * Curitiba tem o slide dedicado de Energia Solar (Slide10_EnergiaSolar.gs).
+ * COMPONENTE — GESTÃO DE UTILITIES (energia, água, pluviômetro, canal)
+ * DESCRIÇÃO: Duas famílias de slides que reaproveitam o mesmo motor de
+ * desenho (cards de KPI + gráfico de barras agrupadas por ano):
  *
- * Cada slide tem 3 cards de KPI (mês de referência, acumulado no ano e
- * média mensal no ano — "CUSTO MÉDIO MENSAL" nos slides de R$, "CONSUMO
- * MÉDIO MENSAL" nos de kWh/m³, sempre na mesma unidade do gráfico) — mais
- * um 4º card só com a logo da concessionária, quando a cidade tiver uma
- * configurada (logoEnergiaId/logoAguaId em 01_Config.gs) — seguidos do
- * gráfico de barras agrupadas por mês, uma barra por ano disponível na
- * planilha: o ano mais recente entra na cor de destaque da métrica (energia
- * = âmbar, água = azul), os anos anteriores em tons de cinza (mais antigo =
- * mais escuro). O mês de referência da apresentação (obterMesReferencia_)
- * ganha uma faixa vertical suave no gráfico, mais um comparativo com os
- * valores dos outros anos lado a lado — mesma ideia do quadro vermelho
- * manual, sem o alarme visual. Meses com "R$ 0,00" lançado (cobrança zerada,
- * diferente de mês ainda sem lançamento) ganham uma nota de rodapé.
+ *   1) gerarSlidesUtilities_() — até 4 slides (Energia R$/kWh, Água R$/m³) a
+ *      partir da aba "UTILITIES" da planilha da cidade ativa (ver
+ *      obterDadosUtilities_ em 02_Dados.gs). Itajaí e Esteio — Curitiba tem
+ *      o slide dedicado de Energia Solar (Slide10_EnergiaSolar.gs).
  *
- * Sem aba UTILITIES, ou aba sem nenhuma seção reconhecida: a função não gera
+ *   2) gerarSlidesMonitoramentoEsteio_() — 2 slides (Pluviômetro, Nível do
+ *      Canal de Drenagem), só Mega Esteio, a partir de uma planilha EXTERNA
+ *      de lançamentos brutos de campo (ver obterDadosMonitoramentoEsteio_
+ *      em 02_Dados.gs, monitoramentoId em 01_Config.gs).
+ *
+ * Cada slide tem 3 cards de KPI (definidos pelo chamador — os rótulos e o
+ * que cada um mede variam por família) — mais um 4º card só com a logo da
+ * concessionária, quando configurada (logoEnergiaId/logoAguaId, só faz
+ * sentido para energia/água) — seguidos do gráfico de barras agrupadas por
+ * mês, uma barra por ano (no máximo os 3 mais recentes — a fonte de
+ * monitoramento tem histórico desde 2012 e um gráfico com uma barra por ano
+ * desde então ficaria ilegível). O ano mais recente entra na cor de
+ * destaque, os anteriores em tons de cinza (mais antigo = mais escuro). O
+ * mês de referência da apresentação (obterMesReferencia_) ganha uma faixa
+ * vertical suave no gráfico, mais um comparativo com os valores dos outros
+ * anos lado a lado.
+ *
+ * Sem fonte de dados (aba/planilha ausente ou vazia): a função não gera
  * nada e não quebra o resto da apresentação.
  */
 
@@ -47,55 +53,113 @@ function gerarSlidesUtilities_() {
     if (!bloco) return;
     const serie = bloco[p.metrica];
     if (!serie || serie.anos.length === 0) return;
-    _utilSlideGrafico_(p.titulo, serie, p.metrica, p.fmt, p.cor, p.logo, ref);
+
+    const mesAtual      = _utilValorMes_(serie, ref.ano,     ref.index);
+    const mesAnterior   = _utilValorMes_(serie, ref.ano - 1, ref.index);
+    const acAtual       = _utilAcumulado_(serie, ref.ano,     ref.index);
+    const acAnterior    = _utilAcumulado_(serie, ref.ano - 1, ref.index);
+    const mediaAtual    = _utilMediaMensal_(serie, ref.ano,     ref.index);
+    const mediaAnterior = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
+
+    const cards = [
+      { label: p.metrica === 'valor' ? 'GASTO DO MÊS' : 'CONSUMO DO MÊS',
+        val: mesAtual, ant: mesAnterior, fmt: p.fmt },
+      { label: 'ACUMULADO NO ANO',
+        val: acAtual, ant: acAnterior, fmt: p.fmt },
+      { label: p.metrica === 'valor' ? 'CUSTO MÉDIO MENSAL' : 'CONSUMO MÉDIO MENSAL',
+        val: mediaAtual, ant: mediaAnterior, fmt: p.fmt }
+    ];
+
+    const subtitulo = p.titulo + ' · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    _utilSlideGrafico_('GESTÃO DE UTILITIES', subtitulo, _utilUltimosAnos_(serie, 3),
+      cards, p.fmt, p.cor, p.logo, ref, 'Sem cobrança');
     gerados++;
   });
 
   Logger.log('Utilities: ' + gerados + ' slide(s) gerado(s) a partir da aba UTILITIES.');
 }
 
-function _utilSlideGrafico_(titulo, serie, metrica, fmt, corDestaque, logoId, ref) {
+// ── Monitoramento — Pluviômetro e Canal de Drenagem (só Mega Esteio) ──────
+function gerarSlidesMonitoramentoEsteio_() {
+  const dados = obterDadosMonitoramentoEsteio_();
+  if (!dados) {
+    Logger.log('Monitoramento (Esteio): sem dados — nenhum slide gerado.');
+    return;
+  }
+
+  const ref = obterMesReferencia_();
+  let gerados = 0;
+
+  if (dados.chuva && dados.chuva.anos.length > 0) {
+    const serie = dados.chuva;
+    const mesAtual      = _utilValorMes_(serie, ref.ano,     ref.index);
+    const mesAnterior   = _utilValorMes_(serie, ref.ano - 1, ref.index);
+    const acAtual       = _utilAcumulado_(serie, ref.ano,     ref.index);
+    const acAnterior    = _utilAcumulado_(serie, ref.ano - 1, ref.index);
+    const mediaAtual    = _utilMediaMensal_(serie, ref.ano,     ref.index);
+    const mediaAnterior = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
+
+    const cards = [
+      { label: 'CHUVA DO MÊS',      val: mesAtual, ant: mesAnterior, fmt: _utilFmtChuva_ },
+      { label: 'ACUMULADO NO ANO',  val: acAtual,  ant: acAnterior,  fmt: _utilFmtChuva_ },
+      { label: 'MÉDIA MENSAL',      val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtChuva_ }
+    ];
+    const subtitulo = 'PLUVIÔMETRO (mm) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
+      cards, _utilFmtChuva_, CORES.lightBlue, null, ref, null);
+    gerados++;
+  }
+
+  if (dados.nivel && dados.nivel.anos.length > 0) {
+    const serie = dados.nivel;
+    const mesAtual      = _utilValorMes_(serie, ref.ano,     ref.index);
+    const mesAnterior   = _utilValorMes_(serie, ref.ano - 1, ref.index);
+    const maxAtual       = _utilMaximoAno_(dados.nivelMax, ref.ano,     ref.index);
+    const maxAnterior    = _utilMaximoAno_(dados.nivelMax, ref.ano - 1, ref.index);
+    const mediaAtual    = _utilMediaMensal_(serie, ref.ano,     ref.index);
+    const mediaAnterior = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
+
+    const cards = [
+      { label: 'NÍVEL DO MÊS',          val: mesAtual, ant: mesAnterior, fmt: _utilFmtNivel_ },
+      { label: 'NÍVEL MÁXIMO NO ANO',   val: maxAtual, ant: maxAnterior, fmt: _utilFmtNivel_ },
+      { label: 'NÍVEL MÉDIO MENSAL',    val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtNivel_ }
+    ];
+    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
+      cards, _utilFmtNivel_, '#0EA5E9', null, ref, null);
+    gerados++;
+  }
+
+  Logger.log('Monitoramento (Esteio): ' + gerados + ' slide(s) gerado(s).');
+}
+
+function _utilSlideGrafico_(tituloSecao, subtitulo, serie, cards, fmt, corDestaque, logoId, ref, notaZeroLabel) {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
-  criarHeaderPadrao(slide, 'GESTÃO DE UTILITIES',
-    titulo + ' · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano);
+  criarHeaderPadrao(slide, tituloSecao, subtitulo);
 
   const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
-  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, serie, metrica, fmt, corDestaque, ref, logoId);
+  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, cards, corDestaque, logoId);
 
   const chartY = topY + cardH + cardGap;
   const chartH = H - chartY - 16;
-  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref);
+  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref, notaZeroLabel);
 
-  Logger.log('Slide Utilities gerado → ' + titulo);
+  Logger.log('Slide Utilities gerado → ' + tituloSecao + ' — ' + subtitulo);
 }
 
-// ── Cards de KPI (mês de referência, acumulado no ano, média mensal no ano)
-// — e, quando a concessionária tiver logo configurada, um 4º card só com ela.
-function _utilCardsKPI_(slide, x, y, w, h, serie, metrica, fmt, corDestaque, ref, logoId) {
+// ── Cards de KPI — o chamador decide os 3 (rótulo/valor/comparativo fazem
+// sentido diferente por métrica: soma-no-ano p/ R$/consumo/chuva, pico-no-
+// -ano p/ nível de canal) — e, quando houver logo configurada, um 4º card
+// só com ela.
+function _utilCardsKPI_(slide, x, y, w, h, cards, corDestaque, logoId) {
   const gap    = 10;
   const nCards = logoId ? 4 : 3;
   const cardW  = (w - gap * (nCards - 1)) / nCards;
-
-  const mesAtual       = _utilValorMes_(serie,    ref.ano,     ref.index);
-  const mesAnterior    = _utilValorMes_(serie,    ref.ano - 1, ref.index);
-  const acAtual        = _utilAcumulado_(serie,   ref.ano,     ref.index);
-  const acAnterior     = _utilAcumulado_(serie,   ref.ano - 1, ref.index);
-  const mediaAtual     = _utilMediaMensal_(serie, ref.ano,     ref.index);
-  const mediaAnterior  = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
-
-  const cards = [
-    { label: metrica === 'valor' ? 'GASTO DO MÊS' : 'CONSUMO DO MÊS',
-      val: mesAtual, ant: mesAnterior, fmt: fmt },
-    { label: 'ACUMULADO NO ANO',
-      val: acAtual, ant: acAnterior, fmt: fmt },
-    { label: metrica === 'valor' ? 'CUSTO MÉDIO MENSAL' : 'CONSUMO MÉDIO MENSAL',
-      val: mediaAtual, ant: mediaAnterior, fmt: fmt }
-  ];
 
   cards.forEach((c, i) => {
     const cx = x + i * (cardW + gap);
@@ -146,7 +210,7 @@ function _utilCard_(slide, x, y, w, h, kpi, corDestaque) {
     const seta   = diff === 0 ? '▬' : (diff > 0 ? '▲' : '▼');
     const pctStr = pct != null ? ' (' + (diff > 0 ? '+' : '') + pct.toFixed(1) + '%)' : '';
     opts.sub    = seta + pctStr;
-    // Cost/consumo: menor é melhor — cair é bom (verde), subir é ruim (vermelho).
+    // Cost/consumo/chuva/nível: menor é melhor — cair é bom (verde), subir é ruim (vermelho).
     opts.corSub = diff > 0 ? CORES.cardRed : (diff < 0 ? CORES.cardGreen : CORES.textGray);
     opts.nota   = 'vs mesmo mês ano anterior';
   } else {
@@ -173,7 +237,7 @@ function _utilAcumulado_(serie, ano, ateMes) {
 }
 
 // Média mensal de Jan até ateMes (só considera meses com dado lançado —
-// "R$ 0,00" conta como mês, mês ainda vazio não conta).
+// zero explícito conta como mês, mês ainda vazio não conta).
 function _utilMediaMensal_(serie, ano, ateMes) {
   const arr = serie.porAno[ano];
   if (!arr) return null;
@@ -184,8 +248,33 @@ function _utilMediaMensal_(serie, ano, ateMes) {
   return n > 0 ? soma / n : null;
 }
 
+// Maior valor de Jan até ateMes — usado no pico de nível do canal (a média
+// mensal dilui um pico de cheia de um único dia; o máximo não).
+function _utilMaximoAno_(serie, ano, ateMes) {
+  const arr = serie.porAno[ano];
+  if (!arr) return null;
+  let max = null;
+  for (let m = 0; m <= ateMes; m++) {
+    if (arr[m] != null && (max == null || arr[m] > max)) max = arr[m];
+  }
+  return max;
+}
+
+// Mantém só os N anos mais recentes de uma série (evita gráfico poluído
+// quando a fonte tem histórico muito longo — o monitoramento predial
+// remonta a 2012; um bar por ano desde então seria ilegível).
+function _utilUltimosAnos_(serie, n) {
+  const anos = serie.anos.slice(-n);
+  const porAno = {};
+  anos.forEach(a => { porAno[a] = serie.porAno[a]; });
+  return { anos: anos, porAno: porAno };
+}
+
 // ── Gráfico de barras agrupadas por ano ────────────────────────────────────
-function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
+// notaZeroLabel: rótulo da nota de rodapé quando o ano mais recente tem
+// zero explícito lançado num mês (ex.: "Sem cobrança"). null desativa a
+// nota — zero é um valor normal em chuva/nível, não um evento a destacar.
+function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZeroLabel) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
   bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
@@ -230,7 +319,7 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
   const barW   = (slotW - barPad * (n + 1)) / n;
   const bBase  = plotY + plotH;
   const anoRecente = anos[n - 1];
-  const semCobranca = [];   // meses do ano mais recente com "R$ 0,00" lançado
+  const zerados = [];   // meses do ano mais recente com zero explícito lançado
 
   for (let mes = 0; mes < 12; mes++) {
     const slotX = plotX + mes * slotW;
@@ -246,7 +335,7 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
       }
 
       if (i === n - 1) {   // ano mais recente — valor acima da própria barra
-        if (val === 0) { semCobranca.push(mes); }
+        if (val === 0 && notaZeroLabel) { zerados.push(mes); }
         // Caixa alargada com folga simétrica: o recuo interno da TEXT_BOX
         // (~7pt de cada lado) quebra o texto em duas linhas se a caixa for
         // só do tamanho do texto. Como a caixa não tem fundo/borda própria,
@@ -254,7 +343,7 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
         const lw = 42, folga = 10;
         const cxBar = _utilBarX_(slotX, barPad, barW, i) + barW / 2;
         _sTxt(slide, cxBar - lw / 2 - folga, bBase - bh - 13, lw + folga * 2, 11,
-          fmt(val), 6.5, true, val === 0 ? CORES.textGray : cor, 'center');
+          fmt(val), 6.5, true, (val === 0 && notaZeroLabel) ? CORES.textGray : cor, 'center');
       }
     });
 
@@ -263,11 +352,10 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
       destaque, destaque ? corDestaque : CORES.textDark, 'center');
   }
 
-  // Nota de rodapé — meses do ano corrente com cobrança lançada em zero
-  // (diferente de mês ainda sem lançamento, que fica sem barra e sem nota).
-  if (semCobranca.length > 0) {
-    const meses = semCobranca.map(m => MESES_3_REF[m]).join(', ');
-    const txt = 'Sem cobrança em ' + anoRecente + ': ' + meses;
+  // Nota de rodapé — meses do ano corrente com zero explícito lançado.
+  if (notaZeroLabel && zerados.length > 0) {
+    const meses = zerados.map(m => MESES_3_REF[m]).join(', ');
+    const txt = notaZeroLabel + ' em ' + anoRecente + ': ' + meses;
     _sTxt(slide, plotX, bBase + 17, plotW, 11, txt, 6.5, false, CORES.textGray, 'left');
   }
 
@@ -339,4 +427,14 @@ function _utilFmtMoeda_(v) {
 function _utilFmtNum_(v) {
   if (v == null || isNaN(v)) return '';
   return Math.round(v).toLocaleString('pt-BR');
+}
+
+function _utilFmtChuva_(v) {
+  if (v == null || isNaN(v)) return '';
+  return Math.round(v).toLocaleString('pt-BR') + ' mm';
+}
+
+function _utilFmtNivel_(v) {
+  if (v == null || isNaN(v)) return '';
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m';
 }

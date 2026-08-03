@@ -191,6 +191,12 @@ const PROJETOS = {
     // Utilities (Slide_Utilities.gs) — opcional, some sem quebrar se vazio.
     logoEnergiaId  : '1wPWU_JPxIv3cEYs8iKRKpE9xjhr0Dvty',   // RGE
     logoAguaId     : '1LmweZVaJGvd1etINot2HBEuVt1aB-DpK',   // CORSAN
+    // Planilha EXTERNA do sistema de gestão predial (fora do padrão das
+    // outras — não é a spreadsheetId da cidade), aba "BDMEDI": lançamentos
+    // brutos de medições de campo (data/hora + texto livre em "Medição").
+    // Só Mega Esteio tem monitoramento de Pluviômetro e Canal de Drenagem
+    // por enquanto. Ver obterDadosMonitoramentoEsteio_ em 02_Dados.gs.
+    monitoramentoId: '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo',
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]
