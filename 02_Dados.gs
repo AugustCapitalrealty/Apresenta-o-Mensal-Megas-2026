@@ -2264,7 +2264,10 @@ function obterDadosMonitoramentoEsteio_() {
 function _monEncontrarAba_(ss) {
   const abas = ss.getSheets();
   for (let i = 0; i < abas.length; i++) {
-    if (_histNorm_(abas[i].getName()).indexOf('bdmedi') >= 0) return abas[i];
+    // Remove espaço/hífen/etc. antes de comparar — o nome real é
+    // "BD-MEDIÇÕES", e o hífen quebraria um indexOf direto por "bdmedi".
+    const nome = _histNorm_(abas[i].getName()).replace(/[^a-z0-9]/g, '');
+    if (nome.indexOf('bdmedi') >= 0) return abas[i];
   }
   return null;
 }
