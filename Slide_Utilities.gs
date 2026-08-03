@@ -8,7 +8,9 @@
  *
  * Cada slide tem 3 cards de KPI (mês de referência, acumulado no ano e custo
  * médio por unidade — R$/kWh ou R$/m³, sempre calculado a partir de VALOR ÷
- * CONSUMO independente de qual métrica o slide está plotando) seguidos do
+ * CONSUMO independente de qual métrica o slide está plotando) — mais um 4º
+ * card só com a logo da concessionária, quando a cidade tiver uma
+ * configurada (logoEnergiaId/logoAguaId em 01_Config.gs) — seguidos do
  * gráfico de barras agrupadas por mês, uma barra por ano disponível na
  * planilha: o ano mais recente entra na cor de destaque da métrica (energia
  * = âmbar, água = azul), os anos anteriores em tons de cinza (mais antigo =
@@ -63,20 +65,22 @@ function _utilSlideGrafico_(titulo, bloco, metrica, fmt, corDestaque, unidade, l
     titulo + ' · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano);
 
   const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
-  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, bloco, metrica, fmt, corDestaque, unidade, ref);
+  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, bloco, metrica, fmt, corDestaque, unidade, ref, logoId);
 
   const chartY = topY + cardH + cardGap;
   const chartH = H - chartY - 16;
-  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, bloco[metrica], fmt, corDestaque, logoId, ref);
+  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, bloco[metrica], fmt, corDestaque, ref);
 
   Logger.log('Slide Utilities gerado → ' + titulo);
 }
 
-// ── Cards de KPI (mês de referência, acumulado no ano, custo médio) ───────
-function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, unidade, ref) {
+// ── Cards de KPI (mês de referência, acumulado no ano, custo médio) — e,
+// quando a concessionária tiver logo configurada, um 4º card só com ela.
+function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, unidade, ref, logoId) {
   const serie = bloco[metrica];
   const gap   = 10;
-  const cardW = (w - gap * 2) / 3;
+  const nCards = logoId ? 4 : 3;
+  const cardW  = (w - gap * (nCards - 1)) / nCards;
 
   const mesAtual    = _utilValorMes_(serie, ref.ano,     ref.index);
   const mesAnterior = _utilValorMes_(serie, ref.ano - 1, ref.index);
@@ -100,6 +104,37 @@ function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, uni
     const cx = x + i * (cardW + gap);
     _utilCard_(slide, cx, y, cardW, h, c, corDestaque);
   });
+
+  if (logoId) {
+    const cx = x + 3 * (cardW + gap);
+    _utilCardLogo_(slide, cx, y, cardW, h, logoId, corDestaque);
+  }
+}
+
+// Card só com a logo da concessionária, mesmo container visual dos cards de
+// KPI (fundo branco, borda, faixa lateral) — preserva a proporção natural da
+// imagem, centralizada dentro da área útil do card.
+function _utilCardLogo_(slide, x, y, w, h, logoId, corDestaque) {
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(CORES.white);
+  bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
+  bg.getBorder().setWeight(1);
+
+  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
+  side.getFill().setSolidFill(corDestaque);
+  side.getBorder().setTransparent();
+
+  try {
+    const blob = DriveApp.getFileById(logoId).getBlob();
+    const img  = slide.insertImage(blob);
+    const ar   = img.getWidth() / img.getHeight();
+    const padX = 22, padY = 16;
+    let wImg = w - padX * 2, hImg = wImg / ar;
+    if (hImg > h - padY * 2) { hImg = h - padY * 2; wImg = hImg * ar; }
+    img.setLeft(x + (w - wImg) / 2).setTop(y + (h - hImg) / 2).setWidth(wImg).setHeight(hImg);
+  } catch (e) {
+    Logger.log('Aviso (Utilities): logo da concessionária não carregado. ' + e.message);
+  }
 }
 
 function _utilCard_(slide, x, y, w, h, kpi, corDestaque) {
@@ -138,7 +173,7 @@ function _utilAcumulado_(serie, ano, ateMes) {
 }
 
 // ── Gráfico de barras agrupadas por ano ────────────────────────────────────
-function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, logoId, ref) {
+function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
   bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
@@ -200,8 +235,13 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, logoId, ref) 
 
       if (i === n - 1) {   // ano mais recente — valor acima da própria barra
         if (val === 0) { semCobranca.push(mes); }
-        const lw = 42;
-        _sTxt(slide, _utilBarX_(slotX, barPad, barW, i) + barW / 2 - lw / 2, bBase - bh - 13, lw, 11,
+        // Caixa alargada com folga simétrica: o recuo interno da TEXT_BOX
+        // (~7pt de cada lado) quebra o texto em duas linhas se a caixa for
+        // só do tamanho do texto. Como a caixa não tem fundo/borda própria,
+        // alargar não muda nada visualmente — só devolve a largura útil.
+        const lw = 42, folga = 10;
+        const cxBar = _utilBarX_(slotX, barPad, barW, i) + barW / 2;
+        _sTxt(slide, cxBar - lw / 2 - folga, bBase - bh - 13, lw + folga * 2, 11,
           fmt(val), 6.5, true, val === 0 ? CORES.textGray : cor, 'center');
       }
     });
@@ -231,16 +271,8 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, logoId, ref) 
   }
 
   // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
-  let calloutFim = plotX;
   if (ref.index >= 0 && ref.index <= 11) {
-    calloutFim = _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
-  }
-
-  // Logo da concessionária — centralizado no espaço livre entre o
-  // comparativo (esquerda) e a legenda (direita); nunca colide com nenhum
-  // dos dois porque é posicionado depois que ambos já estão calculados.
-  if (logoId) {
-    _utilLogoEmpresa_(slide, calloutFim, legX, y + 6, 22, logoId);
+    _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
   }
 }
 
@@ -263,25 +295,6 @@ function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
     _sTxt(slide, cx + 10, y - 1, tw, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
     cx += 10 + tw + 6;
   });
-  return cx;
-}
-
-// Insere a logo da concessionária centralizada no intervalo [xEsq, xDir],
-// preservando a proporção natural da imagem (evita distorção).
-function _utilLogoEmpresa_(slide, xEsq, xDir, yTopo, maxH, logoId) {
-  try {
-    const blob = DriveApp.getFileById(logoId).getBlob();
-    const img  = slide.insertImage(blob);
-    const ar   = img.getWidth() / img.getHeight();
-    let h = maxH, wImg = h * ar;
-    const maxW = Math.max(0, xDir - xEsq - 8);
-    if (wImg > maxW) { wImg = maxW; h = ar > 0 ? wImg / ar : h; }
-    if (wImg <= 0 || h <= 0) { img.remove(); return; }
-    const left = xEsq + (xDir - xEsq - wImg) / 2;
-    img.setLeft(left).setTop(yTopo).setWidth(wImg).setHeight(h);
-  } catch (e) {
-    Logger.log('Aviso (Utilities): logo da concessionária não carregado. ' + e.message);
-  }
 }
 
 // Ano mais recente = cor de destaque da métrica; anteriores em cinza,
