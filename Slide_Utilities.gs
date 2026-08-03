@@ -112,8 +112,11 @@ function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, uni
 }
 
 // Card só com a logo da concessionária, mesmo container visual dos cards de
-// KPI (fundo branco, borda, faixa lateral) — preserva a proporção natural da
-// imagem, centralizada dentro da área útil do card.
+// KPI (fundo branco, borda, faixa lateral). As logos entram numa moldura
+// QUADRADA de lado fixo — a mesma para energia e água — para as duas saírem
+// do mesmo tamanho na página independente da proporção natural de cada
+// imagem (uma pode ser bem mais larga que alta, ou quase quadrada); dentro
+// da moldura, contain-fit preserva a proporção própria, sem distorcer.
 function _utilCardLogo_(slide, x, y, w, h, logoId, corDestaque) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
@@ -128,9 +131,9 @@ function _utilCardLogo_(slide, x, y, w, h, logoId, corDestaque) {
     const blob = DriveApp.getFileById(logoId).getBlob();
     const img  = slide.insertImage(blob);
     const ar   = img.getWidth() / img.getHeight();
-    const padX = 22, padY = 16;
-    let wImg = w - padX * 2, hImg = wImg / ar;
-    if (hImg > h - padY * 2) { hImg = h - padY * 2; wImg = hImg * ar; }
+    const lado = Math.min(60, w - 8, h - 8);   // moldura quadrada, com folga mínima de 4pt
+    let wImg = lado, hImg = lado;
+    if (ar >= 1) hImg = lado / ar; else wImg = lado * ar;
     img.setLeft(x + (w - wImg) / 2).setTop(y + (h - hImg) / 2).setWidth(wImg).setHeight(hImg);
   } catch (e) {
     Logger.log('Aviso (Utilities): logo da concessionária não carregado. ' + e.message);
