@@ -168,6 +168,8 @@ const PROJETOS = {
     // Pasta-raiz de FOTOS — subpastas por seção são descobertas pelo nome
     // (CONTRATADOS/INTERNOS/COMPLEMENTOS), depois a subpasta do mês dentro de cada uma.
     fotosRaizId    : '1OaPX5AC9jk5rXHcCbF1SFFfYVwA-RB5e',
+    logoEnergiaId  : '',   // logo da concessionária de energia — ainda não recebido
+    logoAguaId     : '',   // logo da concessionária de água — ainda não recebido
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -185,6 +187,10 @@ const PROJETOS = {
     unitLogoId     : '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',   // logo Mega Esteio
     coBrandLogoId  : '',
     fotosRaizId    : '1CQqkWhiAcA6E4o0PIGaobSF18TIEo4jU',
+    // Logos das concessionárias, mostradas nos gráficos de Gestão de
+    // Utilities (Slide_Utilities.gs) — opcional, some sem quebrar se vazio.
+    logoEnergiaId  : '1wPWU_JPxIv3cEYs8iKRKpE9xjhr0Dvty',   // RGE
+    logoAguaId     : '1LmweZVaJGvd1etINot2HBEuVt1aB-DpK',   // CORSAN
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]

@@ -6,12 +6,17 @@
  * obterDadosUtilities_ em 02_Dados.gs). Só Itajaí e Esteio por enquanto —
  * Curitiba tem o slide dedicado de Energia Solar (Slide10_EnergiaSolar.gs).
  *
- * Cada slide é um gráfico de barras agrupadas por mês, uma barra por ano
- * disponível na planilha: o ano mais recente entra na cor de destaque da
- * métrica (energia = âmbar, água = azul), os anos anteriores em tons de
- * cinza (mais antigo = mais escuro). O mês de referência da apresentação
- * (obterMesReferencia_) ganha uma faixa vertical suave e o rótulo em negrito
- * — mesma ideia do quadro vermelho manual, sem o alarme visual.
+ * Cada slide tem 3 cards de KPI (mês de referência, acumulado no ano e custo
+ * médio por unidade — R$/kWh ou R$/m³, sempre calculado a partir de VALOR ÷
+ * CONSUMO independente de qual métrica o slide está plotando) seguidos do
+ * gráfico de barras agrupadas por mês, uma barra por ano disponível na
+ * planilha: o ano mais recente entra na cor de destaque da métrica (energia
+ * = âmbar, água = azul), os anos anteriores em tons de cinza (mais antigo =
+ * mais escuro). O mês de referência da apresentação (obterMesReferencia_)
+ * ganha uma faixa vertical suave no gráfico, mais um comparativo com os
+ * valores dos outros anos lado a lado — mesma ideia do quadro vermelho
+ * manual, sem o alarme visual. Meses com "R$ 0,00" lançado (cobrança zerada,
+ * diferente de mês ainda sem lançamento) ganham uma nota de rodapé.
  *
  * Sem aba UTILITIES, ou aba sem nenhuma seção reconhecida: a função não gera
  * nada e não quebra o resto da apresentação.
@@ -24,13 +29,14 @@ function gerarSlidesUtilities_() {
     return;
   }
 
-  const ref = obterMesReferencia_();
+  const ref     = obterMesReferencia_();
+  const projeto = getProjetoAtivo();
 
   const paineis = [
-    { chave: 'energia', metrica: 'valor',   titulo: 'ENERGIA (R$)',  fmt: _utilFmtMoeda_, cor: '#F59E0B' },
-    { chave: 'energia', metrica: 'consumo', titulo: 'ENERGIA (kWh)', fmt: _utilFmtNum_,   cor: '#F59E0B' },
-    { chave: 'agua',    metrica: 'valor',   titulo: 'ÁGUA (R$)',     fmt: _utilFmtMoeda_, cor: CORES.lightBlue },
-    { chave: 'agua',    metrica: 'consumo', titulo: 'ÁGUA (m³)',     fmt: _utilFmtNum_,   cor: CORES.lightBlue }
+    { chave: 'energia', metrica: 'valor',   titulo: 'ENERGIA (R$)',  unidade: 'kWh', fmt: _utilFmtMoeda_, cor: '#F59E0B',       logo: projeto.logoEnergiaId },
+    { chave: 'energia', metrica: 'consumo', titulo: 'ENERGIA (kWh)', unidade: 'kWh', fmt: _utilFmtNum_,   cor: '#F59E0B',       logo: projeto.logoEnergiaId },
+    { chave: 'agua',    metrica: 'valor',   titulo: 'ÁGUA (R$)',     unidade: 'm³',  fmt: _utilFmtMoeda_, cor: CORES.lightBlue, logo: projeto.logoAguaId },
+    { chave: 'agua',    metrica: 'consumo', titulo: 'ÁGUA (m³)',     unidade: 'm³',  fmt: _utilFmtNum_,   cor: CORES.lightBlue, logo: projeto.logoAguaId }
   ];
 
   let gerados = 0;
@@ -39,14 +45,14 @@ function gerarSlidesUtilities_() {
     if (!bloco) return;
     const serie = bloco[p.metrica];
     if (!serie || serie.anos.length === 0) return;
-    _utilSlideGrafico_(p.titulo, serie, p.fmt, p.cor, ref);
+    _utilSlideGrafico_(p.titulo, bloco, p.metrica, p.fmt, p.cor, p.unidade, p.logo, ref);
     gerados++;
   });
 
   Logger.log('Utilities: ' + gerados + ' slide(s) gerado(s) a partir da aba UTILITIES.');
 }
 
-function _utilSlideGrafico_(titulo, serie, fmt, corDestaque, ref) {
+function _utilSlideGrafico_(titulo, bloco, metrica, fmt, corDestaque, unidade, logoId, ref) {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
@@ -56,15 +62,83 @@ function _utilSlideGrafico_(titulo, serie, fmt, corDestaque, ref) {
   criarHeaderPadrao(slide, 'GESTÃO DE UTILITIES',
     titulo + ' · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano);
 
-  const marginX = 28, topY = 74;
-  const chartH  = H - topY - 16;
-  _utilGrafico_(slide, marginX, topY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref);
+  const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
+  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, bloco, metrica, fmt, corDestaque, unidade, ref);
+
+  const chartY = topY + cardH + cardGap;
+  const chartH = H - chartY - 16;
+  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, bloco[metrica], fmt, corDestaque, logoId, ref);
 
   Logger.log('Slide Utilities gerado → ' + titulo);
 }
 
+// ── Cards de KPI (mês de referência, acumulado no ano, custo médio) ───────
+function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, unidade, ref) {
+  const serie = bloco[metrica];
+  const gap   = 10;
+  const cardW = (w - gap * 2) / 3;
+
+  const mesAtual    = _utilValorMes_(serie, ref.ano,     ref.index);
+  const mesAnterior = _utilValorMes_(serie, ref.ano - 1, ref.index);
+  const acAtual      = _utilAcumulado_(serie, ref.ano,     ref.index);
+  const acAnterior   = _utilAcumulado_(serie, ref.ano - 1, ref.index);
+
+  const valorAtual = _utilValorMes_(bloco.valor,   ref.ano,     ref.index);
+  const consAtual  = _utilValorMes_(bloco.consumo, ref.ano,     ref.index);
+  const valorAnt   = _utilValorMes_(bloco.valor,   ref.ano - 1, ref.index);
+  const consAnt    = _utilValorMes_(bloco.consumo, ref.ano - 1, ref.index);
+  const custoAtual  = (valorAtual != null && consAtual)  ? valorAtual / consAtual : null;
+  const custoAnt    = (valorAnt   != null && consAnt)    ? valorAnt   / consAnt   : null;
+
+  const cards = [
+    { label: metrica === 'valor' ? 'GASTO DO MÊS' : 'CONSUMO DO MÊS', val: mesAtual, ant: mesAnterior, fmt: fmt },
+    { label: 'ACUMULADO NO ANO',                                      val: acAtual,  ant: acAnterior,  fmt: fmt },
+    { label: 'CUSTO MÉDIO',                                           val: custoAtual, ant: custoAnt,  fmt: v => _utilFmtCusto_(v, unidade) }
+  ];
+
+  cards.forEach((c, i) => {
+    const cx = x + i * (cardW + gap);
+    _utilCard_(slide, cx, y, cardW, h, c, corDestaque);
+  });
+}
+
+function _utilCard_(slide, x, y, w, h, kpi, corDestaque) {
+  const opts = { label: kpi.label, valor: kpi.val != null ? kpi.fmt(kpi.val) : '—', cor: corDestaque, corValor: CORES.textDark, tamValor: 20 };
+
+  if (kpi.val != null && kpi.ant != null) {
+    const diff   = kpi.val - kpi.ant;
+    const pct    = kpi.ant !== 0 ? (diff / Math.abs(kpi.ant)) * 100 : null;
+    const seta   = diff === 0 ? '▬' : (diff > 0 ? '▲' : '▼');
+    const pctStr = pct != null ? ' (' + (diff > 0 ? '+' : '') + pct.toFixed(1) + '%)' : '';
+    opts.sub    = seta + pctStr;
+    // Cost/consumo: menor é melhor — cair é bom (verde), subir é ruim (vermelho).
+    opts.corSub = diff > 0 ? CORES.cardRed : (diff < 0 ? CORES.cardGreen : CORES.textGray);
+    opts.nota   = 'vs mesmo mês ano anterior';
+  } else {
+    opts.sub    = 'sem comparativo';
+    opts.corSub = CORES.textGray;
+  }
+
+  criarCardKPI(slide, x, y, w, h, opts);
+}
+
+function _utilValorMes_(serie, ano, mes) {
+  if (!serie || !serie.porAno[ano]) return null;
+  return serie.porAno[ano][mes];
+}
+
+function _utilAcumulado_(serie, ano, ateMes) {
+  const arr = serie.porAno[ano];
+  if (!arr) return null;
+  let soma = 0, tem = false;
+  for (let m = 0; m <= ateMes; m++) {
+    if (arr[m] != null) { soma += arr[m]; tem = true; }
+  }
+  return tem ? soma : null;
+}
+
 // ── Gráfico de barras agrupadas por ano ────────────────────────────────────
-function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
+function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, logoId, ref) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
   bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
@@ -108,6 +182,8 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
   const barPad = slotW * 0.14;
   const barW   = (slotW - barPad * (n + 1)) / n;
   const bBase  = plotY + plotH;
+  const anoRecente = anos[n - 1];
+  const semCobranca = [];   // meses do ano mais recente com "R$ 0,00" lançado
 
   for (let mes = 0; mes < 12; mes++) {
     const slotX = plotX + mes * slotW;
@@ -115,21 +191,32 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
       const val = serie.porAno[ano][mes];
       if (val == null) return;
       const bh = escMax > 0 ? (val / escMax) * plotH : 0;
-      if (bh <= 0.5) return;
-      const bx  = slotX + barPad + i * (barW + barPad);
       const cor = _utilCorSerie_(i, n, corDestaque);
-      const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, bBase - bh, barW, bh);
-      bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+
+      if (bh > 0.5) {
+        const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, _utilBarX_(slotX, barPad, barW, i), bBase - bh, barW, bh);
+        bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+      }
 
       if (i === n - 1) {   // ano mais recente — valor acima da própria barra
+        if (val === 0) { semCobranca.push(mes); }
         const lw = 42;
-        _sTxt(slide, bx + barW / 2 - lw / 2, bBase - bh - 13, lw, 11, fmt(val), 6.5, true, cor, 'center');
+        _sTxt(slide, _utilBarX_(slotX, barPad, barW, i) + barW / 2 - lw / 2, bBase - bh - 13, lw, 11,
+          fmt(val), 6.5, true, val === 0 ? CORES.textGray : cor, 'center');
       }
     });
 
     const destaque = mes === ref.index;
     _sTxt(slide, slotX, bBase + 4, slotW, 12, MESES_3_REF[mes], destaque ? 7.5 : 6.5,
       destaque, destaque ? corDestaque : CORES.textDark, 'center');
+  }
+
+  // Nota de rodapé — meses do ano corrente com cobrança lançada em zero
+  // (diferente de mês ainda sem lançamento, que fica sem barra e sem nota).
+  if (semCobranca.length > 0) {
+    const meses = semCobranca.map(m => MESES_3_REF[m]).join(', ');
+    const txt = 'Sem cobrança em ' + anoRecente + ': ' + meses;
+    _sTxt(slide, plotX, bBase + 17, plotW, 11, txt, 6.5, false, CORES.textGray, 'left');
   }
 
   // Legenda — um chip por ano, alinhada à direita no topo do painel
@@ -143,11 +230,22 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, rotulo, 7.5, false, CORES.textDark, 'left');
   }
 
-  // Comparativo do mês de referência — os 3 anos lado a lado, no topo
-  // esquerdo (a legenda fica à direita, então não colidem em nenhum cenário).
+  // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
+  let calloutFim = plotX;
   if (ref.index >= 0 && ref.index <= 11) {
-    _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
+    calloutFim = _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
   }
+
+  // Logo da concessionária — centralizado no espaço livre entre o
+  // comparativo (esquerda) e a legenda (direita); nunca colide com nenhum
+  // dos dois porque é posicionado depois que ambos já estão calculados.
+  if (logoId) {
+    _utilLogoEmpresa_(slide, calloutFim, legX, y + 6, 22, logoId);
+  }
+}
+
+function _utilBarX_(slotX, barPad, barW, i) {
+  return slotX + barPad + i * (barW + barPad);
 }
 
 function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
@@ -165,6 +263,25 @@ function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
     _sTxt(slide, cx + 10, y - 1, tw, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
     cx += 10 + tw + 6;
   });
+  return cx;
+}
+
+// Insere a logo da concessionária centralizada no intervalo [xEsq, xDir],
+// preservando a proporção natural da imagem (evita distorção).
+function _utilLogoEmpresa_(slide, xEsq, xDir, yTopo, maxH, logoId) {
+  try {
+    const blob = DriveApp.getFileById(logoId).getBlob();
+    const img  = slide.insertImage(blob);
+    const ar   = img.getWidth() / img.getHeight();
+    let h = maxH, wImg = h * ar;
+    const maxW = Math.max(0, xDir - xEsq - 8);
+    if (wImg > maxW) { wImg = maxW; h = ar > 0 ? wImg / ar : h; }
+    if (wImg <= 0 || h <= 0) { img.remove(); return; }
+    const left = xEsq + (xDir - xEsq - wImg) / 2;
+    img.setLeft(left).setTop(yTopo).setWidth(wImg).setHeight(h);
+  } catch (e) {
+    Logger.log('Aviso (Utilities): logo da concessionária não carregado. ' + e.message);
+  }
 }
 
 // Ano mais recente = cor de destaque da métrica; anteriores em cinza,
@@ -191,4 +308,9 @@ function _utilFmtMoeda_(v) {
 function _utilFmtNum_(v) {
   if (v == null || isNaN(v)) return '';
   return Math.round(v).toLocaleString('pt-BR');
+}
+
+function _utilFmtCusto_(v, unidade) {
+  if (v == null || isNaN(v)) return '—';
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '/' + unidade;
 }
