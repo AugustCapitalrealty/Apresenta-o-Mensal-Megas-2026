@@ -2086,3 +2086,91 @@ function obterDadosEnergiaSolar() {
     return null;
   }
 }
+
+
+// ==========================================
+// DADOS UTILITIES — CONSUMO E GASTO DE ENERGIA E ÁGUA
+// ==========================================
+// Aba esperada: "UTILITIES", na própria planilha da cidade (Itajaí e Esteio;
+// Curitiba usa o slide dedicado de Energia Solar acima). Layout: uma linha de
+// rótulo de seção ("ENERGIA" / "ÁGUA", em célula mesclada) seguida da linha
+// de colunas (MÊS/ANO | VALOR | CONSUMO), repetida lado a lado por seção; uma
+// linha por mês/ano (ex.: "06/2026"). Usada por gerarSlidesUtilities_
+// (Slide_Utilities.gs).
+function obterDadosUtilities_() {
+  try {
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = ss.getSheetByName('UTILITIES');
+    if (!sheet) return null;
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 3) return null;
+
+    // Acha a linha com os cabeçalhos de coluna ("mês/ano").
+    let linhaHdr = -1;
+    for (let r = 0; r < Math.min(data.length, 5); r++) {
+      if (data[r].some(c => _histNorm_(c).indexOf('mes') === 0)) { linhaHdr = r; break; }
+    }
+    if (linhaHdr < 0) return null;
+
+    // Rótulo de seção fica na linha acima ("ENERGIA" / "ÁGUA"). A célula
+    // mesclada costuma cobrir só as colunas VALOR/CONSUMO do bloco (não a de
+    // MÊS/ANO) — por isso o rótulo é procurado dentro do próprio intervalo de
+    // colunas do bloco, não numa única célula fixa.
+    const linhaSecao = data[Math.max(0, linhaHdr - 1)];
+    const linhaCol   = data[linhaHdr];
+
+    // Cada ocorrência de "mês/ano" abre um bloco [mês/ano, valor, consumo].
+    const inicios = [];
+    linhaCol.forEach((cab, c) => { if (_histNorm_(cab).indexOf('mes') === 0) inicios.push(c); });
+    if (inicios.length === 0) return null;
+
+    const blocos = inicios.map((cMes, i) => {
+      const fim = i + 1 < inicios.length ? inicios[i + 1] : linhaCol.length;
+      let rotulo = '';
+      for (let c = cMes; c < fim; c++) {
+        const v = String(linhaSecao[c] || '').trim();
+        if (v) { rotulo = v; break; }
+      }
+      return { rotulo: _histNorm_(rotulo), cMes: cMes, cValor: cMes + 1, cConsumo: cMes + 2 };
+    });
+
+    const resultado = {};
+    blocos.forEach(b => {
+      const chave = b.rotulo.indexOf('energ') >= 0 ? 'energia'
+                  : b.rotulo.indexOf('agua')  >= 0 ? 'agua'
+                  : null;
+      if (!chave) return;   // seção não reconhecida — ignora sem quebrar
+
+      const porAnoValor   = {};
+      const porAnoConsumo = {};
+      for (let r = linhaHdr + 1; r < data.length; r++) {
+        const ref = _histParseMes_(data[r][b.cMes]);
+        if (!ref) continue;
+        const ano = Math.floor(ref.ord / 100);
+        const mes = (ref.ord % 100) - 1;   // 0-11
+        if (!porAnoValor[ano])   porAnoValor[ano]   = new Array(12).fill(null);
+        if (!porAnoConsumo[ano]) porAnoConsumo[ano] = new Array(12).fill(null);
+        const v = _histNum_(data[r][b.cValor]);
+        const c = _histNum_(data[r][b.cConsumo]);
+        porAnoValor[ano][mes]   = isNaN(v) ? null : v;
+        porAnoConsumo[ano][mes] = isNaN(c) ? null : c;
+      }
+
+      const anos = Object.keys(porAnoValor).map(Number).sort((a, z) => a - z);
+      if (anos.length === 0) return;
+
+      resultado[chave] = {
+        valor:   { anos: anos, porAno: porAnoValor },
+        consumo: { anos: anos, porAno: porAnoConsumo }
+      };
+    });
+
+    if (!resultado.energia && !resultado.agua) return null;
+    return resultado;
+
+  } catch (e) {
+    Logger.log('Erro Utilities: ' + e.message);
+    return null;
+  }
+}

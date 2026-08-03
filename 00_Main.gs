@@ -31,6 +31,12 @@ function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCom
 function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
 function gerarSoMetasGuilherme() { setProjetoAtivo('CURITIBA'); gerarSlidesMetasGuilherme(); }
 
+// Gestão de Utilities (consumo/gasto de energia e água) — busca automática na
+// aba UTILITIES da planilha da cidade (ver Slide_Utilities.gs). Só Itajaí e
+// Esteio; Curitiba usa gerarSoEnergiaSolar() acima.
+function gerarSoUtilitiesItajai() { setProjetoAtivo('ITAJAI'); gerarSlidesUtilities_(); }
+function gerarSoUtilitiesEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesUtilities_(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -118,9 +124,10 @@ function gerarApresentacaoCompleta_() {
     // disponível via gerarSlideDRE(), avulsa, se precisar).
     { nome: 'DRE — Realizado + Ritmo',             fn: gerarSlideDREComRitmo },
     { nome: 'Custo M²',                            fn: gerarSlideCustoM2 },
-    // Mega Curitiba tem o projeto de Utilities (geração/consumo próprios);
-    // Itajaí e Esteio ainda não, então entram com a capa mais genérica de
-    // Gestão Sustentável (mesma seção, foto e título diferentes).
+    // Mega Curitiba tem projeto de geração própria (Energia Solar), por isso
+    // usa a capa "Utilities/Geração e Consumo"; Itajaí e Esteio acompanham
+    // consumo/gasto (sem geração própria), então entram com a capa mais
+    // genérica de Gestão Sustentável (mesma seção, foto e título diferentes).
     { nome: 'Capa Seção - Utilities/Sustentabilidade', fn: () => {
         if (getProjetoAtivo().nome === 'Mega Curitiba') {
           gerarCapaSecao('UTILITIES', 'GERAÇÃO E CONSUMO', 'UTILITIES');
@@ -128,7 +135,12 @@ function gerarApresentacaoCompleta_() {
           gerarCapaSecao('GESTÃO', 'SUSTENTÁVEL', 'SUSTENTAVEL');
         }
       } },
-    { nome: 'Energia Solar',                       fn: gerarSlideEnergiaSolar },
+    // Curitiba tem projeto de Energia Solar próprio; Itajaí e Esteio usam a
+    // aba UTILITIES (consumo/gasto de energia e água) — ver Slide_Utilities.gs.
+    { nome: 'Energia Solar / Utilities',           fn: () => {
+        if (getProjetoAtivo().nome === 'Mega Curitiba') gerarSlideEnergiaSolar();
+        else gerarSlidesUtilities_();
+      } },
     { nome: 'Capa Seção - Documentação',           fn: () => gerarCapaSecao('DOCUMENTAÇÃO', 'LEGAL', 'DOCUMENTACAO') },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
     { nome: 'Encerramento',                        fn: gerarSlideEncerramento }
