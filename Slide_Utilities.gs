@@ -124,13 +124,15 @@ function gerarSlidesMonitoramentoEsteio_() {
     const mesAnterior   = _utilValorMes_(serie, ref.ano - 1, ref.index);
     const maxAtual       = _utilMaximoAno_(serie, ref.ano,     ref.index);
     const maxAnterior    = _utilMaximoAno_(serie, ref.ano - 1, ref.index);
-    const mediaAtual    = _utilMediaMensal_(serie, ref.ano,     ref.index);
-    const mediaAnterior = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
 
     const cards = [
-      { label: 'PICO DO MÊS',           val: mesAtual, ant: mesAnterior, fmt: _utilFmtNivel_ },
-      { label: 'PICO MÁXIMO NO ANO',    val: maxAtual, ant: maxAnterior, fmt: _utilFmtNivel_ },
-      { label: 'MÉDIA DOS PICOS MENSAIS', val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtNivel_ }
+      { label: 'PICO DO MÊS',        val: mesAtual, ant: mesAnterior, fmt: _utilFmtNivel_ },
+      { label: 'PICO MÁXIMO NO ANO', val: maxAtual, ant: maxAnterior, fmt: _utilFmtNivel_ },
+      // Em vez de uma média (estatística abstrata), mostra o valor do mesmo
+      // mês no ano anterior de forma direta — dá pra comparar os dois
+      // números lado a lado sem fazer conta.
+      { label: 'PICO ' + MESES_3_REF[ref.index] + '/' + (ref.ano - 1),
+        val: mesAnterior, semDelta: true, subFixo: 'mesmo mês, ano anterior', fmt: _utilFmtNivel_ }
     ];
     const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
     // Nível é uma leitura de estado (sobe/desce), não uma quantidade que se
@@ -214,7 +216,12 @@ function _utilCardLogo_(slide, x, y, w, h, logoId, corDestaque) {
 function _utilCard_(slide, x, y, w, h, kpi, corDestaque) {
   const opts = { label: kpi.label, valor: kpi.val != null ? kpi.fmt(kpi.val) : '—', cor: corDestaque, corValor: CORES.textDark, tamValor: 20 };
 
-  if (kpi.val != null && kpi.ant != null) {
+  if (kpi.semDelta) {
+    // Card que já É o valor de comparação (ex.: "mesmo mês, ano anterior")
+    // — não faz sentido calcular uma seta/delta dele contra ele mesmo.
+    opts.sub    = kpi.subFixo || '';
+    opts.corSub = CORES.textGray;
+  } else if (kpi.val != null && kpi.ant != null) {
     const diff   = kpi.val - kpi.ant;
     const pct    = kpi.ant !== 0 ? (diff / Math.abs(kpi.ant)) * 100 : null;
     const seta   = diff === 0 ? '▬' : (diff > 0 ? '▲' : '▼');
@@ -335,9 +342,13 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
       _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1));
 
     // Rótulo em TODOS os pontos (não só o ano mais recente) — por mês, os
-    // pontos disponíveis (até um por ano) são empilhados por valor (o maior
-    // em cima) com espaçamento mínimo garantido entre os rótulos, então
-    // linhas próximas ou cruzando não geram texto sobreposto.
+    // pontos disponíveis (até um por ano) são empilhados por valor, com
+    // espaçamento mínimo garantido entre os rótulos, então linhas próximas
+    // ou cruzando não geram texto sobreposto. Empilha de BAIXO pra CIMA (do
+    // ponto de menor valor pro de maior): cada rótulo parte da posição
+    // natural (13pt acima do próprio ponto) e só é empurrado MAIS PRA CIMA
+    // se precisar de espaço — nunca pra baixo, o que poderia jogar o rótulo
+    // de um ponto em cima do marcador (ou da linha) de outro.
     for (let mes = 0; mes < 12; mes++) {
       const doMes = [];
       anos.forEach((ano, i) => {
@@ -345,17 +356,13 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
         if (p) doMes.push({ p: p, cor: _utilCorSerie_(i, n, corDestaque), destaque: i === n - 1 });
       });
       if (doMes.length === 0) continue;
-      doMes.sort((a, b) => a.p.y - b.p.y);   // menor y primeiro = ponto mais alto
+      doMes.sort((a, b) => b.p.y - a.p.y);   // maior y primeiro = ponto mais baixo
 
-      // minGap é a distância entre os TOPOS de duas caixas empilhadas; como
-      // cada caixa já tem 11pt de altura, minGap=11 deixava zero espaço em
-      // branco real entre uma e a próxima (só encostavam) — na prática
-      // ficava sobreposto. 17 dá ~6pt de respiro visível.
       const offset = 13, minGap = 17;
       const labelY = [];
       doMes.forEach((item, i) => {
-        const desejado = item.p.y - offset;
-        labelY.push(i === 0 ? desejado : Math.max(desejado, labelY[i - 1] + minGap));
+        const proprio = item.p.y - offset;
+        labelY.push(i === 0 ? proprio : Math.min(proprio, labelY[i - 1] - minGap));
       });
 
       doMes.forEach((item, i) => {
