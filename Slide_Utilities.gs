@@ -423,10 +423,7 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
   }
 
   // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
-  // Só no modo barra: no modo linha, todo ponto já tem rótulo próprio no
-  // gráfico, então esse resumo fica redundante (e apertado ao lado da
-  // legenda quando os valores são mais longos, como "5,19 m").
-  if (modo !== 'linha' && ref.index >= 0 && ref.index <= 11) {
+  if (ref.index >= 0 && ref.index <= 11) {
     _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque, modo);
   }
 }
@@ -488,20 +485,23 @@ function _utilLegendaIcone_(slide, x, y, w, h, cor, modo) {
 
 function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque, modo) {
   let cx = x;
-  const rotuloMes = MESES_3_REF[ref.index] + '/' + ref.ano + ':';
+  // Só o mês no rótulo (o ano de cada valor já vai escrito no próprio item
+  // abaixo — repetir "/2026" aqui seria redundante e a cor sozinha exigia
+  // caçar na legenda pra saber qual quadradinho era qual ano).
+  const rotuloMes = MESES_3_REF[ref.index] + ':';
   const wMes = 16 + rotuloMes.length * 5;
   _sTxt(slide, cx, y, wMes, 12, rotuloMes, 7.5, true, CORES.textDark, 'left');
   cx += wMes;
 
-  // Largura fixa por ano (em vez de estimar pelo tamanho do texto): sem API
+  // Largura fixa por item (em vez de estimar pelo tamanho do texto): sem API
   // de medição real de glifos no Apps Script, a estimativa por caractere é
-  // imprecisa e o erro se acumula item a item — um valor mais longo (ex.:
-  // "R$ 5.268") deixava o próximo quadradinho visualmente desalinhado dos
-  // demais. Com pitch fixo, o espaçamento entre os itens fica sempre igual.
-  const wValor = 58;
+  // imprecisa e o erro se acumula item a item — um valor mais longo deixava
+  // o próximo quadradinho visualmente desalinhado dos demais. Com pitch
+  // fixo, o espaçamento entre os itens fica sempre igual.
+  const wValor = 72;
   anos.forEach((ano, i) => {
     const val = serie.porAno[ano][ref.index];
-    const txt = val != null ? fmt(val) : '—';
+    const txt = ano + ': ' + (val != null ? fmt(val) : '—');
     const cor = _utilCorSerie_(i, anos.length, corDestaque);
     _utilLegendaIcone_(slide, cx, y + 3, 7, 7, cor, modo);
     _sTxt(slide, cx + 10, y - 1, wValor, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
