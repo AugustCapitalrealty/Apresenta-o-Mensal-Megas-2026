@@ -2,7 +2,7 @@
  * ARQUIVO: Slide_Utilities.gs
  * COMPONENTE — GESTÃO DE UTILITIES (energia, água, pluviômetro, canal)
  * DESCRIÇÃO: Duas famílias de slides que reaproveitam o mesmo motor de
- * desenho (cards de KPI + gráfico de barras agrupadas por ano):
+ * desenho (cards de KPI + gráfico agrupado por ano, em barras ou em linha):
  *
  *   1) gerarSlidesUtilities_() — até 4 slides (Energia R$/kWh, Água R$/m³) a
  *      partir da aba "UTILITIES" da planilha da cidade ativa (ver
@@ -17,14 +17,19 @@
  * Cada slide tem 3 cards de KPI (definidos pelo chamador — os rótulos e o
  * que cada um mede variam por família) — mais um 4º card só com a logo da
  * concessionária, quando configurada (logoEnergiaId/logoAguaId, só faz
- * sentido para energia/água) — seguidos do gráfico de barras agrupadas por
- * mês, uma barra por ano (no máximo os 3 mais recentes — a fonte de
- * monitoramento tem histórico desde 2012 e um gráfico com uma barra por ano
- * desde então ficaria ilegível). O ano mais recente entra na cor de
- * destaque, os anteriores em tons de cinza (mais antigo = mais escuro). O
- * mês de referência da apresentação (obterMesReferencia_) ganha uma faixa
- * vertical suave no gráfico, mais um comparativo com os valores dos outros
- * anos lado a lado.
+ * sentido para energia/água) — seguidos do gráfico agrupado por mês, um
+ * traço por ano (no máximo os 3 mais recentes — a fonte de monitoramento
+ * tem histórico desde 2012 e um gráfico com um traço por ano desde então
+ * ficaria ilegível). Duas representações, escolhidas pelo chamador conforme
+ * a natureza da métrica:
+ *   ▸ 'barra' (padrão) — quantidades que se somam ao longo do mês: R$,
+ *     consumo, chuva.
+ *   ▸ 'linha' — leitura de estado que sobe/desce (ex.: nível de canal); uma
+ *     barra sugeriria "acúmulo", o que não existe numa leitura de nível.
+ * O ano mais recente entra na cor de destaque, os anteriores em tons de
+ * cinza (mais antigo = mais escuro). O mês de referência da apresentação
+ * (obterMesReferencia_) ganha uma faixa vertical suave no gráfico, mais um
+ * comparativo com os valores dos outros anos lado a lado.
  *
  * Sem fonte de dados (aba/planilha ausente ou vazia): a função não gera
  * nada e não quebra o resto da apresentação.
@@ -125,15 +130,17 @@ function gerarSlidesMonitoramentoEsteio_() {
       { label: 'NÍVEL MÉDIO MENSAL',    val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtNivel_ }
     ];
     const subtitulo = 'CANAL DE DRENAGEM — NÍVEL (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    // Nível é uma leitura de estado (sobe/desce), não uma quantidade que se
+    // acumula em barras — gráfico de LINHA representa melhor a tendência.
     _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
-      cards, _utilFmtNivel_, '#0EA5E9', null, ref, null);
+      cards, _utilFmtNivel_, '#0EA5E9', null, ref, null, 'linha');
     gerados++;
   }
 
   Logger.log('Monitoramento (Esteio): ' + gerados + ' slide(s) gerado(s).');
 }
 
-function _utilSlideGrafico_(tituloSecao, subtitulo, serie, cards, fmt, corDestaque, logoId, ref, notaZeroLabel) {
+function _utilSlideGrafico_(tituloSecao, subtitulo, serie, cards, fmt, corDestaque, logoId, ref, notaZeroLabel, modo) {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
@@ -147,7 +154,7 @@ function _utilSlideGrafico_(tituloSecao, subtitulo, serie, cards, fmt, corDestaq
 
   const chartY = topY + cardH + cardGap;
   const chartH = H - chartY - 16;
-  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref, notaZeroLabel);
+  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref, notaZeroLabel, modo);
 
   Logger.log('Slide Utilities gerado → ' + tituloSecao + ' — ' + subtitulo);
 }
@@ -270,11 +277,15 @@ function _utilUltimosAnos_(serie, n) {
   return { anos: anos, porAno: porAno };
 }
 
-// ── Gráfico de barras agrupadas por ano ────────────────────────────────────
+// ── Gráfico agrupado por ano — barras ou linha ─────────────────────────────
+// modo: 'barra' (padrão — quantidades que se somam: R$, consumo, chuva) ou
+//   'linha' (leitura de estado que sobe/desce, como nível de canal — uma
+//   linha por ano, com marcador em cada mês, é mais fiel que uma barra).
 // notaZeroLabel: rótulo da nota de rodapé quando o ano mais recente tem
 // zero explícito lançado num mês (ex.: "Sem cobrança"). null desativa a
 // nota — zero é um valor normal em chuva/nível, não um evento a destacar.
-function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZeroLabel) {
+function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZeroLabel, modo) {
+  modo = modo || 'barra';
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
   bg.getBorder().getLineFill().setSolidFill(CORES.lineSeparator);
@@ -311,42 +322,62 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
     _sTxt(slide, x, gy - 7, mL - 6, 14, fmt(gVal), 7, false, CORES.textGray, 'right');
   }
 
-  // Barras — uma por ano, agrupadas dentro do slot do mês. Rótulo de valor
-  // só no ano mais recente (senão os 12x3 números lotam o gráfico) — o
-  // comparativo entre anos completo fica no cabeçalho do mês de referência
-  // logo abaixo, sem risco de sobrepor barra ou rótulo vizinho.
-  const barPad = slotW * 0.14;
-  const barW   = (slotW - barPad * (n + 1)) / n;
-  const bBase  = plotY + plotH;
+  const bBase = plotY + plotH;
   const anoRecente = anos[n - 1];
   const zerados = [];   // meses do ano mais recente com zero explícito lançado
 
-  for (let mes = 0; mes < 12; mes++) {
-    const slotX = plotX + mes * slotW;
+  if (modo === 'linha') {
     anos.forEach((ano, i) => {
-      const val = serie.porAno[ano][mes];
-      if (val == null) return;
-      const bh = escMax > 0 ? (val / escMax) * plotH : 0;
-      const cor = _utilCorSerie_(i, n, corDestaque);
-
-      if (bh > 0.5) {
-        const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, _utilBarX_(slotX, barPad, barW, i), bBase - bh, barW, bh);
-        bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
-      }
-
-      if (i === n - 1) {   // ano mais recente — valor acima da própria barra
-        if (val === 0 && notaZeroLabel) { zerados.push(mes); }
-        // Caixa alargada com folga simétrica: o recuo interno da TEXT_BOX
-        // (~7pt de cada lado) quebra o texto em duas linhas se a caixa for
-        // só do tamanho do texto. Como a caixa não tem fundo/borda própria,
-        // alargar não muda nada visualmente — só devolve a largura útil.
-        const lw = 42, folga = 10;
-        const cxBar = _utilBarX_(slotX, barPad, barW, i) + barW / 2;
-        _sTxt(slide, cxBar - lw / 2 - folga, bBase - bh - 13, lw + folga * 2, 11,
-          fmt(val), 6.5, true, (val === 0 && notaZeroLabel) ? CORES.textGray : cor, 'center');
+      const pontos = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1);
+      if (i === n - 1) {
+        pontos.forEach((p, mes) => {
+          if (!p) return;
+          if (p.val === 0 && notaZeroLabel) zerados.push(mes);
+          const lw = 42, folga = 10;
+          _sTxt(slide, p.x - lw / 2 - folga, p.y - 13, lw + folga * 2, 11,
+            fmt(p.val), 6.5, true, (p.val === 0 && notaZeroLabel) ? CORES.textGray : corDestaque, 'center');
+        });
       }
     });
+  } else {
+    // Barras — uma por ano, agrupadas dentro do slot do mês. Rótulo de valor
+    // só no ano mais recente (senão os 12x3 números lotam o gráfico) — o
+    // comparativo entre anos completo fica no cabeçalho do mês de referência
+    // logo abaixo, sem risco de sobrepor barra ou rótulo vizinho.
+    const barPad = slotW * 0.14;
+    const barW   = (slotW - barPad * (n + 1)) / n;
 
+    for (let mes = 0; mes < 12; mes++) {
+      const slotX = plotX + mes * slotW;
+      anos.forEach((ano, i) => {
+        const val = serie.porAno[ano][mes];
+        if (val == null) return;
+        const bh = escMax > 0 ? (val / escMax) * plotH : 0;
+        const cor = _utilCorSerie_(i, n, corDestaque);
+
+        if (bh > 0.5) {
+          const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, _utilBarX_(slotX, barPad, barW, i), bBase - bh, barW, bh);
+          bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+        }
+
+        if (i === n - 1) {   // ano mais recente — valor acima da própria barra
+          if (val === 0 && notaZeroLabel) { zerados.push(mes); }
+          // Caixa alargada com folga simétrica: o recuo interno da TEXT_BOX
+          // (~7pt de cada lado) quebra o texto em duas linhas se a caixa for
+          // só do tamanho do texto. Como a caixa não tem fundo/borda própria,
+          // alargar não muda nada visualmente — só devolve a largura útil.
+          const lw = 42, folga = 10;
+          const cxBar = _utilBarX_(slotX, barPad, barW, i) + barW / 2;
+          _sTxt(slide, cxBar - lw / 2 - folga, bBase - bh - 13, lw + folga * 2, 11,
+            fmt(val), 6.5, true, (val === 0 && notaZeroLabel) ? CORES.textGray : cor, 'center');
+        }
+      });
+    }
+  }
+
+  // Rótulos do eixo X — mês a mês, comum aos dois modos.
+  for (let mes = 0; mes < 12; mes++) {
+    const slotX = plotX + mes * slotW;
     const destaque = mes === ref.index;
     _sTxt(slide, slotX, bBase + 4, slotW, 12, MESES_3_REF[mes], destaque ? 7.5 : 6.5,
       destaque, destaque ? corDestaque : CORES.textDark, 'center');
@@ -366,21 +397,72 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
     const rotulo = String(anos[i]);
     const lw = 12 + rotulo.length * 5.5 + 16;
     legX -= lw;
-    _solarRect(slide, legX, legY, 10, 8, _utilCorSerie_(i, n, corDestaque));
+    _utilLegendaIcone_(slide, legX, legY, 10, 8, _utilCorSerie_(i, n, corDestaque), modo);
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, rotulo, 7.5, false, CORES.textDark, 'left');
   }
 
   // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
   if (ref.index >= 0 && ref.index <= 11) {
-    _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
+    _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque, modo);
   }
+}
+
+// Desenha a linha de um ano: segmentos entre meses consecutivos com dado
+// (deixa vazio nos meses sem leitura, em vez de "colar" por cima do buraco)
+// mais um marcador (bolinha) em cada ponto válido. Retorna as coordenadas
+// calculadas (mesmo formato usado pelos rótulos do ano em destaque).
+function _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, valoresPorMes, cor, escMax, ehDestaque) {
+  const pontos = valoresPorMes.map((val, mes) => {
+    if (val == null) return null;
+    return {
+      x: plotX + mes * slotW + slotW / 2,
+      y: plotY + plotH - (escMax > 0 ? (val / escMax) * plotH : 0),
+      val: val
+    };
+  });
+
+  for (let mes = 0; mes < 11; mes++) {
+    if (pontos[mes] && pontos[mes + 1]) {
+      const ln = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, pontos[mes].x, pontos[mes].y, pontos[mes + 1].x, pontos[mes + 1].y);
+      ln.getLineFill().setSolidFill(cor);
+      ln.setWeight(ehDestaque ? 2.25 : 1.5);
+    }
+  }
+
+  const raio = ehDestaque ? 3.5 : 2.5;
+  pontos.forEach(p => {
+    if (!p) return;
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, p.x - raio, p.y - raio, raio * 2, raio * 2);
+    dot.getFill().setSolidFill(cor);
+    dot.getBorder().setTransparent();
+  });
+
+  return pontos;
 }
 
 function _utilBarX_(slotX, barPad, barW, i) {
   return slotX + barPad + i * (barW + barPad);
 }
 
-function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
+// Ícone da legenda/comparativo: quadradinho sólido no modo barra, ou um
+// traço com bolinha no meio no modo linha — condiz com o tipo de série que
+// está representando.
+function _utilLegendaIcone_(slide, x, y, w, h, cor, modo) {
+  if (modo === 'linha') {
+    const cy = y + h / 2;
+    const ln = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x, cy, x + w, cy);
+    ln.getLineFill().setSolidFill(cor);
+    ln.setWeight(2);
+    const raio = 2.5;
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + w / 2 - raio, cy - raio, raio * 2, raio * 2);
+    dot.getFill().setSolidFill(cor);
+    dot.getBorder().setTransparent();
+  } else {
+    _solarRect(slide, x, y, w, h, cor);
+  }
+}
+
+function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque, modo) {
   let cx = x;
   const rotuloMes = MESES_3_REF[ref.index] + '/' + ref.ano + ':';
   const wMes = 16 + rotuloMes.length * 5;
@@ -397,7 +479,7 @@ function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
     const val = serie.porAno[ano][ref.index];
     const txt = val != null ? fmt(val) : '—';
     const cor = _utilCorSerie_(i, anos.length, corDestaque);
-    _solarRect(slide, cx, y + 3, 7, 7, cor);
+    _utilLegendaIcone_(slide, cx, y + 3, 7, 7, cor, modo);
     _sTxt(slide, cx + 10, y - 1, wValor, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
     cx += 10 + wValor + 6;
   });
