@@ -134,12 +134,13 @@ function gerarSlidesMonitoramentoEsteio_() {
       { label: 'PICO ' + MESES_3_REF[ref.index] + '/' + (ref.ano - 1),
         val: mesAnterior, semDelta: true, subFixo: 'mesmo mês, ano anterior', fmt: _utilFmtNivel_ }
     ];
-    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
     // Nível é uma leitura de estado (sobe/desce), não uma quantidade que se
-    // acumula em barras — gráfico de LINHA representa melhor a tendência. Só
-    // o ano corrente (o comparativo com o ano anterior já fica nos cards de
-    // KPI acima) — evitava a poluição visual de 3 linhas se cruzando.
-    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 1),
+    // acumula em barras — gráfico de LINHA representa melhor a tendência. As
+    // 3 linhas ficam visíveis (contexto de como o ano corrente compara com
+    // os anteriores), mas só o ano mais recente ganha rótulo de valor em
+    // cada mês — como nos gráficos de barra, evita lotar o gráfico de números.
+    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
       cards, _utilFmtNivel_, '#0EA5E9', null, ref, null, 'linha');
     gerados++;
   }
@@ -339,41 +340,23 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
   const zerados = [];   // meses do ano mais recente com zero explícito lançado
 
   if (modo === 'linha') {
-    // Desenha as N linhas primeiro (todas, com marcador em cada ponto).
-    const pontosPorAno = anos.map((ano, i) =>
-      _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1));
-
-    // Rótulo em TODOS os pontos (não só o ano mais recente) — por mês, os
-    // pontos disponíveis (até um por ano) são empilhados por valor, com
-    // espaçamento mínimo garantido entre os rótulos, então linhas próximas
-    // ou cruzando não geram texto sobreposto. Empilha de BAIXO pra CIMA (do
-    // ponto de menor valor pro de maior): cada rótulo parte da posição
-    // natural (13pt acima do próprio ponto) e só é empurrado MAIS PRA CIMA
-    // se precisar de espaço — nunca pra baixo, o que poderia jogar o rótulo
-    // de um ponto em cima do marcador (ou da linha) de outro.
-    for (let mes = 0; mes < 12; mes++) {
-      const doMes = [];
-      anos.forEach((ano, i) => {
-        const p = pontosPorAno[i][mes];
-        if (p) doMes.push({ p: p, cor: _utilCorSerie_(i, n, corDestaque), destaque: i === n - 1 });
-      });
-      if (doMes.length === 0) continue;
-      doMes.sort((a, b) => b.p.y - a.p.y);   // maior y primeiro = ponto mais baixo
-
-      const offset = 13, minGap = 17;
-      const labelY = [];
-      doMes.forEach((item, i) => {
-        const proprio = item.p.y - offset;
-        labelY.push(i === 0 ? proprio : Math.min(proprio, labelY[i - 1] - minGap));
-      });
-
-      doMes.forEach((item, i) => {
-        if (item.p.val === 0 && notaZeroLabel) zerados.push(mes);
-        const lw = 42, folga = 10;
-        _sTxt(slide, item.p.x - lw / 2 - folga, labelY[i], lw + folga * 2, 11,
-          fmt(item.p.val), 6.5, item.destaque, item.cor, 'center');
-      });
-    }
+    // Desenha as N linhas (todas, com marcador em cada ponto — dá o contexto
+    // visual de como o ano corrente compara com os anteriores). Só a linha
+    // do ano mais recente ganha rótulo de valor em cada mês; as demais ficam
+    // só como referência visual, sem número — evita a poluição de até 3
+    // rótulos por mês e o risco de colisão entre eles.
+    anos.forEach((ano, i) => {
+      const pontos = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1);
+      if (i === n - 1) {
+        pontos.forEach((p, mes) => {
+          if (!p) return;
+          if (p.val === 0 && notaZeroLabel) zerados.push(mes);
+          const lw = 42, folga = 10;
+          _sTxt(slide, p.x - lw / 2 - folga, p.y - 13, lw + folga * 2, 11,
+            fmt(p.val), 6.5, true, (p.val === 0 && notaZeroLabel) ? CORES.textGray : corDestaque, 'center');
+        });
+      }
+    });
   } else {
     // Barras — uma por ano, agrupadas dentro do slot do mês. Rótulo de valor
     // só no ano mais recente (senão os 12x3 números lotam o gráfico) — o
