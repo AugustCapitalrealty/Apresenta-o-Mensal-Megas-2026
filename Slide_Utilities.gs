@@ -6,10 +6,10 @@
  * obterDadosUtilities_ em 02_Dados.gs). Só Itajaí e Esteio por enquanto —
  * Curitiba tem o slide dedicado de Energia Solar (Slide10_EnergiaSolar.gs).
  *
- * Cada slide tem 3 cards de KPI (mês de referência, acumulado no ano e custo
- * médio por unidade — R$/kWh ou R$/m³, sempre calculado a partir de VALOR ÷
- * CONSUMO independente de qual métrica o slide está plotando) — mais um 4º
- * card só com a logo da concessionária, quando a cidade tiver uma
+ * Cada slide tem 3 cards de KPI (mês de referência, acumulado no ano e
+ * média mensal no ano — "CUSTO MÉDIO MENSAL" nos slides de R$, "CONSUMO
+ * MÉDIO MENSAL" nos de kWh/m³, sempre na mesma unidade do gráfico) — mais
+ * um 4º card só com a logo da concessionária, quando a cidade tiver uma
  * configurada (logoEnergiaId/logoAguaId em 01_Config.gs) — seguidos do
  * gráfico de barras agrupadas por mês, uma barra por ano disponível na
  * planilha: o ano mais recente entra na cor de destaque da métrica (energia
@@ -35,10 +35,10 @@ function gerarSlidesUtilities_() {
   const projeto = getProjetoAtivo();
 
   const paineis = [
-    { chave: 'energia', metrica: 'valor',   titulo: 'ENERGIA (R$)',  unidade: 'kWh', fmt: _utilFmtMoeda_, cor: '#F59E0B',       logo: projeto.logoEnergiaId },
-    { chave: 'energia', metrica: 'consumo', titulo: 'ENERGIA (kWh)', unidade: 'kWh', fmt: _utilFmtNum_,   cor: '#F59E0B',       logo: projeto.logoEnergiaId },
-    { chave: 'agua',    metrica: 'valor',   titulo: 'ÁGUA (R$)',     unidade: 'm³',  fmt: _utilFmtMoeda_, cor: CORES.lightBlue, logo: projeto.logoAguaId },
-    { chave: 'agua',    metrica: 'consumo', titulo: 'ÁGUA (m³)',     unidade: 'm³',  fmt: _utilFmtNum_,   cor: CORES.lightBlue, logo: projeto.logoAguaId }
+    { chave: 'energia', metrica: 'valor',   titulo: 'ENERGIA (R$)',  fmt: _utilFmtMoeda_, cor: '#F59E0B',       logo: projeto.logoEnergiaId },
+    { chave: 'energia', metrica: 'consumo', titulo: 'ENERGIA (kWh)', fmt: _utilFmtNum_,   cor: '#F59E0B',       logo: projeto.logoEnergiaId },
+    { chave: 'agua',    metrica: 'valor',   titulo: 'ÁGUA (R$)',     fmt: _utilFmtMoeda_, cor: CORES.lightBlue, logo: projeto.logoAguaId },
+    { chave: 'agua',    metrica: 'consumo', titulo: 'ÁGUA (m³)',     fmt: _utilFmtNum_,   cor: CORES.lightBlue, logo: projeto.logoAguaId }
   ];
 
   let gerados = 0;
@@ -47,14 +47,14 @@ function gerarSlidesUtilities_() {
     if (!bloco) return;
     const serie = bloco[p.metrica];
     if (!serie || serie.anos.length === 0) return;
-    _utilSlideGrafico_(p.titulo, bloco, p.metrica, p.fmt, p.cor, p.unidade, p.logo, ref);
+    _utilSlideGrafico_(p.titulo, serie, p.metrica, p.fmt, p.cor, p.logo, ref);
     gerados++;
   });
 
   Logger.log('Utilities: ' + gerados + ' slide(s) gerado(s) a partir da aba UTILITIES.');
 }
 
-function _utilSlideGrafico_(titulo, bloco, metrica, fmt, corDestaque, unidade, logoId, ref) {
+function _utilSlideGrafico_(titulo, serie, metrica, fmt, corDestaque, logoId, ref) {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
@@ -65,39 +65,36 @@ function _utilSlideGrafico_(titulo, bloco, metrica, fmt, corDestaque, unidade, l
     titulo + ' · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano);
 
   const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
-  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, bloco, metrica, fmt, corDestaque, unidade, ref, logoId);
+  _utilCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, serie, metrica, fmt, corDestaque, ref, logoId);
 
   const chartY = topY + cardH + cardGap;
   const chartH = H - chartY - 16;
-  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, bloco[metrica], fmt, corDestaque, ref);
+  _utilGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, serie, fmt, corDestaque, ref);
 
   Logger.log('Slide Utilities gerado → ' + titulo);
 }
 
-// ── Cards de KPI (mês de referência, acumulado no ano, custo médio) — e,
-// quando a concessionária tiver logo configurada, um 4º card só com ela.
-function _utilCardsKPI_(slide, x, y, w, h, bloco, metrica, fmt, corDestaque, unidade, ref, logoId) {
-  const serie = bloco[metrica];
-  const gap   = 10;
+// ── Cards de KPI (mês de referência, acumulado no ano, média mensal no ano)
+// — e, quando a concessionária tiver logo configurada, um 4º card só com ela.
+function _utilCardsKPI_(slide, x, y, w, h, serie, metrica, fmt, corDestaque, ref, logoId) {
+  const gap    = 10;
   const nCards = logoId ? 4 : 3;
   const cardW  = (w - gap * (nCards - 1)) / nCards;
 
-  const mesAtual    = _utilValorMes_(serie, ref.ano,     ref.index);
-  const mesAnterior = _utilValorMes_(serie, ref.ano - 1, ref.index);
-  const acAtual      = _utilAcumulado_(serie, ref.ano,     ref.index);
-  const acAnterior   = _utilAcumulado_(serie, ref.ano - 1, ref.index);
-
-  const valorAtual = _utilValorMes_(bloco.valor,   ref.ano,     ref.index);
-  const consAtual  = _utilValorMes_(bloco.consumo, ref.ano,     ref.index);
-  const valorAnt   = _utilValorMes_(bloco.valor,   ref.ano - 1, ref.index);
-  const consAnt    = _utilValorMes_(bloco.consumo, ref.ano - 1, ref.index);
-  const custoAtual  = (valorAtual != null && consAtual)  ? valorAtual / consAtual : null;
-  const custoAnt    = (valorAnt   != null && consAnt)    ? valorAnt   / consAnt   : null;
+  const mesAtual       = _utilValorMes_(serie,    ref.ano,     ref.index);
+  const mesAnterior    = _utilValorMes_(serie,    ref.ano - 1, ref.index);
+  const acAtual        = _utilAcumulado_(serie,   ref.ano,     ref.index);
+  const acAnterior     = _utilAcumulado_(serie,   ref.ano - 1, ref.index);
+  const mediaAtual     = _utilMediaMensal_(serie, ref.ano,     ref.index);
+  const mediaAnterior  = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
 
   const cards = [
-    { label: metrica === 'valor' ? 'GASTO DO MÊS' : 'CONSUMO DO MÊS', val: mesAtual, ant: mesAnterior, fmt: fmt },
-    { label: 'ACUMULADO NO ANO',                                      val: acAtual,  ant: acAnterior,  fmt: fmt },
-    { label: 'CUSTO MÉDIO',                                           val: custoAtual, ant: custoAnt,  fmt: v => _utilFmtCusto_(v, unidade) }
+    { label: metrica === 'valor' ? 'GASTO DO MÊS' : 'CONSUMO DO MÊS',
+      val: mesAtual, ant: mesAnterior, fmt: fmt },
+    { label: 'ACUMULADO NO ANO',
+      val: acAtual, ant: acAnterior, fmt: fmt },
+    { label: metrica === 'valor' ? 'CUSTO MÉDIO MENSAL' : 'CONSUMO MÉDIO MENSAL',
+      val: mediaAtual, ant: mediaAnterior, fmt: fmt }
   ];
 
   cards.forEach((c, i) => {
@@ -173,6 +170,18 @@ function _utilAcumulado_(serie, ano, ateMes) {
     if (arr[m] != null) { soma += arr[m]; tem = true; }
   }
   return tem ? soma : null;
+}
+
+// Média mensal de Jan até ateMes (só considera meses com dado lançado —
+// "R$ 0,00" conta como mês, mês ainda vazio não conta).
+function _utilMediaMensal_(serie, ano, ateMes) {
+  const arr = serie.porAno[ano];
+  if (!arr) return null;
+  let soma = 0, n = 0;
+  for (let m = 0; m <= ateMes; m++) {
+    if (arr[m] != null) { soma += arr[m]; n++; }
+  }
+  return n > 0 ? soma / n : null;
 }
 
 // ── Gráfico de barras agrupadas por ano ────────────────────────────────────
@@ -324,9 +333,4 @@ function _utilFmtMoeda_(v) {
 function _utilFmtNum_(v) {
   if (v == null || isNaN(v)) return '';
   return Math.round(v).toLocaleString('pt-BR');
-}
-
-function _utilFmtCusto_(v, unidade) {
-  if (v == null || isNaN(v)) return '—';
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '/' + unidade;
 }
