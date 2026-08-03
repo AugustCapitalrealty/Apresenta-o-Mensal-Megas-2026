@@ -115,21 +115,24 @@ function gerarSlidesMonitoramentoEsteio_() {
     gerados++;
   }
 
-  if (dados.nivel && dados.nivel.anos.length > 0) {
-    const serie = dados.nivel;
+  if (dados.nivelMax && dados.nivelMax.anos.length > 0) {
+    // Usa o PICO de cada mês (não a média) — um evento de cheia de um dia só
+    // se dilui na média mensal; o máximo captura o que de fato importa pro
+    // monitoramento de contenção de cheias.
+    const serie = dados.nivelMax;
     const mesAtual      = _utilValorMes_(serie, ref.ano,     ref.index);
     const mesAnterior   = _utilValorMes_(serie, ref.ano - 1, ref.index);
-    const maxAtual       = _utilMaximoAno_(dados.nivelMax, ref.ano,     ref.index);
-    const maxAnterior    = _utilMaximoAno_(dados.nivelMax, ref.ano - 1, ref.index);
+    const maxAtual       = _utilMaximoAno_(serie, ref.ano,     ref.index);
+    const maxAnterior    = _utilMaximoAno_(serie, ref.ano - 1, ref.index);
     const mediaAtual    = _utilMediaMensal_(serie, ref.ano,     ref.index);
     const mediaAnterior = _utilMediaMensal_(serie, ref.ano - 1, ref.index);
 
     const cards = [
-      { label: 'NÍVEL DO MÊS',          val: mesAtual, ant: mesAnterior, fmt: _utilFmtNivel_ },
-      { label: 'NÍVEL MÁXIMO NO ANO',   val: maxAtual, ant: maxAnterior, fmt: _utilFmtNivel_ },
-      { label: 'NÍVEL MÉDIO MENSAL',    val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtNivel_ }
+      { label: 'PICO DO MÊS',           val: mesAtual, ant: mesAnterior, fmt: _utilFmtNivel_ },
+      { label: 'PICO MÁXIMO NO ANO',    val: maxAtual, ant: maxAnterior, fmt: _utilFmtNivel_ },
+      { label: 'MÉDIA DOS PICOS MENSAIS', val: mediaAtual, ant: mediaAnterior, fmt: _utilFmtNivel_ }
     ];
-    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
     // Nível é uma leitura de estado (sobe/desce), não uma quantidade que se
     // acumula em barras — gráfico de LINHA representa melhor a tendência.
     _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
@@ -327,18 +330,37 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
   const zerados = [];   // meses do ano mais recente com zero explícito lançado
 
   if (modo === 'linha') {
-    anos.forEach((ano, i) => {
-      const pontos = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1);
-      if (i === n - 1) {
-        pontos.forEach((p, mes) => {
-          if (!p) return;
-          if (p.val === 0 && notaZeroLabel) zerados.push(mes);
-          const lw = 42, folga = 10;
-          _sTxt(slide, p.x - lw / 2 - folga, p.y - 13, lw + folga * 2, 11,
-            fmt(p.val), 6.5, true, (p.val === 0 && notaZeroLabel) ? CORES.textGray : corDestaque, 'center');
-        });
-      }
-    });
+    // Desenha as N linhas primeiro (todas, com marcador em cada ponto).
+    const pontosPorAno = anos.map((ano, i) =>
+      _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, serie.porAno[ano], _utilCorSerie_(i, n, corDestaque), escMax, i === n - 1));
+
+    // Rótulo em TODOS os pontos (não só o ano mais recente) — por mês, os
+    // pontos disponíveis (até um por ano) são empilhados por valor (o maior
+    // em cima) com espaçamento mínimo garantido entre os rótulos, então
+    // linhas próximas ou cruzando não geram texto sobreposto.
+    for (let mes = 0; mes < 12; mes++) {
+      const doMes = [];
+      anos.forEach((ano, i) => {
+        const p = pontosPorAno[i][mes];
+        if (p) doMes.push({ p: p, cor: _utilCorSerie_(i, n, corDestaque), destaque: i === n - 1 });
+      });
+      if (doMes.length === 0) continue;
+      doMes.sort((a, b) => a.p.y - b.p.y);   // menor y primeiro = ponto mais alto
+
+      const offset = 13, minGap = 11;
+      const labelY = [];
+      doMes.forEach((item, i) => {
+        const desejado = item.p.y - offset;
+        labelY.push(i === 0 ? desejado : Math.max(desejado, labelY[i - 1] + minGap));
+      });
+
+      doMes.forEach((item, i) => {
+        if (item.p.val === 0 && notaZeroLabel) zerados.push(mes);
+        const lw = 42, folga = 10;
+        _sTxt(slide, item.p.x - lw / 2 - folga, labelY[i], lw + folga * 2, 11,
+          fmt(item.p.val), 6.5, item.destaque, item.cor, 'center');
+      });
+    }
   } else {
     // Barras — uma por ano, agrupadas dentro do slot do mês. Rótulo de valor
     // só no ano mais recente (senão os 12x3 números lotam o gráfico) — o
