@@ -134,10 +134,12 @@ function gerarSlidesMonitoramentoEsteio_() {
       { label: 'PICO ' + MESES_3_REF[ref.index] + '/' + (ref.ano - 1),
         val: mesAnterior, semDelta: true, subFixo: 'mesmo mês, ano anterior', fmt: _utilFmtNivel_ }
     ];
-    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Comparativo mensal · Mês de referência: ' + ref.curto + '/' + ref.ano;
+    const subtitulo = 'CANAL DE DRENAGEM — NÍVEL MÁXIMO (m) · Mês de referência: ' + ref.curto + '/' + ref.ano;
     // Nível é uma leitura de estado (sobe/desce), não uma quantidade que se
-    // acumula em barras — gráfico de LINHA representa melhor a tendência.
-    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 3),
+    // acumula em barras — gráfico de LINHA representa melhor a tendência. Só
+    // o ano corrente (o comparativo com o ano anterior já fica nos cards de
+    // KPI acima) — evitava a poluição visual de 3 linhas se cruzando.
+    _utilSlideGrafico_('MONITORAMENTO PLUVIOMÉTRICO', subtitulo, _utilUltimosAnos_(serie, 1),
       cards, _utilFmtNivel_, '#0EA5E9', null, ref, null, 'linha');
     gerados++;
   }
@@ -423,15 +425,18 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
     _sTxt(slide, plotX, bBase + 17, plotW, 11, txt, 6.5, false, CORES.textGray, 'left');
   }
 
-  // Legenda — um chip por ano, alinhada à direita no topo do painel
-  const legY = y + 10;
-  let legX = x + w - 14;
-  for (let i = n - 1; i >= 0; i--) {
-    const rotulo = String(anos[i]);
-    const lw = 12 + rotulo.length * 5.5 + 16;
-    legX -= lw;
-    _utilLegendaIcone_(slide, legX, legY, 10, 8, _utilCorSerie_(i, n, corDestaque), modo);
-    _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, rotulo, 7.5, false, CORES.textDark, 'left');
+  // Legenda — um chip por ano, alinhada à direita no topo do painel. Com um
+  // único ano no gráfico não há o que legendar (já está no subtítulo).
+  if (n > 1) {
+    const legY = y + 10;
+    let legX = x + w - 14;
+    for (let i = n - 1; i >= 0; i--) {
+      const rotulo = String(anos[i]);
+      const lw = 12 + rotulo.length * 5.5 + 16;
+      legX -= lw;
+      _utilLegendaIcone_(slide, legX, legY, 10, 8, _utilCorSerie_(i, n, corDestaque), modo);
+      _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, rotulo, 7.5, false, CORES.textDark, 'left');
+    }
   }
 
   // Comparativo do mês de referência — os anos lado a lado, no topo esquerdo.
