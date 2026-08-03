@@ -101,7 +101,10 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
     _sTxt(slide, x, gy - 7, mL - 6, 14, fmt(gVal), 7, false, CORES.textGray, 'right');
   }
 
-  // Barras — uma por ano, agrupadas dentro do slot do mês
+  // Barras — uma por ano, agrupadas dentro do slot do mês. Rótulo de valor
+  // só no ano mais recente (senão os 12x3 números lotam o gráfico) — o
+  // comparativo entre anos completo fica no cabeçalho do mês de referência
+  // logo abaixo, sem risco de sobrepor barra ou rótulo vizinho.
   const barPad = slotW * 0.14;
   const barW   = (slotW - barPad * (n + 1)) / n;
   const bBase  = plotY + plotH;
@@ -114,8 +117,14 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
       const bh = escMax > 0 ? (val / escMax) * plotH : 0;
       if (bh <= 0.5) return;
       const bx  = slotX + barPad + i * (barW + barPad);
+      const cor = _utilCorSerie_(i, n, corDestaque);
       const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, bBase - bh, barW, bh);
-      bar.getFill().setSolidFill(_utilCorSerie_(i, n, corDestaque)); bar.getBorder().setTransparent();
+      bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+
+      if (i === n - 1) {   // ano mais recente — valor acima da própria barra
+        const lw = 42;
+        _sTxt(slide, bx + barW / 2 - lw / 2, bBase - bh - 13, lw, 11, fmt(val), 6.5, true, cor, 'center');
+      }
     });
 
     const destaque = mes === ref.index;
@@ -133,6 +142,29 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref) {
     _solarRect(slide, legX, legY, 10, 8, _utilCorSerie_(i, n, corDestaque));
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, rotulo, 7.5, false, CORES.textDark, 'left');
   }
+
+  // Comparativo do mês de referência — os 3 anos lado a lado, no topo
+  // esquerdo (a legenda fica à direita, então não colidem em nenhum cenário).
+  if (ref.index >= 0 && ref.index <= 11) {
+    _utilComparativoMes_(slide, plotX, y + 9, serie, fmt, ref, anos, corDestaque);
+  }
+}
+
+function _utilComparativoMes_(slide, x, y, serie, fmt, ref, anos, corDestaque) {
+  let cx = x;
+  const rotuloMes = MESES_3_REF[ref.index] + '/' + ref.ano + ':';
+  const wMes = 16 + rotuloMes.length * 5;
+  _sTxt(slide, cx, y, wMes, 12, rotuloMes, 7.5, true, CORES.textDark, 'left');
+  cx += wMes;
+  anos.forEach((ano, i) => {
+    const val = serie.porAno[ano][ref.index];
+    const txt = val != null ? fmt(val) : '—';
+    const cor = _utilCorSerie_(i, anos.length, corDestaque);
+    _solarRect(slide, cx, y + 3, 7, 7, cor);
+    const tw = 14 + txt.length * 5;
+    _sTxt(slide, cx + 10, y - 1, tw, 12, txt, 7.5, i === anos.length - 1, cor, 'left');
+    cx += 10 + tw + 6;
+  });
 }
 
 // Ano mais recente = cor de destaque da métrica; anteriores em cinza,
