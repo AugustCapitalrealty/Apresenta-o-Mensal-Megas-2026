@@ -73,13 +73,18 @@ function obterPapeisMetas_() {
 // Tendência de uma célula: um único selo (indicador simples) ou dois selos
 // concatenados com "/" quando o indicador é composto (ex.: Custo M² tem a
 // tendência do R$ e a da % de manutenções planejadas juntas — delta2/
-// menorMelhor2 vindos de obterMetaAuto_).
+// menorMelhor2 vindos de obterMetaAuto_). Retorna os segmentos SEPARADOS
+// (cada um com sua própria cor) em vez de já juntar num texto único: um
+// indicador composto pode ter uma parte boa (verde) e outra ruim (vermelha)
+// ao mesmo tempo — juntar tudo numa cor só escondia a parte ruim.
 function _metasTrend_(auto) {
   const t1 = tendenciaTexto_(auto.delta, auto.menorMelhor);
-  if (auto.delta2 == null || isNaN(auto.delta2)) return t1;
+  if (auto.delta2 == null || isNaN(auto.delta2)) {
+    return t1.txt ? { segmentos: [t1] } : null;
+  }
   const t2 = tendenciaTexto_(auto.delta2, auto.menorMelhor2);
-  if (!t1.txt && !t2.txt) return t1;
-  return { txt: [t1.txt, t2.txt].filter(Boolean).join(' / '), cor: t1.cor || t2.cor };
+  const segmentos = [t1, t2].filter(s => s.txt);
+  return segmentos.length ? { segmentos: segmentos } : null;
 }
 
 // { titulo, papel, linhas } para o papel informado (cidade ativa), ou null.
@@ -341,7 +346,7 @@ function gerarSlideMetas(papel) {
         if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
 
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        const temTrend = !!(trend && trend.txt && valStr !== '');
+        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '');
 
         // Valor na caixa padrão da célula (célula inteira, centralizado) —
         // o comparativo NÃO entra junto para nunca quebrar o valor.
@@ -361,14 +366,30 @@ function gerarSlideMetas(papel) {
 
         // Comparativo ▲/▼ vs mês anterior: caixa própria sobreposta,
         // CENTRALIZADA no topo da célula — um em cima do outro com o
-        // valor (Real Mês [6] / Real Acum. [9]).
+        // valor (Real Mês [6] / Real Acum. [9]). Indicador composto (dois
+        // segmentos, ex.: Custo M²) pode ter uma parte boa e outra ruim ao
+        // mesmo tempo — cada segmento é colorido na sua PRÓPRIA cor via
+        // range de texto, em vez de uma cor só pro texto inteiro (isso
+        // escondia a parte vermelha atrás da cor da parte verde).
         if (temTrend) {
+          const textoCompleto = trend.segmentos.map(s => s.txt).join(' / ');
           const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
             xs[c], ry + 2, larg[c], 11);
-          selo.getText().setText(trend.txt).getTextStyle()
-            .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor)
-            .setFontFamily(DS.typography.titles);
-          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+          const tsr = selo.getText();
+          tsr.setText(textoCompleto);
+          tsr.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(DS.typography.titles);
+
+          let offset = 0;
+          trend.segmentos.forEach((seg, si) => {
+            tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
+            offset += seg.txt.length;
+            if (si < trend.segmentos.length - 1) {
+              tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(CORES.textGray);   // " / "
+              offset += 3;
+            }
+          });
+
+          tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         }
       }
     });
