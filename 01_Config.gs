@@ -168,8 +168,8 @@ const PROJETOS = {
     // Pasta-raiz de FOTOS — subpastas por seção são descobertas pelo nome
     // (CONTRATADOS/INTERNOS/COMPLEMENTOS), depois a subpasta do mês dentro de cada uma.
     fotosRaizId    : '1OaPX5AC9jk5rXHcCbF1SFFfYVwA-RB5e',
-    logoEnergiaId  : '',   // logo da concessionária de energia — ainda não recebido
-    logoAguaId     : '',   // logo da concessionária de água — ainda não recebido
+    logoEnergiaId  : '1QLHR8LPZ_VGeCitL4n0hy4wcpFjfCKkk',
+    logoAguaId     : '1xF9sj8CRfUsLe_5BMaZCtRWNpPz8IaOp',
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
