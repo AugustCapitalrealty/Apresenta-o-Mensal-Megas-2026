@@ -332,6 +332,85 @@ function obterKpisAcessos_() {
   }
 }
 
+// KPIs de acesso pro painel "CONTROLE DE ACESSO" do Dashboard (Slide 01):
+// mês atual, mês anterior e mesmo mês do ano anterior — direto da planilha
+// dedicada de Controle de Acessos (fonte autoritativa), em vez da aba DADOS
+// da própria cidade, que raramente tem "Fluxo de VISITANTES"/"Tempo médio"
+// preenchidos (essas duas linhas nunca foram o fluxo de trabalho mensal ali).
+// Retorna { 'Fluxo de VISITANTES': {atual,mesAnt,anoAnt}, 'Tempo médio': {...} },
+// com '-' em qualquer célula sem mês correspondente na planilha.
+function obterAcessosDashboard_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(ACESSOS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Dados');
+    if (!sheet) return null;
+
+    const data = sheet.getDataRange().getDisplayValues();
+    let hRow = -1, c = {};
+    for (let i = 0; i < Math.min(6, data.length); i++) {
+      const norm = data[i].map(_histNorm_);
+      const iEmp = norm.findIndex(h => h.indexOf('empreend') >= 0);
+      const iFlx = norm.findIndex(h => h.indexOf('fluxo') >= 0 && h.indexOf('total') >= 0);
+      if (iEmp >= 0 && iFlx >= 0) {
+        hRow = i; c.emp = iEmp; c.fluxo = iFlx;
+        c.mes   = norm.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
+        c.tempo = norm.findIndex(h => h.indexOf('tempo medio') >= 0);
+        break;
+      }
+    }
+    if (hRow < 0 || c.mes < 0) return null;
+
+    // Indexa por ord do mês (ano*100+mes), só as linhas da cidade ativa.
+    const porOrd = {};
+    for (let i = hRow + 1; i < data.length; i++) {
+      const row = data[i];
+      if (_histEmpChave_(row[c.emp]) !== alvoEmp) continue;
+      const mes = _histParseMes_(row[c.mes]);
+      if (mes) porOrd[mes.ord] = row;
+    }
+    const ords = Object.keys(porOrd).map(Number).sort((a, b) => a - b);
+    if (!ords.length) return null;
+
+    const ordAtual = ords[ords.length - 1];
+    // Mês anterior = penúltimo mês PRESENTE na planilha (não ordAtual-1, que
+    // quebraria em janeiro e em meses com lacuna) — mesmo critério já usado
+    // em obterSerieFluxoAcessos_/Slide04.
+    const rowAtual  = porOrd[ordAtual];
+    const rowMesAnt = ords.length >= 2 ? porOrd[ords[ords.length - 2]] : null;
+    // Mesmo mês do ano anterior: subtrair 100 no ord (ano*100+mes) sempre
+    // preserva o mês e decrementa o ano em 1, sem casos especiais.
+    const rowAnoAnt = porOrd[ordAtual - 100] || null;
+
+    const fluxoStr = row => {
+      if (!row) return '-';
+      const v = _histNum_(row[c.fluxo]);
+      return isNaN(v) ? '-' : String(Math.round(v));
+    };
+    const tempoStr = row => {
+      if (!row || c.tempo < 0) return '-';
+      const t = _fmtTempoAcesso_(row[c.tempo]);
+      return t || '-';
+    };
+
+    return {
+      'Fluxo de VISITANTES': {
+        atual:  fluxoStr(rowAtual),
+        mesAnt: fluxoStr(rowMesAnt),
+        anoAnt: fluxoStr(rowAnoAnt)
+      },
+      'Tempo médio': {
+        atual:  tempoStr(rowAtual),
+        mesAnt: tempoStr(rowMesAnt),
+        anoAnt: tempoStr(rowAnoAnt)
+      }
+    };
+  } catch (e) {
+    Logger.log('obterAcessosDashboard_: ' + e.message);
+    return null;
+  }
+}
+
 
 // ==========================================
 // CHAMADOS PENDENTES (BACKLOG) POR ESTADO
@@ -501,6 +580,29 @@ function obterDadosDashboard() {
   } catch (e) {
     Logger.log('Erro Dashboard: ' + e.message);
   }
+
+  // Sobrescreve Fluxo de VISITANTES/Tempo médio com a planilha dedicada de
+  // Controle de Acessos (fonte autoritativa) — a aba DADOS da própria cidade
+  // raramente tem essas duas linhas preenchidas. Só troca a célula quando a
+  // planilha de acessos realmente tem aquele período; sem isso, mantém o que
+  // já veio da aba DADOS (evita apagar um valor bom por um '-').
+  try {
+    const acessos = obterAcessosDashboard_();
+    if (acessos) {
+      Object.keys(acessos).forEach(chave => {
+        const nova = acessos[chave];
+        const atual = dataMap.get(chave) || { atual: '-', mesAnt: '-', anoAnt: '-' };
+        dataMap.set(chave, {
+          atual:  nova.atual  !== '-' ? nova.atual  : atual.atual,
+          mesAnt: nova.mesAnt !== '-' ? nova.mesAnt : atual.mesAnt,
+          anoAnt: nova.anoAnt !== '-' ? nova.anoAnt : atual.anoAnt
+        });
+      });
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (acessos): ' + e.message);
+  }
+
   return { map: dataMap, headers: headers };
 }
 
