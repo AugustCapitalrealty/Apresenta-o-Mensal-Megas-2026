@@ -137,7 +137,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     }
     const lw = destaque ? 30 : 24, folga = destaque ? 10 : 6;
     coluna.forEach(r => {
-      _sTxt(slide, r.x - lw / 2 - folga, r.y - (destaque ? 13 : 11), lw + folga * 2, 11,
+      _sTxt(slide, r.x - lw / 2 - folga, r.y - (destaque ? 18 : 16), lw + folga * 2, 11,
         formatarNumeroBR(r.val), destaque ? 6.5 : 5.5, destaque, r.cor, 'center');
     });
   }
