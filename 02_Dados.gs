@@ -2322,11 +2322,12 @@ function _monSerieDireta_(porAnoRaw) {
 // ==========================================
 // Layout diferente do padrão "Mês | Empreendimento | Indicador | Dado" usado
 // por lerHistoricoValidado — essa aba é em blocos lado a lado, um por Mega
-// (célula mesclada com o nome na linha 1, "FACILITIES"/"GERAL" na linha 2),
-// com uma coluna "ANO MES" compartilhada:
-//   ANO MES | MEGA ESTEIO (FACILITIES|GERAL) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
+// (célula mesclada com o nome na linha 1; GERAL/FACILITIES/PROPERTY/LOCATÁRIO
+// na linha 2, nessa ordem), com uma coluna "ANO MES" compartilhada:
+//   ANO MES | MEGA ESTEIO (GERAL|FACILITIES|PROPERTY|LOCATÁRIO) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
 // Mesmos números já lançados na aba DADOS de cada Mega (linhas "Chamados de
 // facilities"/"Chamados geral") — aqui é só o histórico consolidado das três.
+// PROPERTY/LOCATÁRIO existem na planilha mas não são usados neste slide.
 // Retorna a série cronológica da cidade ativa, ordenada, mais recente por
 // último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94, geral:108 }]
 function obterDadosBacklogHistorico_() {
@@ -2350,26 +2351,33 @@ function obterDadosBacklogHistorico_() {
     const cMes = linhaCol.findIndex(c => _histNorm_(c).indexOf('mes') >= 0);
     if (cMes < 0) return [];
 
-    // Cada ocorrência de "facilities" abre um bloco [facilities, geral] —
-    // o rótulo do Mega é buscado dentro do próprio intervalo de colunas do
-    // bloco (célula mesclada cobre só esse bloco, não a coluna ANO MES).
-    const inicios = [];
-    linhaCol.forEach((cab, c) => { if (_histNorm_(cab).indexOf('facilit') >= 0) inicios.push(c); });
-    if (inicios.length === 0) return [];
+    // Cada Mega abre um bloco de colunas, marcado pela célula mesclada com o
+    // nome (linha acima do cabeçalho) — só a coluna inicial do bloco tem
+    // texto ali (o resto da mesclagem vem em branco). Dentro do bloco,
+    // GERAL/FACILITIES podem estar em qualquer ordem; localizamos cada um
+    // pelo próprio texto do cabeçalho, não pela posição.
+    const blocos = [];
+    linhaMega.forEach((v, c) => {
+      if (c === cMes) return;
+      const nome = String(v || '').trim();
+      if (nome) blocos.push({ col: c, nome: nome });
+    });
+    if (blocos.length === 0) return [];
 
     const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
     let cFac = -1, cGer = -1;
-    for (let i = 0; i < inicios.length; i++) {
-      const cIni = inicios[i];
-      const cFim = i + 1 < inicios.length ? inicios[i + 1] : linhaCol.length;
-      let rotulo = '';
+    for (let i = 0; i < blocos.length; i++) {
+      if (_histEmpChave_(blocos[i].nome) !== alvoMega) continue;
+      const cIni = blocos[i].col;
+      const cFim = i + 1 < blocos.length ? blocos[i + 1].col : linhaCol.length;
       for (let c = cIni; c < cFim; c++) {
-        const v = String(linhaMega[c] || '').trim();
-        if (v) { rotulo = v; break; }
+        const h = _histNorm_(linhaCol[c]);
+        if (h.indexOf('geral') >= 0) cGer = c;
+        else if (h.indexOf('facilit') >= 0) cFac = c;
       }
-      if (_histEmpChave_(rotulo) === alvoMega) { cFac = cIni; cGer = cIni + 1; break; }
+      break;
     }
-    if (cFac < 0) return [];
+    if (cFac < 0 || cGer < 0) return [];
 
     const saida = [];
     for (let r = linhaHdr + 1; r < data.length; r++) {
