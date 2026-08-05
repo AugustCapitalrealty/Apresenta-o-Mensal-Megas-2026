@@ -42,6 +42,13 @@ function gerarSoUtilitiesEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesUtilit
 // Slide_Utilities.gs / monitoramentoId em 01_Config.gs).
 function gerarSoMonitoramentoEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesMonitoramentoEsteio_(); }
 
+// Backlog Facilities — evolução mensal de chamados, busca automática na aba
+// BACKLOG da planilha de Histórico Validado (ver Slide_BacklogFacilities.gs).
+// Sem linha para a cidade, cai no slide manual de espaço reservado.
+function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogFacilities(); }
+function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
+function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -110,7 +117,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
     { nome: 'Chamados por Prioridade',             fn: () => gerarSlideReservaGraficos('CHAMADOS POR PRIORIDADE', 'Abertos x Fechados', [{ titulo: 'ABERTOS' }, { titulo: 'FECHADOS' }]) },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
-    { nome: 'Backlog Facilities',                  fn: () => gerarSlideReservaGraficos('BACKLOG FACILITIES', 'Evolução mensal do backlog', [{ titulo: '' }]) },
+    { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
     { nome: 'Fotos - Serviços Contratados',        fn: gerarSlidesServicosContratados_ },
     { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS', 'INTERNOS') },

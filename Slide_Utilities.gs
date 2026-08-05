@@ -232,7 +232,7 @@ function _utilCard_(slide, x, y, w, h, kpi, corDestaque) {
     opts.sub    = seta + pctStr;
     // Cost/consumo/chuva/nível: menor é melhor — cair é bom (verde), subir é ruim (vermelho).
     opts.corSub = diff > 0 ? CORES.cardRed : (diff < 0 ? CORES.cardGreen : CORES.textGray);
-    opts.nota   = 'vs mesmo mês ano anterior';
+    opts.nota   = kpi.notaTxt || 'vs mesmo mês ano anterior';
   } else {
     opts.sub    = 'sem comparativo';
     opts.corSub = CORES.textGray;
@@ -428,10 +428,12 @@ function _utilGrafico_(slide, x, y, w, h, serie, fmt, corDestaque, ref, notaZero
   }
 }
 
-// Desenha a linha de um ano: segmentos entre meses consecutivos com dado
-// (deixa vazio nos meses sem leitura, em vez de "colar" por cima do buraco)
-// mais um marcador (bolinha) em cada ponto válido. Retorna as coordenadas
-// calculadas (mesmo formato usado pelos rótulos do ano em destaque).
+// Desenha uma linha ao longo de N slots sequenciais (qualquer tamanho — 12
+// meses do ano, ou uma série cronológica mais curta/longa como o histórico
+// de Backlog): segmentos entre slots consecutivos com dado (deixa vazio nos
+// que não têm leitura, em vez de "colar" por cima do buraco) mais um
+// marcador (bolinha) em cada ponto válido. Retorna as coordenadas
+// calculadas (mesmo formato usado pelos rótulos do slot em destaque).
 function _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, valoresPorMes, cor, escMax, ehDestaque) {
   const pontos = valoresPorMes.map((val, mes) => {
     if (val == null) return null;
@@ -442,7 +444,7 @@ function _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, valoresPorMes, c
     };
   });
 
-  for (let mes = 0; mes < 11; mes++) {
+  for (let mes = 0; mes < pontos.length - 1; mes++) {
     if (pontos[mes] && pontos[mes + 1]) {
       const ln = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, pontos[mes].x, pontos[mes].y, pontos[mes + 1].x, pontos[mes + 1].y);
       ln.getLineFill().setSolidFill(cor);

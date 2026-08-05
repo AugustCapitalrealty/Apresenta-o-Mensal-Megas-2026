@@ -2314,3 +2314,82 @@ function _monSerieDireta_(porAnoRaw) {
   const anos = Object.keys(porAno).map(Number).sort((a, z) => a - z);
   return { anos: anos, porAno: porAno };
 }
+
+
+// ==========================================
+// DADOS BACKLOG (Chamados Facilities x Geral) — aba "BACKLOG" da planilha
+// de HISTÓRICO VALIDADO
+// ==========================================
+// Layout diferente do padrão "Mês | Empreendimento | Indicador | Dado" usado
+// por lerHistoricoValidado — essa aba é em blocos lado a lado, um por Mega
+// (célula mesclada com o nome na linha 1, "FACILITIES"/"GERAL" na linha 2),
+// com uma coluna "ANO MES" compartilhada:
+//   ANO MES | MEGA ESTEIO (FACILITIES|GERAL) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
+// Mesmos números já lançados na aba DADOS de cada Mega (linhas "Chamados de
+// facilities"/"Chamados geral") — aqui é só o histórico consolidado das três.
+// Retorna a série cronológica da cidade ativa, ordenada, mais recente por
+// último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94, geral:108 }]
+function obterDadosBacklogHistorico_() {
+  try {
+    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const sheet = ss.getSheetByName('BACKLOG');
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 3) return [];
+
+    // Acha a linha de cabeçalho de coluna ("ano mes" ou "mes").
+    let linhaHdr = -1;
+    for (let r = 0; r < Math.min(data.length, 5); r++) {
+      if (data[r].some(c => _histNorm_(c).indexOf('mes') >= 0)) { linhaHdr = r; break; }
+    }
+    if (linhaHdr < 0) return [];
+
+    const linhaMega = data[Math.max(0, linhaHdr - 1)];
+    const linhaCol  = data[linhaHdr];
+    const cMes = linhaCol.findIndex(c => _histNorm_(c).indexOf('mes') >= 0);
+    if (cMes < 0) return [];
+
+    // Cada ocorrência de "facilities" abre um bloco [facilities, geral] —
+    // o rótulo do Mega é buscado dentro do próprio intervalo de colunas do
+    // bloco (célula mesclada cobre só esse bloco, não a coluna ANO MES).
+    const inicios = [];
+    linhaCol.forEach((cab, c) => { if (_histNorm_(cab).indexOf('facilit') >= 0) inicios.push(c); });
+    if (inicios.length === 0) return [];
+
+    const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
+    let cFac = -1, cGer = -1;
+    for (let i = 0; i < inicios.length; i++) {
+      const cIni = inicios[i];
+      const cFim = i + 1 < inicios.length ? inicios[i + 1] : linhaCol.length;
+      let rotulo = '';
+      for (let c = cIni; c < cFim; c++) {
+        const v = String(linhaMega[c] || '').trim();
+        if (v) { rotulo = v; break; }
+      }
+      if (_histEmpChave_(rotulo) === alvoMega) { cFac = cIni; cGer = cIni + 1; break; }
+    }
+    if (cFac < 0) return [];
+
+    const saida = [];
+    for (let r = linhaHdr + 1; r < data.length; r++) {
+      const mes = _histParseMes_(data[r][cMes]);
+      if (!mes) continue;
+      const facilities = _histNum_(data[r][cFac]);
+      const geral      = _histNum_(data[r][cGer]);
+      saida.push({
+        mes: mes.label,
+        ord: mes.ord,
+        rotulo: MESES_3_REF[parseInt(mes.label.slice(0, 2), 10) - 1] + '/' + mes.label.slice(-2),
+        facilities: isNaN(facilities) ? null : facilities,
+        geral: isNaN(geral) ? null : geral
+      });
+    }
+    saida.sort((a, b) => a.ord - b.ord);
+    return saida;
+
+  } catch (e) {
+    Logger.log('Erro Backlog Histórico: ' + e.message);
+    return [];
+  }
+}
