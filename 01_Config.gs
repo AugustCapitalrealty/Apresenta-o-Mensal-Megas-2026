@@ -472,7 +472,10 @@ function criarCardKPI(slide, x, y, w, h, opts) {
   side.getFill().setSolidFill(corBarra);
   side.getBorder().setTransparent();
 
-  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20, 13);
+  // +10pt de folga à direita: vence o recuo interno do TEXT_BOX pra rótulos
+  // mais longos (ex.: "RESPONSABILIDADE LOCATÁRIO") não quebrarem em duas
+  // linhas à toa — a caixa não tem borda própria, então a folga é invisível.
+  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20 + 10, 13);
   lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   lbl.getText().setText(String(opts.label)).getTextStyle()
     .setFontSize(7.5).setBold(true)

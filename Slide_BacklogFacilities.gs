@@ -2,11 +2,11 @@
  * ARQUIVO: Slide_BacklogFacilities.gs
  * SLIDE — BACKLOG FACILITIES (evolução mensal de chamados)
  * DESCRIÇÃO: Substitui o espaço reservado ("cole o gráfico aqui") pelo
- * gráfico automático de Chamados Geral, Facilities, Property e Clientes
- * (Locatário), lido da aba "BACKLOG" da planilha de HISTÓRICO VALIDADO
+ * gráfico automático de Chamados Geral, Facilities, Property e Responsabilidade
+ * Locatário, lido da aba "BACKLOG" da planilha de HISTÓRICO VALIDADO
  * (obterDadosBacklogHistorico_ em 02_Dados.gs) — Facilities/Geral batem com
  * as linhas "Chamados de facilities"/"Chamados geral" da aba DADOS de cada
- * Mega; Property e Clientes só existem na aba BACKLOG.
+ * Mega; Property e Responsabilidade Locatário só existem na aba BACKLOG.
  *
  * Diferente dos gráficos de Utilities/Monitoramento (grade fixa de 12 meses
  * do ano, uma linha por ano), aqui é uma linha do tempo contínua — os
@@ -64,7 +64,7 @@ function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
     { label: 'CHAMADOS GERAL',      val: atual.geral,      ant: anterior ? anterior.geral      : null, fmt: formatarNumeroBR, cor: CORES.darkBlue,   notaTxt: 'vs mês anterior' },
     { label: 'CHAMADOS FACILITIES', val: atual.facilities, ant: anterior ? anterior.facilities : null, fmt: formatarNumeroBR, cor: CORES.lightBlue,  notaTxt: 'vs mês anterior' },
     { label: 'CHAMADOS PROPERTY',   val: atual.property,   ant: anterior ? anterior.property   : null, fmt: formatarNumeroBR, cor: CORES.themeCorr,  notaTxt: 'vs mês anterior' },
-    { label: 'CHAMADOS CLIENTES',   val: atual.locatario,  ant: anterior ? anterior.locatario  : null, fmt: formatarNumeroBR, cor: CORES.cardGreen,  notaTxt: 'vs mês anterior' }
+    { label: 'RESPONSABILIDADE LOCATÁRIO', val: atual.locatario, ant: anterior ? anterior.locatario : null, fmt: formatarNumeroBR, cor: CORES.cardGreen, notaTxt: 'vs mês anterior' }
   ];
 
   cards.forEach((c, i) => {
@@ -73,7 +73,7 @@ function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
   });
 }
 
-// ── Gráfico de linha — Geral, Facilities, Property e Clientes, cronológico ──
+// ── Gráfico de linha — Geral, Facilities, Property e Responsabilidade Locatário, cronológico ──
 function _backlogGrafico_(slide, x, y, w, h, meses) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
@@ -92,7 +92,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     { chave: 'geral',     rotulo: 'Geral',      cor: CORES.darkBlue,   destaque: true  },
     { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  destaque: false },
     { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  destaque: false },
-    { chave: 'locatario',  rotulo: 'Clientes',   cor: CORES.cardGreen,  destaque: false }
+    { chave: 'locatario',  rotulo: 'Responsabilidade Locatário', cor: CORES.cardGreen, destaque: false }
   ];
 
   // Realce do mês de referência (o mais recente) — mesma ideia da faixa
@@ -150,7 +150,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
       destaque, destaque ? CORES.darkBlue : CORES.textDark, 'center');
   });
 
-  // Legenda — Geral, Facilities, Property, Clientes (esquerda pra direita),
+  // Legenda — Geral, Facilities, Property, Responsabilidade Locatário (esquerda pra direita),
   // alinhada à direita no topo do painel.
   const legY = y + 10;
   let legX = x + w - 14;
