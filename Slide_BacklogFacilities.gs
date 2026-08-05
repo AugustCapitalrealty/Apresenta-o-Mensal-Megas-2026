@@ -11,9 +11,9 @@
  * Diferente dos gráficos de Utilities/Monitoramento (grade fixa de 12 meses
  * do ano, uma linha por ano), aqui é uma linha do tempo contínua — os
  * últimos 12 meses disponíveis, em ordem cronológica, sem repetir a grade
- * a cada ano. Quatro linhas; só o mês mais recente ganha rótulo de valor em
- * cada linha (com afastamento automático se dois rótulos ficarem próximos
- * demais), para não lotar o gráfico.
+ * a cada ano. Quatro linhas, todo mês com rótulo de valor (o mês mais
+ * recente em destaque, maior e em negrito); se duas séries ficarem
+ * próximas demais na vertical num mesmo mês, uma afasta a outra.
  *
  * Sem a aba BACKLOG preenchida (ou sem linha para a cidade ativa): cai no
  * slide manual de espaço reservado (gerarSlideReservaGraficos), sem quebrar
@@ -64,7 +64,7 @@ function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
     { label: 'CHAMADOS GERAL',      val: atual.geral,      ant: anterior ? anterior.geral      : null, fmt: formatarNumeroBR, cor: CORES.darkBlue,   notaTxt: 'vs mês anterior' },
     { label: 'CHAMADOS FACILITIES', val: atual.facilities, ant: anterior ? anterior.facilities : null, fmt: formatarNumeroBR, cor: CORES.lightBlue,  notaTxt: 'vs mês anterior' },
     { label: 'CHAMADOS PROPERTY',   val: atual.property,   ant: anterior ? anterior.property   : null, fmt: formatarNumeroBR, cor: CORES.themeCorr,  notaTxt: 'vs mês anterior' },
-    { label: 'CHAMADOS CLIENTES',   val: atual.locatario,  ant: anterior ? anterior.locatario  : null, fmt: formatarNumeroBR, cor: CORES.textPurple, notaTxt: 'vs mês anterior' }
+    { label: 'CHAMADOS CLIENTES',   val: atual.locatario,  ant: anterior ? anterior.locatario  : null, fmt: formatarNumeroBR, cor: CORES.cardGreen,  notaTxt: 'vs mês anterior' }
   ];
 
   cards.forEach((c, i) => {
@@ -92,7 +92,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     { chave: 'geral',     rotulo: 'Geral',      cor: CORES.darkBlue,   destaque: true  },
     { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  destaque: false },
     { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  destaque: false },
-    { chave: 'locatario',  rotulo: 'Clientes',   cor: CORES.textPurple, destaque: false }
+    { chave: 'locatario',  rotulo: 'Clientes',   cor: CORES.cardGreen,  destaque: false }
   ];
 
   // Realce do mês de referência (o mais recente) — mesma ideia da faixa
@@ -121,24 +121,26 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     pontos: _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.cor, escMax, s.destaque)
   }));
 
-  // Rótulo de valor só no mês mais recente de cada linha — evita lotar o
-  // gráfico com até 48 números (4 séries × 12 meses). Se dois rótulos do
-  // mês mais recente ficarem perto demais na vertical, afasta um do outro.
-  const rotulosValor = desenhadas
-    .map(d => { const p = d.pontos[n - 1]; return p ? { x: p.x, y: p.y, val: p.val, cor: d.serie.cor } : null; })
-    .filter(Boolean)
-    .sort((a, b) => a.y - b.y);
-  const gapMin = 11;
-  for (let i = 1; i < rotulosValor.length; i++) {
-    if (rotulosValor[i].y - rotulosValor[i - 1].y < gapMin) {
-      rotulosValor[i].y = rotulosValor[i - 1].y + gapMin;
+  // Rótulo de valor em TODO mês de cada série (até 4 por coluna). Se duas
+  // séries ficarem próximas demais na vertical no mesmo mês, afasta uma da
+  // outra. O mês mais recente ganha corpo maior e negrito, igual ao rótulo
+  // do eixo X — os demais ficam menores pra não pesar o gráfico.
+  for (let i = 0; i < n; i++) {
+    const destaque = i === n - 1;
+    const coluna = desenhadas
+      .map(d => { const p = d.pontos[i]; return p ? { x: p.x, y: p.y, val: p.val, cor: d.serie.cor } : null; })
+      .filter(Boolean)
+      .sort((a, b) => a.y - b.y);
+    const gapMin = destaque ? 11 : 9;
+    for (let k = 1; k < coluna.length; k++) {
+      if (coluna[k].y - coluna[k - 1].y < gapMin) coluna[k].y = coluna[k - 1].y + gapMin;
     }
+    const lw = destaque ? 30 : 24, folga = destaque ? 10 : 6;
+    coluna.forEach(r => {
+      _sTxt(slide, r.x - lw / 2 - folga, r.y - (destaque ? 13 : 11), lw + folga * 2, 11,
+        formatarNumeroBR(r.val), destaque ? 6.5 : 5.5, destaque, r.cor, 'center');
+    });
   }
-  rotulosValor.forEach(r => {
-    const lw = 30, folga = 10;
-    _sTxt(slide, r.x - lw / 2 - folga, r.y - 13, lw + folga * 2, 11,
-      formatarNumeroBR(r.val), 6.5, true, r.cor, 'center');
-  });
 
   // Rótulos do eixo X — cronológicos (ex.: "JUL/25"), não meses do ano.
   meses.forEach((m, i) => {
