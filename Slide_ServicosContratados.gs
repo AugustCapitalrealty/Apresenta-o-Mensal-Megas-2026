@@ -40,20 +40,22 @@ const SC_KEYLINE    = '#CBD5E1';  // filete em volta de cada foto
 const SC_TAG_BORDA  = '#93C5FD';
 const SC_TAG_COR    = '#003D7B';
 const SC_GAP        = 10;      // respiro entre fotos do mosaico
-// Banda A (padrão): mosaico ocupa a largura toda, texto no topo. Vai até y=390
-// — os 12pt extras são o espaço que o rodapé ocupava.
-const SC_A = { x: 44, y: 138, w: 632, h: 252 };
-// Zona B (fotos estreitas): texto em coluna FIXA à esquerda e as fotos com todo
-// o resto, centralizadas na zona. A primeira versão fazia o contrário — a
-// coluna de texto era a sobra do que as fotos não usavam —, então quanto menor
-// a foto, maior o vazio à esquerda: com 1 foto sobravam 387pt de coluna para
-// duas palavras. Agora o texto tem largura fixa e a foto é a protagonista.
-const SC_B = { x: 272, y: 72, w: 418, h: 328 };
-const SC_B_TEXTO_W = 190;
+// Cabeçalho único da placa (ver _scHeaderServico_): nome do serviço é a
+// manchete; seção/cidade/mês vira o texto pequeno acima dela. Título e zonas
+// de foto abaixo (SC_A/SC_B) começam logo após, sem repetir manchete no corpo.
+const SC_TITULO_X = 50, SC_TITULO_W = 510;
+const SC_HEADER_FIM = 64;   // y onde termina o cabeçalho (linha divisória)
+// Banda A (padrão): mosaico ocupa a largura toda. Vai até y=390 — os 12pt
+// extras são o espaço que o rodapé ocupava.
+const SC_A = { x: 44, y: 70, w: 632, h: 320 };
+// Zona B (fotos estreitas): sem cabeçalho próprio (já fica no topo da placa),
+// as fotos usam uma zona mais estreita e alta — melhor pra retrato — centrada
+// na largura toda (antes ficava deslocada à direita pra sobrar coluna de
+// texto à esquerda; sem mais texto ali, centraliza de verdade).
+const SC_B = { x: 110, y: 70, w: 500, h: 320 };
 // Abaixo desta largura final o mosaico fica "perdido" na banda A → usa a B.
 const SC_LIMIAR_B   = 400;
 const SC_ESCADA_A   = [18, 16.5, 15, 13.5, 12, 11, 10];
-const SC_ESCADA_B   = [24, 21, 18, 16, 14, 12];
 
 // Pontos de entrada por seção. A chave casa com PROJETOS[cidade].fotosServicos
 // (01_Config.gs); o rótulo é o que aparece no cabeçalho do slide.
@@ -211,13 +213,14 @@ function _scCorpoTexto_(len, boxW, escada, maxLinhas) {
   return escada[escada.length - 1];
 }
 
-// Manchete do layout A: prefere UMA linha; se nem o menor corpo couber, aceita
-// duas linhas (a caixa tem h=40, que comporta 2 linhas até ~15pt) em vez de
-// truncar o nome do serviço — nome de serviço truncado perde informação real.
-function _scCorpoManchete_(len) {
-  const umaLinha = _scCorpoTexto_(len, 626, SC_ESCADA_A, 1);
-  if (0.64 * umaLinha * len <= (626 - 14) * 0.96) return umaLinha;
-  return _scCorpoTexto_(len, 626, SC_ESCADA_A.filter(c => c <= 15), 2);
+// Manchete do cabeçalho: prefere UMA linha; se nem o menor corpo couber,
+// aceita duas linhas em vez de truncar o nome do serviço — nome truncado
+// perde informação real.
+function _scCorpoManchete_(len, boxW) {
+  const w = boxW || SC_TITULO_W;
+  const umaLinha = _scCorpoTexto_(len, w, SC_ESCADA_A, 1);
+  if (0.64 * umaLinha * len <= (w - 14) * 0.96) return umaLinha;
+  return _scCorpoTexto_(len, w, SC_ESCADA_A.filter(c => c <= 15), 2);
 }
 
 // ── MOSAICO JUSTIFICADO ───────────────────────────────────────────────────
@@ -382,18 +385,63 @@ function _scTag_(slide, texto, x, y) {
   return pw;
 }
 
+// ── Cabeçalho único da placa ───────────────────────────────────────────────
+// O nome do serviço é a ÚNICA manchete da placa (antes havia duas: a seção
+// no header padrão e o nome do serviço repetido embaixo, dando a impressão
+// de "dois slides colados"). Seção/cidade/mês vira o texto pequeno acima da
+// manchete; a tag de governança (se houver) fica ao lado do logo, também no
+// cabeçalho — nenhum dos três layouts de foto precisa repetir texto.
+function _scHeaderServico_(slide, secao, info) {
+  const DS = CR_DESIGN_SYSTEM;
+  const deck = getDeckAtivo();
+  const W = deck.getPageWidth();
+  const ref = obterMesReferencia_();
+  const projeto = getProjetoAtivo();
+
+  // Grafismo de fundo — mesma assinatura sutil do header padrão do deck.
+  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 350, -80, 450, 450);
+  ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.03);
+  ellipse.getBorder().setTransparent();
+
+  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 8, 4, 48);
+  bar.getFill().setSolidFill(SC_ACENTO);
+  bar.getBorder().setTransparent();
+
+  _scTexto_(slide, SC_TITULO_X, 6, 460, 13,
+    secao + ' · ' + projeto.nome + ' · ' + ref.curto + ' / ' + ref.ano,
+    8.5, SC_ACENTO, DS.typography.body, true);
+
+  _scTexto_(slide, SC_TITULO_X, 20, SC_TITULO_W, 44, info.nome, _scCorpoManchete_(info.nome.length),
+            SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
+
+  if (info.tag) {
+    const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
+    _scTag_(slide, info.tag, W - 44 - DS.assets.logoW - 12 - pw, 16);
+  }
+
+  try {
+    const logoBlob = DriveApp.getFileById(DS.assets.logoId).getBlob();
+    slide.insertImage(logoBlob, W - 44 - DS.assets.logoW, 14, DS.assets.logoW, DS.assets.logoH);
+  } catch (e) {
+    Logger.log('Aviso (Header Serviço): logo não carregado. ' + e.message);
+  }
+
+  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 0, SC_HEADER_FIM, W, SC_HEADER_FIM);
+  sep.getLineFill().setSolidFill(SC_LINHA_COR);
+  sep.setWeight(1);
+  const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 44, SC_HEADER_FIM, 154, SC_HEADER_FIM);
+  acc.getLineFill().setSolidFill(SC_ACENTO);
+  acc.setWeight(3);
+}
+
 // ── Slide de um serviço ────────────────────────────────────────────────────
 function _scGerarSlideServico_(secao, pastaServico) {
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
-  const DS  = CR_DESIGN_SYSTEM;
-  const ref = obterMesReferencia_();
-  const projeto = getProjetoAtivo();
-
-  criarHeaderPadrao(slide, secao, projeto.nome + ' · ' + ref.curto + ' / ' + ref.ano);
 
   const info = _scNormalizarNome_(pastaServico.getName());
+  _scHeaderServico_(slide, secao, info);
 
   // ── Fotos: mede primeiro, diagrama depois ───────────────────────────────
   const arquivos = _scListarFotos_(pastaServico, 4);
@@ -408,54 +456,17 @@ function _scGerarSlideServico_(secao, pastaServico) {
   }
 
   if (!ars.length) {
-    // Nenhuma foto carregou: placa ainda apresentável, só com o texto.
-    _scTexto_(slide, 50, 178, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
-              SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
+    // Nenhuma foto carregou: cabeçalho já traz o nome do serviço, sem mais nada pra desenhar.
     Logger.log('Slide de ' + secao + ' gerado SEM fotos (todas falharam): ' + info.nome);
     return;
   }
 
-  if (usarB) {
-    // ── LAYOUT B — fotos estreitas: coluna de texto fixa, fotos centralizadas ─
-    const colW = SC_B_TEXTO_W;
-    const px = SC_B.x + (SC_B.w - mos.usedW) / 2;
-    const py = SC_B.y + (SC_B.h - mos.usedH) / 2;
-
-    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 50, 104, 40, 2.5);
-    filete.getFill().setSolidFill(SC_ACENTO);
-    filete.getBorder().setTransparent();
-
-    _scTexto_(slide, 50, 116, colW, 132, info.nome,
-              _scCorpoTexto_(info.nome.length, colW, SC_ESCADA_B, 3.7),
-              SC_TITULO_COR, DS.typography.titles, true);
-    if (info.tag) _scTag_(slide, info.tag, 50, 258);
-
-    fotos.forEach((f, i) => _scPosicionar_(f.img, {
-      x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
-    }));
-  } else {
-    // ── LAYOUT A — padrão: texto no topo da placa, mosaico na largura toda ─
-    const filete = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 76, 3, 30);
-    filete.getFill().setSolidFill(SC_ACENTO);
-    filete.getBorder().setTransparent();
-
-    if (info.tag) {
-      const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
-      _scTag_(slide, info.tag, 676 - pw, 83);
-    }
-    _scTexto_(slide, 50, 74, 626, 52, info.nome, _scCorpoManchete_(info.nome.length),
-              SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
-
-    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 128, 632, 0.75);
-    div.getFill().setSolidFill(SC_LINHA_COR);
-    div.getBorder().setTransparent();
-
-    const px = SC_A.x + (SC_A.w - mos.usedW) / 2;
-    const py = SC_A.y + (SC_A.h - mos.usedH) / 2;
-    fotos.forEach((f, i) => _scPosicionar_(f.img, {
-      x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
-    }));
-  }
+  const zona = usarB ? SC_B : SC_A;
+  const px = zona.x + (zona.w - mos.usedW) / 2;
+  const py = zona.y + (zona.h - mos.usedH) / 2;
+  fotos.forEach((f, i) => _scPosicionar_(f.img, {
+    x: px + mos.rects[i].x, y: py + mos.rects[i].y, w: mos.rects[i].w, h: mos.rects[i].h
+  }));
 
   Logger.log('Slide de ' + secao + ' gerado (' + (usarB ? 'B' : 'A') + ', ' + ars.length + ' foto(s)): ' + info.nome);
 }
