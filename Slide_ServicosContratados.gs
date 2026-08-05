@@ -113,7 +113,7 @@ function gerarSlidesFotosDrive_(secao, chavePasta) {
     return gerarSlideRegistroFotos(secao);
   }
 
-  servicos.forEach((pastaServico, i) => _scGerarSlideServico_(secao, pastaServico, i + 1, servicos.length));
+  servicos.forEach(pastaServico => _scGerarSlideServico_(secao, pastaServico));
   Logger.log(secao + ': ' + servicos.length + ' slide(s) gerado(s) automaticamente a partir do Drive (' + pastaMes.getName() + ').');
 }
 
@@ -383,7 +383,7 @@ function _scTag_(slide, texto, x, y) {
 }
 
 // ── Slide de um serviço ────────────────────────────────────────────────────
-function _scGerarSlideServico_(secao, pastaServico, indice, total) {
+function _scGerarSlideServico_(secao, pastaServico) {
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
@@ -394,8 +394,6 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
   criarHeaderPadrao(slide, secao, projeto.nome + ' · ' + ref.curto + ' / ' + ref.ano);
 
   const info = _scNormalizarNome_(pastaServico.getName());
-  const nn   = String(indice).padStart(2, '0');
-  const NN   = String(total).padStart(2, '0');
 
   // ── Fotos: mede primeiro, diagrama depois ───────────────────────────────
   const arquivos = _scListarFotos_(pastaServico, 4);
@@ -411,8 +409,7 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
 
   if (!ars.length) {
     // Nenhuma foto carregou: placa ainda apresentável, só com o texto.
-    _scTexto_(slide, 50, 178, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
-    _scTexto_(slide, 50, 192, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
+    _scTexto_(slide, 50, 178, 626, 40, info.nome, _scCorpoManchete_(info.nome.length),
               SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
     Logger.log('Slide de ' + secao + ' gerado SEM fotos (todas falharam): ' + info.nome);
     return;
@@ -428,8 +425,7 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     filete.getFill().setSolidFill(SC_ACENTO);
     filete.getBorder().setTransparent();
 
-    _scTexto_(slide, 50, 116, colW, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
-    _scTexto_(slide, 50, 132, colW, 116, info.nome,
+    _scTexto_(slide, 50, 116, colW, 132, info.nome,
               _scCorpoTexto_(info.nome.length, colW, SC_ESCADA_B, 3.7),
               SC_TITULO_COR, DS.typography.titles, true);
     if (info.tag) _scTag_(slide, info.tag, 50, 258);
@@ -443,12 +439,11 @@ function _scGerarSlideServico_(secao, pastaServico, indice, total) {
     filete.getFill().setSolidFill(SC_ACENTO);
     filete.getBorder().setTransparent();
 
-    _scTexto_(slide, 50, 74, 300, 13, 'SERVIÇO ' + nn + ' / ' + NN, 8.5, SC_ACENTO, DS.typography.body, true);
     if (info.tag) {
       const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
-      _scTag_(slide, info.tag, 676 - pw, 74);
+      _scTag_(slide, info.tag, 676 - pw, 83);
     }
-    _scTexto_(slide, 50, 88, 626, 38, info.nome, _scCorpoManchete_(info.nome.length),
+    _scTexto_(slide, 50, 74, 626, 52, info.nome, _scCorpoManchete_(info.nome.length),
               SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
 
     const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 128, 632, 0.75);
