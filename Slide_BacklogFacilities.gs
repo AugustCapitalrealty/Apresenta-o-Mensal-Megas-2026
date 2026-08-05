@@ -2,17 +2,18 @@
  * ARQUIVO: Slide_BacklogFacilities.gs
  * SLIDE — BACKLOG FACILITIES (evolução mensal de chamados)
  * DESCRIÇÃO: Substitui o espaço reservado ("cole o gráfico aqui") pelo
- * gráfico automático de Chamados Facilities x Geral, lido da aba "BACKLOG"
- * da planilha de HISTÓRICO VALIDADO (obterDadosBacklogHistorico_ em
- * 02_Dados.gs) — os mesmos números já lançados na aba DADOS de cada Mega
- * ("Chamados de facilities"/"Chamados geral"), só que consolidados numa
- * série cronológica.
+ * gráfico automático de Chamados Geral, Facilities, Property e Clientes
+ * (Locatário), lido da aba "BACKLOG" da planilha de HISTÓRICO VALIDADO
+ * (obterDadosBacklogHistorico_ em 02_Dados.gs) — Facilities/Geral batem com
+ * as linhas "Chamados de facilities"/"Chamados geral" da aba DADOS de cada
+ * Mega; Property e Clientes só existem na aba BACKLOG.
  *
  * Diferente dos gráficos de Utilities/Monitoramento (grade fixa de 12 meses
  * do ano, uma linha por ano), aqui é uma linha do tempo contínua — os
  * últimos 12 meses disponíveis, em ordem cronológica, sem repetir a grade
- * a cada ano. Duas linhas (Facilities e Geral); só o mês mais recente ganha
- * rótulo de valor em cada linha, para não lotar o gráfico.
+ * a cada ano. Quatro linhas; só o mês mais recente ganha rótulo de valor em
+ * cada linha (com afastamento automático se dois rótulos ficarem próximos
+ * demais), para não lotar o gráfico.
  *
  * Sem a aba BACKLOG preenchida (ou sem linha para a cidade ativa): cai no
  * slide manual de espaço reservado (gerarSlideReservaGraficos), sem quebrar
@@ -50,17 +51,20 @@ function gerarSlideBacklogFacilities() {
   _backlogGrafico_(slide, marginX, chartY, W - marginX * 2, chartH, meses);
 
   Logger.log('Slide Backlog Facilities gerado — ' + n + ' mês(es), atual=' + atual.rotulo +
-             ' (facilities=' + atual.facilities + ', geral=' + atual.geral + ').');
+             ' (geral=' + atual.geral + ', facilities=' + atual.facilities +
+             ', property=' + atual.property + ', locatario=' + atual.locatario + ').');
 }
 
 // ── Cards de KPI — chamados do mês, com delta vs mês anterior ─────────────
 function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
-  const gap   = 10;
-  const cardW = (w - gap) / 2;
+  const gap   = 8;
+  const cardW = (w - gap * 3) / 4;
 
   const cards = [
-    { label: 'CHAMADOS FACILITIES', val: atual.facilities, ant: anterior ? anterior.facilities : null, fmt: formatarNumeroBR, cor: CORES.lightBlue, notaTxt: 'vs mês anterior' },
-    { label: 'CHAMADOS GERAL',      val: atual.geral,      ant: anterior ? anterior.geral      : null, fmt: formatarNumeroBR, cor: CORES.darkBlue, notaTxt: 'vs mês anterior' }
+    { label: 'CHAMADOS GERAL',      val: atual.geral,      ant: anterior ? anterior.geral      : null, fmt: formatarNumeroBR, cor: CORES.darkBlue,   notaTxt: 'vs mês anterior' },
+    { label: 'CHAMADOS FACILITIES', val: atual.facilities, ant: anterior ? anterior.facilities : null, fmt: formatarNumeroBR, cor: CORES.lightBlue,  notaTxt: 'vs mês anterior' },
+    { label: 'CHAMADOS PROPERTY',   val: atual.property,   ant: anterior ? anterior.property   : null, fmt: formatarNumeroBR, cor: CORES.themeCorr,  notaTxt: 'vs mês anterior' },
+    { label: 'CHAMADOS CLIENTES',   val: atual.locatario,  ant: anterior ? anterior.locatario  : null, fmt: formatarNumeroBR, cor: CORES.textPurple, notaTxt: 'vs mês anterior' }
   ];
 
   cards.forEach((c, i) => {
@@ -69,7 +73,7 @@ function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
   });
 }
 
-// ── Gráfico de linha — Facilities x Geral, cronológico (não agrupado por ano) ──
+// ── Gráfico de linha — Geral, Facilities, Property e Clientes, cronológico ──
 function _backlogGrafico_(slide, x, y, w, h, meses) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
@@ -84,16 +88,20 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   const plotY = y + mT;
   const slotW = plotW / n;
 
-  const corFacilities = CORES.lightBlue;
-  const corGeral      = CORES.darkBlue;
+  const SERIES = [
+    { chave: 'geral',     rotulo: 'Geral',      cor: CORES.darkBlue,   destaque: true  },
+    { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  destaque: false },
+    { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  destaque: false },
+    { chave: 'locatario',  rotulo: 'Clientes',   cor: CORES.textPurple, destaque: false }
+  ];
 
   // Realce do mês de referência (o mais recente) — mesma ideia da faixa
   // suave usada nos gráficos de Utilities/Monitoramento.
   const hl = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + (n - 1) * slotW, plotY, slotW, plotH);
-  hl.getFill().setSolidFill(corGeral, 0.06);
+  hl.getFill().setSolidFill(CORES.darkBlue, 0.06);
   hl.getBorder().setTransparent();
 
-  const todosValores = meses.flatMap(m => [m.facilities, m.geral]).filter(v => v != null);
+  const todosValores = meses.flatMap(m => SERIES.map(s => m[s.chave])).filter(v => v != null);
   const vMax   = todosValores.length ? Math.max(...todosValores) : 0;
   const escMax = _utilEscalaTeto_(vMax);
 
@@ -107,20 +115,29 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     _sTxt(slide, x, gy - 7, mL - 6, 14, formatarNumeroBR(Math.round(gVal)), 7, false, CORES.textGray, 'right');
   }
 
-  const valoresFacilities = meses.map(m => m.facilities);
-  const valoresGeral      = meses.map(m => m.geral);
-
-  const pontosGeral      = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, valoresGeral,      corGeral,      escMax, true);
-  const pontosFacilities = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, valoresFacilities, corFacilities, escMax, false);
+  // Desenha Geral por último (por cima), mas mede/rotula todas.
+  const desenhadas = SERIES.map(s => ({
+    serie: s,
+    pontos: _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.cor, escMax, s.destaque)
+  }));
 
   // Rótulo de valor só no mês mais recente de cada linha — evita lotar o
-  // gráfico com até 24 números (2 séries × 12 meses).
-  [{ pontos: pontosFacilities, cor: corFacilities }, { pontos: pontosGeral, cor: corGeral }].forEach(serie => {
-    const p = serie.pontos[n - 1];
-    if (!p) return;
+  // gráfico com até 48 números (4 séries × 12 meses). Se dois rótulos do
+  // mês mais recente ficarem perto demais na vertical, afasta um do outro.
+  const rotulosValor = desenhadas
+    .map(d => { const p = d.pontos[n - 1]; return p ? { x: p.x, y: p.y, val: p.val, cor: d.serie.cor } : null; })
+    .filter(Boolean)
+    .sort((a, b) => a.y - b.y);
+  const gapMin = 11;
+  for (let i = 1; i < rotulosValor.length; i++) {
+    if (rotulosValor[i].y - rotulosValor[i - 1].y < gapMin) {
+      rotulosValor[i].y = rotulosValor[i - 1].y + gapMin;
+    }
+  }
+  rotulosValor.forEach(r => {
     const lw = 30, folga = 10;
-    _sTxt(slide, p.x - lw / 2 - folga, p.y - 13, lw + folga * 2, 11,
-      formatarNumeroBR(p.val), 6.5, true, serie.cor, 'center');
+    _sTxt(slide, r.x - lw / 2 - folga, r.y - 13, lw + folga * 2, 11,
+      formatarNumeroBR(r.val), 6.5, true, r.cor, 'center');
   });
 
   // Rótulos do eixo X — cronológicos (ex.: "JUL/25"), não meses do ano.
@@ -128,16 +145,17 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     const slotX = plotX + i * slotW;
     const destaque = i === n - 1;
     _sTxt(slide, slotX, plotY + plotH + 4, slotW, 12, m.rotulo, destaque ? 7.5 : 6.5,
-      destaque, destaque ? corGeral : CORES.textDark, 'center');
+      destaque, destaque ? CORES.darkBlue : CORES.textDark, 'center');
   });
 
-  // Legenda — Geral e Facilities, alinhada à direita no topo do painel
+  // Legenda — Geral, Facilities, Property, Clientes (esquerda pra direita),
+  // alinhada à direita no topo do painel.
   const legY = y + 10;
   let legX = x + w - 14;
-  [{ rotulo: 'Geral', cor: corGeral }, { rotulo: 'Facilities', cor: corFacilities }].forEach(it => {
-    const lw = 12 + it.rotulo.length * 5.5 + 16;
+  SERIES.slice().reverse().forEach(s => {
+    const lw = 12 + s.rotulo.length * 5.5 + 16;
     legX -= lw;
-    _solarRect(slide, legX, legY, 10, 8, it.cor);
-    _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, it.rotulo, 7.5, false, CORES.textDark, 'left');
+    _solarRect(slide, legX, legY, 10, 8, s.cor);
+    _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, s.rotulo, 7.5, false, CORES.textDark, 'left');
   });
 }

@@ -2317,19 +2317,20 @@ function _monSerieDireta_(porAnoRaw) {
 
 
 // ==========================================
-// DADOS BACKLOG (Chamados Facilities x Geral) — aba "BACKLOG" da planilha
-// de HISTÓRICO VALIDADO
+// DADOS BACKLOG (Geral, Facilities, Property, Locatário) — aba "BACKLOG" da
+// planilha de HISTÓRICO VALIDADO
 // ==========================================
 // Layout diferente do padrão "Mês | Empreendimento | Indicador | Dado" usado
 // por lerHistoricoValidado — essa aba é em blocos lado a lado, um por Mega
 // (célula mesclada com o nome na linha 1; GERAL/FACILITIES/PROPERTY/LOCATÁRIO
 // na linha 2, nessa ordem), com uma coluna "ANO MES" compartilhada:
 //   ANO MES | MEGA ESTEIO (GERAL|FACILITIES|PROPERTY|LOCATÁRIO) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
-// Mesmos números já lançados na aba DADOS de cada Mega (linhas "Chamados de
-// facilities"/"Chamados geral") — aqui é só o histórico consolidado das três.
-// PROPERTY/LOCATÁRIO existem na planilha mas não são usados neste slide.
+// Facilities/Geral já batem com as linhas "Chamados de facilities"/"Chamados
+// geral" da aba DADOS de cada Mega — aqui é só o histórico consolidado das
+// três, com Property e Locatário (Clientes) inclusos também.
 // Retorna a série cronológica da cidade ativa, ordenada, mais recente por
-// último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94, geral:108 }]
+// último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94,
+//            geral:108, property:13, locatario:11 }]
 function obterDadosBacklogHistorico_() {
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
@@ -2353,9 +2354,9 @@ function obterDadosBacklogHistorico_() {
 
     // Cada Mega abre um bloco de colunas, marcado pela célula mesclada com o
     // nome (linha acima do cabeçalho) — só a coluna inicial do bloco tem
-    // texto ali (o resto da mesclagem vem em branco). Dentro do bloco,
-    // GERAL/FACILITIES podem estar em qualquer ordem; localizamos cada um
-    // pelo próprio texto do cabeçalho, não pela posição.
+    // texto ali (o resto da mesclagem vem em branco). Dentro do bloco, as 4
+    // colunas podem estar em qualquer ordem; localizamos cada uma pelo
+    // próprio texto do cabeçalho, não pela posição.
     const blocos = [];
     linhaMega.forEach((v, c) => {
       if (c === cMes) return;
@@ -2365,7 +2366,7 @@ function obterDadosBacklogHistorico_() {
     if (blocos.length === 0) return [];
 
     const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
-    let cFac = -1, cGer = -1;
+    let cFac = -1, cGer = -1, cProp = -1, cLoc = -1;
     for (let i = 0; i < blocos.length; i++) {
       if (_histEmpChave_(blocos[i].nome) !== alvoMega) continue;
       const cIni = blocos[i].col;
@@ -2374,6 +2375,8 @@ function obterDadosBacklogHistorico_() {
         const h = _histNorm_(linhaCol[c]);
         if (h.indexOf('geral') >= 0) cGer = c;
         else if (h.indexOf('facilit') >= 0) cFac = c;
+        else if (h.indexOf('propert') >= 0) cProp = c;
+        else if (h.indexOf('locatari') >= 0) cLoc = c;
       }
       break;
     }
@@ -2385,12 +2388,16 @@ function obterDadosBacklogHistorico_() {
       if (!mes) continue;
       const facilities = _histNum_(data[r][cFac]);
       const geral      = _histNum_(data[r][cGer]);
+      const property   = cProp >= 0 ? _histNum_(data[r][cProp]) : NaN;
+      const locatario  = cLoc  >= 0 ? _histNum_(data[r][cLoc])  : NaN;
       saida.push({
         mes: mes.label,
         ord: mes.ord,
         rotulo: MESES_3_REF[parseInt(mes.label.slice(0, 2), 10) - 1] + '/' + mes.label.slice(-2),
         facilities: isNaN(facilities) ? null : facilities,
-        geral: isNaN(geral) ? null : geral
+        geral: isNaN(geral) ? null : geral,
+        property: isNaN(property) ? null : property,
+        locatario: isNaN(locatario) ? null : locatario
       });
     }
     saida.sort((a, b) => a.ord - b.ord);
