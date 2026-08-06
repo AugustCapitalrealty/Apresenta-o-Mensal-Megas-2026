@@ -161,3 +161,14 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, s.rotulo, 7.5, false, CORES.textDark, 'left');
   });
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Backlog Facilities — evolução mensal de chamados, busca automática na aba
+// BACKLOG da planilha de Histórico Validado. Sem linha para a cidade, cai
+// no slide manual de espaço reservado.
+function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogFacilities(); }
+function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
+function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }

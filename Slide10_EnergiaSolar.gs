@@ -192,3 +192,9 @@ function _solarFmtKwh(v) {
   if (v >= 1000) return (v / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k';
   return Math.round(v).toLocaleString('pt-BR');
 }
+
+
+// ==========================================
+// PONTO DE ENTRADA — SLIDE AVULSO
+// ==========================================
+function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }

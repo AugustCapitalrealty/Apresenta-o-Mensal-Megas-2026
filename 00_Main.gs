@@ -10,6 +10,13 @@
  *   Para rodar AS TRÊS de uma vez:
  *     ▸ gerarTodas()      → gera (acrescenta)
  *     ▸ regerarTodas()    → limpa e gera
+ *
+ *   Para rodar UM SLIDE avulso (gerarSoXxxCuritiba/Itajai/Esteio): a função
+ *   fica no próprio arquivo do slide (ex.: gerarSoChamadosClientesCuritiba
+ *   está em Slide_ChamadosClientes.gs, perto de gerarSlideChamadosClientes),
+ *   não aqui — Apps Script compila todos os arquivos num namespace só, então
+ *   a localização não muda o comportamento, só a organização. Este arquivo
+ *   fica só com o pipeline completo e os pontos de entrada por cidade/todas.
  */
 
 
@@ -23,99 +30,6 @@ function gerarEsteio()     { setProjetoAtivo('ESTEIO');   gerarApresentacaoCompl
 function regerarCuritiba() { setProjetoAtivo('CURITIBA'); regerarApresentacaoCompleta_(); }
 function regerarItajai()   { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); }
 function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); }
-
-
-// ==========================================
-// PONTOS DE ENTRADA — SLIDES INDIVIDUAIS
-// ==========================================
-function gerarSoEnergiaSolar() { setProjetoAtivo('CURITIBA'); gerarSlideEnergiaSolar(); }
-function gerarSoMetasGuilherme() { setProjetoAtivo('CURITIBA'); gerarSlidesMetasGuilherme(); }
-
-// Gestão de Utilities (consumo/gasto de energia e água) — busca automática na
-// aba UTILITIES da planilha da cidade (ver Slide_Utilities.gs). Só Itajaí e
-// Esteio; Curitiba usa gerarSoEnergiaSolar() acima.
-function gerarSoUtilitiesItajai() { setProjetoAtivo('ITAJAI'); gerarSlidesUtilities_(); }
-function gerarSoUtilitiesEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesUtilities_(); }
-
-// Monitoramento Pluviométrico e Canal de Drenagem — só Mega Esteio, busca
-// automática na planilha externa do sistema de gestão predial (ver
-// Slide_Utilities.gs / monitoramentoId em 01_Config.gs).
-function gerarSoMonitoramentoEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesMonitoramentoEsteio_(); }
-
-// Backlog Facilities — evolução mensal de chamados, busca automática na aba
-// BACKLOG da planilha de Histórico Validado (ver Slide_BacklogFacilities.gs).
-// Sem linha para a cidade, cai no slide manual de espaço reservado.
-function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogFacilities(); }
-function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
-function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }
-
-// Chamados por Prioridade — barras Abertos/Fechados por Prioridade + lista
-// dos Emergenciais, busca automática nas abas CHAMADOS ABERTOS MES/CHAMADOS
-// FECHADOS MES da planilha de Histórico Validado, filtrado pelo Centro de
-// Custos da cidade ativa (ver Slide_ChamadosPrioridade.gs). Sem as abas
-// preenchidas, cai no slide manual de espaço reservado.
-function gerarSoChamadosPrioridadeCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosPrioridade(); }
-function gerarSoChamadosPrioridadeItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosPrioridade(); }
-function gerarSoChamadosPrioridadeEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosPrioridade(); }
-
-// Chamados de Clientes — barras Abertos/Fechados por Cliente + lista
-// completa de chamados de cada período, mesmas abas do Chamados por
-// Prioridade, mas agrupado por Cliente e sem as linhas do próprio
-// condomínio (ver Slide_ChamadosClientes.gs). Sem as abas preenchidas,
-// cai no slide manual de espaço reservado.
-function gerarSoChamadosClientesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosClientes(); }
-function gerarSoChamadosClientesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosClientes(); }
-function gerarSoChamadosClientesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosClientes(); }
-
-// Backlog Emergencial — Detalhe — chamados de prioridade Emergencial que
-// estavam em aberto durante o mês de referência (mês anterior) no
-// empreendimento ativo, com o detalhe por Equipe responsável (Facilities x
-// Property), busca automática na aba "BACKLOG - EMERGENCIAL - DETALHE" da
-// planilha de Histórico Validado (ver Slide_BacklogEmergencialDetalhe.gs).
-// Sem a aba preenchida, cai no slide manual de espaço reservado.
-function gerarSoBacklogEmergencialDetalheCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogEmergencialDetalhe(); }
-function gerarSoBacklogEmergencialDetalheItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogEmergencialDetalhe(); }
-function gerarSoBacklogEmergencialDetalheEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogEmergencialDetalhe(); }
-
-// Backlog de Clientes — Detalhe — chamados do backlog de responsabilidade do
-// locatário que estavam em aberto durante o mês de referência no
-// empreendimento ativo, agrupados por Cliente (mesma regra de janela de mês
-// do Backlog Emergencial — Detalhe), busca automática na aba "BACKLOG -
-// CLIENTES - DETALHES" da planilha de Histórico Validado (ver
-// Slide_BacklogClientesDetalhes.gs). Sem a aba preenchida, cai no slide
-// manual de espaço reservado.
-function gerarSoBacklogClientesDetalhesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogClientesDetalhes(); }
-function gerarSoBacklogClientesDetalhesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogClientesDetalhes(); }
-function gerarSoBacklogClientesDetalhesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogClientesDetalhes(); }
-
-// Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
-// geração mensal automática (é um recorte de período fixo, não do mês de
-// referência corrente). Troque a cidade e rode a função correspondente.
-function gerarSoCustoM2QuadrimestreCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideCustoM2Quadrimestre(); }
-function gerarSoCustoM2QuadrimestreItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCustoM2Quadrimestre(); }
-function gerarSoCustoM2QuadrimestreEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCustoM2Quadrimestre(); }
-
-// DRE avulso — só a versão Realizado + Ritmo (a que entra na apresentação
-// completa agora). Gera direto na apresentação do Curitiba, sem rodar o
-// resto do fluxo.
-function gerarSoDRECuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDREComRitmo(); }
-function gerarSoDREItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDREComRitmo(); }
-function gerarSoDREEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDREComRitmo(); }
-
-// Slides de fotos avulsos — busca automática no Drive (se a cidade tiver a
-// seção em fotosServicos, no 01_Config.gs); senão cai no slide manual de
-// colar foto por foto.
-function gerarSoServicosContratadosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesServicosContratados_(); }
-function gerarSoServicosContratadosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesServicosContratados_(); }
-function gerarSoServicosContratadosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesServicosContratados_(); }
-
-function gerarSoServicosInternosCuritiba()    { setProjetoAtivo('CURITIBA'); gerarSlidesServicosInternos_(); }
-function gerarSoServicosInternosItajai()      { setProjetoAtivo('ITAJAI');   gerarSlidesServicosInternos_(); }
-function gerarSoServicosInternosEsteio()      { setProjetoAtivo('ESTEIO');   gerarSlidesServicosInternos_(); }
-
-// COMPLEMENTOS ainda não entra na apresentação completa — falta definir em que
-// ponto do fluxo ele aparece. Roda avulso enquanto isso.
-function gerarSoComplementosCuritiba()        { setProjetoAtivo('CURITIBA'); gerarSlidesComplementos_(); }
 
 
 // ==========================================

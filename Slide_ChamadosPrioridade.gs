@@ -179,3 +179,15 @@ function _prioridadeSemDado_(slide, x, y, w, h, texto, cor) {
     .setFontSize(9.5).setItalic(true).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
   txt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Barras Abertos/Fechados por Prioridade + lista dos Emergenciais, busca
+// automática nas abas CHAMADOS ABERTOS MES/CHAMADOS FECHADOS MES da
+// planilha de Histórico Validado, filtrado pelo Centro de Custos da cidade
+// ativa. Sem as abas preenchidas, cai no slide manual de espaço reservado.
+function gerarSoChamadosPrioridadeCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosPrioridade(); }
+function gerarSoChamadosPrioridadeItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosPrioridade(); }
+function gerarSoChamadosPrioridadeEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosPrioridade(); }

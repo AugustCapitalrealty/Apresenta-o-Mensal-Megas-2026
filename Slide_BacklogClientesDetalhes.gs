@@ -204,3 +204,17 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
     });
   }
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Chamados do backlog de responsabilidade do locatário que estavam em
+// aberto durante o mês de referência no empreendimento ativo, agrupados
+// por Cliente (mesma regra de janela de mês do Backlog Emergencial —
+// Detalhe), busca automática na aba "BACKLOG - CLIENTES - DETALHES" da
+// planilha de Histórico Validado. Sem a aba preenchida, cai no slide
+// manual de espaço reservado.
+function gerarSoBacklogClientesDetalhesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogClientesDetalhes(); }
+function gerarSoBacklogClientesDetalhesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogClientesDetalhes(); }
+function gerarSoBacklogClientesDetalhesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogClientesDetalhes(); }

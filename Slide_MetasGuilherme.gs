@@ -167,3 +167,9 @@ function _gerarSlideControleReembolsos_() {
 
   _mgCardTexto_(slide, 30, 325, 660, 64, 'OBJETIVO DO FUNIL', 'Separar entrevistas concluídas, pendentes e apoios necessários para redesenhar a solicitação e o controle dos reembolsos.', DS.colors.brandMed);
 }
+
+
+// ==========================================
+// PONTO DE ENTRADA — SLIDE AVULSO
+// ==========================================
+function gerarSoMetasGuilherme() { setProjetoAtivo('CURITIBA'); gerarSlidesMetasGuilherme(); }

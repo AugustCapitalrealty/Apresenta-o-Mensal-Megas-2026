@@ -289,3 +289,15 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     });
   }
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Barras Abertos/Fechados por Cliente + lista completa de chamados de cada
+// período, mesmas abas do Chamados por Prioridade, mas agrupado por Cliente
+// e sem as linhas do próprio condomínio. Sem as abas preenchidas, cai no
+// slide manual de espaço reservado.
+function gerarSoChamadosClientesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosClientes(); }
+function gerarSoChamadosClientesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosClientes(); }
+function gerarSoChamadosClientesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosClientes(); }

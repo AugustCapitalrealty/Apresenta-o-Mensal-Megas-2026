@@ -340,3 +340,14 @@ function _gerarSlideDRE_(modo) {
 
   Logger.log('Slide DRE (' + modo + ') gerado: ' + d.rubricas.length + ' rubrica(s), mês ' + d.mesLabel + '.');
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// DRE avulso — só a versão Realizado + Ritmo (a que entra na apresentação
+// completa). Gera direto na apresentação da cidade, sem rodar o resto do
+// fluxo.
+function gerarSoDRECuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDREComRitmo(); }
+function gerarSoDREItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDREComRitmo(); }
+function gerarSoDREEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDREComRitmo(); }

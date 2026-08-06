@@ -145,3 +145,16 @@ function _backlogEmergLista_(slide, x, y, w, h, titulo, itens, corTema) {
     box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   }
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Chamados de prioridade Emergencial que estavam em aberto durante o mês de
+// referência (mês anterior) no empreendimento ativo, com o detalhe por
+// Equipe responsável (Facilities x Property), busca automática na aba
+// "BACKLOG - EMERGENCIAL - DETALHE" da planilha de Histórico Validado. Sem
+// a aba preenchida, cai no slide manual de espaço reservado.
+function gerarSoBacklogEmergencialDetalheCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogEmergencialDetalhe(); }
+function gerarSoBacklogEmergencialDetalheItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogEmergencialDetalhe(); }
+function gerarSoBacklogEmergencialDetalheEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogEmergencialDetalhe(); }

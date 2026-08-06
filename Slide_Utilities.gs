@@ -546,3 +546,18 @@ function _utilFmtNivel_(v) {
   if (v == null || isNaN(v)) return '';
   return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m';
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDES AVULSOS
+// ==========================================
+// Gestão de Utilities (consumo/gasto de energia e água) — busca automática na
+// aba UTILITIES da planilha da cidade. Só Itajaí e Esteio; Curitiba usa
+// gerarSoEnergiaSolar() (Slide10_EnergiaSolar.gs).
+function gerarSoUtilitiesItajai() { setProjetoAtivo('ITAJAI'); gerarSlidesUtilities_(); }
+function gerarSoUtilitiesEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesUtilities_(); }
+
+// Monitoramento Pluviométrico e Canal de Drenagem — só Mega Esteio, busca
+// automática na planilha externa do sistema de gestão predial (ver
+// monitoramentoId em 01_Config.gs).
+function gerarSoMonitoramentoEsteio() { setProjetoAtivo('ESTEIO'); gerarSlidesMonitoramentoEsteio_(); }
