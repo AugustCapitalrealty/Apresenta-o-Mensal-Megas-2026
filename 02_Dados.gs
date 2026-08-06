@@ -2419,20 +2419,21 @@ function _monSerieDireta_(porAnoRaw) {
 
 
 // ==========================================
-// DADOS BACKLOG (Geral, Facilities, Property, Locatário) — aba "BACKLOG" da
-// planilha de HISTÓRICO VALIDADO
+// DADOS BACKLOG (Geral, Facilities, Property, Locatário, Emergencial) — aba
+// "BACKLOG" da planilha de HISTÓRICO VALIDADO
 // ==========================================
 // Layout diferente do padrão "Mês | Empreendimento | Indicador | Dado" usado
 // por lerHistoricoValidado — essa aba é em blocos lado a lado, um por Mega
-// (célula mesclada com o nome na linha 1; GERAL/FACILITIES/PROPERTY/LOCATÁRIO
-// na linha 2, nessa ordem), com uma coluna "ANO MES" compartilhada:
-//   ANO MES | MEGA ESTEIO (GERAL|FACILITIES|PROPERTY|LOCATÁRIO) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
+// (célula mesclada com o nome na linha 1; GERAL/FACILITIES/PROPERTY/
+// LOCATÁRIO/EMERGENCIAL na linha 2, nessa ordem), com uma coluna "ANO MES"
+// compartilhada:
+//   ANO MES | MEGA ESTEIO (GERAL|FACILITIES|PROPERTY|LOCATÁRIO|EMERGENCIAL) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
 // Facilities/Geral já batem com as linhas "Chamados de facilities"/"Chamados
 // geral" da aba DADOS de cada Mega — aqui é só o histórico consolidado das
-// três, com Property e Locatário (Clientes) inclusos também.
+// três, com Property, Locatário (Clientes) e Emergencial inclusos também.
 // Retorna a série cronológica da cidade ativa, ordenada, mais recente por
 // último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94,
-//            geral:108, property:13, locatario:11 }]
+//            geral:108, property:13, locatario:11, emergencial:4 }]
 function obterDadosBacklogHistorico_() {
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
@@ -2468,7 +2469,7 @@ function obterDadosBacklogHistorico_() {
     if (blocos.length === 0) return [];
 
     const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
-    let cFac = -1, cGer = -1, cProp = -1, cLoc = -1;
+    let cFac = -1, cGer = -1, cProp = -1, cLoc = -1, cEmerg = -1;
     for (let i = 0; i < blocos.length; i++) {
       if (_histEmpChave_(blocos[i].nome) !== alvoMega) continue;
       const cIni = blocos[i].col;
@@ -2479,6 +2480,7 @@ function obterDadosBacklogHistorico_() {
         else if (h.indexOf('facilit') >= 0) cFac = c;
         else if (h.indexOf('propert') >= 0) cProp = c;
         else if (h.indexOf('locatari') >= 0) cLoc = c;
+        else if (h.indexOf('emergenc') >= 0) cEmerg = c;
       }
       break;
     }
@@ -2488,10 +2490,11 @@ function obterDadosBacklogHistorico_() {
     for (let r = linhaHdr + 1; r < data.length; r++) {
       const mes = _histParseMes_(data[r][cMes]);
       if (!mes) continue;
-      const facilities = _histNum_(data[r][cFac]);
-      const geral      = _histNum_(data[r][cGer]);
-      const property   = cProp >= 0 ? _histNum_(data[r][cProp]) : NaN;
-      const locatario  = cLoc  >= 0 ? _histNum_(data[r][cLoc])  : NaN;
+      const facilities  = _histNum_(data[r][cFac]);
+      const geral       = _histNum_(data[r][cGer]);
+      const property    = cProp   >= 0 ? _histNum_(data[r][cProp])   : NaN;
+      const locatario   = cLoc    >= 0 ? _histNum_(data[r][cLoc])    : NaN;
+      const emergencial = cEmerg  >= 0 ? _histNum_(data[r][cEmerg])  : NaN;
       saida.push({
         mes: mes.label,
         ord: mes.ord,
@@ -2499,7 +2502,8 @@ function obterDadosBacklogHistorico_() {
         facilities: isNaN(facilities) ? null : facilities,
         geral: isNaN(geral) ? null : geral,
         property: isNaN(property) ? null : property,
-        locatario: isNaN(locatario) ? null : locatario
+        locatario: isNaN(locatario) ? null : locatario,
+        emergencial: isNaN(emergencial) ? null : emergencial
       });
     }
     saida.sort((a, b) => a.ord - b.ord);

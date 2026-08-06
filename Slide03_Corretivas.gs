@@ -45,25 +45,83 @@ function gerarSlideCorretivas() {
   desenharCardListaKPIs(slide, marginX, topY, cardW, cardH, CORES, dados.mensal, CORES.lightBlue);
   desenharCardListaKPIs(slide, marginX + cardW + gap, topY, cardW, cardH, CORES, dados.anual, CORES.cardGreen);
 
-  // Espaço para Gráfico
+  // Gráfico BACKLOG DE CHAMADOS EMERGÊNCIAS — automático, lido da coluna
+  // EMERGENCIAL da aba BACKLOG (planilha de Histórico Validado, mesma fonte
+  // do slide Backlog Facilities). Sem a coluna preenchida pra cidade ativa,
+  // cai no espaço reservado manual de sempre.
   const chartY = topY + cardH + 20;
   const chartW = PageWidth - (2 * marginX);
   const footerH = PageHeight - chartY - 20;
 
-  const ph = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, chartY, chartW, footerH);
-  ph.getFill().setSolidFill(CORES.white);
-  ph.getBorder().setDashStyle(SlidesApp.DashStyle.DASH).setWeight(1).getLineFill().setSolidFill('#CBD5E1');
+  const historicoBacklog = obterDadosBacklogHistorico_();
+  const temEmergencial = historicoBacklog.some(m => m.emergencial != null);
 
-  const chartTitle = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 15, chartY + 10, chartW - 30, 25);
+  if (temEmergencial) {
+    _corretivasGraficoEmergencial_(slide, marginX, chartY, chartW, footerH, historicoBacklog.slice(-13));
+  } else {
+    const ph = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, marginX, chartY, chartW, footerH);
+    ph.getFill().setSolidFill(CORES.white);
+    ph.getBorder().setDashStyle(SlidesApp.DashStyle.DASH).setWeight(1).getLineFill().setSolidFill('#CBD5E1');
+
+    const chartTitle = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 15, chartY + 10, chartW - 30, 25);
+    chartTitle.getText().setText("BACKLOG DE CHAMADOS EMERGÊNCIAS")
+      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.lightBlue).setFontFamily('Montserrat');
+
+    const phTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, chartY + (footerH/2), chartW, 30);
+    phTxt.getText().setText("[ ESPAÇO RESERVADO PARA COLAR O GRÁFICO — preencha a coluna EMERGENCIAL da aba BACKLOG ]")
+      .getTextStyle().setFontSize(10).setBold(true).setForegroundColor('#CBD5E1').setFontFamily('Montserrat');
+    phTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
+
+  Logger.log("Slide 03 (Corretivas) gerado com sucesso.");
+}
+
+// ── Gráfico de barras — chamados emergenciais, cronológico (últimos meses
+// disponíveis na aba BACKLOG, mais recente por último) ─────────────────────
+function _corretivasGraficoEmergencial_(slide, x, y, w, h, meses) {
+  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(CORES.white);
+  bg.getBorder().getLineFill().setSolidFill('#CBD5E1');
+  bg.getBorder().setWeight(1);
+
+  const chartTitle = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, y + 10, w - 30, 25);
   chartTitle.getText().setText("BACKLOG DE CHAMADOS EMERGÊNCIAS")
     .getTextStyle().setFontSize(10).setBold(true).setForegroundColor(CORES.lightBlue).setFontFamily('Montserrat');
 
-  const phTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, chartY + (footerH/2), chartW, 30);
-  phTxt.getText().setText("[ ESPAÇO RESERVADO PARA COLAR O GRÁFICO ]")
-    .getTextStyle().setFontSize(10).setBold(true).setForegroundColor('#CBD5E1').setFontFamily('Montserrat');
-  phTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  
-  Logger.log("Slide 03 (Corretivas) gerado com sucesso.");
+  const MESES_MIN = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const n = meses.length;
+  const mL = 14, mR = 14, mT = 42, mB = 26;
+  const plotW = w - mL - mR;
+  const plotH = h - mT - mB;
+  const plotX = x + mL;
+  const plotY = y + mT;
+  const slotW = plotW / n;
+  const barW  = Math.min(slotW * 0.5, 40);
+
+  const valores = meses.map(m => m.emergencial).filter(v => v != null);
+  const vMax    = valores.length ? Math.max(...valores) : 0;
+  const escMax  = _utilEscalaTeto_(vMax);
+
+  meses.forEach((m, i) => {
+    const v = m.emergencial;
+    const slotX = plotX + i * slotW;
+    const cx = slotX + (slotW - barW) / 2;
+
+    if (v != null) {
+      const bh = (v > 0 && escMax > 0) ? Math.max((v / escMax) * plotH, 3) : 0;
+      if (bh > 0) {
+        const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, plotY + plotH - bh, barW, bh);
+        bar.getFill().setSolidFill(CORES.lightBlue);
+        bar.getBorder().setTransparent();
+      }
+      _sTxt(slide, slotX, plotY + plotH - bh - 18, slotW, 13,
+        formatarNumeroBR(v), 8.5, true, CORES.textDark, 'center');
+    }
+
+    const mesNum = parseInt(m.mes.slice(0, 2), 10);
+    const rotuloEixo = (MESES_MIN[mesNum - 1] || '') + '.' + m.mes.slice(-4);
+    _sTxt(slide, slotX, plotY + plotH + 6, slotW, 12, rotuloEixo, 6.5, false, CORES.textGray, 'center');
+  });
 }
 
 // Função Auxiliar Local
