@@ -1,17 +1,19 @@
 /**
  * ARQUIVO: Slide_ChamadosPrioridade.gs
  * SLIDE — CHAMADOS POR PRIORIDADE (Abertos x Fechados)
- * DESCRIÇÃO: Substitui o espaço reservado por duas pizzas (Abertos e
- * Fechados, fatiadas por Prioridade) mais a lista detalhada só dos
- * chamados Emergenciais de cada período — lido das abas "CHAMADOS ABERTOS
- * MES"/"CHAMADOS FECHADOS MES" da planilha de Histórico Validado
+ * DESCRIÇÃO: Substitui o espaço reservado por duas barras 100% empilhadas
+ * (Abertos e Fechados, fatiadas por Prioridade) mais a lista detalhada só
+ * dos chamados Emergenciais de cada período — lido das abas "CHAMADOS
+ * ABERTOS MES"/"CHAMADOS FECHADOS MES" da planilha de Histórico Validado
  * (obterDadosChamadosPrioridade_ em 02_Dados.gs), já filtrado pelo Centro
  * de Custos da cidade ativa.
  *
- * A pizza é desenhada via Charts.newPieChart() (serviço de gráficos nativo
- * do Apps Script, sem precisar de planilha auxiliar) — o SlidesApp não tem
- * nenhuma shape de "fatia" com ângulo ajustável, então o gráfico é gerado
- * como imagem PNG e inserido no slide com slide.insertImage().
+ * A barra é desenhada 100% nativa, só com RECTANGLE — o Slides não tem
+ * nenhuma shape de "fatia de pizza" com ângulo ajustável (nem via API, nem
+ * via SlidesApp), então uma pizza de verdade só sairia como imagem
+ * (Charts.newPieChart() + insertImage), que fica borrada em zoom alto. A
+ * barra empilhada carrega a mesma informação (proporção + valor + %) 100%
+ * vetorial, nítida em qualquer zoom/impressão.
  *
  * Sem as duas abas preenchidas (ou sem nenhuma linha da cidade ativa): cai
  * no slide manual de espaço reservado (gerarSlideReservaGraficos), sem
@@ -41,8 +43,8 @@ function gerarSlideChamadosPrioridade() {
   const colW = (W - 2 * marginX - gap) / 2;
   const rowH = (areaBottom - topY - gap) / 2;
 
-  _prioridadePizzaCard_(slide, marginX,             topY, colW, rowH, 'ABERTOS',  dados.abertos,  CORES.lightBlue);
-  _prioridadePizzaCard_(slide, marginX + colW + gap, topY, colW, rowH, 'FECHADOS', dados.fechados, CORES.darkBlue);
+  _prioridadeBarraCard_(slide, marginX,             topY, colW, rowH, 'ABERTOS',  dados.abertos,  CORES.lightBlue);
+  _prioridadeBarraCard_(slide, marginX + colW + gap, topY, colW, rowH, 'FECHADOS', dados.fechados, CORES.darkBlue);
 
   const y2 = topY + rowH + gap;
   _prioridadeListaEmergencial_(slide, marginX,              y2, colW, rowH, 'CHAMADOS ABERTOS EMERGENCIAL',  dados.abertos.emergencial);
@@ -53,8 +55,8 @@ function gerarSlideChamadosPrioridade() {
              ' (emergencial=' + dados.fechados.emergencial.length + ').');
 }
 
-// Mesma cor pra cada prioridade nas duas pizzas (Abertos/Fechados), pra dar
-// pra comparar visualmente — "menor é melhor" não se aplica aqui, é só
+// Mesma cor pra cada prioridade nos dois períodos (Abertos/Fechados), pra
+// dar pra comparar visualmente — "menor é melhor" não se aplica aqui, é só
 // identidade visual por prioridade (Emergencial mais escuro/sério).
 const _PRIORIDADE_CORES_ = {
   'Emergencial': '#1E3A8A',
@@ -62,9 +64,12 @@ const _PRIORIDADE_CORES_ = {
   'Normal':      '#CBD5E1',
   'Baixa':       '#94A3B8'
 };
+// Texto claro nos tons escuros/saturados, escuro no cinza-claro (Normal) —
+// senão o número dentro do segmento fica ilegível.
+const _PRIORIDADE_TEXTO_CLARO_ = { 'Emergencial': true, 'Alta': true, 'Normal': false, 'Baixa': true };
 
-// ── Card com a pizza Abertos/Fechados fatiada por Prioridade ──────────────
-function _prioridadePizzaCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema) {
+// ── Card com a barra 100% empilhada Abertos/Fechados por Prioridade ───────
+function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + dadosPeriodo.total + ')', corTema);
   const areaY = contentY + 2, areaH = y + h - areaY - 8;
 
@@ -73,25 +78,41 @@ function _prioridadePizzaCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema)
     return;
   }
 
-  const dataTable = Charts.newDataTable();
-  dataTable.addColumn(Charts.ColumnType.STRING, 'Prioridade');
-  dataTable.addColumn(Charts.ColumnType.NUMBER, 'Qtd');
-  dadosPeriodo.fatias.forEach(f => dataTable.addRow([f.label, f.qtd]));
+  const barX = x + 16, barW = w - 32, barY = areaY + 8, barH = 24;
+  const total = dadosPeriodo.total;
 
-  const cores = dadosPeriodo.fatias.map(f => _PRIORIDADE_CORES_[f.label] || CORES.textGray);
-  const chart = Charts.newPieChart()
-    .setDataTable(dataTable)
-    .setDimensions(Math.round(w * 1.6), Math.round(areaH * 1.6))
-    .setColors(cores)
-    .setLegendPosition(Charts.Position.RIGHT)
-    .setOption('pieSliceText', 'value')
-    .setOption('pieSliceTextStyle', { fontSize: 13, bold: true, color: '#FFFFFF' })
-    .setOption('legend', { textStyle: { fontSize: 11 } })
-    .setOption('chartArea', { left: 10, top: 10, width: '78%', height: '88%' })
-    .setOption('backgroundColor', 'transparent')
-    .build();
+  let cursorX = barX;
+  dadosPeriodo.fatias.forEach((f, i) => {
+    const ehUltima = i === dadosPeriodo.fatias.length - 1;
+    const segW = ehUltima ? (barX + barW - cursorX) : Math.round((f.qtd / total) * barW);
+    const cor = _PRIORIDADE_CORES_[f.label] || CORES.textGray;
 
-  slide.insertImage(chart.getAs('image/png'), x + 8, areaY, w - 16, areaH);
+    const seg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cursorX, barY, Math.max(segW, 1), barH);
+    seg.getFill().setSolidFill(cor);
+    seg.getBorder().setTransparent();
+
+    if (segW >= 16) {
+      const corTxt = _PRIORIDADE_TEXTO_CLARO_[f.label] ? CORES.white : CORES.textDark;
+      _sTxt(slide, cursorX, barY + 5, segW, 14, String(f.qtd), 9, true, corTxt, 'center');
+    }
+    cursorX += segW;
+  });
+
+  // Legenda: bolinha + prioridade + qtd (%), uma linha por fatia.
+  let legendY = barY + barH + 10;
+  dadosPeriodo.fatias.forEach(f => {
+    const cor = _PRIORIDADE_CORES_[f.label] || CORES.textGray;
+    const pct = total > 0 ? (f.qtd / total * 100) : 0;
+    const pctTxt = pct.toFixed(1).replace('.', ',') + '%';
+
+    const dot = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, legendY + 3, 8, 8);
+    dot.getFill().setSolidFill(cor);
+    dot.getBorder().setTransparent();
+
+    _sTxt(slide, barX + 13, legendY, 90, 14, f.label, 8, true, CORES.textDark, 'left');
+    _sTxt(slide, barX + 100, legendY, barW - 100, 14, f.qtd + ' (' + pctTxt + ')', 8, false, CORES.textGray, 'left');
+    legendY += 15;
+  });
 }
 
 // ── Card com a lista de chamados Emergenciais (Abertos ou Fechados) ───────
