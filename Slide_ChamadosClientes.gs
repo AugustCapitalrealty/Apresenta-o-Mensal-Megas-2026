@@ -161,27 +161,42 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     return;
   }
 
-  const MAX_ITENS = 8, MAX_CLIENTE = 22, MAX_DESC = 42;
-  const visiveis = itens.slice(0, MAX_ITENS);
-  const resto = itens.length - visiveis.length;
+  // Mostra TODOS os chamados, sem cortar — a partir de 6 itens divide em 2
+  // colunas (mesma ideia de _colunaTexto_/Slide02_Preventivas.gs) e o corpo
+  // do texto encolhe conforme a quantidade por coluna, até um mínimo ainda
+  // legível. Em meses muito cheios o texto pode encostar no rodapé do card
+  // (aceitável — o que não pode é sumir chamado da lista).
+  const cols     = itens.length > 6 ? 2 : 1;
+  const colGap   = 14;
+  const colW     = (w - 30 - (cols - 1) * colGap) / cols;
+  const porCol   = Math.ceil(itens.length / cols);
+  const LINE_PCT = 118;
 
-  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, listY, w - 30, listH);
-  const tr = box.getText();
-  tr.setText('');
-  visiveis.forEach(it => {
-    const bullet = tr.appendText('• ');
-    bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(8).setBold(true);
-    const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(it.cliente), MAX_CLIENTE) + ' - ');
-    cliPart.getTextStyle().setFontSize(8).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-    const idPart = tr.appendText(it.id + ' - ');
-    idPart.getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-    const descPart = tr.appendText(_truncarNome_(it.descricao, MAX_DESC) + '\n');
-    descPart.getTextStyle().setFontSize(8).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-  });
-  if (resto > 0) {
-    const maisPart = tr.appendText('+ ' + resto + ' outro(s) chamado(s)');
-    maisPart.getTextStyle().setFontSize(7.5).setItalic(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+  let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
+  fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+
+  const maxCliente = cols === 1 ? 22 : 16;
+  const maxDesc    = cols === 1 ? 42 : 26;
+
+  for (let c = 0; c < cols; c++) {
+    const fatia = itens.slice(c * porCol, (c + 1) * porCol);
+    if (!fatia.length) continue;
+
+    const colX = x + 15 + c * (colW + colGap);
+    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, listY, colW, listH);
+    const tr = box.getText();
+    tr.setText('');
+    fatia.forEach(it => {
+      const bullet = tr.appendText('• ');
+      bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+      const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(it.cliente), maxCliente) + ' - ');
+      cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+      const idPart = tr.appendText(it.id + ' - ');
+      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
+      descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+    });
+    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+    box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   }
-  tr.getParagraphStyle().setLineSpacing(120);
-  box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
 }
