@@ -49,7 +49,7 @@ function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerar
 function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
 function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }
 
-// Chamados por Prioridade — pizzas Abertos/Fechados por Prioridade + lista
+// Chamados por Prioridade — barras Abertos/Fechados por Prioridade + lista
 // dos Emergenciais, busca automática nas abas CHAMADOS ABERTOS MES/CHAMADOS
 // FECHADOS MES da planilha de Histórico Validado, filtrado pelo Centro de
 // Custos da cidade ativa (ver Slide_ChamadosPrioridade.gs). Sem as abas
@@ -57,6 +57,15 @@ function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerar
 function gerarSoChamadosPrioridadeCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosPrioridade(); }
 function gerarSoChamadosPrioridadeItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosPrioridade(); }
 function gerarSoChamadosPrioridadeEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosPrioridade(); }
+
+// Chamados de Clientes — barras Abertos/Fechados por Cliente + lista
+// completa de chamados de cada período, mesmas abas do Chamados por
+// Prioridade, mas agrupado por Cliente e sem as linhas do próprio
+// condomínio (ver Slide_ChamadosClientes.gs). Sem as abas preenchidas,
+// cai no slide manual de espaço reservado.
+function gerarSoChamadosClientesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosClientes(); }
+function gerarSoChamadosClientesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosClientes(); }
+function gerarSoChamadosClientesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosClientes(); }
 
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
@@ -125,6 +134,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Capa Seção - Manutenção Corretiva',   fn: () => gerarCapaSecao('MANUTENÇÃO', 'CORRETIVA', 'CORRETIVA') },
     { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
     { nome: 'Chamados por Prioridade',             fn: gerarSlideChamadosPrioridade },
+    { nome: 'Chamados de Clientes',                fn: gerarSlideChamadosClientes },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },

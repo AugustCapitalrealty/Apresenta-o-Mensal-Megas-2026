@@ -2602,3 +2602,53 @@ function obterDadosChamadosPrioridade_() {
 
   return { abertos: agrupar(abertos), fechados: agrupar(fechados) };
 }
+
+
+// ==========================================
+// CHAMADOS DE CLIENTES (Abertos x Fechados) — mesmas abas "CHAMADOS ABERTOS
+// MES"/"CHAMADOS FECHADOS MES", agrupado por Cliente em vez de Prioridade
+// ==========================================
+// Mesmo filtro por Centro de Custos de obterDadosChamadosPrioridade_, mas
+// aqui as linhas do próprio condomínio ("CONDOMÍNIO MEGA <CIDADE>") ficam
+// de fora — não são chamados de cliente, são do condomínio em si. Os 4
+// clientes com mais chamados aparecem nomeados; o resto vira "Outros" (a
+// lista detalhada embaixo, porém, mostra todos, sem agrupar).
+function _ehCondominio_(cliente) {
+  return _histNorm_(cliente).indexOf('condomini') >= 0;
+}
+
+// Retorna { abertos: {total, fatias:[{label,qtd}], lista:[{id,cliente,descricao}]},
+//           fechados: {...} }, ou null se as duas abas estiverem vazias ou
+// sem nenhuma linha da cidade ativa.
+function obterDadosChamadosClientes_() {
+  const abertos  = _lerChamadosMes_('CHAMADOS ABERTOS MES');
+  const fechados = _lerChamadosMes_('CHAMADOS FECHADOS MES');
+  if (!abertos.length && !fechados.length) return null;
+
+  const MAX_FATIAS = 5;
+  function agrupar(lista) {
+    const semCondominio = lista.filter(c => c.cliente && !_ehCondominio_(c.cliente));
+
+    const porCliente = {};
+    semCondominio.forEach(c => { porCliente[c.cliente] = (porCliente[c.cliente] || 0) + 1; });
+    const ranked = Object.keys(porCliente)
+      .map(cli => ({ label: cli, qtd: porCliente[cli] }))
+      .sort((a, b) => b.qtd - a.qtd);
+
+    let fatias = ranked;
+    if (ranked.length > MAX_FATIAS) {
+      const top = ranked.slice(0, MAX_FATIAS - 1);
+      const restoQtd = ranked.slice(MAX_FATIAS - 1).reduce((s, f) => s + f.qtd, 0);
+      fatias = top.concat([{ label: 'Outros', qtd: restoQtd }]);
+    }
+
+    const listaOrdenada = semCondominio
+      .slice()
+      .sort((a, b) => a.cliente.localeCompare(b.cliente, 'pt-BR') || a.id.localeCompare(b.id))
+      .map(c => ({ id: c.id, cliente: c.cliente, descricao: c.descricao }));
+
+    return { total: semCondominio.length, fatias: fatias, lista: listaOrdenada };
+  }
+
+  return { abertos: agrupar(abertos), fechados: agrupar(fechados) };
+}
