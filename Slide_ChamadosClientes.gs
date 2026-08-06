@@ -13,6 +13,10 @@
  * Prioridade — ver o comentário lá pra explicação de por que não é uma
  * pizza de verdade.
  *
+ * A lista de chamados mostra o logo do cliente (Google Drive) quando
+ * cadastrado em LOGOS_CLIENTES (Slide_LogosClientes.gs); sem logo, cai no
+ * nome em texto de sempre — nunca quebra a geração por causa disso.
+ *
  * Sem as duas abas preenchidas (ou sem nenhuma linha da cidade ativa): cai
  * no slide manual de espaço reservado (gerarSlideReservaGraficos), sem
  * quebrar a geração.
@@ -210,32 +214,66 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
 
   let fontSize = Math.min(8, listH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+  const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = cols === 1 ? 22 : 16;
   const maxDesc    = cols === 1 ? 42 : 26;
+  const LOGO_W = 32, LOGO_GAP = 6;
 
+  // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
+  // medida que avança — não dá pra usar uma caixa só por coluna com texto
+  // corrido quando tem logo: o Slides não devolve a posição de cada linha
+  // renderizada dentro de uma caixa (não dá pra alinhar imagem com texto
+  // que flui sozinho), então a única forma de casar o logo com a linha
+  // certa é desenhar cada grupo numa caixa própria, numa posição calculada
+  // à mão (mesma matemática de altura de linha usada pra dimensionar a
+  // fonte acima). Cliente sem logo cadastrado cai no nome em texto de
+  // sempre (_getClienteLogoBlob_, Slide_LogosClientes.gs).
   for (let c = 0; c < cols; c++) {
     const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
     if (!fatia.length) continue;
 
     const colX = x + 15 + c * (colW + colGap);
-    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, listY, colW, listH);
-    const tr = box.getText();
-    tr.setText('');
+    let cursorY = listY;
+
     fatia.forEach(grupo => {
+      const rowH = linhasGrupo(grupo) * lineH;
+      let textX = colX, textW = colW;
+      // Casa pelo apelido de exibição, não pelo nome cru da planilha — o
+      // mapa de logos (Slide_LogosClientes.gs) usa nomes informais tipo
+      // "Shopee", que não aparecem como substring na razão social "SHPX
+      // LOGÍSTICA LTDA". _clienteDisplay_ já resolve essa distância.
+      const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
+      if (logoBlob) {
+        try {
+          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, lineH);
+          textX = colX + LOGO_W + LOGO_GAP;
+          textW = colW - LOGO_W - LOGO_GAP;
+        } catch (e) {
+          Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
+        }
+      }
+
+      const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
+      const tr = box.getText();
+      tr.setText('');
+
       if (grupo.length === 1) {
         const bullet = tr.appendText('• ');
         bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
-        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+        if (!logoBlob) {
+          const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+          cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+        }
         const idPart = tr.appendText(grupo[0].id + ' - ');
         idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-        const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc) + '\n');
+        const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc));
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
       } else {
         const bullet = tr.appendText('• ');
         bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' (' + grupo.length + ')\n');
+        const rotulo = (logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ') + '(' + grupo.length + ')\n';
+        const cliPart = tr.appendText(rotulo);
         cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
         grupo.forEach(it => {
           const idPart = tr.appendText('   ' + it.id + ' - ');
@@ -244,8 +282,10 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
           descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
         });
       }
+
+      tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+      box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+      cursorY += rowH;
     });
-    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
-    box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   }
 }

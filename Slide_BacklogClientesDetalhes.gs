@@ -122,26 +122,52 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
 
   let fontSize = Math.min(8, listH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+  const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = cols === 1 ? 20 : (cols === 2 ? 14 : 10);
   const maxDesc    = cols === 1 ? 58 : (cols === 2 ? 30 : 18);
+  const LOGO_W = 32, LOGO_GAP = 6;
 
+  // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
+  // medida que avança — mesma técnica de Slide_ChamadosClientes.gs (ver
+  // comentário lá): não dá pra alinhar logo com uma linha específica dentro
+  // de uma caixa de texto corrido, então cada grupo ganha posição própria.
   for (let c = 0; c < cols; c++) {
     const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
     if (!fatia.length) continue;
 
     const colX = x + 15 + c * (colW + colGap);
-    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, listY, colW, listH);
-    const tr = box.getText();
-    tr.setText('');
+    let cursorY = listY;
+
     fatia.forEach(grupo => {
       const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
+      const rowH = linhasGrupo(grupo) * lineH;
+
+      let textX = colX, textW = colW;
+      // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
+      // equivalente em Slide_ChamadosClientes.gs.
+      const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
+      if (logoBlob) {
+        try {
+          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, lineH);
+          textX = colX + LOGO_W + LOGO_GAP;
+          textW = colW - LOGO_W - LOGO_GAP;
+        } catch (e) {
+          Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
+        }
+      }
+
+      const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
+      const tr = box.getText();
+      tr.setText('');
 
       if (grupo.length === 1) {
         const bullet = tr.appendText('• ');
         bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
-        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+        if (!logoBlob) {
+          const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+          cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+        }
         // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
         // ficam indistinguíveis quando o cliente cai na mesma cor do tema.
         const idPart = tr.appendText(grupo[0].id + ' ');
@@ -151,12 +177,13 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
           const metaPart = tr.appendText('(' + meta + ') ');
           metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
         }
-        const descPart = tr.appendText('- ' + _truncarNome_(grupo[0].descricao, maxDesc) + '\n');
+        const descPart = tr.appendText('- ' + _truncarNome_(grupo[0].descricao, maxDesc));
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
       } else {
         const bullet = tr.appendText('• ');
         bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' (' + grupo.length + ')\n');
+        const rotulo = (logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ') + '(' + grupo.length + ')\n';
+        const cliPart = tr.appendText(rotulo);
         cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
         grupo.forEach(it => {
           const idPart = tr.appendText('   ' + it.id + ' ');
@@ -170,8 +197,10 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
           descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
         });
       }
+
+      tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+      box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+      cursorY += rowH;
     });
-    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
-    box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   }
 }
