@@ -2705,6 +2705,24 @@ function _histParseDataHora_(v) {
   return null;
 }
 
+// Ponto único da regra "estava aberto durante o mês de referência", usado por
+// toda aba de backlog no formato bruto (Estado + Data de reporte + Fechado
+// em) — hoje BACKLOG - EMERGENCIAL - DETALHE e BACKLOG - CLIENTES -
+// DETALHES. Conta como aberto no mês todo chamado cujo intervalo [reporte,
+// fechamento) tem interseção com a janela [refIni, refFim) — ver o
+// comentário completo acima de _abaBacklogEmergencialDetalhe_.
+function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
+  const fechado = _histNorm_(estado) === 'fechado';
+  if (dtReporte) {
+    if (dtReporte >= refFim) return false;                    // ainda não existia no mês de referência
+    if (fechado && dtFechado && dtFechado < refIni) return false; // já tinha fechado antes do mês começar
+    return true;
+  }
+  // Sem data de reporte pra confirmar a janela: comportamento conservador —
+  // só entra se ainda não estava fechado.
+  return !fechado;
+}
+
 function _lerBacklogEmergencialDetalhe_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
   try {
@@ -2735,21 +2753,9 @@ function _lerBacklogEmergencialDetalhe_() {
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
 
       const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
-      const fechado   = _histNorm_(estado) === 'fechado';
       const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
-      const dtFechado = (fechado && cFechado >= 0) ? _histParseDataHora_(row[cFechado]) : null;
-
-      if (dtReporte) {
-        // Fora da janela: reportado só depois do mês de referência terminar.
-        if (dtReporte >= refFim) continue;
-        // Já estava fechado antes do mês de referência começar — não fazia
-        // mais parte do backlog naquele mês.
-        if (fechado && dtFechado && dtFechado < refIni) continue;
-      } else if (fechado) {
-        // Sem data de reporte pra confirmar a janela: só entra se ainda não
-        // estava fechado (comportamento conservador do fallback anterior).
-        continue;
-      }
+      const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
+      if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
 
       saida.push({
         id:        String(row[cId] || '').trim(),
@@ -2784,4 +2790,110 @@ function obterDadosBacklogEmergencialDetalhe_() {
   const lista = itens.slice().sort((a, b) => a.id.localeCompare(b.id));
 
   return { total: itens.length, fatias: fatias, lista: lista };
+}
+
+
+// ==========================================
+// BACKLOG DE CLIENTES — DETALHE — aba "BACKLOG - CLIENTES - DETALHES" da
+// planilha de Histórico Validado
+// ==========================================
+// Mesmo formato bruto da aba de Backlog Emergencial (Estado, Data de
+// reporte, Fechado em, Centro de Custos, EQUIPE), mas sem filtro de
+// Prioridade — é o backlog de chamados de responsabilidade do locatário
+// (coluna "Responsabilidade Locatario" da planilha), agrupado por CLIENTE em
+// vez de Equipe. Mesma janela de mês de referência (_histAbertoNoMes_) e
+// mesma exclusão do próprio condomínio de obterDadosChamadosClientes_ — as
+// linhas "CONDOMÍNIO MEGA <EMPREENDIMENTO>" não são chamados de cliente.
+function _abaBacklogClientesDetalhes_(ss) {
+  let sheet = ss.getSheetByName('BACKLOG - CLIENTES - DETALHES');
+  if (!sheet) {
+    sheet = ss.getSheets().find(s => {
+      const n = _histNorm_(s.getName());
+      return n.indexOf('clientes') >= 0 && n.indexOf('detalhe') >= 0 && n.indexOf('backlog') >= 0;
+    });
+  }
+  return sheet || null;
+}
+
+function _lerBacklogClientesDetalhes_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const sheet = _abaBacklogClientesDetalhes_(ss);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr      = data[0].map(_histNorm_);
+    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
+    const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cEquipe  = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
+    if (cId < 0 || cCC < 0 || cCliente < 0) return [];
+
+    const ref    = obterMesReferencia_();
+    const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+    const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+
+      const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
+      const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
+      const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
+      if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
+
+      saida.push({
+        id:        String(row[cId] || '').trim(),
+        cliente:   String(row[cCliente] || '').trim(),
+        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        estado:    estado,
+        equipe:    cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : ''
+      });
+    }
+    return saida;
+  } catch (e) {
+    Logger.log('_lerBacklogClientesDetalhes_: ' + e.message);
+    return [];
+  }
+}
+
+// Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao}] } ou
+// null se a aba estiver vazia/ausente ou sem nenhuma linha do empreendimento
+// ativo no mês de referência. Agrupamento por Cliente (top 4 + "Outros"),
+// igual a obterDadosChamadosClientes_ — só que aqui é um período único (o
+// backlog atual), sem Abertos x Fechados.
+function obterDadosBacklogClientesDetalhes_() {
+  const itens = _lerBacklogClientesDetalhes_();
+  if (!itens.length) return null;
+
+  const semCondominio = itens.filter(c => c.cliente && !_ehCondominio_(c.cliente));
+
+  const MAX_FATIAS = 5;
+  const porCliente = {};
+  semCondominio.forEach(c => { porCliente[c.cliente] = (porCliente[c.cliente] || 0) + 1; });
+  const ranked = Object.keys(porCliente)
+    .map(cli => ({ label: cli, qtd: porCliente[cli] }))
+    .sort((a, b) => b.qtd - a.qtd);
+
+  let fatias = ranked;
+  if (ranked.length > MAX_FATIAS) {
+    const top = ranked.slice(0, MAX_FATIAS - 1);
+    const restoQtd = ranked.slice(MAX_FATIAS - 1).reduce((s, f) => s + f.qtd, 0);
+    fatias = top.concat([{ label: 'Outros', qtd: restoQtd }]);
+  }
+
+  const lista = semCondominio
+    .slice()
+    .sort((a, b) => a.cliente.localeCompare(b.cliente, 'pt-BR') || a.id.localeCompare(b.id))
+    .map(c => ({ id: c.id, cliente: c.cliente, descricao: c.descricao }));
+
+  return { total: semCondominio.length, fatias: fatias, lista: lista };
 }

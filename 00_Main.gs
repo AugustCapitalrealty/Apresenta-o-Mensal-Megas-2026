@@ -77,6 +77,17 @@ function gerarSoBacklogEmergencialDetalheCuritiba() { setProjetoAtivo('CURITIBA'
 function gerarSoBacklogEmergencialDetalheItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogEmergencialDetalhe(); }
 function gerarSoBacklogEmergencialDetalheEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogEmergencialDetalhe(); }
 
+// Backlog de Clientes — Detalhe — chamados do backlog de responsabilidade do
+// locatário que estavam em aberto durante o mês de referência no
+// empreendimento ativo, agrupados por Cliente (mesma regra de janela de mês
+// do Backlog Emergencial — Detalhe), busca automática na aba "BACKLOG -
+// CLIENTES - DETALHES" da planilha de Histórico Validado (ver
+// Slide_BacklogClientesDetalhes.gs). Sem a aba preenchida, cai no slide
+// manual de espaço reservado.
+function gerarSoBacklogClientesDetalhesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogClientesDetalhes(); }
+function gerarSoBacklogClientesDetalhesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogClientesDetalhes(); }
+function gerarSoBacklogClientesDetalhesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogClientesDetalhes(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -146,6 +157,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Chamados por Prioridade',             fn: gerarSlideChamadosPrioridade },
     { nome: 'Chamados de Clientes',                fn: gerarSlideChamadosClientes },
     { nome: 'Backlog Emergencial — Detalhe',       fn: gerarSlideBacklogEmergencialDetalhe },
+    { nome: 'Backlog de Clientes — Detalhe',       fn: gerarSlideBacklogClientesDetalhes },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
