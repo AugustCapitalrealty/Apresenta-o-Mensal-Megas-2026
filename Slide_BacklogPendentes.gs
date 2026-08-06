@@ -118,3 +118,15 @@ function gerarSlideBacklogPendentes() {
              d.direcionados.length + ' estados direcionados · Em resolução=' + d.emResolucao +
              ' · Total=' + d.total + '.');
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Chamados Pendentes (Backlog) por estado, busca automática na aba CHAMADOS
+// PENDENTES (BACKLOG) da planilha da cidade (obterDadosBacklogPendentes_ em
+// 02_Dados.gs). Sem a aba preenchida, cai no slide manual de espaço
+// reservado.
+function gerarSoBacklogPendentesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogPendentes(); }
+function gerarSoBacklogPendentesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogPendentes(); }
+function gerarSoBacklogPendentesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogPendentes(); }
