@@ -2661,9 +2661,17 @@ function obterDadosChamadosClientes_() {
 // Mesmo formato bruto das abas CHAMADOS ABERTOS/FECHADOS MES, mas é uma
 // lista à parte, só dos chamados de prioridade Emergencial — com uma
 // coluna a mais, EQUIPE (FACILITIES ou PROPERTY), quem é responsável.
-// Filtra por Centro de Custos = MEGA <CIDADE> (igual às outras abas de
-// chamados) e por Estado != Fechado — só o que ainda está em aberto no
-// backlog; um chamado já fechado não é mais "backlog em aberto".
+// Filtra por Centro de Custos = MEGA <EMPREENDIMENTO> (igual às outras abas
+// de chamados).
+//
+// A apresentação é sempre do MÊS ANTERIOR (obterMesReferencia_), gerada dias
+// depois do mês já ter fechado — então um chamado que hoje aparece "Fechado"
+// pode muito bem ter estado em aberto durante TODO o mês de referência (só
+// foi fechado agora, já em agosto, por exemplo). Por isso não dá pra usar o
+// Estado atual como filtro: comparamos "Data de reporte" x "Fechado em" com
+// a janela do mês de referência — conta como backlog em aberto todo chamado
+// cujo intervalo [reporte, fechamento) tem interseção com esse mês (aberto
+// antes do mês terminar e, se fechado, fechado depois do mês começar).
 function _abaBacklogEmergencialDetalhe_(ss) {
   let sheet = ss.getSheetByName('BACKLOG - EMERGENCIAL - DETALHE');
   if (!sheet) {
@@ -2673,6 +2681,28 @@ function _abaBacklogEmergencialDetalhe_(ss) {
     });
   }
   return sheet || null;
+}
+
+// Datas nessa aba vêm como número de série (Google Sheets/Excel, dia 0 =
+// 30/12/1899), exibidas em texto com vírgula decimal (ex.: "46155,62211") —
+// a coluna não está formatada como data na planilha de origem. Aceita
+// também, defensivamente, um texto já formatado tipo "13/05/2026" ou
+// "13/05/2026 14:55", caso a formatação da coluna mude no futuro.
+function _histParseDataHora_(v) {
+  const txt = String(v || '').trim();
+  if (!txt) return null;
+
+  if (/^\d+([.,]\d+)?$/.test(txt)) {
+    const serial = parseFloat(txt.replace(',', '.'));
+    if (isNaN(serial)) return null;
+    return new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
+  }
+
+  const m = txt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (m) {
+    return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)));
+  }
+  return null;
 }
 
 function _lerBacklogEmergencialDetalhe_() {
@@ -2685,20 +2715,42 @@ function _lerBacklogEmergencialDetalhe_() {
     const data = sheet.getDataRange().getDisplayValues();
     if (data.length < 2) return [];
 
-    const hdr     = data[0].map(_histNorm_);
-    const cId     = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
-    const cDesc   = hdr.findIndex(h => h.indexOf('descricao') >= 0);
-    const cEstado = hdr.findIndex(h => h.indexOf('estado') >= 0);
-    const cCC     = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    const cEquipe = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+    const hdr      = data[0].map(_histNorm_);
+    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cEquipe  = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
     if (cId < 0 || cCC < 0) return [];
+
+    const ref      = obterMesReferencia_();
+    const refIni   = new Date(Date.UTC(ref.ano, ref.index, 1));
+    const refFim   = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
-      const estado = cEstado >= 0 ? String(row[cEstado] || '').trim() : '';
-      if (_histNorm_(estado) === 'fechado') continue;   // já resolvido — fora do backlog em aberto
+
+      const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
+      const fechado   = _histNorm_(estado) === 'fechado';
+      const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
+      const dtFechado = (fechado && cFechado >= 0) ? _histParseDataHora_(row[cFechado]) : null;
+
+      if (dtReporte) {
+        // Fora da janela: reportado só depois do mês de referência terminar.
+        if (dtReporte >= refFim) continue;
+        // Já estava fechado antes do mês de referência começar — não fazia
+        // mais parte do backlog naquele mês.
+        if (fechado && dtFechado && dtFechado < refIni) continue;
+      } else if (fechado) {
+        // Sem data de reporte pra confirmar a janela: só entra se ainda não
+        // estava fechado (comportamento conservador do fallback anterior).
+        continue;
+      }
+
       saida.push({
         id:        String(row[cId] || '').trim(),
         descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
@@ -2714,8 +2766,8 @@ function _lerBacklogEmergencialDetalhe_() {
 }
 
 // Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe}] }
-// ou null se a aba estiver vazia/ausente ou sem nenhum chamado em aberto
-// pra cidade ativa.
+// ou null se a aba estiver vazia/ausente ou sem nenhum chamado em aberto no
+// mês de referência pro empreendimento ativo.
 function obterDadosBacklogEmergencialDetalhe_() {
   const itens = _lerBacklogEmergencialDetalhe_();
   if (!itens.length) return null;

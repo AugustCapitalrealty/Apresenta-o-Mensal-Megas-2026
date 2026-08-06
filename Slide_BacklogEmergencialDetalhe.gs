@@ -1,20 +1,25 @@
 /**
  * ARQUIVO: Slide_BacklogEmergencialDetalhe.gs
  * SLIDE — BACKLOG EMERGENCIAL — DETALHE (chamados emergenciais em aberto)
- * DESCRIÇÃO: Abre o detalhe dos chamados de prioridade Emergencial que ainda
- * estão em aberto (backlog) no Mega ativo, lidos da aba "BACKLOG -
- * EMERGENCIAL - DETALHE" da planilha de Histórico Validado
+ * DESCRIÇÃO: Abre o detalhe dos chamados de prioridade Emergencial que
+ * estavam em aberto no Mega ativo durante o MÊS DE REFERÊNCIA da
+ * apresentação (o mês anterior — obterMesReferencia_), lidos da aba
+ * "BACKLOG - EMERGENCIAL - DETALHE" da planilha de Histórico Validado
  * (obterDadosBacklogEmergencialDetalhe_ em 02_Dados.gs), filtrados por
- * Centro de Custos = MEGA <CIDADE> e Estado != Fechado.
+ * Centro de Custos = MEGA <EMPREENDIMENTO>. Um chamado que hoje já aparece
+ * "Fechado" ainda entra se ele esteve aberto em algum momento do mês de
+ * referência (comparação de datas, não do Estado atual — ver comentário em
+ * 02_Dados.gs).
  *
  * Diferença em relação ao slide de Chamados por Prioridade/Clientes: aqui não
- * tem Abertos x Fechados (é só backlog aberto) — o eixo é EQUIPE responsável
- * (FACILITIES ou PROPERTY). Mesma técnica de barra 100% nativa (RECTANGLE) e
- * a mesma regra de nunca cortar a lista (colunas + fonte adaptativa), igual
- * ao slide de Chamados de Clientes.
+ * tem Abertos x Fechados (é só backlog aberto no mês) — o eixo é EQUIPE
+ * responsável (FACILITIES ou PROPERTY). Mesma técnica de barra 100% nativa
+ * (RECTANGLE) e a mesma regra de nunca cortar a lista (colunas + fonte
+ * adaptativa), igual ao slide de Chamados de Clientes.
  *
- * Sem chamados emergenciais em aberto pra cidade ativa: cai no slide manual
- * de espaço reservado (gerarSlideReservaGraficos), sem quebrar a geração.
+ * Sem chamados emergenciais em aberto no mês de referência pro empreendimento
+ * ativo: cai no slide manual de espaço reservado (gerarSlideReservaGraficos),
+ * sem quebrar a geração.
  */
 
 function gerarSlideBacklogEmergencialDetalhe() {
