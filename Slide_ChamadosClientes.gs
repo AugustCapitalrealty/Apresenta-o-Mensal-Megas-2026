@@ -76,7 +76,11 @@ const _CLIENTE_APELIDOS_ = [
   { trecho: 'magazine luiza', apelido: 'Magazine Luiza' },
   { trecho: 'stella',         apelido: 'Stella' },
   { trecho: 'rio branco',     apelido: 'Rio Branco' },
-  { trecho: 'domus',          apelido: 'Domus' }
+  { trecho: 'domus',          apelido: 'Domus' },
+  { trecho: 'mercadolivre',   apelido: 'Mercado Livre' },
+  { trecho: 'calamo',         apelido: 'Cálamo' },
+  { trecho: 'boticario',      apelido: 'Boticário' },
+  { trecho: 'ntn rolamentos', apelido: 'NTN' }
 ];
 
 function _clienteDisplay_(clienteCru) {

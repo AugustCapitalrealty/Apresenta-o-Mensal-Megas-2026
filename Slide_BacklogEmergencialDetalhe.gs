@@ -13,9 +13,11 @@
  *
  * Diferença em relação ao slide de Chamados por Prioridade/Clientes: aqui não
  * tem Abertos x Fechados (é só backlog aberto no mês) — o eixo é EQUIPE
- * responsável (FACILITIES ou PROPERTY). Mesma técnica de barra 100% nativa
- * (RECTANGLE) e a mesma regra de nunca cortar a lista (colunas + fonte
- * adaptativa), igual ao slide de Chamados de Clientes.
+ * responsável (FACILITIES ou PROPERTY), resumido em dois cards KPI compactos
+ * (criarCardKPI, 01_Config.gs) em vez de barra+legenda — só 2 categorias não
+ * precisam de gráfico, e o espaço economizado vai pra lista de detalhe, que
+ * é o que importa no slide. Mesma regra de nunca cortar a lista (colunas +
+ * fonte adaptativa), igual ao slide de Chamados de Clientes.
  *
  * Sem chamados emergenciais em aberto no mês de referência pro empreendimento
  * ativo: cai no slide manual de espaço reservado (gerarSlideReservaGraficos),
@@ -38,13 +40,13 @@ function gerarSlideBacklogEmergencialDetalhe() {
 
   criarHeaderPadrao(slide, 'BACKLOG EMERGENCIAL — DETALHE', 'Chamados emergenciais em aberto · Facilities x Property');
 
-  const marginX = 30, topY = 76;
+  const marginX = 30, topY = 76, gap = 16;
   const areaBottom = H - 16;
-  const barraH = 96;
-  const listaY = topY + barraH + 16;
+  const kpiH = 72;
+  const listaY = topY + kpiH + gap;
   const listaH = areaBottom - listaY;
 
-  _backlogEmergBarraCard_(slide, marginX, topY, W - 2 * marginX, barraH, 'EM ABERTO', dados, CORES.themeCorr);
+  _backlogEmergKPIs_(slide, marginX, topY, W - 2 * marginX, kpiH, dados);
   _backlogEmergLista_(slide, marginX, listaY, W - 2 * marginX, listaH, 'LISTA DE CHAMADOS EM ABERTO', dados.lista, CORES.themeCorr);
 
   Logger.log('Slide Backlog Emergencial — Detalhe gerado — total=' + dados.total + '.');
@@ -66,49 +68,26 @@ function _backlogMetaTexto_(it) {
   return dias ? (it.dataReporte + ' · ' + dias) : it.dataReporte;
 }
 
-// ── Card com a barra 100% empilhada Facilities x Property ─────────────────
-function _backlogEmergBarraCard_(slide, x, y, w, h, titulo, dados, corTema) {
-  const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + dados.total + ')', corTema);
-  const areaY = contentY + 2, areaH = y + h - areaY - 8;
-
-  if (!dados.fatias.length) {
-    _prioridadeSemDado_(slide, x, areaY, w, areaH, 'Nenhum chamado emergencial em aberto.', CORES.cardGreen);
-    return;
-  }
-
-  const barX = x + 16, barW = w - 32, barY = areaY + 2, barH = 24;
+// ── Dois cards KPI compactos: FACILITIES x PROPERTY ────────────────────────
+// Sempre mostra as duas equipes, mesmo quando uma tem zero chamados — o
+// card não vira gráfico (só 2 categorias não precisam de barra/legenda) e
+// sobra espaço pra lista de detalhe embaixo, que é o foco do slide.
+function _backlogEmergKPIs_(slide, x, y, w, h, dados) {
+  const porEquipe = { FACILITIES: 0, PROPERTY: 0 };
+  dados.fatias.forEach(f => { porEquipe[f.label] = f.qtd; });
   const total = dados.total;
 
-  let cursorX = barX;
-  dados.fatias.forEach((f, i) => {
-    const ehUltima = i === dados.fatias.length - 1;
-    const segW = ehUltima ? (barX + barW - cursorX) : Math.round((f.qtd / total) * barW);
-    const cor = _equipeCor_(f.label);
-
-    const seg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cursorX, barY, Math.max(segW, 1), barH);
-    seg.getFill().setSolidFill(cor);
-    seg.getBorder().setTransparent();
-
-    if (segW >= 16) {
-      _sTxt(slide, cursorX, barY + 4, segW, 16, String(f.qtd), 9.5, true, CORES.white, 'center');
-    }
-    cursorX += segW;
-  });
-
-  // Legenda em linha única (só 2 séries possíveis) abaixo da barra.
-  const legendY = barY + barH + 8;
-  const legendW = barW / dados.fatias.length;
-  dados.fatias.forEach((f, i) => {
-    const cor = _equipeCor_(f.label);
-    const pct = total > 0 ? (f.qtd / total * 100) : 0;
-    const pctTxt = pct.toFixed(1).replace('.', ',') + '%';
-    const lx = barX + i * legendW;
-
-    const dot = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, legendY + 3, 8, 8);
-    dot.getFill().setSolidFill(cor);
-    dot.getBorder().setTransparent();
-
-    _sTxt(slide, lx + 13, legendY, legendW - 13, 16, f.label + ' — ' + f.qtd + ' (' + pctTxt + ')', 9, true, CORES.textDark, 'left');
+  const gap = 16, cardW = (w - gap) / 2;
+  ['FACILITIES', 'PROPERTY'].forEach((equipe, i) => {
+    const qtd = porEquipe[equipe] || 0;
+    const pct = total > 0 ? (qtd / total * 100) : 0;
+    criarCardKPI(slide, x + i * (cardW + gap), y, cardW, h, {
+      label: equipe,
+      valor: qtd,
+      cor: _equipeCor_(equipe),
+      tamValor: 26,
+      sub: pct.toFixed(1).replace('.', ',') + '%'
+    });
   });
 }
 
