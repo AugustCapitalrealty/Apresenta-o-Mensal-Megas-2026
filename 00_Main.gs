@@ -67,6 +67,16 @@ function gerarSoChamadosClientesCuritiba() { setProjetoAtivo('CURITIBA'); gerarS
 function gerarSoChamadosClientesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosClientes(); }
 function gerarSoChamadosClientesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosClientes(); }
 
+// Backlog Emergencial — Detalhe — chamados de prioridade Emergencial ainda em
+// aberto (Estado != Fechado) no Mega ativo, com o detalhe por Equipe
+// responsável (Facilities x Property), busca automática na aba "BACKLOG -
+// EMERGENCIAL - DETALHE" da planilha de Histórico Validado (ver
+// Slide_BacklogEmergencialDetalhe.gs). Sem a aba preenchida, cai no slide
+// manual de espaço reservado.
+function gerarSoBacklogEmergencialDetalheCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogEmergencialDetalhe(); }
+function gerarSoBacklogEmergencialDetalheItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogEmergencialDetalhe(); }
+function gerarSoBacklogEmergencialDetalheEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogEmergencialDetalhe(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -135,6 +145,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
     { nome: 'Chamados por Prioridade',             fn: gerarSlideChamadosPrioridade },
     { nome: 'Chamados de Clientes',                fn: gerarSlideChamadosClientes },
+    { nome: 'Backlog Emergencial — Detalhe',       fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },

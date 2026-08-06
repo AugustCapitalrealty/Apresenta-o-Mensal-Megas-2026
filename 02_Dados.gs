@@ -2652,3 +2652,84 @@ function obterDadosChamadosClientes_() {
 
   return { abertos: agrupar(abertos), fechados: agrupar(fechados) };
 }
+
+
+// ==========================================
+// BACKLOG EMERGENCIAL — DETALHE — aba "BACKLOG - EMERGENCIAL - DETALHE" da
+// planilha de Histórico Validado
+// ==========================================
+// Mesmo formato bruto das abas CHAMADOS ABERTOS/FECHADOS MES, mas é uma
+// lista à parte, só dos chamados de prioridade Emergencial — com uma
+// coluna a mais, EQUIPE (FACILITIES ou PROPERTY), quem é responsável.
+// Filtra por Centro de Custos = MEGA <CIDADE> (igual às outras abas de
+// chamados) e por Estado != Fechado — só o que ainda está em aberto no
+// backlog; um chamado já fechado não é mais "backlog em aberto".
+function _abaBacklogEmergencialDetalhe_(ss) {
+  let sheet = ss.getSheetByName('BACKLOG - EMERGENCIAL - DETALHE');
+  if (!sheet) {
+    sheet = ss.getSheets().find(s => {
+      const n = _histNorm_(s.getName());
+      return n.indexOf('emergencial') >= 0 && n.indexOf('detalhe') >= 0;
+    });
+  }
+  return sheet || null;
+}
+
+function _lerBacklogEmergencialDetalhe_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const sheet = _abaBacklogEmergencialDetalhe_(ss);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr     = data[0].map(_histNorm_);
+    const cId     = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cDesc   = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+    const cEstado = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cCC     = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cEquipe = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+    if (cId < 0 || cCC < 0) return [];
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+      const estado = cEstado >= 0 ? String(row[cEstado] || '').trim() : '';
+      if (_histNorm_(estado) === 'fechado') continue;   // já resolvido — fora do backlog em aberto
+      saida.push({
+        id:        String(row[cId] || '').trim(),
+        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        estado:    estado,
+        equipe:    cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : ''
+      });
+    }
+    return saida;
+  } catch (e) {
+    Logger.log('_lerBacklogEmergencialDetalhe_: ' + e.message);
+    return [];
+  }
+}
+
+// Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe}] }
+// ou null se a aba estiver vazia/ausente ou sem nenhum chamado em aberto
+// pra cidade ativa.
+function obterDadosBacklogEmergencialDetalhe_() {
+  const itens = _lerBacklogEmergencialDetalhe_();
+  if (!itens.length) return null;
+
+  const porEquipe = {};
+  itens.forEach(it => {
+    const eq = it.equipe || 'OUTROS';
+    porEquipe[eq] = (porEquipe[eq] || 0) + 1;
+  });
+  const fatias = Object.keys(porEquipe)
+    .map(eq => ({ label: eq, qtd: porEquipe[eq] }))
+    .sort((a, b) => b.qtd - a.qtd);
+
+  const lista = itens.slice().sort((a, b) => a.id.localeCompare(b.id));
+
+  return { total: itens.length, fatias: fatias, lista: lista };
+}
