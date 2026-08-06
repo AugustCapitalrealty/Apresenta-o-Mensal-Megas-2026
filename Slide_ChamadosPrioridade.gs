@@ -55,18 +55,20 @@ function gerarSlideChamadosPrioridade() {
              ' (emergencial=' + dados.fechados.emergencial.length + ').');
 }
 
-// Mesma cor pra cada prioridade nos dois períodos (Abertos/Fechados), pra
-// dar pra comparar visualmente — "menor é melhor" não se aplica aqui, é só
-// identidade visual por prioridade (Emergencial mais escuro/sério).
+// Gradiente de urgência (não é mais tom de azul): Emergencial em vermelho
+// de alerta — igual ao tema dos cards de lista Emergencial logo abaixo,
+// pra "emergencial" significar a mesma cor em toda a página — Alta em
+// âmbar de atenção, Normal/Baixa em cinza decrescente (menos saturado =
+// menos urgente).
 const _PRIORIDADE_CORES_ = {
-  'Emergencial': '#1E3A8A',
-  'Alta':        '#0EA5E9',
-  'Normal':      '#CBD5E1',
-  'Baixa':       '#94A3B8'
+  'Emergencial': '#EF4444',  // = CORES.cardRed — hardcoded pra não depender da ordem de carga dos arquivos (const de nível de arquivo)
+  'Alta':        '#F59E0B',
+  'Normal':      '#94A3B8',
+  'Baixa':       '#E2E8F0'
 };
-// Texto claro nos tons escuros/saturados, escuro no cinza-claro (Normal) —
-// senão o número dentro do segmento fica ilegível.
-const _PRIORIDADE_TEXTO_CLARO_ = { 'Emergencial': true, 'Alta': true, 'Normal': false, 'Baixa': true };
+// Texto claro nos tons escuros/saturados, escuro no cinza bem claro (Baixa)
+// — senão o número dentro do segmento fica ilegível.
+const _PRIORIDADE_TEXTO_CLARO_ = { 'Emergencial': true, 'Alta': true, 'Normal': true, 'Baixa': false };
 
 // ── Card com a barra 100% empilhada Abertos/Fechados por Prioridade ───────
 function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema) {
@@ -78,7 +80,7 @@ function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema)
     return;
   }
 
-  const barX = x + 16, barW = w - 32, barY = areaY + 8, barH = 24;
+  const barX = x + 16, barW = w - 32, barY = areaY + 8, barH = 28;
   const total = dadosPeriodo.total;
 
   let cursorX = barX;
@@ -93,25 +95,31 @@ function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema)
 
     if (segW >= 16) {
       const corTxt = _PRIORIDADE_TEXTO_CLARO_[f.label] ? CORES.white : CORES.textDark;
-      _sTxt(slide, cursorX, barY + 5, segW, 14, String(f.qtd), 9, true, corTxt, 'center');
+      _sTxt(slide, cursorX, barY + 6, segW, 16, String(f.qtd), 9.5, true, corTxt, 'center');
     }
     cursorX += segW;
   });
 
-  // Legenda: bolinha + prioridade + qtd (%), uma linha por fatia.
-  let legendY = barY + barH + 10;
+  // Legenda: bolinha + prioridade + qtd (%), uma linha por fatia — a altura
+  // de cada linha se adapta ao espaço sobrando no card (com só 2-3
+  // prioridades, cada linha ganha mais respiro em vez de deixar vazio
+  // embaixo; com as 4, aperta o suficiente pra caber todas).
+  const legendTop = barY + barH + 10;
+  const legendBottom = areaY + areaH - 4;
+  const rowH = Math.min(20, (legendBottom - legendTop) / dadosPeriodo.fatias.length);
+  let legendY = legendTop;
   dadosPeriodo.fatias.forEach(f => {
     const cor = _PRIORIDADE_CORES_[f.label] || CORES.textGray;
     const pct = total > 0 ? (f.qtd / total * 100) : 0;
     const pctTxt = pct.toFixed(1).replace('.', ',') + '%';
 
-    const dot = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, legendY + 3, 8, 8);
+    const dot = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, legendY + rowH / 2 - 4, 8, 8);
     dot.getFill().setSolidFill(cor);
     dot.getBorder().setTransparent();
 
-    _sTxt(slide, barX + 13, legendY, 90, 14, f.label, 8, true, CORES.textDark, 'left');
-    _sTxt(slide, barX + 100, legendY, barW - 100, 14, f.qtd + ' (' + pctTxt + ')', 8, false, CORES.textGray, 'left');
-    legendY += 15;
+    _sTxt(slide, barX + 13, legendY, 90, rowH, f.label, 8, true, CORES.textDark, 'left');
+    _sTxt(slide, barX + 100, legendY, barW - 100, rowH, f.qtd + ' (' + pctTxt + ')', 8, false, CORES.textGray, 'left');
+    legendY += rowH;
   });
 }
 
