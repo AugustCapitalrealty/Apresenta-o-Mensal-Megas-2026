@@ -169,14 +169,17 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     return;
   }
 
-  // Mostra TODOS os chamados, sem cortar. Cliente com mais de um chamado no
-  // período agrupa numa linha só (nome + qtd + ids), em vez de repetir nome
-  // e descrição — economiza espaço pros clientes com vários chamados sem
-  // perder nenhum id. A partir de 6 GRUPOS divide em colunas (mesma ideia de
-  // _colunaTexto_/Slide02_Preventivas.gs) e o corpo do texto encolhe conforme
-  // a quantidade por coluna, até um mínimo ainda legível. Em meses muito
-  // cheios o texto pode encostar no rodapé do card (aceitável — o que não
-  // pode é sumir chamado da lista).
+  // Mostra TODOS os chamados, sem cortar — e cada um detalhado (id +
+  // descrição). Cliente com mais de um chamado no período agrupa embaixo do
+  // nome uma vez só (em vez de repetir "Cliente - id - descrição" em cada
+  // linha), mas cada chamado do grupo continua com sua própria linha de
+  // detalhe — só o nome do cliente é que não se repete. A partir de 6
+  // GRUPOS divide em colunas (mesma ideia de _colunaTexto_/
+  // Slide02_Preventivas.gs) e o corpo do texto encolhe conforme a
+  // quantidade de LINHAS por coluna (não de grupos — um grupo com vários
+  // chamados ocupa várias linhas), até um mínimo ainda legível. Em meses
+  // muito cheios o texto pode encostar no rodapé do card (aceitável — o
+  // que não pode é sumir chamado ou descrição da lista).
   const porCliente = {};
   const ordemClientes = [];
   itens.forEach(it => {
@@ -191,7 +194,17 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const porCol   = Math.ceil(grupos.length / cols);
   const LINE_PCT = 118;
 
-  let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
+  // Linhas de cada grupo: 1 por chamado + 1 de cabeçalho extra só quando o
+  // grupo tem mais de 1 chamado (o cabeçalho do grupo de 1 chamado é a
+  // própria linha do chamado, não soma linha a mais).
+  const linhasGrupo = g => g.length === 1 ? 1 : g.length + 1;
+  let maxLinhasColuna = 0;
+  for (let c = 0; c < cols; c++) {
+    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
+    maxLinhasColuna = Math.max(maxLinhasColuna, fatia.reduce((s, g) => s + linhasGrupo(g), 0));
+  }
+
+  let fontSize = Math.min(8, listH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
 
   const maxCliente = cols === 1 ? 22 : 16;
@@ -206,19 +219,26 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     const tr = box.getText();
     tr.setText('');
     fatia.forEach(grupo => {
-      const bullet = tr.appendText('• ');
-      bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-      const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ');
-      cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-
       if (grupo.length === 1) {
-        const idPart = tr.appendText('- ' + grupo[0].id + ' - ');
+        const bullet = tr.appendText('• ');
+        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+        const idPart = tr.appendText(grupo[0].id + ' - ');
         idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
         const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc) + '\n');
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
       } else {
-        const idsPart = tr.appendText('(' + grupo.length + '): ' + grupo.map(it => it.id).join(', ') + '\n');
-        idsPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+        const bullet = tr.appendText('• ');
+        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' (' + grupo.length + ')\n');
+        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
+        grupo.forEach(it => {
+          const idPart = tr.appendText('   ' + it.id + ' - ');
+          idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+          const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
+          descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+        });
       }
     });
     tr.getParagraphStyle().setLineSpacing(LINE_PCT);
