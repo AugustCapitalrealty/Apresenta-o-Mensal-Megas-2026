@@ -124,6 +124,10 @@ function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema)
 }
 
 // ── Card com a lista de chamados Emergenciais (Abertos ou Fechados) ───────
+// Regra geral de todas as listas de chamados do deck: mostrar tudo que
+// couber; quando não couber numa coluna só, divide em mais colunas e
+// encolhe a fonte até um piso legível — nunca esconde chamado atrás de um
+// "+N outros" (mesma técnica de _clientesLista_/_backlogEmergLista_).
 function _prioridadeListaEmergencial_(slide, x, y, w, h, titulo, itens) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', CORES.cardRed);
   const listY = contentY + 2, listH = y + h - listY - 8;
@@ -133,39 +137,40 @@ function _prioridadeListaEmergencial_(slide, x, y, w, h, titulo, itens) {
     return;
   }
 
-  // Descrições da planilha costumam ser um parágrafo inteiro — corta em ~65
-  // caracteres (na última palavra completa) pra caber numa linha só por
-  // chamado, como no gráfico colado à mão que este slide substitui.
-  const MAX_ITENS = 6, MAX_DESC = 65;
+  const cols     = itens.length > 6 ? (itens.length > 16 ? 3 : 2) : 1;
+  const colGap   = 14;
+  const colW     = (w - 30 - (cols - 1) * colGap) / cols;
+  const porCol   = Math.ceil(itens.length / cols);
+  const LINE_PCT = 120;
+
+  let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
+  fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+
+  const maxDesc = cols === 1 ? 65 : (cols === 2 ? 36 : 22);
   const truncar = txt => {
     const t = String(txt || '').replace(/\s+/g, ' ').trim();
-    if (!t) return '(sem descrição)';
-    if (t.length <= MAX_DESC) return t;
-    const corte = t.slice(0, MAX_DESC);
-    const ultimoEspaco = corte.lastIndexOf(' ');
-    return (ultimoEspaco > MAX_DESC * 0.6 ? corte.slice(0, ultimoEspaco) : corte) + '…';
+    return t ? _truncarNome_(t, maxDesc) : '(sem descrição)';
   };
 
-  const visiveis = itens.slice(0, MAX_ITENS);
-  const resto = itens.length - visiveis.length;
+  for (let c = 0; c < cols; c++) {
+    const fatia = itens.slice(c * porCol, (c + 1) * porCol);
+    if (!fatia.length) continue;
 
-  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, listY, w - 30, listH);
-  const tr = box.getText();
-  tr.setText('');
-  visiveis.forEach(it => {
-    const bullet = tr.appendText('• ');
-    bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(8).setBold(true);
-    const idPart = tr.appendText(it.id + ' - ');
-    idPart.getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.cardRed).setFontFamily('Montserrat');
-    const descPart = tr.appendText(truncar(it.descricao) + '\n');
-    descPart.getTextStyle().setFontSize(8).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-  });
-  if (resto > 0) {
-    const maisPart = tr.appendText('+ ' + resto + ' outro(s) chamado(s) emergencial(is)');
-    maisPart.getTextStyle().setFontSize(7.5).setItalic(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+    const colX = x + 15 + c * (colW + colGap);
+    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, listY, colW, listH);
+    const tr = box.getText();
+    tr.setText('');
+    fatia.forEach(it => {
+      const bullet = tr.appendText('• ');
+      bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+      const idPart = tr.appendText(it.id + ' - ');
+      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.cardRed).setFontFamily('Montserrat');
+      const descPart = tr.appendText(truncar(it.descricao) + '\n');
+      descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+    });
+    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+    box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
   }
-  tr.getParagraphStyle().setLineSpacing(120);
-  box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
 }
 
 function _prioridadeSemDado_(slide, x, y, w, h, texto, cor) {

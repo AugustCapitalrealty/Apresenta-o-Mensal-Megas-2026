@@ -66,9 +66,17 @@ const _CLIENTE_COR_OUTROS_ = '#94A3B8';
 // agrupamento continuam pelo nome CRU (obterDadosChamadosClientes_) — o
 // apelido é só de exibição, não mexe na contagem.
 const _CLIENTE_APELIDOS_ = [
-  { trecho: 'shpx',    apelido: 'Shopee' },
-  { trecho: 'tornado', apelido: 'TornadoLog' },
-  { trecho: 'dhl',     apelido: 'DHL' }
+  { trecho: 'shpx',           apelido: 'Shopee' },
+  { trecho: 'tornado',        apelido: 'TornadoLog' },
+  { trecho: 'dhl',            apelido: 'DHL' },
+  { trecho: 'suzano',         apelido: 'Suzano' },
+  { trecho: 'bosch',          apelido: 'Bosch' },
+  { trecho: 'sodexo',         apelido: 'Sodexo' },
+  { trecho: 'veloz',          apelido: 'Veloz' },
+  { trecho: 'magazine luiza', apelido: 'Magazine Luiza' },
+  { trecho: 'stella',         apelido: 'Stella' },
+  { trecho: 'rio branco',     apelido: 'Rio Branco' },
+  { trecho: 'domus',          apelido: 'Domus' }
 ];
 
 function _clienteDisplay_(clienteCru) {
@@ -161,15 +169,26 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     return;
   }
 
-  // Mostra TODOS os chamados, sem cortar — a partir de 6 itens divide em 2
-  // colunas (mesma ideia de _colunaTexto_/Slide02_Preventivas.gs) e o corpo
-  // do texto encolhe conforme a quantidade por coluna, até um mínimo ainda
-  // legível. Em meses muito cheios o texto pode encostar no rodapé do card
-  // (aceitável — o que não pode é sumir chamado da lista).
-  const cols     = itens.length > 6 ? 2 : 1;
+  // Mostra TODOS os chamados, sem cortar. Cliente com mais de um chamado no
+  // período agrupa numa linha só (nome + qtd + ids), em vez de repetir nome
+  // e descrição — economiza espaço pros clientes com vários chamados sem
+  // perder nenhum id. A partir de 6 GRUPOS divide em colunas (mesma ideia de
+  // _colunaTexto_/Slide02_Preventivas.gs) e o corpo do texto encolhe conforme
+  // a quantidade por coluna, até um mínimo ainda legível. Em meses muito
+  // cheios o texto pode encostar no rodapé do card (aceitável — o que não
+  // pode é sumir chamado da lista).
+  const porCliente = {};
+  const ordemClientes = [];
+  itens.forEach(it => {
+    if (!porCliente[it.cliente]) { porCliente[it.cliente] = []; ordemClientes.push(it.cliente); }
+    porCliente[it.cliente].push(it);
+  });
+  const grupos = ordemClientes.map(cli => porCliente[cli]);
+
+  const cols     = grupos.length > 6 ? 2 : 1;
   const colGap   = 14;
   const colW     = (w - 30 - (cols - 1) * colGap) / cols;
-  const porCol   = Math.ceil(itens.length / cols);
+  const porCol   = Math.ceil(grupos.length / cols);
   const LINE_PCT = 118;
 
   let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
@@ -179,22 +198,28 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const maxDesc    = cols === 1 ? 42 : 26;
 
   for (let c = 0; c < cols; c++) {
-    const fatia = itens.slice(c * porCol, (c + 1) * porCol);
+    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
     if (!fatia.length) continue;
 
     const colX = x + 15 + c * (colW + colGap);
     const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, listY, colW, listH);
     const tr = box.getText();
     tr.setText('');
-    fatia.forEach(it => {
+    fatia.forEach(grupo => {
       const bullet = tr.appendText('• ');
       bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-      const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(it.cliente), maxCliente) + ' - ');
+      const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ');
       cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-      const idPart = tr.appendText(it.id + ' - ');
-      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-      const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
-      descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+
+      if (grupo.length === 1) {
+        const idPart = tr.appendText('- ' + grupo[0].id + ' - ');
+        idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+        const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc) + '\n');
+        descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+      } else {
+        const idsPart = tr.appendText('(' + grupo.length + '): ' + grupo.map(it => it.id).join(', ') + '\n');
+        idsPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      }
     });
     tr.getParagraphStyle().setLineSpacing(LINE_PCT);
     box.setContentAlignment(SlidesApp.ContentAlignment.TOP);

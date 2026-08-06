@@ -57,6 +57,15 @@ function _equipeCor_(equipe) {
   return String(equipe || '').toUpperCase() === 'PROPERTY' ? CORES.themeCorr : CORES.lightBlue;
 }
 
+// Texto compacto "dd/mm/aa · Nd" (data do chamado + dias em aberto até o
+// fim do mês de referência) — usado nas listas dos dois slides de backlog
+// detalhado (Emergencial e Clientes, este em Slide_BacklogClientesDetalhes.gs).
+function _backlogMetaTexto_(it) {
+  if (!it.dataReporte) return '';
+  const dias = (it.diasAberto === null || it.diasAberto === undefined) ? '' : it.diasAberto + 'd';
+  return dias ? (it.dataReporte + ' · ' + dias) : it.dataReporte;
+}
+
 // ── Card com a barra 100% empilhada Facilities x Property ─────────────────
 function _backlogEmergBarraCard_(slide, x, y, w, h, titulo, dados, corTema) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + dados.total + ')', corTema);
@@ -125,7 +134,7 @@ function _backlogEmergLista_(slide, x, y, w, h, titulo, itens, corTema) {
   let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
 
-  const maxDesc = cols === 1 ? 90 : (cols === 2 ? 46 : 30);
+  const maxDesc = cols === 1 ? 78 : (cols === 2 ? 38 : 24);
 
   for (let c = 0; c < cols; c++) {
     const fatia = itens.slice(c * porCol, (c + 1) * porCol);
@@ -138,9 +147,17 @@ function _backlogEmergLista_(slide, x, y, w, h, titulo, itens, corTema) {
     fatia.forEach(it => {
       const bullet = tr.appendText('• ');
       bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-      const idPart = tr.appendText(it.id + ' - ');
-      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-      const eqPart = tr.appendText((it.equipe || '—') + ' - ');
+      // ID em cinza neutro — nunca na cor do tema/equipe, senão em chamados
+      // PROPERTY (mesma cor âmbar do tema deste slide) ID e equipe ficam
+      // indistinguíveis visualmente.
+      const idPart = tr.appendText(it.id + ' ');
+      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      const meta = _backlogMetaTexto_(it);
+      if (meta) {
+        const metaPart = tr.appendText('(' + meta + ') ');
+        metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      }
+      const eqPart = tr.appendText('- ' + (it.equipe || '—') + ' - ');
       eqPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(_equipeCor_(it.equipe)).setFontFamily('Montserrat');
       const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
       descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');

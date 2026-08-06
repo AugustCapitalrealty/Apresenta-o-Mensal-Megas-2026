@@ -2723,6 +2723,23 @@ function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
   return !fechado;
 }
 
+// "dd/mm/aa" pra exibir a data de reporte no card sem gastar muito espaço.
+function _histFormatarDataCurta_(d) {
+  if (!d) return '';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  return dd + '/' + mm + '/' + yy;
+}
+
+// Dias em aberto NÃO é "até hoje" — é até o ÚLTIMO DIA do mês de referência
+// (refFim é o 1º dia do mês seguinte, exclusivo), porque a apresentação
+// retrata a situação daquele mês, não do dia em que o script rodou.
+function _histDiasAberto_(dtReporte, refFim) {
+  if (!dtReporte) return null;
+  return Math.max(0, Math.floor((refFim - dtReporte) / 86400000));
+}
+
 function _lerBacklogEmergencialDetalhe_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
   try {
@@ -2758,10 +2775,12 @@ function _lerBacklogEmergencialDetalhe_() {
       if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
 
       saida.push({
-        id:        String(row[cId] || '').trim(),
-        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
-        estado:    estado,
-        equipe:    cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : ''
+        id:          String(row[cId] || '').trim(),
+        descricao:   cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        estado:      estado,
+        equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
+        dataReporte: _histFormatarDataCurta_(dtReporte),
+        diasAberto:  _histDiasAberto_(dtReporte, refFim)
       });
     }
     return saida;
@@ -2851,11 +2870,13 @@ function _lerBacklogClientesDetalhes_() {
       if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
 
       saida.push({
-        id:        String(row[cId] || '').trim(),
-        cliente:   String(row[cCliente] || '').trim(),
-        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
-        estado:    estado,
-        equipe:    cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : ''
+        id:          String(row[cId] || '').trim(),
+        cliente:     String(row[cCliente] || '').trim(),
+        descricao:   cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        estado:      estado,
+        equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
+        dataReporte: _histFormatarDataCurta_(dtReporte),
+        diasAberto:  _histDiasAberto_(dtReporte, refFim)
       });
     }
     return saida;
@@ -2865,11 +2886,11 @@ function _lerBacklogClientesDetalhes_() {
   }
 }
 
-// Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao}] } ou
-// null se a aba estiver vazia/ausente ou sem nenhuma linha do empreendimento
-// ativo no mês de referência. Agrupamento por Cliente (top 4 + "Outros"),
-// igual a obterDadosChamadosClientes_ — só que aqui é um período único (o
-// backlog atual), sem Abertos x Fechados.
+// Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao,dataReporte,diasAberto}] }
+// ou null se a aba estiver vazia/ausente ou sem nenhuma linha do
+// empreendimento ativo no mês de referência. Agrupamento por Cliente (top 4
+// + "Outros"), igual a obterDadosChamadosClientes_ — só que aqui é um
+// período único (o backlog atual), sem Abertos x Fechados.
 function obterDadosBacklogClientesDetalhes_() {
   const itens = _lerBacklogClientesDetalhes_();
   if (!itens.length) return null;
@@ -2893,7 +2914,7 @@ function obterDadosBacklogClientesDetalhes_() {
   const lista = semCondominio
     .slice()
     .sort((a, b) => a.cliente.localeCompare(b.cliente, 'pt-BR') || a.id.localeCompare(b.id))
-    .map(c => ({ id: c.id, cliente: c.cliente, descricao: c.descricao }));
+    .map(c => ({ id: c.id, cliente: c.cliente, descricao: c.descricao, dataReporte: c.dataReporte, diasAberto: c.diasAberto }));
 
   return { total: semCondominio.length, fatias: fatias, lista: lista };
 }
