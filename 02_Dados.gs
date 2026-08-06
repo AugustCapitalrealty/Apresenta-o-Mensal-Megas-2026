@@ -2514,3 +2514,91 @@ function obterDadosBacklogHistorico_() {
     return [];
   }
 }
+
+
+// ==========================================
+// CHAMADOS POR PRIORIDADE (Abertos x Fechados) — abas "CHAMADOS ABERTOS MES"
+// e "CHAMADOS FECHADOS MES" da planilha de HISTÓRICO VALIDADO
+// ==========================================
+// As duas abas são a exportação bruta do sistema de chamados (colunas "Id
+// chamado", "Cliente", "Prioridade", "Descrição", "Centro de Custos" etc.),
+// substituída inteira todo mês — cabeçalho na linha 1, sem mesclagem.
+// A aba tem DUAS colunas chamadas "Prioridade" (a de texto — Emergencial/
+// Alta/Normal/Baixa — vem primeiro; uma segunda, numérica, vem bem mais à
+// direita e é ignorada aqui, já que a busca por cabeçalho pega a primeira
+// ocorrência). O Centro de Custos define o Mega: só contam as linhas cujo
+// Centro de Custos é exatamente "MEGA <CIDADE>" — outros centros de custo
+// (postos, outros clientes fora dos 3 Megas) ficam de fora.
+function _lerChamadosMes_(nomeAba) {
+  const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const sheet = ss.getSheetByName(nomeAba);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr   = data[0].map(_histNorm_);
+    const cId   = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cCli  = hdr.findIndex(h => h.indexOf('cliente') >= 0);
+    const cPri  = hdr.findIndex(h => h.indexOf('prioridade') >= 0);
+    const cDesc = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+    const cCC   = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    if (cId < 0 || cCC < 0) return [];
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoMega) continue;
+      saida.push({
+        id:         String(row[cId]   || '').trim(),
+        cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
+        prioridade: cPri  >= 0 ? String(row[cPri]  || '').trim() : '',
+        descricao:  cDesc >= 0 ? String(row[cDesc] || '').trim() : ''
+      });
+    }
+    return saida;
+  } catch (e) {
+    Logger.log('_lerChamadosMes_(' + nomeAba + '): ' + e.message);
+    return [];
+  }
+}
+
+function _normalizarPrioridade_(v) {
+  const n = _histNorm_(v);
+  if (n.indexOf('emergenc') >= 0) return 'Emergencial';
+  if (n.indexOf('alta') >= 0)     return 'Alta';
+  if (n.indexOf('normal') >= 0)   return 'Normal';
+  if (n.indexOf('baixa') >= 0)    return 'Baixa';
+  return '';
+}
+
+// Retorna { abertos: {total, fatias:[{label,qtd}], emergencial:[{id,descricao}]},
+//           fechados: {...} }, ou null se as duas abas estiverem vazias ou
+// sem nenhuma linha da cidade ativa.
+function obterDadosChamadosPrioridade_() {
+  const abertos  = _lerChamadosMes_('CHAMADOS ABERTOS MES');
+  const fechados = _lerChamadosMes_('CHAMADOS FECHADOS MES');
+  if (!abertos.length && !fechados.length) return null;
+
+  const ORDEM_PRIORIDADE = ['Emergencial', 'Alta', 'Normal', 'Baixa'];
+  function agrupar(lista) {
+    const porPrioridade = {};
+    ORDEM_PRIORIDADE.forEach(p => porPrioridade[p] = 0);
+    lista.forEach(c => {
+      const p = _normalizarPrioridade_(c.prioridade);
+      if (p) porPrioridade[p]++;
+    });
+    const fatias = ORDEM_PRIORIDADE
+      .map(p => ({ label: p, qtd: porPrioridade[p] }))
+      .filter(f => f.qtd > 0);
+    const emergencial = lista
+      .filter(c => _normalizarPrioridade_(c.prioridade) === 'Emergencial')
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map(c => ({ id: c.id, descricao: c.descricao }));
+    return { total: lista.length, fatias: fatias, emergencial: emergencial };
+  }
+
+  return { abertos: agrupar(abertos), fechados: agrupar(fechados) };
+}

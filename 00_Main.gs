@@ -49,6 +49,15 @@ function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerar
 function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
 function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }
 
+// Chamados por Prioridade — pizzas Abertos/Fechados por Prioridade + lista
+// dos Emergenciais, busca automática nas abas CHAMADOS ABERTOS MES/CHAMADOS
+// FECHADOS MES da planilha de Histórico Validado, filtrado pelo Centro de
+// Custos da cidade ativa (ver Slide_ChamadosPrioridade.gs). Sem as abas
+// preenchidas, cai no slide manual de espaço reservado.
+function gerarSoChamadosPrioridadeCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosPrioridade(); }
+function gerarSoChamadosPrioridadeItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosPrioridade(); }
+function gerarSoChamadosPrioridadeEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosPrioridade(); }
+
 // Slide avulso — Custo do M² do 1º Quadrimestre (Jan-Abr/2026). Não entra na
 // geração mensal automática (é um recorte de período fixo, não do mês de
 // referência corrente). Troque a cidade e rode a função correspondente.
@@ -115,7 +124,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Preventivas',                         fn: gerarSlidePreventivas },
     { nome: 'Capa Seção - Manutenção Corretiva',   fn: () => gerarCapaSecao('MANUTENÇÃO', 'CORRETIVA', 'CORRETIVA') },
     { nome: 'Corretivas',                          fn: gerarSlideCorretivas },
-    { nome: 'Chamados por Prioridade',             fn: () => gerarSlideReservaGraficos('CHAMADOS POR PRIORIDADE', 'Abertos x Fechados', [{ titulo: 'ABERTOS' }, { titulo: 'FECHADOS' }]) },
+    { nome: 'Chamados por Prioridade',             fn: gerarSlideChamadosPrioridade },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
