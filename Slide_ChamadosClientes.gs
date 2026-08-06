@@ -1,21 +1,19 @@
 /**
  * ARQUIVO: Slide_ChamadosClientes.gs
  * SLIDE — CHAMADOS DE CLIENTES (Abertos x Fechados)
- * DESCRIÇÃO: Substitui o slide manual por duas barras 100% empilhadas
- * (Abertos e Fechados, fatiadas por Cliente) mais a lista completa de
- * chamados de cada período — lido das mesmas abas "CHAMADOS ABERTOS
- * MES"/"CHAMADOS FECHADOS MES" da planilha de Histórico Validado usadas
- * pelo slide Chamados por Prioridade (obterDadosChamadosClientes_ em
- * 02_Dados.gs), filtrado pelo Centro de Custos da cidade ativa e sem as
+ * DESCRIÇÃO: Substitui o slide manual por um resumo por Cliente (logo +
+ * quantidade — sem gráfico; com só 1-5 clientes por período um gráfico não
+ * ajuda, e o boletim manual já usava logo por cliente) mais a lista
+ * completa de chamados de cada período — lido das mesmas abas "CHAMADOS
+ * ABERTOS MES"/"CHAMADOS FECHADOS MES" da planilha de Histórico Validado
+ * usadas pelo slide Chamados por Prioridade (obterDadosChamadosClientes_
+ * em 02_Dados.gs), filtrado pelo Centro de Custos da cidade ativa e sem as
  * linhas do próprio condomínio (só chamados de clientes de verdade).
  *
- * Mesma técnica de barra 100% nativa (só RECTANGLE) do slide de
- * Prioridade — ver o comentário lá pra explicação de por que não é uma
- * pizza de verdade.
- *
- * A lista de chamados mostra o logo do cliente (Google Drive) quando
- * cadastrado em LOGOS_CLIENTES (Slide_LogosClientes.gs); sem logo, cai no
- * nome em texto de sempre — nunca quebra a geração por causa disso.
+ * O resumo de cima e a lista de baixo reaproveitam a mesma identidade
+ * visual do cliente (logo do Google Drive quando cadastrado em
+ * LOGOS_CLIENTES, Slide_LogosClientes.gs; nome colorido em texto quando
+ * não — nunca quebra a geração por causa disso).
  *
  * Sem as duas abas preenchidas (ou sem nenhuma linha da cidade ativa): cai
  * no slide manual de espaço reservado (gerarSlideReservaGraficos), sem
@@ -44,8 +42,8 @@ function gerarSlideChamadosClientes() {
   const rowH = (areaBottom - topY - gap) / 2;
 
   const coresMapa = _clienteCoresMapa_(dados);
-  _clientesBarraCard_(slide, marginX,             topY, colW, rowH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
-  _clientesBarraCard_(slide, marginX + colW + gap, topY, colW, rowH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
+  _clientesResumoLogos_(slide, marginX,             topY, colW, rowH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
+  _clientesResumoLogos_(slide, marginX + colW + gap, topY, colW, rowH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
 
   const y2 = topY + rowH + gap;
   _clientesLista_(slide, marginX,             y2, colW, rowH, 'LISTA DE CHAMADOS ABERTOS',  dados.abertos.lista,  CORES.lightBlue);
@@ -117,53 +115,44 @@ function _truncarNome_(txt, max) {
   return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte) + '…';
 }
 
-// ── Card com a barra 100% empilhada Abertos/Fechados por Cliente ──────────
-function _clientesBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema, coresMapa) {
+// ── Card-resumo por Cliente: logo (ou nome) + quantidade, sem gráfico ─────
+// Com só 1-5 clientes por período (MAX_FATIAS em obterDadosChamadosClientes_)
+// uma barra/pizza não ajuda a leitura — um "tile" por cliente com o logo
+// (mesma técnica de _getClienteLogoBlob_/_insertLogoFit_ usada na lista de
+// baixo) e o número grande comunica mais rápido.
+function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema, coresMapa) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + dadosPeriodo.total + ')', corTema);
-  const areaY = contentY + 2, areaH = y + h - areaY - 8;
+  const areaY = contentY + 6, areaH = y + h - areaY - 8;
 
   if (!dadosPeriodo.fatias.length) {
     _prioridadeSemDado_(slide, x, areaY, w, areaH, 'Nenhum chamado de cliente no período.', CORES.textGray);
     return;
   }
 
-  const barX = x + 16, barW = w - 32, barY = areaY + 8, barH = 28;
   const total = dadosPeriodo.total;
+  const n = dadosPeriodo.fatias.length;
+  const tileGap = 10;
+  const tileW = (w - 24 - (n - 1) * tileGap) / n;
+  const logoH = Math.min(46, areaH * 0.5);
+  const qtyY  = areaY + logoH + 6;
 
-  let cursorX = barX;
   dadosPeriodo.fatias.forEach((f, i) => {
-    const ehUltima = i === dadosPeriodo.fatias.length - 1;
-    const segW = ehUltima ? (barX + barW - cursorX) : Math.round((f.qtd / total) * barW);
-    const cor = coresMapa[f.label] || CORES.textGray;
+    const tileX = x + 12 + i * (tileW + tileGap);
+    const cor = (coresMapa && coresMapa[f.label]) || corTema;
 
-    const seg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cursorX, barY, Math.max(segW, 1), barH);
-    seg.getFill().setSolidFill(cor);
-    seg.getBorder().setTransparent();
-
-    if (segW >= 16) {
-      _sTxt(slide, cursorX, barY + 6, segW, 16, String(f.qtd), 9.5, true, CORES.white, 'center');
+    const logoBlob = f.label === 'Outros' ? null : _getClienteLogoBlob_(_clienteDisplay_(f.label));
+    let logoOk = false;
+    if (logoBlob) {
+      try { _insertLogoFit_(slide, logoBlob, tileX, areaY, tileW, logoH); logoOk = true; }
+      catch (e) { Logger.log('Logo do cliente ' + f.label + ' não desenhou: ' + e.message); }
     }
-    cursorX += segW;
-  });
+    if (!logoOk) {
+      _sTxt(slide, tileX, areaY, tileW, logoH, _truncarNome_(_clienteDisplay_(f.label), 16), 9, true, cor, 'center');
+    }
 
-  // Legenda: bolinha + cliente (truncado) + qtd (%) — altura de linha
-  // adaptada à quantidade de fatias, igual ao slide de Prioridade.
-  const legendTop = barY + barH + 10;
-  const legendBottom = areaY + areaH - 4;
-  const rowH = Math.min(20, (legendBottom - legendTop) / dadosPeriodo.fatias.length);
-  let legendY = legendTop;
-  dadosPeriodo.fatias.forEach(f => {
-    const cor = coresMapa[f.label] || CORES.textGray;
     const pct = total > 0 ? (f.qtd / total * 100) : 0;
-    const pctTxt = pct.toFixed(1).replace('.', ',') + '%';
-
-    const dot = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, legendY + rowH / 2 - 4, 8, 8);
-    dot.getFill().setSolidFill(cor);
-    dot.getBorder().setTransparent();
-
-    _sTxt(slide, barX + 13, legendY, 160, rowH, _truncarNome_(_clienteDisplay_(f.label), 30), 8, true, CORES.textDark, 'left');
-    _sTxt(slide, barX + 176, legendY, barW - 176, rowH, f.qtd + ' (' + pctTxt + ')', 8, false, CORES.textGray, 'left');
-    legendY += rowH;
+    _sTxt(slide, tileX, qtyY, tileW, 22, String(f.qtd), 16, true, cor, 'center');
+    _sTxt(slide, tileX, qtyY + 20, tileW, 12, pct.toFixed(1).replace('.', ',') + '%', 7.5, false, CORES.textGray, 'center');
   });
 }
 
@@ -217,8 +206,12 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = cols === 1 ? 22 : 16;
-  const maxDesc    = cols === 1 ? 42 : 26;
-  const LOGO_W = 32, LOGO_GAP = 6;
+  const LOGO_W = 44, LOGO_GAP = 8;
+  // Orçamento de caracteres da descrição calculado pela largura REAL
+  // disponível (não uma tabela fixa por nº de colunas) — cada coluna usa o
+  // espaço que sobra depois do logo, então uma coluna larga com poucos
+  // clientes aproveita bem mais linha do que a tabela fixa antiga permitia.
+  const CHAR_W = fontSize * 0.52;
 
   // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
   // medida que avança — não dá pra usar uma caixa só por coluna com texto
@@ -246,13 +239,18 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
       const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
       if (logoBlob) {
         try {
-          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, lineH);
+          // Logo ocupa a altura da linha inteira do grupo (não só a 1ª
+          // linha) — _insertLogoFit_ centraliza dentro da caixa, então num
+          // grupo de vários chamados o logo fica centralizado no bloco
+          // inteiro, não colado no topo.
+          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, rowH);
           textX = colX + LOGO_W + LOGO_GAP;
           textW = colW - LOGO_W - LOGO_GAP;
         } catch (e) {
           Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
         }
       }
+      const maxDesc = Math.max(20, Math.floor((textW - 70) / CHAR_W));
 
       const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
       const tr = box.getText();

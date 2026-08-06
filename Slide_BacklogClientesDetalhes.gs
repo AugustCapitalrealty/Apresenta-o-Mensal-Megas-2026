@@ -13,10 +13,13 @@
  *
  * O foco do slide é a LISTA de pendências — sem gráfico de resumo (o card
  * de barra por cliente foi removido a pedido: o que importa aqui é o
- * detalhe de cada chamado, não a proporção entre clientes). Cliente com
- * mais de um chamado agrupa o nome uma vez só, mas cada chamado continua
- * com sua própria linha (id + data + dias em aberto + descrição) — nunca
- * corta nenhum item.
+ * detalhe de cada chamado, não a proporção entre clientes). Layout de
+ * TABELA: uma linha de largura cheia por cliente (logo grande à esquerda,
+ * chamados detalhados à direita) — nada de colunas estreitas, que
+ * desperdiçavam a largura do card nos meses com poucos clientes. Cliente
+ * com mais de um chamado agrupa o nome uma vez só, mas cada chamado
+ * continua com sua própria linha (id + data + dias em aberto + descrição)
+ * — nunca corta nenhum item.
  *
  * Sem chamados no mês de referência pro empreendimento ativo: cai no slide
  * manual de espaço reservado (gerarSlideReservaGraficos), sem quebrar a
@@ -79,18 +82,20 @@ function _backlogClientesCoresMapa_(dados) {
   return mapa;
 }
 
-// ── Card com a lista completa de pendências, agrupada por Cliente ─────────
-// Mesma técnica de _clientesLista_ (Slide_ChamadosClientes.gs): o nome do
-// cliente aparece uma vez só quando ele tem mais de um chamado (evita
-// repetir o nome em cada linha), mas cada chamado continua com sua própria
-// linha de detalhe — nunca corta nenhum item, nem esconde descrição atrás
-// de "+N outros". Aqui cada linha também mostra a data do chamado e há
-// quantos dias está em aberto (_backlogMetaTexto_, em
-// Slide_BacklogEmergencialDetalhe.gs) — informação que o slide de Chamados
-// de Clientes não tem.
+// ── Card com a lista completa de pendências, em formato de TABELA ────────
+// Uma linha de largura cheia por cliente — logo à esquerda, chamados
+// detalhados à direita — em vez de dividir em colunas estreitas: o card é
+// largo (o slide inteiro) e a maioria dos meses tem só 1-3 clientes, então
+// colunas estreitas desperdiçavam a largura toda (texto cabia numa fração
+// do card, o resto ficava em branco). O nome do cliente aparece uma vez só
+// quando ele tem mais de um chamado (evita repetir em cada linha), mas
+// cada chamado continua com sua própria linha de detalhe — nunca corta
+// nenhum item, nem esconde descrição atrás de "+N outros". Cada linha
+// também mostra a data do chamado e há quantos dias está em aberto
+// (_backlogMetaTexto_, em Slide_BacklogEmergencialDetalhe.gs).
 function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, coresMapa) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', corTema);
-  const listY = contentY + 2, listH = y + h - listY - 8;
+  const listY = contentY + 4, listH = y + h - listY - 8;
 
   if (!itens.length) {
     _prioridadeSemDado_(slide, x, listY, w, listH, 'Nenhum chamado no período.', CORES.cardGreen);
@@ -105,104 +110,94 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
   });
   const grupos = ordemClientes.map(cli => porCliente[cli]);
 
-  const cols     = grupos.length > 6 ? (grupos.length > 16 ? 3 : 2) : 1;
-  const colGap   = 14;
-  const colW     = (w - 30 - (cols - 1) * colGap) / cols;
-  const porCol   = Math.ceil(grupos.length / cols);
-  const LINE_PCT = 118;
+  const LINE_PCT = 130;   // mais espaçado que as listas em coluna — preenche melhor a altura do card
+  const ROW_GAP  = 8;     // respiro entre um cliente e o próximo (separa as "linhas da tabela")
 
   // Linhas de cada grupo: 1 por chamado + 1 de cabeçalho extra só quando o
   // grupo tem mais de 1 chamado (grupo de 1 chamado é uma linha só).
   const linhasGrupo = g => g.length === 1 ? 1 : g.length + 1;
-  let maxLinhasColuna = 0;
-  for (let c = 0; c < cols; c++) {
-    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
-    maxLinhasColuna = Math.max(maxLinhasColuna, fatia.reduce((s, g) => s + linhasGrupo(g), 0));
-  }
+  const totalLinhas = grupos.reduce((s, g) => s + linhasGrupo(g), 0);
+  const totalGaps   = Math.max(0, grupos.length - 1) * ROW_GAP;
 
-  let fontSize = Math.min(8, listH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
+  let fontSize = Math.min(11, (listH - totalGaps) / (totalLinhas * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
-  const maxCliente = cols === 1 ? 20 : (cols === 2 ? 14 : 10);
-  const maxDesc    = cols === 1 ? 58 : (cols === 2 ? 30 : 18);
-  const LOGO_W = 32, LOGO_GAP = 6;
+  const maxCliente = 26;
+  const LOGO_W = 56, LOGO_GAP = 10;
+  // Orçamento de caracteres da descrição pela largura REAL da linha (não
+  // uma tabela fixa) — com a linha ocupando o card inteiro, sobra muito
+  // mais espaço do que as ~58 letras fixas de antes permitiam.
+  const CHAR_W = fontSize * 0.52;
 
-  // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
-  // medida que avança — mesma técnica de Slide_ChamadosClientes.gs (ver
-  // comentário lá): não dá pra alinhar logo com uma linha específica dentro
-  // de uma caixa de texto corrido, então cada grupo ganha posição própria.
-  for (let c = 0; c < cols; c++) {
-    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
-    if (!fatia.length) continue;
+  let cursorY = listY;
+  grupos.forEach(grupo => {
+    const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
+    const rowH = linhasGrupo(grupo) * lineH;
 
-    const colX = x + 15 + c * (colW + colGap);
-    let cursorY = listY;
-
-    fatia.forEach(grupo => {
-      const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
-      const rowH = linhasGrupo(grupo) * lineH;
-
-      let textX = colX, textW = colW;
-      // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
-      // equivalente em Slide_ChamadosClientes.gs.
-      const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
-      if (logoBlob) {
-        try {
-          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, lineH);
-          textX = colX + LOGO_W + LOGO_GAP;
-          textW = colW - LOGO_W - LOGO_GAP;
-        } catch (e) {
-          Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
-        }
+    let textX = x + 15, textW = w - 30;
+    // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
+    // equivalente em Slide_ChamadosClientes.gs.
+    const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
+    if (logoBlob) {
+      try {
+        // Logo ocupa a altura da linha inteira do grupo — _insertLogoFit_
+        // centraliza dentro da caixa, então mesmo num grupo de vários
+        // chamados o logo fica centralizado no bloco, não colado no topo.
+        _insertLogoFit_(slide, logoBlob, x + 15, cursorY, LOGO_W, rowH);
+        textX = x + 15 + LOGO_W + LOGO_GAP;
+        textW = w - 30 - LOGO_W - LOGO_GAP;
+      } catch (e) {
+        Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
       }
+    }
+    const maxDesc = Math.max(24, Math.floor((textW - 90) / CHAR_W));
 
-      const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
-      const tr = box.getText();
-      tr.setText('');
+    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
+    const tr = box.getText();
+    tr.setText('');
 
-      if (grupo.length === 1) {
-        const bullet = tr.appendText('• ');
-        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        if (!logoBlob) {
-          const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
-          cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
-        }
-        // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
-        // ficam indistinguíveis quando o cliente cai na mesma cor do tema.
-        const idPart = tr.appendText(grupo[0].id + ' ');
+    if (grupo.length === 1) {
+      const bullet = tr.appendText('• ');
+      bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+      if (!logoBlob) {
+        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+      }
+      // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
+      // ficam indistinguíveis quando o cliente cai na mesma cor do tema.
+      const idPart = tr.appendText(grupo[0].id + ' ');
+      idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      const meta = _backlogMetaTexto_(grupo[0]);
+      if (meta) {
+        const metaPart = tr.appendText('(' + meta + ') ');
+        metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+      }
+      const descPart = tr.appendText('- ' + _truncarNome_(grupo[0].descricao, maxDesc));
+      descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+    } else {
+      const bullet = tr.appendText('• ');
+      bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
+      const rotulo = (logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ') + '(' + grupo.length + ')\n';
+      const cliPart = tr.appendText(rotulo);
+      cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+      grupo.forEach(it => {
+        const idPart = tr.appendText('   ' + it.id + ' ');
         idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-        const meta = _backlogMetaTexto_(grupo[0]);
+        const meta = _backlogMetaTexto_(it);
         if (meta) {
           const metaPart = tr.appendText('(' + meta + ') ');
           metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
         }
-        const descPart = tr.appendText('- ' + _truncarNome_(grupo[0].descricao, maxDesc));
+        const descPart = tr.appendText('- ' + _truncarNome_(it.descricao, maxDesc) + '\n');
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-      } else {
-        const bullet = tr.appendText('• ');
-        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const rotulo = (logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ') + '(' + grupo.length + ')\n';
-        const cliPart = tr.appendText(rotulo);
-        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
-        grupo.forEach(it => {
-          const idPart = tr.appendText('   ' + it.id + ' ');
-          idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-          const meta = _backlogMetaTexto_(it);
-          if (meta) {
-            const metaPart = tr.appendText('(' + meta + ') ');
-            metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-          }
-          const descPart = tr.appendText('- ' + _truncarNome_(it.descricao, maxDesc) + '\n');
-          descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-        });
-      }
+      });
+    }
 
-      tr.getParagraphStyle().setLineSpacing(LINE_PCT);
-      box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
-      cursorY += rowH;
-    });
-  }
+    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+    box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+    cursorY += rowH + ROW_GAP;
+  });
 }
 
 
