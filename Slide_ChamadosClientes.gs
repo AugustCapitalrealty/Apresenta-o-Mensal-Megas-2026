@@ -57,6 +57,26 @@ function gerarSlideChamadosClientes() {
 const _CLIENTE_PALETA_ = ['#1E3A8A', '#0EA5E9', '#F59E0B', '#10B981', '#9333EA', '#D97706'];
 const _CLIENTE_COR_OUTROS_ = '#94A3B8';
 
+// Apelido curto pros clientes mais conhecidos, em vez da razão social crua
+// da planilha (comprida, sempre com LTDA/S.A. etc., quebra em 2-3 linhas
+// no card). Casa por trecho do nome já normalizado (minúsculo, sem acento
+// — ver _histNorm_ em 02_Dados.gs), então variações como "SHPX Logística
+// Ltda" ou "SHPX LTDA" caem no mesmo apelido. Sem apelido cadastrado, usa
+// o nome cru mesmo (o chamador trunca se for muito longo). A cor e o
+// agrupamento continuam pelo nome CRU (obterDadosChamadosClientes_) — o
+// apelido é só de exibição, não mexe na contagem.
+const _CLIENTE_APELIDOS_ = [
+  { trecho: 'shpx',    apelido: 'Shopee' },
+  { trecho: 'tornado', apelido: 'TornadoLog' },
+  { trecho: 'dhl',     apelido: 'DHL' }
+];
+
+function _clienteDisplay_(clienteCru) {
+  const norm = _histNorm_(clienteCru);
+  const achado = _CLIENTE_APELIDOS_.find(a => norm.indexOf(a.trecho) >= 0);
+  return achado ? achado.apelido : clienteCru;
+}
+
 function _clienteCoresMapa_(dados) {
   const soma = {};
   ['abertos', 'fechados'].forEach(periodo => {
@@ -125,7 +145,7 @@ function _clientesBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema, c
     dot.getFill().setSolidFill(cor);
     dot.getBorder().setTransparent();
 
-    _sTxt(slide, barX + 13, legendY, 160, rowH, _truncarNome_(f.label, 30), 8, true, CORES.textDark, 'left');
+    _sTxt(slide, barX + 13, legendY, 160, rowH, _truncarNome_(_clienteDisplay_(f.label), 30), 8, true, CORES.textDark, 'left');
     _sTxt(slide, barX + 176, legendY, barW - 176, rowH, f.qtd + ' (' + pctTxt + ')', 8, false, CORES.textGray, 'left');
     legendY += rowH;
   });
@@ -151,7 +171,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   visiveis.forEach(it => {
     const bullet = tr.appendText('• ');
     bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(8).setBold(true);
-    const cliPart = tr.appendText(_truncarNome_(it.cliente, MAX_CLIENTE) + ' - ');
+    const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(it.cliente), MAX_CLIENTE) + ' - ');
     cliPart.getTextStyle().setFontSize(8).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
     const idPart = tr.appendText(it.id + ' - ');
     idPart.getTextStyle().setFontSize(8).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
