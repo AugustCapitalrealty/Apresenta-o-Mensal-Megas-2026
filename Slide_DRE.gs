@@ -53,6 +53,20 @@ function _dreSomarCategoria_(itens) {
   return blocos;
 }
 
+// Converte a linha TOTAL (R$) numa linha equivalente em R$/m², dividindo
+// cada bloco pela área do empreendimento (obterAreaM2_, 02_Dados.gs — área
+// derivada do Custo M² e tratada como aproximadamente constante ano a
+// ano). Mesmo formato { mes, acum, anual, anualOrc, aaMes, aaAcum, aaAno }
+// da linha original, então reaproveita o mesmo desenho de blocos/variação.
+function _dreValoresPorM2_(b, area) {
+  const divBloco = bl => ({ orc: bl.orc / area, real: bl.real / area });
+  const divAA = v => (v == null ? null : v / area);
+  return {
+    mes: divBloco(b.mes), acum: divBloco(b.acum), anual: divBloco(b.anual), anualOrc: divBloco(b.anualOrc),
+    aaMes: divAA(b.aaMes), aaAcum: divAA(b.aaAcum), aaAno: divAA(b.aaAno)
+  };
+}
+
 function _gerarSlideDRE_(modo) {
   const d = obterDadosDRE_();
   if (!d) {
@@ -111,9 +125,15 @@ function _gerarSlideDRE_(modo) {
 
   // ── Barra dos blocos ──────────────────────────────────────────────────────
   const blocoY = 66, blocoH = 14;
+  // "JAN A JUL/26" em vez de "7 MESES" — o range fica explícito sem precisar
+  // contar nos dedos. d.mesLabel já vem como "Julho/26"; abrevia pro nome
+  // curto (3 letras) mantendo o "/26". Mês de referência = Janeiro não repete
+  // ("JANEIRO/26" sozinho, sem "JAN A JAN/26").
+  const mesAbrev = d.mesLabel.slice(0, 3).toUpperCase() + d.mesLabel.slice(d.mesLabel.indexOf('/'));
+  const acumTxt  = d.mesesAcum > 1 ? ('ACUMULADO — JAN A ' + mesAbrev) : ('ACUMULADO — ' + mesAbrev);
   const blocos = [
     { txt: 'MÊS — ' + d.mesLabel.toUpperCase(),     c0: 0,  cor: DS.colors.brandMed },
-    { txt: 'ACUMULADO — ' + d.mesesAcum + ' MESES', c0: 5,  cor: DS.colors.brandMed },
+    { txt: acumTxt,                                 c0: 5,  cor: DS.colors.brandMed },
     // Projeção do ano: cor própria em TODO o cabeçalho do bloco (barra + a
     // régua Meta/Real/…) e um leve tingido atrás das células — sinaliza que
     // aquele trecho é FUTURO/projeção, não realizado.
@@ -165,6 +185,15 @@ function _gerarSlideDRE_(modo) {
   // ── Linhas: TOTAL, depois cada CATEGORIA (subtotal) com suas rubricas ─────
   // Ordem fixa: obterDadosDRE_ já entrega as rubricas na ordem do mapa.
   const linhas = [{ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', b: d.total }];
+  // Linha extra logo abaixo do TOTAL, em R$/m² — "upgrade" pedido pelo
+  // usuário: mesma leitura (Meta/Real/2025/Δ%, nos 3 blocos), só que por m²
+  // em vez de R$ mil, pra comparar eficiência independente do tamanho do
+  // portfólio. Sem obterAreaM2_() (falta Custo M² ou Financeiro Mensal), a
+  // linha simplesmente não aparece — nunca quebra a geração.
+  const areaM2 = obterAreaM2_();
+  if (areaM2) {
+    linhas.push({ tipo: 'total_m2', nome: 'DESPESAS OPERACIONAIS (R$/M²)', b: _dreValoresPorM2_(d.total, areaM2) });
+  }
   const ordemCategorias = DRE_CATEGORIAS.map(c => c.nome).concat(['Outras Despesas']);
   ordemCategorias.forEach(nomeCat => {
     const doCat = d.rubricas.filter(r => r.categoria === nomeCat);
@@ -184,6 +213,14 @@ function _gerarSlideDRE_(modo) {
   const mil = v => {
     if (v == null || isNaN(v)) return '-';
     return Math.round(v / 1000).toLocaleString('pt-BR');
+  };
+
+  // R$/m² — valor já pequeno (não passa por milhares), 2 casas decimais
+  // (mesma convenção de formatarMoedaSlide em Slide09_CustoM2.gs, sem o
+  // prefixo "R$" que a linha já deixa implícito no rótulo).
+  const porM2 = v => {
+    if (v == null || isNaN(v)) return '-';
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   // VARIAÇÃO: Real ÷ base − 1, sempre positiva, com o sentido na seta.
@@ -255,15 +292,18 @@ function _gerarSlideDRE_(modo) {
   linhas.forEach((l, r) => {
     const ry = tY + r * rowH;
     const ehTotal     = l.tipo === 'total';
+    const ehTotalM2   = l.tipo === 'total_m2';
     const ehCategoria = l.tipo === 'categoria';
-    const resumo      = ehTotal || ehCategoria;   // linhas de fundo escuro
+    const resumo      = ehTotal || ehCategoria || ehTotalM2;   // linhas de fundo escuro
 
-    // Fundo: TOTAL azul escuro, categoria cinza, itens em zebra. Nos itens, a
-    // faixa das 5 colunas da projeção sai levemente azulada — banda de cor
-    // que percorre a tabela inteira marcando "isto é futuro".
+    // Fundo: TOTAL azul escuro, TOTAL R$/m² azul médio (relacionado mas
+    // distinto — é o mesmo total, só que por m²), categoria cinza, itens em
+    // zebra. Nos itens, a faixa das 5 colunas da projeção sai levemente
+    // azulada — banda de cor que percorre a tabela inteira marcando "isto é
+    // futuro".
     if (resumo) {
       const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
-      z.getFill().setSolidFill(ehTotal ? DS.colors.brandDark : CINZA_CATEGORIA);
+      z.getFill().setSolidFill(ehTotal ? DS.colors.brandDark : (ehTotalM2 ? DS.colors.brandMed : CINZA_CATEGORIA));
       z.getBorder().setTransparent();
       if (ehCategoria) zebra = 0;
     } else {
@@ -283,7 +323,7 @@ function _gerarSlideDRE_(modo) {
     // para o nome completo caber em uma linha ("DESPESAS COM PESSOAL E
     // ADMINISTRATIVAS" não cabia e quebrava/cortava). Texto alinhado à
     // esquerda → a folga vai só para a DIREITA, senão o texto "anda".
-    const fsLinha = ehCategoria ? Math.min(fs, 6.3) : fs;
+    const fsLinha = (ehCategoria || ehTotalM2) ? Math.min(fs, 6.3) : fs;
     const indent  = l.tipo === 'item' ? 12 : 4;
     const larguraVisual = rubricaW - 4 - indent;
     let nome = ehCategoria ? l.nome.toUpperCase() : l.nome;
@@ -307,10 +347,13 @@ function _gerarSlideDRE_(modo) {
         const vs25   = variacao(blk.aa, bl.real);
 
         // Primeiro os VALORES (Meta | Real | 2025), depois as VARIAÇÕES.
+        // Linha R$/m² usa o formatador com 2 casas (porM2) — as demais
+        // continuam em R$ mil arredondado (mil).
+        const valFmt = ehTotalM2 ? porM2 : mil;
         const valores = [
-          { txt: mil(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
-          { txt: mil(bl.real), cor: corBase,                             bold: true   },
-          { txt: mil(blk.aa),  cor: resumo ? '#CBD5E1' : '#64748B',      bold: false  }
+          { txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
+          { txt: valFmt(bl.real), cor: corBase,                             bold: true   },
+          { txt: valFmt(blk.aa),  cor: resumo ? '#CBD5E1' : '#64748B',      bold: false  }
         ];
         valores.forEach((cel, i) => {
           // Valores alinhados à direita: a folga da caixa vai só para a
