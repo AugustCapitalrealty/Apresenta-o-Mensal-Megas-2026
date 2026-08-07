@@ -31,6 +31,15 @@ function regerarCuritiba() { setProjetoAtivo('CURITIBA'); regerarApresentacaoCom
 function regerarItajai()   { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); }
 function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); }
 
+// Mesma apresentação + o slide de CHECK DE CONSISTÊNCIA no final (confere
+// se os números que aparecem em mais de um slide batem entre si). O check
+// é DESCARTÁVEL: nasce marcado pra ser apagado antes de apresentar, por
+// isso não entra em gerarApresentacaoCompleta_ — quem quiser conferir usa
+// estas entradas. Ver Slide_CheckConsistencia.gs.
+function regerarCuritibaComCheck() { setProjetoAtivo('CURITIBA'); regerarApresentacaoCompleta_(); gerarSlideCheckConsistencia(); }
+function regerarItajaiComCheck()   { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); gerarSlideCheckConsistencia(); }
+function regerarEsteioComCheck()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); gerarSlideCheckConsistencia(); }
+
 
 // ==========================================
 // PONTOS DE ENTRADA — TODAS AS CIDADES
