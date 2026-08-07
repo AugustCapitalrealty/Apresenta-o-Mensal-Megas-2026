@@ -2928,13 +2928,15 @@ function obterDadosBacklogClientesDetalhes_() {
 
 
 // ==========================================
-// BACKLOG DE CLIENTES — OPERAÇÃO — aba "BD-CORRETIVAS" da planilha BASE DE
-// DADOS — QUADRO REM (BD_CORRETIVAS_ID, histórico bruto desde 2021,
-// multi-empreendimento). Complementar ao Backlog de Clientes — Detalhe
-// acima (que é só responsabilidade do LOCATÁRIO): aqui é o backlog de
+// BACKLOG DE CLIENTES — FACILITIES / PROPERTIES — aba "BD-CORRETIVAS" da
+// planilha BASE DE DADOS — QUADRO REM (BD_CORRETIVAS_ID, histórico bruto
+// desde 2021, multi-empreendimento). Complementar ao Backlog de Clientes —
+// Detalhe acima (que é só responsabilidade do LOCATÁRIO): aqui são os
 // chamados de cliente que são responsabilidade DA OPERAÇÃO — todo chamado
 // de cliente em aberto no mês de referência, MENOS os marcados como
-// responsabilidade do locatário. Ver Slide_BacklogClientesOperacao.gs.
+// responsabilidade do locatário — divididos em DOIS slides por equipe
+// responsável (Slide_BacklogClientesFacilities.gs /
+// Slide_BacklogClientesProperties.gs).
 // ==========================================
 
 // Mapa NOME → EQUIPE (PROPERTY/FACILITIES/OPERACAO) dos responsáveis que
@@ -3074,13 +3076,11 @@ function _lerBdCorretivasChamadosClientes_() {
   }
 }
 
+// Agrupa uma lista já filtrada de chamados de cliente (BD-CORRETIVAS) por
+// Cliente — mesma lógica (top 4 + "Outros") de obterDadosBacklogClientesDetalhes_.
 // Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao,dataReporte,diasAberto,equipe}] }
-// ou null se a aba estiver vazia/ausente ou sem nenhum chamado de cliente
-// (não-locatário) em aberto no mês de referência pro empreendimento ativo.
-// Mesmo formato de obterDadosBacklogClientesDetalhes_ — dá pra reaproveitar
-// o mesmo desenho de tabela/paginação (Slide_BacklogClientesDetalhes.gs).
-function obterDadosBacklogClientesOperacao_() {
-  const itens = _lerBdCorretivasChamadosClientes_();
+// ou null se a lista filtrada vier vazia.
+function _agruparBacklogClientesPorCliente_(itens) {
   if (!itens.length) return null;
 
   const MAX_FATIAS = 5;
@@ -3102,4 +3102,20 @@ function obterDadosBacklogClientesOperacao_() {
     .sort((a, b) => a.cliente.localeCompare(b.cliente, 'pt-BR') || a.id.localeCompare(b.id));
 
   return { total: itens.length, fatias: fatias, lista: lista };
+}
+
+// Backlog de Clientes — FACILITIES: chamados cuja equipe resolvida
+// (_resolverEquipeResponsaveis_) é FACILITIES. Também recebe OPERAÇÃO e
+// equipe não resolvida (nome fora do mapa) — são os casos residuais mais
+// próximos operacionalmente dos dois grupos que este par de slides separa.
+function obterDadosBacklogClientesFacilities_() {
+  const itens = _lerBdCorretivasChamadosClientes_().filter(c => c.equipe !== 'PROPERTY');
+  return _agruparBacklogClientesPorCliente_(itens);
+}
+
+// Backlog de Clientes — PROPERTIES: chamados cuja equipe resolvida é
+// PROPERTY.
+function obterDadosBacklogClientesProperties_() {
+  const itens = _lerBdCorretivasChamadosClientes_().filter(c => c.equipe === 'PROPERTY');
+  return _agruparBacklogClientesPorCliente_(itens);
 }

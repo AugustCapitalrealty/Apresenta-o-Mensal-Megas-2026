@@ -113,7 +113,8 @@ function _paginarGruposBacklog_(grupos, listaH) {
 // Chip no canto do card avisando de quem é a responsabilidade do backlog
 // (locatário ou operação) — precisa ficar óbvio batendo o olho, não só no
 // subtítulo pequeno do cabeçalho. Reaproveitado por
-// Slide_BacklogClientesOperacao.gs (mesmo padrão visual, texto/cor mudam).
+// Slide_BacklogClientesFacilities.gs/Slide_BacklogClientesProperties.gs
+// (mesmo padrão visual, texto/cor mudam).
 function _backlogClientesBadge_(slide, x, y, w, texto, cor) {
   const chipW = 220, chipH = 16, chipX = x + w - chipW - 14, chipY = y + 9;
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, chipX, chipY, chipW, chipH);
