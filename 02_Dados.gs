@@ -552,6 +552,11 @@ function obterDadosDashboard() {
   const SHEET_NAME = 'DADOS';
   let dataMap = new Map();
   let headers = ['DEZ', 'NOV', "DEZ'24"];
+  // Registro do que a aba DADOS trazia antes de ser sobrescrito por uma
+  // fonte autoritativa — o slide de CHECK usa isso pra continuar apontando
+  // a divergência de origem (senão, corrigido o valor, a checagem viraria
+  // sempre verdadeira e esconderia o problema na planilha).
+  const sobrescritos = [];
 
   try {
     const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
@@ -603,7 +608,42 @@ function obterDadosDashboard() {
     Logger.log('Erro Dashboard (acessos): ' + e.message);
   }
 
-  return { map: dataMap, headers: headers };
+  // FONTE ÚNICA dos contadores de backlog: "Chamados geral" e "Chamados de
+  // facilities" também são digitados na aba DADOS, mas a aba BACKLOG do
+  // Histórico Validado é a fonte AUTORITATIVA — é ela que alimenta o slide
+  // Backlog Facilities e é internamente consistente (geral = facilities +
+  // property + locatário, verificado em todos os meses da série). Quando as
+  // duas discordam, quem manda é o BACKLOG; assim o Dashboard e o slide de
+  // Backlog Facilities nunca mostram números diferentes pro mesmo mês.
+  // (Mesmo padrão do override de acessos acima.)
+  try {
+    const serie = obterDadosBacklogHistorico_();
+    if (serie && serie.length) {
+      const ref = obterMesReferencia_();
+      const ord = ref.ano * 100 + (ref.index + 1);
+      const idx = serie.findIndex(p => p.ord === ord);
+      if (idx >= 0) {
+        const mesRef = serie[idx];
+        const mesAnt = idx > 0 ? serie[idx - 1] : null;
+        [{ chave: 'Chamados geral', campo: 'geral' },
+         { chave: 'Chamados de facilities', campo: 'facilities' }].forEach(m => {
+          if (mesRef[m.campo] == null) return;
+          const atual = dataMap.get(m.chave) || { atual: '-', mesAnt: '-', anoAnt: '-' };
+          const antVal = (mesAnt && mesAnt[m.campo] != null) ? String(mesAnt[m.campo]) : atual.mesAnt;
+          if (atual.atual !== '-' && _histNum_(atual.atual) !== mesRef[m.campo]) {
+            Logger.log('Dashboard: "' + m.chave + '" da aba DADOS (' + atual.atual +
+                       ') diverge da aba BACKLOG (' + mesRef[m.campo] + ') — usando o BACKLOG.');
+            sobrescritos.push({ chave: m.chave, dados: _histNum_(atual.atual), backlog: mesRef[m.campo] });
+          }
+          dataMap.set(m.chave, { atual: String(mesRef[m.campo]), mesAnt: antVal, anoAnt: atual.anoAnt });
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
+  }
+
+  return { map: dataMap, headers: headers, sobrescritos: sobrescritos };
 }
 
 

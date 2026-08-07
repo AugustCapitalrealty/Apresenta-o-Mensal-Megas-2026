@@ -466,17 +466,22 @@ function _rodarChecagensConsistencia_() {
   // planilhas diferentes com as mesmas duas linhas. O "geral" costuma bater
   // (o backlog pendentes concilia com a aba DADOS), mas o "facilities" é
   // digitado separado nas duas — é onde aparece defasagem.
-  _ckAdd_(L, G_BKGER, 'Chamados Geral: Dashboard x Backlog histórico', () => {
-    if (!histMes || histMes.geral == null || !dash) return null;
-    const v = _ckDash_(dash, 'chamados geral');
-    if (v == null) return null;
-    return { ok: v === histMes.geral, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(v) };
+  // O Dashboard já CORRIGE "Chamados geral"/"Chamados de facilities" pela
+  // aba BACKLOG (fonte autoritativa) — então comparar o valor exibido com o
+  // backlog seria sempre verdadeiro. O que interessa é o que a aba DADOS
+  // trazia ANTES da correção: `sobrescritos` guarda exatamente isso, pra
+  // avisar que a planilha de origem está desatualizada.
+  _ckAdd_(L, G_BKGER, 'Chamados Geral: aba DADOS x aba BACKLOG (origem)', () => {
+    if (!dash || !dash.sobrescritos) return null;
+    const s = dash.sobrescritos.find(x => _histNorm_(x.chave).indexOf('chamados geral') >= 0);
+    if (!s) return { ok: true, esperado: 'iguais', obtido: 'iguais' };
+    return { ok: false, esperado: _ckInt_(s.backlog), obtido: _ckInt_(s.dados) + ' (DADOS)' };
   });
-  _ckAdd_(L, G_BKGER, 'Chamados Facilities: Dashboard x Backlog histórico', () => {
-    if (!histMes || histMes.facilities == null || !dash) return null;
-    const v = _ckDash_(dash, 'chamados de facilities');
-    if (v == null) return null;
-    return { ok: v === histMes.facilities, esperado: _ckInt_(histMes.facilities), obtido: _ckInt_(v) };
+  _ckAdd_(L, G_BKGER, 'Chamados Facilities: aba DADOS x aba BACKLOG (origem)', () => {
+    if (!dash || !dash.sobrescritos) return null;
+    const s = dash.sobrescritos.find(x => _histNorm_(x.chave).indexOf('facilities') >= 0);
+    if (!s) return { ok: true, esperado: 'iguais', obtido: 'iguais' };
+    return { ok: false, esperado: _ckInt_(s.backlog), obtido: _ckInt_(s.dados) + ' (DADOS)' };
   });
   // O backlog de cliente de cada equipe é subconjunto do backlog TOTAL
   // daquela equipe (que inclui também os chamados do próprio condomínio).
