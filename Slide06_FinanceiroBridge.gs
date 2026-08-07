@@ -119,19 +119,26 @@ function obterDadosBridge() {
     });
   }
 
-  // ── Localiza linha TOTAL (ou soma tudo) ───────────────────────────────────
-  let vetor = null;
+  // ── Vetor de valores: SOMA DAS RUBRICAS (não a linha TOTAL) ───────────────
+  // FONTE ÚNICA do financeiro: o total exibido é sempre a soma das rubricas
+  // da própria aba, não a linha "TOTAL" dela. Motivo: no deck de julho/2026
+  // a linha TOTAL trazia R$ 2.192 a mais no mês (e no acumulado) do que a
+  // soma das suas próprias rubricas — e a soma é que bate com a aba
+  // FINANCEIRO/FINANCEIRO ANUAL (conferido rubrica a rubrica) e com a aba
+  // METRO QUADRADO no ano. Somando, o Bridge, o DRE e o Resultado
+  // Operacional passam a mostrar o MESMO número.
+  //
+  // A soma PARA na linha TOTAL (não a inclui): além de evitar contar tudo em
+  // dobro, algumas planilhas (ex.: Itajaí) trazem uma segunda tabela
+  // auxiliar logo depois dela, que não pertence às despesas — mesma regra
+  // de obterDadosDRE_ em 02_Dados.gs.
+  const vetor = new Array(hdr.length).fill(0);
+  let vetorTotalPlanilha = null;
   for (let r = hdrRow + 1; r < data.length; r++) {
-    if (normTxt(data[r][0]).includes('total')) { vetor = data[r]; break; }
-  }
-  if (!vetor) {
-    // soma todas as linhas com natureza preenchida
-    vetor = new Array(hdr.length).fill(0);
-    for (let r = hdrRow + 1; r < data.length; r++) {
-      if (!data[r][0]) continue;
-      for (let c = 1; c < data[r].length; c++) {
-        vetor[c] += typeof data[r][c] === 'number' ? data[r][c] : 0;
-      }
+    if (!data[r][0]) continue;
+    if (normTxt(data[r][0]).includes('total')) { vetorTotalPlanilha = data[r]; break; }
+    for (let c = 1; c < data[r].length; c++) {
+      vetor[c] += typeof data[r][c] === 'number' ? data[r][c] : 0;
     }
   }
 

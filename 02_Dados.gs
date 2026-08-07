@@ -1706,15 +1706,27 @@ function obterDadosDRE_() {
     // Empate (rubricas fora do mapa) desempata por nome, p/ ficar estável.
     rubricas.sort((a, b) => (a._ordem - b._ordem) || a.nome.localeCompare(b.nome, 'pt-BR'));
 
-    // TOTAL: linha da planilha se existir; senão soma das rubricas
-    if (!totalLinha) {
-      totalLinha = { mes: { orc: 0, real: 0 }, acum: { orc: 0, real: 0 }, anual: { orc: 0, real: 0 }, anualOrc: { orc: 0, real: 0 } };
-      rubricas.forEach(rb => {
-        ['mes', 'acum', 'anual', 'anualOrc'].forEach(k => {
-          totalLinha[k].orc += rb[k].orc; totalLinha[k].real += rb[k].real;
-        });
+    // TOTAL: SEMPRE a soma das rubricas, nunca a linha "TOTAL" da planilha.
+    //
+    // FONTE ÚNICA do financeiro: uma tabela cujo TOTAL não fecha com as
+    // próprias linhas se contradiz na cara do leitor. No deck de julho/2026
+    // a linha TOTAL da FINANCEIRO BRIDGE trazia R$ 2.192 a mais no mês e no
+    // acumulado do que a soma das suas rubricas — e é a SOMA que bate com
+    // duas fontes independentes: a aba FINANCEIRO/FINANCEIRO ANUAL (conferida
+    // rubrica a rubrica) e a aba METRO QUADRADO no ano. Somando, o DRE, o
+    // Bridge e o Resultado Operacional passam a mostrar o mesmo número.
+    //
+    // A linha da planilha continua sendo lida e devolvida em `totalPlanilha`
+    // — o slide de CHECK compara as duas e segue avisando quando a planilha
+    // de origem discorda (se ele comparasse o total já corrigido com a soma,
+    // a checagem viraria sempre verdadeira e esconderia o problema).
+    const totalPlanilha = totalLinha;
+    totalLinha = { mes: { orc: 0, real: 0 }, acum: { orc: 0, real: 0 }, anual: { orc: 0, real: 0 }, anualOrc: { orc: 0, real: 0 } };
+    rubricas.forEach(rb => {
+      ['mes', 'acum', 'anual', 'anualOrc'].forEach(k => {
+        totalLinha[k].orc += rb[k].orc; totalLinha[k].real += rb[k].real;
       });
-    }
+    });
 
     // ── ANO ANTERIOR (2025), na MESMA janela de cada bloco — aba "Financeiro
     // 2025" (opcional; mesma estrutura da FINANCEIRO BRIDGE). Sem ela, os
@@ -1738,7 +1750,8 @@ function obterDadosDRE_() {
       mesLabel : ref.curto + '/' + String(ref.ano).slice(-2),
       mesesAcum,
       rubricas,
-      total    : totalLinha
+      total         : totalLinha,      // soma das rubricas (o que o deck exibe)
+      totalPlanilha : totalPlanilha    // linha "TOTAL" crua da aba, só pro CHECK
     };
   } catch (e) {
     Logger.log('obterDadosDRE_: ' + e.message);

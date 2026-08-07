@@ -237,21 +237,18 @@ function _rodarChecagensConsistencia_() {
     const a = dre.total.acum.orc, b = finAcum.totalOrcado;
     return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a), obtido: _ckMil_(b) };
   });
-  // Coerência interna do DRE: a linha TOTAL tem que ser a soma das rubricas.
-  _ckAdd_(L, G_FIN, 'DRE: soma das rubricas = linha TOTAL (mês)', () => {
-    if (!dre) return null;
-    const soma = dre.rubricas.reduce((s, r) => s + r.mes.real, 0);
-    return { ok: _ckDinheiro_(dre.total.mes.real, soma), esperado: _ckMil_(dre.total.mes.real), obtido: _ckMil_(soma) };
-  });
-  _ckAdd_(L, G_FIN, 'DRE: soma das rubricas = linha TOTAL (acumulado)', () => {
-    if (!dre) return null;
-    const soma = dre.rubricas.reduce((s, r) => s + r.acum.real, 0);
-    return { ok: _ckDinheiro_(dre.total.acum.real, soma), esperado: _ckMil_(dre.total.acum.real), obtido: _ckMil_(soma) };
-  });
-  _ckAdd_(L, G_FIN, 'DRE: soma das rubricas = linha TOTAL (ano)', () => {
-    if (!dre) return null;
-    const soma = dre.rubricas.reduce((s, r) => s + r.anual.real, 0);
-    return { ok: _ckDinheiro_(dre.total.anual.real, soma), esperado: _ckMil_(dre.total.anual.real), obtido: _ckMil_(soma) };
+  // Coerência da planilha de origem: o deck já EXIBE a soma das rubricas
+  // (obterDadosDRE_ monta `total` somando), então comparar `total` com a
+  // soma seria sempre verdadeiro. O que vale checar é a linha "TOTAL" CRUA
+  // da aba (`totalPlanilha`): quando ela discorda da soma das próprias
+  // rubricas, há erro na planilha de origem que alguém precisa corrigir.
+  [['mês', 'mes'], ['acumulado', 'acum'], ['ano', 'anual']].forEach(par => {
+    _ckAdd_(L, G_FIN, 'Aba BRIDGE: linha TOTAL = soma das rubricas (' + par[0] + ')', () => {
+      if (!dre || !dre.totalPlanilha) return null;
+      const soma = dre.rubricas.reduce((s, r) => s + r[par[1]].real, 0);
+      const bruto = dre.totalPlanilha[par[1]].real;
+      return { ok: _ckDinheiro_(bruto, soma), esperado: _ckMil_(soma), obtido: _ckMil_(bruto) + ' (TOTAL)' };
+    });
   });
   // Rubrica a rubrica: isola SE a divergência está no total ou espalhada
   // pelas linhas. Se as rubricas batem e só o TOTAL não, o erro está na
