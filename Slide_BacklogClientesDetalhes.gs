@@ -198,7 +198,13 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   // próximo cliente (overlap com o divisor). CAPTION_H cobre o respiro +
   // o texto da legenda.
   const CAPTION_H = 12;
-  const DATA_W = 60, DIAS_W = 46, COL_GAP2 = 10, COL_GAP3 = 6;
+  // DATA_W/DIAS_W com folga pro pior caso (fonte no teto de 11pt): uma
+  // data "dd/mm/aa" tem sempre 8 caracteres — com DATA_W = 60 e fonte
+  // 10,5pt (fontSize-0.5), a capacidade real (_charsQueCabem_) cai pra 7 e
+  // a data quebra em 2 linhas ("04/02/2" / "6"). Alargar pra 68/52 garante
+  // margem mesmo no teto de fonte, tanto pra data (8 chars) quanto pra
+  // dias em aberto de chamados bem antigos (3+ dígitos, ex. "372d").
+  const DATA_W = 68, DIAS_W = 52, COL_GAP2 = 10, COL_GAP3 = 6;
 
   const descX  = x + 15 + LOGO_COL_W + LOGO_GAP;
   const descW  = (w - 30) - LOGO_COL_W - LOGO_GAP - DATA_W - COL_GAP2 - DIAS_W - COL_GAP3;

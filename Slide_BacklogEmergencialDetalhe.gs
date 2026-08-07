@@ -149,7 +149,10 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const EQUIPE_W = 88, EQUIPE_GAP = 14;
-  const DATA_W = 60, DIAS_W = 46, COL_GAP2 = 10, COL_GAP3 = 6;
+  // Mesma folga de Slide_BacklogClientesDetalhes.gs — ver o comentário lá
+  // pro porquê (uma data "dd/mm/aa" de 8 caracteres quebrava em 2 linhas
+  // no teto de fonte).
+  const DATA_W = 68, DIAS_W = 52, COL_GAP2 = 10, COL_GAP3 = 6;
   const descX = x + 15 + EQUIPE_W + EQUIPE_GAP;
   const descW = (w - 30) - EQUIPE_W - EQUIPE_GAP - DATA_W - COL_GAP2 - DIAS_W - COL_GAP3;
   const dataX = descX + descW + COL_GAP2;
