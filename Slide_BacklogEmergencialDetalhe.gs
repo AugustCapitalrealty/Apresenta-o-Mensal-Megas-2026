@@ -60,7 +60,12 @@ function gerarSlideBacklogEmergencialDetalhe() {
     criarHeaderPadrao(slide, 'BACKLOG EMERGENCIAL — DETALHE', subtitulo);
 
     _backlogEmergKPIs_(slide, marginX, topY, W - 2 * marginX, kpiH, dados);
-    _backlogEmergTabela_(slide, marginX, listaY, W - 2 * marginX, listaH, 'LISTA DE CHAMADOS EM ABERTO', dados.total, itensPagina, CORES.themeCorr);
+    // Tema geral do slide (borda do card, cabeçalho da tabela) em vermelho —
+    // "Emergencial" já é vermelho em todo o resto do deck (ver
+    // _PRIORIDADE_CORES_ em Slide_ChamadosPrioridade.gs). O azul/âmbar de
+    // Facilities/Property fica só nas células por equipe (_equipeCor_,
+    // usado nos KPIs de cima e na coluna EQUIPE da tabela) — não muda aqui.
+    _backlogEmergTabela_(slide, marginX, listaY, W - 2 * marginX, listaH, 'LISTA DE CHAMADOS EM ABERTO', dados.total, itensPagina, CORES.cardRed);
   });
 
   Logger.log('Slide Backlog Emergencial — Detalhe gerado — total=' + dados.total + ' em ' + paginas.length + ' página(s).');
