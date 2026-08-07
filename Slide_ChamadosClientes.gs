@@ -90,7 +90,8 @@ const _CLIENTE_APELIDOS_ = [
   { trecho: 'mercadolivre',   apelido: 'Mercado Livre' },
   { trecho: 'calamo',         apelido: 'Cálamo' },
   { trecho: 'boticario',      apelido: 'Boticário' },
-  { trecho: 'ntn rolamentos', apelido: 'NTN' }
+  { trecho: 'ntn rolamentos', apelido: 'NTN' },
+  { trecho: 'h p comercio',   apelido: 'HP' }
 ];
 
 function _clienteDisplay_(clienteCru) {

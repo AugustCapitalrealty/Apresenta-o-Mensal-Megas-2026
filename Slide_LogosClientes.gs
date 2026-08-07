@@ -30,7 +30,7 @@ const LOGOS_CLIENTES = {
   'Ativa':          '10-uTna_fhwqozMi8dvn-tzEJ6BhnfUo2',
   'Tornado':        '1Jxwe1oSRlDIR4-Qw0g5fOM_6zo1KHwUZ',
   'Bosch':          '1lh7-yq4HOFHWu6BI_we35khXldFATHg3',
-  'HP Trade':       '1LB8AfjJnZFHTKIWGfk0sDoMmZ-Fz_7SI',
+  'HP':             '1LB8AfjJnZFHTKIWGfk0sDoMmZ-Fz_7SI',
   'Damasio':        '1bDprE9vS940Pf04bGqb9OMqhJIypNveU',
   'Magalu':         '1R1NXo3r04uQQgKnEQUZoZZlBHh9HuiOU',
   'Magazine Luiza': '1R1NXo3r04uQQgKnEQUZoZZlBHh9HuiOU',
