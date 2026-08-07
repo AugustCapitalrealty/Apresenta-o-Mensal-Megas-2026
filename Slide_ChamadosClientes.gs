@@ -138,23 +138,10 @@ function _charsQueCabem_(w, fontSize) {
   return Math.max(8, Math.floor((w - TEXTBOX_INSET_PT * 2) / (fontSize * 0.62)));
 }
 
-// Altura-alvo do logo nas listas de chamados de cliente (Chamados de
-// Clientes e Backlog de Clientes) — ~15pt ≈ 0,53cm, calibrada no ajuste
-// manual que o usuário fez direto no Slides em vários logos (Bosch,
-// Shopee, Suzano, Sodexo, Veloz — todos entre 0,42cm e 0,6cm de altura).
-//
-// POR QUE A ALTURA É O EIXO FIXO (não a largura): os logos dos clientes
-// têm formatos bem diferentes — uns são "em linha" (marca larga e baixa,
-// tipo Sodexo) e outros "quadrados" (ícone empilhado sobre o texto, tipo
-// Veloz). Travar a LARGURA e deixar a altura livre (como a 1ª versão desta
-// correção fazia) dá altura diferente pra cada formato — os quadrados
-// saem mais altos que os em linha e desalinham com a linha de texto ao
-// lado. Travando a ALTURA em vez disso, todo logo ocupa exatamente essa
-// faixa vertical não importa o formato — só a largura varia (logo em
-// linha sai largo e curto, logo quadrado sai mais estreito), que é
-// justamente o que _insertLogoFit_ já faz ao receber uma caixa mais larga
-// que alta: a altura vira o fator limitante do "contain fit".
-const LOGO_H_ALVO_PT = 15;
+// Cor das linhas divisórias da "tabela" de clientes (cinza claro — divide
+// sem competir visualmente com texto/logo) — usada pelas listas de
+// Chamados de Clientes e Backlog de Clientes (_linhaTabela_, mesmo arquivo).
+const _TABELA_LINHA_COR_ = '#E2E8F0';
 
 // ── Card-resumo por Cliente: logo (ou nome) + quantidade, sem gráfico ─────
 // Com só 1-5 clientes por período (MAX_FATIAS em obterDadosChamadosClientes_)
@@ -206,7 +193,15 @@ function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema,
   });
 }
 
-// ── Card com a lista completa de chamados (Abertos ou Fechados) ───────────
+// ── Card com a lista completa de chamados, em formato de TABELA ──────────
+// Cabeçalho interno "CLIENTE | CHAMADOS", coluna do logo com largura fixa
+// separada por uma linha vertical, e uma linha horizontal fina fechando
+// cada linha da tabela — pedido do usuário depois de comparar com uma
+// referência real de tabela (colunas visíveis, logo "no quadrado dele").
+// Como o cliente agora tem sua própria coluna, cada chamado vira uma
+// linha simples "id - descrição" (sem repetir nome/contagem no meio do
+// texto) — o agrupamento visual passa a ser puramente a linha/coluna do
+// logo, não mais um prefixo de texto.
 function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', corTema);
   const listY = contentY + 2, listH = y + h - listY - 8;
@@ -217,14 +212,10 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   }
 
   // Mostra TODOS os chamados, sem cortar — e cada um detalhado (id +
-  // descrição). Cliente com mais de um chamado no período agrupa embaixo do
-  // nome uma vez só (em vez de repetir "Cliente - id - descrição" em cada
-  // linha), mas cada chamado do grupo continua com sua própria linha de
-  // detalhe — só o nome do cliente é que não se repete. A partir de 6
-  // GRUPOS divide em colunas (mesma ideia de _colunaTexto_/
+  // descrição), agrupados por Cliente na mesma linha/coluna de logo. A
+  // partir de 6 GRUPOS divide em colunas (mesma ideia de _colunaTexto_/
   // Slide02_Preventivas.gs) e o corpo do texto encolhe conforme a
-  // quantidade de LINHAS por coluna (não de grupos — um grupo com vários
-  // chamados ocupa várias linhas), até um mínimo ainda legível. Em meses
+  // quantidade de LINHAS por coluna, até um mínimo ainda legível. Em meses
   // muito cheios o texto pode encostar no rodapé do card (aceitável — o
   // que não pode é sumir chamado ou descrição da lista).
   const porCliente = {};
@@ -241,110 +232,115 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const porCol   = Math.ceil(grupos.length / cols);
   const LINE_PCT = 118;
 
-  // Linhas de cada grupo: 1 por chamado + 1 de cabeçalho extra só quando o
-  // grupo tem mais de 1 chamado (o cabeçalho do grupo de 1 chamado é a
-  // própria linha do chamado, não soma linha a mais).
-  const linhasGrupo = g => g.length === 1 ? 1 : g.length + 1;
+  // Cabeçalho "CLIENTE | CHAMADOS" repetido em cada coluna — como cada
+  // coluna vira sua própria mini-tabela lado a lado, repetir o cabeçalho é
+  // o mesmo padrão de tabelas com múltiplas colunas de continuação.
+  const HEADER_H = 14, HEADER_GAP = 6;
+  const linhasY = listY + HEADER_H + HEADER_GAP;
+  const linhasH = listH - HEADER_H - HEADER_GAP;
+
+  const linhasGrupo = g => g.length;
   let maxLinhasColuna = 0;
   for (let c = 0; c < cols; c++) {
     const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
     maxLinhasColuna = Math.max(maxLinhasColuna, fatia.reduce((s, g) => s + linhasGrupo(g), 0));
   }
 
-  let fontSize = Math.min(8, listH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
+  let fontSize = Math.min(8, linhasH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
   fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
-  const maxCliente = cols === 1 ? 22 : 16;
-  // LOGO_W é só o teto de largura pro "contain fit" (ver LOGO_H_ALVO_PT) —
-  // não a largura real de todo logo. Um logo bem largo/baixo pode chegar
-  // perto desse teto; um quadrado fica bem mais estreito.
-  const LOGO_W = 55, LOGO_GAP = 8;
+  const maxCliente = 16;
+  // Coluna do logo com largura e altura fixas — não é mais "o quanto o
+  // logo esticar", é o TAMANHO DO QUADRADO da célula (como na referência
+  // que o usuário mandou). _insertLogoFit_ centraliza a imagem dentro
+  // desse quadrado mantendo a proporção original.
+  const LOGO_COL_W = 58, LOGO_GAP = 12, LOGO_CELL_H = 26, MIN_ROW_H = 30;
 
-  // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
-  // medida que avança — não dá pra usar uma caixa só por coluna com texto
-  // corrido quando tem logo: o Slides não devolve a posição de cada linha
-  // renderizada dentro de uma caixa (não dá pra alinhar imagem com texto
-  // que flui sozinho), então a única forma de casar o logo com a linha
-  // certa é desenhar cada grupo numa caixa própria, numa posição calculada
-  // à mão (mesma matemática de altura de linha usada pra dimensionar a
-  // fonte acima). Cliente sem logo cadastrado cai no nome em texto de
-  // sempre (_getClienteLogoBlob_, Slide_LogosClientes.gs).
   for (let c = 0; c < cols; c++) {
     const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
     if (!fatia.length) continue;
 
     const colX = x + 15 + c * (colW + colGap);
-    let cursorY = listY;
+    const dividerX = colX + LOGO_COL_W + LOGO_GAP / 2;
+
+    // Cabeçalho da mini-tabela: faixa clara na cor do tema + rótulos, com
+    // uma linha mais forte separando do corpo (mesmo tom da linha
+    // vertical, só que horizontal).
+    const headerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, colX, listY, colW, HEADER_H);
+    headerBg.getFill().setSolidFill(corTema, 0.10);
+    headerBg.getBorder().setTransparent();
+    _sTxt(slide, colX, listY, LOGO_COL_W, HEADER_H, 'CLIENTE', 6.5, true, corTema, 'center');
+    _sTxt(slide, colX + LOGO_COL_W + LOGO_GAP, listY, colW - LOGO_COL_W - LOGO_GAP, HEADER_H, 'DESCRIÇÃO', 6.5, true, corTema, 'left');
+    _linhaTabela_(slide, colX, listY + HEADER_H, colW, corTema, 1);
+
+    let cursorY = linhasY;
 
     fatia.forEach(grupo => {
+      const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H);
+
       // Casa pelo apelido de exibição, não pelo nome cru da planilha — o
       // mapa de logos (Slide_LogosClientes.gs) usa nomes informais tipo
       // "Shopee", que não aparecem como substring na razão social "SHPX
       // LOGÍSTICA LTDA". _clienteDisplay_ já resolve essa distância.
-      const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
-      // Grupo com logo precisa de no mínimo LOGO_H_ALVO_PT de altura pra
-      // caber o logo sem estourar pro bloco seguinte — num grupo de 1
-      // chamado só (rowH = 1 linha), o texto sozinho não precisaria de
-      // tanto espaço, mas o logo precisa.
-      const rowH = Math.max(linhasGrupo(grupo) * lineH, logoBlob ? LOGO_H_ALVO_PT + TEXTBOX_INSET_PT : 0);
-      let textX = colX, textW = colW;
+      const nomeDisplay = _clienteDisplay_(grupo[0].cliente);
+      const logoBlob = _getClienteLogoBlob_(nomeDisplay);
+      const logoY = cursorY + (rowH - LOGO_CELL_H) / 2;
+      let logoOk = false;
       if (logoBlob) {
-        try {
-          // Altura travada em LOGO_H_ALVO_PT (não em rowH) — ver
-          // LOGO_H_ALVO_PT pro porquê da altura ser o eixo fixo em vez da
-          // largura. O deslocamento de TEXTBOX_INSET_PT compensa a margem
-          // interna da caixa de texto ao lado, pra casar com a 1ª linha.
-          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, LOGO_H_ALVO_PT);
-          textX = colX + LOGO_W + LOGO_GAP;
-          textW = colW - LOGO_W - LOGO_GAP;
-        } catch (e) {
-          Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
-        }
+        try { _insertLogoFit_(slide, logoBlob, colX, logoY, LOGO_COL_W, LOGO_CELL_H); logoOk = true; }
+        catch (e) { Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message); }
       }
+      if (!logoOk) {
+        _sTxt(slide, colX, logoY, LOGO_COL_W, LOGO_CELL_H, _truncarNome_(nomeDisplay, maxCliente), 7.5, true, corTema, 'center');
+      }
+      if (grupo.length > 1) {
+        _sTxt(slide, colX, logoY + LOGO_CELL_H + 1, LOGO_COL_W, 9, '(' + grupo.length + ')', 6.5, false, CORES.textGray, 'center');
+      }
+
+      const textX = colX + LOGO_COL_W + LOGO_GAP, textW = colW - LOGO_COL_W - LOGO_GAP;
       // Orçamento de caracteres por LINHA, descontando o prefixo de cada
-      // uma (bullet/indentação + id + separador). Cada chamado tem que
-      // caber numa linha só, senão a quebra desalinha os logos seguintes —
-      // ver o comentário de _charsQueCabem_.
+      // uma (bullet + id + separador). Cada chamado tem que caber numa
+      // linha só, senão a quebra empurra o resto da coluna — ver o
+      // comentário de _charsQueCabem_.
       const capacidadeLinha = _charsQueCabem_(textW, fontSize);
 
       const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
       const tr = box.getText();
       tr.setText('');
-
-      if (grupo.length === 1) {
-        const bullet = tr.appendText('• ');
-        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const nomeTxt = logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ';
-        if (nomeTxt) {
-          const cliPart = tr.appendText(nomeTxt);
-          cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-        }
-        const idPart = tr.appendText(grupo[0].id + ' - ');
+      grupo.forEach((it, i) => {
+        const idPart = tr.appendText((i > 0 ? '\n' : '') + '• ' + it.id + ' - ');
         idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-        const maxDesc = Math.max(12, capacidadeLinha - 2 - nomeTxt.length - grupo[0].id.length - 3);
-        const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc));
+        // Piso baixo (4, não 12): numa coluna bem estreita (2 colunas + célula
+        // de logo fixa) capacidadeLinha pode ficar pequena — um piso alto
+        // forçaria mais texto do que cabe de verdade, quebrando a linha e
+        // desalinhando o resto da coluna (ver _charsQueCabem_).
+        const maxDesc = Math.max(4, capacidadeLinha - 3 - it.id.length - 3);
+        const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc));
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-      } else {
-        const bullet = tr.appendText('• ');
-        bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        const rotulo = (logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' ') + '(' + grupo.length + ')\n';
-        const cliPart = tr.appendText(rotulo);
-        cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
-        grupo.forEach(it => {
-          const idPart = tr.appendText('   ' + it.id + ' - ');
-          idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-          const maxDesc = Math.max(12, capacidadeLinha - 3 - it.id.length - 3);
-          const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
-          descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
-        });
-      }
+      });
 
       tr.getParagraphStyle().setLineSpacing(LINE_PCT);
-      box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+      box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       cursorY += rowH;
+      _linhaTabela_(slide, colX, cursorY, colW, _TABELA_LINHA_COR_, 0.75);
     });
+
+    // Linha vertical separando a coluna do logo da coluna dos chamados,
+    // atravessando cabeçalho + todas as linhas da coluna.
+    const divisor = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, dividerX, listY, 0.75, cursorY - listY);
+    divisor.getFill().setSolidFill(_TABELA_LINHA_COR_);
+    divisor.getBorder().setTransparent();
   }
+}
+
+// Linha horizontal fina — separa o cabeçalho do corpo ou uma linha da
+// próxima na "tabela" de clientes (Chamados de Clientes / Backlog de
+// Clientes — Detalhe).
+function _linhaTabela_(slide, x, y, w, cor, altura) {
+  const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, altura);
+  linha.getFill().setSolidFill(cor);
+  linha.getBorder().setTransparent();
 }
 
 
