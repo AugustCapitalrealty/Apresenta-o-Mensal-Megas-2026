@@ -53,17 +53,29 @@ function _dreSomarCategoria_(itens) {
   return blocos;
 }
 
-// Converte a linha TOTAL (R$) numa linha equivalente em R$/m², dividindo
-// cada bloco pela área do empreendimento (obterAreaM2_, 02_Dados.gs — área
-// derivada do Custo M² e tratada como aproximadamente constante ano a
-// ano). Mesmo formato { mes, acum, anual, anualOrc, aaMes, aaAcum, aaAno }
-// da linha original, então reaproveita o mesmo desenho de blocos/variação.
-function _dreValoresPorM2_(b, area) {
-  const divBloco = bl => ({ orc: bl.orc / area, real: bl.real / area });
-  const divAA = v => (v == null ? null : v / area);
+// Converte uma linha (TOTAL ou subtotal de CATEGORIA) em R$ numa linha
+// equivalente em R$/m², dividindo cada bloco pela área do empreendimento
+// (obterAreaM2_, 02_Dados.gs) E pelo número de meses que o bloco soma —
+// senão MÊS sai numa escala (1 mês) e ACUMULADO/ANO saem em outra (N
+// meses somados), o que parecia "errado"/instável comparado lado a lado.
+// Todos os blocos viram a MESMA leitura: R$/m² MÉDIO POR MÊS.
+//   MÊS      → já é 1 mês, não divide por nada além da área.
+//   ACUMULADO→ divide também por mesesAcum (Jan..mês de referência).
+//   ANO      → divide também por 12 (ano completo, realizado + ritmo/orçado).
+// Mesmo formato { mes, acum, anual, anualOrc, aaMes, aaAcum, aaAno } da
+// linha original, então reaproveita o mesmo desenho de blocos/variação.
+function _dreValoresPorM2_(b, area, mesesAcum) {
+  const div = (v, meses) => v / area / meses;
+  const divBloco = (bl, meses) => ({ orc: div(bl.orc, meses), real: div(bl.real, meses) });
+  const divAA = (v, meses) => (v == null ? null : v / area / meses);
   return {
-    mes: divBloco(b.mes), acum: divBloco(b.acum), anual: divBloco(b.anual), anualOrc: divBloco(b.anualOrc),
-    aaMes: divAA(b.aaMes), aaAcum: divAA(b.aaAcum), aaAno: divAA(b.aaAno)
+    mes:      divBloco(b.mes, 1),
+    acum:     divBloco(b.acum, mesesAcum),
+    anual:    divBloco(b.anual, 12),
+    anualOrc: divBloco(b.anualOrc, 12),
+    aaMes:  divAA(b.aaMes, 1),
+    aaAcum: divAA(b.aaAcum, mesesAcum),
+    aaAno:  divAA(b.aaAno, 12)
   };
 }
 
@@ -88,7 +100,8 @@ function _gerarSlideDRE_(modo) {
   const DS = CR_DESIGN_SYSTEM;
 
   // Cores das linhas de hierarquia
-  const CINZA_CATEGORIA = '#475569';   // subtotal de categoria (destoa do azul)
+  const CINZA_CATEGORIA    = '#475569';   // subtotal de categoria (destoa do azul)
+  const CINZA_CATEGORIA_M2 = '#64748B';   // subtotal de categoria em R$/m² (mesma família, mais claro)
   const COR_FUTURO      = DS.colors.brandLight;   // bloco da projeção anual
   // Vermelho/verde DESSATURADOS: a tabela tem ~90 variações coloridas e o tom
   // saturado (#DC2626/#166534) pesava demais na leitura. Estes mantêm o
@@ -185,20 +198,32 @@ function _gerarSlideDRE_(modo) {
   // ── Linhas: TOTAL, depois cada CATEGORIA (subtotal) com suas rubricas ─────
   // Ordem fixa: obterDadosDRE_ já entrega as rubricas na ordem do mapa.
   const linhas = [{ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', b: d.total }];
-  // Linha extra logo abaixo do TOTAL, em R$/m² — "upgrade" pedido pelo
-  // usuário: mesma leitura (Meta/Real/2025/Δ%, nos 3 blocos), só que por m²
-  // em vez de R$ mil, pra comparar eficiência independente do tamanho do
-  // portfólio. Sem obterAreaM2_() (falta Custo M² ou Financeiro Mensal), a
-  // linha simplesmente não aparece — nunca quebra a geração.
+  // Linha extra logo abaixo do TOTAL (e uma por CATEGORIA, ver abaixo), em
+  // R$/m² — "upgrade" pedido pelo usuário: mesma leitura de Meta/Real/2025
+  // nos 3 blocos, só que por m² em vez de R$ mil, pra comparar eficiência
+  // independente do tamanho do portfólio. As colunas Δ% NÃO se repetem
+  // aqui — são idênticas às da linha em R$ (dividir os dois lados de uma
+  // razão pela mesma constante não muda o resultado), então ficariam só
+  // redundantes (ver desenharVar/ehLinhaM2 mais abaixo). Sem obterAreaM2_()
+  // (falta Custo M² ou Financeiro Mensal), nenhuma linha de m² aparece —
+  // nunca quebra a geração.
   const areaM2 = obterAreaM2_();
   if (areaM2) {
-    linhas.push({ tipo: 'total_m2', nome: 'DESPESAS OPERACIONAIS (R$/M²)', b: _dreValoresPorM2_(d.total, areaM2) });
+    linhas.push({ tipo: 'total_m2', nome: 'DESPESAS OPERACIONAIS (R$/M²)', b: _dreValoresPorM2_(d.total, areaM2, d.mesesAcum) });
   }
   const ordemCategorias = DRE_CATEGORIAS.map(c => c.nome).concat(['Outras Despesas']);
   ordemCategorias.forEach(nomeCat => {
     const doCat = d.rubricas.filter(r => r.categoria === nomeCat);
     if (!doCat.length) return;
-    linhas.push({ tipo: 'categoria', nome: nomeCat, b: _dreSomarCategoria_(doCat) });
+    const somaCat = _dreSomarCategoria_(doCat);
+    linhas.push({ tipo: 'categoria', nome: nomeCat, b: somaCat });
+    // Rótulo curto ("R$/M²", não o nome da categoria repetido) — categorias
+    // como "DESPESAS COM PESSOAL E ADMINISTRATIVAS" já ocupam quase toda a
+    // largura da coluna de rubrica; repetir o nome + sufixo estouraria e
+    // truncaria bem o "(R$/M²)" que é a parte que importa identificar.
+    if (areaM2) {
+      linhas.push({ tipo: 'categoria_m2', nome: 'R$/M²', b: _dreValoresPorM2_(somaCat, areaM2, d.mesesAcum) });
+    }
     doCat.forEach(r => linhas.push({ tipo: 'item', nome: r.nome, b: r }));
   });
 
@@ -291,19 +316,26 @@ function _gerarSlideDRE_(modo) {
                    // não é bagunçada pelas linhas de TOTAL/subtotal no meio.
   linhas.forEach((l, r) => {
     const ry = tY + r * rowH;
-    const ehTotal     = l.tipo === 'total';
-    const ehTotalM2   = l.tipo === 'total_m2';
-    const ehCategoria = l.tipo === 'categoria';
-    const resumo      = ehTotal || ehCategoria || ehTotalM2;   // linhas de fundo escuro
+    const ehTotal       = l.tipo === 'total';
+    const ehTotalM2     = l.tipo === 'total_m2';
+    const ehCategoria   = l.tipo === 'categoria';
+    const ehCategoriaM2 = l.tipo === 'categoria_m2';
+    const ehLinhaM2     = ehTotalM2 || ehCategoriaM2;   // Δ% não se repete nessas (ver comentário acima)
+    const resumo        = ehTotal || ehCategoria || ehLinhaM2;   // linhas de fundo escuro
 
     // Fundo: TOTAL azul escuro, TOTAL R$/m² azul médio (relacionado mas
-    // distinto — é o mesmo total, só que por m²), categoria cinza, itens em
+    // distinto — é o mesmo total, só que por m²), categoria cinza,
+    // categoria R$/m² num cinza mais claro (mesma relação), itens em
     // zebra. Nos itens, a faixa das 5 colunas da projeção sai levemente
     // azulada — banda de cor que percorre a tabela inteira marcando "isto é
     // futuro".
     if (resumo) {
       const z = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH);
-      z.getFill().setSolidFill(ehTotal ? DS.colors.brandDark : (ehTotalM2 ? DS.colors.brandMed : CINZA_CATEGORIA));
+      let bgCor = CINZA_CATEGORIA;
+      if (ehTotal) bgCor = DS.colors.brandDark;
+      else if (ehTotalM2) bgCor = DS.colors.brandMed;
+      else if (ehCategoriaM2) bgCor = CINZA_CATEGORIA_M2;
+      z.getFill().setSolidFill(bgCor);
       z.getBorder().setTransparent();
       if (ehCategoria) zebra = 0;
     } else {
@@ -323,10 +355,10 @@ function _gerarSlideDRE_(modo) {
     // para o nome completo caber em uma linha ("DESPESAS COM PESSOAL E
     // ADMINISTRATIVAS" não cabia e quebrava/cortava). Texto alinhado à
     // esquerda → a folga vai só para a DIREITA, senão o texto "anda".
-    const fsLinha = (ehCategoria || ehTotalM2) ? Math.min(fs, 6.3) : fs;
-    const indent  = l.tipo === 'item' ? 12 : 4;
+    const fsLinha = (ehCategoria || ehLinhaM2) ? Math.min(fs, 6.3) : fs;
+    const indent  = l.tipo === 'item' ? 12 : (ehCategoriaM2 ? 8 : 4);
     const larguraVisual = rubricaW - 4 - indent;
-    let nome = ehCategoria ? l.nome.toUpperCase() : l.nome;
+    let nome = (ehCategoria || ehCategoriaM2) ? l.nome.toUpperCase() : l.nome;
     // 0,62 em/char é a medida real do Montserrat/Open Sans em CAIXA ALTA
     // negrito (0,58 subestimava e deixava o texto passar da coluna, indo
     // parar embaixo do separador vertical).
@@ -349,7 +381,7 @@ function _gerarSlideDRE_(modo) {
         // Primeiro os VALORES (Meta | Real | 2025), depois as VARIAÇÕES.
         // Linha R$/m² usa o formatador com 2 casas (porM2) — as demais
         // continuam em R$ mil arredondado (mil).
-        const valFmt = ehTotalM2 ? porM2 : mil;
+        const valFmt = ehLinhaM2 ? porM2 : mil;
         const valores = [
           { txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
           { txt: valFmt(bl.real), cor: corBase,                             bold: true   },
@@ -368,9 +400,14 @@ function _gerarSlideDRE_(modo) {
           t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
         });
 
-        // Variações (seta ancorada + número à direita)
-        desenharVar(vsMeta, colX(c0 + 3), ry, colW(c0 + 3) - 1, resumo);
-        desenharVar(vs25,   colX(c0 + 4), ry, colW(c0 + 4) - 1, resumo);
+        // Variações (seta ancorada + número à direita) — as linhas em R$/m²
+        // NÃO repetem: dividir os dois lados de uma razão pela mesma
+        // constante (área, meses) não muda o resultado, então a % é
+        // idêntica à da linha em R$ logo acima (pedido do usuário).
+        if (!ehLinhaM2) {
+          desenharVar(vsMeta, colX(c0 + 3), ry, colW(c0 + 3) - 1, resumo);
+          desenharVar(vs25,   colX(c0 + 4), ry, colW(c0 + 4) - 1, resumo);
+        }
       });
   });
 
