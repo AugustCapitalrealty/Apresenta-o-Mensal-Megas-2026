@@ -72,6 +72,7 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Chamados de Clientes',                fn: gerarSlideChamadosClientes },
     { nome: 'Backlog Emergencial — Detalhe',       fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Backlog de Clientes — Detalhe',       fn: gerarSlideBacklogClientesDetalhes },
+    { nome: 'Backlog de Clientes — Operação',      fn: gerarSlideBacklogClientesOperacao },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },

@@ -92,6 +92,13 @@ const FOTOS_SECAO = {
 // gravados automaticamente (que podiam sair errados). Ver Suporte_RegistroDados.gs.
 const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 
+// Planilha "BASE DE DADOS — QUADRO REM" — aba BD-CORRETIVAS, histórico bruto
+// de TODOS os chamados corretivos desde 2021 (multi-empreendimento, não só
+// os 3 Megas). Fonte pro Backlog de Clientes — Operação (chamados de
+// cliente que NÃO são responsabilidade do locatário) — ver 02_Dados.gs,
+// _lerBdCorretivasChamadosClientes_.
+const BD_CORRETIVAS_ID = '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo';
+
 // Planilha do sistema irmão "Gestão à Vista TV" — já mantém a aba METAS
 // (Mega | Papel | Título | Descrição | Pontos | ...) todo mês para os
 // painéis de TV. O slide de Metas lê direto daqui: nada novo para

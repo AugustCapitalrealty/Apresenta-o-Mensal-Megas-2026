@@ -69,7 +69,7 @@ function gerarSlideBacklogClientesDetalhes() {
     criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — DETALHE', subtitulo);
 
     _backlogClientesTabela_(slide, marginX, topY, W - 2 * marginX, listaH, 'PENDÊNCIAS EM ABERTO', dados.total, grupoDaPagina, CORES.lightBlue, coresMapa);
-    _backlogClientesBadgeLocatario_(slide, marginX, topY, W - 2 * marginX);
+    _backlogClientesBadge_(slide, marginX, topY, W - 2 * marginX, 'RESPONSABILIDADE DO LOCATÁRIO', CORES.themeCorr);
   });
 
   Logger.log('Slide Backlog de Clientes — Detalhe gerado — total=' + dados.total + ' em ' + paginas.length + ' página(s).');
@@ -110,18 +110,19 @@ function _paginarGruposBacklog_(grupos, listaH) {
   return paginas;
 }
 
-// Chip "RESPONSABILIDADE DO LOCATÁRIO" no canto do card — o assunto do
-// slide (backlog que depende do cliente agir, não da operação) precisa
-// ficar óbvio batendo o olho, não só no subtítulo pequeno do cabeçalho.
-function _backlogClientesBadgeLocatario_(slide, x, y, w) {
+// Chip no canto do card avisando de quem é a responsabilidade do backlog
+// (locatário ou operação) — precisa ficar óbvio batendo o olho, não só no
+// subtítulo pequeno do cabeçalho. Reaproveitado por
+// Slide_BacklogClientesOperacao.gs (mesmo padrão visual, texto/cor mudam).
+function _backlogClientesBadge_(slide, x, y, w, texto, cor) {
   const chipW = 220, chipH = 16, chipX = x + w - chipW - 14, chipY = y + 9;
   const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, chipX, chipY, chipW, chipH);
-  bg.getFill().setSolidFill(CORES.themeCorr, 0.15);
+  bg.getFill().setSolidFill(cor, 0.15);
   bg.getBorder().setTransparent();
   const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, chipX, chipY, chipW, chipH);
   txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  txt.getText().setText('RESPONSABILIDADE DO LOCATÁRIO').getTextStyle()
-    .setFontSize(7).setBold(true).setForegroundColor(CORES.themeCorr).setFontFamily('Montserrat');
+  txt.getText().setText(texto).getTextStyle()
+    .setFontSize(7).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
   txt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 

@@ -2702,6 +2702,13 @@ function _histParseDataHora_(v) {
   if (m) {
     return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)));
   }
+
+  // BD-CORRETIVAS (planilha BASE DE DADOS — QUADRO REM) traz "Data de
+  // reporte"/"Fechado em" em formato ISO "AAAA-MM-DD HH:MM:SS".
+  const iso = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (iso) {
+    return new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3], +(iso[4] || 0), +(iso[5] || 0), +(iso[6] || 0)));
+  }
   return null;
 }
 
@@ -2917,4 +2924,182 @@ function obterDadosBacklogClientesDetalhes_() {
     .map(c => ({ id: c.id, cliente: c.cliente, descricao: c.descricao, dataReporte: c.dataReporte, diasAberto: c.diasAberto }));
 
   return { total: semCondominio.length, fatias: fatias, lista: lista };
+}
+
+
+// ==========================================
+// BACKLOG DE CLIENTES — OPERAÇÃO — aba "BD-CORRETIVAS" da planilha BASE DE
+// DADOS — QUADRO REM (BD_CORRETIVAS_ID, histórico bruto desde 2021,
+// multi-empreendimento). Complementar ao Backlog de Clientes — Detalhe
+// acima (que é só responsabilidade do LOCATÁRIO): aqui é o backlog de
+// chamados de cliente que são responsabilidade DA OPERAÇÃO — todo chamado
+// de cliente em aberto no mês de referência, MENOS os marcados como
+// responsabilidade do locatário. Ver Slide_BacklogClientesOperacao.gs.
+// ==========================================
+
+// Mapa NOME → EQUIPE (PROPERTY/FACILITIES/OPERACAO) dos responsáveis que
+// aparecem na coluna "Responsáveis" do BD-CORRETIVAS (lista separada por
+// vírgula, pode ter mais de um nome no mesmo chamado). Chave normalizada
+// (_histNorm_) pra casar com/sem acento e maiúscula/minúscula.
+const _RESPONSAVEL_EQUIPE_ = (function () {
+  const bruto = {
+    PROPERTY: [
+      'Jonatas Augusto Ferreira', 'Matheus Ferreira Rompa', 'Luiz Guilherme Bernart',
+      'Nicolly Correa Branco', 'Ivan Fuscolin Neto', 'Jéssica Garcia de Holanda',
+      'Coordenação Propriedades', 'Lucas Beltrao Carneiro Santos', 'Ricardo Murilo da Silva',
+      'Analista de Propriedades II', 'Fernando Cesar Iurk', 'Cleverson Boeno Moro',
+      'Daniel Moreira', 'Pedro Henrique Dinalli Fidalgo', 'Wilson Francisco Leffer Junior'
+    ],
+    FACILITIES: [
+      'Guilherme Heck', 'Henrique Augusto Lobo', 'Jessé J. Do Prado', 'Jessé Jandir do Prado',
+      'José Ernesto', 'Leandro Genoveski', 'MEGA Curitiba', 'Mega Esteio', 'Mega Itajaí',
+      'Rodrigo Habitzreuter', 'Paulo Augusto Maximiano', 'Dionatan Rek'
+    ],
+    OPERACAO: [
+      'Gerente Hangar', 'Leonardo Casagrande', 'Mariana Lucia Fernandes Rodrigues',
+      'Motorista', 'Motoristas', 'Anderson Matheus Da Cunha', 'Ariel Glisczeski Barbosa',
+      "Sergio Sivonei Sant'ana"
+    ]
+  };
+  const mapa = {};
+  Object.keys(bruto).forEach(equipe => bruto[equipe].forEach(nome => { mapa[_histNorm_(nome)] = equipe; }));
+  return mapa;
+})();
+
+// "Responsabilidade Locatario" aparece como um item A MAIS dentro da
+// própria lista de Responsáveis (mesmo padrão de placeholder que
+// "Disponivel") — quando presente, PREVALECE sobre a equipe (mesmo que
+// PROPERTY também esteja na lista): o chamado é do locatário, não da
+// operação.
+function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
+  return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0;
+}
+
+// Resolve a equipe responsável por um chamado a partir do texto bruto da
+// coluna "Responsáveis" (lista separada por vírgula). Prioridade: 1) marca
+// de responsabilidade do locatário (ver acima) → 'LOCATARIO'; 2) PROPERTY
+// vence se qualquer nome da lista for PROPERTY (regra combinada do
+// usuário: "quem vai prevalecer é Property"); 3) senão FACILITIES; 4)
+// senão OPERACAO; 5) '' se nenhum nome reconhecido.
+function _resolverEquipeResponsaveis_(responsaveisTxt) {
+  if (_chamadoResponsabilidadeLocatario_(responsaveisTxt)) return 'LOCATARIO';
+  const equipes = String(responsaveisTxt || '').split(',')
+    .map(n => _RESPONSAVEL_EQUIPE_[_histNorm_(n)])
+    .filter(Boolean);
+  if (equipes.indexOf('PROPERTY') >= 0) return 'PROPERTY';
+  if (equipes.indexOf('FACILITIES') >= 0) return 'FACILITIES';
+  if (equipes.indexOf('OPERACAO') >= 0) return 'OPERACAO';
+  return '';
+}
+
+// BD-CORRETIVAS traz "Id chamado" formatado como número decimal brasileiro
+// (ex.: "2.490.644,00", coluna com formatação de moeda por engano na
+// planilha de origem) — normaliza pro mesmo formato de dígitos puros
+// ("2490644") usado no resto do deck/das outras abas.
+function _idChamadoNormaliza_(v) {
+  const txt = String(v || '').trim();
+  if (!txt) return '';
+  const n = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? txt.replace(/\D/g, '') : String(Math.round(n));
+}
+
+function _abaBdCorretivas_(ss) {
+  let sheet = ss.getSheetByName('BD-CORRETIVAS');
+  if (!sheet) {
+    sheet = ss.getSheets().find(s => _histNorm_(s.getName()).replace(/\s+/g, '-').indexOf('bd-corretivas') >= 0);
+  }
+  return sheet || null;
+}
+
+// Lê a aba BD-CORRETIVAS filtrando por Centro de Custos do empreendimento
+// ativo, chamados de CLIENTE de verdade (exclui "CONDOMÍNIO MEGA
+// <CIDADE>" — mesma regra de _ehCondominio_), em aberto no mês de
+// referência (_histAbertoNoMes_), e que NÃO sejam responsabilidade do
+// locatário (_chamadoResponsabilidadeLocatario_ na coluna Responsáveis) —
+// esses já têm slide próprio (Slide_BacklogClientesDetalhes.gs).
+function _lerBdCorretivasChamadosClientes_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _abaBdCorretivas_(ss);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr      = data[0].map(_histNorm_);
+    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
+    const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
+    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0);
+    if (cId < 0 || cCC < 0 || cCliente < 0) return [];
+
+    const ref    = obterMesReferencia_();
+    const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+    const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+
+      const cliente = String(row[cCliente] || '').trim();
+      if (!cliente || _ehCondominio_(cliente)) continue;
+
+      const responsaveis = cResp >= 0 ? row[cResp] : '';
+      if (_chamadoResponsabilidadeLocatario_(responsaveis)) continue;   // é do locatário, não da operação
+
+      const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
+      const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
+      const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
+      if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
+
+      saida.push({
+        id:          _idChamadoNormaliza_(row[cId]),
+        cliente:     cliente,
+        descricao:   cDesc >= 0 ? String(row[cDesc] || '').trim() : '',
+        dataReporte: _histFormatarDataCurta_(dtReporte),
+        diasAberto:  _histDiasAberto_(dtReporte, refFim),
+        equipe:      _resolverEquipeResponsaveis_(responsaveis)
+      });
+    }
+    return saida;
+  } catch (e) {
+    Logger.log('_lerBdCorretivasChamadosClientes_: ' + e.message);
+    return [];
+  }
+}
+
+// Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao,dataReporte,diasAberto,equipe}] }
+// ou null se a aba estiver vazia/ausente ou sem nenhum chamado de cliente
+// (não-locatário) em aberto no mês de referência pro empreendimento ativo.
+// Mesmo formato de obterDadosBacklogClientesDetalhes_ — dá pra reaproveitar
+// o mesmo desenho de tabela/paginação (Slide_BacklogClientesDetalhes.gs).
+function obterDadosBacklogClientesOperacao_() {
+  const itens = _lerBdCorretivasChamadosClientes_();
+  if (!itens.length) return null;
+
+  const MAX_FATIAS = 5;
+  const porCliente = {};
+  itens.forEach(c => { porCliente[c.cliente] = (porCliente[c.cliente] || 0) + 1; });
+  const ranked = Object.keys(porCliente)
+    .map(cli => ({ label: cli, qtd: porCliente[cli] }))
+    .sort((a, b) => b.qtd - a.qtd);
+
+  let fatias = ranked;
+  if (ranked.length > MAX_FATIAS) {
+    const top = ranked.slice(0, MAX_FATIAS - 1);
+    const restoQtd = ranked.slice(MAX_FATIAS - 1).reduce((s, f) => s + f.qtd, 0);
+    fatias = top.concat([{ label: 'Outros', qtd: restoQtd }]);
+  }
+
+  const lista = itens
+    .slice()
+    .sort((a, b) => a.cliente.localeCompare(b.cliente, 'pt-BR') || a.id.localeCompare(b.id));
+
+  return { total: itens.length, fatias: fatias, lista: lista };
 }
