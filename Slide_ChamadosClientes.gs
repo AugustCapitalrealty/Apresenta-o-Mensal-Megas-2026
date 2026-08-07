@@ -138,6 +138,24 @@ function _charsQueCabem_(w, fontSize) {
   return Math.max(8, Math.floor((w - TEXTBOX_INSET_PT * 2) / (fontSize * 0.62)));
 }
 
+// Altura-alvo do logo nas listas de chamados de cliente (Chamados de
+// Clientes e Backlog de Clientes) — ~15pt ≈ 0,53cm, calibrada no ajuste
+// manual que o usuário fez direto no Slides em vários logos (Bosch,
+// Shopee, Suzano, Sodexo, Veloz — todos entre 0,42cm e 0,6cm de altura).
+//
+// POR QUE A ALTURA É O EIXO FIXO (não a largura): os logos dos clientes
+// têm formatos bem diferentes — uns são "em linha" (marca larga e baixa,
+// tipo Sodexo) e outros "quadrados" (ícone empilhado sobre o texto, tipo
+// Veloz). Travar a LARGURA e deixar a altura livre (como a 1ª versão desta
+// correção fazia) dá altura diferente pra cada formato — os quadrados
+// saem mais altos que os em linha e desalinham com a linha de texto ao
+// lado. Travando a ALTURA em vez disso, todo logo ocupa exatamente essa
+// faixa vertical não importa o formato — só a largura varia (logo em
+// linha sai largo e curto, logo quadrado sai mais estreito), que é
+// justamente o que _insertLogoFit_ já faz ao receber uma caixa mais larga
+// que alta: a altura vira o fator limitante do "contain fit".
+const LOGO_H_ALVO_PT = 15;
+
 // ── Card-resumo por Cliente: logo (ou nome) + quantidade, sem gráfico ─────
 // Com só 1-5 clientes por período (MAX_FATIAS em obterDadosChamadosClientes_)
 // uma barra/pizza não ajuda a leitura — um "tile" por cliente com o logo
@@ -238,16 +256,10 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = cols === 1 ? 22 : 16;
-  // LOGO_W ~53pt (1,87cm) veio do ajuste manual que o usuário fez direto no
-  // Slides pra comparar — mediu a mesma largura em 3 logos diferentes
-  // (Bosch/Shopee/Suzano) e deixou a altura livre pra acompanhar a
-  // proporção de cada imagem. LOGO_H_MAX limita essa altura a ~2 linhas:
-  // sem o teto, um grupo com vários chamados (ex.: Suzano com 4) dava um
-  // rowH alto e _insertLogoFit_ centralizava o logo no meio do bloco
-  // inteiro (logo "flutuando" longe do nome, sem relação visual com o
-  // texto). Com o teto, o logo fica compacto e colado no topo do grupo —
-  // exatamente como no ajuste manual de referência.
-  const LOGO_W = 52, LOGO_GAP = 8;
+  // LOGO_W é só o teto de largura pro "contain fit" (ver LOGO_H_ALVO_PT) —
+  // não a largura real de todo logo. Um logo bem largo/baixo pode chegar
+  // perto desse teto; um quadrado fica bem mais estreito.
+  const LOGO_W = 55, LOGO_GAP = 8;
 
   // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
   // medida que avança — não dá pra usar uma caixa só por coluna com texto
@@ -266,22 +278,24 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     let cursorY = listY;
 
     fatia.forEach(grupo => {
-      const rowH = linhasGrupo(grupo) * lineH;
-      let textX = colX, textW = colW;
       // Casa pelo apelido de exibição, não pelo nome cru da planilha — o
       // mapa de logos (Slide_LogosClientes.gs) usa nomes informais tipo
       // "Shopee", que não aparecem como substring na razão social "SHPX
       // LOGÍSTICA LTDA". _clienteDisplay_ já resolve essa distância.
       const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
+      // Grupo com logo precisa de no mínimo LOGO_H_ALVO_PT de altura pra
+      // caber o logo sem estourar pro bloco seguinte — num grupo de 1
+      // chamado só (rowH = 1 linha), o texto sozinho não precisaria de
+      // tanto espaço, mas o logo precisa.
+      const rowH = Math.max(linhasGrupo(grupo) * lineH, logoBlob ? LOGO_H_ALVO_PT + TEXTBOX_INSET_PT : 0);
+      let textX = colX, textW = colW;
       if (logoBlob) {
         try {
-          // Caixa do logo colada no topo do grupo (cursorY), com altura
-          // travada em ~1,9 linha — não em rowH, senão num grupo de vários
-          // chamados o logo estica/centraliza no bloco inteiro. O
-          // deslocamento de TEXTBOX_INSET_PT compensa a margem interna da
-          // caixa de texto ao lado, pra casar com a 1ª linha do texto.
-          const logoH = Math.min(rowH - TEXTBOX_INSET_PT, lineH * 1.9);
-          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, logoH);
+          // Altura travada em LOGO_H_ALVO_PT (não em rowH) — ver
+          // LOGO_H_ALVO_PT pro porquê da altura ser o eixo fixo em vez da
+          // largura. O deslocamento de TEXTBOX_INSET_PT compensa a margem
+          // interna da caixa de texto ao lado, pra casar com a 1ª linha.
+          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, LOGO_H_ALVO_PT);
           textX = colX + LOGO_W + LOGO_GAP;
           textW = colW - LOGO_W - LOGO_GAP;
         } catch (e) {

@@ -124,27 +124,30 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 26;
-  // Mesmo LOGO_W (~53pt/1,87cm) e mesma lógica de altura travada de
-  // Slide_ChamadosClientes.gs — ver comentário lá pro porquê (ajuste manual
-  // de referência do usuário + logo colado no topo do grupo em vez de
-  // esticado/centralizado no bloco inteiro).
-  const LOGO_W = 53, LOGO_GAP = 10;
+  // Mesmo LOGO_W (teto de largura) e mesma lógica de altura travada em
+  // LOGO_H_ALVO_PT de Slide_ChamadosClientes.gs — ver o comentário lá pro
+  // porquê da altura (não a largura) ser o eixo fixo: logos "em linha"
+  // (largos/baixos) e "quadrados" (ícone empilhado sobre texto) precisam
+  // da MESMA altura pra alinhar com o texto ao lado, mas naturalmente
+  // ocupam larguras bem diferentes.
+  const LOGO_W = 55, LOGO_GAP = 10;
 
   let cursorY = listY;
   grupos.forEach(grupo => {
     const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
-    const rowH = linhasGrupo(grupo) * lineH;
-
-    let textX = x + 15, textW = w - 30;
     // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
     // equivalente em Slide_ChamadosClientes.gs.
     const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
+    // Grupo com logo precisa de no mínimo LOGO_H_ALVO_PT de altura, senão
+    // um grupo de 1 chamado só (rowH = 1 linha) fica baixo demais pro logo.
+    const rowH = Math.max(linhasGrupo(grupo) * lineH, logoBlob ? LOGO_H_ALVO_PT + TEXTBOX_INSET_PT : 0);
+
+    let textX = x + 15, textW = w - 30;
     if (logoBlob) {
       try {
-        // Logo colado no topo do grupo, altura travada em ~1,9 linha (não
-        // rowH) — ver comentário equivalente em Slide_ChamadosClientes.gs.
-        const logoH = Math.min(rowH - TEXTBOX_INSET_PT, lineH * 1.9);
-        _insertLogoFit_(slide, logoBlob, x + 15, cursorY + TEXTBOX_INSET_PT, LOGO_W, logoH);
+        // Altura travada em LOGO_H_ALVO_PT (não rowH) — ver comentário
+        // equivalente em Slide_ChamadosClientes.gs.
+        _insertLogoFit_(slide, logoBlob, x + 15, cursorY + TEXTBOX_INSET_PT, LOGO_W, LOGO_H_ALVO_PT);
         textX = x + 15 + LOGO_W + LOGO_GAP;
         textW = w - 30 - LOGO_W - LOGO_GAP;
       } catch (e) {
