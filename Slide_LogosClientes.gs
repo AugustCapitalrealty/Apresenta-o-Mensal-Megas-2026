@@ -50,10 +50,11 @@ const LOGOS_CLIENTES = {
   'Pacific':        '1l7G3-cq9viXEMJi8bc0lBUejPJoU6W7i',
   'Domus':          '1VhxvlmFQ27aYiIjdsOJd2VU0s-A6Mg-C',
   'Veloz':          '1-i3nKyGyVWQIFbCO96Ih-5fiV9ZgtDZ2',
-  'Demercado':      '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T'
-  // DHL, TornadoLog e outros apelidos sem logo cadastrado aqui caem no
-  // fallback de texto (_getClienteLogoBlob_ retorna null) — não fabricamos
-  // ID de arquivo pra cliente que não estava no mapa de origem.
+  'Demercado':      '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',
+  'DHL':            '1MtKYh79eDwOXw52reQ4WLDEXLGv-cm9z'
+  // TornadoLog e outros apelidos sem logo cadastrado aqui caem no fallback
+  // de texto (_getClienteLogoBlob_ retorna null) — não fabricamos ID de
+  // arquivo pra cliente que não estava no mapa de origem.
 };
 
 // Cache do blob de cada logo (evita baixar o mesmo arquivo do Drive várias
