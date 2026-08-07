@@ -366,20 +366,49 @@ function _rodarChecagensConsistencia_() {
     const repetidos = bkLoc.lista.filter(it => idsOper[String(it.id).trim()]);
     return { ok: repetidos.length === 0, esperado: '0 repetidos', obtido: repetidos.length + ' repetidos' };
   });
-  // "Responsabilidade Locatário" também é um ESTADO na aba de Chamados
-  // Pendentes — o mesmo fato contado por outra fonte.
-  _ckAdd_(L, G_BKCLI, 'Locatário: Backlog de Clientes x estado em Chamados Pendentes', () => {
-    if (!bkLoc || !pendentes) return null;
-    const est = pendentes.direcionados.find(d => _histNorm_(d.estado).indexOf('locatario') >= 0);
-    if (!est) return null;
-    return { ok: est.qtd === bkLoc.total, esperado: _ckInt_(est.qtd), obtido: _ckInt_(bkLoc.total) };
+  // ── BACKLOG GERAL (slide Backlog Facilities) ────────────────────────────
+  // A aba BACKLOG do Histórico Validado tem, por Mega, as colunas GERAL /
+  // FACILITIES / PROPERTY / LOCATÁRIO / EMERGENCIAL do mês. É a fonte que
+  // mais cruza com outros slides: o GERAL é o mesmo total do slide de
+  // Chamados Pendentes, e LOCATÁRIO/EMERGENCIAL são os mesmos universos
+  // dos slides de backlog detalhado. Se essas pontas divergirem, o deck
+  // mostra dois números diferentes pro mesmo fato.
+  const G_BKGER = 'Backlog geral (Facilities x Property x Locatário)';
+  const histMes = _ckSafe_(() => {
+    const serie = obterDadosBacklogHistorico_();
+    if (!serie || !serie.length) return null;
+    const ref = obterMesReferencia_();
+    const ord = ref.ano * 100 + (ref.index + 1);
+    return serie.find(p => p.ord === ord) || null;
   });
 
-  // ── BACKLOG PENDENTES ───────────────────────────────────────────────────
-  _ckAdd_(L, 'Backlog pendentes (chamados por estado)', 'Soma dos estados + Em resolução = total', () => {
-    if (!pendentes) return null;
-    const soma = pendentes.direcionados.reduce((s, d) => s + d.qtd, 0) + pendentes.emResolucao;
-    return { ok: soma === pendentes.total, esperado: _ckInt_(pendentes.total), obtido: _ckInt_(soma) };
+  _ckAdd_(L, G_BKGER, 'Geral = Facilities + Property + Locatário', () => {
+    if (!histMes || histMes.geral == null || histMes.facilities == null ||
+        histMes.property == null || histMes.locatario == null) return null;
+    const soma = histMes.facilities + histMes.property + histMes.locatario;
+    return { ok: soma === histMes.geral, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(soma) };
+  });
+  _ckAdd_(L, G_BKGER, 'Chamados Geral x total de Chamados Pendentes', () => {
+    if (!histMes || histMes.geral == null || !pendentes) return null;
+    return { ok: histMes.geral === pendentes.total, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(pendentes.total) };
+  });
+  _ckAdd_(L, G_BKGER, 'Locatário x Backlog de Clientes — Detalhe', () => {
+    if (!histMes || histMes.locatario == null || !bkLoc) return null;
+    return { ok: histMes.locatario === bkLoc.total, esperado: _ckInt_(histMes.locatario), obtido: _ckInt_(bkLoc.total) };
+  });
+  _ckAdd_(L, G_BKGER, 'Emergencial x Backlog Emergencial — Detalhe', () => {
+    if (!histMes || histMes.emergencial == null || !emerg) return null;
+    return { ok: histMes.emergencial === emerg.total, esperado: _ckInt_(histMes.emergencial), obtido: _ckInt_(emerg.total) };
+  });
+  // "Responsabilidade Locatário" também é um ESTADO na aba de Chamados
+  // Pendentes. Como o TOTAL daquela aba é o mesmo GERAL do backlog (ver
+  // checagem acima), o universo é o mesmo — logo o estado tem que bater
+  // com a coluna LOCATÁRIO.
+  _ckAdd_(L, G_BKGER, 'Locatário: coluna do backlog x estado em Chamados Pendentes', () => {
+    if (!histMes || histMes.locatario == null || !pendentes) return null;
+    const est = pendentes.direcionados.find(d => _histNorm_(d.estado).indexOf('locatario') >= 0);
+    if (!est) return null;
+    return { ok: est.qtd === histMes.locatario, esperado: _ckInt_(histMes.locatario), obtido: _ckInt_(est.qtd) };
   });
 
   return L;
