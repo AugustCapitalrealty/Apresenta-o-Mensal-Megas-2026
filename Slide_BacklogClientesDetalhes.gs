@@ -21,6 +21,11 @@
  * continua com sua própria linha (id + data + dias em aberto + descrição)
  * — nunca corta nenhum item.
  *
+ * Mês cheio: em vez de encolher a fonte até ficar ilegível, divide os
+ * clientes (nunca um cliente no meio) em quantas PÁGINAS/slides forem
+ * necessárias pra caber tudo com fonte legível (_paginarGruposBacklog_) —
+ * a pedido do usuário, gerar mais de um slide não é problema.
+ *
  * Sem chamados no mês de referência pro empreendimento ativo: cai no slide
  * manual de espaço reservado (gerarSlideReservaGraficos), sem quebrar a
  * geração.
@@ -37,20 +42,72 @@ function gerarSlideBacklogClientesDetalhes() {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(CORES.bgSlide);
-
-  criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — DETALHE', 'Chamados pendentes de responsabilidade do locatário');
-
   const marginX = 30, topY = 76;
-  const areaBottom = H - 16;
-  const listaH = areaBottom - topY;
+  const listaH = (H - 16) - topY;
+
+  const porCliente = {};
+  const ordemClientes = [];
+  dados.lista.forEach(it => {
+    if (!porCliente[it.cliente]) { porCliente[it.cliente] = []; ordemClientes.push(it.cliente); }
+    porCliente[it.cliente].push(it);
+  });
+  const grupos = ordemClientes.map(cli => porCliente[cli]);
 
   const coresMapa = _backlogClientesCoresMapa_(dados);
-  _backlogClientesLista_(slide, marginX, topY, W - 2 * marginX, listaH, 'PENDÊNCIAS EM ABERTO', dados.lista, CORES.lightBlue, coresMapa);
-  _backlogClientesBadgeLocatario_(slide, marginX, topY, W - 2 * marginX);
+  // Mês cheio: em vez de encolher a fonte até ficar ilegível pra caber tudo
+  // num card só, divide os CLIENTES (nunca um cliente no meio) em quantas
+  // páginas forem necessárias — a pedido do usuário, não tem problema virar
+  // mais de um slide contanto que nada fique de fora.
+  const paginas = _paginarGruposBacklog_(grupos, listaH);
 
-  Logger.log('Slide Backlog de Clientes — Detalhe gerado — total=' + dados.total + '.');
+  paginas.forEach((grupoDaPagina, i) => {
+    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    slide.getBackground().setSolidFill(CORES.bgSlide);
+
+    const subtitulo = 'Chamados pendentes de responsabilidade do locatário' +
+      (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');
+    criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — DETALHE', subtitulo);
+
+    _backlogClientesTabela_(slide, marginX, topY, W - 2 * marginX, listaH, 'PENDÊNCIAS EM ABERTO', dados.total, grupoDaPagina, CORES.lightBlue, coresMapa);
+    _backlogClientesBadgeLocatario_(slide, marginX, topY, W - 2 * marginX);
+  });
+
+  Logger.log('Slide Backlog de Clientes — Detalhe gerado — total=' + dados.total + ' em ' + paginas.length + ' página(s).');
+}
+
+// Divide os grupos (clientes) em páginas sem nunca partir um cliente no
+// meio — cada página tem que caber no card no MÍNIMO com a fonte-piso
+// (FLOOR_FONT) legível; se um cliente sozinho já estourar isso (caso raro
+// de dezenas de chamados pro mesmo cliente), ele fica sozinho na própria
+// página mesmo assim (ver comentário de _charsQueCabem_ pra o porquê do
+// projeto tolerar esse tipo de estouro extremo em vez de esconder dado).
+function _paginarGruposBacklog_(grupos, listaH) {
+  if (!grupos.length) return [[]];
+
+  const FLOOR_FONT = 8, LINE_PCT = 130;
+  const MIN_ROW_H = 40, CAPTION_H = 12, ROW_GAP = 6;
+  const HEADER_H = 16, HEADER_GAP = 6;
+  // Mesmas constantes de layout de _backlogClientesTabela_: criarCardPainel
+  // devolve y+32 (título do card), listY = contentY+4, listH = h-listY-8.
+  const CARD_HEADER = 32, LIST_TOP_PAD = 4, LIST_BOTTOM_PAD = 8;
+  const pageBudgetPt = listaH - CARD_HEADER - LIST_TOP_PAD - LIST_BOTTOM_PAD - HEADER_H - HEADER_GAP;
+
+  const lineHFloor = FLOOR_FONT * (LINE_PCT / 100) * 1.15;
+  const alturaGrupo = g => Math.max(g.length * lineHFloor, MIN_ROW_H + (g.length > 1 ? CAPTION_H : 0)) + ROW_GAP;
+
+  const paginas = [];
+  let atual = [], alturaAtual = 0;
+  grupos.forEach(g => {
+    const alturaG = alturaGrupo(g);
+    if (atual.length && alturaAtual + alturaG > pageBudgetPt) {
+      paginas.push(atual);
+      atual = []; alturaAtual = 0;
+    }
+    atual.push(g);
+    alturaAtual += alturaG;
+  });
+  if (atual.length) paginas.push(atual);
+  return paginas;
 }
 
 // Chip "RESPONSABILIDADE DO LOCATÁRIO" no canto do card — o assunto do
@@ -82,7 +139,7 @@ function _backlogClientesCoresMapa_(dados) {
   return mapa;
 }
 
-// ── Card com a lista completa de pendências, em formato de TABELA ────────
+// ── Card com a lista de pendências DE UMA PÁGINA, em formato de TABELA ───
 // Cabeçalho interno "CLIENTE | DESCRIÇÃO | DATA | DIAS", coluna do logo com
 // largura fixa separada por uma linha vertical, e uma linha horizontal fina
 // fechando cada cliente — mesmo padrão de _clientesLista_ em
@@ -98,22 +155,18 @@ function _backlogClientesCoresMapa_(dados) {
 // uma caixa (mesmo problema de fundo do logo x texto, ver o comentário de
 // _charsQueCabem_). Desenhando uma linha (Y) por chamado, cada trinca
 // DESCRIÇÃO/DATA/DIAS nasce alinhada por construção.
-function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, coresMapa) {
-  const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', corTema);
+//
+// `grupos` já vem pré-dividido em página por _paginarGruposBacklog_ (em
+// gerarSlideBacklogClientesDetalhes) — esta função só desenha; `totalCount`
+// é o total do PERÍODO INTEIRO (todas as páginas), não só desta.
+function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, corTema, coresMapa) {
+  const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + totalCount + ')', corTema);
   const listY = contentY + 4, listH = y + h - listY - 8;
 
-  if (!itens.length) {
+  if (!grupos.length) {
     _prioridadeSemDado_(slide, x, listY, w, listH, 'Nenhum chamado no período.', CORES.cardGreen);
     return;
   }
-
-  const porCliente = {};
-  const ordemClientes = [];
-  itens.forEach(it => {
-    if (!porCliente[it.cliente]) { porCliente[it.cliente] = []; ordemClientes.push(it.cliente); }
-    porCliente[it.cliente].push(it);
-  });
-  const grupos = ordemClientes.map(cli => porCliente[cli]);
 
   const LINE_PCT = 130;   // mais espaçado que as listas em coluna — preenche melhor a altura do card
   const ROW_GAP  = 6;     // respiro entre um cliente e o próximo, além da linha divisória
@@ -126,8 +179,11 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
   const totalLinhas = grupos.reduce((s, g) => s + linhasGrupo(g), 0);
   const totalGaps   = Math.max(0, grupos.length - 1) * ROW_GAP;
 
+  // Piso de 8 (não mais 6): como _paginarGruposBacklog_ já garante que
+  // cada página cabe com fonte legível, não precisa mais encolher até
+  // ficar minúsculo — se sobrar, vira página nova em vez de espremer.
   let fontSize = Math.min(11, (linhasH - totalGaps) / (totalLinhas * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+  fontSize = Math.max(8, Math.round(fontSize * 2) / 2);
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 26;
