@@ -208,6 +208,9 @@ function _rodarChecagensConsistencia_() {
   const bkFac     = _ckSafe_(() => obterDadosBacklogClientesFacilities_());
   const bkProp    = _ckSafe_(() => obterDadosBacklogClientesProperties_());
   const pendentes = _ckSafe_(() => obterDadosBacklogPendentes_());
+  const dash      = _ckSafe_(() => obterDadosDashboard());
+  const corr      = _ckSafe_(() => obterDadosCorretivasV6());
+  const prev      = _ckSafe_(() => obterDadosPreventivas());
 
   // ── FINANCEIRO ──────────────────────────────────────────────────────────
   // DRE (aba FINANCEIRO BRIDGE) x Resultado Operacional (aba FINANCEIRO):
@@ -245,6 +248,28 @@ function _rodarChecagensConsistencia_() {
     const soma = dre.rubricas.reduce((s, r) => s + r.acum.real, 0);
     return { ok: _ckDinheiro_(dre.total.acum.real, soma), esperado: _ckMil_(dre.total.acum.real), obtido: _ckMil_(soma) };
   });
+  _ckAdd_(L, G_FIN, 'DRE: soma das rubricas = linha TOTAL (ano)', () => {
+    if (!dre) return null;
+    const soma = dre.rubricas.reduce((s, r) => s + r.anual.real, 0);
+    return { ok: _ckDinheiro_(dre.total.anual.real, soma), esperado: _ckMil_(dre.total.anual.real), obtido: _ckMil_(soma) };
+  });
+  // Rubrica a rubrica: isola SE a divergência está no total ou espalhada
+  // pelas linhas. Se as rubricas batem e só o TOTAL não, o erro está na
+  // linha TOTAL da planilha de origem, não nos lançamentos.
+  _ckAdd_(L, G_FIN, 'Rubricas do mês: Resultado Operacional x DRE (uma a uma)', () => {
+    if (!dre || !finMes || !finMes.linhasDados) return null;
+    const porNome = {};
+    dre.rubricas.forEach(r => { porNome[_histNorm_(r.nome)] = r.mes.real; });
+    let comparadas = 0, divergentes = 0;
+    finMes.linhasDados.forEach(l => {
+      const v = porNome[_histNorm_(l.natureza)];
+      if (v === undefined) return;
+      comparadas++;
+      if (!_ckDinheiro_(v, l.realizado)) divergentes++;
+    });
+    if (!comparadas) return null;
+    return { ok: divergentes === 0, esperado: comparadas + ' iguais', obtido: divergentes ? divergentes + ' diferem' : comparadas + ' iguais' };
+  });
 
   // ── METRO QUADRADO ──────────────────────────────────────────────────────
   // O R$/m² aparece em 3 lugares (slide Custo do M², cards do Resultado
@@ -265,12 +290,26 @@ function _rodarChecagensConsistencia_() {
     const a = custoAcum.realizado, b = dre.total.acum.real / area / dre.mesesAcum;
     return { ok: Math.abs(a - b) <= CK_TOL_M2, esperado: _ckM2_(a), obtido: _ckM2_(b) };
   });
-  // A área é derivada (Financeiro ÷ Custo m²). Se o acumulado devolver uma
-  // área diferente da do mês, alguma das duas pontas está inconsistente.
+  _ckAdd_(L, G_M2, 'R$/m² do ano (média Custo M² x DRE ÷ área ÷ 12)', () => {
+    if (!dre || !custoM2 || !area) return null;
+    const media = _ckMediaAnualCustoM2_(custoM2, /^real/i);
+    if (media == null) return null;
+    const b = dre.total.anual.real / area / 12;
+    return { ok: Math.abs(media - b) <= CK_TOL_M2, esperado: _ckM2_(media), obtido: _ckM2_(b) };
+  });
+  // A área é derivada (Financeiro REALIZADO ÷ Custo m² realizado). Se o
+  // orçado e o acumulado devolverem áreas diferentes, a aba FINANCEIRO e a
+  // aba METRO QUADRADO descolaram (alguém atualizou uma e esqueceu a outra).
+  _ckAdd_(L, G_M2, 'Área implícita: realizado x orçado do mês (m²)', () => {
+    if (!area || !finMes || !custoM2 || !custoM2.kpis.meta) return null;
+    const areaOrc = finMes.totalOrcado / custoM2.kpis.meta;
+    const ok = Math.abs(area - areaOrc) / Math.max(area, 1) <= 0.01;   // 1% de folga
+    return { ok: ok, esperado: Math.round(area).toLocaleString('pt-BR'), obtido: Math.round(areaOrc).toLocaleString('pt-BR') };
+  });
   _ckAdd_(L, G_M2, 'Área implícita: mês x acumulado (m²)', () => {
     if (!area || !finAcum || !custoAcum || !custoAcum.realizado || !custoAcum.meses) return null;
     const areaAcum = finAcum.totalRealizado / custoAcum.realizado / custoAcum.meses;
-    const ok = Math.abs(area - areaAcum) / Math.max(area, 1) <= 0.01;   // 1% de folga
+    const ok = Math.abs(area - areaAcum) / Math.max(area, 1) <= 0.01;
     return { ok: ok, esperado: Math.round(area).toLocaleString('pt-BR'), obtido: Math.round(areaAcum).toLocaleString('pt-BR') };
   });
 
@@ -308,6 +347,23 @@ function _rodarChecagensConsistencia_() {
   _ckAdd_(L, G_CHAM, 'Clientes FECHADOS ≤ Prioridade FECHADOS (subconjunto)', () => {
     if (!prio || !cli) return null;
     return { ok: cli.fechados.total <= prio.fechados.total, esperado: '≤ ' + prio.fechados.total, obtido: _ckInt_(cli.fechados.total) };
+  });
+  // Cross-source forte: "Chamados criados/fechados" do slide de Corretivas
+  // vem da aba CHAMADOS (digitada à mão na planilha da cidade); o total de
+  // Chamados por Prioridade vem da contagem das linhas das abas brutas do
+  // Histórico Validado. Duas origens independentes pro mesmo fato — é aqui
+  // que um mês desalinhado aparece primeiro.
+  _ckAdd_(L, G_CHAM, 'Chamados criados: Corretivas x Prioridade ABERTOS', () => {
+    if (!corr || !prio) return null;
+    const v = _ckKpi_(corr.mensal, 'chamados criados');
+    if (v == null) return null;
+    return { ok: v === prio.abertos.total, esperado: _ckInt_(v), obtido: _ckInt_(prio.abertos.total) };
+  });
+  _ckAdd_(L, G_CHAM, 'Chamados fechados: Corretivas x Prioridade FECHADOS', () => {
+    if (!corr || !prio) return null;
+    const v = _ckKpi_(corr.mensal, 'chamados fechados');
+    if (v == null) return null;
+    return { ok: v === prio.fechados.total, esperado: _ckInt_(v), obtido: _ckInt_(prio.fechados.total) };
   });
 
   // ── BACKLOG EMERGENCIAL ─────────────────────────────────────────────────
@@ -366,6 +422,20 @@ function _rodarChecagensConsistencia_() {
     const repetidos = bkLoc.lista.filter(it => idsOper[String(it.id).trim()]);
     return { ok: repetidos.length === 0, esperado: '0 repetidos', obtido: repetidos.length + ' repetidos' };
   });
+  // Cross-PLANILHA (Histórico Validado x BD-CORRETIVAS): todo chamado de
+  // cliente aberto no mês tem que aparecer em algum dos 3 backlogs de
+  // cliente. Se some, as duas planilhas não estão contando o mesmo
+  // universo. Os IDs do BD-CORRETIVAS já vêm normalizados por
+  // _idChamadoNormaliza_ ("2.490.644,00" → "2490644"), então comparamos só
+  // dígitos dos dois lados.
+  _ckAdd_(L, G_BKCLI, 'Chamados de clientes do mês estão em algum backlog', () => {
+    if (!cli || !bkLoc || !bkFac || !bkProp) return null;
+    const soDigitos = v => String(v == null ? '' : v).replace(/\D/g, '');
+    const universo = {};
+    [bkLoc, bkFac, bkProp].forEach(b => b.lista.forEach(it => { universo[soDigitos(it.id)] = true; }));
+    const faltando = cli.abertos.lista.filter(it => !universo[soDigitos(it.id)]);
+    return { ok: faltando.length === 0, esperado: '0 fora', obtido: faltando.length + ' fora' };
+  });
   // ── BACKLOG GERAL (slide Backlog Facilities) ────────────────────────────
   // A aba BACKLOG do Histórico Validado tem, por Mega, as colunas GERAL /
   // FACILITIES / PROPERTY / LOCATÁRIO / EMERGENCIAL do mês. É a fonte que
@@ -392,6 +462,33 @@ function _rodarChecagensConsistencia_() {
     if (!histMes || histMes.geral == null || !pendentes) return null;
     return { ok: histMes.geral === pendentes.total, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(pendentes.total) };
   });
+  // Dashboard (aba DADOS) x aba BACKLOG do Histórico Validado: duas
+  // planilhas diferentes com as mesmas duas linhas. O "geral" costuma bater
+  // (o backlog pendentes concilia com a aba DADOS), mas o "facilities" é
+  // digitado separado nas duas — é onde aparece defasagem.
+  _ckAdd_(L, G_BKGER, 'Chamados Geral: Dashboard x Backlog histórico', () => {
+    if (!histMes || histMes.geral == null || !dash) return null;
+    const v = _ckDash_(dash, 'chamados geral');
+    if (v == null) return null;
+    return { ok: v === histMes.geral, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(v) };
+  });
+  _ckAdd_(L, G_BKGER, 'Chamados Facilities: Dashboard x Backlog histórico', () => {
+    if (!histMes || histMes.facilities == null || !dash) return null;
+    const v = _ckDash_(dash, 'chamados de facilities');
+    if (v == null) return null;
+    return { ok: v === histMes.facilities, esperado: _ckInt_(histMes.facilities), obtido: _ckInt_(v) };
+  });
+  // O backlog de cliente de cada equipe é subconjunto do backlog TOTAL
+  // daquela equipe (que inclui também os chamados do próprio condomínio).
+  // Estourar aqui denuncia erro no mapa de responsáveis (_RESPONSAVEL_EQUIPE_).
+  _ckAdd_(L, G_BKGER, 'Clientes-Facilities ≤ Facilities do backlog', () => {
+    if (!histMes || histMes.facilities == null || !bkFac) return null;
+    return { ok: bkFac.total <= histMes.facilities, esperado: '≤ ' + histMes.facilities, obtido: _ckInt_(bkFac.total) };
+  });
+  _ckAdd_(L, G_BKGER, 'Clientes-Properties ≤ Property do backlog', () => {
+    if (!histMes || histMes.property == null || !bkProp) return null;
+    return { ok: bkProp.total <= histMes.property, esperado: '≤ ' + histMes.property, obtido: _ckInt_(bkProp.total) };
+  });
   _ckAdd_(L, G_BKGER, 'Locatário x Backlog de Clientes — Detalhe', () => {
     if (!histMes || histMes.locatario == null || !bkLoc) return null;
     return { ok: histMes.locatario === bkLoc.total, esperado: _ckInt_(histMes.locatario), obtido: _ckInt_(bkLoc.total) };
@@ -411,12 +508,72 @@ function _rodarChecagensConsistencia_() {
     return { ok: est.qtd === histMes.locatario, esperado: _ckInt_(histMes.locatario), obtido: _ckInt_(est.qtd) };
   });
 
+  // ── INDICADORES (Dashboard x slides de detalhe) ─────────────────────────
+  // O Dashboard (aba DADOS, digitada à mão) repete indicadores que os
+  // slides de Preventivas/Corretivas calculam das suas próprias abas.
+  const G_IND = 'Indicadores (Dashboard x slide de detalhe)';
+  _ckAdd_(L, G_IND, 'SLA de preventivas do mês: Dashboard x Preventivas', () => {
+    if (!dash || !prev) return null;
+    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla atendido');
+    if (a == null || b == null) return null;
+    return { ok: Math.abs(a - b) <= 0.05, esperado: _ckM2_(a) + '%', obtido: _ckM2_(b) + '%' };
+  });
+  _ckAdd_(L, G_IND, 'Disponibilidade do mês: Dashboard x Corretivas', () => {
+    if (!dash || !corr) return null;
+    const a = _ckKpi_(corr.mensal, 'disponibilidade'), b = _ckDash_(dash, 'disponibilidade');
+    if (a == null || b == null) return null;
+    return { ok: Math.abs(a - b) <= 0.05, esperado: _ckM2_(a) + '%', obtido: _ckM2_(b) + '%' };
+  });
+
   return L;
 }
 
 // Carrega uma fonte sem deixar erro vazar (aba faltando, permissão etc.).
 function _ckSafe_(fn) {
   try { return fn(); } catch (e) { Logger.log('Check: fonte indisponível — ' + e.message); return null; }
+}
+
+// A aba DADOS é indexada pelo rótulo EXATO da linha; aqui buscamos
+// normalizado (_histNorm_) pra não depender de acento/caixa/espaço duplo.
+// Devolve o número já convertido, ou null se não achar/não for numérico.
+function _ckDash_(dash, trechoNorm) {
+  if (!dash || !dash.map) return null;
+  let achado = null;
+  dash.map.forEach((val, chave) => {
+    if (achado === null && _histNorm_(chave).indexOf(trechoNorm) >= 0) achado = val;
+  });
+  if (!achado) return null;
+  return _ckPct_(achado.atual);
+}
+
+// Percentual vindo formatado ("89,13%", "89,13", 89.13). _histNum_ sozinho
+// devolve NaN quando o texto tem o "%" (Number('89.13%') é NaN), e o SLA de
+// preventivas chega justamente assim (formatarPorcentagem).
+function _ckPct_(v) {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return isNaN(v) ? null : v;
+  const n = _histNum_(String(v).replace(/%/g, '').trim());
+  return isNaN(n) ? null : n;
+}
+
+// Pega um KPI de obterDadosCorretivasV6() pelo rótulo (lista de {l, v}).
+function _ckKpi_(bloco, rotuloNorm) {
+  if (!bloco || !bloco.kpis) return null;
+  const k = bloco.kpis.find(x => _histNorm_(x.l).indexOf(rotuloNorm) >= 0);
+  if (!k) return null;
+  return _ckPct_(k.v);
+}
+
+// Média anual (12 meses) de uma linha da tabela do slide Custo do M².
+// Mesma regra de obterCustoM2Acumulado_: só conta mês com valor > 0.
+function _ckMediaAnualCustoM2_(custoM2, regex) {
+  if (!custoM2 || !custoM2.tabela) return null;
+  const chave = Object.keys(custoM2.tabela).find(k => regex.test(k));
+  if (!chave) return null;
+  const arr = custoM2.tabela[chave];
+  let soma = 0, n = 0;
+  (arr || []).forEach(v => { if (v != null && !isNaN(v) && v > 0) { soma += Number(v); n++; } });
+  return n > 0 ? soma / n : null;
 }
 
 
