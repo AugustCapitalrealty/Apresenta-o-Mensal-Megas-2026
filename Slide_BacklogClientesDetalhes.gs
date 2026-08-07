@@ -83,12 +83,21 @@ function _backlogClientesCoresMapa_(dados) {
 }
 
 // ── Card com a lista completa de pendências, em formato de TABELA ────────
-// Cabeçalho interno "CLIENTE | DESCRIÇÃO", coluna do logo com largura fixa
-// separada por uma linha vertical, e uma linha horizontal fina fechando
-// cada linha — mesmo padrão de _clientesLista_ em Slide_ChamadosClientes.gs
-// (ver o comentário lá pro raciocínio completo). Cada chamado é uma linha
-// simples "id (data · dias) - descrição"; o nome do cliente não repete no
-// texto porque já tem sua própria coluna com o logo.
+// Cabeçalho interno "CLIENTE | DESCRIÇÃO | DATA | DIAS", coluna do logo com
+// largura fixa separada por uma linha vertical, e uma linha horizontal fina
+// fechando cada cliente — mesmo padrão de _clientesLista_ em
+// Slide_ChamadosClientes.gs (ver o comentário lá pro raciocínio completo).
+//
+// Data e dias em aberto viraram COLUNAS próprias (a pedido do usuário) em
+// vez de texto embutido na descrição. Por isso cada CHAMADO — não cada
+// cliente — precisa da sua própria caixa de texto por coluna: se as 3
+// colunas de um chamado morassem juntas numa caixa de texto corrida com
+// várias linhas (como a descrição fazia antes), não haveria garantia de
+// que a linha N da coluna DATA caía exatamente ao lado da linha N da
+// coluna DESCRIÇÃO — o Slides não expõe a posição de cada linha dentro de
+// uma caixa (mesmo problema de fundo do logo x texto, ver o comentário de
+// _charsQueCabem_). Desenhando uma linha (Y) por chamado, cada trinca
+// DESCRIÇÃO/DATA/DIAS nasce alinhada por construção.
 function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, coresMapa) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', corTema);
   const listY = contentY + 4, listH = y + h - listY - 8;
@@ -127,24 +136,41 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
   // isso a célula pode ser bem maior que na lista de 2 colunas de
   // Slide_ChamadosClientes.gs.
   const LOGO_COL_W = 92, LOGO_GAP = 16, LOGO_CELL_H = 36, MIN_ROW_H = 40;
+  // Legenda "(N chamados)" só aparece em grupo com mais de 1 chamado — sem
+  // reservar essa altura extra no piso da linha, ela invadia a linha do
+  // próximo cliente (overlap com o divisor). CAPTION_H cobre o respiro +
+  // o texto da legenda.
+  const CAPTION_H = 12;
+  const DATA_W = 60, DIAS_W = 46, COL_GAP2 = 10, COL_GAP3 = 6;
+
+  const descX  = x + 15 + LOGO_COL_W + LOGO_GAP;
+  const descW  = (w - 30) - LOGO_COL_W - LOGO_GAP - DATA_W - COL_GAP2 - DIAS_W - COL_GAP3;
+  const dataX  = descX + descW + COL_GAP2;
+  const diasX  = dataX + DATA_W + COL_GAP3;
 
   const headerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, listY, w - 30, HEADER_H);
   headerBg.getFill().setSolidFill(corTema, 0.10);
   headerBg.getBorder().setTransparent();
   _sTxt(slide, x + 15, listY, LOGO_COL_W, HEADER_H, 'CLIENTE', 7, true, corTema, 'center');
-  _sTxt(slide, x + 15 + LOGO_COL_W + LOGO_GAP, listY, w - 30 - LOGO_COL_W - LOGO_GAP, HEADER_H, 'DESCRIÇÃO', 7, true, corTema, 'left');
+  _sTxt(slide, descX, listY, descW, HEADER_H, 'DESCRIÇÃO', 7, true, corTema, 'left');
+  _sTxt(slide, dataX, listY, DATA_W, HEADER_H, 'DATA ABERTURA', 6, true, corTema, 'center');
+  _sTxt(slide, diasX, listY, DIAS_W, HEADER_H, 'TEMPO ABERTO', 6, true, corTema, 'center');
   _linhaTabela_(slide, x + 15, listY + HEADER_H, w - 30, corTema, 1);
+  [descX - COL_GAP2 / 2, dataX - COL_GAP3 / 2].forEach(lx => {
+    const l = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, listY, 0.75, HEADER_H);
+    l.getFill().setSolidFill(_TABELA_LINHA_COR_); l.getBorder().setTransparent();
+  });
 
   let cursorY = linhasY;
   grupos.forEach(grupo => {
     const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
-    const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H);
+    const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
 
     // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
     // equivalente em Slide_ChamadosClientes.gs.
     const nomeDisplay = _clienteDisplay_(grupo[0].cliente);
     const logoBlob = _getClienteLogoBlob_(nomeDisplay);
-    const logoY = cursorY + (rowH - LOGO_CELL_H) / 2;
+    const logoY = cursorY + (rowH - LOGO_CELL_H - (grupo.length > 1 ? CAPTION_H : 0)) / 2;
     let logoOk = false;
     if (logoBlob) {
       try { _insertLogoFit_(slide, logoBlob, x + 15, logoY, LOGO_COL_W, LOGO_CELL_H); logoOk = true; }
@@ -154,48 +180,50 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
       _sTxt(slide, x + 15, logoY, LOGO_COL_W, LOGO_CELL_H, _truncarNome_(nomeDisplay, maxCliente), 8.5, true, cor, 'center');
     }
     if (grupo.length > 1) {
-      _sTxt(slide, x + 15, logoY + LOGO_CELL_H + 1, LOGO_COL_W, 10, '(' + grupo.length + ' chamados)', 7, false, CORES.textGray, 'center');
+      _sTxt(slide, x + 15, logoY + LOGO_CELL_H + 1, LOGO_COL_W, CAPTION_H - 1, '(' + grupo.length + ' chamados)', 7, false, CORES.textGray, 'center');
     }
 
-    const textX = x + 15 + LOGO_COL_W + LOGO_GAP, textW = w - 30 - LOGO_COL_W - LOGO_GAP;
     // Orçamento de caracteres por LINHA — cada chamado tem que caber numa
-    // linha só, senão a quebra desalinha os logos seguintes (ver o
+    // linha só, senão a quebra desalinha os logos/colunas seguintes (ver o
     // comentário de _charsQueCabem_ em Slide_ChamadosClientes.gs).
-    const capacidadeLinha = _charsQueCabem_(textW, fontSize);
-    const metaLen = 18;   // "(dd/mm/aa · NNNd) " — orçamento fixo pro trecho de data/dias
+    const capacidadeLinha = _charsQueCabem_(descW, fontSize);
 
-    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
-    const tr = box.getText();
-    tr.setText('');
-    grupo.forEach((it, i) => {
+    let ticketY = cursorY + (rowH - grupo.length * lineH) / 2;  // centraliza o bloco de linhas na altura do grupo
+    grupo.forEach(it => {
+      const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, ticketY, descW, lineH);
+      const tr = descBox.getText();
+      tr.setText('');
       // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
       // ficam indistinguíveis quando o cliente cai na mesma cor do tema.
-      const idPart = tr.appendText((i > 0 ? '\n' : '') + '• ' + it.id + ' ');
+      const idPart = tr.appendText('• ' + it.id + ' - ');
       idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-      const meta = _backlogMetaTexto_(it);
-      if (meta) {
-        const metaPart = tr.appendText('(' + meta + ') ');
-        metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
-      }
       // Piso baixo (4, não 12) — ver comentário equivalente em
       // Slide_ChamadosClientes.gs.
-      const maxDesc = Math.max(4, capacidadeLinha - 3 - it.id.length - 1 - (meta ? metaLen : 0) - 2);
-      const descPart = tr.appendText('- ' + _truncarNome_(it.descricao, maxDesc));
+      const maxDesc = Math.max(4, capacidadeLinha - 3 - it.id.length - 3);
+      const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc));
       descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
+      tr.getParagraphStyle().setLineSpacing(LINE_PCT);
+      descBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
+      _sTxt(slide, dataX, ticketY, DATA_W, lineH, it.dataReporte || '—', Math.max(6, fontSize - 0.5), false, CORES.textGray, 'center');
+      const diasTxt = (it.diasAberto === null || it.diasAberto === undefined) ? '—' : it.diasAberto + 'd';
+      _sTxt(slide, diasX, ticketY, DIAS_W, lineH, diasTxt, fontSize, true, cor, 'center');
+
+      ticketY += lineH;
     });
 
-    tr.getParagraphStyle().setLineSpacing(LINE_PCT);
-    box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     cursorY += rowH + ROW_GAP;
     _linhaTabela_(slide, x + 15, cursorY - ROW_GAP / 2, w - 30, _TABELA_LINHA_COR_, 0.75);
   });
 
-  // Linha vertical separando a coluna do logo da coluna dos chamados,
-  // atravessando cabeçalho + todas as linhas.
-  const dividerX = x + 15 + LOGO_COL_W + LOGO_GAP / 2;
-  const divisor = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, dividerX, listY, 0.75, cursorY - ROW_GAP - listY);
-  divisor.getFill().setSolidFill(_TABELA_LINHA_COR_);
-  divisor.getBorder().setTransparent();
+  // Linhas verticais separando logo | descrição | data | dias, atravessando
+  // cabeçalho + todas as linhas.
+  const alturaTabela = cursorY - ROW_GAP - listY;
+  [x + 15 + LOGO_COL_W + LOGO_GAP / 2, descX - COL_GAP2 / 2, dataX - COL_GAP3 / 2].forEach(lx => {
+    const divisor = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, listY, 0.75, alturaTabela);
+    divisor.getFill().setSolidFill(_TABELA_LINHA_COR_);
+    divisor.getBorder().setTransparent();
+  });
 }
 
 

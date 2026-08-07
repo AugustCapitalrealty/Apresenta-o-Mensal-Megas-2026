@@ -263,7 +263,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   // logo esticar", é o TAMANHO DO QUADRADO da célula (como na referência
   // que o usuário mandou). _insertLogoFit_ centraliza a imagem dentro
   // desse quadrado mantendo a proporção original.
-  const LOGO_COL_W = 58, LOGO_GAP = 12, LOGO_CELL_H = 26, MIN_ROW_H = 30;
+  const LOGO_COL_W = 58, LOGO_GAP = 12, LOGO_CELL_H = 26, MIN_ROW_H = 30, CAPTION_H = 10;
 
   for (let c = 0; c < cols; c++) {
     const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
@@ -285,7 +285,10 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
     let cursorY = linhasY;
 
     fatia.forEach(grupo => {
-      const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H);
+      // Legenda "(N)" só aparece com mais de 1 chamado — sem reservar essa
+      // altura extra no piso da linha, ela invadia a linha do próximo
+      // cliente (overlap com o divisor). CAPTION_H cobre respiro + legenda.
+      const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
 
       // Casa pelo apelido de exibição, não pelo nome cru da planilha — o
       // mapa de logos (Slide_LogosClientes.gs) usa nomes informais tipo
@@ -293,7 +296,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
       // LOGÍSTICA LTDA". _clienteDisplay_ já resolve essa distância.
       const nomeDisplay = _clienteDisplay_(grupo[0].cliente);
       const logoBlob = _getClienteLogoBlob_(nomeDisplay);
-      const logoY = cursorY + (rowH - LOGO_CELL_H) / 2;
+      const logoY = cursorY + (rowH - LOGO_CELL_H - (grupo.length > 1 ? CAPTION_H : 0)) / 2;
       let logoOk = false;
       if (logoBlob) {
         try { _insertLogoFit_(slide, logoBlob, colX, logoY, LOGO_COL_W, LOGO_CELL_H); logoOk = true; }
@@ -303,7 +306,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
         _sTxt(slide, colX, logoY, LOGO_COL_W, LOGO_CELL_H, _truncarNome_(nomeDisplay, maxCliente), 7.5, true, corTema, 'center');
       }
       if (grupo.length > 1) {
-        _sTxt(slide, colX, logoY + LOGO_CELL_H + 1, LOGO_COL_W, 9, '(' + grupo.length + ')', 6.5, false, CORES.textGray, 'center');
+        _sTxt(slide, colX, logoY + LOGO_CELL_H + 1, LOGO_COL_W, CAPTION_H - 1, '(' + grupo.length + ')', 6.5, false, CORES.textGray, 'center');
       }
 
       const textX = colX + LOGO_COL_W + LOGO_GAP, textW = colW - LOGO_COL_W - LOGO_GAP;
