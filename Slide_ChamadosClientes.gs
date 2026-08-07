@@ -115,6 +115,29 @@ function _truncarNome_(txt, max) {
   return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte) + '…';
 }
 
+// Margem interna que o Google Slides aplica por padrão dentro de QUALQUER
+// caixa de texto (0,05" ≈ 3,6pt de cada lado). Não existe API pra zerar,
+// então os cálculos de largura descontam essa folga e o logo ao lado é
+// deslocado pelo mesmo tanto, pra casar opticamente com a 1ª linha do texto.
+const TEXTBOX_INSET_PT = 4;
+
+// Quantos caracteres cabem numa linha de largura `w` (pt) na fonte
+// `fontSize` — usado pelas listas de chamados dos slides de Clientes e de
+// Backlog de Clientes.
+//
+// POR QUE ISSO EXISTE: o Apps Script não mede texto renderizado e o Slides
+// não devolve a posição de cada linha dentro de uma caixa. Como as listas
+// precisam alinhar o LOGO do cliente com o bloco de chamados dele, a
+// posição de cada bloco é calculada à mão assumindo 1 chamado = 1 linha.
+// Se uma descrição quebrar em duas linhas, todo o resto do card desce e os
+// logos ficam desalinhados. Por isso o fator abaixo é DELIBERADAMENTE
+// PESSIMISTA (0,62 em/caractere, acima da largura média real da Montserrat):
+// é melhor truncar a descrição um pouco antes do que arriscar uma quebra
+// que desalinha a coluna inteira.
+function _charsQueCabem_(w, fontSize) {
+  return Math.max(8, Math.floor((w - TEXTBOX_INSET_PT * 2) / (fontSize * 0.62)));
+}
+
 // ── Card-resumo por Cliente: logo (ou nome) + quantidade, sem gráfico ─────
 // Com só 1-5 clientes por período (MAX_FATIAS em obterDadosChamadosClientes_)
 // uma barra/pizza não ajuda a leitura — um "tile" por cliente com o logo
@@ -133,17 +156,26 @@ function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema,
   const n = dadosPeriodo.fatias.length;
   const tileGap = 10;
   const tileW = (w - 24 - (n - 1) * tileGap) / n;
-  const logoH = Math.min(46, areaH * 0.5);
-  const qtyY  = areaY + logoH + 6;
+
+  // Teto fixo pro logo: _insertLogoFit_ preenche o máximo da caixa que
+  // receber, então sem limite um período com 2 clientes daria a cada um
+  // metade do card e os logos sairiam gigantes (e desproporcionais aos de
+  // um período com 5). Com o teto, a caixa do logo é a MESMA em todos os
+  // períodos — só sobra mais respiro lateral quando há poucos clientes.
+  const LOGO_MAX_W = 92, LOGO_MAX_H = 38;
+  const logoW = Math.min(tileW, LOGO_MAX_W);
+  const logoH = Math.min(LOGO_MAX_H, areaH * 0.45);
+  const qtyY  = areaY + logoH + 8;
 
   dadosPeriodo.fatias.forEach((f, i) => {
     const tileX = x + 12 + i * (tileW + tileGap);
+    const logoX = tileX + (tileW - logoW) / 2;   // logo centralizado no tile
     const cor = (coresMapa && coresMapa[f.label]) || corTema;
 
     const logoBlob = f.label === 'Outros' ? null : _getClienteLogoBlob_(_clienteDisplay_(f.label));
     let logoOk = false;
     if (logoBlob) {
-      try { _insertLogoFit_(slide, logoBlob, tileX, areaY, tileW, logoH); logoOk = true; }
+      try { _insertLogoFit_(slide, logoBlob, logoX, areaY, logoW, logoH); logoOk = true; }
       catch (e) { Logger.log('Logo do cliente ' + f.label + ' não desenhou: ' + e.message); }
     }
     if (!logoOk) {
@@ -207,11 +239,6 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
 
   const maxCliente = cols === 1 ? 22 : 16;
   const LOGO_W = 44, LOGO_GAP = 8;
-  // Orçamento de caracteres da descrição calculado pela largura REAL
-  // disponível (não uma tabela fixa por nº de colunas) — cada coluna usa o
-  // espaço que sobra depois do logo, então uma coluna larga com poucos
-  // clientes aproveita bem mais linha do que a tabela fixa antiga permitia.
-  const CHAR_W = fontSize * 0.52;
 
   // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
   // medida que avança — não dá pra usar uma caixa só por coluna com texto
@@ -242,15 +269,21 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
           // Logo ocupa a altura da linha inteira do grupo (não só a 1ª
           // linha) — _insertLogoFit_ centraliza dentro da caixa, então num
           // grupo de vários chamados o logo fica centralizado no bloco
-          // inteiro, não colado no topo.
-          _insertLogoFit_(slide, logoBlob, colX, cursorY, LOGO_W, rowH);
+          // inteiro, não colado no topo. O deslocamento de TEXTBOX_INSET_PT
+          // compensa a margem interna da caixa de texto ao lado, senão o
+          // logo fica alguns pontos acima da 1ª linha do texto.
+          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, rowH - TEXTBOX_INSET_PT);
           textX = colX + LOGO_W + LOGO_GAP;
           textW = colW - LOGO_W - LOGO_GAP;
         } catch (e) {
           Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
         }
       }
-      const maxDesc = Math.max(20, Math.floor((textW - 70) / CHAR_W));
+      // Orçamento de caracteres por LINHA, descontando o prefixo de cada
+      // uma (bullet/indentação + id + separador). Cada chamado tem que
+      // caber numa linha só, senão a quebra desalinha os logos seguintes —
+      // ver o comentário de _charsQueCabem_.
+      const capacidadeLinha = _charsQueCabem_(textW, fontSize);
 
       const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
       const tr = box.getText();
@@ -259,12 +292,14 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
       if (grupo.length === 1) {
         const bullet = tr.appendText('• ');
         bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-        if (!logoBlob) {
-          const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+        const nomeTxt = logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ';
+        if (nomeTxt) {
+          const cliPart = tr.appendText(nomeTxt);
           cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(corTema).setFontFamily('Montserrat');
         }
         const idPart = tr.appendText(grupo[0].id + ' - ');
         idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+        const maxDesc = Math.max(12, capacidadeLinha - 2 - nomeTxt.length - grupo[0].id.length - 3);
         const descPart = tr.appendText(_truncarNome_(grupo[0].descricao, maxDesc));
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
       } else {
@@ -276,6 +311,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
         grupo.forEach(it => {
           const idPart = tr.appendText('   ' + it.id + ' - ');
           idPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+          const maxDesc = Math.max(12, capacidadeLinha - 3 - it.id.length - 3);
           const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc) + '\n');
           descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
         });

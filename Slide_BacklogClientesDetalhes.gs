@@ -125,10 +125,6 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
 
   const maxCliente = 26;
   const LOGO_W = 56, LOGO_GAP = 10;
-  // Orçamento de caracteres da descrição pela largura REAL da linha (não
-  // uma tabela fixa) — com a linha ocupando o card inteiro, sobra muito
-  // mais espaço do que as ~58 letras fixas de antes permitiam.
-  const CHAR_W = fontSize * 0.52;
 
   let cursorY = listY;
   grupos.forEach(grupo => {
@@ -144,14 +140,20 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
         // Logo ocupa a altura da linha inteira do grupo — _insertLogoFit_
         // centraliza dentro da caixa, então mesmo num grupo de vários
         // chamados o logo fica centralizado no bloco, não colado no topo.
-        _insertLogoFit_(slide, logoBlob, x + 15, cursorY, LOGO_W, rowH);
+        // O deslocamento de TEXTBOX_INSET_PT compensa a margem interna da
+        // caixa de texto ao lado (ver Slide_ChamadosClientes.gs).
+        _insertLogoFit_(slide, logoBlob, x + 15, cursorY + TEXTBOX_INSET_PT, LOGO_W, rowH - TEXTBOX_INSET_PT);
         textX = x + 15 + LOGO_W + LOGO_GAP;
         textW = w - 30 - LOGO_W - LOGO_GAP;
       } catch (e) {
         Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message);
       }
     }
-    const maxDesc = Math.max(24, Math.floor((textW - 90) / CHAR_W));
+    // Orçamento de caracteres por LINHA — cada chamado tem que caber numa
+    // linha só, senão a quebra desalinha os logos seguintes (ver o
+    // comentário de _charsQueCabem_ em Slide_ChamadosClientes.gs).
+    const capacidadeLinha = _charsQueCabem_(textW, fontSize);
+    const metaLen = 18;   // "(dd/mm/aa · NNNd) " — orçamento fixo pro trecho de data/dias
 
     const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textX, cursorY, textW, rowH);
     const tr = box.getText();
@@ -160,8 +162,9 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
     if (grupo.length === 1) {
       const bullet = tr.appendText('• ');
       bullet.getTextStyle().setForegroundColor(CORES.textGray).setFontSize(fontSize).setBold(true);
-      if (!logoBlob) {
-        const cliPart = tr.appendText(_truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ');
+      const nomeTxt = logoBlob ? '' : _truncarNome_(_clienteDisplay_(grupo[0].cliente), maxCliente) + ' - ';
+      if (nomeTxt) {
+        const cliPart = tr.appendText(nomeTxt);
         cliPart.getTextStyle().setFontSize(fontSize).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
       }
       // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
@@ -173,6 +176,7 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
         const metaPart = tr.appendText('(' + meta + ') ');
         metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
       }
+      const maxDesc = Math.max(12, capacidadeLinha - 2 - nomeTxt.length - grupo[0].id.length - 1 - (meta ? metaLen : 0) - 2);
       const descPart = tr.appendText('- ' + _truncarNome_(grupo[0].descricao, maxDesc));
       descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
     } else {
@@ -189,6 +193,7 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
           const metaPart = tr.appendText('(' + meta + ') ');
           metaPart.getTextStyle().setFontSize(Math.max(6, fontSize - 0.5)).setItalic(true).setBold(false).setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
         }
+        const maxDesc = Math.max(12, capacidadeLinha - 3 - it.id.length - 1 - (meta ? metaLen : 0) - 2);
         const descPart = tr.appendText('- ' + _truncarNome_(it.descricao, maxDesc) + '\n');
         descPart.getTextStyle().setFontSize(fontSize).setBold(false).setForegroundColor(CORES.textDark).setFontFamily('Montserrat');
       });
