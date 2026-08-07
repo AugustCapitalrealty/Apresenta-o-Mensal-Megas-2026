@@ -238,7 +238,16 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = cols === 1 ? 22 : 16;
-  const LOGO_W = 44, LOGO_GAP = 8;
+  // LOGO_W ~53pt (1,87cm) veio do ajuste manual que o usuário fez direto no
+  // Slides pra comparar — mediu a mesma largura em 3 logos diferentes
+  // (Bosch/Shopee/Suzano) e deixou a altura livre pra acompanhar a
+  // proporção de cada imagem. LOGO_H_MAX limita essa altura a ~2 linhas:
+  // sem o teto, um grupo com vários chamados (ex.: Suzano com 4) dava um
+  // rowH alto e _insertLogoFit_ centralizava o logo no meio do bloco
+  // inteiro (logo "flutuando" longe do nome, sem relação visual com o
+  // texto). Com o teto, o logo fica compacto e colado no topo do grupo —
+  // exatamente como no ajuste manual de referência.
+  const LOGO_W = 52, LOGO_GAP = 8;
 
   // Cada grupo (cliente) vira sua própria caixa de texto, empilhada em Y à
   // medida que avança — não dá pra usar uma caixa só por coluna com texto
@@ -266,13 +275,13 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
       const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
       if (logoBlob) {
         try {
-          // Logo ocupa a altura da linha inteira do grupo (não só a 1ª
-          // linha) — _insertLogoFit_ centraliza dentro da caixa, então num
-          // grupo de vários chamados o logo fica centralizado no bloco
-          // inteiro, não colado no topo. O deslocamento de TEXTBOX_INSET_PT
-          // compensa a margem interna da caixa de texto ao lado, senão o
-          // logo fica alguns pontos acima da 1ª linha do texto.
-          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, rowH - TEXTBOX_INSET_PT);
+          // Caixa do logo colada no topo do grupo (cursorY), com altura
+          // travada em ~1,9 linha — não em rowH, senão num grupo de vários
+          // chamados o logo estica/centraliza no bloco inteiro. O
+          // deslocamento de TEXTBOX_INSET_PT compensa a margem interna da
+          // caixa de texto ao lado, pra casar com a 1ª linha do texto.
+          const logoH = Math.min(rowH - TEXTBOX_INSET_PT, lineH * 1.9);
+          _insertLogoFit_(slide, logoBlob, colX, cursorY + TEXTBOX_INSET_PT, LOGO_W, logoH);
           textX = colX + LOGO_W + LOGO_GAP;
           textW = colW - LOGO_W - LOGO_GAP;
         } catch (e) {

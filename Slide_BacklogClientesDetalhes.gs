@@ -124,7 +124,11 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 26;
-  const LOGO_W = 56, LOGO_GAP = 10;
+  // Mesmo LOGO_W (~53pt/1,87cm) e mesma lógica de altura travada de
+  // Slide_ChamadosClientes.gs — ver comentário lá pro porquê (ajuste manual
+  // de referência do usuário + logo colado no topo do grupo em vez de
+  // esticado/centralizado no bloco inteiro).
+  const LOGO_W = 53, LOGO_GAP = 10;
 
   let cursorY = listY;
   grupos.forEach(grupo => {
@@ -137,12 +141,10 @@ function _backlogClientesLista_(slide, x, y, w, h, titulo, itens, corTema, cores
     const logoBlob = _getClienteLogoBlob_(_clienteDisplay_(grupo[0].cliente));
     if (logoBlob) {
       try {
-        // Logo ocupa a altura da linha inteira do grupo — _insertLogoFit_
-        // centraliza dentro da caixa, então mesmo num grupo de vários
-        // chamados o logo fica centralizado no bloco, não colado no topo.
-        // O deslocamento de TEXTBOX_INSET_PT compensa a margem interna da
-        // caixa de texto ao lado (ver Slide_ChamadosClientes.gs).
-        _insertLogoFit_(slide, logoBlob, x + 15, cursorY + TEXTBOX_INSET_PT, LOGO_W, rowH - TEXTBOX_INSET_PT);
+        // Logo colado no topo do grupo, altura travada em ~1,9 linha (não
+        // rowH) — ver comentário equivalente em Slide_ChamadosClientes.gs.
+        const logoH = Math.min(rowH - TEXTBOX_INSET_PT, lineH * 1.9);
+        _insertLogoFit_(slide, logoBlob, x + 15, cursorY + TEXTBOX_INSET_PT, LOGO_W, logoH);
         textX = x + 15 + LOGO_W + LOGO_GAP;
         textW = w - 30 - LOGO_W - LOGO_GAP;
       } catch (e) {
