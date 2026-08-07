@@ -127,7 +127,7 @@ function _prioridadeBarraCard_(slide, x, y, w, h, titulo, dadosPeriodo, corTema)
 // Regra geral de todas as listas de chamados do deck: mostrar tudo que
 // couber; quando não couber numa coluna só, divide em mais colunas e
 // encolhe a fonte até um piso legível — nunca esconde chamado atrás de um
-// "+N outros" (mesma técnica de _clientesLista_/_backlogEmergLista_).
+// "+N outros" (mesma técnica de _clientesLista_/_backlogEmergTabela_).
 function _prioridadeListaEmergencial_(slide, x, y, w, h, titulo, itens) {
   const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', CORES.cardRed);
   const listY = contentY + 2, listH = y + h - listY - 8;
