@@ -39,15 +39,23 @@ function gerarSlideChamadosClientes() {
   const marginX = 30, topY = 76, gap = 16;
   const areaBottom = H - 16;
   const colW = (W - 2 * marginX - gap) / 2;
-  const rowH = (areaBottom - topY - gap) / 2;
+  // Resumo (logo+qtd) precisa de bem menos altura que a lista de tabela —
+  // com poucos clientes ele sobra espaço em branco embaixo, enquanto a
+  // lista é o que carrega o detalhe (id + descrição de cada chamado, uma
+  // linha por vez), então ganha a maior fatia da área disponível. O piso
+  // de 124pt é o mínimo pro conteúdo do resumo caber sem cortar (título do
+  // card + logo no teto de 38pt + qtd + %, ver _clientesResumoLogos_).
+  const totalH   = areaBottom - topY - gap;
+  const resumoH  = Math.max(124, totalH * 0.32);
+  const listaH   = totalH - resumoH;
 
   const coresMapa = _clienteCoresMapa_(dados);
-  _clientesResumoLogos_(slide, marginX,             topY, colW, rowH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
-  _clientesResumoLogos_(slide, marginX + colW + gap, topY, colW, rowH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
+  _clientesResumoLogos_(slide, marginX,             topY, colW, resumoH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
+  _clientesResumoLogos_(slide, marginX + colW + gap, topY, colW, resumoH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
 
-  const y2 = topY + rowH + gap;
-  _clientesLista_(slide, marginX,             y2, colW, rowH, 'LISTA DE CHAMADOS ABERTOS',  dados.abertos.lista,  CORES.lightBlue);
-  _clientesLista_(slide, marginX + colW + gap, y2, colW, rowH, 'LISTA DE CHAMADOS FECHADOS', dados.fechados.lista, CORES.darkBlue);
+  const y2 = topY + resumoH + gap;
+  _clientesLista_(slide, marginX,             y2, colW, listaH, 'LISTA DE CHAMADOS ABERTOS',  dados.abertos.lista,  CORES.lightBlue);
+  _clientesLista_(slide, marginX + colW + gap, y2, colW, listaH, 'LISTA DE CHAMADOS FECHADOS', dados.fechados.lista, CORES.darkBlue);
 
   Logger.log('Slide Chamados de Clientes gerado — abertos=' + dados.abertos.total +
              ', fechados=' + dados.fechados.total + '.');
