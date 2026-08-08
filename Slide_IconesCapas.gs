@@ -32,11 +32,14 @@
  * sendo o padrão até alguém povoar a pasta.
  */
 
-// ID da pasta do Drive com os ícones — a mesma pasta de assets do projeto
-// (onde já moram os logos Mega e as subpastas CR/, CLIENTES/, FOTOS MEGAS/).
-// Só os arquivos SOLTOS na pasta são procurados; subpasta não é vasculhada.
-// Vazio = recurso desligado: nenhuma chamada ao Drive e capas 100% nativas.
-const ICONES_CAPAS_PASTA_ID = '1LDDbVpH0zAwUeQR7cu7bTOqg74Fa5Yks';
+// ID da pasta do Drive com os ícones. DESLIGADO por opção: vazio = nenhuma
+// chamada ao Drive e capas 100% no desenho nativo.
+//
+// Para religar, basta pôr o ID da pasta aqui (a pasta de assets do projeto é
+// 1LDDbVpH0zAwUeQR7cu7bTOqg74Fa5Yks — onde já moram os logos Mega e as
+// subpastas CR/, CLIENTES/, FOTOS MEGAS/) e colocar os PNGs com os nomes de
+// _ICONES_CAPAS_ARQUIVO_. Só os arquivos SOLTOS na pasta são procurados.
+const ICONES_CAPAS_PASTA_ID = '';
 
 // Chave da seção (a mesma de _secDesenharMotivo_) → nome do arquivo na pasta,
 // sem extensão. A extensão é resolvida por _ICONES_CAPAS_EXTENSOES_.
