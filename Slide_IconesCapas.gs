@@ -32,9 +32,11 @@
  * sendo o padrão até alguém povoar a pasta.
  */
 
-// ID da pasta do Drive com os ícones. Vazio = recurso desligado: nenhuma
-// chamada ao Drive é feita e as capas seguem 100% no desenho nativo.
-const ICONES_CAPAS_PASTA_ID = '';
+// ID da pasta do Drive com os ícones — a mesma pasta de assets do projeto
+// (onde já moram os logos Mega e as subpastas CR/, CLIENTES/, FOTOS MEGAS/).
+// Só os arquivos SOLTOS na pasta são procurados; subpasta não é vasculhada.
+// Vazio = recurso desligado: nenhuma chamada ao Drive e capas 100% nativas.
+const ICONES_CAPAS_PASTA_ID = '1LDDbVpH0zAwUeQR7cu7bTOqg74Fa5Yks';
 
 // Chave da seção (a mesma de _secDesenharMotivo_) → nome do arquivo na pasta,
 // sem extensão. A extensão é resolvida por _ICONES_CAPAS_EXTENSOES_.
@@ -66,6 +68,31 @@ const ICONE_CAPA_BOX_PT = 108;
 // deck das três cidades repetiria a mesma busca no Drive a cada capa.
 const _iconeCapaCache_ = {};
 
+// Índice nome→arquivo da pasta, montado UMA vez por execução.
+//
+// Vale a pena listar a pasta inteira em vez de perguntar arquivo por arquivo:
+// com getFilesByName seriam 4 consultas (uma por extensão) × 9 seções = 36
+// idas ao Drive quando a pasta ainda não tem ícone nenhum — que é justamente
+// o estado inicial. Assim é 1 só. De quebra, o índice é minúsculo, então
+// "Preventiva.PNG" também é encontrado (o Drive diferencia maiúsculas).
+let _iconeCapaIndice_ = null;
+
+function _iconesCapaIndice_() {
+  if (_iconeCapaIndice_) return _iconeCapaIndice_;
+  const idx = {};
+  try {
+    const it = DriveApp.getFolderById(ICONES_CAPAS_PASTA_ID).getFiles();
+    while (it.hasNext()) {
+      const f = it.next();
+      idx[String(f.getName() || '').toLowerCase()] = f;
+    }
+  } catch (e) {
+    Logger.log('Ícones das capas: pasta do Drive inacessível (' + e.message +
+               ') — usando os motivos desenhados.');
+  }
+  _iconeCapaIndice_ = idx;
+  return idx;
+}
 
 // Devolve o Blob do ícone da seção, ou null (sem pasta, sem arquivo, arquivo
 // inacessível ou formato não suportado). Nunca lança.
@@ -77,21 +104,14 @@ function _getIconeCapaBlob_(chave) {
 
   if (nomeBase in _iconeCapaCache_) return _iconeCapaCache_[nomeBase];
 
+  const idx = _iconesCapaIndice_();
   let achado = null;
-  try {
-    const pasta = DriveApp.getFolderById(ICONES_CAPAS_PASTA_ID);
-    for (let i = 0; i < _ICONES_CAPAS_EXTENSOES_.length && !achado; i++) {
-      const nome = nomeBase + '.' + _ICONES_CAPAS_EXTENSOES_[i];
-      const it   = pasta.getFilesByName(nome);
-      if (it.hasNext()) achado = it.next();
-    }
-    if (!achado) {
-      Logger.log('Ícone da capa "' + chave + '": nenhum arquivo "' + nomeBase +
-                 '.(png|jpg|gif)" na pasta — usando o motivo desenhado.');
-    }
-  } catch (e) {
-    Logger.log('Ícone da capa "' + chave + '": pasta do Drive inacessível (' +
-               e.message + ') — usando o motivo desenhado.');
+  for (let i = 0; i < _ICONES_CAPAS_EXTENSOES_.length && !achado; i++) {
+    achado = idx[nomeBase + '.' + _ICONES_CAPAS_EXTENSOES_[i]] || null;
+  }
+  if (!achado) {
+    Logger.log('Ícone da capa "' + chave + '": nenhum arquivo "' + nomeBase +
+               '.(png|jpg|gif)" na pasta — usando o motivo desenhado.');
   }
 
   let blob = null;
@@ -142,6 +162,7 @@ function conferirIconesCapas() {
     Logger.log('ICONES_CAPAS_PASTA_ID vazio — as capas usam o motivo desenhado (padrão atual).');
     return;
   }
+  _iconeCapaIndice_ = null;   // relê a pasta: o arquivo pode ter acabado de entrar
   Object.keys(_ICONES_CAPAS_ARQUIVO_).forEach(chave => {
     delete _iconeCapaCache_[_ICONES_CAPAS_ARQUIVO_[chave]];
     const blob = _getIconeCapaBlob_(chave);
