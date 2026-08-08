@@ -2,9 +2,10 @@
  * ARQUIVO: Slide_CapaSecao.gs
  * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto), versão premium
  *
- * Cada seção tem sua ESTÉTICA ÚNICA na FORMA (um "motivo" geométrico
- * próprio que remete ao tema, desenhado só com shapes nativos do Slides —
- * nada de ícone externo) e na FOTO de fundo — mas a COR é uma só, padrão,
+ * Cada seção tem sua ESTÉTICA ÚNICA na FORMA (um "motivo" próprio que remete
+ * ao tema — um ícone PNG da pasta do Drive quando existe, senão o desenho
+ * nativo em shapes do Slides; ver Slide_IconesCapas.gs) e na FOTO de fundo —
+ * mas a COR é uma só, padrão,
  * em todas: o azul #60A5FA, o mesmo destaque já usado na Capa e no
  * Encerramento. Antes cada categoria tinha uma cor diferente (verde,
  * laranja, vermelho...) e ficou com cara de "carnaval" — a marca não
@@ -93,6 +94,12 @@ function gerarCapaSecao(linha1, linha2, chave) {
 // (lê sobre a foto) com UM realce na cor de acento. Só shapes nativos.
 
 function _secDesenharMotivo_(chave, s, cx, cy, cor) {
+  // Ícone da pasta do Drive tem precedência, quando existe (ver
+  // Slide_IconesCapas.gs). Sem pasta configurada isso sai na primeira linha
+  // sem nenhuma chamada de rede, e o desenho nativo abaixo continua sendo o
+  // padrão — ele é vetorial e nunca depende de arquivo externo.
+  if (_secIconeCapa_(s, cx, cy, chave)) return;
+
   switch (chave) {
     case 'PREVENTIVA':   return _secMotPreventiva_(s, cx, cy, cor);
     case 'CORRETIVA':    return _secMotCorretiva_(s, cx, cy, cor);
