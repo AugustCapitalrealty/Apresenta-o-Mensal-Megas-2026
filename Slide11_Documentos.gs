@@ -32,6 +32,39 @@ const DOC_LABEL_CATEGORIA = {
   PENDENTE : 'PENDENTE'
 };
 
+// Logo do cliente na coluna EMPRESA (mesma técnica das listas de chamados:
+// Slide_ChamadosClientes.gs / Slide_BacklogClientesDetalhes.gs). Altura máxima
+// para que o logo não domine a linha quando o card da empresa é alto (empresa
+// com muitos documentos) e folga vertical mínima dentro da célula.
+const DOC_LOGO_MAX_H = 28;
+const DOC_LOGO_PAD_Y = 3;
+
+// Desenha a célula EMPRESA: logo quando existe arquivo no Drive, senão o nome
+// em texto (fallback obrigatório — nem todo inquilino tem logo cadastrado em
+// LOGOS_CLIENTES, e o Drive pode negar acesso ao arquivo em tempo de execução).
+function _docEmpresaCelula_(slide, x, y, w, h, empresa, fontSize, cor) {
+  const nome = _clienteDisplay_(empresa);
+  let blob = null;
+  try {
+    blob = _getClienteLogoBlob_(nome);
+  } catch (e) {
+    Logger.log('Logo de "' + empresa + '" (Documentos) não carregou: ' + e.message);
+  }
+
+  if (blob) {
+    try {
+      const boxH = Math.min(h - DOC_LOGO_PAD_Y * 2, DOC_LOGO_MAX_H);
+      _insertLogoFit_(slide, blob, x, y + (h - boxH) / 2, w - 6, boxH);
+      return true;
+    } catch (e) {
+      Logger.log('Logo de "' + empresa + '" (Documentos) não inseriu: ' + e.message);
+    }
+  }
+
+  desenharCelulaDoc_(slide, x, y, w, h, nome, fontSize, true, cor, 'L');
+  return false;
+}
+
 
 function gerarSlideDocumentos() {
   const dados = obterDadosDocumentos();
@@ -173,7 +206,7 @@ function desenharPaginaResumoDocumentos_(dados) {
       zebra.getFill().setSolidFill('#F8FAFC'); zebra.getBorder().setTransparent();
     }
 
-    desenharCelulaDoc_(slide, cols[0].x, ry, cols[0].w, rowH, it.empresa,   8, true,  CORES.textDark, 'L');
+    _docEmpresaCelula_(slide, cols[0].x, ry, cols[0].w, rowH, it.empresa, 8, CORES.textDark);
     desenharCelulaDoc_(slide, cols[1].x, ry, cols[1].w, rowH, it.documento, 8, false, CORES.textDark, 'L');
     desenharCelulaDoc_(slide, cols[2].x, ry, cols[2].w, rowH, it.venc,      8, false, CORES.textDark, 'C');
     desenharCelulaDoc_(slide, cols[3].x, ry, cols[3].w, rowH, it.diasTexto, 8, true,  cor,            'C');
@@ -261,8 +294,8 @@ function desenharPaginaTabelaDocumentos_(itens, pagina, totalPaginas) {
     const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, DOC_MARGIN_X + 8, cardY, 4, cardH);
     barra.getFill().setSolidFill(CORES.lightBlue); barra.getBorder().setTransparent();
 
-    // Nome da empresa verticalmente centralizado no card
-    desenharCelulaDoc_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, true, CORES.darkBlue, 'L');
+    // Logo (ou nome) da empresa verticalmente centralizado no card
+    _docEmpresaCelula_(slide, cols[0].x, cardY, cols[0].w, cardH, g.empresa, 9, CORES.darkBlue);
 
     g.itens.forEach(({ i }, li) => { itemY[i] = cardY + li * DOC_ROW_H; });
     cursorY += cardH + DOC_CARD_GAP;
