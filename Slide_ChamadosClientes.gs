@@ -91,7 +91,8 @@ const _CLIENTE_APELIDOS_ = [
   { trecho: 'calamo',         apelido: 'Cálamo' },
   { trecho: 'boticario',      apelido: 'Boticário' },
   { trecho: 'ntn rolamentos', apelido: 'NTN' },
-  { trecho: 'h p comercio',   apelido: 'HP' }
+  { trecho: 'h p comercio',   apelido: 'HP' },
+  { trecho: 'bpb',            apelido: 'Boticário' }
 ];
 
 function _clienteDisplay_(clienteCru) {
@@ -186,14 +187,15 @@ function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema,
     const logoX = tileX + (tileW - logoW) / 2;   // logo centralizado no tile
     const cor = (coresMapa && coresMapa[f.label]) || corTema;
 
-    const logoBlob = f.label === 'Outros' ? null : _getClienteLogoBlob_(_clienteDisplay_(f.label));
+    const nomeTile = _clienteDisplay_(f.label);
+    const logoBlob = f.label === 'Outros' ? null : _getClienteLogoBlob_(nomeTile);
     let logoOk = false;
     if (logoBlob) {
-      try { _insertLogoFit_(slide, logoBlob, logoX, areaY, logoW, logoH); logoOk = true; }
+      try { logoOk = !!_insertLogoFitLegenda_(slide, logoBlob, nomeTile, logoX, areaY, logoW, logoH); }
       catch (e) { Logger.log('Logo do cliente ' + f.label + ' não desenhou: ' + e.message); }
     }
     if (!logoOk) {
-      _sTxt(slide, tileX, areaY, tileW, logoH, _truncarNome_(_clienteDisplay_(f.label), 16), 9, true, cor, 'center');
+      _sTxt(slide, tileX, areaY, tileW, logoH, _truncarNome_(nomeTile, 16), 9, true, cor, 'center');
     }
 
     const pct = total > 0 ? (f.qtd / total * 100) : 0;
@@ -300,7 +302,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
       const logoY = cursorY + (rowH - LOGO_CELL_H - (grupo.length > 1 ? CAPTION_H : 0)) / 2;
       let logoOk = false;
       if (logoBlob) {
-        try { _insertLogoFit_(slide, logoBlob, colX, logoY, LOGO_COL_W, LOGO_CELL_H); logoOk = true; }
+        try { logoOk = !!_insertLogoFitLegenda_(slide, logoBlob, nomeDisplay, colX, logoY, LOGO_COL_W, LOGO_CELL_H); }
         catch (e) { Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message); }
       }
       if (!logoOk) {

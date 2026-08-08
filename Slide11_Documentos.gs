@@ -53,9 +53,12 @@ function _docEmpresaCelula_(slide, x, y, w, h, empresa, fontSize, cor) {
 
   if (blob) {
     try {
-      const boxH = Math.min(h - DOC_LOGO_PAD_Y * 2, DOC_LOGO_MAX_H);
-      _insertLogoFit_(slide, blob, x, y + (h - boxH) / 2, w - 6, boxH);
-      return true;
+      // Marca que divide o arquivo de logo com outra (Cálamo sob a logo do
+      // Boticário) ganha uma faixa a mais de altura pra legenda embaixo, pra
+      // que o logo em si continue do mesmo tamanho das demais empresas.
+      const extra = _logoLegendaRotulo_(nome) ? _LOGO_LEGENDA_H_ : 0;
+      const boxH = Math.min(h - DOC_LOGO_PAD_Y * 2, DOC_LOGO_MAX_H + extra);
+      if (_insertLogoFitLegenda_(slide, blob, nome, x, y + (h - boxH) / 2, w - 6, boxH)) return true;
     } catch (e) {
       Logger.log('Logo de "' + empresa + '" (Documentos) não inseriu: ' + e.message);
     }

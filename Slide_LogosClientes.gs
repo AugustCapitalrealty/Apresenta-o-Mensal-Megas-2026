@@ -82,6 +82,78 @@ function _getClienteLogoBlob_(nomeCliente) {
   return _clienteLogoCache_[idAchado];
 }
 
+// ── Legenda embaixo do logo (marcas que dividem o mesmo arquivo) ─────────
+// Alguns clientes aparecem sob o logo de OUTRA marca porque compartilham o
+// mesmo arquivo no mapa acima — herança do projeto "Controle de Acessos
+// Megas", que já mostra a logo do Boticário para o Cálamo. Sem nada escrito
+// embaixo, o slide exibe duas empresas diferentes com exatamente a mesma
+// imagem e ninguém sabe qual é qual. Nesses casos (e só nesses) o nome curto
+// da empresa vai numa legenda logo abaixo do logo.
+//
+// O casamento é por TRECHO normalizado, igual ao de LOGOS_CLIENTES: o nome
+// que chega aqui pode ser o apelido ("Cálamo") ou a razão social inteira
+// ("ORIZON COMERCIO DE ALIMENTOS LTDA"), e a legenda tem que mostrar sempre
+// o nome curto.
+const _LOGOS_LEGENDA_ = [
+  { trecho: 'boticario', rotulo: 'Boticário' },   // BPB / O Boticário
+  { trecho: 'calamo',    rotulo: 'Cálamo'    },   // usa a logo do Boticário
+  { trecho: 'domazzi',   rotulo: 'Domazzi'   },   // divide arquivo com Flexmodal
+  { trecho: 'flexmodal', rotulo: 'Flexmodal' },
+  { trecho: 'stella',    rotulo: 'Stella'    },   // Stella/Orizon/STH/Vm Vinhos
+  { trecho: 'orizon',    rotulo: 'Orizon'    },   // dividem o mesmo arquivo
+  { trecho: 'sth',       rotulo: 'STH'       },
+  { trecho: 'vm vinhos', rotulo: 'Vm Vinhos' }
+];
+
+const _LOGO_LEGENDA_H_        = 9;    // faixa reservada pra legenda (pt)
+const _LOGO_LEGENDA_FS_       = 6;    // fonte da legenda (pt)
+const _LOGO_LEGENDA_FOLGA_    = 10;   // folga lateral da caixa de texto (ver abaixo)
+const _LOGO_LEGENDA_MIN_BOX_  = 22;   // altura mínima pra caber logo + legenda
+
+// Devolve o nome curto da marca quando o logo é ambíguo, senão null.
+function _logoLegendaRotulo_(nomeCliente) {
+  const alvo = _histEmpChave_(nomeCliente);
+  for (let i = 0; i < _LOGOS_LEGENDA_.length; i++) {
+    if (alvo.indexOf(_histEmpChave_(_LOGOS_LEGENDA_[i].trecho)) >= 0) return _LOGOS_LEGENDA_[i].rotulo;
+  }
+  return null;
+}
+
+// Escreve a legenda centralizada na faixa x,y,w,h.
+//
+// A caixa de texto é criada MAIS LARGA que a faixa (_LOGO_LEGENDA_FOLGA_ de
+// cada lado): toda TEXT_BOX do Slides tem um recuo interno de ~7pt que não dá
+// pra desligar pela API, e numa coluna estreita esse recuo faz um nome curto
+// como "Flexmodal" quebrar em duas linhas mesmo sobrando espaço visível.
+// Como o texto é centralizado e a folga é simétrica, a largura extra sobra
+// igual dos dois lados e não muda nada na aparência — a caixa não tem fundo
+// nem borda própria.
+function _logoLegendaTexto_(slide, x, y, w, h, rotulo) {
+  const caixaW = w + _LOGO_LEGENDA_FOLGA_ * 2;
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - _LOGO_LEGENDA_FOLGA_, y, caixaW, h);
+  const txt = box.getText();
+  txt.setText(_truncarNome_(rotulo, _charsQueCabem_(caixaW, _LOGO_LEGENDA_FS_)))
+    .getTextStyle().setFontSize(_LOGO_LEGENDA_FS_).setBold(true)
+    .setForegroundColor(CORES.textGray).setFontFamily('Montserrat');
+  txt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+}
+
+// Igual a _insertLogoFit_, mas escreve o nome curto embaixo quando o logo é
+// compartilhado por mais de uma marca. Devolve a imagem inserida, ou null
+// quando a caixa é baixa demais pra comportar logo + legenda legíveis — aí o
+// chamador cai no fallback de texto, que diferencia melhor do que um logo
+// minúsculo com uma legenda ilegível embaixo.
+function _insertLogoFitLegenda_(slide, blob, nomeCliente, x, y, boxW, boxH) {
+  const rotulo = _logoLegendaRotulo_(nomeCliente);
+  if (!rotulo) return _insertLogoFit_(slide, blob, x, y, boxW, boxH);
+  if (boxH < _LOGO_LEGENDA_MIN_BOX_) return null;
+
+  const img = _insertLogoFit_(slide, blob, x, y, boxW, boxH - _LOGO_LEGENDA_H_);
+  _logoLegendaTexto_(slide, x, y + boxH - _LOGO_LEGENDA_H_, boxW, _LOGO_LEGENDA_H_, rotulo);
+  return img;
+}
+
 // Insere uma imagem centralizada dentro de uma caixa x,y,boxW,boxH, ocupando
 // o máximo de área possível sem distorcer a proporção original ("contain") —
 // necessário porque os arquivos de logo têm proporções bem diferentes entre

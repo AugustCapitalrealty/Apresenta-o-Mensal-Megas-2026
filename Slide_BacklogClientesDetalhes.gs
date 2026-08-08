@@ -237,7 +237,7 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
     const logoY = cursorY + (rowH - LOGO_CELL_H - (grupo.length > 1 ? CAPTION_H : 0)) / 2;
     let logoOk = false;
     if (logoBlob) {
-      try { _insertLogoFit_(slide, logoBlob, x + 15, logoY, LOGO_COL_W, LOGO_CELL_H); logoOk = true; }
+      try { logoOk = !!_insertLogoFitLegenda_(slide, logoBlob, nomeDisplay, x + 15, logoY, LOGO_COL_W, LOGO_CELL_H); }
       catch (e) { Logger.log('Logo do cliente ' + grupo[0].cliente + ' não desenhou: ' + e.message); }
     }
     if (!logoOk) {
