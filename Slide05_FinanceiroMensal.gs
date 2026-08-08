@@ -144,7 +144,12 @@ function obterDadosFinanceiroMensal_() {
     totalRealizado,
     acimaDoOrcado,
     abaixoDoOrcado,
-    dadosGrafico
+    dadosGrafico,
+    // Todas as rubricas do mês ({natureza, orcado, realizado, diff}) — o
+    // slide só usa os recortes acima (top 3 / top 8), mas o slide de CHECK
+    // precisa da lista inteira pra comparar rubrica a rubrica com o DRE e
+    // isolar se uma divergência de total está nas linhas ou só no total.
+    linhasDados
   };
 }
 
