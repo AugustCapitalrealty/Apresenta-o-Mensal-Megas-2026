@@ -455,9 +455,13 @@ function _rodarChecagensConsistencia_() {
     const soma = histMes.facilities + histMes.property + histMes.locatario;
     return { ok: soma === histMes.geral, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(soma) };
   });
-  _ckAdd_(L, G_BKGER, 'Chamados Geral x total de Chamados Pendentes', () => {
-    if (!histMes || histMes.geral == null || !pendentes) return null;
-    return { ok: histMes.geral === pendentes.total, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(pendentes.total) };
+  // O total exibido em Chamados Pendentes já é conciliado com o Geral da aba
+  // BACKLOG, então comparar os dois seria sempre verdadeiro. O que vale é a
+  // SOMA CRUA da aba de estados (`somaAba`): se ela não fecha com o Geral do
+  // histórico, falta (ou sobra) chamado em algum estado da planilha.
+  _ckAdd_(L, G_BKGER, 'Chamados Geral x soma dos estados (aba de pendentes)', () => {
+    if (!histMes || histMes.geral == null || !pendentes || pendentes.somaAba == null) return null;
+    return { ok: histMes.geral === pendentes.somaAba, esperado: _ckInt_(histMes.geral), obtido: _ckInt_(pendentes.somaAba) };
   });
   // Dashboard (aba DADOS) x aba BACKLOG do Histórico Validado: duas
   // planilhas diferentes com as mesmas duas linhas. O "geral" costuma bater

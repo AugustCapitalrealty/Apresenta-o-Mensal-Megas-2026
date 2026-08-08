@@ -496,24 +496,34 @@ function obterDadosBacklogPendentes_() {
     });
     const somaDir = direcionados.reduce((s, it) => s + it.qtd, 0);
 
-    // Total oficial: 'Chamados geral' da aba DADOS (mesmo número do Dashboard).
-    // Captura também o total do mês anterior (coluna mesAnt) para a tendência.
+    // Total oficial: coluna "Geral" da aba BACKLOG do HISTÓRICO VALIDADO —
+    // a mesma fonte do slide Backlog Facilities. NÃO usa mais a aba DADOS
+    // da planilha da cidade (a pedido): o histórico é a fonte autoritativa
+    // do backlog, é internamente consistente (geral = facilities + property
+    // + locatário) e traz a série mensal inteira, então o mês anterior sai
+    // da mesma origem em vez de depender da coluna "mês anterior" da aba
+    // DADOS. Isso também desfaz a ida e volta que existia aqui
+    // (pendentes → Dashboard → histórico).
     let totalOficial = null, totalAnterior = null;
     try {
-      const dash = obterDadosDashboard();
-      dash.map.forEach((val, chave) => {
-        const k = _histNorm_(chave);
-        if (totalOficial === null && k.includes('chamados') && k.includes('geral')) {
-          const n = _histNum_(val.atual);
-          if (!isNaN(n)) totalOficial = n;
-          const p = _histNum_(val.mesAnt);
-          if (!isNaN(p)) totalAnterior = p;
+      const serie = obterDadosBacklogHistorico_();
+      if (serie && serie.length) {
+        const iAlvo = serie.findIndex(p => p.ord === alvoOrd);
+        if (iAlvo >= 0 && serie[iAlvo].geral != null) {
+          totalOficial = serie[iAlvo].geral;
+          if (iAlvo > 0 && serie[iAlvo - 1].geral != null) totalAnterior = serie[iAlvo - 1].geral;
         }
-      });
-    } catch (e) {}
+      }
+    } catch (e) {
+      Logger.log('Backlog pendentes: aba BACKLOG indisponível — ' + e.message);
+    }
 
-    // Se a aba DADOS não trouxe o mês anterior, usa a soma do mês anterior da própria aba
+    // Sem o histórico, cai na soma do mês anterior da própria aba
     if (totalAnterior == null) totalAnterior = totalAnteriorAba;
+
+    // Soma crua da própria aba (antes da conciliação) — o slide de CHECK usa
+    // pra apontar quando a aba de estados não fecha com o total do histórico.
+    const somaAba = somaDir + emResolucaoAba;
 
     // Conciliação
     let emResolucao, total;
@@ -522,13 +532,13 @@ function obterDadosBacklogPendentes_() {
       total       = totalOficial;
       if (emResolucao !== emResolucaoAba) {
         Logger.log('Backlog: "Em resolução" ajustado de ' + emResolucaoAba + ' para ' +
-                   emResolucao + ' (concilia com o total da aba DADOS = ' + totalOficial + ').');
+                   emResolucao + ' (concilia com o Geral da aba BACKLOG = ' + totalOficial + ').');
       }
     } else {
       emResolucao = emResolucaoAba;
-      total       = somaDir + emResolucaoAba;
+      total       = somaAba;
       if (totalOficial !== null) {
-        Logger.log('Backlog: total da aba DADOS (' + totalOficial + ') é MENOR que a soma dos ' +
+        Logger.log('Backlog: Geral da aba BACKLOG (' + totalOficial + ') é MENOR que a soma dos ' +
                    'direcionados (' + somaDir + ') — usando a soma da própria aba. Confira os dados.');
       }
     }
@@ -537,7 +547,8 @@ function obterDadosBacklogPendentes_() {
     const emResolucaoAnterior = prevOrd == null ? null
       : (totalAnterior != null ? Math.max(totalAnterior - prevSomaDir, 0) : prevEmResRaw);
 
-    return { mesLabel: alvo.label, direcionados, emResolucao, total, totalAnterior, emResolucaoAnterior };
+    return { mesLabel: alvo.label, direcionados, emResolucao, total, totalAnterior, emResolucaoAnterior,
+             somaAba: somaAba, emResolucaoAba: emResolucaoAba };
   } catch (e) {
     Logger.log('obterDadosBacklogPendentes_: ' + e.message);
     return null;
