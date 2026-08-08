@@ -59,100 +59,33 @@ function gerarSlideFinanceiroAnual() {
 // ==========================================
 // LEITURA DA PLANILHA - FINANCEIRO ANUAL
 // ==========================================
+// O acumulado é a soma de Jan até o mês de referência — exatamente o bloco
+// `acum` que obterDadosDRE_ já monta a partir da aba FINANCEIRO BRIDGE
+// (fonte única; ver _financeiroDoBridge_ em 02_Dados.gs). A aba FINANCEIRO
+// ANUAL continua sendo lida, mas só entra em `planilha`, para o slide de
+// CHECK comparar as duas e apontar divergência.
 function obterDadosFinanceiroAnual() {
-  const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const aba = ss.getSheetByName(NOME_ABA_FINANCEIRO_ANUAL);
-
-  if (!aba) {
-    throw new Error('A aba ' + NOME_ABA_FINANCEIRO_ANUAL + ' não foi encontrada na planilha.');
+  const base = _financeiroDoBridge_('acum');
+  if (!base) {
+    throw new Error('Não foi possível montar o acumulado a partir da aba ' + NOME_ABA_BRIDGE +
+                    '. Confira se ela existe e tem as colunas Orç/Real por mês.');
   }
+  const planilha = _financeiroDaAba_(NOME_ABA_FINANCEIRO_ANUAL);
+  const ref      = obterMesReferencia_();
 
-  const ultimaLinha  = aba.getLastRow();
-  const ultimaColuna = aba.getLastColumn();
-
-  if (ultimaLinha < 2) {
-    Logger.log('Planilha sem dados na aba ' + NOME_ABA_FINANCEIRO_ANUAL);
-    return null;
-  }
-
-  const valores   = aba.getRange(1, 1, ultimaLinha, ultimaColuna).getValues();
-  const cabecalho = valores[0].map(v => normalizarTexto(v));
-
-  const idxNatureza  = cabecalho.indexOf('natureza');
-  const idxOrcado    = cabecalho.indexOf('orcado');
-  const idxRealizado = cabecalho.indexOf('custo mensal') >= 0
-    ? cabecalho.indexOf('custo mensal')
-    : cabecalho.indexOf('realizado');
-  const idxVariacao  = cabecalho.indexOf('variacao');
-
-  if (idxNatureza === -1 || idxOrcado === -1 || idxRealizado === -1) {
-    throw new Error(
-      'Colunas obrigatórias não encontradas na aba ' + NOME_ABA_FINANCEIRO_ANUAL +
-      '. Esperado: NATUREZA, ORÇADO e CUSTO MENSAL/REALIZADO.'
-    );
-  }
-
-  const linhasDados    = [];
-  let   totalOrcado    = 0;
-  let   totalRealizado = 0;
-
-  for (let i = 1; i < valores.length; i++) {
-    const linha        = valores[i];
-    const naturezaRaw  = limparTexto(linha[idxNatureza]);
-    if (!naturezaRaw) continue;
-
-    const norm = normalizarTexto(naturezaRaw);
-    if (norm === 'total geral' || norm === 'total' || norm.indexOf('resultado total') >= 0) continue;
-
-    const natureza = padronizarRubrica_(naturezaRaw);   // corrige acentos/capitalização
-
-    const orcado    = converterNumero(linha[idxOrcado]);
-    const realizado = converterNumero(linha[idxRealizado]);
-    if (orcado === 0 && realizado === 0) continue;
-
-    const diffCalculado = orcado - realizado;
-    const diffPlanilha  = idxVariacao >= 0 ? converterNumero(linha[idxVariacao]) : diffCalculado;
-    const diff          = Number.isFinite(diffPlanilha) ? diffPlanilha : diffCalculado;
-
-    linhasDados.push({ natureza, orcado, realizado, diff, absDiff: Math.abs(diff) });
-    totalOrcado    += orcado;
-    totalRealizado += realizado;
-  }
-
-  if (!linhasDados.length) {
-    Logger.log('Nenhuma linha válida na aba ' + NOME_ABA_FINANCEIRO_ANUAL);
-    return null;
-  }
-
-  const acimaDoOrcado = linhasDados
-    .filter(i => i.realizado > i.orcado)
-    .sort((a, b) => b.absDiff - a.absDiff)
-    .slice(0, 3);
-
-  const abaixoDoOrcado = linhasDados
-    .filter(i => i.realizado < i.orcado)
-    .sort((a, b) => b.absDiff - a.absDiff)
-    .slice(0, 3);
-
-  const dadosGrafico = [...linhasDados]
-    .sort((a, b) => b.realizado - a.realizado)
-    .slice(0, 8)
-    .map(i => ({ label: i.natureza, orcado: i.orcado, realizado: i.realizado, diff: i.diff }));
-
-  const periodoDetectado = detectarPeriodoAnual_(valores[0]);
-
-  return {
-    nomeEmpreendimento: getProjetoAtivo().nome,
-    periodo           : periodoDetectado || 'Acumulado Anual',
-    totalOrcado,
-    totalRealizado,
-    acimaDoOrcado,
-    abaixoDoOrcado,
-    dadosGrafico
-  };
+  base.nomeEmpreendimento = getProjetoAtivo().nome;
+  // Rótulo do período: preferimos o texto escrito no cabeçalho da aba (é o
+  // que o time revisa à mão); sem ele, montamos "Jan a <Mês>/<ano>" a partir
+  // do mês de referência — nunca mais um "Acumulado Anual" genérico que não
+  // diz até quando o acumulado vai.
+  base.periodo  = (planilha && detectarPeriodoAnual_(planilha.cabecalho))
+               || ('Jan a ' + ref.curto + '/' + ref.ano);
+  base.planilha = planilha;
+  return base;
 }
 
 function detectarPeriodoAnual_(headerRow) {
+  if (!headerRow) return null;
   for (let i = 0; i < headerRow.length; i++) {
     const txt = String(headerRow[i] || '').trim();
     if (/jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez/i.test(txt) && txt.length > 5) return txt;

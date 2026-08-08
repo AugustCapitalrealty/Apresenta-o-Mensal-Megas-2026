@@ -216,26 +216,27 @@ function _rodarChecagensConsistencia_() {
   // DRE (aba FINANCEIRO BRIDGE) x Resultado Operacional (aba FINANCEIRO):
   // são DUAS abas diferentes com o mesmo fato. Divergir aqui significa que
   // o deck mostra dois totais diferentes pro mesmo mês.
-  const G_FIN = 'Financeiro — DRE x Resultado Operacional';
-  _ckAdd_(L, G_FIN, 'Total do mês REALIZADO (DRE x Resultado Operacional)', () => {
-    if (!dre || !finMes) return null;
-    const a = dre.total.mes.real, b = finMes.totalRealizado;
-    return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a), obtido: _ckMil_(b) };
-  });
-  _ckAdd_(L, G_FIN, 'Total do mês ORÇADO (DRE x Resultado Operacional)', () => {
-    if (!dre || !finMes) return null;
-    const a = dre.total.mes.orc, b = finMes.totalOrcado;
-    return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a), obtido: _ckMil_(b) };
-  });
-  _ckAdd_(L, G_FIN, 'Acumulado REALIZADO (DRE x Resultado Acumulado)', () => {
-    if (!dre || !finAcum) return null;
-    const a = dre.total.acum.real, b = finAcum.totalRealizado;
-    return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a), obtido: _ckMil_(b) };
-  });
-  _ckAdd_(L, G_FIN, 'Acumulado ORÇADO (DRE x Resultado Acumulado)', () => {
-    if (!dre || !finAcum) return null;
-    const a = dre.total.acum.orc, b = finAcum.totalOrcado;
-    return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a), obtido: _ckMil_(b) };
+  //
+  // ATENÇÃO ao montar check aqui: o Resultado Operacional (mês) e o
+  // Resultado Acumulado agora SAEM da BRIDGE (fonte única). Comparar o que
+  // eles exibem com o DRE seria sempre verdadeiro e esconderia o problema.
+  // O que vale checar é a ABA de origem (`finMes.planilha` /
+  // `finAcum.planilha`): quando ela discorda da BRIDGE, alguém atualizou uma
+  // e esqueceu a outra — e é isso que precisa aparecer.
+  const G_FIN = 'Financeiro — BRIDGE x abas FINANCEIRO';
+  [['mês',       'mes',  () => finMes,  'FINANCEIRO'],
+   ['acumulado', 'acum', () => finAcum, 'FINANCEIRO ANUAL']].forEach(par => {
+    const rotulo = par[0], bloco = par[1], obter = par[2], aba = par[3];
+    ['real', 'orc'].forEach(campo => {
+      const nomeCampo = campo === 'real' ? 'REALIZADO' : 'ORÇADO';
+      _ckAdd_(L, G_FIN, 'Total ' + rotulo + ' ' + nomeCampo + ' (BRIDGE x aba ' + aba + ')', () => {
+        const fin = obter();
+        if (!dre || !fin || !fin.planilha) return null;
+        const a = dre.total[bloco][campo];
+        const b = campo === 'real' ? fin.planilha.totalRealizado : fin.planilha.totalOrcado;
+        return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a) + ' (BRIDGE)', obtido: _ckMil_(b) + ' (aba)' };
+      });
+    });
   });
   // Coerência da planilha de origem: o deck já EXIBE a soma das rubricas
   // (obterDadosDRE_ monta `total` somando), então comparar `total` com a
@@ -253,19 +254,43 @@ function _rodarChecagensConsistencia_() {
   // Rubrica a rubrica: isola SE a divergência está no total ou espalhada
   // pelas linhas. Se as rubricas batem e só o TOTAL não, o erro está na
   // linha TOTAL da planilha de origem, não nos lançamentos.
-  _ckAdd_(L, G_FIN, 'Rubricas do mês: Resultado Operacional x DRE (uma a uma)', () => {
-    if (!dre || !finMes || !finMes.linhasDados) return null;
-    const porNome = {};
-    dre.rubricas.forEach(r => { porNome[_histNorm_(r.nome)] = r.mes.real; });
-    let comparadas = 0, divergentes = 0;
-    finMes.linhasDados.forEach(l => {
-      const v = porNome[_histNorm_(l.natureza)];
-      if (v === undefined) return;
-      comparadas++;
-      if (!_ckDinheiro_(v, l.realizado)) divergentes++;
+  [['mês',       'mes',  () => finMes,  'FINANCEIRO'],
+   ['acumulado', 'acum', () => finAcum, 'FINANCEIRO ANUAL']].forEach(par => {
+    const rotulo = par[0], bloco = par[1], obter = par[2], aba = par[3];
+    _ckAdd_(L, G_FIN, 'Rubricas do ' + rotulo + ': BRIDGE x aba ' + aba + ' (uma a uma)', () => {
+      const fin = obter();
+      if (!dre || !fin || !fin.planilha || !fin.planilha.linhasDados) return null;
+      const porNome = {};
+      dre.rubricas.forEach(r => { porNome[_histNorm_(r.nome)] = r[bloco].real; });
+      let comparadas = 0, divergentes = 0;
+      fin.planilha.linhasDados.forEach(l => {
+        const v = porNome[_histNorm_(l.natureza)];
+        if (v === undefined) return;
+        comparadas++;
+        if (!_ckDinheiro_(v, l.realizado)) divergentes++;
+      });
+      if (!comparadas) return null;
+      return { ok: divergentes === 0, esperado: comparadas + ' iguais', obtido: divergentes ? divergentes + ' diferem' : comparadas + ' iguais' };
     });
-    if (!comparadas) return null;
-    return { ok: divergentes === 0, esperado: comparadas + ' iguais', obtido: divergentes ? divergentes + ' diferem' : comparadas + ' iguais' };
+    // Rubrica que existe numa fonte e não na outra não aparece na checagem
+    // acima (ela só compara os nomes em comum) — mas é exatamente assim que
+    // dois totais divergem sem nenhuma linha divergir.
+    _ckAdd_(L, G_FIN, 'Rubricas do ' + rotulo + ': mesma lista nas duas fontes', () => {
+      const fin = obter();
+      if (!dre || !fin || !fin.planilha || !fin.planilha.linhasDados) return null;
+      const naBridge = dre.rubricas.filter(r => r[bloco].orc !== 0 || r[bloco].real !== 0).map(r => _histNorm_(r.nome));
+      const naAba    = fin.planilha.linhasDados.map(l => _histNorm_(l.natureza));
+      const soBridge = naBridge.filter(n => naAba.indexOf(n) < 0);
+      const soAba    = naAba.filter(n => naBridge.indexOf(n) < 0);
+      const ok = soBridge.length === 0 && soAba.length === 0;
+      return {
+        ok,
+        esperado: naBridge.length + ' rubricas',
+        obtido  : ok ? naAba.length + ' rubricas'
+                     : (soBridge.length ? soBridge.length + ' só na BRIDGE ' : '') +
+                       (soAba.length    ? soAba.length + ' só na aba' : '')
+      };
+    });
   });
 
   // ── METRO QUADRADO ──────────────────────────────────────────────────────
@@ -294,9 +319,11 @@ function _rodarChecagensConsistencia_() {
     const b = dre.total.anual.real / area / 12;
     return { ok: Math.abs(media - b) <= CK_TOL_M2, esperado: _ckM2_(media), obtido: _ckM2_(b) };
   });
-  // A área é derivada (Financeiro REALIZADO ÷ Custo m² realizado). Se o
-  // orçado e o acumulado devolverem áreas diferentes, a aba FINANCEIRO e a
-  // aba METRO QUADRADO descolaram (alguém atualizou uma e esqueceu a outra).
+  // A área agora é LIDA da aba METRO QUADRADO (obterAreaM2_), então estas
+  // duas checagens deixaram de ser circulares: elas refazem a área a partir
+  // do financeiro ÷ R$/m² e conferem se bate com a área declarada. Área
+  // implícita diferente da declarada = a BRIDGE e a METRO QUADRADO
+  // descolaram (alguém atualizou uma e esqueceu a outra).
   _ckAdd_(L, G_M2, 'Área implícita: realizado x orçado do mês (m²)', () => {
     if (!area || !finMes || !custoM2 || !custoM2.kpis.meta) return null;
     const areaOrc = finMes.totalOrcado / custoM2.kpis.meta;

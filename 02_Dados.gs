@@ -54,12 +54,20 @@ function obterMesReferencia_() {
 
 
 // ==========================================
-// ÁREA (m²) DERIVADA DO CUSTO M²
+// ÁREA (m²) — aba METRO QUADRADO
 // ==========================================
-// área = Total Realizado (Financeiro Mensal) ÷ Custo R$/m² do mês.
 // Permite expressar qualquer valor financeiro em R$/m² (a diretoria gosta).
-// Retorna null se faltar alguma das abas → os slides simplesmente omitem
-// o R$/m² sem quebrar. Resultado em cache por cidade.
+//
+// 1º) LIDA direto da linha "TOTAL ÁREA COM IPTU E SEGURO" da aba METRO
+//     QUADRADO (ver obterDadosCustoM2). É o caminho certo: a área é um dado
+//     próprio, não um resultado de conta.
+// 2º) Fallback (planilha antiga, sem essa linha legível): área = Total
+//     Realizado ÷ Custo R$/m² do mês, como era antes. Nesse caso usamos o
+//     total da ABA FINANCEIRO (`planilha`) e não o da BRIDGE, para que o
+//     número continue idêntico ao que o deck vinha mostrando.
+//
+// Retorna null se as duas rotas falharem → os slides simplesmente omitem o
+// R$/m² sem quebrar. Resultado em cache por cidade.
 // ==========================================
 let _areaM2Cache = {};
 
@@ -70,14 +78,23 @@ function obterAreaM2_() {
   let area = null;
   try {
     const custo = obterDadosCustoM2();
-    const fin   = obterDadosFinanceiroMensal_();
-    if (custo && custo.kpis && custo.kpis.custo > 0 && fin && fin.totalRealizado > 0) {
-      area = fin.totalRealizado / custo.kpis.custo;
-      Logger.log('Área m² derivada: ' + Math.round(area).toLocaleString('pt-BR') +
-                 ' m² (Real ' + fin.totalRealizado + ' ÷ Custo ' + custo.kpis.custo + ')');
+
+    if (custo && custo.area > 0) {
+      area = custo.area;
+      Logger.log('Área m²: ' + Math.round(area).toLocaleString('pt-BR') + ' m² (lida da aba METRO QUADRADO).');
+    } else if (custo && custo.kpis && custo.kpis.custo > 0) {
+      const fin   = obterDadosFinanceiroMensal_();
+      const total = fin && fin.planilha && fin.planilha.totalRealizado > 0
+        ? fin.planilha.totalRealizado
+        : (fin && fin.totalRealizado > 0 ? fin.totalRealizado : 0);
+      if (total > 0) {
+        area = total / custo.kpis.custo;
+        Logger.log('Área m² derivada (fallback): ' + Math.round(area).toLocaleString('pt-BR') +
+                   ' m² (Real ' + total + ' ÷ Custo ' + custo.kpis.custo + ')');
+      }
     }
   } catch (e) {
-    Logger.log('Área m²: não foi possível derivar. ' + e.message);
+    Logger.log('Área m²: não foi possível obter. ' + e.message);
   }
   _areaM2Cache[chave] = area;
   return area;
@@ -882,48 +899,155 @@ function obterDadosTempo() {
 
 
 // ==========================================
-// DADOS FINANCEIROS (Slide 05 - Financeiro Mensal)
+// FONTE ÚNICA DO FINANCEIRO — aba FINANCEIRO BRIDGE
 // ==========================================
-function obterDadosFinanceiro() {
+// A planilha tinha QUATRO abas financeiras para o mesmo fato:
+//   FINANCEIRO        → rubricas do MÊS (Orçado x Realizado)
+//   FINANCEIRO ANUAL  → as mesmas rubricas, ACUMULADAS no ano
+//   FINANCEIRO BRIDGE → as mesmas rubricas, mês a mês (12 × Orç/Real)
+//   METRO QUADRADO    → R$/m² por mês (e a área)
+//
+// As três primeiras são o MESMO dado em recortes diferentes, e a BRIDGE já
+// contém os outros dois: o mês é a coluna do mês de referência e o acumulado
+// é a soma de Jan até ele — é exatamente o que obterDadosDRE_ já calcula
+// (blocos `mes` e `acum` por rubrica). Manter três abas à mão significa três
+// lugares para errar, e no deck de julho/2026 elas de fato divergiram
+// (Realizado do mês: R$ 469.287 na aba FINANCEIRO x soma das rubricas da
+// BRIDGE; mesma história no acumulado).
+//
+// Por isso o mês e o acumulado passaram a sair da BRIDGE. As abas FINANCEIRO
+// e FINANCEIRO ANUAL continuam sendo LIDAS, mas só como conferência: o valor
+// delas vai em `planilha` e o slide de CHECK compara os dois. Assim a
+// divergência aparece para ser corrigida em vez de sumir em silêncio — e
+// quem mantém a planilha só precisa alimentar a BRIDGE.
+//
+// bloco = 'mes' | 'acum' | 'anual' | 'anualOrc' (os mesmos de obterDadosDRE_)
+function _financeiroDoBridge_(bloco) {
+  const dre = obterDadosDRE_();
+  if (!dre || !dre.rubricas || !dre.rubricas.length) return null;
+
+  const linhasDados = [];
+  let totalOrcado = 0, totalRealizado = 0;
+
+  dre.rubricas.forEach(rb => {
+    const orcado    = rb[bloco].orc;
+    const realizado = rb[bloco].real;
+    if (orcado === 0 && realizado === 0) return;   // mesma regra dos leitores antigos
+    const diff = orcado - realizado;
+    linhasDados.push({ natureza: rb.nome, orcado, realizado, diff, absDiff: Math.abs(diff) });
+    totalOrcado    += orcado;
+    totalRealizado += realizado;
+  });
+  if (!linhasDados.length) return null;
+
+  const acimaDoOrcado = linhasDados
+    .filter(i => i.realizado > i.orcado)
+    .sort((a, b) => b.absDiff - a.absDiff)
+    .slice(0, 3);
+
+  const abaixoDoOrcado = linhasDados
+    .filter(i => i.realizado < i.orcado)
+    .sort((a, b) => b.absDiff - a.absDiff)
+    .slice(0, 3);
+
+  const dadosGrafico = linhasDados.slice()
+    .sort((a, b) => b.realizado - a.realizado)
+    .slice(0, 8)
+    .map(i => ({ label: i.natureza, orcado: i.orcado, realizado: i.realizado, diff: i.diff }));
+
+  return {
+    totalOrcado, totalRealizado, acimaDoOrcado, abaixoDoOrcado, dadosGrafico,
+    linhasDados,
+    mesesAcum: dre.mesesAcum,
+    fonte    : 'FINANCEIRO BRIDGE'
+  };
+}
+
+// Leitor cru de uma aba no formato NATUREZA | ORÇADO | CUSTO MENSAL/REALIZADO
+// [| VARIAÇÃO] — serve tanto a FINANCEIRO quanto a FINANCEIRO ANUAL (as duas
+// têm exatamente a mesma estrutura; antes havia uma cópia do mesmo código em
+// Slide05 e outra em Slide08). Hoje o retorno é usado só como CONFERÊNCIA
+// contra a BRIDGE, então uma aba ausente devolve null em vez de lançar erro:
+// o deck não depende mais dela para ser gerado.
+function _financeiroDaAba_(nomeAba) {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('FINANCEIRO');
-    if (!sheet) throw new Error('Aba FINANCEIRO não encontrada.');
+    const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const aba = ss.getSheetByName(nomeAba);
+    if (!aba) { Logger.log('_financeiroDaAba_: aba "' + nomeAba + '" não encontrada (só conferência).'); return null; }
 
-    const data = sheet.getDataRange().getValues();
+    const ultimaLinha  = aba.getLastRow();
+    const ultimaColuna = aba.getLastColumn();
+    if (ultimaLinha < 2) return null;
 
-    let totalOrcado    = 0;
-    let totalRealizado = 0;
-    let items          = [];
+    const valores   = aba.getRange(1, 1, ultimaLinha, ultimaColuna).getValues();
+    const cabecalho = valores[0].map(v => normalizarTexto(v));
 
-    for (let i = 1; i < data.length; i++) {
-      const row      = data[i];
-      const natureza = String(row[1]).trim();
-      const custo    = parseFloat(row[2]) || 0;
-      const orcado   = parseFloat(row[3]) || 0;
-
-      if (!natureza) continue;
-
-      totalOrcado    += orcado;
-      totalRealizado += custo;
-
-      const diff = orcado - custo;
-      items.push({ natureza, custo, orcado, diff, absDiff: Math.abs(diff) });
+    const idxNatureza  = cabecalho.indexOf('natureza');
+    const idxOrcado    = cabecalho.indexOf('orcado');
+    const idxRealizado = cabecalho.indexOf('custo mensal') >= 0
+      ? cabecalho.indexOf('custo mensal')
+      : cabecalho.indexOf('realizado');
+    const idxVariacao  = cabecalho.indexOf('variacao');
+    if (idxNatureza === -1 || idxOrcado === -1 || idxRealizado === -1) {
+      Logger.log('_financeiroDaAba_: colunas NATUREZA/ORÇADO/REALIZADO não encontradas em "' + nomeAba + '".');
+      return null;
     }
 
-    items.sort((a, b) => b.absDiff - a.absDiff);
-    const ofensores  = items.filter(i => i.diff < 0).slice(0, 3);
-    const defensores = items.filter(i => i.diff > 0).slice(0, 3);
+    const linhasDados = [];
+    let totalOrcado = 0, totalRealizado = 0;
 
-    items.sort((a, b) => b.custo - a.custo);
-    const dadosGrafico = items.slice(0, 10).map(i => ({
-      label     : i.natureza,
-      orcado    : i.orcado,
-      realizado : i.custo
-    }));
+    for (let i = 1; i < valores.length; i++) {
+      const linha       = valores[i];
+      const naturezaRaw = limparTexto(linha[idxNatureza]);
+      if (!naturezaRaw) continue;
 
-    return { totalOrcado, totalRealizado, ofensores, defensores, dadosGrafico };
+      const norm = normalizarTexto(naturezaRaw);
+      if (norm === 'total geral' || norm === 'total' || norm.indexOf('resultado total') >= 0) continue;
 
+      const orcado    = converterNumero(linha[idxOrcado]);
+      const realizado = converterNumero(linha[idxRealizado]);
+      if (orcado === 0 && realizado === 0) continue;
+
+      const diffCalculado = orcado - realizado;
+      const diffPlanilha  = idxVariacao >= 0 ? converterNumero(linha[idxVariacao]) : diffCalculado;
+      const diff          = Number.isFinite(diffPlanilha) ? diffPlanilha : diffCalculado;
+
+      linhasDados.push({
+        natureza: padronizarRubrica_(naturezaRaw),
+        orcado, realizado, diff, absDiff: Math.abs(diff)
+      });
+      totalOrcado    += orcado;
+      totalRealizado += realizado;
+    }
+
+    if (!linhasDados.length) return null;
+    return { aba: nomeAba, linhasDados, totalOrcado, totalRealizado, cabecalho: valores[0] };
+
+  } catch (e) {
+    Logger.log('_financeiroDaAba_("' + nomeAba + '"): ' + e.message);
+    return null;
+  }
+}
+
+
+// ==========================================
+// DADOS FINANCEIROS (registro de dados / histórico)
+// ==========================================
+// Mantido pela compatibilidade com Suporte_RegistroDados.gs, mas agora sai da
+// mesma fonte do deck (BRIDGE) em vez de reler a aba FINANCEIRO por índice de
+// coluna fixo — o registro histórico tem que gravar o número que foi
+// APRESENTADO, senão o histórico e o deck contam histórias diferentes.
+function obterDadosFinanceiro() {
+  try {
+    const d = obterDadosFinanceiroMensal_();
+    if (!d) return null;
+    return {
+      totalOrcado   : d.totalOrcado,
+      totalRealizado: d.totalRealizado,
+      ofensores     : d.acimaDoOrcado,
+      defensores    : d.abaixoDoOrcado,
+      dadosGrafico  : d.dadosGrafico
+    };
   } catch (e) {
     Logger.log('Erro Financeiro: ' + e.message);
     return null;
@@ -1049,6 +1173,33 @@ function obterDadosCustoM2() {
     const realizado = tabela['Real 2026'][mesRef.index];
     const variacao  = realizado - orcado;
 
+    // ── ÁREA (m²) ──────────────────────────────────────────────────────────
+    // A linha "TOTAL ÁREA COM IPTU E SEGURO" (a âncora, logo ACIMA da linha
+    // de R$/m²) já traz a metragem mês a mês — a aba sempre teve esse número
+    // e o código o ignorava, derivando a área por divisão
+    // (Realizado ÷ R$/m²), o que amarrava duas abas uma na outra. Lendo
+    // direto, o R$/m² de qualquer valor do deck passa a depender só da
+    // BRIDGE (valores) + desta linha (área).
+    //
+    // Filtro de plausibilidade: a área é da ordem de dezenas de milhares de
+    // m², o R$/m² é da ordem de unidades. Exigir > 1.000 impede que uma
+    // planilha com a estrutura levemente diferente devolva um R$/m² como se
+    // fosse área — nesse caso `area` fica null e obterAreaM2_ volta ao
+    // cálculo antigo, sem quebrar nada.
+    const areaMeses = [];
+    let area = null;
+    if (idxComIptu > 0) {
+      const linhaArea = data[idxComIptu - 1];
+      meses.forEach(m => {
+        const v = parseNumeroCusto_(linhaArea[m.colReal]);
+        const w = v !== null && v > 1000 ? v : parseNumeroCusto_(linhaArea[m.colOrc]);
+        areaMeses.push(w !== null && w > 1000 ? w : null);
+      });
+      area = areaMeses[mesRef.index];
+      if (area == null) area = areaMeses.find(v => v != null) || null;   // mês sem área: usa a 1ª disponível
+      Logger.log('obterDadosCustoM2: área lida da aba METRO QUADRADO → ' + (area == null ? 'não encontrada' : Math.round(area) + ' m²'));
+    }
+
     Logger.log('obterDadosCustoM2: OK → cidade=' + nomeCidade +
                ' | mês=' + mesRef.nomeMesExtenso + ' ' + mesRef.ano +
                ' | Orç=' + orcado + ' Real=' + realizado);
@@ -1069,7 +1220,9 @@ function obterDadosCustoM2() {
         corStatus: variacao <= 0 ? '#00B050'           : '#D32F2F'
       },
       tabela,
-      meses: meses.map(m => m.nome)
+      meses: meses.map(m => m.nome),
+      area,        // m² do mês de referência (null se não deu pra ler)
+      areaMeses    // m² mês a mês, na mesma ordem de `meses`
     };
     _custoM2Cache[_ckCusto] = _resCusto;
     return _resCusto;
