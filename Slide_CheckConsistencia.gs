@@ -516,15 +516,17 @@ function _rodarChecagensConsistencia_() {
   const G_IND = 'Indicadores (Dashboard x slide de detalhe)';
   _ckAdd_(L, G_IND, 'SLA de preventivas do mês: Dashboard x Preventivas', () => {
     if (!dash || !prev) return null;
-    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla atendido');
+    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla atendido', true);
     if (a == null || b == null) return null;
-    return { ok: Math.abs(a - b) <= 0.05, esperado: _ckM2_(a) + '%', obtido: _ckM2_(b) + '%' };
+    const r = _ckPctIguais_(a, b);
+    return { ok: r.ok, esperado: _ckM2_(r.a) + '%', obtido: _ckM2_(r.b) + '%' };
   });
   _ckAdd_(L, G_IND, 'Disponibilidade do mês: Dashboard x Corretivas', () => {
     if (!dash || !corr) return null;
-    const a = _ckKpi_(corr.mensal, 'disponibilidade'), b = _ckDash_(dash, 'disponibilidade');
+    const a = _ckKpi_(corr.mensal, 'disponibilidade', true), b = _ckDash_(dash, 'disponibilidade', true);
     if (a == null || b == null) return null;
-    return { ok: Math.abs(a - b) <= 0.05, esperado: _ckM2_(a) + '%', obtido: _ckM2_(b) + '%' };
+    const r = _ckPctIguais_(a, b);
+    return { ok: r.ok, esperado: _ckM2_(r.a) + '%', obtido: _ckM2_(r.b) + '%' };
   });
 
   return L;
@@ -538,32 +540,61 @@ function _ckSafe_(fn) {
 // A aba DADOS é indexada pelo rótulo EXATO da linha; aqui buscamos
 // normalizado (_histNorm_) pra não depender de acento/caixa/espaço duplo.
 // Devolve o número já convertido, ou null se não achar/não for numérico.
-function _ckDash_(dash, trechoNorm) {
+function _ckDash_(dash, trechoNorm, comoPct) {
   if (!dash || !dash.map) return null;
   let achado = null;
   dash.map.forEach((val, chave) => {
     if (achado === null && _histNorm_(chave).indexOf(trechoNorm) >= 0) achado = val;
   });
   if (!achado) return null;
-  return _ckPct_(achado.atual);
+  return comoPct ? _ckPct_(achado.atual) : _ckQtd_(achado.atual);
 }
 
-// Percentual vindo formatado ("89,13%", "89,13", 89.13). _histNum_ sozinho
-// devolve NaN quando o texto tem o "%" (Number('89.13%') é NaN), e o SLA de
-// preventivas chega justamente assim (formatarPorcentagem).
+// Percentual vindo formatado ("89,13%", "89,13") OU como número cru da
+// planilha ("89.13", 0.8913).
+//
+// POR QUE NÃO USA _histNum_: sem vírgula no texto, ele trata o ponto como
+// separador de MILHAR ("66.408" → 66408) — certo para contagem, mas destrói
+// o decimal de um percentual ("89.13" viraria 8913). A aba DADOS é lida com
+// getValues() e vira string depois (String(89.13) === "89.13"), então cai
+// exatamente nesse caso.
 function _ckPct_(v) {
   if (v == null || v === '') return null;
   if (typeof v === 'number') return isNaN(v) ? null : v;
-  const n = _histNum_(String(v).replace(/%/g, '').trim());
+  const t = String(v).replace(/%/g, '').replace(/\s/g, '').trim();
+  if (!t) return null;
+  // Com vírgula = formato BR ("1.234,56"): ponto é milhar, vírgula é decimal.
+  // Sem vírgula = número cru do Sheets ("89.13"): o ponto É o decimal.
+  const n = t.indexOf(',') >= 0 ? Number(t.replace(/\./g, '').replace(',', '.')) : Number(t);
   return isNaN(n) ? null : n;
 }
 
+// Contagem inteira (chamados etc.) — aqui o ponto É separador de milhar,
+// então _histNum_ é o parser certo.
+function _ckQtd_(v) {
+  if (v == null || v === '') return null;
+  const n = _histNum_(v);
+  return isNaN(n) ? null : n;
+}
+
+// Compara dois percentuais que podem estar em ESCALAS diferentes: uma aba
+// guarda a fração (0,8913) e a outra o percentual (89,13) — mesma
+// informação, formato diferente. Normaliza antes de comparar, senão o check
+// acusa divergência onde só há diferença de formatação. O corte em 1,5
+// é seguro para SLA/disponibilidade, que vivem na faixa de 80–100%.
+function _ckPctIguais_(a, b, tol) {
+  let x = a, y = b;
+  if (x <= 1.5 && y > 1.5) x *= 100;
+  else if (y <= 1.5 && x > 1.5) y *= 100;
+  return { ok: Math.abs(x - y) <= (tol == null ? 0.05 : tol), a: x, b: y };
+}
+
 // Pega um KPI de obterDadosCorretivasV6() pelo rótulo (lista de {l, v}).
-function _ckKpi_(bloco, rotuloNorm) {
+function _ckKpi_(bloco, rotuloNorm, comoPct) {
   if (!bloco || !bloco.kpis) return null;
   const k = bloco.kpis.find(x => _histNorm_(x.l).indexOf(rotuloNorm) >= 0);
   if (!k) return null;
-  return _ckPct_(k.v);
+  return comoPct ? _ckPct_(k.v) : _ckQtd_(k.v);
 }
 
 // Média anual (12 meses) de uma linha da tabela do slide Custo do M².
