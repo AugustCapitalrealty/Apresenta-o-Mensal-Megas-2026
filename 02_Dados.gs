@@ -1181,13 +1181,21 @@ function obterDadosCustoM2() {
     // direto, o R$/m² de qualquer valor do deck passa a depender só da
     // BRIDGE (valores) + desta linha (área).
     //
-    // Filtro de plausibilidade: a área é da ordem de dezenas de milhares de
-    // m², o R$/m² é da ordem de unidades. Exigir > 1.000 impede que uma
-    // planilha com a estrutura levemente diferente devolva um R$/m² como se
-    // fosse área — nesse caso `area` fica null e obterAreaM2_ volta ao
-    // cálculo antigo, sem quebrar nada.
+    // Filtro de plausibilidade em DUAS camadas:
+    //   1) magnitude: a área é da ordem de dezenas/centenas de milhares de
+    //      m², o R$/m² é da ordem de unidades — exigir > 1.000 impede que um
+    //      R$/m² seja lido como se fosse área.
+    //   2) ESTABILIDADE mês a mês: a área FÍSICA de um empreendimento não
+    //      dobra de um mês pro outro. Erro real visto na aba de Mega Itajaí —
+    //      a linha "TOTAL ÁREA..." estava preenchida com o mesmo TOTAL EM R$
+    //      da aba FINANCEIRO (552.169,26 nos dois lugares, até o centavo),
+    //      não com metragem. Isso PASSA no filtro de magnitude (R$ 552 mil
+    //      também é "> 1.000") mas oscila mês a mês do jeito que despesa
+    //      oscila — de R$ 386 mil a R$ 1.081 mil no mesmo ano —, e área de
+    //      verdade não faz isso. Quando a série varia mais que 2× entre o
+    //      menor e o maior valor, a linha inteira é descartada (não só o mês
+    //      de referência) e cai no cálculo derivado de obterAreaM2_.
     const areaMeses = [];
-    let area = null;
     if (idxComIptu > 0) {
       const linhaArea = data[idxComIptu - 1];
       meses.forEach(m => {
@@ -1195,10 +1203,22 @@ function obterDadosCustoM2() {
         const w = v !== null && v > 1000 ? v : parseNumeroCusto_(linhaArea[m.colOrc]);
         areaMeses.push(w !== null && w > 1000 ? w : null);
       });
-      area = areaMeses[mesRef.index];
-      if (area == null) area = areaMeses.find(v => v != null) || null;   // mês sem área: usa a 1ª disponível
-      Logger.log('obterDadosCustoM2: área lida da aba METRO QUADRADO → ' + (area == null ? 'não encontrada' : Math.round(area) + ' m²'));
+      const valores = areaMeses.filter(v => v != null);
+      if (valores.length >= 2) {
+        const min = Math.min.apply(null, valores), max = Math.max.apply(null, valores);
+        if (max / min > 2) {
+          Logger.log('obterDadosCustoM2: linha "TOTAL ÁREA..." varia demais mês a mês (' +
+                     Math.round(min).toLocaleString('pt-BR') + ' a ' + Math.round(max).toLocaleString('pt-BR') +
+                     ') pra ser área — a planilha provavelmente tem outro dado nessa linha ' +
+                     '(confira a aba METRO QUADRADO). Ignorando; caindo no cálculo derivado.');
+          areaMeses.length = 0;
+          meses.forEach(() => areaMeses.push(null));
+        }
+      }
     }
+    let area = areaMeses[mesRef.index];
+    if (area == null) area = areaMeses.find(v => v != null) || null;   // mês sem área: usa a 1ª disponível
+    if (area != null) Logger.log('obterDadosCustoM2: área lida da aba METRO QUADRADO → ' + Math.round(area) + ' m²');
 
     Logger.log('obterDadosCustoM2: OK → cidade=' + nomeCidade +
                ' | mês=' + mesRef.nomeMesExtenso + ' ' + mesRef.ano +
