@@ -318,6 +318,27 @@ function _scMosaicoRetangulos_(arranjo, BW, BH, G) {
   return { rects: rects, usedW: usedW, usedH: usedH };
 }
 
+// Dentro de um grupo (fotos empilhadas numa COL ou lado a lado numa ROW),
+// cada foto já sai com a proporção dela mesma — sem corte nem distorção —
+// mas se as fotos do grupo têm proporções bem diferentes entre si, o
+// resultado sai com tamanhos visualmente desiguais dentro do mesmo grupo
+// (ex.: duas fotos empilhadas, uma bem mais larga que a outra, ficam com
+// alturas bem diferentes mesmo tendo a mesma largura). 0 = mesma proporção
+// (grupo "parelho"); cresce conforme diverge.
+function _scDesequilibrioGrupo_(ars) {
+  if (ars.length < 2) return 0;
+  const mx = Math.max.apply(null, ars), mn = Math.min.apply(null, ars);
+  return mx / mn - 1;
+}
+function _scDesequilibrio_(grupos) {
+  return grupos.reduce((pior, g) => Math.max(pior, _scDesequilibrioGrupo_(g.ars)), 0);
+}
+// Peso do desequilíbrio no placar: entre composições de preenchimento
+// parecido, prefere a mais parelha; não chega a trocar por uma composição
+// bem pior só pra evitar um par desigual (score é 0-1; um desequilíbrio
+// grande — fotos com o dobro de proporção uma da outra — custa 0,15).
+const SC_PESO_DESEQUILIBRIO = 0.15;
+
 // Devolve { rects: [{x,y,w,h}] relativos a (0,0), usedW, usedH }.
 function _scMosaico_(ars, BW, BH, G) {
   // 4 fotos: sempre uma fileira única, lado a lado — pedido explícito, pra
@@ -334,10 +355,11 @@ function _scMosaico_(ars, BW, BH, G) {
     [_scArranjoRow_(ars, grupos, BW, BH, G), _scArranjoCol_(ars, grupos, BW, BH, G)]
       .forEach(cand => {
         if (!cand) return;
+        cand.scoreAjustado = cand.score - SC_PESO_DESEQUILIBRIO * _scDesequilibrio_(cand.grupos);
         if (!melhor) { melhor = cand; return; }
-        if (cand.score > melhor.score + 1e-9) { melhor = cand; return; }
+        if (cand.scoreAjustado > melhor.scoreAjustado + 1e-9) { melhor = cand; return; }
         // Empate: ROW antes de COL, depois menos grupos.
-        if (Math.abs(cand.score - melhor.score) <= 1e-9) {
+        if (Math.abs(cand.scoreAjustado - melhor.scoreAjustado) <= 1e-9) {
           if (melhor.tipo === 'COL' && cand.tipo === 'ROW') melhor = cand;
           else if (cand.tipo === melhor.tipo && cand.grupos.length < melhor.grupos.length) melhor = cand;
         }
