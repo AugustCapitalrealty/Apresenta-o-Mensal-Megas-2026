@@ -146,7 +146,7 @@ const PROJETOS = {
     // MB) que eu troco.
     fotoFundoId    : '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
     reaberturaId   : '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0',
-    ppcId          : '',   // ainda não recebido — % planejado fica manual
+    ppcId          : '1a5OlMoeFtgsKagPlmPr-5UTXXBVufczUzDVSQvUe4Zo',   // PPC Mega Curitiba 2026
     unitLogoId     : '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',   // logo Mega Curitiba
     coBrandLogoId  : '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',   // logo Demercado
     // Pasta-raiz de FOTOS (FOTOS - APRESENTAÇÕES). A automação busca
@@ -169,7 +169,7 @@ const PROJETOS = {
     // padrão do Curitiba).
     fotoFundoId    : '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
     reaberturaId   : '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
-    ppcId          : '',   // ainda não recebido — % planejado fica manual
+    ppcId          : '10wfrx335OaBeTuPcXIg42Wk6U6NsMNt4f97QwGT3hZU',   // PPC Mega Itajaí 2026
     unitLogoId     : '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',   // logo Mega Itajaí
     coBrandLogoId  : '',
     // Pasta-raiz de FOTOS — subpastas por seção são descobertas pelo nome
