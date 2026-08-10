@@ -5,22 +5,27 @@
  * na pasta do Drive configurada em fotosServicos[chave] (01_Config.gs), a
  * subpasta do mês de referência (ex.: "06-JUNHO") e, dentro dela, uma subpasta
  * por serviço com as fotos. Gera um slide por serviço, usando o nome da própria
- * subpasta como manchete.
+ * subpasta como legenda.
  *
  * (O nome do arquivo é herdado de quando só existia a seção Contratados —
  * mantido para não duplicar declarações no editor do Apps Script.)
  *
- * DESIGN — prancha fotográfica sobre parede clara. As fotos são diagramadas
- * por um MOSAICO JUSTIFICADO: cada foto recebe um retângulo com a proporção
- * dela mesma, então não há letterbox, corte nem distorção. O nome do serviço é
- * a manchete. Sem rótulos de painel — eles existiam no template manual
- * (Slide_RegistroFotos.gs) só para guiar quem preenchia à mão, e aqui a
- * geração é automática.
+ * DESIGN — prancha fotográfica sobre parede clara. Cabeçalho PADRÃO do deck
+ * (criarHeaderPadrao — seção grande, cidade/mês pequeno, igual a todo outro
+ * slide da apresentação); o nome do serviço aparece como LEGENDA centralizada
+ * logo abaixo do mosaico de fotos (_scLegendaServico_), não repetido no
+ * cabeçalho. As fotos são diagramadas por um MOSAICO JUSTIFICADO: cada foto
+ * recebe um retângulo com a proporção dela mesma, então não há letterbox,
+ * corte nem distorção. Sem rótulos de painel — eles existiam no template
+ * manual (Slide_RegistroFotos.gs) só para guiar quem preenchia à mão, e aqui
+ * a geração é automática.
  *
  * Dois arranjos, escolhidos pela largura final do mosaico:
- *   ▸ A — fotos largas: manchete no topo, mosaico ocupando a largura toda.
- *   ▸ B — fotos estreitas (1-2 retratos): coluna de texto fixa à esquerda e as
- *         fotos, bem maiores, centralizadas no espaço restante.
+ *   ▸ A — fotos largas: mosaico ocupando a largura toda, logo abaixo do cabeçalho.
+ *   ▸ B — fotos estreitas (1-2 retratos): mosaico mais estreito e alto,
+ *         centralizado na largura toda.
+ * Em ambos, a legenda com o nome do serviço fica na mesma faixa embaixo do
+ * mosaico (SC_LEGENDA_H).
  *
  * Sem pasta configurada, sem pasta do mês ou sem nenhum serviço com foto:
  * cai de volta no slide manual de colar foto por foto (gerarSlideRegistroFotos),
@@ -40,19 +45,18 @@ const SC_KEYLINE    = '#CBD5E1';  // filete em volta de cada foto
 const SC_TAG_BORDA  = '#93C5FD';
 const SC_TAG_COR    = '#003D7B';
 const SC_GAP        = 10;      // respiro entre fotos do mosaico
-// Cabeçalho único da placa (ver _scHeaderServico_): nome do serviço é a
-// manchete; seção/cidade/mês vira o texto pequeno acima dela. Título e zonas
-// de foto abaixo (SC_A/SC_B) começam logo após, sem repetir manchete no corpo.
+// Cabeçalho PADRÃO do deck (criarHeaderPadrao, 01_Config.gs) — mesma seção
+// grande + cidade/mês pequeno de todo slide da apresentação; a tag de
+// governança (quando houver) fica ao lado da logo. O nome do serviço NÃO
+// mora mais aqui — vira legenda abaixo das fotos (ver SC_LEGENDA_H).
 const SC_TITULO_X = 50, SC_TITULO_W = 510;
-const SC_HEADER_FIM = 64;   // y onde termina o cabeçalho (linha divisória)
-// Banda A (padrão): mosaico ocupa a largura toda. Vai até y=390 — os 12pt
-// extras são o espaço que o rodapé ocupava.
-const SC_A = { x: 44, y: 70, w: 632, h: 320 };
-// Zona B (fotos estreitas): sem cabeçalho próprio (já fica no topo da placa),
-// as fotos usam uma zona mais estreita e alta — melhor pra retrato — centrada
-// na largura toda (antes ficava deslocada à direita pra sobrar coluna de
-// texto à esquerda; sem mais texto ali, centraliza de verdade).
-const SC_B = { x: 110, y: 70, w: 500, h: 320 };
+// Banda A (padrão): mosaico ocupa a largura toda. SC_LEGENDA_H reserva o
+// espaço da legenda (nome do serviço) logo abaixo do mosaico.
+const SC_LEGENDA_H = 40;
+const SC_A = { x: 44, y: 74, w: 632, h: 280 };
+// Zona B (fotos estreitas): mesma altura reservada pra legenda embaixo,
+// centralizada na largura toda — melhor pra retrato.
+const SC_B = { x: 110, y: 74, w: 500, h: 280 };
 // Abaixo desta largura final o mosaico fica "perdido" na banda A → usa a B.
 const SC_LIMIAR_B   = 400;
 const SC_ESCADA_A   = [18, 16.5, 15, 13.5, 12, 11, 10];
@@ -399,63 +403,37 @@ function _scTag_(slide, texto, x, y) {
   return pw;
 }
 
-// ── Cabeçalho único da placa ───────────────────────────────────────────────
-// O nome do serviço é a ÚNICA manchete da placa (antes havia duas: a seção
-// no header padrão e o nome do serviço repetido embaixo, dando a impressão
-// de "dois slides colados"). Seção/cidade/mês vira o texto pequeno acima da
-// manchete; a tag de governança (se houver) fica ao lado do logo, também no
-// cabeçalho — nenhum dos três layouts de foto precisa repetir texto.
-function _scHeaderServico_(slide, secao, info) {
-  const DS = CR_DESIGN_SYSTEM;
-  const deck = getDeckAtivo();
-  const W = deck.getPageWidth();
-  const ref = obterMesReferencia_();
-  const projeto = getProjetoAtivo();
-
-  // Grafismo de fundo — mesma assinatura sutil do header padrão do deck.
-  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 350, -80, 450, 450);
-  ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.03);
-  ellipse.getBorder().setTransparent();
-
-  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 44, 8, 4, 48);
-  bar.getFill().setSolidFill(SC_ACENTO);
-  bar.getBorder().setTransparent();
-
-  _scTexto_(slide, SC_TITULO_X, 6, 460, 13,
-    secao + ' · ' + projeto.nome + ' · ' + ref.curto + ' / ' + ref.ano,
-    8.5, SC_ACENTO, DS.typography.body, true);
-
-  _scTexto_(slide, SC_TITULO_X, 20, SC_TITULO_W, 44, info.nome, _scCorpoManchete_(info.nome.length),
-            SC_TITULO_COR, DS.typography.titles, true, SlidesApp.ParagraphAlignment.START, true);
-
-  if (info.tag) {
-    const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
-    _scTag_(slide, info.tag, W - 44 - DS.assets.logoW - 12 - pw, 16);
-  }
-
-  try {
-    const logoBlob = DriveApp.getFileById(DS.assets.logoId).getBlob();
-    slide.insertImage(logoBlob, W - 44 - DS.assets.logoW, 14, DS.assets.logoW, DS.assets.logoH);
-  } catch (e) {
-    Logger.log('Aviso (Header Serviço): logo não carregado. ' + e.message);
-  }
-
-  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 0, SC_HEADER_FIM, W, SC_HEADER_FIM);
-  sep.getLineFill().setSolidFill(SC_LINHA_COR);
-  sep.setWeight(1);
-  const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 44, SC_HEADER_FIM, 154, SC_HEADER_FIM);
-  acc.getLineFill().setSolidFill(SC_ACENTO);
-  acc.setWeight(3);
+// ── Legenda com o nome do serviço, abaixo do mosaico ────────────────────────
+// Volta a ser uma legenda (não mais a manchete do cabeçalho): centralizada
+// na largura do mosaico, logo abaixo dele — cabe em SC_LEGENDA_H, com 1 ou
+// 2 linhas conforme _scCorpoManchete_ decidir. Desenhada mesmo sem foto
+// nenhuma (fallback), pra placa continuar identificável.
+function _scLegendaServico_(slide, nome) {
+  const y = SC_A.y + SC_A.h + 8;
+  _scTexto_(slide, SC_A.x, y, SC_A.w, SC_LEGENDA_H - 8, nome, _scCorpoManchete_(nome.length, SC_A.w),
+            SC_TITULO_COR, CR_DESIGN_SYSTEM.typography.titles, true, SlidesApp.ParagraphAlignment.CENTER, true);
 }
 
 // ── Slide de um serviço ────────────────────────────────────────────────────
+// Cabeçalho PADRÃO do deck (seção grande, cidade/mês pequeno — igual a todo
+// outro slide da apresentação); o nome do serviço vira legenda abaixo do
+// mosaico de fotos (_scLegendaServico_), não mais repetido no cabeçalho.
 function _scGerarSlideServico_(secao, pastaServico) {
   const deck  = getDeckAtivo();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
+  const DS  = CR_DESIGN_SYSTEM;
+  const W   = deck.getPageWidth();
+  const ref = obterMesReferencia_();
+  const projeto = getProjetoAtivo();
+  criarHeaderPadrao(slide, secao, projeto.nome + ' · ' + ref.curto + ' / ' + ref.ano);
+
   const info = _scNormalizarNome_(pastaServico.getName());
-  _scHeaderServico_(slide, secao, info);
+  if (info.tag) {
+    const pw = Math.max(58, Math.min(200, 16 + 4.3 * info.tag.length));
+    _scTag_(slide, info.tag, W - DS.layout.marginX - DS.assets.logoW - 12 - pw, 16);
+  }
 
   // ── Fotos: mede primeiro, diagrama depois ───────────────────────────────
   const arquivos = _scListarFotos_(pastaServico, 4);
@@ -469,8 +447,9 @@ function _scGerarSlideServico_(secao, pastaServico) {
     if (usarB) mos = _scMosaico_(ars, SC_B.w, SC_B.h, SC_GAP);
   }
 
+  _scLegendaServico_(slide, info.nome);
+
   if (!ars.length) {
-    // Nenhuma foto carregou: cabeçalho já traz o nome do serviço, sem mais nada pra desenhar.
     Logger.log('Slide de ' + secao + ' gerado SEM fotos (todas falharam): ' + info.nome);
     return;
   }
