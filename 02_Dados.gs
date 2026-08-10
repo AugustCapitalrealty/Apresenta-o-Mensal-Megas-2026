@@ -2892,14 +2892,25 @@ function obterDadosChamadosClientes_() {
 
 
 // ==========================================
-// BACKLOG EMERGENCIAL — DETALHE — aba "BACKLOG - EMERGENCIAL - DETALHE" da
-// planilha de Histórico Validado
-// ==========================================
-// Mesmo formato bruto das abas CHAMADOS ABERTOS/FECHADOS MES, mas é uma
-// lista à parte, só dos chamados de prioridade Emergencial — com uma
-// coluna a mais, EQUIPE (FACILITIES ou PROPERTY), quem é responsável.
-// Filtra por Centro de Custos = MEGA <EMPREENDIMENTO> (igual às outras abas
-// de chamados).
+// BACKLOG EMERGENCIAL — DETALHE — aba "BD-CORRETIVAS" da planilha BASE DE
+// DADOS — QUADRO REM (BD_CORRETIVAS_ID, histórico bruto desde 2021,
+// multi-empreendimento) — MESMA fonte que já alimenta o Backlog de
+// Clientes — Facilities/Properties (ver _lerBdCorretivasChamadosClientes_
+// mais abaixo). Antes lia de uma aba separada e curada à mão ("BACKLOG -
+// EMERGENCIAL - DETALHE", na planilha de Histórico Validado) — trocada pela
+// base completa por pedido do usuário, porque aquela aba só passou a ser
+// preenchida a partir de um certo mês e não tinha histórico anterior (o
+// gráfico de Slide03_Corretivas.gs zerava os meses antes disso). Chamado
+// "emergencial" = coluna "Prioridade" (a de texto — a aba tem duas colunas
+// com esse nome, a busca por cabeçalho pega a primeira ocorrência)
+// normalizada para 'Emergencial' (_normalizarPrioridade_).
+//
+// Conta QUALQUER chamado emergencial em aberto no mês, não importa a
+// equipe responsável — inclusive os marcados como responsabilidade do
+// locatário (decisão explícita do usuário: aqui é uma visão ampla de
+// emergências pendentes, diferente do Backlog de Clientes —
+// Facilities/Properties, que exclui locatário de propósito porque aquele
+// slide é só sobre responsabilidade DA OPERAÇÃO).
 //
 // A apresentação é sempre do MÊS ANTERIOR (obterMesReferencia_), gerada dias
 // depois do mês já ter fechado — então um chamado que hoje aparece "Fechado"
@@ -2909,16 +2920,6 @@ function obterDadosChamadosClientes_() {
 // a janela do mês de referência — conta como backlog em aberto todo chamado
 // cujo intervalo [reporte, fechamento) tem interseção com esse mês (aberto
 // antes do mês terminar e, se fechado, fechado depois do mês começar).
-function _abaBacklogEmergencialDetalhe_(ss) {
-  let sheet = ss.getSheetByName('BACKLOG - EMERGENCIAL - DETALHE');
-  if (!sheet) {
-    sheet = ss.getSheets().find(s => {
-      const n = _histNorm_(s.getName());
-      return n.indexOf('emergencial') >= 0 && n.indexOf('detalhe') >= 0;
-    });
-  }
-  return sheet || null;
-}
 
 // Datas nessa aba vêm como número de série (Google Sheets/Excel, dia 0 =
 // 30/12/1899), exibidas em texto com vírgula decimal (ex.: "46155,62211") —
@@ -2950,11 +2951,12 @@ function _histParseDataHora_(v) {
 }
 
 // Ponto único da regra "estava aberto durante o mês de referência", usado por
-// toda aba de backlog no formato bruto (Estado + Data de reporte + Fechado
-// em) — hoje BACKLOG - EMERGENCIAL - DETALHE e BACKLOG - CLIENTES -
-// DETALHES. Conta como aberto no mês todo chamado cujo intervalo [reporte,
-// fechamento) tem interseção com a janela [refIni, refFim) — ver o
-// comentário completo acima de _abaBacklogEmergencialDetalhe_.
+// toda fonte de backlog no formato bruto (Estado + Data de reporte + Fechado
+// em) — hoje BD-CORRETIVAS (Backlog Emergencial e Backlog de Clientes —
+// Facilities/Properties) e BACKLOG - CLIENTES - DETALHES. Conta como aberto
+// no mês todo chamado cujo intervalo [reporte, fechamento) tem interseção
+// com a janela [refIni, refFim) — ver o comentário completo acima da seção
+// BACKLOG EMERGENCIAL — DETALHE.
 // BACKLOG = chamado que ainda estava aberto no ÚLTIMO DIA do mês de
 // referência — não "qualquer chamado que passou por essa janela". Aberto E
 // fechado dentro do MESMO mês de referência não é backlog daquele mês (foi
@@ -2993,11 +2995,16 @@ function _histDiasAberto_(dtReporte, refFim) {
   return Math.max(0, Math.floor((refFim - dtReporte) / 86400000));
 }
 
-function _lerBacklogEmergencialDetalhe_() {
+// Lê BD-CORRETIVAS filtrando por Centro de Custos do empreendimento ativo e
+// Prioridade=Emergencial, SEM filtrar por mês — devolve todo mundo com as
+// datas prontas, pra que obterDadosBacklogEmergencialDetalhe_ (mês de
+// referência) e obterDadosBacklogEmergencialHistoricoPorMes_ (série
+// histórica) apliquem _histAbertoNoMes_ sem reler a planilha duas vezes.
+function _lerBdCorretivasEmergenciaisCru_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
   try {
-    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
-    const sheet = _abaBacklogEmergencialDetalhe_(ss);
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _abaBdCorretivas_(ss);
     if (!sheet) return [];
 
     const data = sheet.getDataRange().getDisplayValues();
@@ -3008,46 +3015,52 @@ function _lerBacklogEmergencialDetalhe_() {
     const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
     const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
     const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    const cEquipe  = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+    const cPri     = hdr.findIndex(h => h.indexOf('prioridade') >= 0);   // 1ª ocorrência = texto; a 2ª (numérica) é ignorada
+    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0);
     const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
     const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
     if (cId < 0 || cCC < 0) return [];
-
-    const ref      = obterMesReferencia_();
-    const refIni   = new Date(Date.UTC(ref.ano, ref.index, 1));
-    const refFim   = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
-
-      const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
-      const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
-      const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
-      if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
+      if (_normalizarPrioridade_(cPri >= 0 ? row[cPri] : '') !== 'Emergencial') continue;
 
       saida.push({
-        id:          String(row[cId] || '').trim(),
-        descricao:   cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
-        estado:      estado,
-        equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
-        dataReporte: _histFormatarDataCurta_(dtReporte),
-        diasAberto:  _histDiasAberto_(dtReporte, refFim)
+        id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
+        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
+        equipe:    _resolverEquipeResponsaveis_(cResp >= 0 ? row[cResp] : '') || 'OUTROS',
+        dtReporte: cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
+        dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
       });
     }
     return saida;
   } catch (e) {
-    Logger.log('_lerBacklogEmergencialDetalhe_: ' + e.message);
+    Logger.log('_lerBdCorretivasEmergenciaisCru_: ' + e.message);
     return [];
   }
 }
 
-// Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe}] }
-// ou null se a aba estiver vazia/ausente ou sem nenhum chamado em aberto no
-// mês de referência pro empreendimento ativo.
+// Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe,dataReporte,diasAberto}] }
+// ou null se não houver nenhum chamado emergencial em aberto no mês de
+// referência pro empreendimento ativo.
 function obterDadosBacklogEmergencialDetalhe_() {
-  const itens = _lerBacklogEmergencialDetalhe_();
+  const ref    = obterMesReferencia_();
+  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
+
+  const itens = _lerBdCorretivasEmergenciaisCru_()
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .map(it => ({
+      id:          it.id,
+      descricao:   it.descricao,
+      estado:      it.estado,
+      equipe:      it.equipe,
+      dataReporte: _histFormatarDataCurta_(it.dtReporte),
+      diasAberto:  _histDiasAberto_(it.dtReporte, refFim)
+    }));
   if (!itens.length) return null;
 
   const porEquipe = {};
@@ -3064,73 +3077,32 @@ function obterDadosBacklogEmergencialDetalhe_() {
   return { total: itens.length, fatias: fatias, lista: lista };
 }
 
-// Igual a _lerBacklogEmergencialDetalhe_, mas SEM filtrar por mês — devolve
-// todo mundo (já filtrado por Centro de Custos = empreendimento ativo) com
-// as datas prontas, pra que obterDadosBacklogEmergencialHistoricoPorMes_
-// possa aplicar _histAbertoNoMes_ mês a mês sem reler a planilha uma vez por
-// mês do gráfico.
-function _lerBacklogEmergencialDetalheCru_() {
-  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
-  try {
-    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
-    const sheet = _abaBacklogEmergencialDetalhe_(ss);
-    if (!sheet) return [];
-
-    const data = sheet.getDataRange().getDisplayValues();
-    if (data.length < 2) return [];
-
-    const hdr      = data[0].map(_histNorm_);
-    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
-    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
-    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
-    if (cCC < 0) return [];
-
-    const saida = [];
-    for (let r = 1; r < data.length; r++) {
-      const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
-      saida.push({
-        estado:    cEstado  >= 0 ? String(row[cEstado] || '').trim() : '',
-        dtReporte: cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
-        dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
-      });
-    }
-    return saida;
-  } catch (e) {
-    Logger.log('_lerBacklogEmergencialDetalheCru_: ' + e.message);
-    return [];
-  }
-}
-
-// Recalcula o backlog emergencial MÊS A MÊS a partir da aba "BACKLOG -
-// EMERGENCIAL - DETALHE" — a mesma fonte crua e a mesma regra
-// (_histAbertoNoMes_) que já alimenta o slide Backlog Emergencial —
-// Detalhe — em vez de depender da coluna EMERGENCIAL da aba BACKLOG, que o
-// usuário vinha preenchendo à mão mês a mês.
+// Recalcula o backlog emergencial MÊS A MÊS a partir da BD-CORRETIVAS (mesma
+// fonte crua e mesma regra — _histAbertoNoMes_ — de
+// obterDadosBacklogEmergencialDetalhe_ acima), em vez de depender da coluna
+// EMERGENCIAL da aba BACKLOG, que o usuário vinha preenchendo à mão mês a
+// mês.
 //
 // `meses` é a lista de referência já produzida por obterDadosBacklogHistorico_
 // (mesmos `ord`/rótulos que já desenham o eixo X do gráfico em
 // Slide03_Corretivas.gs — reaproveitada aqui só pra saber QUAIS janelas
 // mês/ano calcular, não os valores). Retorna um Map ord -> quantidade.
 //
-// Fonte única: como aqui é a mesma aba+regra que já gera o "Backlog
+// Fonte única: como aqui é a mesma base+regra que já gera o "Backlog
 // Emergencial — Detalhe" do MÊS DE REFERÊNCIA, o valor do último mês desta
 // série tem que bater exatamente com o total daquele slide — se algum dia
 // divergir, é sinal de bug nesta função, não de dado da planilha.
 function obterDadosBacklogEmergencialHistoricoPorMes_(meses) {
-  const itens = _lerBacklogEmergencialDetalheCru_();
+  const itens = _lerBdCorretivasEmergenciaisCru_();
   const porOrd = new Map();
   if (!itens.length) return porOrd;
 
-  // A aba "BACKLOG - EMERGENCIAL - DETALHE" só passou a ser preenchida a
-  // partir de um certo mês — meses ANTERIORES a ela não têm "zero chamados
-  // emergenciais", eles simplesmente não têm dado nenhum ali. Sem essa
-  // checagem, todo mês fora do alcance real da aba dava qtd=0 (nenhum item
-  // cru tem `dtReporte` caindo naquela janela), o que o merge em
-  // Slide03_Corretivas.gs então tratava como "recalculado cobre esse mês" e
-  // apagava o valor histórico digitado à mão, zerando o gráfico antes do
-  // início da aba em vez de preservar o histórico antigo.
+  // BD-CORRETIVAS tem histórico bruto desde 2021, mas mantém a mesma
+  // checagem defensiva de quando a fonte era a aba curada à mão: só computa
+  // (mesmo que dê 0) a partir do mês do chamado mais antigo encontrado pro
+  // empreendimento ativo — meses anteriores a isso ficam fora do Map, e
+  // quem chama mantém o valor manual pra eles em vez de zerar sem dado
+  // nenhum (protege contra empreendimento novo/sem histórico emergencial).
   let primeiroOrd = null;
   itens.forEach(it => {
     if (!it.dtReporte) return;

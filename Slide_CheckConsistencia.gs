@@ -392,7 +392,7 @@ function _rodarChecagensConsistencia_() {
 
   // ── BACKLOG EMERGENCIAL ─────────────────────────────────────────────────
   const G_EMERG = 'Backlog emergencial';
-  _ckAdd_(L, G_EMERG, 'Soma por equipe (Facilities+Property) = total', () => {
+  _ckAdd_(L, G_EMERG, 'Soma por equipe = total', () => {
     if (!emerg) return null;
     const soma = emerg.fatias.reduce((s, f) => s + f.qtd, 0);
     return { ok: soma === emerg.total, esperado: _ckInt_(emerg.total), obtido: _ckInt_(soma) };
@@ -402,8 +402,8 @@ function _rodarChecagensConsistencia_() {
     return { ok: emerg.lista.length === emerg.total, esperado: _ckInt_(emerg.total), obtido: _ckInt_(emerg.lista.length) };
   });
   // Um emergencial ABERTO no mês esteve aberto no mês — logo tem que
-  // aparecer no backlog emergencial. Se não aparece, as duas abas
-  // (CHAMADOS ABERTOS MES x BACKLOG - EMERGENCIAL - DETALHE) divergem.
+  // aparecer no backlog emergencial. Se não aparece, as duas fontes
+  // (CHAMADOS ABERTOS MES, no Histórico Validado, x BD-CORRETIVAS) divergem.
   _ckAdd_(L, G_EMERG, 'Emergenciais abertos no mês estão no backlog', () => {
     if (!prio || !emerg) return null;
     const idsBacklog = {};

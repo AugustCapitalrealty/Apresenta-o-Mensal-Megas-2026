@@ -4,16 +4,21 @@
  * DESCRIÇÃO: Abre o detalhe dos chamados de prioridade Emergencial que
  * estavam em aberto no Mega ativo durante o MÊS DE REFERÊNCIA da
  * apresentação (o mês anterior — obterMesReferencia_), lidos da aba
- * "BACKLOG - EMERGENCIAL - DETALHE" da planilha de Histórico Validado
- * (obterDadosBacklogEmergencialDetalhe_ em 02_Dados.gs), filtrados por
- * Centro de Custos = MEGA <EMPREENDIMENTO>. Só entra o chamado que AINDA
- * estava aberto no fim do mês de referência — um chamado aberto e fechado
- * dentro do mesmo mês não é backlog daquele mês (comparação de datas, não
- * do Estado atual — ver comentário em 02_Dados.gs, _histAbertoNoMes_).
+ * "BD-CORRETIVAS" da planilha BASE DE DADOS — QUADRO REM (histórico bruto
+ * desde 2021 — obterDadosBacklogEmergencialDetalhe_ em 02_Dados.gs),
+ * filtrados por Centro de Custos = MEGA <EMPREENDIMENTO> e Prioridade =
+ * Emergencial. Conta qualquer chamado emergencial, inclusive os de
+ * responsabilidade do locatário (decisão do usuário — visão ampla de
+ * emergências pendentes). Só entra o chamado que AINDA estava aberto no
+ * fim do mês de referência — um chamado aberto e fechado dentro do mesmo
+ * mês não é backlog daquele mês (comparação de datas, não do Estado atual
+ * — ver comentário em 02_Dados.gs, _histAbertoNoMes_).
  *
  * Diferença em relação ao slide de Chamados por Prioridade/Clientes: aqui não
  * tem Abertos x Fechados (é só backlog aberto no mês) — o eixo é EQUIPE
- * responsável (FACILITIES ou PROPERTY), resumido em dois cards KPI compactos
+ * responsável (FACILITIES, PROPERTY, OPERACAO, LOCATARIO ou OUTROS,
+ * resolvida a partir da coluna Responsáveis — _resolverEquipeResponsaveis_),
+ * resumido em cards KPI compactos
  * (criarCardKPI, 01_Config.gs) em vez de barra+legenda — só 2 categorias não
  * precisam de gráfico, e o espaço economizado vai pra lista de detalhe, que
  * é o que importa no slide. Lista em formato de TABELA (EQUIPE | DESCRIÇÃO |
@@ -96,28 +101,45 @@ function _paginarItensBacklogEmerg_(itens, listaH) {
 
 // Cor por equipe responsável — função (não const top-level) pra não depender
 // da ordem de carga dos arquivos .gs (CORES é definido em 01_Config.gs; um
-// const de topo aqui poderia rodar antes e estourar TDZ).
+// const de topo aqui poderia rodar antes e estourar TDZ). FACILITIES e
+// PROPERTY são as duas equipes de operação (a maioria dos chamados);
+// qualquer outra (OPERACAO, LOCATARIO, OUTROS — só existem desde que a
+// fonte virou BD-CORRETIVAS, que não exclui responsabilidade do locatário
+// daqui) cai no cinza neutro.
 function _equipeCor_(equipe) {
-  return String(equipe || '').toUpperCase() === 'PROPERTY' ? CORES.themeCorr : CORES.lightBlue;
+  const eq = String(equipe || '').toUpperCase();
+  if (eq === 'PROPERTY')   return CORES.themeCorr;
+  if (eq === 'FACILITIES') return CORES.lightBlue;
+  return CORES.textGray;
 }
 
-// ── Dois cards KPI compactos: FACILITIES x PROPERTY ────────────────────────
-// Sempre mostra as duas equipes, mesmo quando uma tem zero chamados — o
-// card não vira gráfico (só 2 categorias não precisam de barra/legenda) e
-// sobra espaço pra lista de detalhe embaixo, que é o foco do slide.
+// ── Cards KPI compactos: FACILITIES x PROPERTY, sempre exibidos (mesmo com
+// zero chamados) + um 3º card "OUTRAS EQUIPES" só quando existir alguma
+// qtd fora dessas duas (OPERACAO/LOCATARIO/OUTROS) — evita que o total do
+// slide fique maior que a soma dos cards visíveis, que era o caso antes de
+// a fonte virar BD-CORRETIVAS (só tinha FACILITIES/PROPERTY na aba antiga).
 function _backlogEmergKPIs_(slide, x, y, w, h, dados) {
-  const porEquipe = { FACILITIES: 0, PROPERTY: 0 };
+  const porEquipe = {};
   dados.fatias.forEach(f => { porEquipe[f.label] = f.qtd; });
   const total = dados.total;
 
-  const gap = 16, cardW = (w - gap) / 2;
-  ['FACILITIES', 'PROPERTY'].forEach((equipe, i) => {
-    const qtd = porEquipe[equipe] || 0;
-    const pct = total > 0 ? (qtd / total * 100) : 0;
+  const outras = Object.keys(porEquipe)
+    .filter(eq => eq !== 'FACILITIES' && eq !== 'PROPERTY')
+    .reduce((s, eq) => s + porEquipe[eq], 0);
+
+  const cards = [
+    { label: 'FACILITIES', qtd: porEquipe.FACILITIES || 0 },
+    { label: 'PROPERTY',   qtd: porEquipe.PROPERTY   || 0 }
+  ];
+  if (outras > 0) cards.push({ label: 'OUTRAS EQUIPES', qtd: outras });
+
+  const gap = 16, cardW = (w - (cards.length - 1) * gap) / cards.length;
+  cards.forEach((c, i) => {
+    const pct = total > 0 ? (c.qtd / total * 100) : 0;
     criarCardKPI(slide, x + i * (cardW + gap), y, cardW, h, {
-      label: equipe,
-      valor: qtd,
-      cor: _equipeCor_(equipe),
+      label: c.label,
+      valor: c.qtd,
+      cor: _equipeCor_(c.label),
       tamValor: 26,
       sub: pct.toFixed(1).replace('.', ',') + '%'
     });
@@ -223,9 +245,9 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
 // ==========================================
 // Chamados de prioridade Emergencial que estavam em aberto durante o mês de
 // referência (mês anterior) no empreendimento ativo, com o detalhe por
-// Equipe responsável (Facilities x Property), busca automática na aba
-// "BACKLOG - EMERGENCIAL - DETALHE" da planilha de Histórico Validado. Sem
-// a aba preenchida, cai no slide manual de espaço reservado.
+// Equipe responsável, busca automática na aba "BD-CORRETIVAS" da planilha
+// BASE DE DADOS — QUADRO REM. Sem chamado emergencial no período, cai no
+// slide manual de espaço reservado.
 function gerarSoBacklogEmergencialDetalheCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogEmergencialDetalhe(); }
 function gerarSoBacklogEmergencialDetalheItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogEmergencialDetalhe(); }
 function gerarSoBacklogEmergencialDetalheEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogEmergencialDetalhe(); }
