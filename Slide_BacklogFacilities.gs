@@ -28,6 +28,17 @@
  * a geração.
  */
 
+// Preenchimento das colunas do Geral: tom claro da família do azul
+// institucional (#151E49). A barra é o pano de fundo do gráfico — as três
+// linhas passam por dentro dela —, então precisa ser leve o bastante pra
+// não competir com elas nem pesar o slide ("esse azul ficou muito forte").
+//
+// O tom é claro também por contraste: a linha de Property é âmbar
+// (#F59E0B), de luminância média, e num azul só um pouco mais claro que o
+// navy ela sumia dentro da coluna. Neste tom as três linhas se destacam do
+// preenchimento (ver o teste de contraste em test-backlog-facilities-grafico.js).
+const BACKLOG_COR_COLUNA = '#C6CFE6';
+
 function gerarSlideBacklogFacilities() {
   const historico = obterDadosBacklogHistorico_();
   if (!historico || historico.length === 0) {
@@ -126,8 +137,14 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   // Property e Responsabilidade Locatário — seguem em LINHA por cima. A
   // coluna dá o volume do mês batendo o olho; as linhas mostram como esse
   // volume se divide, sem competir visualmente com o total.
+  // `cor` é a cor do TRAÇO/rótulo da série; `corBarra` (só na série em
+  // coluna) é o preenchimento da barra. Os dois são separados de propósito:
+  // preencher a barra inteira com o azul institucional (#151E49) pesava
+  // demais no slide e engolia as linhas que passam por dentro dela — a
+  // barra usa um tom BEM mais claro da mesma família, e o rótulo de valor
+  // continua no navy escuro pra seguir legível sobre o fundo branco.
   const SERIES = [
-    { chave: 'geral',      rotulo: 'Geral',      cor: CORES.darkBlue,   modo: 'coluna', destaque: true  },
+    { chave: 'geral',      rotulo: 'Geral',      cor: CORES.darkBlue,   corBarra: BACKLOG_COR_COLUNA, modo: 'coluna', destaque: true  },
     { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  modo: 'linha',  destaque: false },
     { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  modo: 'linha',  destaque: false },
     { chave: 'locatario',  rotulo: 'Responsabilidade Locatário', cor: CORES.cardGreen, modo: 'linha', destaque: false }
@@ -158,7 +175,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   const desenhadas = SERIES.map(s => ({
     serie: s,
     pontos: s.modo === 'coluna'
-      ? _backlogDesenharColuna_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.cor, escMax)
+      ? _backlogDesenharColuna_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.corBarra || s.cor, escMax)
       : null
   }));
   desenhadas.forEach(d => {
@@ -205,7 +222,7 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   SERIES.slice().reverse().forEach(s => {
     const lw = 12 + s.rotulo.length * 5.5 + 16;
     legX -= lw;
-    _utilLegendaIcone_(slide, legX, legY, 10, 8, s.cor, s.modo === 'coluna' ? 'barra' : 'linha');
+    _utilLegendaIcone_(slide, legX, legY, 10, 8, s.corBarra || s.cor, s.modo === 'coluna' ? 'barra' : 'linha');
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, s.rotulo, 7.5, false, CORES.textDark, 'left');
   });
 }
