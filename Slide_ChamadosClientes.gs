@@ -266,14 +266,12 @@ function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema,
   const tileGap = 10;
   const tileW = (w - 24 - (n - 1) * tileGap) / n;
 
-  // Teto fixo pro logo: _insertLogoFit_ preenche o máximo da caixa que
-  // receber, então sem limite um período com 2 clientes daria a cada um
-  // metade do card e os logos sairiam gigantes (e desproporcionais aos de
-  // um período com 5). Com o teto, a caixa do logo é a MESMA em todos os
-  // períodos — só sobra mais respiro lateral quando há poucos clientes.
-  const LOGO_MAX_W = 92, LOGO_MAX_H = 38;
-  const logoW = Math.min(tileW, LOGO_MAX_W);
-  const logoH = Math.min(LOGO_MAX_H, areaH * 0.45);
+  // Card-resumo usa a MESMA altura de logo das tabelas (padrão único do
+  // deck) — o número grande embaixo é que carrega o destaque. A caixa é a
+  // mesma em qualquer período (2 clientes ou 5): só sobra mais respiro
+  // lateral quando há poucos clientes.
+  const logoW = Math.min(tileW, LOGO_LARG_PADRAO);
+  const logoH = Math.min(LOGO_ALT_PADRAO + 8, areaH * 0.45);
   const qtyY  = areaY + logoH + 8;
 
   dadosPeriodo.fatias.forEach((f, i) => {
@@ -330,10 +328,6 @@ function _clientesLista_(slide, x, y, w, h, titulo, totalCount, paginaColunas, c
 
   // Mostra TODOS os chamados desta página, sem cortar — cada um detalhado
   // (id + descrição), agrupados por Cliente na mesma linha/coluna de logo.
-  // O corpo do texto ainda se ajusta (entre o piso e o teto) conforme a
-  // quantidade de LINHAS desta página especificamente — a paginação já
-  // garantiu que cabe no piso, então aqui é só polimento: página com pouco
-  // conteúdo ganha fonte maior.
   const colGap   = 14;
   const colW     = (w - 30 - (cols - 1) * colGap) / cols;
   const LINE_PCT = 118;
@@ -343,27 +337,24 @@ function _clientesLista_(slide, x, y, w, h, titulo, totalCount, paginaColunas, c
   // o mesmo padrão de tabelas com múltiplas colunas de continuação.
   const HEADER_H = 14, HEADER_GAP = 6;
   const linhasY = listY + HEADER_H + HEADER_GAP;
-  const linhasH = listH - HEADER_H - HEADER_GAP;
 
   const linhasGrupo = g => g.length;
-  let maxLinhasColuna = 0;
-  paginaColunas.forEach(fatia => {
-    maxLinhasColuna = Math.max(maxLinhasColuna, fatia.reduce((s, g) => s + linhasGrupo(g), 0));
-  });
 
-  // Piso 7 (não mais 6): como _paginarGruposClientes_ já garante que cada
-  // página cabe com fonte legível, não precisa mais encolher até ficar
-  // minúsculo — se sobrar, vira página nova em vez de espremer.
-  let fontSize = Math.min(8, linhasH / (Math.max(1, maxLinhasColuna) * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(7, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt
+  // Fonte FIXA em 7pt, igual às tabelas de backlog — a pedido do usuário,
+  // nenhuma tabela do deck muda de corpo conforme a página fica mais cheia
+  // ou mais vazia. _paginarGruposClientes_ já garante que a página cabe
+  // nesse corpo, então não há risco de estourar o card.
+  const fontSize = 7;
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 16;
-  // Coluna do logo com largura e altura fixas — não é mais "o quanto o
-  // logo esticar", é o TAMANHO DO QUADRADO da célula (como na referência
-  // que o usuário mandou). _insertLogoFit_ centraliza a imagem dentro
-  // desse quadrado mantendo a proporção original.
-  const LOGO_COL_W = 58, LOGO_GAP = 12, LOGO_CELL_H = 26, MIN_ROW_H = 30, CAPTION_H = 10;
+  // Coluna do logo dimensionada pelo padrão único do deck
+  // (Slide_LogosClientes.gs), igual às demais tabelas — aqui são DUAS
+  // colunas de lista lado a lado, então usa a largura padrão só quando ela
+  // couber sem espremer a descrição; senão fica com o que a coluna permite
+  // (e os logos mais largos saem menores, o que o Logger registra).
+  const LOGO_COL_W = Math.min(LOGO_LARG_PADRAO, Math.round(colW * 0.34));
+  const LOGO_GAP = 12, LOGO_CELL_H = LOGO_ALT_PADRAO + 6, MIN_ROW_H = 30, CAPTION_H = 10;
 
   for (let c = 0; c < cols; c++) {
     const fatia = paginaColunas[c] || [];

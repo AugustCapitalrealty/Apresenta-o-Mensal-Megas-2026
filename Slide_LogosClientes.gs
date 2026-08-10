@@ -62,12 +62,31 @@ const LOGOS_CLIENTES = {
 // então clientes diferentes que casam no mesmo logo reaproveitam o download).
 const _clienteLogoCache_ = {};
 
+// O próprio Mega aparece como "cliente" em várias listas (linhas de área
+// comum/condomínio: "MEGA Curitiba - ÁREA COMUM", "CONDOMÍNIO MEGA
+// CURITIBA"). Nesses casos o logo certo é o do empreendimento ATIVO
+// (unitLogoId em 01_Config.gs) — não existe um "logo do Mega" genérico, cada
+// cidade tem o seu, e a apresentação sempre roda com uma cidade ativa.
+// `_histEmpChave_` devolve MAIÚSCULO sem acento, daí a comparação em caixa
+// alta; e o casamento é por PALAVRA inteira (\bMEGA\b) pra não pegar razão
+// social que só contenha as letras (ex.: "OMEGA ...").
+function _logoDoMegaId_(nomeCliente) {
+  if (!/\bMEGA\b/.test(_histEmpChave_(nomeCliente))) return null;
+  try {
+    return getProjetoAtivo().unitLogoId || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function _getClienteLogoBlob_(nomeCliente) {
   const alvo = _histEmpChave_(nomeCliente);
-  let idAchado = null;
-  const chaves = Object.keys(LOGOS_CLIENTES);
-  for (let k = 0; k < chaves.length; k++) {
-    if (alvo.indexOf(_histEmpChave_(chaves[k])) >= 0) { idAchado = LOGOS_CLIENTES[chaves[k]]; break; }
+  let idAchado = _logoDoMegaId_(nomeCliente);
+  if (!idAchado) {
+    const chaves = Object.keys(LOGOS_CLIENTES);
+    for (let k = 0; k < chaves.length; k++) {
+      if (alvo.indexOf(_histEmpChave_(chaves[k])) >= 0) { idAchado = LOGOS_CLIENTES[chaves[k]]; break; }
+    }
   }
   if (!idAchado) return null;
 
@@ -141,26 +160,83 @@ function _logoLegendaTexto_(slide, x, y, w, h, rotulo) {
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }
 
-// Igual a _insertLogoFit_, mas escreve o nome curto embaixo quando o logo é
-// compartilhado por mais de uma marca. Devolve a imagem inserida, ou null
+// Igual a _insertLogoPadrao_, mas escreve o nome curto embaixo quando o logo
+// é compartilhado por mais de uma marca. Devolve a imagem inserida, ou null
 // quando a caixa é baixa demais pra comportar logo + legenda legíveis — aí o
 // chamador cai no fallback de texto, que diferencia melhor do que um logo
 // minúsculo com uma legenda ilegível embaixo.
-function _insertLogoFitLegenda_(slide, blob, nomeCliente, x, y, boxW, boxH) {
+//
+// Ponto único de entrada dos logos de cliente: todos os slides passam por
+// aqui, então a altura padrão (e a homogeneidade) vale pro deck inteiro.
+function _insertLogoFitLegenda_(slide, blob, nomeCliente, x, y, boxW, boxH, altura) {
   const rotulo = _logoLegendaRotulo_(nomeCliente);
-  if (!rotulo) return _insertLogoFit_(slide, blob, x, y, boxW, boxH);
+  if (!rotulo) return _insertLogoPadrao_(slide, blob, x, y, boxW, boxH, altura);
   if (boxH < _LOGO_LEGENDA_MIN_BOX_) return null;
 
-  const img = _insertLogoFit_(slide, blob, x, y, boxW, boxH - _LOGO_LEGENDA_H_);
+  const img = _insertLogoPadrao_(slide, blob, x, y, boxW, boxH - _LOGO_LEGENDA_H_, altura);
   _logoLegendaTexto_(slide, x, y + boxH - _LOGO_LEGENDA_H_, boxW, _LOGO_LEGENDA_H_, rotulo);
   return img;
 }
 
+// ── TAMANHO PADRÃO DO LOGO (homogeneidade entre slides) ───────────────────
+// _insertLogoFit_ faz "contain": a imagem cresce até esbarrar na LARGURA ou
+// na ALTURA da caixa, o que vier primeiro. O efeito colateral é justamente a
+// falta de homogeneidade que o usuário apontou: numa mesma tabela, um logo
+// largo (Mercado Livre, ~4:1) esbarra na largura e sai baixinho, enquanto um
+// logo mais quadrado (NTN, HP) esbarra na altura e sai no tamanho cheio —
+// duas marcas lado a lado com alturas visivelmente diferentes.
+//
+// _insertLogoPadrao_ inverte a regra: fixa a ALTURA e deixa a largura variar
+// com a proporção de cada marca. Assim todo logo do deck tem exatamente a
+// mesma altura visual, independente do formato do arquivo e de qual slide
+// está desenhando — que é o que faz a tabela de DOCUMENTAÇÃO LEGAL (a
+// referência que o usuário considerou correta) parecer alinhada.
+//
+// Pra isso funcionar a coluna precisa ser larga o bastante pro logo mais
+// largo do acervo caber na altura padrão:
+//     larguraDaColuna >= LOGO_ALT_PADRAO * LOGO_RATIO_MAX
+// Abaixo disso o logo largo volta a ser limitado pela largura (e sai menor
+// que os demais) — por isso as colunas de logo dos slides estão
+// dimensionadas a partir de LOGO_LARG_PADRAO.
+// Altura ÚNICA pro deck inteiro (tabelas e cards-resumo): a pedido do
+// usuário, a mesma marca tem que ter o mesmo tamanho em qualquer página —
+// nada de logo maior no resumo e menor na tabela. Uma altura só também
+// evita o problema de a faixa de destaque precisar de uma coluna mais larga
+// do que o tile comporta (aí o logo largo encolheria e a homogeneidade se
+// perderia justamente onde ela é mais visível).
+const LOGO_ALT_PADRAO   = 18;   // altura de TODO logo de cliente do deck
+const LOGO_RATIO_MAX    = 5;    // logo mais largo do acervo (~5:1)
+const LOGO_LARG_PADRAO  = LOGO_ALT_PADRAO * LOGO_RATIO_MAX;   // 90pt
+
+// Insere o logo com ALTURA FIXA (`altura`, default LOGO_ALT_PADRAO),
+// centralizado na caixa x,y,boxW,boxH. Só reduz abaixo da altura padrão
+// quando a caixa é baixa demais ou quando o logo é largo demais pra coluna
+// — os dois casos ficam registrados no Logger, porque são exatamente os que
+// quebram a homogeneidade e valem ajuste de layout.
+function _insertLogoPadrao_(slide, blob, x, y, boxW, boxH, altura) {
+  const img = slide.insertImage(blob);
+  const ratio = img.getWidth() / img.getHeight();
+
+  let h = Math.min(altura || LOGO_ALT_PADRAO, boxH);
+  let w = h * ratio;
+  if (w > boxW) {
+    w = boxW;
+    h = boxW / ratio;
+    Logger.log('Logo mais largo que a coluna (' + ratio.toFixed(1) + ':1 em ' + Math.round(boxW) +
+               'pt): saiu com ' + Math.round(h) + 'pt de altura em vez de ' + Math.round(altura || LOGO_ALT_PADRAO) + 'pt.');
+  }
+
+  img.setWidth(Math.round(w)).setHeight(Math.round(h))
+     .setLeft(x + (boxW - w) / 2)
+     .setTop(y + (boxH - h) / 2);
+  return img;
+}
+
 // Insere uma imagem centralizada dentro de uma caixa x,y,boxW,boxH, ocupando
-// o máximo de área possível sem distorcer a proporção original ("contain") —
-// necessário porque os arquivos de logo têm proporções bem diferentes entre
-// si (quadrados, bem largos, etc.) e o slide precisa de um tamanho visual
-// padronizado entre eles.
+// o máximo de área possível sem distorcer a proporção original ("contain").
+// Usada onde a caixa É o tamanho desejado (ícones quadrados das capas de
+// seção); pros logos de cliente use _insertLogoPadrao_, que fixa a altura e
+// mantém todas as marcas do mesmo tamanho.
 function _insertLogoFit_(slide, blob, x, y, boxW, boxH) {
   const img = slide.insertImage(blob);
   const ratio = img.getWidth() / img.getHeight();

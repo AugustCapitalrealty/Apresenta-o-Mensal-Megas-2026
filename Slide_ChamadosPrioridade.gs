@@ -143,8 +143,11 @@ function _prioridadeListaEmergencial_(slide, x, y, w, h, titulo, itens) {
   const porCol   = Math.ceil(itens.length / cols);
   const LINE_PCT = 120;
 
-  let fontSize = Math.min(8, listH / (porCol * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+  // Fonte FIXA em 7pt, igual a todas as outras listas/tabelas do deck — a
+  // pedido do usuário, nenhuma página muda de corpo conforme fica mais
+  // cheia ou mais vazia. O número de COLUNAS (acima) é o que absorve o
+  // volume; o corpo do texto não muda.
+  const fontSize = 7;
 
   const maxDesc = cols === 1 ? 65 : (cols === 2 ? 36 : 22);
   const truncar = txt => {

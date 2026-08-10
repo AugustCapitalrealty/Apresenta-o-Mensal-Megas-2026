@@ -32,12 +32,12 @@ const DOC_LABEL_CATEGORIA = {
   PENDENTE : 'PENDENTE'
 };
 
-// Logo do cliente na coluna EMPRESA (mesma técnica das listas de chamados:
-// Slide_ChamadosClientes.gs / Slide_BacklogClientesDetalhes.gs). Altura máxima
-// para que o logo não domine a linha quando o card da empresa é alto (empresa
-// com muitos documentos) e folga vertical mínima dentro da célula.
-const DOC_LOGO_MAX_H = 28;
-const DOC_LOGO_PAD_Y = 3;
+// Logo do cliente na coluna EMPRESA. A altura é a PADRÃO do deck
+// (LOGO_ALT_PADRAO, Slide_LogosClientes.gs) — a mesma das listas de chamados
+// e dos backlogs, pra que a marca tenha sempre o mesmo tamanho em qualquer
+// slide. Aqui só sobra a folga vertical dentro da célula, que não pode
+// engolir a altura padrão (por isso 2pt, com DOC_ROW_H = 22 → sobra 18pt).
+const DOC_LOGO_PAD_Y = 2;
 
 // Desenha a célula EMPRESA: logo quando existe arquivo no Drive, senão o nome
 // em texto (fallback obrigatório — nem todo inquilino tem logo cadastrado em
@@ -57,7 +57,7 @@ function _docEmpresaCelula_(slide, x, y, w, h, empresa, fontSize, cor) {
       // Boticário) ganha uma faixa a mais de altura pra legenda embaixo, pra
       // que o logo em si continue do mesmo tamanho das demais empresas.
       const extra = _logoLegendaRotulo_(nome) ? _LOGO_LEGENDA_H_ : 0;
-      const boxH = Math.min(h - DOC_LOGO_PAD_Y * 2, DOC_LOGO_MAX_H + extra);
+      const boxH = Math.min(h - DOC_LOGO_PAD_Y * 2, LOGO_ALT_PADRAO + extra);
       if (_insertLogoFitLegenda_(slide, blob, nome, x, y + (h - boxH) / 2, w - 6, boxH)) return true;
     } catch (e) {
       Logger.log('Logo de "' + empresa + '" (Documentos) não inseriu: ' + e.message);

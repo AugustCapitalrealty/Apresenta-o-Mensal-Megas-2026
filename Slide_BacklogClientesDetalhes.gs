@@ -193,11 +193,12 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 26;
-  // Coluna do logo com largura e altura fixas — o "quadrado" da célula,
-  // não mais um teto elástico. Card cheio de largura (slide inteiro), por
-  // isso a célula pode ser bem maior que na lista de 2 colunas de
-  // Slide_ChamadosClientes.gs.
-  const LOGO_COL_W = 92, LOGO_GAP = 16, LOGO_CELL_H = 36, MIN_ROW_H = 40;
+  // Coluna do logo dimensionada a partir do padrão único do deck
+  // (Slide_LogosClientes.gs): LOGO_LARG_PADRAO é a largura mínima pra que
+  // até o logo mais largo do acervo saia na altura padrão — abaixo dela as
+  // marcas largas encolhem e a tabela volta a ficar com logos de tamanhos
+  // diferentes, que foi exatamente a reclamação do usuário aqui.
+  const LOGO_COL_W = LOGO_LARG_PADRAO, LOGO_GAP = 16, LOGO_CELL_H = LOGO_ALT_PADRAO + 6, MIN_ROW_H = 40;
   // Legenda "(N chamados)" só aparece em grupo com mais de 1 chamado — sem
   // reservar essa altura extra no piso da linha, ela invadia a linha do
   // próximo cliente (overlap com o divisor). CAPTION_H cobre o respiro +
