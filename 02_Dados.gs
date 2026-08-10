@@ -3123,7 +3123,24 @@ function obterDadosBacklogEmergencialHistoricoPorMes_(meses) {
   const porOrd = new Map();
   if (!itens.length) return porOrd;
 
+  // A aba "BACKLOG - EMERGENCIAL - DETALHE" só passou a ser preenchida a
+  // partir de um certo mês — meses ANTERIORES a ela não têm "zero chamados
+  // emergenciais", eles simplesmente não têm dado nenhum ali. Sem essa
+  // checagem, todo mês fora do alcance real da aba dava qtd=0 (nenhum item
+  // cru tem `dtReporte` caindo naquela janela), o que o merge em
+  // Slide03_Corretivas.gs então tratava como "recalculado cobre esse mês" e
+  // apagava o valor histórico digitado à mão, zerando o gráfico antes do
+  // início da aba em vez de preservar o histórico antigo.
+  let primeiroOrd = null;
+  itens.forEach(it => {
+    if (!it.dtReporte) return;
+    const ord = it.dtReporte.getUTCFullYear() * 100 + (it.dtReporte.getUTCMonth() + 1);
+    if (primeiroOrd === null || ord < primeiroOrd) primeiroOrd = ord;
+  });
+  if (primeiroOrd === null) return porOrd;
+
   meses.forEach(m => {
+    if (m.ord < primeiroOrd) return; // fora da cobertura da aba — mantém o valor manual
     const ano = Math.floor(m.ord / 100), mesIdx = (m.ord % 100) - 1;
     const refIni = new Date(Date.UTC(ano, mesIdx, 1));
     const refFim = new Date(Date.UTC(ano, mesIdx + 1, 1));
