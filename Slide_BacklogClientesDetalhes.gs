@@ -192,6 +192,17 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   const fontSize = 7;
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
+  // Quantas LINHAS de descrição cada chamado ganha nesta página (1 ou 2).
+  // _paginarGruposBacklog_ reserva 1 — o piso que garante o encaixe; quando
+  // a página sobra altura (o vazio no rodapé do card que o usuário
+  // apontou), cada chamado passa a ter 2 linhas em vez de truncar a
+  // descrição no meio. A FONTE segue fixa; o que varia é só quanto texto
+  // cabe, que o usuário liberou explicitamente por página.
+  const MIN_ROW_H_PAG = 40, CAPTION_H_PAG = 12;
+  const linhasPorChamado = _linhasPorChamadoQueCabem_(
+    [grupos], listH - HEADER_H - HEADER_GAP, lineH, MIN_ROW_H_PAG, CAPTION_H_PAG, ROW_GAP);
+  const alturaChamado = lineH * linhasPorChamado;
+
   const maxCliente = 26;
   // Coluna do logo dimensionada a partir do padrão único do deck
   // (Slide_LogosClientes.gs): LOGO_LARG_PADRAO é a largura mínima pra que
@@ -233,7 +244,7 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   let cursorY = linhasY;
   grupos.forEach(grupo => {
     const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
-    const rowH = Math.max(linhasGrupo(grupo) * lineH, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
+    const rowH = Math.max(linhasGrupo(grupo) * alturaChamado, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
 
     // Casa pelo apelido de exibição, não pelo nome cru — ver comentário
     // equivalente em Slide_ChamadosClientes.gs.
@@ -252,14 +263,16 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
       _sTxt(slide, x + 15, logoY + LOGO_CELL_H + 1, LOGO_COL_W, CAPTION_H - 1, '(' + grupo.length + ' chamados)', 7, false, CORES.textGray, 'center');
     }
 
-    // Orçamento de caracteres por LINHA — cada chamado tem que caber numa
-    // linha só, senão a quebra desalinha os logos/colunas seguintes (ver o
-    // comentário de _charsQueCabem_ em Slide_ChamadosClientes.gs).
-    const capacidadeLinha = _charsQueCabem_(descW, fontSize);
+    // Orçamento de caracteres do chamado: capacidade de UMA linha vezes
+    // quantas linhas ele pode ocupar nesta página. A altura da linha já foi
+    // reservada com o mesmo número, então a quebra é esperada e não
+    // desalinha os logos/colunas seguintes (ver o comentário de
+    // _charsQueCabem_ em Slide_ChamadosClientes.gs).
+    const capacidadeLinha = _charsQueCabem_(descW, fontSize) * linhasPorChamado;
 
-    let ticketY = cursorY + (rowH - grupo.length * lineH) / 2;  // centraliza o bloco de linhas na altura do grupo
+    let ticketY = cursorY + (rowH - grupo.length * alturaChamado) / 2;  // centraliza o bloco de linhas na altura do grupo
     grupo.forEach(it => {
-      const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, ticketY, descW, lineH);
+      const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, ticketY, descW, alturaChamado);
       const tr = descBox.getText();
       tr.setText('');
       // ID em cinza neutro — nunca na cor do cliente, senão ID e cliente
@@ -274,11 +287,14 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
       tr.getParagraphStyle().setLineSpacing(LINE_PCT);
       descBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-      _sTxt(slide, dataX, ticketY, DATA_W, lineH, it.dataReporte || '—', Math.max(6, fontSize - 0.5), false, CORES.textGray, 'center');
+      // DATA/DIAS na MESMA altura da caixa de descrição — as três são
+      // centralizadas verticalmente, então com 2 linhas de descrição a data
+      // e os dias ficam no meio dela, alinhados por construção.
+      _sTxt(slide, dataX, ticketY, DATA_W, alturaChamado, it.dataReporte || '—', Math.max(6, fontSize - 0.5), false, CORES.textGray, 'center');
       const diasTxt = (it.diasAberto === null || it.diasAberto === undefined) ? '—' : it.diasAberto + 'd';
-      _sTxt(slide, diasX, ticketY, DIAS_W, lineH, diasTxt, fontSize, true, cor, 'center');
+      _sTxt(slide, diasX, ticketY, DIAS_W, alturaChamado, diasTxt, fontSize, true, cor, 'center');
 
-      ticketY += lineH;
+      ticketY += alturaChamado;
     });
 
     cursorY += rowH + ROW_GAP;

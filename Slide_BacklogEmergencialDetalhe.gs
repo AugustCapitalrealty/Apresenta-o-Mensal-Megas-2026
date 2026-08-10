@@ -176,6 +176,16 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
   const fontSize = 7;
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
+  // Quantas LINHAS de descrição cada chamado ganha nesta página (1 ou 2).
+  // _paginarItensBacklogEmerg_ reserva 1 — o piso que garante o encaixe;
+  // sobrando altura no card (o vazio no rodapé que o usuário apontou), cada
+  // chamado passa a ter 2 linhas em vez de truncar a descrição no meio. A
+  // FONTE segue fixa; só varia quanto texto cabe. Aqui não há agrupamento
+  // por cliente, então cada item é seu próprio "grupo" de 1 linha.
+  const linhasPorChamado = _linhasPorChamadoQueCabem_(
+    [itens.map(it => [it])], listH - HEADER_H - HEADER_GAP, lineH, 0, 0, ROW_GAP);
+  const alturaChamado = lineH * linhasPorChamado;
+
   const EQUIPE_W = 88, EQUIPE_GAP = 14;
   // Mesma folga de Slide_BacklogClientesDetalhes.gs — ver o comentário lá
   // pro porquê (uma data "dd/mm/aa" de 8 caracteres quebrava em 2 linhas
@@ -199,13 +209,13 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
     l.getFill().setSolidFill(_TABELA_LINHA_COR_); l.getBorder().setTransparent();
   });
 
-  const capacidadeLinha = _charsQueCabem_(descW, fontSize);
+  const capacidadeLinha = _charsQueCabem_(descW, fontSize) * linhasPorChamado;
   let cursorY = linhasY;
   itens.forEach(it => {
     const cor = _equipeCor_(it.equipe);
-    _sTxt(slide, x + 15, cursorY, EQUIPE_W, lineH, (it.equipe || '—').toUpperCase(), Math.min(fontSize, 9), true, cor, 'center');
+    _sTxt(slide, x + 15, cursorY, EQUIPE_W, alturaChamado, (it.equipe || '—').toUpperCase(), Math.min(fontSize, 9), true, cor, 'center');
 
-    const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, cursorY, descW, lineH);
+    const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, cursorY, descW, alturaChamado);
     const tr = descBox.getText();
     tr.setText('');
     // ID em cinza neutro — nunca na cor do tema/equipe, senão em chamados
@@ -221,11 +231,14 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
     tr.getParagraphStyle().setLineSpacing(LINE_PCT);
     descBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-    _sTxt(slide, dataX, cursorY, DATA_W, lineH, it.dataReporte || '—', Math.max(6, fontSize - 0.5), false, CORES.textGray, 'center');
+    // EQUIPE/DATA/DIAS na MESMA altura da caixa de descrição — todas são
+    // centralizadas verticalmente, então com 2 linhas de descrição elas
+    // ficam no meio dela, alinhadas por construção.
+    _sTxt(slide, dataX, cursorY, DATA_W, alturaChamado, it.dataReporte || '—', Math.max(6, fontSize - 0.5), false, CORES.textGray, 'center');
     const diasTxt = (it.diasAberto === null || it.diasAberto === undefined) ? '—' : it.diasAberto + 'd';
-    _sTxt(slide, diasX, cursorY, DIAS_W, lineH, diasTxt, fontSize, true, cor, 'center');
+    _sTxt(slide, diasX, cursorY, DIAS_W, alturaChamado, diasTxt, fontSize, true, cor, 'center');
 
-    cursorY += lineH + ROW_GAP;
+    cursorY += alturaChamado + ROW_GAP;
     _linhaTabela_(slide, x + 15, cursorY - ROW_GAP / 2, w - 30, _TABELA_LINHA_COR_, 0.75);
   });
 
