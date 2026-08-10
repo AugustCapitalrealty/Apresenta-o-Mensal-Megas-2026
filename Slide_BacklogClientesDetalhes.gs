@@ -76,15 +76,16 @@ function gerarSlideBacklogClientesDetalhes() {
 }
 
 // Divide os grupos (clientes) em páginas sem nunca partir um cliente no
-// meio — cada página tem que caber no card no MÍNIMO com a fonte-piso
-// (FLOOR_FONT) legível; se um cliente sozinho já estourar isso (caso raro
-// de dezenas de chamados pro mesmo cliente), ele fica sozinho na própria
-// página mesmo assim (ver comentário de _charsQueCabem_ pra o porquê do
-// projeto tolerar esse tipo de estouro extremo em vez de esconder dado).
+// meio — cada página tem que caber no card com a fonte FIXA da tabela
+// (FLOOR_FONT, que agora é a MESMA em toda página — ver _backlogClientesTabela_);
+// se um cliente sozinho já estourar isso (caso raro de dezenas de chamados
+// pro mesmo cliente), ele fica sozinho na própria página mesmo assim (ver
+// comentário de _charsQueCabem_ pra o porquê do projeto tolerar esse tipo
+// de estouro extremo em vez de esconder dado).
 function _paginarGruposBacklog_(grupos, listaH) {
   if (!grupos.length) return [[]];
 
-  const FLOOR_FONT = 8, LINE_PCT = 130;
+  const FLOOR_FONT = 7, LINE_PCT = 130;
   const MIN_ROW_H = 40, CAPTION_H = 12, ROW_GAP = 6;
   const HEADER_H = 16, HEADER_GAP = 6;
   // Mesmas constantes de layout de _backlogClientesTabela_: criarCardPainel
@@ -175,17 +176,20 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
 
   const HEADER_H = 16, HEADER_GAP = 6;
   const linhasY = listY + HEADER_H + HEADER_GAP;
-  const linhasH = listH - HEADER_H - HEADER_GAP;
 
   const linhasGrupo = g => g.length;
-  const totalLinhas = grupos.reduce((s, g) => s + linhasGrupo(g), 0);
-  const totalGaps   = Math.max(0, grupos.length - 1) * ROW_GAP;
 
-  // Piso de 8 (não mais 6): como _paginarGruposBacklog_ já garante que
-  // cada página cabe com fonte legível, não precisa mais encolher até
-  // ficar minúsculo — se sobrar, vira página nova em vez de espremer.
-  let fontSize = Math.min(11, (linhasH - totalGaps) / (totalLinhas * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(8, Math.round(fontSize * 2) / 2);
+  // Fonte FIXA em 7pt (não mais adaptativa entre 8 e 11) — a pedido do
+  // usuário, padronizada nas três tabelas que compartilham esta função
+  // (Backlog de Clientes — Detalhe/Facilities/Properties): antes o tamanho
+  // mudava de página pra página conforme o volume de chamados (mais cheia
+  // ficava em 8pt, mais vazia esticava até 11pt), o que deixava páginas do
+  // mesmo relatório com aparência inconsistente e truncava a descrição cedo
+  // demais nas páginas cheias. Com fonte menor e fixa, cabe mais texto por
+  // linha (ver _charsQueCabem_) e todo página fica igual. Como
+  // _paginarGruposBacklog_ já garante que cada página cabe com essa mesma
+  // fonte, não há risco de estourar o card.
+  const fontSize = 7;
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 26;

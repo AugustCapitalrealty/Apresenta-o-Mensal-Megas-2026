@@ -79,7 +79,7 @@ function gerarSlideBacklogEmergencialDetalhe() {
 function _paginarItensBacklogEmerg_(itens, listaH) {
   if (!itens.length) return [[]];
 
-  const FLOOR_FONT = 8, LINE_PCT = 118, ROW_GAP = 4;
+  const FLOOR_FONT = 7, LINE_PCT = 118, ROW_GAP = 4;
   const HEADER_H = 16, HEADER_GAP = 6;
   // Mesmas constantes de layout de _backlogEmergTabela_: criarCardPainel
   // devolve y+32 (título do card), listY = contentY+2, listH = h-listY-8.
@@ -144,13 +144,14 @@ function _backlogEmergTabela_(slide, x, y, w, h, titulo, totalCount, itens, corT
   const LINE_PCT = 118, ROW_GAP = 4;
   const HEADER_H = 16, HEADER_GAP = 6;
   const linhasY = listY + HEADER_H + HEADER_GAP;
-  const linhasH = listH - HEADER_H - HEADER_GAP;
 
-  // Piso de 8 (não mais 6): _paginarItensBacklogEmerg_ já garante que cada
-  // página cabe com fonte legível — se sobrar, vira página nova em vez de
-  // espremer (ver comentário equivalente em Slide_BacklogClientesDetalhes.gs).
-  let fontSize = Math.min(10, (linhasH - (itens.length - 1) * ROW_GAP) / (itens.length * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(8, Math.round(fontSize * 2) / 2);
+  // Fonte FIXA em 7pt (não mais adaptativa entre 8 e 10) — padronizada com
+  // _backlogClientesTabela_ (mesma família de tabela de backlog): antes o
+  // tamanho mudava de página pra página conforme o volume de chamados,
+  // deixando páginas do mesmo relatório com aparência inconsistente. Como
+  // _paginarItensBacklogEmerg_ já garante que cada página cabe com essa
+  // mesma fonte, não há risco de estourar o card.
+  const fontSize = 7;
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const EQUIPE_W = 88, EQUIPE_GAP = 14;
