@@ -14,6 +14,7 @@
  *   CORRETIVA    → alerta/exclamação (ação corretiva)
  *   CONTRATADOS  → anéis entrelaçados (parceria)
  *   INTERNOS     → skyline de barras (predial/time)
+ *   COMPLEMENTOS → sinal de mais (itens extras, sem categoria própria)
  *   PATRIMONIAL  → cadeado (segurança)
  *   OPERACIONAL  → barras crescentes + seta (financeiro)
  *   UTILITIES    → medidor de energia
@@ -105,6 +106,7 @@ function _secDesenharMotivo_(chave, s, cx, cy, cor) {
     case 'CORRETIVA':    return _secMotCorretiva_(s, cx, cy, cor);
     case 'CONTRATADOS':  return _secMotContratados_(s, cx, cy, cor);
     case 'INTERNOS':     return _secMotInternos_(s, cx, cy, cor);
+    case 'COMPLEMENTOS': return _secMotComplementos_(s, cx, cy, cor);
     case 'PATRIMONIAL':  return _secMotPatrimonial_(s, cx, cy, cor);
     case 'OPERACIONAL':  return _secMotOperacional_(s, cx, cy, cor);
     case 'UTILITIES':    return _secMotUtilities_(s, cx, cy, cor);
@@ -168,6 +170,16 @@ function _secMotInternos_(s, cx, cy, cor) {
     _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, dest ? cor : '#FFFFFF', dest ? 0.85 : 0.28, true);
   });
   _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
+}
+
+// COMPLEMENTOS — sinal de mais: serviços extras que não têm categoria
+// própria (nem Contratados, nem Internos) — "+" é o símbolo mais direto pra
+// "itens adicionais", sem forçar um objeto literal que nem sempre existe.
+// A barra vertical (destaque) cruza a horizontal (branca) formando o "+".
+function _secMotComplementos_(s, cx, cy, cor) {
+  const comprimento = 92, espessura = 18;
+  _secRet_(s, cx - comprimento / 2, cy - espessura / 2, comprimento, espessura, '#FFFFFF', 0.5, true);
+  _secRet_(s, cx - espessura / 2, cy - comprimento / 2, espessura, comprimento, cor, 0.9, true);
 }
 
 // PATRIMONIAL — cadeado (segurança), miolo (fechadura) em destaque.

@@ -89,6 +89,8 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Fotos - Serviços Contratados',        fn: gerarSlidesServicosContratados_ },
     { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS', 'INTERNOS') },
     { nome: 'Fotos - Serviços Internos',           fn: gerarSlidesServicosInternos_ },
+    { nome: 'Capa Seção - Complementos',           fn: () => gerarCapaSecao('SERVIÇOS', 'COMPLEMENTARES', 'COMPLEMENTOS') },
+    { nome: 'Fotos - Complementos',                fn: gerarSlidesComplementos_ },
     { nome: 'Capa Seção - Segurança Patrimonial',  fn: () => gerarCapaSecao('SEGURANÇA', 'PATRIMONIAL', 'PATRIMONIAL') },
     { nome: 'Acesso e Segurança',                  fn: gerarSlideTempo },
     { nome: 'Fotos - Serviços Segurança',          fn: () => gerarSlideRegistroFotos('SERVIÇOS SEGURANÇA') },

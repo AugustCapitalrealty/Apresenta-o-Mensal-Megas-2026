@@ -500,6 +500,9 @@ function gerarSoServicosInternosCuritiba()    { setProjetoAtivo('CURITIBA'); ger
 function gerarSoServicosInternosItajai()      { setProjetoAtivo('ITAJAI');   gerarSlidesServicosInternos_(); }
 function gerarSoServicosInternosEsteio()      { setProjetoAtivo('ESTEIO');   gerarSlidesServicosInternos_(); }
 
-// COMPLEMENTOS ainda não entra na apresentação completa — falta definir em
-// que ponto do fluxo ele aparece. Roda avulso enquanto isso.
+// COMPLEMENTOS já entra na apresentação completa (00_Main.gs, entre Serviços
+// Internos e Segurança Patrimonial) — estes atalhos continuam existindo pra
+// gerar só essa seção avulsa, sem rodar o deck inteiro.
 function gerarSoComplementosCuritiba()        { setProjetoAtivo('CURITIBA'); gerarSlidesComplementos_(); }
+function gerarSoComplementosItajai()          { setProjetoAtivo('ITAJAI');   gerarSlidesComplementos_(); }
+function gerarSoComplementosEsteio()          { setProjetoAtivo('ESTEIO');   gerarSlidesComplementos_(); }
