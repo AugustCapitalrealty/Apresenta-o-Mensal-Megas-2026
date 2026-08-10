@@ -18,7 +18,11 @@
  * automaticamente comparando Real x Meta pelo Sentido (<=, >=, =). SIM/NÃO
  * vira Verde/Amarelo. Metas compostas (duas medidas separadas por "/") só
  * ficam Verdes se AMBAS baterem. Se a coluna de Status já tiver um valor
- * (Verde/Amarelo/Vermelho), ele prevalece (override manual).
+ * (Verde/Amarelo/Vermelho), ele prevalece (override manual) — EXCETO nas
+ * linhas cujo Real foi sobrescrito pelo valor calculado (ver VALORES
+ * AUTOMÁTICOS abaixo): aí o status manual é descartado, porque foi digitado
+ * em cima do Real antigo da Gestão à Vista TV, não do Real recalculado que
+ * a apresentação está de fato mostrando.
  *
  * PONTUAÇÃO: soma os pontos das linhas com Status Acum. = Verde, mostrada
  * no rodapé do slide com selo de elegibilidade (>= METAS_PONTOS_ELEGIVEL).
@@ -125,12 +129,21 @@ function obterDadosMetas_(papel) {
     if (autoMes) {
       if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
       linha[6] = autoMes.valor;
+      // O Status Mês manual (linha[7]) foi digitado na Gestão à Vista TV em
+      // cima do Real DELA, que acabamos de substituir pelo nosso valor
+      // calculado — se deixarmos o manual, ele pode ficar Verde com um Real
+      // que já não é o mostrado (ex.: Check-list/SLA: TV tinha outro Real
+      // quando marcou Verde, recalculamos e deu 89,13% < meta 90%, mas o
+      // status ficava Verde do jeito antigo). Limpa pra forçar recálculo
+      // (_metasStatusCelula_) a partir do Real que está de fato na tela.
+      linha[7] = '';
       linha._trendMes = _metasTrend_(autoMes);
     }
     const autoAcum = obterMetaAuto_(descricao, linha[8], 'acum');
     if (autoAcum) {
       if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
       linha[9] = autoAcum.valor;
+      linha[10] = '';   // mesmo motivo do Status Mês acima, só que pro acumulado
       linha._trendAcum = _metasTrend_(autoAcum);
     }
     return linha;
