@@ -6,10 +6,10 @@
  * apresentação (o mês anterior — obterMesReferencia_), lidos da aba
  * "BACKLOG - EMERGENCIAL - DETALHE" da planilha de Histórico Validado
  * (obterDadosBacklogEmergencialDetalhe_ em 02_Dados.gs), filtrados por
- * Centro de Custos = MEGA <EMPREENDIMENTO>. Um chamado que hoje já aparece
- * "Fechado" ainda entra se ele esteve aberto em algum momento do mês de
- * referência (comparação de datas, não do Estado atual — ver comentário em
- * 02_Dados.gs).
+ * Centro de Custos = MEGA <EMPREENDIMENTO>. Só entra o chamado que AINDA
+ * estava aberto no fim do mês de referência — um chamado aberto e fechado
+ * dentro do mesmo mês não é backlog daquele mês (comparação de datas, não
+ * do Estado atual — ver comentário em 02_Dados.gs, _histAbertoNoMes_).
  *
  * Diferença em relação ao slide de Chamados por Prioridade/Clientes: aqui não
  * tem Abertos x Fechados (é só backlog aberto no mês) — o eixo é EQUIPE

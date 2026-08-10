@@ -2955,11 +2955,20 @@ function _histParseDataHora_(v) {
 // DETALHES. Conta como aberto no mês todo chamado cujo intervalo [reporte,
 // fechamento) tem interseção com a janela [refIni, refFim) — ver o
 // comentário completo acima de _abaBacklogEmergencialDetalhe_.
+// BACKLOG = chamado que ainda estava aberto no ÚLTIMO DIA do mês de
+// referência — não "qualquer chamado que passou por essa janela". Aberto E
+// fechado dentro do MESMO mês de referência não é backlog daquele mês (foi
+// resolvido dentro do próprio mês); só conta se ainda seguia aberto quando o
+// mês fechou (fechou depois, ou nem fechou ainda). Definição do usuário:
+// "aberto em julho e fechado em julho não é backlog, só se foi fechado em
+// agosto" — um chamado aberto em maio e fechado em julho também não entra no
+// backlog de JULHO (já tinha fechado antes de julho acabar), mas teria
+// entrado no de maio e de junho.
 function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
   const fechado = _histNorm_(estado) === 'fechado';
   if (dtReporte) {
-    if (dtReporte >= refFim) return false;                    // ainda não existia no mês de referência
-    if (fechado && dtFechado && dtFechado < refIni) return false; // já tinha fechado antes do mês começar
+    if (dtReporte >= refFim) return false;                     // ainda não existia no mês de referência
+    if (fechado && dtFechado && dtFechado < refFim) return false; // já tinha fechado até o fim do mês — não é mais backlog
     return true;
   }
   // Sem data de reporte pra confirmar a janela: comportamento conservador —

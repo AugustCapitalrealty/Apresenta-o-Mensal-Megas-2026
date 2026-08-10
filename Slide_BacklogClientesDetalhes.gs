@@ -7,9 +7,9 @@
  * (obterDadosBacklogClientesDetalhes_ em 02_Dados.gs), filtradas por Centro
  * de Custos = MEGA <EMPREENDIMENTO> e sem as linhas do próprio condomínio.
  * Mesma regra de janela de mês de referência do slide de Backlog
- * Emergencial — Detalhe: um chamado que hoje já aparece "Fechado" ainda
- * entra se esteve aberto em algum momento do mês de referência (ver
- * comentário em 02_Dados.gs, _histAbertoNoMes_).
+ * Emergencial — Detalhe: só entra o chamado que AINDA estava aberto no fim
+ * do mês de referência — aberto e fechado dentro do mesmo mês não é backlog
+ * daquele mês (ver comentário em 02_Dados.gs, _histAbertoNoMes_).
  *
  * O foco do slide é a LISTA de pendências — sem gráfico de resumo (o card
  * de barra por cliente foi removido a pedido: o que importa aqui é o
