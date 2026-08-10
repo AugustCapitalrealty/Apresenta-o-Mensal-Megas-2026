@@ -15,6 +15,13 @@
  * LOGOS_CLIENTES, Slide_LogosClientes.gs; nome colorido em texto quando
  * não — nunca quebra a geração por causa disso).
  *
+ * Mês cheio: em vez de encolher a fonte da lista até ficar minúscula (e
+ * ainda assim estourar o rodapé do card), divide os clientes em quantas
+ * PÁGINAS/slides forem necessárias — mesma ideia de _paginarGruposBacklog_
+ * (Slide_BacklogClientesDetalhes.gs), adaptada pro layout em colunas desta
+ * lista (ver _paginarGruposClientes_). Abertos e Fechados paginam de forma
+ * independente; o resumo (logo+qtd) se repete em toda página.
+ *
  * Sem as duas abas preenchidas (ou sem nenhuma linha da cidade ativa): cai
  * no slide manual de espaço reservado (gerarSlideReservaGraficos), sem
  * quebrar a geração.
@@ -31,10 +38,6 @@ function gerarSlideChamadosClientes() {
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(CORES.bgSlide);
-
-  criarHeaderPadrao(slide, 'CHAMADOS DE CLIENTES', 'Abertos x Fechados');
 
   const marginX = 30, topY = 76, gap = 16;
   const areaBottom = H - 16;
@@ -50,15 +53,103 @@ function gerarSlideChamadosClientes() {
   const listaH   = totalH - resumoH;
 
   const coresMapa = _clienteCoresMapa_(dados);
-  _clientesResumoLogos_(slide, marginX,             topY, colW, resumoH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
-  _clientesResumoLogos_(slide, marginX + colW + gap, topY, colW, resumoH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
 
-  const y2 = topY + resumoH + gap;
-  _clientesLista_(slide, marginX,             y2, colW, listaH, 'LISTA DE CHAMADOS ABERTOS',  dados.abertos.lista,  CORES.lightBlue);
-  _clientesLista_(slide, marginX + colW + gap, y2, colW, listaH, 'LISTA DE CHAMADOS FECHADOS', dados.fechados.lista, CORES.darkBlue);
+  // Agrupa por cliente preservando a ordem de chegada — mesma regra de
+  // colunas de antes: mais de 6 clientes usa 2 colunas.
+  const agrupar = itens => {
+    const porCliente = {}, ordem = [];
+    itens.forEach(it => {
+      if (!porCliente[it.cliente]) { porCliente[it.cliente] = []; ordem.push(it.cliente); }
+      porCliente[it.cliente].push(it);
+    });
+    return ordem.map(cli => porCliente[cli]);
+  };
+  const gruposAbertos  = agrupar(dados.abertos.lista);
+  const gruposFechados = agrupar(dados.fechados.lista);
+  const colsAbertos  = gruposAbertos.length  > 6 ? 2 : 1;
+  const colsFechados = gruposFechados.length > 6 ? 2 : 1;
+
+  // Mês cheio: em vez de encolher a fonte da lista até ficar minúscula (e
+  // ainda assim estourar o rodapé do card), divide os clientes em quantas
+  // páginas forem necessárias — mesma ideia de _paginarGruposBacklog_
+  // (Slide_BacklogClientesDetalhes.gs), adaptada pro layout em colunas
+  // desta lista (ver _paginarGruposClientes_). Abertos e Fechados paginam
+  // de forma INDEPENDENTE — podem terminar com números de página
+  // diferentes. O resumo (logo+qtd) se repete em toda página: ele já é um
+  // TOP N fixo (no máx. 5 tiles, ver MAX_FATIAS em
+  // obterDadosChamadosClientes_), então o tamanho dele não muda com o
+  // volume de chamados — repetir não custa espaço extra nem fica poluído.
+  const paginasAbertos  = _paginarGruposClientes_(gruposAbertos,  listaH, colsAbertos);
+  const paginasFechados = _paginarGruposClientes_(gruposFechados, listaH, colsFechados);
+  const totalPaginas = Math.max(paginasAbertos.length, paginasFechados.length);
+
+  for (let p = 0; p < totalPaginas; p++) {
+    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    slide.getBackground().setSolidFill(CORES.bgSlide);
+
+    const subtitulo = 'Abertos x Fechados' + (totalPaginas > 1 ? ' — página ' + (p + 1) + ' de ' + totalPaginas : '');
+    criarHeaderPadrao(slide, 'CHAMADOS DE CLIENTES', subtitulo);
+
+    _clientesResumoLogos_(slide, marginX,             topY, colW, resumoH, 'ABERTOS',  dados.abertos,  CORES.lightBlue, coresMapa);
+    _clientesResumoLogos_(slide, marginX + colW + gap, topY, colW, resumoH, 'FECHADOS', dados.fechados, CORES.darkBlue, coresMapa);
+
+    const y2 = topY + resumoH + gap;
+    _clientesLista_(slide, marginX,             y2, colW, listaH, 'LISTA DE CHAMADOS ABERTOS',
+      dados.abertos.lista.length,  paginasAbertos[p]  || [], colsAbertos,  CORES.lightBlue);
+    _clientesLista_(slide, marginX + colW + gap, y2, colW, listaH, 'LISTA DE CHAMADOS FECHADOS',
+      dados.fechados.lista.length, paginasFechados[p] || [], colsFechados, CORES.darkBlue);
+  }
 
   Logger.log('Slide Chamados de Clientes gerado — abertos=' + dados.abertos.total +
-             ', fechados=' + dados.fechados.total + '.');
+             ', fechados=' + dados.fechados.total +
+             (totalPaginas > 1 ? ' em ' + totalPaginas + ' página(s)' : '') + '.');
+}
+
+// Divide os grupos (clientes) da lista em PÁGINAS de até `cols` colunas cada,
+// nunca partindo um cliente no meio — mesma ideia de _paginarGruposBacklog_
+// (Slide_BacklogClientesDetalhes.gs), adaptada pro layout em colunas desta
+// lista (lá é 1 coluna de largura cheia; aqui pode ser 1 ou 2 lado a lado).
+// Cada coluna é preenchida greedily até estourar o orçamento vertical; ao
+// fechar a última coluna disponível da página, abre a próxima página.
+// Retorna um array de páginas, cada página um array de até `cols` colunas,
+// cada coluna um array de grupos — pronto pra passar direto pra
+// _clientesLista_ desenhar, sem repetir a lógica de corte.
+function _paginarGruposClientes_(grupos, listaH, cols) {
+  if (!grupos.length) return [[]];
+
+  // Fonte-piso (ver _clientesLista_): a paginação garante que cada página
+  // cabe NO MÍNIMO com essa fonte legível — se sobrar espaço, _clientesLista_
+  // usa uma fonte maior (até o teto de 8pt) só naquela página.
+  const FLOOR_FONT = 7, LINE_PCT = 118;
+  const MIN_ROW_H = 30, CAPTION_H = 10;
+  // Mesmos offsets de _clientesLista_: criarCardPainel devolve y+32 (título
+  // do card), listY = contentY+2, listH = h-listY-8, e o cabeçalho interno
+  // "CLIENTE | DESCRIÇÃO" consome mais HEADER_H+HEADER_GAP.
+  const CARD_HEADER = 32, LIST_TOP_PAD = 2, LIST_BOTTOM_PAD = 8;
+  const HEADER_H = 14, HEADER_GAP = 6;
+  const budgetPorColuna = listaH - CARD_HEADER - LIST_TOP_PAD - LIST_BOTTOM_PAD - HEADER_H - HEADER_GAP;
+
+  const lineHFloor = FLOOR_FONT * (LINE_PCT / 100) * 1.15;
+  const alturaGrupo = g => Math.max(g.length * lineHFloor, MIN_ROW_H + (g.length > 1 ? CAPTION_H : 0));
+
+  const paginas = [];
+  let coluna = [], alturaColuna = 0, colunasNaPagina = [];
+  grupos.forEach(g => {
+    const alturaG = alturaGrupo(g);
+    if (coluna.length && alturaColuna + alturaG > budgetPorColuna) {
+      colunasNaPagina.push(coluna);
+      coluna = []; alturaColuna = 0;
+      if (colunasNaPagina.length === cols) {
+        paginas.push(colunasNaPagina);
+        colunasNaPagina = [];
+      }
+    }
+    coluna.push(g);
+    alturaColuna += alturaG;
+  });
+  if (coluna.length) colunasNaPagina.push(coluna);
+  if (colunasNaPagina.length) paginas.push(colunasNaPagina);
+  return paginas;
 }
 
 // Paleta cíclica pros clientes nomeados (a ordem de atribuição segue o
@@ -216,34 +307,35 @@ function _clientesResumoLogos_(slide, x, y, w, h, titulo, dadosPeriodo, corTema,
 // linha simples "id - descrição" (sem repetir nome/contagem no meio do
 // texto) — o agrupamento visual passa a ser puramente a linha/coluna do
 // logo, não mais um prefixo de texto.
-function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
-  const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + itens.length + ')', corTema);
+// `paginaColunas` já vem PRÉ-DIVIDIDA em página e coluna por
+// _paginarGruposClientes_ (em gerarSlideChamadosClientes) — esta função só
+// desenha; `totalCount` é o total do PERÍODO INTEIRO (todas as páginas), não
+// só desta, e é o que aparece no título do card.
+function _clientesLista_(slide, x, y, w, h, titulo, totalCount, paginaColunas, cols, corTema) {
+  const contentY = criarCardPainel(slide, x, y, w, h, titulo + ' (' + totalCount + ')', corTema);
   const listY = contentY + 2, listH = y + h - listY - 8;
 
-  if (!itens.length) {
+  if (!totalCount) {
     _prioridadeSemDado_(slide, x, listY, w, listH, 'Nenhum chamado no período.', CORES.cardGreen);
     return;
   }
+  const grupos = paginaColunas.reduce((s, col) => s.concat(col), []);
+  if (!grupos.length) {
+    // Esta página não tem nada deste lado — o outro lado (Abertos ou
+    // Fechados) precisou de mais páginas que este. Evita desenhar um card
+    // "vazio" que pareceria dizer que não há chamados no período inteiro.
+    _prioridadeSemDado_(slide, x, listY, w, listH, 'Lista completa nas páginas anteriores.', CORES.textGray);
+    return;
+  }
 
-  // Mostra TODOS os chamados, sem cortar — e cada um detalhado (id +
-  // descrição), agrupados por Cliente na mesma linha/coluna de logo. A
-  // partir de 6 GRUPOS divide em colunas (mesma ideia de _colunaTexto_/
-  // Slide02_Preventivas.gs) e o corpo do texto encolhe conforme a
-  // quantidade de LINHAS por coluna, até um mínimo ainda legível. Em meses
-  // muito cheios o texto pode encostar no rodapé do card (aceitável — o
-  // que não pode é sumir chamado ou descrição da lista).
-  const porCliente = {};
-  const ordemClientes = [];
-  itens.forEach(it => {
-    if (!porCliente[it.cliente]) { porCliente[it.cliente] = []; ordemClientes.push(it.cliente); }
-    porCliente[it.cliente].push(it);
-  });
-  const grupos = ordemClientes.map(cli => porCliente[cli]);
-
-  const cols     = grupos.length > 6 ? 2 : 1;
+  // Mostra TODOS os chamados desta página, sem cortar — cada um detalhado
+  // (id + descrição), agrupados por Cliente na mesma linha/coluna de logo.
+  // O corpo do texto ainda se ajusta (entre o piso e o teto) conforme a
+  // quantidade de LINHAS desta página especificamente — a paginação já
+  // garantiu que cabe no piso, então aqui é só polimento: página com pouco
+  // conteúdo ganha fonte maior.
   const colGap   = 14;
   const colW     = (w - 30 - (cols - 1) * colGap) / cols;
-  const porCol   = Math.ceil(grupos.length / cols);
   const LINE_PCT = 118;
 
   // Cabeçalho "CLIENTE | CHAMADOS" repetido em cada coluna — como cada
@@ -255,13 +347,15 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
 
   const linhasGrupo = g => g.length;
   let maxLinhasColuna = 0;
-  for (let c = 0; c < cols; c++) {
-    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
+  paginaColunas.forEach(fatia => {
     maxLinhasColuna = Math.max(maxLinhasColuna, fatia.reduce((s, g) => s + linhasGrupo(g), 0));
-  }
+  });
 
-  let fontSize = Math.min(8, linhasH / (maxLinhasColuna * (LINE_PCT / 100) * 1.15));
-  fontSize = Math.max(6, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt, piso de 6pt
+  // Piso 7 (não mais 6): como _paginarGruposClientes_ já garante que cada
+  // página cabe com fonte legível, não precisa mais encolher até ficar
+  // minúsculo — se sobrar, vira página nova em vez de espremer.
+  let fontSize = Math.min(8, linhasH / (Math.max(1, maxLinhasColuna) * (LINE_PCT / 100) * 1.15));
+  fontSize = Math.max(7, Math.round(fontSize * 2) / 2);  // arredonda pra 0,5pt
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const maxCliente = 16;
@@ -272,7 +366,7 @@ function _clientesLista_(slide, x, y, w, h, titulo, itens, corTema) {
   const LOGO_COL_W = 58, LOGO_GAP = 12, LOGO_CELL_H = 26, MIN_ROW_H = 30, CAPTION_H = 10;
 
   for (let c = 0; c < cols; c++) {
-    const fatia = grupos.slice(c * porCol, (c + 1) * porCol);
+    const fatia = paginaColunas[c] || [];
     if (!fatia.length) continue;
 
     const colX = x + 15 + c * (colW + colGap);
