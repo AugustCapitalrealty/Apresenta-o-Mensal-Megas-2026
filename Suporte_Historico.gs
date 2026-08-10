@@ -5,25 +5,22 @@
  *            Para o histórico CONSULTÁVEL dos números/indicadores,
  *            veja Suporte_RegistroDados.gs (aba HISTORICO na planilha).
  *
- *   AUTOMÁTICO (toda execução):
- *     ▸ A revisão atual da apresentação é marcada como "manter para sempre"
- *       no histórico de versões nativo do Drive (Arquivo → Histórico de
- *       versões → Ver histórico). Assim você nunca perde um estado anterior.
- *
  *   SOB DEMANDA (quando uma versão "vale registrar"):
  *     ▸ marcarFinalCuritiba() / marcarFinalItajai() / marcarFinalEsteio()
  *       cria uma cópia da apresentação atual com nome
  *       "Mega [Cidade] — VERSÃO FINAL — [Data]" na mesma pasta.
  *
- *   PRÉ-REQUISITO PARA O AUTOMÁTICO:
- *     ▸ No editor do Apps Script: Serviços (+) → Drive API → adicionar.
- *       Sem isso, o registro automático é PULADO silenciosamente (não quebra
- *       a geração). A geração funciona normalmente.
+ *   registrarRevisaoAutomatica_() (marcar a revisão atual como "manter para
+ *   sempre" no histórico nativo do Drive a CADA execução) DESLIGADA a pedido
+ *   do usuário — não é mais chamada pelo pipeline (00_Main.gs). A função
+ *   continua aqui, funcional, caso alguém queira religar um dia; só exige a
+ *   Drive API habilitada no editor (Serviços (+) → Drive API).
  */
 
 
 // ==========================================
-// AUTOMÁTICO — chamado pelo Main após gerar
+// Chamada SOB DEMANDA, se algum dia quiserem religar o registro automático —
+// hoje NENHUM ponto do pipeline chama esta função (ver nota acima).
 // ==========================================
 function registrarRevisaoAutomatica_() {
   const projeto = getProjetoAtivo();

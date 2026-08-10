@@ -144,8 +144,12 @@ function gerarApresentacaoCompleta_() {
   Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
   if (erros.length) Logger.log(erros.join('\n'));
 
-  // Versionamento visual no Drive (mantido)
-  if (typeof registrarRevisaoAutomatica_ === 'function') registrarRevisaoAutomatica_();
+  // Versionamento automático no Drive DESLIGADO a pedido do usuário — sem a
+  // Drive API habilitada no editor ele só gerava um log de aviso a cada
+  // geração, sem nenhum efeito. A função continua em Suporte_Historico.gs
+  // (registrarRevisaoAutomatica_) e as versões SOB DEMANDA (marcarFinalCuritiba
+  // / marcarFinalItajai / marcarFinalEsteio) continuam funcionando normalmente
+  // — só o registro automático de toda execução foi removido do pipeline.
 
   // NÃO gravamos mais o histórico numérico automático: os dados podiam sair
   // errados. O histórico agora é mantido manualmente na planilha validada
