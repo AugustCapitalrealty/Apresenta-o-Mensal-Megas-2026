@@ -45,15 +45,29 @@ function gerarSlideCorretivas() {
   desenharCardListaKPIs(slide, marginX, topY, cardW, cardH, CORES, dados.mensal, CORES.lightBlue);
   desenharCardListaKPIs(slide, marginX + cardW + gap, topY, cardW, cardH, CORES, dados.anual, CORES.cardGreen);
 
-  // Gráfico BACKLOG DE CHAMADOS EMERGÊNCIAS — automático, lido da coluna
-  // EMERGENCIAL da aba BACKLOG (planilha de Histórico Validado, mesma fonte
-  // do slide Backlog Facilities). Sem a coluna preenchida pra cidade ativa,
-  // cai no espaço reservado manual de sempre.
+  // Gráfico BACKLOG DE CHAMADOS EMERGÊNCIAS — os valores mês a mês vêm
+  // RECALCULADOS a partir da aba "BACKLOG - EMERGENCIAL - DETALHE" (mesma
+  // fonte crua e mesma regra — _histAbertoNoMes_ — do slide Backlog
+  // Emergencial — Detalhe), em vez da coluna EMERGENCIAL da aba BACKLOG que
+  // era digitada à mão mês a mês. Onde a aba de detalhe cobre o mês, o
+  // recalculado PREVALECE (loga quando diverge do que estava digitado); nos
+  // meses fora do alcance dela (nenhum chamado encontrado ali) mantém o
+  // valor manual, sem perder histórico antigo.
   const chartY = topY + cardH + 20;
   const chartW = PageWidth - (2 * marginX);
   const footerH = PageHeight - chartY - 20;
 
   const historicoBacklog = obterDadosBacklogHistorico_();
+  const recalculado = obterDadosBacklogEmergencialHistoricoPorMes_(historicoBacklog);
+  historicoBacklog.forEach(m => {
+    if (!recalculado.has(m.ord)) return;   // aba de detalhe não cobre esse mês — mantém o valor manual
+    const calc = recalculado.get(m.ord);
+    if (m.emergencial != null && m.emergencial !== calc) {
+      Logger.log('Backlog Emergencial (' + m.mes + '): aba BACKLOG tinha ' + m.emergencial +
+                 ' digitado à mão, recalculado da aba de detalhe deu ' + calc + '. Usando o recalculado.');
+    }
+    m.emergencial = calc;
+  });
   const temEmergencial = historicoBacklog.some(m => m.emergencial != null);
 
   if (temEmergencial) {

@@ -3064,6 +3064,78 @@ function obterDadosBacklogEmergencialDetalhe_() {
   return { total: itens.length, fatias: fatias, lista: lista };
 }
 
+// Igual a _lerBacklogEmergencialDetalhe_, mas SEM filtrar por mês — devolve
+// todo mundo (já filtrado por Centro de Custos = empreendimento ativo) com
+// as datas prontas, pra que obterDadosBacklogEmergencialHistoricoPorMes_
+// possa aplicar _histAbertoNoMes_ mês a mês sem reler a planilha uma vez por
+// mês do gráfico.
+function _lerBacklogEmergencialDetalheCru_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  try {
+    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    const sheet = _abaBacklogEmergencialDetalhe_(ss);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr      = data[0].map(_histNorm_);
+    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
+    if (cCC < 0) return [];
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+      saida.push({
+        estado:    cEstado  >= 0 ? String(row[cEstado] || '').trim() : '',
+        dtReporte: cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
+        dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
+      });
+    }
+    return saida;
+  } catch (e) {
+    Logger.log('_lerBacklogEmergencialDetalheCru_: ' + e.message);
+    return [];
+  }
+}
+
+// Recalcula o backlog emergencial MÊS A MÊS a partir da aba "BACKLOG -
+// EMERGENCIAL - DETALHE" — a mesma fonte crua e a mesma regra
+// (_histAbertoNoMes_) que já alimenta o slide Backlog Emergencial —
+// Detalhe — em vez de depender da coluna EMERGENCIAL da aba BACKLOG, que o
+// usuário vinha preenchendo à mão mês a mês.
+//
+// `meses` é a lista de referência já produzida por obterDadosBacklogHistorico_
+// (mesmos `ord`/rótulos que já desenham o eixo X do gráfico em
+// Slide03_Corretivas.gs — reaproveitada aqui só pra saber QUAIS janelas
+// mês/ano calcular, não os valores). Retorna um Map ord -> quantidade.
+//
+// Fonte única: como aqui é a mesma aba+regra que já gera o "Backlog
+// Emergencial — Detalhe" do MÊS DE REFERÊNCIA, o valor do último mês desta
+// série tem que bater exatamente com o total daquele slide — se algum dia
+// divergir, é sinal de bug nesta função, não de dado da planilha.
+function obterDadosBacklogEmergencialHistoricoPorMes_(meses) {
+  const itens = _lerBacklogEmergencialDetalheCru_();
+  const porOrd = new Map();
+  if (!itens.length) return porOrd;
+
+  meses.forEach(m => {
+    const ano = Math.floor(m.ord / 100), mesIdx = (m.ord % 100) - 1;
+    const refIni = new Date(Date.UTC(ano, mesIdx, 1));
+    const refFim = new Date(Date.UTC(ano, mesIdx + 1, 1));
+    let qtd = 0;
+    itens.forEach(it => {
+      if (_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) qtd++;
+    });
+    porOrd.set(m.ord, qtd);
+  });
+  return porOrd;
+}
+
 
 // ==========================================
 // BACKLOG DE CLIENTES — DETALHE — aba "BACKLOG - CLIENTES - DETALHES" da
