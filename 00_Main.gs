@@ -165,9 +165,37 @@ function regerarApresentacaoCompleta_() {
 
   // A capa agora é GERADA (gerarSlideCapa), então o primeiro slide antigo
   // que limparApresentacao_ preservou fica obsoleto — remove se sobrou.
-  const slides = getDeckAtivo().getSlides();
-  if (slides.length > 1) {
-    slides[0].remove();
-    Logger.log('  Capa antiga (slide 1) removida — capa gerada assumiu o lugar.');
+  //
+  // Por que isto tem try/catch (e um retry) e nada mais no pipeline tinha
+  // até aqui: TODOS os passos de conteúdo (o array `passos` em
+  // gerarApresentacaoCompleta_) já rodam dentro do próprio try/catch deles —
+  // um erro ali vira uma linha "✗ ERRO" no log e a geração continua. Este
+  // remove() é o ÚNICO ponto do pipeline que ficava DESPROTEGIDO: se a API
+  // do Slides der um soluço passageiro bem no fim de uma execução longa
+  // (comum depois de centenas de chamadas de insertShape/insertImage —
+  // "Service unavailable: Slides"), a apresentação já está 100% pronta e
+  // correta, mas o erro sobe sem tratamento e aparece pro usuário como se a
+  // geração inteira tivesse falhado. Um retry único depois de uma pausa
+  // curta resolve a maioria dos casos (é transitório); se persistir, vira
+  // um aviso no Logger — pior cenário é sobrar o slide de capa antigo pra
+  // apagar à mão, nunca perda de conteúdo.
+  try {
+    const slides = getDeckAtivo().getSlides();
+    if (slides.length > 1) {
+      slides[0].remove();
+      Logger.log('  Capa antiga (slide 1) removida — capa gerada assumiu o lugar.');
+    }
+  } catch (e) {
+    try {
+      Utilities.sleep(3000);
+      const slides = getDeckAtivo().getSlides();
+      if (slides.length > 1) {
+        slides[0].remove();
+        Logger.log('  Capa antiga (slide 1) removida — capa gerada assumiu o lugar (2ª tentativa).');
+      }
+    } catch (e2) {
+      Logger.log('  ⚠ Não foi possível remover a capa antiga (instabilidade da API do Slides: ' + e2.message +
+                 '). A apresentação foi gerada normalmente — só apague o slide 1 (capa antiga) à mão, se ele ainda estiver lá.');
+    }
   }
 }
