@@ -3031,7 +3031,13 @@ function _lerBdCorretivasEmergenciaisCru_() {
         id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
         descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
         estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
-        equipe:    _resolverEquipeResponsaveis_(cResp >= 0 ? row[cResp] : '') || 'OUTROS',
+        // Chamado sem responsável preenchido (ou com um nome que não está
+        // no mapa) conta como FACILITIES, não "OUTROS": é a mesma regra do
+        // slide irmão Backlog de Clientes — Facilities, que já recebe tudo
+        // que não é PROPERTY, e bate com o que a aba curada antiga trazia
+        // na coluna EQUIPE pra esses chamados. "OUTROS" dava a impressão
+        // falsa de que ninguém da operação era responsável.
+        equipe:    _resolverEquipeResponsaveis_(cResp >= 0 ? row[cResp] : '') || 'FACILITIES',
         dtReporte: cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
         dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
       });
@@ -3262,7 +3268,17 @@ const _RESPONSAVEL_EQUIPE_ = (function () {
     FACILITIES: [
       'Guilherme Heck', 'Henrique Augusto Lobo', 'Jessé J. Do Prado', 'Jessé Jandir do Prado',
       'José Ernesto', 'Leandro Genoveski', 'MEGA Curitiba', 'Mega Esteio', 'Mega Itajaí',
-      'Rodrigo Habitzreuter', 'Paulo Augusto Maximiano', 'Dionatan Rek'
+      'Rodrigo Habitzreuter', 'Paulo Augusto Maximiano', 'Dionatan Rek',
+      // Supervisores/analistas de Facilities dos próprios Megas (os mesmos
+      // nomes que aparecem em PROJETOS[].contatos, 01_Config.gs). Faltavam
+      // aqui: como são justamente quem assina os chamados emergenciais, o
+      // slide Backlog Emergencial — Detalhe mostrava 100% dos chamados como
+      // "OUTROS" depois que a fonte passou a ser a BD-CORRETIVAS (que
+      // resolve a equipe pela coluna Responsáveis, em vez da coluna EQUIPE
+      // pronta que a aba curada antiga tinha).
+      'Mauro Sergio Silva Coelho', 'Mauro Coelho',
+      'Felipe Eduardo Campos',
+      'Amanda de Campos Alexandre', 'Amanda de Campos'
     ],
     OPERACAO: [
       'Gerente Hangar', 'Leonardo Casagrande', 'Mariana Lucia Fernandes Rodrigues',

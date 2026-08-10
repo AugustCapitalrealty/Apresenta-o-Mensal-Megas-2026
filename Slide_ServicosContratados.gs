@@ -341,14 +341,20 @@ const SC_PESO_DESEQUILIBRIO = 0.15;
 
 // Devolve { rects: [{x,y,w,h}] relativos a (0,0), usedW, usedH }.
 function _scMosaico_(ars, BW, BH, G) {
-  // 4 fotos: sempre uma fileira única, lado a lado — pedido explícito, pra
-  // não deixar o buscador de melhor-encaixe escolher uma composição
-  // assimétrica (ex.: 2 fotos grandes + 2 empilhadas menores numa coluna),
-  // que fica desequilibrada mesmo preenchendo melhor a banda.
-  if (ars.length === 4) {
-    const fileira = _scArranjoRow_(ars, [4], BW, BH, G);
-    if (fileira) return _scMosaicoRetangulos_(fileira, BW, BH, G);
-  }
+  // SEMPRE uma fileira única, lado a lado (a placa nunca passa de 4 fotos —
+  // ver _scListarFotos_). Numa fileira todas as fotos saem com a MESMA
+  // ALTURA, variando só a largura conforme a proporção de cada uma — é o
+  // que o usuário aprovou no slide de Itajaí ("tem em Itajaí que ficou") e
+  // o oposto do que reprovou em Curitiba, onde o buscador de melhor-encaixe
+  // tinha escolhido uma composição assimétrica (1 foto grande + 2 menores
+  // empilhadas ao lado) só porque preenchia melhor a banda.
+  //
+  // Antes essa regra valia só pra 4 fotos, pelo mesmo motivo; com 3 fotos de
+  // proporções parecidas o buscador ainda caía na composição assimétrica.
+  // O buscador continua abaixo como fallback pro caso raro de a fileira não
+  // ser construível (proporção degenerada).
+  const fileira = _scArranjoRow_(ars, [ars.length], BW, BH, G);
+  if (fileira) return _scMosaicoRetangulos_(fileira, BW, BH, G);
 
   let melhor = null;
   _scComposicoes_(ars.length).forEach(grupos => {
