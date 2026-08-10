@@ -95,14 +95,16 @@ function _getClienteLogoBlob_(nomeCliente) {
 // ("ORIZON COMERCIO DE ALIMENTOS LTDA"), e a legenda tem que mostrar sempre
 // o nome curto.
 const _LOGOS_LEGENDA_ = [
-  { trecho: 'boticario', rotulo: 'Boticário' },   // BPB / O Boticário
-  { trecho: 'calamo',    rotulo: 'Cálamo'    },   // usa a logo do Boticário
-  { trecho: 'domazzi',   rotulo: 'Domazzi'   },   // divide arquivo com Flexmodal
-  { trecho: 'flexmodal', rotulo: 'Flexmodal' },
-  { trecho: 'stella',    rotulo: 'Stella'    },   // Stella/Orizon/STH/Vm Vinhos
-  { trecho: 'orizon',    rotulo: 'Orizon'    },   // dividem o mesmo arquivo
-  { trecho: 'sth',       rotulo: 'STH'       },
-  { trecho: 'vm vinhos', rotulo: 'Vm Vinhos' }
+  { trecho: 'boticario', rotulo: 'Boticário' },   // BPB / O Boticário — ícone
+  { trecho: 'calamo',    rotulo: 'Cálamo'    }    // genérico, sem texto próprio: precisa da legenda
+  // Domazzi/Flexmodal e Stella/Orizon/STH/Vm Vinhos dividem arquivo (ver
+  // LOGOS_CLIENTES acima), mas a pedido do usuário NÃO ganham legenda: os
+  // logos de Stella e Domazzi têm o nome escrito na própria imagem (ao
+  // contrário do ícone genérico do Boticário), então a legenda embaixo era
+  // redundante. Fica registrado aqui que Orizon/STH/Vm Vinhos e Flexmodal
+  // continuam mostrando a logo (real) de Stella/Domazzi sem nenhuma marca —
+  // se algum desses aparecer num slide, o logo exibido será o da OUTRA
+  // empresa, sem aviso.
 ];
 
 const _LOGO_LEGENDA_H_        = 9;    // faixa reservada pra legenda (pt)

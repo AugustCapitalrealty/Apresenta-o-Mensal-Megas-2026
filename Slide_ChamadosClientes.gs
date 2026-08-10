@@ -83,7 +83,10 @@ const _CLIENTE_APELIDOS_ = [
   { trecho: 'bosch',          apelido: 'Bosch' },
   { trecho: 'sodexo',         apelido: 'Sodexo' },
   { trecho: 'veloz',          apelido: 'Veloz' },
-  { trecho: 'magazine luiza', apelido: 'Magazine Luiza' },
+  // 'magazine' (não 'magazine luiza'): a aba DOCUMENTOS INQUILINOS de Itajaí
+  // grava a empresa só como "Magazine" (célula mesclada, sem o "Luiza") —
+  // com o trecho completo isso não casava com nada e a logo não aparecia.
+  { trecho: 'magazine',       apelido: 'Magazine Luiza' },
   { trecho: 'stella',         apelido: 'Stella' },
   { trecho: 'rio branco',     apelido: 'Rio Branco' },
   { trecho: 'domus',          apelido: 'Domus' },
