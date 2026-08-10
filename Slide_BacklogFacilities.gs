@@ -11,9 +11,17 @@
  * Diferente dos gráficos de Utilities/Monitoramento (grade fixa de 12 meses
  * do ano, uma linha por ano), aqui é uma linha do tempo contínua — os
  * últimos 12 meses disponíveis, em ordem cronológica, sem repetir a grade
- * a cada ano. Quatro linhas, todo mês com rótulo de valor (o mês mais
- * recente em destaque, maior e em negrito); se duas séries ficarem
- * próximas demais na vertical num mesmo mês, uma afasta a outra.
+ * a cada ano.
+ *
+ * Gráfico COMBINADO (pedido do gestor): o Geral — o total, que contém as
+ * outras séries — é desenhado como COLUNA, e as três séries que o compõem
+ * (Facilities, Property e Responsabilidade Locatário) como LINHAS por cima
+ * dela. A coluna entrega o volume do mês batendo o olho; as linhas mostram
+ * como esse volume se divide, sem competir visualmente com o total.
+ *
+ * Todo mês tem rótulo de valor em todas as séries (o mês mais recente em
+ * destaque, maior e em negrito); se duas séries ficarem próximas demais na
+ * vertical num mesmo mês, uma afasta a outra.
  *
  * Sem a aba BACKLOG preenchida (ou sem linha para a cidade ativa): cai no
  * slide manual de espaço reservado (gerarSlideReservaGraficos), sem quebrar
@@ -73,7 +81,32 @@ function _backlogCardsKPI_(slide, x, y, w, h, atual, anterior) {
   });
 }
 
-// ── Gráfico de linha — Geral, Facilities, Property e Responsabilidade Locatário, cronológico ──
+// Desenha uma série como COLUNAS (uma barra por mês, centralizada no slot) e
+// devolve os mesmos pontos {x, y, val} que _utilDesenharLinha_ devolve — o x
+// no centro da barra e o y no topo dela —, pra que o rotulador de valores e
+// o desempate vertical funcionem igual pras duas formas, sem código
+// duplicado.
+//
+// A barra é larga o bastante pra dar peso visual ao total, mas não tanto que
+// encoste na do mês seguinte (as linhas passam por dentro dela).
+function _backlogDesenharColuna_(slide, plotX, plotY, plotH, slotW, valoresPorMes, cor, escMax) {
+  const barW = Math.min(slotW * 0.52, 34);
+  return valoresPorMes.map((val, mes) => {
+    const cx = plotX + mes * slotW + slotW / 2;
+    if (val == null) return null;
+    const alturaBarra = escMax > 0 ? (val / escMax) * plotH : 0;
+    const topo = plotY + plotH - alturaBarra;
+    if (alturaBarra > 0) {
+      const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - barW / 2, topo, barW, alturaBarra);
+      barra.getFill().setSolidFill(cor);
+      barra.getBorder().setTransparent();
+    }
+    return { x: cx, y: topo, val: val };
+  });
+}
+
+// ── Gráfico combinado — Geral em COLUNA; Facilities, Property e
+// Responsabilidade Locatário em LINHA, cronológico ──
 function _backlogGrafico_(slide, x, y, w, h, meses) {
   const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
   bg.getFill().setSolidFill(CORES.white);
@@ -88,11 +121,16 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   const plotY = y + mT;
   const slotW = plotW / n;
 
+  // Gráfico COMBINADO, a pedido do gestor: o Geral (o total, que contém as
+  // outras séries) vira COLUNA e as três séries que o compõem — Facilities,
+  // Property e Responsabilidade Locatário — seguem em LINHA por cima. A
+  // coluna dá o volume do mês batendo o olho; as linhas mostram como esse
+  // volume se divide, sem competir visualmente com o total.
   const SERIES = [
-    { chave: 'geral',     rotulo: 'Geral',      cor: CORES.darkBlue,   destaque: true  },
-    { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  destaque: false },
-    { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  destaque: false },
-    { chave: 'locatario',  rotulo: 'Responsabilidade Locatário', cor: CORES.cardGreen, destaque: false }
+    { chave: 'geral',      rotulo: 'Geral',      cor: CORES.darkBlue,   modo: 'coluna', destaque: true  },
+    { chave: 'facilities', rotulo: 'Facilities', cor: CORES.lightBlue,  modo: 'linha',  destaque: false },
+    { chave: 'property',   rotulo: 'Property',   cor: CORES.themeCorr,  modo: 'linha',  destaque: false },
+    { chave: 'locatario',  rotulo: 'Responsabilidade Locatário', cor: CORES.cardGreen, modo: 'linha', destaque: false }
   ];
 
   // Realce do mês de referência (o mais recente) — mesma ideia da faixa
@@ -115,11 +153,19 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
     _sTxt(slide, x, gy - 7, mL - 6, 14, formatarNumeroBR(Math.round(gVal)), 7, false, CORES.textGray, 'right');
   }
 
-  // Desenha Geral por último (por cima), mas mede/rotula todas.
+  // As COLUNAS vêm primeiro (ficam ao fundo) e as LINHAS por cima, senão a
+  // barra do Geral cobriria as três linhas que passam dentro dela.
   const desenhadas = SERIES.map(s => ({
     serie: s,
-    pontos: _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.cor, escMax, s.destaque)
+    pontos: s.modo === 'coluna'
+      ? _backlogDesenharColuna_(slide, plotX, plotY, plotH, slotW, meses.map(m => m[s.chave]), s.cor, escMax)
+      : null
   }));
+  desenhadas.forEach(d => {
+    if (d.serie.modo === 'coluna') return;
+    d.pontos = _utilDesenharLinha_(slide, plotX, plotY, plotH, slotW,
+      meses.map(m => m[d.serie.chave]), d.serie.cor, escMax, d.serie.destaque);
+  });
 
   // Rótulo de valor em TODO mês de cada série (até 4 por coluna). Se duas
   // séries ficarem próximas demais na vertical no mesmo mês, afasta uma da
@@ -154,10 +200,12 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
   // alinhada à direita no topo do painel.
   const legY = y + 10;
   let legX = x + w - 14;
+  // Ícone condiz com a forma da série (quadrado = coluna, traço com bolinha
+  // = linha), pra legenda não sugerir que tudo é do mesmo tipo.
   SERIES.slice().reverse().forEach(s => {
     const lw = 12 + s.rotulo.length * 5.5 + 16;
     legX -= lw;
-    _solarRect(slide, legX, legY, 10, 8, s.cor);
+    _utilLegendaIcone_(slide, legX, legY, 10, 8, s.cor, s.modo === 'coluna' ? 'barra' : 'linha');
     _sTxt(slide, legX + 13, legY - 1, lw - 13, 11, s.rotulo, 7.5, false, CORES.textDark, 'left');
   });
 }
