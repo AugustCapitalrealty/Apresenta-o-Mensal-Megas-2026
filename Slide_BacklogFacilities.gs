@@ -39,8 +39,45 @@
 // preenchimento (ver o teste de contraste em test-backlog-facilities-grafico.js).
 const BACKLOG_COR_COLUNA = '#C6CFE6';
 
+// Recalcular GERAL/FACILITIES/PROPERTY/LOCATÁRIO da BD-CORRETIVAS em vez de
+// usar o que está digitado na aba BACKLOG. Ponha false para voltar aos
+// valores digitados (o Logger continua mostrando a comparação nos dois modos).
+const BACKLOG_RECALCULAR_DA_BD = true;
+
+// Substitui os valores digitados na aba BACKLOG pelo recálculo da
+// BD-CORRETIVAS, mês a mês, e registra cada divergência. Mesmo tratamento
+// que a coluna EMERGENCIAL já recebe em Slide03_Corretivas.gs: mês que a BD
+// não cobre mantém o valor manual, sem perder histórico antigo.
+function _backlogAplicarRecalculo_(historico) {
+  let recalculado;
+  try {
+    recalculado = obterDadosBacklogPorMesBD_(historico);
+  } catch (e) {
+    Logger.log('Backlog: recálculo da BD-CORRETIVAS indisponível (' + e.message +
+               ') — usando os valores digitados na aba BACKLOG.');
+    return;
+  }
+  if (!recalculado || !recalculado.size) return;
+
+  const campos = ['geral', 'facilities', 'property', 'locatario'];
+  historico.forEach(m => {
+    if (!recalculado.has(m.ord)) return;   // fora da cobertura da BD — mantém o manual
+    const calc = recalculado.get(m.ord);
+    const difs = campos
+      .filter(c => m[c] != null && m[c] !== calc[c])
+      .map(c => c + ': ' + m[c] + ' → ' + calc[c]);
+    if (difs.length) {
+      Logger.log('Backlog (' + m.mes + '): aba BACKLOG digitada x BD-CORRETIVAS — ' +
+                 difs.join(', ') + '.' +
+                 (BACKLOG_RECALCULAR_DA_BD ? ' Usando o recalculado.' : ' Mantendo o digitado.'));
+    }
+    if (BACKLOG_RECALCULAR_DA_BD) campos.forEach(c => { m[c] = calc[c]; });
+  });
+}
+
 function gerarSlideBacklogFacilities() {
   const historico = obterDadosBacklogHistorico_();
+  if (historico && historico.length) _backlogAplicarRecalculo_(historico);
   if (!historico || historico.length === 0) {
     gerarSlideReservaGraficos('BACKLOG FACILITIES',
       'Evolução mensal do backlog — preencha a aba BACKLOG da planilha de Histórico Validado',

@@ -3287,6 +3287,68 @@ function obterDadosBacklogEmergencialHistoricoPorMes_(meses) {
 }
 
 
+// Recalcula GERAL / FACILITIES / PROPERTY / LOCATÁRIO mês a mês a partir da
+// BD-CORRETIVAS — mesma fonte e mesma regra (_histAbertoNoMes_) que a coluna
+// EMERGENCIAL já usa desde que deixou de ser digitada.
+//
+// Motivo: essas quatro colunas da aba BACKLOG continuavam preenchidas à mão,
+// e é aí que estava o descasamento que ninguém explicava — JUL/26 com 29
+// chamados criados e 29 fechados (variação zero, agora contados na própria
+// BD) e o backlog digitado subindo de 206 para 220.
+//
+// Classificação: LOCATÁRIO e PROPERTY saem de _resolverEquipeResponsaveis_
+// (coluna "Responsáveis"); FACILITIES recebe TODO O RESTO — inclusive
+// OPERACAO e chamado sem responsável —, que é a mesma regra do slide
+// Backlog de Clientes — Facilities. Assim GERAL = FACILITIES + PROPERTY +
+// LOCATÁRIO fecha por construção, em vez de depender de três digitações
+// concordarem.
+//
+// `meses` é a lista de referência de obterDadosBacklogHistorico_ (só pra
+// saber QUAIS janelas calcular). Retorna Map ord -> {geral, facilities,
+// property, locatario}.
+function obterDadosBacklogPorMesBD_(meses) {
+  const itens = _lerBdCorretivasCru_();
+  const porOrd = new Map();
+  if (!itens.length) return porOrd;
+
+  // Mesma guarda de obterFluxoCorretivasBD_: sem data legível a conta daria
+  // zero em silêncio. Melhor manter o valor digitado.
+  if (!itens.some(it => it.dtReporte)) {
+    Logger.log('Backlog: BD-CORRETIVAS sem "Data de reporte" legível — ' +
+               'mantendo os valores digitados na aba BACKLOG.');
+    return porOrd;
+  }
+
+  // Só computa a partir do mês do chamado mais antigo da base: meses
+  // anteriores ficam fora do Map e quem chama mantém o valor manual, em vez
+  // de zerar um período que a BD simplesmente não cobre.
+  let primeiroOrd = null;
+  itens.forEach(it => {
+    if (!it.dtReporte) return;
+    const ord = it.dtReporte.getUTCFullYear() * 100 + (it.dtReporte.getUTCMonth() + 1);
+    if (primeiroOrd === null || ord < primeiroOrd) primeiroOrd = ord;
+  });
+  if (primeiroOrd === null) return porOrd;
+
+  meses.forEach(m => {
+    if (m.ord < primeiroOrd) return;
+    const ano = Math.floor(m.ord / 100), mesIdx = (m.ord % 100) - 1;
+    const refIni = new Date(Date.UTC(ano, mesIdx, 1));
+    const refFim = new Date(Date.UTC(ano, mesIdx + 1, 1));
+    let geral = 0, facilities = 0, property = 0, locatario = 0;
+    itens.forEach(it => {
+      if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+      geral++;
+      if      (it.equipe === 'LOCATARIO') locatario++;
+      else if (it.equipe === 'PROPERTY')  property++;
+      else                                facilities++;
+    });
+    porOrd.set(m.ord, { geral, facilities, property, locatario });
+  });
+  return porOrd;
+}
+
+
 // ==========================================
 // BACKLOG DE CLIENTES — DETALHE — aba "BACKLOG - CLIENTES - DETALHES" da
 // planilha de Histórico Validado
