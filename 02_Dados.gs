@@ -3100,6 +3100,18 @@ function _histParseDataHora_(v) {
 // agosto" — um chamado aberto em maio e fechado em julho também não entra no
 // backlog de JULHO (já tinha fechado antes de julho acabar), mas teria
 // entrado no de maio e de junho.
+// Ponto ÚNICO da regra "este chamado está fechado". O backlog e o fluxo de
+// criados/fechados precisam concordar aqui, senão a identidade
+//     backlog(fim) = backlog(início) + criados − fechados
+// quebra mesmo com os dois saindo da BD-CORRETIVAS: um chamado com "Fechado
+// em" preenchido mas Estado diferente de "Fechado" contaria como fechado no
+// fluxo e continuaria no backlog pra sempre — foi exatamente esse
+// descasamento que fez JUL/26 sair com 29 criados, 29 fechados e o backlog
+// subindo 14.
+function _bdChamadoFechado_(estado, dtFechado) {
+  return _histNorm_(estado) === 'fechado' && !!dtFechado;
+}
+
 function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
   const fechado = _histNorm_(estado) === 'fechado';
   if (dtReporte) {
@@ -3244,14 +3256,28 @@ function obterFluxoCorretivasBD_() {
   const dentro = (d, ini, fim) => !!d && d >= ini && d < fim;
 
   let mCriados = 0, mFechados = 0, aCriados = 0, aFechados = 0;
+  // Quantos têm data de fechamento mas NÃO estão em estado "Fechado". Esses
+  // não saem do backlog; contá-los como fechados aqui é o que descasa as
+  // duas contas. Vão pro Logger porque, se o número for grande, é sinal de
+  // que o vocabulário de Estado da base tem mais valores de "encerrado" do
+  // que só "Fechado" — e aí a regra precisa ser revista, não o cálculo.
+  let comDataSemEstado = 0;
   itens.forEach(it => {
     if (dentro(it.dtReporte, refIni, refFim)) mCriados++;
-    if (dentro(it.dtFechado, refIni, refFim)) mFechados++;
     if (dentro(it.dtReporte, anoIni, refFim)) aCriados++;
-    if (dentro(it.dtFechado, anoIni, refFim)) aFechados++;
+    const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
+    if (fechado && dentro(it.dtFechado, refIni, refFim)) mFechados++;
+    if (fechado && dentro(it.dtFechado, anoIni, refFim)) aFechados++;
+    if (!fechado && dentro(it.dtFechado, refIni, refFim)) comDataSemEstado++;
   });
+  if (comDataSemEstado) {
+    Logger.log('BD-CORRETIVAS: ' + comDataSemEstado + ' chamado(s) com "Fechado em" no mês ' +
+               'mas Estado diferente de "Fechado" — não contam como fechados nem saem do ' +
+               'backlog. Confira os valores da coluna Estado.');
+  }
 
-  return { mCriados, mFechados, aCriados, aFechados, total: itens.length };
+  return { mCriados, mFechados, aCriados, aFechados,
+           comDataSemEstado: comDataSemEstado, total: itens.length };
 }
 
 // Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe,dataReporte,diasAberto}] }

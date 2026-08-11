@@ -320,3 +320,106 @@ function gerarSoDocumentosTodosOsMegas() {
     gerarSlideDocumentos();
   });
 }
+
+
+// ==========================================
+// DIAGNÓSTICO — POR QUE O BACKLOG NÃO FECHA COM CRIADOS − FECHADOS
+// ==========================================
+// Roda no editor e joga no Logger tudo que é preciso pra responder à
+// pergunta "se entraram 29 e saíram 29, como o backlog sobe 14?" sem
+// depender de olhar planilha:
+//
+//   - se o código novo está mesmo carregado no projeto (as constantes de
+//     01_Config.gs e as funções de 02_Dados.gs existem);
+//   - quantas linhas da BD-CORRETIVAS batem com o Centro de Custos da
+//     cidade (se der 0, o filtro é o problema e todo o resto sai zerado);
+//   - o vocabulário real da coluna Estado — a regra de backlog só tira do
+//     estoque quem está exatamente em "Fechado";
+//   - a conciliação do mês, lado a lado com o que está digitado na aba
+//     BACKLOG.
+//
+// Use diagnosticarBacklog() pra cidade ativa ou
+// diagnosticarBacklogTodosOsMegas() pras três.
+function diagnosticarBacklog() {
+  const nome = getProjetoAtivo().nome;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO DE BACKLOG — ' + nome);
+  Logger.log('======================================================');
+
+  // 1. O código novo está carregado?
+  const faltando = [];
+  [['BACKLOG_RECALCULAR_DA_BD', 'const (01_Config.gs)'],
+   ['obterFluxoCorretivasBD_', 'função (02_Dados.gs)'],
+   ['obterDadosBacklogPorMesBD_', 'função (02_Dados.gs)'],
+   ['_bdChamadoFechado_', 'função (02_Dados.gs)']].forEach(([n, onde]) => {
+    try { if (eval('typeof ' + n) === 'undefined') faltando.push(n + ' — ' + onde); }
+    catch (e) { faltando.push(n + ' — ' + onde); }
+  });
+  if (faltando.length) {
+    Logger.log('⚠ O PROJETO NÃO ESTÁ COM O CÓDIGO NOVO. Falta:');
+    faltando.forEach(f => Logger.log('    ' + f));
+    Logger.log('  Copie os arquivos atualizados pro editor do Apps Script e rode de novo.');
+    return;
+  }
+  Logger.log('Código novo carregado. Recálculo do backlog: ' +
+             (BACKLOG_RECALCULAR_DA_BD ? 'LIGADO' : 'DESLIGADO'));
+
+  // 2. A BD responde pra esta cidade?
+  const itens = _lerBdCorretivasCru_();
+  Logger.log('\nBD-CORRETIVAS: ' + itens.length + ' linha(s) com Centro de Custos = "' +
+             nome.toUpperCase() + '".');
+  if (!itens.length) {
+    Logger.log('⚠ ZERO linhas. O filtro de Centro de Custos não casa — confira como o ' +
+               'nome da cidade aparece na coluna "Centro de Custos" da BD.');
+    return;
+  }
+  const semData = itens.filter(it => !it.dtReporte).length;
+  if (semData) Logger.log('  ' + semData + ' sem "Data de reporte" legível.');
+
+  // 3. Vocabulário do Estado — é aqui que costuma morar a diferença.
+  const porEstado = {};
+  itens.forEach(it => {
+    const e = String(it.estado || '(vazio)').trim();
+    porEstado[e] = (porEstado[e] || 0) + 1;
+  });
+  Logger.log('\nValores da coluna Estado (só "Fechado" tira do backlog):');
+  Object.keys(porEstado).sort((a, b) => porEstado[b] - porEstado[a])
+    .forEach(e => Logger.log('    ' + e + ': ' + porEstado[e]));
+  const encerradoSemEstado = itens.filter(it => it.dtFechado && !_bdChamadoFechado_(it.estado, it.dtFechado));
+  if (encerradoSemEstado.length) {
+    Logger.log('  ⚠ ' + encerradoSemEstado.length + ' chamado(s) têm "Fechado em" preenchido ' +
+               'mas Estado ≠ "Fechado" — ficam no backlog pra sempre.');
+    Logger.log('    Estados: ' + Array.from(new Set(encerradoSemEstado.map(it => it.estado))).join(', '));
+  }
+
+  // 4. Conciliação do mês de referência.
+  const ref = obterMesReferencia_();
+  const ord = ref.ano * 100 + (ref.index + 1);
+  const serie = obterDadosBacklogHistorico_();
+  const iAlvo = serie.findIndex(p => p.ord === ord);
+  const fluxo = obterFluxoCorretivasBD_();
+  Logger.log('\nMês de referência: ' + MESES_NOME_REF[ref.index] + '/' + ref.ano);
+  if (!fluxo) { Logger.log('  Fluxo indisponível (ver avisos acima).'); return; }
+  Logger.log('  criados  = ' + fluxo.mCriados);
+  Logger.log('  fechados = ' + fluxo.mFechados);
+  if (iAlvo < 0) { Logger.log('  ⚠ mês não encontrado na aba BACKLOG.'); return; }
+
+  const atual = serie[iAlvo], ant = iAlvo > 0 ? serie[iAlvo - 1] : null;
+  if (!ant || ant.geral == null || atual.geral == null) {
+    Logger.log('  Sem mês anterior pra conciliar.');
+    return;
+  }
+  const esperado = ant.geral + fluxo.mCriados - fluxo.mFechados;
+  Logger.log('  backlog anterior (' + ant.mes + ') = ' + ant.geral);
+  Logger.log('  esperado = ' + ant.geral + ' + ' + fluxo.mCriados + ' − ' +
+             fluxo.mFechados + ' = ' + esperado);
+  Logger.log('  no slide = ' + atual.geral +
+             (esperado === atual.geral ? '  ✓ FECHA' : '  ✗ diferença de ' + (atual.geral - esperado)));
+  Logger.log('  quebra por equipe: facilities ' + atual.facilities +
+             ' + property ' + atual.property + ' + locatário ' + atual.locatario +
+             ' = ' + (atual.facilities + atual.property + atual.locatario));
+}
+
+function diagnosticarBacklogTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => { setProjetoAtivo(c); diagnosticarBacklog(); });
+}
