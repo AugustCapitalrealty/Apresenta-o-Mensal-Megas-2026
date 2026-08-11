@@ -7,9 +7,9 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | Pasta | Projeto | Arquivos |
 |---|---|---|
 | `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 43 `.gs` |
-| `boletim/` | Boletim 2026 (inclui os slides de controle de acessos) | 24 `.gs` |
+| `boletim/` | Boletim 2026 | 24 `.gs` |
+| `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 9 `.gs` |
-| `controle-acessos/` | ver o README de lá | — |
 
 ## A regra que não dá para esquecer
 
@@ -18,15 +18,18 @@ global.** Não existe `import`, não existe módulo: uma `function` ou `const`
 declarada em qualquer arquivo enxerga e colide com as dos outros.
 
 Consequência prática: **as pastas deste repositório não podem ser juntadas
-num projeto Apps Script só.** Hoje existem 6 nomes duplicados entre elas:
+num projeto Apps Script só.** Hoje existem 9 nomes duplicados entre elas:
 
 ```
-CR_DESIGN_SYSTEM      megas, boletim, tvs
-METAS_COLS            megas, tvs
-METAS_COLS_FULL       megas, tvs
-gerarSlideCapa        megas, tvs
-gerarSlideCorretivas  megas, tvs
-gerarSlidePreventivas megas, tvs
+CR_DESIGN_SYSTEM       megas, boletim, tvs
+FOTOS_SECAO            megas, acessos
+LOGOS_CLIENTES         megas, acessos
+METAS_COLS             megas, tvs
+METAS_COLS_FULL        megas, tvs
+gerarApresentacao      tvs, acessos
+gerarSlideCapa         megas, tvs
+gerarSlideCorretivas   megas, tvs
+gerarSlidePreventivas  megas, tvs
 ```
 
 Compartilhar código entre os projetos é **copiar**, não importar. Ao copiar
