@@ -93,6 +93,20 @@ function gerarCapaSecao(linha1, linha2, chave) {
 // ==========================================
 // Todos desenhados em torno de (cx, cy), predominância branca translúcida
 // (lê sobre a foto) com UM realce na cor de acento. Só shapes nativos.
+//
+// GRADE ÓPTICA: todo motivo cabe num quadro de SEC_MOT_CAIXA pt centrado
+// exatamente em (cx, cy). Sem isso o símbolo muda de tamanho e de posição de
+// uma capa para a outra — era o caso: a largura ia de 56 a 116pt e a altura
+// de 72 a 150pt, com Patrimonial ocupando 34% do espaço e Sustentável 139%.
+// Passando os slides em sequência, o símbolo "pulava". O teste
+// test-motivos-capa.js cobra caixa, centragem, ocupação e paleta.
+const SEC_MOT_CAIXA = 104;        // lado do quadro
+const SEC_MOT_MEIA  = 52;         // meia-caixa, atalho para centrar
+
+// Escala única de opacidade e espessura — mantém o "peso" visual igual entre
+// os motivos, que é o que faz eles parecerem da mesma família.
+const SEC_MOT_A = { traco: 0.55, massa: 0.28, acento: 0.92, fantasma: 0.15 };
+const SEC_MOT_W = { forte: 2.5, leve: 1.5 };
 
 function _secDesenharMotivo_(chave, s, cx, cy, cor) {
   // Ícone da pasta do Drive tem precedência, quando existe (ver
@@ -126,17 +140,19 @@ function _secRet_(s, x, y, w, h, cor, alpha, rounded) {
 }
 
 // PREVENTIVA — grade 3×3 (plano/calendário), célula central em destaque.
+// 3 células de 28 + 2 vãos de 10 = 104: preenche a caixa exatamente.
 function _secMotPreventiva_(s, cx, cy, cor) {
-  const cell = 22, gap = 9, n = 3, span = n * cell + (n - 1) * gap;
-  const x0 = cx - span / 2, y0 = cy - span / 2;
+  const cell = 28, gap = 10, n = 3;
+  const x0 = cx - SEC_MOT_MEIA, y0 = cy - SEC_MOT_MEIA;
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-    const x = x0 + c * (cell + gap), y = y0 + r * (cell + gap);
-    const sq = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cell, cell);
+    const sq = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
+      x0 + c * (cell + gap), y0 + r * (cell + gap), cell, cell);
     if (r === 1 && c === 1) {
-      sq.getFill().setSolidFill(cor, 0.9); sq.getBorder().setTransparent();
+      sq.getFill().setSolidFill(cor, SEC_MOT_A.acento); sq.getBorder().setTransparent();
     } else {
       sq.getFill().setTransparent();
-      sq.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.5); sq.getBorder().setWeight(1.5);
+      sq.getBorder().getLineFill().setSolidFill('#FFFFFF', SEC_MOT_A.traco);
+      sq.getBorder().setWeight(SEC_MOT_W.leve);
     }
   }
 }
@@ -144,32 +160,37 @@ function _secMotPreventiva_(s, cx, cy, cor) {
 // CORRETIVA — sinal de alerta (triângulo + exclamação): ação corretiva
 // nasce de um problema identificado — símbolo universal, direto ao ponto.
 function _secMotCorretiva_(s, cx, cy, cor) {
-  const w = 104, h = 92;
-  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - w / 2, cy - h / 2, w, h);
+  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE,
+    cx - SEC_MOT_MEIA, cy - 48, SEC_MOT_CAIXA, 96);
   tri.getFill().setTransparent();
-  tri.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.55); tri.getBorder().setWeight(2.5);
+  tri.getBorder().getLineFill().setSolidFill('#FFFFFF', SEC_MOT_A.traco);
+  tri.getBorder().setWeight(SEC_MOT_W.forte);
 
-  const bar = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 4, cy - 8, 8, 26);
-  bar.getFill().setSolidFill(cor, 0.92); bar.getBorder().setTransparent();
-  const dot = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 5, cy + 24, 10, 10);
-  dot.getFill().setSolidFill(cor, 0.92); dot.getBorder().setTransparent();
+  // Exclamação na metade de baixo, onde o triângulo tem largura para ela.
+  _secRet_(s, cx - 4.5, cy - 8, 9, 30, cor, SEC_MOT_A.acento, true);
+  const dot = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 5.5, cy + 30, 11, 11);
+  dot.getFill().setSolidFill(cor, SEC_MOT_A.acento); dot.getBorder().setTransparent();
 }
 
 // CONTRATADOS — dois anéis entrelaçados (parceria/contrato), um em destaque.
 function _secMotContratados_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 56, cy - 36, 72, '#FFFFFF', 2.5, 0.5);
-  _capaAnel_(s, cx - 16, cy - 36, 72, cor, 2.5, 0.85);
+  const d = 76, sobra = SEC_MOT_CAIXA - d;          // 28 de deslocamento entre eles
+  _capaAnel_(s, cx - SEC_MOT_MEIA, cy - d / 2, d, '#FFFFFF', SEC_MOT_W.forte, SEC_MOT_A.traco);
+  _capaAnel_(s, cx - SEC_MOT_MEIA + sobra, cy - d / 2, d, cor, SEC_MOT_W.forte, SEC_MOT_A.acento);
 }
 
 // INTERNOS — skyline de barras (predial/time), uma barra em destaque.
+// 5 barras de 16 + 4 vãos de 6 = 104; a régua da base tem a mesma largura,
+// para o conjunto não ultrapassar a caixa.
 function _secMotInternos_(s, cx, cy, cor) {
-  const alt = [38, 64, 50, 78, 44], bw = 14, gap = 8;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 42;
+  const alt = [44, 72, 58, 88, 52], bw = 16, gap = 6;
+  const x0 = cx - SEC_MOT_MEIA, base = cy + 43;
   alt.forEach((hh, i) => {
     const dest = (i === 3);
-    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, dest ? cor : '#FFFFFF', dest ? 0.85 : 0.28, true);
+    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh,
+      dest ? cor : '#FFFFFF', dest ? SEC_MOT_A.acento : SEC_MOT_A.massa, true);
   });
-  _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
+  _secRet_(s, x0, base, SEC_MOT_CAIXA, 2, '#FFFFFF', SEC_MOT_A.traco, false);
 }
 
 // COMPLEMENTOS — sinal de mais: serviços extras que não têm categoria
@@ -177,81 +198,117 @@ function _secMotInternos_(s, cx, cy, cor) {
 // "itens adicionais", sem forçar um objeto literal que nem sempre existe.
 // A barra vertical (destaque) cruza a horizontal (branca) formando o "+".
 function _secMotComplementos_(s, cx, cy, cor) {
-  const comprimento = 92, espessura = 18;
-  _secRet_(s, cx - comprimento / 2, cy - espessura / 2, comprimento, espessura, '#FFFFFF', 0.5, true);
-  _secRet_(s, cx - espessura / 2, cy - comprimento / 2, espessura, comprimento, cor, 0.9, true);
+  const esp = 20;
+  _secRet_(s, cx - SEC_MOT_MEIA, cy - esp / 2, SEC_MOT_CAIXA, esp, '#FFFFFF', SEC_MOT_A.traco, true);
+  _secRet_(s, cx - esp / 2, cy - SEC_MOT_MEIA, esp, SEC_MOT_CAIXA, cor, SEC_MOT_A.acento, true);
 }
 
 // PATRIMONIAL — cadeado (segurança), miolo (fechadura) em destaque.
+// Estava ocupando 34% da caixa — o menor de todos, sumia ao lado dos outros.
 function _secMotPatrimonial_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 20, cy - 42, 40, '#FFFFFF', 3, 0.5);   // arco/shackle
-  const body = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 28, cy - 14, 56, 48);
-  body.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);   // cobre a base do arco
-  body.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6); body.getBorder().setWeight(2.5);
-  const kh = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 6, cy + 2, 12, 12);
-  kh.getFill().setSolidFill(cor, 0.95); kh.getBorder().setTransparent();
-  _secRet_(s, cx - 2, cy + 11, 4, 12, cor, 0.95, false);
+  _capaAnel_(s, cx - 28, cy - 52, 56, '#FFFFFF', 3, SEC_MOT_A.traco);   // arco/shackle
+  const body = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 40, cy - 12, 80, 56);
+  body.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);  // cobre a base do arco
+  body.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6);
+  body.getBorder().setWeight(SEC_MOT_W.forte);
+  const kh = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 8, cy + 4, 16, 16);
+  kh.getFill().setSolidFill(cor, SEC_MOT_A.acento); kh.getBorder().setTransparent();
+  _secRet_(s, cx - 3, cy + 16, 6, 16, cor, SEC_MOT_A.acento, false);
 }
 
-// OPERACIONAL — barras crescentes + seta (resultado financeiro), topo em destaque.
+// OPERACIONAL — barras crescentes coroadas por uma seta (resultado que sobe).
+// A seta agora remata a barra mais alta em vez de flutuar acima dela, que era
+// o que puxava o desenho 11pt para cima da âncora.
 function _secMotOperacional_(s, cx, cy, cor) {
-  const alt = [30, 48, 66, 86], bw = 16, gap = 10;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 44;
+  const alt = [34, 48, 60, 70], bw = 18, gap = 10;
+  const span = alt.length * bw + (alt.length - 1) * gap;   // 102
+  const x0 = cx - span / 2, base = cy + 45;
   alt.forEach((hh, i) => {
     const last = (i === alt.length - 1);
-    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, last ? cor : '#FFFFFF', last ? 0.85 : 0.3, true);
+    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh,
+      last ? cor : '#FFFFFF', last ? SEC_MOT_A.acento : SEC_MOT_A.massa, true);
   });
-  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, x0 + span - bw - 4, base - alt[3] - 26, 24, 22);
-  tri.getFill().setSolidFill(cor, 0.9); tri.getBorder().setTransparent();
-  _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
+  const topo = base - alt[alt.length - 1];                 // topo da 4ª barra
+  const cxUlt = x0 + 3 * (bw + gap) + bw / 2;
+  // Seta com a MESMA largura da barra: remata em cima dela sem transbordar
+  // a caixa (com 26 de largura ela sobrava 4pt à direita).
+  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cxUlt - bw / 2, topo - 18, bw, 18);
+  tri.getFill().setSolidFill(cor, SEC_MOT_A.acento); tri.getBorder().setTransparent();
+  _secRet_(s, x0, base, span, 2, '#FFFFFF', SEC_MOT_A.traco, false);
 }
 
-// UTILITIES — medidor de energia (corpo + agulha + escala), miolo em
-// destaque. Substitui o sol/raios anterior (não aprovado).
+// UTILITIES — medidor (mostrador + escala + ponteiro), miolo em destaque.
+//
+// Três defeitos corrigidos aqui:
+//  1. a escala calculava dois pontos (raio interno e externo) como se fosse
+//     desenhar um traço radial, mas inseria um quadrado de 2,5pt no canto —
+//     os pontos externos eram código morto e a escala saía como sujeirinha;
+//  2. o ponteiro era um retângulo com setRotation, que gira em torno do
+//     PRÓPRIO centro: como o retângulo nascia com a base no eixo, ele girava
+//     deslocado e não saía do miolo;
+//  3. o comentário falava em "semicírculo por anel + máscara", mas máscara
+//     nenhuma era desenhada — sempre foi um círculo inteiro.
+//
+// A escala virou pontos sobre a circunferência (sem rotação, sem risco de
+// convenção de sinal) e o ponteiro é centrado no MEIO do próprio traço, que
+// é a posição em que girar pelo centro dá o resultado certo.
 function _secMotUtilities_(s, cx, cy, cor) {
-  const R = 46;
-  // Corpo do medidor (semicírculo aproximado por anel + máscara)
-  _capaAnel_(s, cx - R, cy - R, R * 2, '#FFFFFF', 2.5, 0.5);
-  // Escala: tracinhos ao redor do arco superior
+  const R = 48;
+  _capaAnel_(s, cx - R, cy - R, R * 2, '#FFFFFF', SEC_MOT_W.forte, SEC_MOT_A.traco);
+
+  // Escala: 7 pontos varrendo o arco de cima, de 210° a -30°.
+  const rEsc = R - 9;
   for (let i = 0; i <= 6; i++) {
-    const a = (200 - i * 40) * Math.PI / 180;   // varre ~200° a -40°
-    const x1 = cx + Math.cos(a) * (R - 10), y1 = cy - Math.sin(a) * (R - 10);
-    const x2 = cx + Math.cos(a) * (R - 2),  y2 = cy - Math.sin(a) * (R - 2);
-    const tick = s.insertShape(SlidesApp.ShapeType.RECTANGLE, Math.min(x1, x2), Math.min(y1, y2), 2.5, 2.5);
-    tick.getFill().setSolidFill('#FFFFFF', 0.6); tick.getBorder().setTransparent();
+    const a = (210 - i * 40) * Math.PI / 180;
+    const px = cx + Math.cos(a) * rEsc, py = cy - Math.sin(a) * rEsc;
+    const p = s.insertShape(SlidesApp.ShapeType.ELLIPSE, px - 2.5, py - 2.5, 5, 5);
+    p.getFill().setSolidFill('#FFFFFF', 0.65); p.getBorder().setTransparent();
   }
-  // Agulha apontando para cima-direita (consumo alto) na cor de acento
-  const agulha = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 1.5, cy - R * 0.68, 3, R * 0.68);
-  agulha.getFill().setSolidFill(cor, 0.95); agulha.getBorder().setTransparent();
-  agulha.setRotation(35);
-  const eixo = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 8, cy - 8, 16, 16);
-  eixo.getFill().setSolidFill(cor, 0.95); eixo.getBorder().setTransparent();
-  // Base do medidor
-  _secRet_(s, cx - 34, cy + 4, 68, 8, '#FFFFFF', 0.5, true);
+
+  // Ponteiro: comprimento L, apontando GRAU graus no sentido horário a partir
+  // da vertical. O retângulo é centrado no meio do traço, então setRotation
+  // (que gira pelo centro do shape) leva a ponta ao lugar certo.
+  const L = 38, GRAU = 40, rad = GRAU * Math.PI / 180;
+  const mx = cx + Math.sin(rad) * L / 2, my = cy - Math.cos(rad) * L / 2;
+  const ag = s.insertShape(SlidesApp.ShapeType.RECTANGLE, mx - 2, my - L / 2, 4, L);
+  ag.getFill().setSolidFill(cor, SEC_MOT_A.acento); ag.getBorder().setTransparent();
+  ag.setRotation(GRAU);
+
+  const eixo = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 9, cy - 9, 18, 18);
+  eixo.getFill().setSolidFill(cor, SEC_MOT_A.acento); eixo.getBorder().setTransparent();
 }
 
-// SUSTENTAVEL — anéis de crescimento (troncos) + broto no topo: gestão
-// sustentável / ESG, sem depender de sol/energia literal.
+// SUSTENTAVEL — anéis concêntricos (ciclo) + broto no topo.
+// Estava com 150pt de altura, o dobro do menor motivo, porque o broto subia
+// muito acima dos anéis. Agora o conjunto inteiro cabe na caixa.
 function _secMotSustentavel_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 58, cy - 46, 116, '#FFFFFF', 1.25, 0.14);
-  _capaAnel_(s, cx - 40, cy - 28, 80,  '#FFFFFF', 1.25, 0.28);
-  _capaAnel_(s, cx - 20, cy - 8,  40,  cor, 1.75, 0.9);
+  const cyA = cy + 6;   // anéis um pouco abaixo, abrindo espaço pro broto
+  _capaAnel_(s, cx - 44, cyA - 44, 88, '#FFFFFF', SEC_MOT_W.leve, SEC_MOT_A.fantasma);
+  _capaAnel_(s, cx - 31, cyA - 31, 62, '#FFFFFF', SEC_MOT_W.leve, SEC_MOT_A.massa);
+  _capaAnel_(s, cx - 17, cyA - 17, 34, cor, 2, SEC_MOT_A.acento);
 
-  const caule = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 2, cy - 66, 4, 22);
+  const caule = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 2, cy - 42, 4, 20);
   caule.getFill().setSolidFill(cor, 0.85); caule.getBorder().setTransparent();
-  const f1 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - 20, cy - 80, 20, 18);
+  const f1 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - 19, cy - 52, 19, 17);
   f1.getFill().setSolidFill(cor, 0.85); f1.getBorder().setTransparent(); f1.setRotation(-25);
-  const f2 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx,      cy - 80, 20, 18);
+  const f2 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx, cy - 52, 19, 17);
   f2.getFill().setSolidFill(cor, 0.85); f2.getBorder().setTransparent(); f2.setRotation(25);
 }
 
 // DOCUMENTACAO — pilha de papéis (jurídico), faixa superior em destaque.
+// A pilha é montada simétrica em torno da âncora (antes escorregava 5pt para
+// a direita e 4 para baixo, porque as folhas de trás só cresciam num sentido).
 function _secMotDocumentacao_(s, cx, cy, cor) {
-  _secRet_(s, cx - 30 + 14, cy - 40 + 14, 56, 74, '#FFFFFF', 0.25, true);
-  _secRet_(s, cx - 30 + 7,  cy - 40 + 7,  56, 74, '#FFFFFF', 0.4,  true);
-  _secRet_(s, cx - 30, cy - 40, 56, 74, '#FFFFFF', 0.92, true);
-  _secRet_(s, cx - 30, cy - 40, 56, 9, cor, 0.9, false);
+  const fw = 68, fh = 90, desl = 7;
+  const x0 = cx - (fw + 2 * desl) / 2, y0 = cy - (fh + 2 * desl) / 2;
+  _secRet_(s, x0 + 2 * desl, y0 + 2 * desl, fw, fh, '#FFFFFF', SEC_MOT_A.massa, true);
+  _secRet_(s, x0 + desl,     y0 + desl,     fw, fh, '#FFFFFF', 0.42, true);
+  _secRet_(s, x0,            y0,            fw, fh, '#FFFFFF', 0.92, true);
+  _secRet_(s, x0, y0, fw, 11, cor, SEC_MOT_A.acento, false);
+  // Linhas de texto: tom do design system em vez do #94A3B8 solto que estava
+  // aqui — era a única cor do deck fora da paleta.
   for (let i = 0; i < 4; i++) {
-    _secRet_(s, cx - 22, cy - 18 + i * 12, i === 3 ? 24 : 40, 3, '#94A3B8', 0.9, false);
+    _secRet_(s, x0 + 10, y0 + 30 + i * 14, i === 3 ? 28 : 48, 3,
+      CR_DESIGN_SYSTEM.colors.brandMed, 0.35, false);
   }
 }
