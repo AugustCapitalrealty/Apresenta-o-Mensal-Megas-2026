@@ -1089,7 +1089,24 @@ function obterDadosCustoM2() {
     const sheet = ss.getSheetByName('METRO QUADRADO');
     if (!sheet) throw new Error('Aba METRO QUADRADO não encontrada');
 
-    const data   = sheet.getDataRange().getDisplayValues();
+    const rango  = sheet.getDataRange();
+    const data   = rango.getDisplayValues();
+    // Os NÚMEROS vêm também em precisão total (getValues), não só como o
+    // texto formatado da planilha. getDisplayValues devolve o R$/m² já
+    // arredondado em 2 casas ("4,53"), e quem tirava média/acumulado desses
+    // valores acumulava o erro de arredondamento: o slide CUSTO DO M²
+    // fechava o ano 1 centavo diferente do DRE e do Bridge, que calculam do
+    // total bruto (Σ R$ ÷ área ÷ meses). Agora todo mundo parte do mesmo
+    // número cheio e o arredondamento acontece só na hora de exibir.
+    // (getDisplayValues continua sendo a fonte dos RÓTULOS — cabeçalho de
+    // mês, nome da linha, mês em A1 — que precisam do texto como está.)
+    let brutos = null;
+    try { brutos = rango.getValues(); } catch (e) { Logger.log('Custo m²: getValues indisponível — ' + e.message); }
+    const numeroCelula = (linha, col) => {
+      const cru = brutos && brutos[linha] ? brutos[linha][col] : null;
+      if (typeof cru === 'number' && isFinite(cru)) return cru;
+      return parseNumeroCusto_(data[linha][col]);
+    };
     const header = data[0];
     const meses  = extrairMesesCustoM2_(header);
 
@@ -1117,9 +1134,6 @@ function obterDadosCustoM2() {
 
     if (idxComIptu < 0) throw new Error('"TOTAL ÁREA COM IPTU E SEGURO" não encontrado na aba METRO QUADRADO');
 
-    const linhaComIptu = data[idxComIptu];
-    const linhaSemIptu = idxSemIptu >= 0 ? data[idxSemIptu] : null;
-
     // ── Detectar cidade pelo label da linha (ex: "R$ M² MÊS- ITAJAÍ") ────
     const labelRaw    = String(data[idxComIptu][0] || '').replace(/ /g, ' ').trim();
     const cidadeMatch = labelRaw.match(/[-–]\s*([A-ZÀÁÂÃÉÊÍÓÔÕÚÜ ]+)$/i);
@@ -1133,10 +1147,10 @@ function obterDadosCustoM2() {
     };
 
     meses.forEach(m => {
-      tabela['Orç 2026'].push(parseNumeroCusto_(linhaComIptu[m.colOrc]));
-      tabela['Real 2026'].push(parseNumeroCusto_(linhaComIptu[m.colReal]));
+      tabela['Orç 2026'].push(numeroCelula(idxComIptu, m.colOrc));
+      tabela['Real 2026'].push(numeroCelula(idxComIptu, m.colReal));
       tabela['Real 2026 sem IPTU'].push(
-        linhaSemIptu ? parseNumeroCusto_(linhaSemIptu[m.colReal]) : null
+        idxSemIptu >= 0 ? numeroCelula(idxSemIptu, m.colReal) : null
       );
     });
 
@@ -1197,10 +1211,11 @@ function obterDadosCustoM2() {
     //      de referência) e cai no cálculo derivado de obterAreaM2_.
     const areaMeses = [];
     if (idxComIptu > 0) {
-      const linhaArea = data[idxComIptu - 1];
       meses.forEach(m => {
-        const v = parseNumeroCusto_(linhaArea[m.colReal]);
-        const w = v !== null && v > 1000 ? v : parseNumeroCusto_(linhaArea[m.colOrc]);
+        // Também em precisão total: a área divide TODO R$/m² do deck, então
+        // um arredondamento aqui se propaga pro DRE e pro Bridge.
+        const v = numeroCelula(idxComIptu - 1, m.colReal);
+        const w = v !== null && v > 1000 ? v : numeroCelula(idxComIptu - 1, m.colOrc);
         areaMeses.push(w !== null && w > 1000 ? w : null);
       });
       const valores = areaMeses.filter(v => v != null);
