@@ -99,6 +99,20 @@ const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 // _lerBdCorretivasChamadosClientes_.
 const BD_CORRETIVAS_ID = '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo';
 
+// As colunas GERAL/FACILITIES/PROPERTY/LOCATÁRIO da aba BACKLOG eram
+// digitadas à mão, enquanto o fluxo (criados/fechados) passou a ser contado
+// na BD-CORRETIVAS. Com fontes diferentes, a conta não fechava: JUL/26 saiu
+// com 29 criados e 29 fechados e o backlog subindo de 206 para 220.
+// Recalculando as quatro da mesma base, a identidade
+//     backlog(fim) = backlog(início) + criados − fechados
+// passa a valer por construção.
+//
+// false volta a usar os valores digitados. A comparação continua indo pro
+// Logger nos dois modos (BACKLOG_LOGAR_COMPARACAO_BD), pra dar pra auditar
+// sem trocar os números do deck.
+const BACKLOG_RECALCULAR_DA_BD    = true;
+const BACKLOG_LOGAR_COMPARACAO_BD = true;
+
 // Planilha do sistema irmão "Gestão à Vista TV" — já mantém a aba METAS
 // (Mega | Papel | Título | Descrição | Pontos | ...) todo mês para os
 // painéis de TV. O slide de Metas lê direto daqui: nada novo para

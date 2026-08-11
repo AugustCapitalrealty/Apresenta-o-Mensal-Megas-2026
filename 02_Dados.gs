@@ -2838,12 +2838,52 @@ function obterDadosBacklogHistorico_() {
       });
     }
     saida.sort((a, b) => a.ord - b.ord);
+    _backlogAplicarRecalculoBD_(saida);
     return saida;
 
   } catch (e) {
     Logger.log('Erro Backlog Histórico: ' + e.message);
     return [];
   }
+}
+
+// Substitui GERAL/FACILITIES/PROPERTY/LOCATÁRIO digitados na aba BACKLOG
+// pelo recálculo da BD-CORRETIVAS, mês a mês, registrando cada divergência.
+//
+// Fica AQUI, e não no arquivo do slide, porque a aba BACKLOG alimenta cinco
+// consumidores (Backlog Facilities, Dashboard, Chamados Pendentes, o
+// gráfico de emergenciais e os checks de consistência). Corrigir só no
+// slide faria o deck mostrar 220 num lugar e 206 noutro pro mesmo mês.
+//
+// Mês que a BD não cobre mantém o valor manual, sem perder histórico antigo
+// — mesmo tratamento que a coluna EMERGENCIAL já recebe.
+function _backlogAplicarRecalculoBD_(serie) {
+  if (!BACKLOG_RECALCULAR_DA_BD && !BACKLOG_LOGAR_COMPARACAO_BD) return;
+
+  let recalculado;
+  try {
+    recalculado = obterDadosBacklogPorMesBD_(serie);
+  } catch (e) {
+    Logger.log('Backlog: recálculo da BD-CORRETIVAS indisponível (' + e.message +
+               ') — usando os valores digitados na aba BACKLOG.');
+    return;
+  }
+  if (!recalculado || !recalculado.size) return;
+
+  const campos = ['geral', 'facilities', 'property', 'locatario'];
+  serie.forEach(m => {
+    if (!recalculado.has(m.ord)) return;   // fora da cobertura da BD — mantém o manual
+    const calc = recalculado.get(m.ord);
+    const difs = campos
+      .filter(c => m[c] != null && m[c] !== calc[c])
+      .map(c => c + ': ' + m[c] + ' → ' + calc[c]);
+    if (difs.length) {
+      Logger.log('Backlog (' + m.mes + '): aba BACKLOG digitada x BD-CORRETIVAS — ' +
+                 difs.join(', ') + '.' +
+                 (BACKLOG_RECALCULAR_DA_BD ? ' Usando o recalculado.' : ' Mantendo o digitado.'));
+    }
+    if (BACKLOG_RECALCULAR_DA_BD) campos.forEach(c => { m[c] = calc[c]; });
+  });
 }
 
 
@@ -3102,8 +3142,15 @@ function _lerBdCorretivasEmergenciaisCru_() {
 // empreendimento ativo e devolve todo mundo com as datas prontas. Quem
 // precisa de recorte (prioridade, mês, equipe) filtra em cima — assim o
 // mapeamento de colunas fica num lugar só.
+// A BD-CORRETIVAS tem histórico desde 2021 e agora é lida por vários pontos
+// numa mesma rodada (backlog emergencial, backlogs de clientes, fluxo de
+// corretivas e o recálculo da aba BACKLOG). Sem cache seria a planilha
+// inteira baixada uma vez por consumidor, por cidade.
+let _bdCorretivasCache = {};
+
 function _lerBdCorretivasCru_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  if (_bdCorretivasCache[alvoEmp]) return _bdCorretivasCache[alvoEmp];
   try {
     const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
     const sheet = _abaBdCorretivas_(ss);
@@ -3144,6 +3191,9 @@ function _lerBdCorretivasCru_() {
         dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
       });
     }
+    // Só cacheia resultado bom: leitura vazia por falha transitória não pode
+    // ficar grudada na rodada inteira.
+    if (saida.length) _bdCorretivasCache[alvoEmp] = saida;
     return saida;
   } catch (e) {
     Logger.log('_lerBdCorretivasCru_: ' + e.message);
