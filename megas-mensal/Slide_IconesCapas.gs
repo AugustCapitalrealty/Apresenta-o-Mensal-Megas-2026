@@ -48,6 +48,10 @@ const _ICONES_CAPAS_ARQUIVO_ = {
   'CORRETIVA'   : 'corretiva',
   'CONTRATADOS' : 'contratados',
   'INTERNOS'    : 'internos',
+  // COMPLEMENTOS existe em _secDesenharMotivo_ mas estava faltando aqui: um
+  // complementos.png na pasta era ignorado em silêncio e a capa continuava
+  // com o motivo desenhado, sem nenhum aviso de por quê.
+  'COMPLEMENTOS': 'complementos',
   'PATRIMONIAL' : 'patrimonial',
   'OPERACIONAL' : 'operacional',
   'UTILITIES'   : 'utilities',
