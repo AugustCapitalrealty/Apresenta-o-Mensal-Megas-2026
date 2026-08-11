@@ -1195,37 +1195,51 @@ function obterDadosCustoM2() {
     // direto, o R$/m² de qualquer valor do deck passa a depender só da
     // BRIDGE (valores) + desta linha (área).
     //
-    // Filtro de plausibilidade em DUAS camadas:
-    //   1) magnitude: a área é da ordem de dezenas/centenas de milhares de
-    //      m², o R$/m² é da ordem de unidades — exigir > 1.000 impede que um
-    //      R$/m² seja lido como se fosse área.
-    //   2) ESTABILIDADE mês a mês: a área FÍSICA de um empreendimento não
-    //      dobra de um mês pro outro. Erro real visto na aba de Mega Itajaí —
-    //      a linha "TOTAL ÁREA..." estava preenchida com o mesmo TOTAL EM R$
-    //      da aba FINANCEIRO (552.169,26 nos dois lugares, até o centavo),
-    //      não com metragem. Isso PASSA no filtro de magnitude (R$ 552 mil
-    //      também é "> 1.000") mas oscila mês a mês do jeito que despesa
-    //      oscila — de R$ 386 mil a R$ 1.081 mil no mesmo ano —, e área de
-    //      verdade não faz isso. Quando a série varia mais que 2× entre o
-    //      menor e o maior valor, a linha inteira é descartada (não só o mês
-    //      de referência) e cai no cálculo derivado de obterAreaM2_.
+    // COMO a área é obtida: NÃO lendo a linha "TOTAL ÁREA..." como se ela
+    // trouxesse metragem — ela NÃO traz. Verificado nas três cidades: essa
+    // linha guarda o TOTAL EM R$ do mês, e a linha logo abaixo é o R$/m²
+    // correspondente. Em Mega Esteio, por exemplo, "TOTAL ÁREA - COM IPTU E
+    // SEGURO" de janeiro é (308.679,60) e o "R$ M² MÊS- ESTEIO" logo abaixo
+    // é (12,71) — 308.679,60 ÷ 12,71 = 24.286 m², a metragem real. Ler a
+    // primeira linha como área dava ~300 mil "m²" e jogava todo R$/m² do
+    // Bridge/DRE pra uma ordem de grandeza errada.
+    //
+    // Então a área sai da DIVISÃO das duas linhas, que é consistente por
+    // construção e vale pras três cidades (a planilha é montada assim em
+    // todas). Os valores vêm em formato contábil (negativos entre
+    // parênteses), daí o Math.abs.
+    //
+    // Filtro de plausibilidade que sobra: a área é da ordem de
+    // dezenas/centenas de milhares de m² — exigir > 1.000 descarta divisão
+    // de célula vazia/ruído. E como cada mês produz sua própria estimativa,
+    // uma variação grande entre elas denuncia dado inconsistente na aba: aí
+    // a linha inteira é descartada e cai no cálculo derivado de
+    // obterAreaM2_ (Realizado ÷ Custo R$/m²).
     const areaMeses = [];
     if (idxComIptu > 0) {
       meses.forEach(m => {
-        // Também em precisão total: a área divide TODO R$/m² do deck, então
-        // um arredondamento aqui se propaga pro DRE e pro Bridge.
-        const v = numeroCelula(idxComIptu - 1, m.colReal);
-        const w = v !== null && v > 1000 ? v : numeroCelula(idxComIptu - 1, m.colOrc);
+        // Em precisão total: a área divide TODO R$/m² do deck, então um
+        // arredondamento aqui se propaga pro DRE e pro Bridge.
+        const derivar = col => {
+          const totalRs = numeroCelula(idxComIptu - 1, col);
+          const rsPorM2 = numeroCelula(idxComIptu, col);
+          if (totalRs == null || rsPorM2 == null) return null;
+          const a = Math.abs(totalRs), b = Math.abs(rsPorM2);
+          if (!(b > 0) || !isFinite(a / b)) return null;
+          return a / b;
+        };
+        const v = derivar(m.colReal);
+        const w = v !== null && v > 1000 ? v : derivar(m.colOrc);
         areaMeses.push(w !== null && w > 1000 ? w : null);
       });
       const valores = areaMeses.filter(v => v != null);
       if (valores.length >= 2) {
         const min = Math.min.apply(null, valores), max = Math.max.apply(null, valores);
-        if (max / min > 2) {
-          Logger.log('obterDadosCustoM2: linha "TOTAL ÁREA..." varia demais mês a mês (' +
+        if (max / min > 1.5) {
+          Logger.log('obterDadosCustoM2: a área derivada (Total R$ ÷ R$/m²) varia demais entre os meses (' +
                      Math.round(min).toLocaleString('pt-BR') + ' a ' + Math.round(max).toLocaleString('pt-BR') +
-                     ') pra ser área — a planilha provavelmente tem outro dado nessa linha ' +
-                     '(confira a aba METRO QUADRADO). Ignorando; caindo no cálculo derivado.');
+                     ' m²) — a aba METRO QUADRADO provavelmente tem alguma linha inconsistente. ' +
+                     'Ignorando; caindo no cálculo derivado.');
           areaMeses.length = 0;
           meses.forEach(() => areaMeses.push(null));
         }
