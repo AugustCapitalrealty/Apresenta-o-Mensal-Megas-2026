@@ -1102,9 +1102,14 @@ function obterDadosCustoM2() {
     // mês, nome da linha, mês em A1 — que precisam do texto como está.)
     let brutos = null;
     try { brutos = rango.getValues(); } catch (e) { Logger.log('Custo m²: getValues indisponível — ' + e.message); }
+    // Devolve SEMPRE positivo, igual ao parseNumeroCusto_ (que já fazia
+    // Math.abs): Curitiba e Esteio guardam a aba em formato contábil, com
+    // despesa negativa — "(3,66)" no texto, -3.66 no valor cru. O deck
+    // sempre mostrou custo como número positivo; sem o Math.abs aqui, ler o
+    // valor cru fazia o slide CUSTO DO M² sair com "R$ -3,89".
     const numeroCelula = (linha, col) => {
       const cru = brutos && brutos[linha] ? brutos[linha][col] : null;
-      if (typeof cru === 'number' && isFinite(cru)) return cru;
+      if (typeof cru === 'number' && isFinite(cru)) return Math.abs(cru);
       return parseNumeroCusto_(data[linha][col]);
     };
     const header = data[0];
@@ -1220,13 +1225,14 @@ function obterDadosCustoM2() {
       meses.forEach(m => {
         // Em precisão total: a área divide TODO R$/m² do deck, então um
         // arredondamento aqui se propaga pro DRE e pro Bridge.
+        // numeroCelula já devolve positivo (ver acima), então a divisão não
+        // precisa se preocupar com o sinal contábil.
         const derivar = col => {
           const totalRs = numeroCelula(idxComIptu - 1, col);
           const rsPorM2 = numeroCelula(idxComIptu, col);
-          if (totalRs == null || rsPorM2 == null) return null;
-          const a = Math.abs(totalRs), b = Math.abs(rsPorM2);
-          if (!(b > 0) || !isFinite(a / b)) return null;
-          return a / b;
+          if (totalRs == null || rsPorM2 == null || !(rsPorM2 > 0)) return null;
+          const a = totalRs / rsPorM2;
+          return isFinite(a) ? a : null;
         };
         const v = derivar(m.colReal);
         const w = v !== null && v > 1000 ? v : derivar(m.colOrc);
