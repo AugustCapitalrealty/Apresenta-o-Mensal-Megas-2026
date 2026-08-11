@@ -53,6 +53,15 @@ const FAROL_DECK_ID = '125XfdWiYis2J7nACFLxUVI5f0Tv6Zb85On74Nl2-LZI';
 const FAROL_MES_NOME = 'MAIO';
 const FAROL_MES_NUM  = 5;
 
+// Pontuação oficial — Painel de Metas CR 2026, Planejamento & Gestão, aba
+// GUILHERME MARQUES (coluna PONTOS, linhas 7 a 10). Soma 100.
+// A tabela do slide 1 e a pastilha de pontos do header de cada meta leem
+// daqui, então os dois nunca divergem.
+const FAROL_PONTOS = { meta1: 30, meta2: 25, meta3: 25, meta4: 20 };
+
+// Mínimo para elegibilidade, igual ao Farol dos Megas (Slide_Metas.gs).
+const FAROL_PONTOS_ELEGIVEL = 50;
+
 // Grade de layout — todos os slides respeitam as mesmas margens, então os
 // blocos se alinham de um slide pro outro.
 const G_MX  = 32;   // margem lateral
@@ -355,11 +364,13 @@ function _gFarolSlideTabela(deck) {
   _gHeader(slide, W, 'FAROL DE METAS · ' + FAROL_MES_NOME,
     ['Planejamento & Gestão', 'Guilherme August Padilha Marques', 'Ciclo 2026']);
 
+  // Pontos, direcionador, unidade e sentido saem do Painel de Metas CR 2026
+  // (aba GUILHERME MARQUES, linhas 7–10) — somam 100.
   const metas = [
-    { desc: 'Plataforma de Utilities Mega Curitiba', pontos: 30, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
-    { desc: 'Programa de Excelência 2026', pontos: 20, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
-    { desc: 'Integração das Áreas — Facilities, Financeiro e Jurídico', pontos: 20, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
-    { desc: 'Melhoria na Solicitação e Controle dos Reembolsos', pontos: 15, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' }
+    { desc: 'Plataforma de Utilities Mega Curitiba', pontos: FAROL_PONTOS.meta1, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+    { desc: 'Programa de Excelência 2026', pontos: FAROL_PONTOS.meta2, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+    { desc: 'Integração das Áreas — Facilities, Financeiro e Jurídico', pontos: FAROL_PONTOS.meta3, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+    { desc: 'Melhoria na Solicitação e Controle dos Reembolsos', pontos: FAROL_PONTOS.meta4, direc: 'Projetos', unid: 'SIM/NÃO', sent: '=', metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' }
   ];
 
   // Larguras em fração da tabela (somam 1), pra tabela acompanhar a página.
@@ -457,7 +468,8 @@ function _gFarolSlideTabela(deck) {
   });
 
   const totalPontos = metas.reduce((s, m) => s + m.pontos, 0);
-  const resumo = totalPontos + ' PONTOS POTENCIAIS · ' + metas.length + ' METAS EM ANDAMENTO';
+  const resumo = totalPontos + ' PONTOS POTENCIAIS · MÍN. ' + FAROL_PONTOS_ELEGIVEL +
+                 ' P/ ELEGIBILIDADE';
   const rw = _gLarguraTexto_(resumo, 8.5, DS_G.typography.titles, true) + 28;
   _gPill_(slide, G_MX + totalW - rw - 10, rodY + (rodH - 20) / 2, rw, 20, resumo,
     DS_G.colors.brandMed, DS_G.colors.white, 8.5);
@@ -473,7 +485,7 @@ function _gFarolSlideMeta1(deck) {
   const slide = _gNovoSlide(deck);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Plataforma de Utilities — Mega Curitiba',
-    ['Meta 1', '30 pontos', 'Direcionador Projetos', 'Prazo Novembro/26']);
+    ['Meta 1', FAROL_PONTOS.meta1 + ' pontos', 'Direcionador Projetos', 'Prazo 30/11/26']);
 
   const contW = W - 2 * G_MX, fim = _gFimConteudo_(H);
 
@@ -532,7 +544,7 @@ function _gFarolSlideMeta2(deck) {
   const slide = _gNovoSlide(deck);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Programa de Excelência 2026',
-    ['Meta 2', '20 pontos', 'Direcionador Projetos', 'Prazo Setembro/26']);
+    ['Meta 2', FAROL_PONTOS.meta2 + ' pontos', 'Direcionador Projetos', 'Prazo 30/09/26']);
 
   const contW = W - 2 * G_MX;
   const gap = 16, colW = (contW - 2 * gap) / 3, rowH = 112;
@@ -603,7 +615,7 @@ function _gFarolSlideMeta3(deck) {
   const slide = _gNovoSlide(deck);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Integração das Áreas',
-    ['Meta 3', '20 pontos', 'Facilities · Financeiro · Jurídico', 'Prazo Novembro/26']);
+    ['Meta 3', FAROL_PONTOS.meta3 + ' pontos', 'Facilities · Financeiro · Jurídico', 'Prazo 30/11/26']);
 
   const contW = W - 2 * G_MX, fim = _gFimConteudo_(H);
 
@@ -666,7 +678,7 @@ function _gFarolSlideMeta4(deck) {
   const slide = _gNovoSlide(deck);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Solicitação e Controle de Reembolsos',
-    ['Meta 4', '15 pontos', 'Direcionador Projetos', 'Prazo Novembro/26']);
+    ['Meta 4', FAROL_PONTOS.meta4 + ' pontos', 'Direcionador Projetos', 'Prazo 30/11/26']);
 
   const contW = W - 2 * G_MX, fim = _gFimConteudo_(H);
 
