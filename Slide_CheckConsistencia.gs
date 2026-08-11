@@ -372,24 +372,42 @@ function _rodarChecagensConsistencia_() {
     if (!prio || !cli) return null;
     return { ok: cli.fechados.total <= prio.fechados.total, esperado: '≤ ' + prio.fechados.total, obtido: _ckInt_(cli.fechados.total) };
   });
-  // O slide de Corretivas agora EXIBE a contagem do export bruto (mesma
-  // origem de Chamados por Prioridade), então comparar o valor exibido com
-  // o export seria sempre verdadeiro. O que ainda vale checar é a aba
-  // CHAMADOS digitada na planilha da cidade: ela não alimenta mais o slide,
-  // mas continua sendo consultada pelo time — se ficou para trás, avisa.
-  _ckAdd_(L, G_CHAM, 'Chamados criados: aba CHAMADOS (cidade) x export', () => {
-    if (!corr || !prio || !corr.digitado) return null;
+  // O slide de Corretivas agora EXIBE a contagem da BD-CORRETIVAS. Sobram
+  // dois cruzamentos que valem a pena:
+  //
+  // 1) a aba CHAMADOS digitada na planilha da cidade não alimenta mais o
+  //    slide, mas o time continua consultando — se ficou para trás, avisa;
+  // 2) BD-CORRETIVAS x abas "CHAMADOS ABERTOS/FECHADOS MES". São duas
+  //    extrações independentes do mesmo sistema (base histórica x recorte
+  //    do mês). Divergir aqui é o sinal mais forte de que uma das duas
+  //    exportações saiu incompleta.
+  const fluxoBD = _ckSafe_(() => obterFluxoCorretivasBD_());
+
+  _ckAdd_(L, G_CHAM, 'Chamados criados: aba CHAMADOS (cidade) x BD-CORRETIVAS', () => {
+    if (!corr || !corr.digitado || !fluxoBD) return null;
     const v = _numLenient_(corr.digitado.criados);
     if (isNaN(v)) return null;
-    return { ok: v === prio.abertos.total, esperado: _ckInt_(prio.abertos.total),
+    return { ok: v === fluxoBD.mCriados, esperado: _ckInt_(fluxoBD.mCriados),
              obtido: _ckInt_(v) + ' (digitado)' };
   });
-  _ckAdd_(L, G_CHAM, 'Chamados fechados: aba CHAMADOS (cidade) x export', () => {
-    if (!corr || !prio || !corr.digitado) return null;
+  _ckAdd_(L, G_CHAM, 'Chamados fechados: aba CHAMADOS (cidade) x BD-CORRETIVAS', () => {
+    if (!corr || !corr.digitado || !fluxoBD) return null;
     const v = _numLenient_(corr.digitado.fechados);
     if (isNaN(v)) return null;
-    return { ok: v === prio.fechados.total, esperado: _ckInt_(prio.fechados.total),
+    return { ok: v === fluxoBD.mFechados, esperado: _ckInt_(fluxoBD.mFechados),
              obtido: _ckInt_(v) + ' (digitado)' };
+  });
+  _ckAdd_(L, G_CHAM, 'Criados no mês: BD-CORRETIVAS x export CHAMADOS ABERTOS MES', () => {
+    if (!fluxoBD || !prio) return null;
+    return { ok: fluxoBD.mCriados === prio.abertos.total,
+             esperado: _ckInt_(fluxoBD.mCriados) + ' (BD)',
+             obtido: _ckInt_(prio.abertos.total) + ' (export)' };
+  });
+  _ckAdd_(L, G_CHAM, 'Fechados no mês: BD-CORRETIVAS x export CHAMADOS FECHADOS MES', () => {
+    if (!fluxoBD || !prio) return null;
+    return { ok: fluxoBD.mFechados === prio.fechados.total,
+             esperado: _ckInt_(fluxoBD.mFechados) + ' (BD)',
+             obtido: _ckInt_(prio.fechados.total) + ' (export)' };
   });
 
   // ── BACKLOG EMERGENCIAL ─────────────────────────────────────────────────
@@ -526,17 +544,17 @@ function _rodarChecagensConsistencia_() {
   // diferença pequena é esperada; o check aponta o número pra ser explicado,
   // não afirma que a planilha está errada.
   _ckAdd_(L, G_BKGER, 'Variação do backlog = criados − fechados', () => {
-    if (!histMes || histMes.geral == null || !prio) return null;
+    if (!histMes || histMes.geral == null || !fluxoBD) return null;
     const serie = _ckSafe_(() => obterDadosBacklogHistorico_());
     if (!serie || !serie.length) return null;
     const anteriores = serie.filter(p => p.ord < histMes.ord && p.geral != null);
     if (!anteriores.length) return null;
     const inicio = anteriores[anteriores.length - 1];
-    const esperado = inicio.geral + prio.abertos.total - prio.fechados.total;
+    const esperado = inicio.geral + fluxoBD.mCriados - fluxoBD.mFechados;
     return {
       ok: esperado === histMes.geral,
       esperado: _ckInt_(esperado) + ' (' + inicio.geral + ' + ' +
-                prio.abertos.total + ' − ' + prio.fechados.total + ')',
+                fluxoBD.mCriados + ' − ' + fluxoBD.mFechados + ')',
       obtido: _ckInt_(histMes.geral)
     };
   });

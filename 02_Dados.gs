@@ -770,23 +770,23 @@ function obterDadosPreventivas() {
 // ==========================================
 // DADOS CORRETIVAS (Slide 03)
 // ==========================================
-// Executa fn e devolve null se ela falhar — a contagem do export não pode
-// derrubar o slide de Corretivas (o valor digitado ainda serve de reserva).
+// Executa fn e devolve null se ela falhar — a contagem da BD-CORRETIVAS não
+// pode derrubar o slide de Corretivas (o valor digitado serve de reserva).
 function _ckSafeCorretivas_(fn) {
   try { return fn(); } catch (e) {
-    Logger.log('Corretivas: contagem do export indisponível — ' + e.message);
+    Logger.log('Corretivas: contagem da BD-CORRETIVAS indisponível — ' + e.message);
     return null;
   }
 }
 
 // Registra quando o valor digitado na aba CHAMADOS da cidade não bate com a
-// contagem do export. Não altera nada: só deixa o rastro de que a planilha
-// da cidade está desatualizada naquele mês.
+// contagem da BD-CORRETIVAS. Não altera nada: só deixa o rastro de que a
+// planilha da cidade está desatualizada naquele mês.
 function _avisarDivergenciaChamados_(qual, digitado, contado) {
   const d = _numLenient_(digitado);
   if (isNaN(d) || d === contado) return;
   Logger.log('Corretivas: "Chamados ' + qual + '" digitado = ' + digitado +
-             ', contado no export = ' + contado + '. Vale o export; ' +
+             ', contado na BD-CORRETIVAS = ' + contado + '. Vale a BD; ' +
              'atualize a aba CHAMADOS da planilha da cidade.');
 }
 
@@ -815,29 +815,38 @@ function obterDadosCorretivasV6() {
       else if (ind.includes('disponibilidade'))                    { kpiData.mDisp    = row[1]; kpiData.aDisp     = row[2]; }
     });
 
-    // FONTE DOS CRIADOS/FECHADOS DO MÊS: a contagem das abas "CHAMADOS
-    // ABERTOS MES"/"CHAMADOS FECHADOS MES" do Histórico Validado — export
-    // bruto do sistema, uma linha por chamado — em vez do valor digitado na
-    // aba CHAMADOS da planilha da cidade.
+    // FONTE DOS CRIADOS/FECHADOS: contagem na BD-CORRETIVAS (planilha BASE
+    // DE DADOS — QUADRO REM), em vez dos valores digitados na aba CHAMADOS
+    // da planilha da cidade.
     //
-    // Por que trocar: eram duas planilhas mantidas à mão em paralelo, e
-    // quando desencontravam o deck mostrava um mês que não fecha (JUL/26
-    // saiu com 29 criados e 29 fechados — variação zero — enquanto o backlog
-    // subia de 206 para 220). A contagem do export não depende de digitação.
+    // Por que a BD-CORRETIVAS e não as abas "CHAMADOS ABERTOS/FECHADOS MES":
+    // aquelas são um recorte do mês, substituído a cada rodada, e por isso
+    // não dão o acumulado. A BD-CORRETIVAS é a base bruta — uma linha por
+    // chamado, histórico desde 2021, com "Data de reporte" e "Fechado em" —
+    // e é DE ONDE JÁ SAEM OS BACKLOGS (_histAbertoNoMes_). Estoque e fluxo
+    // passam a ser contados nas mesmas linhas, que era a raiz do problema:
+    // JUL/26 saiu com 29 criados e 29 fechados (variação zero) enquanto o
+    // backlog subia de 206 para 220, porque os dois números vinham de
+    // planilhas digitadas em separado.
     //
-    // O valor digitado vira RESERVA: se o export não tiver linha da cidade
-    // (aba não atualizada no mês), o slide continua saindo com o que havia.
-    // A divergência entre os dois é registrada no Logger e checada em
+    // Os valores digitados viram RESERVA: se a BD não trouxer linha do
+    // empreendimento (ou a leitura falhar), o slide continua saindo com o
+    // que havia. A divergência fica no Logger e é checada em
     // Slide_CheckConsistencia.gs.
-    const contagem = _ckSafeCorretivas_(() => obterDadosChamadosPrioridade_());
-    kpiData.digitado = { criados: kpiData.mCriados, fechados: kpiData.mFechados };
-    if (contagem && contagem.abertos && contagem.abertos.total > 0) {
-      _avisarDivergenciaChamados_('criados', kpiData.mCriados, contagem.abertos.total);
-      kpiData.mCriados = String(contagem.abertos.total);
-    }
-    if (contagem && contagem.fechados && contagem.fechados.total > 0) {
-      _avisarDivergenciaChamados_('fechados', kpiData.mFechados, contagem.fechados.total);
-      kpiData.mFechados = String(contagem.fechados.total);
+    const fluxo = _ckSafeCorretivas_(() => obterFluxoCorretivasBD_());
+    kpiData.digitado = {
+      criados:   kpiData.mCriados,  fechados:   kpiData.mFechados,
+      aCriados:  kpiData.aCriados,  aFechados:  kpiData.aFechados
+    };
+    if (fluxo) {
+      _avisarDivergenciaChamados_('criados (mês)',  kpiData.mCriados,  fluxo.mCriados);
+      _avisarDivergenciaChamados_('fechados (mês)', kpiData.mFechados, fluxo.mFechados);
+      _avisarDivergenciaChamados_('criados (acum.)',  kpiData.aCriados,  fluxo.aCriados);
+      _avisarDivergenciaChamados_('fechados (acum.)', kpiData.aFechados, fluxo.aFechados);
+      kpiData.mCriados  = String(fluxo.mCriados);
+      kpiData.mFechados = String(fluxo.mFechados);
+      kpiData.aCriados  = String(fluxo.aCriados);
+      kpiData.aFechados = String(fluxo.aFechados);
     }
 
     // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
@@ -3086,6 +3095,14 @@ function _histDiasAberto_(dtReporte, refFim) {
 // referência) e obterDadosBacklogEmergencialHistoricoPorMes_ (série
 // histórica) apliquem _histAbertoNoMes_ sem reler a planilha duas vezes.
 function _lerBdCorretivasEmergenciaisCru_() {
+  return _lerBdCorretivasCru_().filter(it => it.prioridade === 'Emergencial');
+}
+
+// Leitura base da BD-CORRETIVAS: filtra só por Centro de Custos do
+// empreendimento ativo e devolve todo mundo com as datas prontas. Quem
+// precisa de recorte (prioridade, mês, equipe) filtra em cima — assim o
+// mapeamento de colunas fica num lugar só.
+function _lerBdCorretivasCru_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
   try {
     const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
@@ -3110,12 +3127,12 @@ function _lerBdCorretivasEmergenciaisCru_() {
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
-      if (_normalizarPrioridade_(cPri >= 0 ? row[cPri] : '') !== 'Emergencial') continue;
 
       saida.push({
         id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
         descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
         estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
+        prioridade: _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
         // Chamado sem responsável preenchido (ou com um nome que não está
         // no mapa) conta como FACILITIES, não "OUTROS": é a mesma regra do
         // slide irmão Backlog de Clientes — Facilities, que já recebe tudo
@@ -3129,9 +3146,62 @@ function _lerBdCorretivasEmergenciaisCru_() {
     }
     return saida;
   } catch (e) {
-    Logger.log('_lerBdCorretivasEmergenciaisCru_: ' + e.message);
+    Logger.log('_lerBdCorretivasCru_: ' + e.message);
     return [];
   }
+}
+
+// ==========================================
+// FLUXO DE CORRETIVAS (criados / fechados) — contado na BD-CORRETIVAS
+// ==========================================
+// Fonte dos KPIs "Chamados criados"/"Chamados fechados" do Slide 03. A
+// BD-CORRETIVAS é a base bruta (uma linha por chamado, histórico desde
+// 2021, com "Data de reporte" e "Fechado em"), então dá pra contar tanto o
+// MÊS quanto o ACUMULADO da mesma origem — e, principalmente, é a MESMA
+// base de onde já saem os backlogs (_histAbertoNoMes_). Com estoque e fluxo
+// vindo das mesmas linhas, a identidade
+//     backlog(fim) = backlog(início) + criados − fechados
+// deixa de depender de duas planilhas digitadas concordarem entre si.
+//
+// Critério: criado no mês = "Data de reporte" dentro da janela;
+// fechado no mês = "Fechado em" dentro da janela. Acumulado = do dia 1º de
+// janeiro do ano de referência até o fim do mês de referência.
+//
+// Retorna { mCriados, mFechados, aCriados, aFechados, total } ou null se a
+// base não trouxer nenhuma linha do empreendimento ativo.
+function obterFluxoCorretivasBD_() {
+  const itens = _lerBdCorretivasCru_();
+  if (!itens.length) return null;
+
+  // Guarda contra coluna de data renomeada/ausente: _lerBdCorretivasCru_ só
+  // exige "Id chamado" e "Centro de Custos", então se "Data de reporte"
+  // sumir do cabeçalho a leitura passa e todas as datas vêm nulas — o que
+  // daria 0 criados e 0 fechados sem nenhum erro, zerando o slide em
+  // silêncio. Havendo linhas mas nenhuma data legível, é falha de fonte:
+  // devolve null e o slide cai no valor digitado.
+  if (!itens.some(it => it.dtReporte)) {
+    Logger.log('BD-CORRETIVAS: ' + itens.length + ' linhas do empreendimento, mas ' +
+               'nenhuma com "Data de reporte" legível — confira o cabeçalho da aba. ' +
+               'Os criados/fechados vão sair do valor digitado.');
+    return null;
+  }
+
+  const ref    = obterMesReferencia_();
+  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
+  const anoIni = new Date(Date.UTC(ref.ano, 0, 1));
+
+  const dentro = (d, ini, fim) => !!d && d >= ini && d < fim;
+
+  let mCriados = 0, mFechados = 0, aCriados = 0, aFechados = 0;
+  itens.forEach(it => {
+    if (dentro(it.dtReporte, refIni, refFim)) mCriados++;
+    if (dentro(it.dtFechado, refIni, refFim)) mFechados++;
+    if (dentro(it.dtReporte, anoIni, refFim)) aCriados++;
+    if (dentro(it.dtFechado, anoIni, refFim)) aFechados++;
+  });
+
+  return { mCriados, mFechados, aCriados, aFechados, total: itens.length };
 }
 
 // Retorna { total, fatias:[{label,qtd}], lista:[{id,descricao,estado,equipe,dataReporte,diasAberto}] }
