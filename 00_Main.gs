@@ -302,3 +302,21 @@ function gerarSoFinanceiroTodosOsMegas() {
     gerarSlidesFinanceiro_();
   });
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — DOCUMENTAÇÃO LEGAL (Slide 11)
+// ==========================================
+// Gera SOMENTE os slides de Documentação Legal (resumo + tabela paginada),
+// por cidade. Padrão idêntico ao dos financeiros.
+
+function gerarSoDocumentosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDocumentos(); }
+function gerarSoDocumentosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDocumentos(); }
+function gerarSoDocumentosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDocumentos(); }
+
+function gerarSoDocumentosTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideDocumentos();
+  });
+}
