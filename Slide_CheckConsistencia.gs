@@ -372,22 +372,24 @@ function _rodarChecagensConsistencia_() {
     if (!prio || !cli) return null;
     return { ok: cli.fechados.total <= prio.fechados.total, esperado: '≤ ' + prio.fechados.total, obtido: _ckInt_(cli.fechados.total) };
   });
-  // Cross-source forte: "Chamados criados/fechados" do slide de Corretivas
-  // vem da aba CHAMADOS (digitada à mão na planilha da cidade); o total de
-  // Chamados por Prioridade vem da contagem das linhas das abas brutas do
-  // Histórico Validado. Duas origens independentes pro mesmo fato — é aqui
-  // que um mês desalinhado aparece primeiro.
-  _ckAdd_(L, G_CHAM, 'Chamados criados: Corretivas x Prioridade ABERTOS', () => {
-    if (!corr || !prio) return null;
-    const v = _ckKpi_(corr.mensal, 'chamados criados');
-    if (v == null) return null;
-    return { ok: v === prio.abertos.total, esperado: _ckInt_(v), obtido: _ckInt_(prio.abertos.total) };
+  // O slide de Corretivas agora EXIBE a contagem do export bruto (mesma
+  // origem de Chamados por Prioridade), então comparar o valor exibido com
+  // o export seria sempre verdadeiro. O que ainda vale checar é a aba
+  // CHAMADOS digitada na planilha da cidade: ela não alimenta mais o slide,
+  // mas continua sendo consultada pelo time — se ficou para trás, avisa.
+  _ckAdd_(L, G_CHAM, 'Chamados criados: aba CHAMADOS (cidade) x export', () => {
+    if (!corr || !prio || !corr.digitado) return null;
+    const v = _numLenient_(corr.digitado.criados);
+    if (isNaN(v)) return null;
+    return { ok: v === prio.abertos.total, esperado: _ckInt_(prio.abertos.total),
+             obtido: _ckInt_(v) + ' (digitado)' };
   });
-  _ckAdd_(L, G_CHAM, 'Chamados fechados: Corretivas x Prioridade FECHADOS', () => {
-    if (!corr || !prio) return null;
-    const v = _ckKpi_(corr.mensal, 'chamados fechados');
-    if (v == null) return null;
-    return { ok: v === prio.fechados.total, esperado: _ckInt_(v), obtido: _ckInt_(prio.fechados.total) };
+  _ckAdd_(L, G_CHAM, 'Chamados fechados: aba CHAMADOS (cidade) x export', () => {
+    if (!corr || !prio || !corr.digitado) return null;
+    const v = _numLenient_(corr.digitado.fechados);
+    if (isNaN(v)) return null;
+    return { ok: v === prio.fechados.total, esperado: _ckInt_(prio.fechados.total),
+             obtido: _ckInt_(v) + ' (digitado)' };
   });
 
   // ── BACKLOG EMERGENCIAL ─────────────────────────────────────────────────
@@ -511,6 +513,34 @@ function _rodarChecagensConsistencia_() {
     if (!s) return { ok: true, esperado: 'iguais', obtido: 'iguais' };
     return { ok: false, esperado: _ckInt_(s.backlog), obtido: _ckInt_(s.dados) + ' (DADOS)' };
   });
+  // CONCILIAÇÃO ESTOQUE x FLUXO — o check que faltava.
+  // O backlog é um estoque (foto no fim do mês) e criados/fechados são um
+  // fluxo; a identidade entre eles é:
+  //     backlog(fim) = backlog(início) + criados − fechados
+  // Em JUL/26 o deck saiu com 29 criados e 29 fechados (variação zero) e o
+  // backlog subindo de 206 para 220 — 14 chamados que apareceram sem
+  // origem. Nenhum check pegava isso porque todos comparavam estoque com
+  // estoque ou fluxo com fluxo, nunca um contra o outro.
+  //
+  // Reaberturas entram no backlog sem contar como "criado", então uma
+  // diferença pequena é esperada; o check aponta o número pra ser explicado,
+  // não afirma que a planilha está errada.
+  _ckAdd_(L, G_BKGER, 'Variação do backlog = criados − fechados', () => {
+    if (!histMes || histMes.geral == null || !prio) return null;
+    const serie = _ckSafe_(() => obterDadosBacklogHistorico_());
+    if (!serie || !serie.length) return null;
+    const anteriores = serie.filter(p => p.ord < histMes.ord && p.geral != null);
+    if (!anteriores.length) return null;
+    const inicio = anteriores[anteriores.length - 1];
+    const esperado = inicio.geral + prio.abertos.total - prio.fechados.total;
+    return {
+      ok: esperado === histMes.geral,
+      esperado: _ckInt_(esperado) + ' (' + inicio.geral + ' + ' +
+                prio.abertos.total + ' − ' + prio.fechados.total + ')',
+      obtido: _ckInt_(histMes.geral)
+    };
+  });
+
   // O backlog de cliente de cada equipe é subconjunto do backlog TOTAL
   // daquela equipe (que inclui também os chamados do próprio condomínio).
   // Estourar aqui denuncia erro no mapa de responsáveis (_RESPONSAVEL_EQUIPE_).

@@ -770,6 +770,26 @@ function obterDadosPreventivas() {
 // ==========================================
 // DADOS CORRETIVAS (Slide 03)
 // ==========================================
+// Executa fn e devolve null se ela falhar — a contagem do export não pode
+// derrubar o slide de Corretivas (o valor digitado ainda serve de reserva).
+function _ckSafeCorretivas_(fn) {
+  try { return fn(); } catch (e) {
+    Logger.log('Corretivas: contagem do export indisponível — ' + e.message);
+    return null;
+  }
+}
+
+// Registra quando o valor digitado na aba CHAMADOS da cidade não bate com a
+// contagem do export. Não altera nada: só deixa o rastro de que a planilha
+// da cidade está desatualizada naquele mês.
+function _avisarDivergenciaChamados_(qual, digitado, contado) {
+  const d = _numLenient_(digitado);
+  if (isNaN(d) || d === contado) return;
+  Logger.log('Corretivas: "Chamados ' + qual + '" digitado = ' + digitado +
+             ', contado no export = ' + contado + '. Vale o export; ' +
+             'atualize a aba CHAMADOS da planilha da cidade.');
+}
+
 function obterDadosCorretivasV6() {
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
@@ -795,6 +815,31 @@ function obterDadosCorretivasV6() {
       else if (ind.includes('disponibilidade'))                    { kpiData.mDisp    = row[1]; kpiData.aDisp     = row[2]; }
     });
 
+    // FONTE DOS CRIADOS/FECHADOS DO MÊS: a contagem das abas "CHAMADOS
+    // ABERTOS MES"/"CHAMADOS FECHADOS MES" do Histórico Validado — export
+    // bruto do sistema, uma linha por chamado — em vez do valor digitado na
+    // aba CHAMADOS da planilha da cidade.
+    //
+    // Por que trocar: eram duas planilhas mantidas à mão em paralelo, e
+    // quando desencontravam o deck mostrava um mês que não fecha (JUL/26
+    // saiu com 29 criados e 29 fechados — variação zero — enquanto o backlog
+    // subia de 206 para 220). A contagem do export não depende de digitação.
+    //
+    // O valor digitado vira RESERVA: se o export não tiver linha da cidade
+    // (aba não atualizada no mês), o slide continua saindo com o que havia.
+    // A divergência entre os dois é registrada no Logger e checada em
+    // Slide_CheckConsistencia.gs.
+    const contagem = _ckSafeCorretivas_(() => obterDadosChamadosPrioridade_());
+    kpiData.digitado = { criados: kpiData.mCriados, fechados: kpiData.mFechados };
+    if (contagem && contagem.abertos && contagem.abertos.total > 0) {
+      _avisarDivergenciaChamados_('criados', kpiData.mCriados, contagem.abertos.total);
+      kpiData.mCriados = String(contagem.abertos.total);
+    }
+    if (contagem && contagem.fechados && contagem.fechados.total > 0) {
+      _avisarDivergenciaChamados_('fechados', kpiData.mFechados, contagem.fechados.total);
+      kpiData.mFechados = String(contagem.fechados.total);
+    }
+
     // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
     // menor = quanto MENOR melhor. Acumulado só tem disponibilidade no histórico
     // (contadores acumulados só crescem — comparação não é útil).
@@ -806,6 +851,11 @@ function obterDadosCorretivasV6() {
     const dDispAc = _d(kpiData.aDisp, 'Índice de disponibilidade - ACUMULADO');
 
     return {
+      // O que a aba CHAMADOS da cidade trazia ANTES de ser substituída pela
+      // contagem do export. É com isso que o check de consistência avisa que
+      // a planilha da cidade ficou para trás — comparar o valor EXIBIDO com
+      // o export seria sempre verdadeiro, já que agora vêm da mesma fonte.
+      digitado: kpiData.digitado,
       mensal: {
         titulo: 'VISÃO MENSAL',
         kpis: [
