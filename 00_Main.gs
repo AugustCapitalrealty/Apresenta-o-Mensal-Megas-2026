@@ -205,3 +205,100 @@ function regerarApresentacaoCompleta_() {
     }
   }
 }
+
+
+// ==========================================
+// SÓ OS SLIDES DE FINANCEIRO
+// ==========================================
+// Gera, no deck da cidade ativa, apenas o bloco financeiro — na MESMA ordem
+// e com as MESMAS funções que gerarApresentacaoCompleta_ usa, pra não haver
+// risco de o avulso divergir do que sai na apresentação de verdade.
+//
+// Serve pra conferir os números depois de mexer na planilha (ou no código)
+// sem esperar o deck inteiro: são 6 slides em vez de ~30. Igual aos outros
+// pontos de entrada avulsos, ANEXA ao deck atual — não apaga nada e não
+// substitui a apresentação; apague os slides gerados quando terminar a
+// conferência.
+//
+// A capa de seção ("RESULTADO OPERACIONAL") fica de fora de propósito: numa
+// rodada de conferência ela é só um slide a mais pra apagar depois. Quem
+// quiser o bloco completo com capa usa a apresentação completa.
+//
+// Cada slide roda isolado: se um falhar (aba faltando, instabilidade da API),
+// os outros continuam e o erro aparece no resumo do Logger — mesmo
+// comportamento do pipeline completo.
+function gerarSlidesFinanceiro_() {
+  const projeto = getProjetoAtivo();
+  Logger.log('▶ FINANCEIRO — ' + projeto.nome);
+
+  const passos = [
+    { nome: 'Financeiro Mensal',       fn: gerarSlideFinanceiro },
+    { nome: 'Bridge Variação',         fn: gerarSlideBridge },
+    { nome: 'Bridge Gráfico',          fn: gerarSlideBridgeGrafico },
+    { nome: 'Financeiro Anual',        fn: gerarSlideFinanceiroAnual },
+    { nome: 'DRE — Realizado + Ritmo', fn: gerarSlideDREComRitmo },
+    { nome: 'Custo M²',                fn: gerarSlideCustoM2 }
+  ];
+
+  const erros = [];
+  passos.forEach(p => {
+    try {
+      Logger.log('  → ' + p.nome);
+      p.fn();
+    } catch (e) {
+      erros.push(p.nome + ': ' + e.message);
+      Logger.log('    ✗ ERRO: ' + e.message);
+    }
+  });
+
+  _financeiroConferencia_();
+
+  Logger.log('✔ Financeiro ' + projeto.nome + ' — ' + passos.length + ' slide(s), ' +
+             (erros.length ? erros.length + ' erro(s).' : 'sem erros.'));
+  if (erros.length) Logger.log(erros.join('\n'));
+  return erros;
+}
+
+// Resumo dos números que amarram TODOS os slides financeiros entre si: a
+// área (divisor de todo R$/m² do deck) e o custo/meta do mês de referência.
+// Vale a pena logar porque foi exatamente aqui que apareceram os problemas
+// já corrigidos — área lida errado da aba e custo saindo negativo por causa
+// do formato contábil. Batendo estes três números, os seis slides fecham.
+function _financeiroConferencia_() {
+  try {
+    const area = obterAreaM2_();
+    const cm   = obterDadosCustoM2();
+    if (!cm) { Logger.log('  Conferência: sem dados de Custo M² pra conferir.'); return; }
+
+    const fmt = v => (v == null || isNaN(v)) ? '—' : Number(v).toFixed(2).replace('.', ',');
+    Logger.log('  Conferência (mês ' + cm.referencia.nomeMesExtenso + '/' + cm.referencia.ano + '):');
+    Logger.log('    área      = ' + (area ? Math.round(area).toLocaleString('pt-BR') + ' m²' : '—'));
+    Logger.log('    custo m²  = R$ ' + fmt(cm.kpis.custo) + '/m²');
+    Logger.log('    meta m²   = R$ ' + fmt(cm.kpis.meta) + '/m²');
+    if (cm.kpis.custo != null && cm.kpis.custo < 0) {
+      Logger.log('    ⚠ custo NEGATIVO — a aba METRO QUADRADO está em formato contábil e ' +
+                 'algo escapou do Math.abs (ver numeroCelula em 02_Dados.gs).');
+    }
+    if (!area) {
+      Logger.log('    ⚠ sem área: o R$/m² dos slides vai sair omitido. Confira a aba ' +
+                 'METRO QUADRADO (linha "TOTAL ÁREA..." e o R$/m² logo abaixo).');
+    }
+  } catch (e) {
+    Logger.log('  Conferência não pôde ser feita: ' + e.message);
+  }
+}
+
+// Pontos de entrada por cidade — é por eles que se roda no editor do Apps
+// Script (o menu suspenso lista só funções sem argumento).
+function gerarSoFinanceiroCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesFinanceiro_(); }
+function gerarSoFinanceiroItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesFinanceiro_(); }
+function gerarSoFinanceiroEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesFinanceiro_(); }
+
+// Os três de uma vez — pra conferir se os números batem entre as cidades
+// numa rodada só (foi assim que apareceu a diferença de metragem de Esteio).
+function gerarSoFinanceiroTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlidesFinanceiro_();
+  });
+}
