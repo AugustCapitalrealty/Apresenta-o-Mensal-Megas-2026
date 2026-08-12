@@ -2,26 +2,59 @@
  * ARQUIVO: 02_Dados.gs
  * SEÇÃO:   DADOS — Apresentação Mensal de Propriedades
  *
- * Primeiro passo do projeto: DESCOBRIR o portfólio em vez de digitá-lo.
- * A BD-CORRETIVAS é multi-empreendimento — a coluna "Centro de Custos" já
- * contém todos os imóveis que abrem chamado, Megas e demais. Ler de lá é
- * mais confiável que uma lista mantida à mão, e é o mesmo princípio que
- * corrigiu o backlog dos Megas: preferir a base bruta à digitação.
+ * A planilha BASE DE DADOS — QUADRO REM (BD_CORRETIVAS_ID) tem DUAS bases
+ * brutas, uma linha por registro, multi-empreendimento:
+ *
+ *     BD-CORRETIVAS    chamados corretivos
+ *     BD-PREVENTIVAS   preventivas
+ *
+ * As duas são lidas pelo mesmo leitor genérico. A coluna "Centro de Custos"
+ * já contém todo o portfólio — não há lista de imóveis para digitar, há
+ * lista para descobrir. Mesmo princípio que corrigiu o backlog dos Megas:
+ * preferir a base bruta à digitação.
  *
  * SOBRE OS NOMES DAS HELPERS
- * _histNorm_, _histParseDataHora_, _histAbertoNoMes_ e
- * _resolverEquipeResponsaveis_ repetem os nomes de megas-mensal/02_Dados.gs
- * DE PROPÓSITO. São projetos Apps Script separados (não colidem em
- * execução), e manter o mesmo nome faz com que copiar uma função de lá para
- * cá funcione sem reescrever as chamadas internas. Ver o CLAUDE.md da raiz.
+ * _histNorm_, _histParseDataHora_, _histAbertoNoMes_ e _bdChamadoFechado_
+ * repetem os nomes de megas-mensal/02_Dados.gs DE PROPÓSITO. São projetos
+ * Apps Script separados (não colidem em execução), e manter o mesmo nome faz
+ * com que copiar uma função de lá para cá funcione sem reescrever as
+ * chamadas internas. Ver o CLAUDE.md da raiz.
  */
+
+// Nomes EXATOS das abas na planilha BASE DE DADOS — QUADRO REM. Repare no
+// espaço em volta do hífen em "BD - PREVENTIVAS": as abas não seguem um
+// padrão único, então _propAba_ compara ignorando espaços e pontuação.
+const BD_ABA_CORRETIVAS  = 'BD-CORRETIVAS';
+const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
+
+// VERIFICADO contra a planilha de controle do time (aba de fórmulas, blocos
+// FACILITIES por Mega): as CANCELADAS ENTRAM na conta. Confronto de 12 casos
+// — Curitiba, Itajaí e Esteio, janeiro a abril/2026 — bateu 12/12 sem filtro
+// de Estado, e errou em 5 deles ao excluir canceladas:
+//
+//     Curitiba jan   oficial 197/28   tudo 197/28 ✓   sem canceladas 197/15 ✗
+//     Esteio   jan   oficial 197/5    tudo 197/5  ✓   sem canceladas 197/2  ✗
+//
+// Não é detalhe: são 1.242 canceladas com SLA classificado na base (1.002
+// delas "Não cumprido"), ~20% de toda a não-conformidade. Deixar em true
+// afastaria o indicador do número oficial.
+const SLA_EXCLUIR_CANCELADAS = false;
+
+// JANELA DO MÊS — também verificada nos mesmos 12 casos.
+// Vale a DATA DE AGENDAMENTO, não a de fechamento: a preventiva pertence ao
+// mês em que estava programada. Pela data de fechamento os números não batem
+// (Curitiba jun daria 94,88% em vez do valor da planilha).
+// A fórmula da planilha confirma a janela: de "1/1/2026 00:00:00" até
+// "31/1/2026 23:59:59", sobre a coluna de agendamento.
+const SLA_JANELA_PADRAO = 'inicio';
+
 
 function _histNorm_(s) {
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/\s+/g, ' ').trim();
 }
 
-// BD-CORRETIVAS traz "Data de reporte"/"Fechado em" em ISO "AAAA-MM-DD HH:MM:SS".
+// As bases trazem data em ISO "AAAA-MM-DD HH:MM:SS".
 function _histParseDataHora_(v) {
   const txt = String(v == null ? '' : v).trim();
   if (!txt) return null;
@@ -31,17 +64,20 @@ function _histParseDataHora_(v) {
 }
 
 // Mesma regra dos Megas: fechado é Estado "Fechado" E com data de fechamento.
-// Vale repetir o comentário porque foi ela que descasou estoque e fluxo lá —
-// um chamado com data mas outro estado contava como fechado e nunca saía do
-// backlog.
+// Foi ela que descasou estoque e fluxo lá — um registro com data mas outro
+// estado contava como fechado e nunca saía do backlog.
+// CORRETIVAS diz "Fechado", PREVENTIVAS diz "Fechada". Testar só uma das
+// formas faria a base inteira de preventivas parecer aberta.
 function _bdChamadoFechado_(estado, dtFechado) {
-  return _histNorm_(estado) === 'fechado' && !!dtFechado;
+  const n = _histNorm_(estado);
+  return (n === 'fechado' || n === 'fechada') && !!dtFechado;
 }
 
 // Aberto no fim do mês de referência (refFim é o 1º dia do mês seguinte,
 // exclusivo). Aberto E fechado dentro do próprio mês não é backlog do mês.
 function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
-  const fechado = _histNorm_(estado) === 'fechado';
+  const n = _histNorm_(estado);
+  const fechado = (n === 'fechado' || n === 'fechada');
   if (dtReporte) {
     if (dtReporte >= refFim) return false;
     if (fechado && dtFechado && dtFechado < refFim) return false;
@@ -50,78 +86,213 @@ function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
   return !fechado;
 }
 
-function _abaBdCorretivas_(ss) {
-  return ss.getSheetByName('BD-CORRETIVAS') ||
-         ss.getSheets().find(s => _histNorm_(s.getName()).replace(/\s+/g, '-').indexOf('bd-corretivas') >= 0) ||
-         null;
+// Megas x demais imóveis — o corte que a apresentação usa para separar
+// "desempenho nos Megas" de "desempenho nos demais".
+function _propEhMega_(cc) {
+  return _histNorm_(cc).indexOf('mega') === 0;
 }
 
 
 // ==========================================
-// LEITURA CRUA — TODO O PORTFÓLIO
+// LEITURA GENÉRICA DAS BASES
 // ==========================================
-// Diferente de megas-mensal/_lerBdCorretivasCru_, que filtra por UM Centro de
-// Custos: aqui a leitura é do portfólio inteiro, porque a apresentação de
-// Propriedades cobre Megas e demais imóveis.
-let _propBdCache = null;
+// Um leitor só para BD-CORRETIVAS e BD-PREVENTIVAS: as duas moram na mesma
+// planilha e compartilham as colunas que interessam aqui (Centro de Custos,
+// Estado, SLA e datas). O mapeamento é por CONTEÚDO do cabeçalho, não por
+// posição — coluna que muda de lugar não quebra a leitura, e coluna que muda
+// de nome aparece em inspecionarBase().
+const _propBaseCache = {};
 
-function _propLerBdCru_() {
-  if (_propBdCache) return _propBdCache;
+// Compara ignorando espaços e pontuação: "BD - PREVENTIVAS",
+// "BD-PREVENTIVAS" e "BD PREVENTIVAS" viram todos "bdpreventivas".
+function _propChaveAba_(s) {
+  return _histNorm_(s).replace(/[^a-z0-9]/g, '');
+}
+
+function _propAba_(ss, nome) {
+  const alvo = _propChaveAba_(nome);
+  return ss.getSheetByName(nome) ||
+         ss.getSheets().find(s => _propChaveAba_(s.getName()) === alvo) ||
+         ss.getSheets().find(s => _propChaveAba_(s.getName()).indexOf(alvo) >= 0) ||
+         null;
+}
+
+function _propLerBase_(nomeAba) {
+  if (_propBaseCache[nomeAba]) return _propBaseCache[nomeAba];
   try {
     const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
-    const sheet = _abaBdCorretivas_(ss);
-    if (!sheet) { Logger.log('BD-CORRETIVAS: aba não encontrada.'); return []; }
+    const sheet = _propAba_(ss, nomeAba);
+    if (!sheet) {
+      Logger.log(nomeAba + ': aba não encontrada na planilha. Abas disponíveis: ' +
+                 ss.getSheets().map(s => s.getName()).join(', '));
+      return [];
+    }
 
     const data = sheet.getDataRange().getDisplayValues();
     if (data.length < 2) return [];
 
     const hdr = data[0].map(_histNorm_);
-    const col = trecho => hdr.findIndex(h => h.indexOf(trecho) >= 0);
-    const cCC      = col('centro de custo');
-    const cEstado  = col('estado');
-    const cReporte = col('data de reporte');
-    const cFechado = col('fechado em');
-    const cResp    = col('responsaveis');
-    const cCli     = col('cliente');
-    if (cCC < 0) { Logger.log('BD-CORRETIVAS: sem coluna "Centro de Custos".'); return []; }
+    const col = (...trechos) => {
+      for (let i = 0; i < trechos.length; i++) {
+        const c = hdr.findIndex(h => h.indexOf(trechos[i]) >= 0);
+        if (c >= 0) return c;
+      }
+      return -1;
+    };
+    const cCC     = col('centro de custo');
+    const cEstado = col('estado');
+    const cSla    = col('sla');
+    const cCli    = col('cliente');
+    // As duas bases nomeiam as datas de formas diferentes — a primeira
+    // coluna que existir vence:
+    //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
+    //   PREVENTIVAS: "Data agendamento"   / "Fechada em"
+    const cIni = col('data de reporte', 'data agendamento', 'data de agendamento');
+    const cFim = col('fechado em', 'fechada em');
+
+    if (cCC < 0) {
+      Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode inspecionarBase("' +
+                 nomeAba + '") para ver o cabeçalho real.');
+      return [];
+    }
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const cc = String(data[r][cCC] || '').trim();
       if (!cc) continue;
       saida.push({
-        cc        : cc,
-        estado    : cEstado  >= 0 ? String(data[r][cEstado] || '').trim() : '',
-        cliente   : cCli     >= 0 ? String(data[r][cCli]    || '').trim() : '',
-        responsavel: cResp   >= 0 ? String(data[r][cResp]   || '').trim() : '',
-        dtReporte : cReporte >= 0 ? _histParseDataHora_(data[r][cReporte]) : null,
-        dtFechado : cFechado >= 0 ? _histParseDataHora_(data[r][cFechado]) : null
+        cc       : cc,
+        estado   : cEstado >= 0 ? String(data[r][cEstado] || '').trim() : '',
+        sla      : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
+        cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
+        cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
+        dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
+        dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
       });
     }
-    if (saida.length) _propBdCache = saida;
+    // Só cacheia resultado bom: leitura vazia por falha transitória não pode
+    // ficar grudada na rodada inteira.
+    if (saida.length) _propBaseCache[nomeAba] = saida;
     return saida;
   } catch (e) {
-    Logger.log('_propLerBdCru_: ' + e.message);
+    Logger.log('_propLerBase_(' + nomeAba + '): ' + e.message);
     return [];
   }
+}
+
+function _propLerCorretivas_()  { return _propLerBase_(BD_ABA_CORRETIVAS); }
+function _propLerPreventivas_() { return _propLerBase_(BD_ABA_PREVENTIVAS); }
+
+
+// ==========================================
+// SLA — CUMPRIDO x NÃO CUMPRIDO
+// ==========================================
+// Regra do time: soma as marcadas como SLA CUMPRIDO, soma as NÃO CUMPRIDO, e
+// divide uma pela soma das duas. O denominador NÃO é o total de preventivas
+// — é só quem tem SLA definido. As "Sem SLA" ficam inteiramente de fora, em
+// cima e embaixo da fração:
+//
+//     SLA % = cumpridos / (cumpridos + não cumpridos) × 100
+//
+// É diferente da taxa de execução (realizadas ÷ previstas), que mede se o
+// serviço aconteceu. Esta mede se aconteceu DENTRO DO PRAZO, entre os que
+// tinham prazo.
+
+// ARMADILHA: "Não cumprido" CONTÉM a palavra "cumprido". Testar 'cumprido'
+// primeiro classificaria todo "Não cumprido" como cumprido e inflaria o
+// indicador em silêncio — o erro que ninguém percebe olhando o slide. A
+// negativa é testada ANTES, e por isso a ordem destes ifs não pode mudar.
+function _slaClasse_(valor) {
+  const n = _histNorm_(valor);           // já sem acento: "não" vira "nao"
+  if (!n) return 'SEM';
+  if (n === 'nao cumprido' || n === 'sla nao cumprido') return 'NAO';
+  if (n === 'cumprido'     || n === 'sla cumprido')     return 'CUMPRIDO';
+  if (n === 'sem sla')                                  return 'SEM';
+  // Correspondência EXATA, não "contém". Com indexOf('cumprido'), um valor
+  // como "Parcialmente cumprido" cairia em CUMPRIDO e inflaria o indicador
+  // — o mesmo tipo de erro silencioso do "Não cumprido" acima, só que sem
+  // nem aparecer no vocabulário conhecido. Valor novo vira DESCONHECIDO,
+  // é contado à parte e reportado por conferirSLA().
+  return 'DESCONHECIDO';
+}
+
+// Recebe qualquer lista com um campo `sla` e devolve a conta pronta. Genérica
+// de propósito: serve para preventivas e corretivas sem duplicar a regra.
+function calcularSLA_(itens) {
+  const r = { cumpridos: 0, naoCumpridos: 0, semSla: 0, desconhecidos: [], base: 0, pct: null,
+              canceladasFora: 0 };
+  itens.forEach(it => {
+    if (SLA_EXCLUIR_CANCELADAS && it.cancelado) { r.canceladasFora++; return; }
+    switch (_slaClasse_(it.sla)) {
+      case 'CUMPRIDO': r.cumpridos++; break;
+      case 'NAO':      r.naoCumpridos++; break;
+      case 'SEM':      r.semSla++; break;
+      default:         r.desconhecidos.push(String(it.sla || '').trim());
+    }
+  });
+  r.base = r.cumpridos + r.naoCumpridos;
+  // Sem base não há SLA a informar. Devolver 0% diria "nenhuma cumprida",
+  // que é uma afirmação diferente de "nenhuma tinha prazo".
+  r.pct = r.base ? (r.cumpridos / r.base) * 100 : null;
+  return r;
+}
+
+// SLA por imóvel no mês, a partir de uma das bases.
+//
+// `janela` decide QUAIS registros entram: 'inicio' (data de agendamento no
+// mês — o padrão, verificado contra a planilha) ou 'fim' (data de
+// fechamento). conferirSLA() mostra as duas para conferência.
+function slaPorImovel_(nomeAba, ano, mesIndex, janela) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+  const campo  = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+
+  const porCC = {};
+  _propLerBase_(nomeAba).forEach(it => {
+    const d = it[campo];
+    if (!d || d < refIni || d >= refFim) return;
+    (porCC[it.cc] = porCC[it.cc] || []).push(it);
+  });
+
+  return Object.keys(porCC).map(cc => {
+    const r = calcularSLA_(porCC[cc]);
+    r.cc = cc;
+    r.mega = _propEhMega_(cc);
+    return r;
+  }).sort((a, b) => b.base - a.base);
+}
+
+// SLA consolidado do portfólio, com o corte Megas x demais — que é o recorte
+// da apresentação.
+function slaPortfolio_(nomeAba, ano, mesIndex, janela) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+  const campo  = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+
+  const noMes = _propLerBase_(nomeAba).filter(it => {
+    const d = it[campo];
+    return d && d >= refIni && d < refFim;
+  });
+
+  return {
+    total : calcularSLA_(noMes),
+    megas : calcularSLA_(noMes.filter(it => _propEhMega_(it.cc))),
+    demais: calcularSLA_(noMes.filter(it => !_propEhMega_(it.cc)))
+  };
 }
 
 
 // ==========================================
 // PORTFÓLIO
 // ==========================================
-// Agrupa a BD por Centro de Custos e devolve, para cada imóvel: volume
-// total, quantos seguem abertos, e a janela de datas coberta. É o retrato do
-// que a base sabe — a partir dele decidimos quem entra na apresentação.
-function listarPortfolioBD_() {
-  const itens = _propLerBdCru_();
+function listarPortfolioBD_(nomeAba) {
+  const itens = _propLerBase_(nomeAba || BD_ABA_CORRETIVAS);
   if (!itens.length) return [];
 
   const porCC = {};
   itens.forEach(it => {
-    const k = it.cc;
-    if (!porCC[k]) porCC[k] = { cc: k, total: 0, abertos: 0, primeiro: null, ultimo: null, semData: 0 };
-    const g = porCC[k];
+    if (!porCC[it.cc]) porCC[it.cc] = { cc: it.cc, total: 0, abertos: 0, primeiro: null, ultimo: null, semData: 0 };
+    const g = porCC[it.cc];
     g.total++;
     if (!_bdChamadoFechado_(it.estado, it.dtFechado)) g.abertos++;
     if (it.dtReporte) {
@@ -131,24 +302,13 @@ function listarPortfolioBD_() {
       g.semData++;
     }
   });
-
-  return Object.keys(porCC)
-    .map(k => porCC[k])
-    .sort((a, b) => b.total - a.total);
+  return Object.keys(porCC).map(k => porCC[k]).sort((a, b) => b.total - a.total);
 }
 
-// Megas x demais imóveis — é o corte que a apresentação vai usar para
-// separar "desempenho nos Megas" de "desempenho nos demais".
-function _propEhMega_(cc) {
-  return _histNorm_(cc).indexOf('mega') === 0;
-}
-
-// Backlog de um Centro de Custos no mês de referência, pela mesma regra dos
-// Megas. `equipe` opcional filtra por PROPERTY / FACILITIES / LOCATARIO.
 function backlogPorCC_(cc, ano, mesIndex) {
   const refIni = new Date(Date.UTC(ano, mesIndex, 1));
   const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
-  return _propLerBdCru_()
+  return _propLerCorretivas_()
     .filter(it => it.cc === cc)
     .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
     .length;
@@ -156,47 +316,134 @@ function backlogPorCC_(cc, ano, mesIndex) {
 
 
 // ==========================================
-// DESCOBERTA — RODE ISTO PRIMEIRO
+// DIAGNÓSTICOS
 // ==========================================
-// Lista o portfólio inteiro que a BD conhece, separando Megas dos demais.
-// A saída é o que preenche PROPRIEDADES em 01_Config.gs: o valor da coluna
-// "cc" tem que ser copiado EXATAMENTE para o campo ccBD (o filtro compara
-// string a string).
-function descobrirPortfolio() {
-  Logger.log('======================================================');
-  Logger.log('PORTFÓLIO CONHECIDO PELA BD-CORRETIVAS');
-  Logger.log('======================================================');
 
-  const lista = listarPortfolioBD_();
-  if (!lista.length) {
-    Logger.log('Nenhuma linha lida. Confira BD_CORRETIVAS_ID em 01_Config.gs ' +
-               'e se a conta que roda o script tem acesso à planilha.');
+// Mostra o cabeçalho real de uma aba e uma linha de exemplo. Use quando a
+// leitura reclamar de coluna ausente — o mapeamento é por conteúdo do
+// cabeçalho, então é aqui que se vê o nome de verdade.
+function inspecionarBase(nomeAba) {
+  const aba = nomeAba || BD_ABA_PREVENTIVAS;
+  Logger.log('======================================================');
+  Logger.log('CABEÇALHO DE ' + aba);
+  Logger.log('======================================================');
+  try {
+    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    Logger.log('Planilha: "' + ss.getName() + '"');
+    Logger.log('Abas: ' + ss.getSheets().map(s => s.getName()).join(', '));
+
+    const sheet = _propAba_(ss, aba);
+    if (!sheet) { Logger.log('\n⚠ Aba "' + aba + '" não encontrada.'); return; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    Logger.log('\n' + sheet.getName() + ': ' + (data.length - 1) + ' linhas.');
+    if (data.length < 2) return;
+    data[0].forEach((h, i) => {
+      const ex = String(data[1][i] || '').substring(0, 40);
+      if (h || ex) Logger.log('  [' + String(i).padStart(2) + '] ' + String(h).padEnd(32) + ' ex.: ' + ex);
+    });
+  } catch (e) {
+    Logger.log('Erro: ' + e.message);
+  }
+}
+
+// Lista o portfólio conhecido pela base, separando Megas dos demais. A saída
+// preenche PROPRIEDADES em 01_Config.gs — o valor de CENTRO DE CUSTOS tem que
+// ser copiado EXATAMENTE para o campo ccBD (o filtro compara string a string).
+function descobrirPortfolio() {
+  [BD_ABA_CORRETIVAS, BD_ABA_PREVENTIVAS].forEach(aba => {
+    Logger.log('======================================================');
+    Logger.log('PORTFÓLIO EM ' + aba);
+    Logger.log('======================================================');
+
+    const lista = listarPortfolioBD_(aba);
+    if (!lista.length) { Logger.log('Nenhuma linha lida.\n'); return; }
+
+    const fmt = d => d ? (String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear()) : '—';
+    const bloco = (titulo, itens) => {
+      if (!itens.length) return;
+      Logger.log('\n' + titulo + ' (' + itens.length + ')');
+      Logger.log('  ' + 'CENTRO DE CUSTOS'.padEnd(30) + 'REGISTROS'.padStart(10) +
+                 'ABERTOS'.padStart(9) + '   PERÍODO');
+      itens.forEach(g => {
+        Logger.log('  ' + g.cc.padEnd(30) + String(g.total).padStart(10) +
+                   String(g.abertos).padStart(9) + '   ' + fmt(g.primeiro) + ' a ' + fmt(g.ultimo) +
+                   (g.semData ? '   (' + g.semData + ' sem data)' : ''));
+      });
+    };
+
+    const megas  = lista.filter(g => _propEhMega_(g.cc));
+    const demais = lista.filter(g => !_propEhMega_(g.cc));
+    bloco('MEGAS', megas);
+    bloco('DEMAIS IMÓVEIS', demais);
+
+    const soma = c => c.reduce((s, g) => s + g.total, 0);
+    Logger.log('\nTotal: ' + lista.length + ' imóveis, ' + soma(lista) + ' registros' +
+               ' (Megas ' + megas.length + '/' + soma(megas) +
+               ' · demais ' + demais.length + '/' + soma(demais) + ').\n');
+  });
+  Logger.log('Copie o valor de CENTRO DE CUSTOS para o campo ccBD de PROPRIEDADES ' +
+             '(01_Config.gs) — tem que bater exatamente.');
+}
+
+// Confere a regra de SLA contra a base real. Roda nas duas janelas porque só
+// quem conhece o relatório sabe qual delas reproduz o número oficial.
+function conferirSLA(ano, mes, nomeAba) {
+  const aba  = nomeAba || BD_ABA_PREVENTIVAS;
+  const hoje = new Date();
+  const ref  = (ano && mes) ? { ano: ano, index: mes - 1 }
+                            : { ano: hoje.getUTCFullYear(), index: hoje.getUTCMonth() - 1 };
+  if (ref.index < 0) { ref.index = 11; ref.ano--; }
+
+  Logger.log('======================================================');
+  Logger.log('SLA — ' + aba + ' — ' + String(ref.index + 1).padStart(2, '0') + '/' + ref.ano);
+  Logger.log('======================================================');
+  Logger.log('Regra: cumpridos ÷ (cumpridos + não cumpridos). "Sem SLA" fica fora.');
+
+  const todos = _propLerBase_(aba);
+  if (!todos.length) {
+    Logger.log('\nBase vazia. Rode inspecionarBase("' + aba + '") para ver o cabeçalho.');
     return;
   }
 
-  const fmt = d => d ? (String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear()) : '—';
-  const bloco = (titulo, itens) => {
-    if (!itens.length) return;
-    Logger.log('\n' + titulo + ' (' + itens.length + ')');
-    Logger.log('  ' + 'CENTRO DE CUSTOS'.padEnd(30) + 'CHAMADOS'.padStart(9) +
-               'ABERTOS'.padStart(9) + '   PERÍODO');
-    itens.forEach(g => {
-      Logger.log('  ' + g.cc.padEnd(30) + String(g.total).padStart(9) +
-                 String(g.abertos).padStart(9) +
-                 '   ' + fmt(g.primeiro) + ' a ' + fmt(g.ultimo) +
-                 (g.semData ? '   (' + g.semData + ' sem data)' : ''));
-    });
-  };
+  // Vocabulário real da coluna: a classificação depende das strings exatas, e
+  // um valor novo na planilha tem que aparecer aqui, não sumir na conta.
+  const vocab = {};
+  todos.forEach(it => {
+    const v = String(it.sla || '(vazio)').trim();
+    vocab[v] = (vocab[v] || 0) + 1;
+  });
+  Logger.log('\nValores da coluna SLA na base inteira (' + todos.length + ' registros):');
+  Object.keys(vocab).sort((a, b) => vocab[b] - vocab[a]).forEach(v => {
+    Logger.log('  ' + _slaClasse_(v === '(vazio)' ? '' : v).padEnd(13) + v + ': ' + vocab[v]);
+  });
 
-  const megas  = lista.filter(g => _propEhMega_(g.cc));
-  const demais = lista.filter(g => !_propEhMega_(g.cc));
-  bloco('MEGAS', megas);
-  bloco('DEMAIS IMÓVEIS', demais);
+  const semData = todos.filter(it => !it.dtReporte && !it.dtFechado).length;
+  if (semData) Logger.log('\n⚠ ' + semData + ' registro(s) sem nenhuma data legível.');
 
-  const soma = c => c.reduce((s, g) => s + g.total, 0);
-  Logger.log('\nTotal: ' + lista.length + ' imóveis, ' + soma(lista) + ' chamados' +
-             ' (Megas: ' + megas.length + ' imóveis / ' + soma(megas) + ' chamados' +
-             ' · demais: ' + demais.length + ' / ' + soma(demais) + ').');
-  Logger.log('\nPara entrar na apresentação, copie o valor da coluna CENTRO DE CUSTOS ' +
-             'para o campo ccBD de PROPRIEDADES (01_Config.gs) — tem que bater exatamente.');
+  [['inicio', 'data prevista/reporte no mês'],
+   ['fim',    'data de execução/fechamento no mês']].forEach(([janela, rotulo]) => {
+    const lista = slaPorImovel_(aba, ref.ano, ref.index, janela);
+    const cons  = slaPortfolio_(aba, ref.ano, ref.index, janela);
+
+    Logger.log('\n--- Janela: ' + rotulo + ' ---');
+    if (!lista.length) { Logger.log('  nenhum registro nesta janela.'); return; }
+    Logger.log('  ' + 'IMÓVEL'.padEnd(26) + 'CUMPR'.padStart(7) + 'N/CUMPR'.padStart(9) +
+               'SEM SLA'.padStart(9) + 'SLA'.padStart(9));
+    const linha = (rot, r) => Logger.log('  ' + rot.padEnd(26) + String(r.cumpridos).padStart(7) +
+      String(r.naoCumpridos).padStart(9) + String(r.semSla).padStart(9) +
+      (r.pct === null ? '—' : r.pct.toFixed(2) + '%').padStart(9));
+    lista.forEach(g => linha(g.cc, g));
+    Logger.log('  ' + '-'.repeat(60));
+    linha('MEGAS', cons.megas);
+    linha('DEMAIS IMÓVEIS', cons.demais);
+    linha('PORTFÓLIO', cons.total);
+    if (cons.total.desconhecidos.length) {
+      Logger.log('  ⚠ valores não reconhecidos na coluna SLA: ' +
+                 Array.from(new Set(cons.total.desconhecidos)).join(', '));
+    }
+  });
+
+  Logger.log('\nA janela oficial é "data de agendamento" (SLA_JANELA_PADRAO), ' +
+             'verificada contra a planilha de controle em 12 casos.');
 }

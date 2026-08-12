@@ -65,33 +65,56 @@ função.
 2. **Fontes** — quais planilhas alimentam cada indicador.
 3. **SLA de preventivas** — ver a seção abaixo.
 
-## SLA de preventivas: nenhum projeto do repositório calcula
+## SLA de preventivas — regra confirmada e implementada
 
-Procurei nos quatro. **Todos leem um percentual já pronto da planilha**,
-nenhum faz a conta:
+```
+SLA % = cumpridos ÷ (cumpridos + não cumpridos) × 100
+```
 
-| Projeto | De onde vem |
+A base é a aba **`BD - PREVENTIVAS`** (repare no espaço em volta do hífen),
+na mesma planilha das corretivas. A coluna `SLA` tem exatamente três valores:
+`SLA Cumprido`, `Não cumprido` e `Sem SLA`. As "Sem SLA" saem da conta
+inteira — de cima e de baixo da fração.
+
+Três pontos foram **verificados contra a planilha de controle** do time
+(blocos FACILITIES por Mega), confrontando 12 casos — Curitiba, Itajaí e
+Esteio, de janeiro a abril/2026:
+
+| | Resultado |
 |---|---|
-| `megas-mensal/` | aba PREVENTIVAS, linha cujo indicador contém "sla" ou "atend" |
-| `boletim/` | células fixas BM9 (Facilities), BM10 (Property), BM11 (Operação), BM12 (Geral) |
-| `gestao-tvs/` | célula de percentual da linha de preventiva de cada unidade |
+| Janela do mês | **data de agendamento**, não a de fechamento |
+| Canceladas | **entram** na conta |
+| Filtro por tipo/descrição | **nenhum** |
 
-Ou seja: a regra de cálculo mora na planilha, não no código — e por isso não
-dá para aprendê-la lendo o repositório.
+Bateu 12 de 12. Excluir canceladas erra em 5 dos 12 (Curitiba jan: oficial
+197/28, sem canceladas 197/15). Pela data de fechamento também não bate.
 
-Há ainda indício de **duas definições diferentes** em uso:
+### Três armadilhas que o código trata
 
-- `megas-mensal` trabalha com **previstas x realizadas** (execução);
-- `gestao-tvs` trabalha com **conforme x não conforme** (cumprimento de
-  prazo), com meta de 90%.
+- **"Não cumprido" contém "cumprido".** Um `indexOf('cumprido')` classifica
+  toda não-conformidade como cumprida e infla o indicador em silêncio. A
+  classificação usa correspondência **exata** — e por isso um valor novo na
+  planilha vira `DESCONHECIDO` e é reportado, em vez de ser adivinhado.
+- **Preventiva diz "Fechada", corretiva diz "Fechado".** Testar só a forma
+  masculina faria a base inteira de preventivas parecer aberta.
+- **Sem base não é 0%.** Se nenhuma preventiva do mês tiver SLA, o resultado
+  é `null`, não zero: "nenhuma cumprida" é uma afirmação diferente de
+  "nenhuma tinha prazo".
 
-São coisas distintas: uma preventiva pode ter sido realizada (entra em
-"realizadas") e ainda assim fora do prazo (entra em "não conforme").
+### Sobre o 94,74% do e-mail modelo
 
-E há um número que não fecha no e-mail modelo: *"SLA atendido de 94,74% no
-mês (189 realizadas de 190 previstas)"*. 189/190 dá **99,47%**, não 94,74%.
-O valor 94,74% corresponde a 180/190. Antes de replicar a conta aqui, vale
-esclarecer qual é o numerador e o denominador de verdade.
+Não vem desta conta. Nos dados, Curitiba em junho/26 dá 96,03% pela regra
+oficial. O e-mail também cita "189 realizadas de 190 previstas", enquanto a
+base tem ~254 preventivas/mês em Curitiba. São de outra fonte ou de outro
+recorte — não tentei reproduzir o número por engenharia reversa, porque
+acertá-lo por coincidência seria pior do que não acertá-lo.
+
+### Como usar
+
+- `conferirSLA(2026, 6)` — SLA de preventivas do mês, por imóvel, com o corte
+  Megas × demais e o vocabulário real da coluna
+- `conferirSLA(2026, 6, BD_ABA_CORRETIVAS)` — a mesma regra nas corretivas
+- `slaPortfolio_(aba, ano, mesIndex)` — o consolidado, para os slides
 
 ## Estrutura planejada
 
