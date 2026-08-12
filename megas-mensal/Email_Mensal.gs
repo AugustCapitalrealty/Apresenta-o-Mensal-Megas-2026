@@ -317,3 +317,287 @@ function _emNomeExtenso_(nome) {
   const cidade = String(nome || '').replace(/^mega\s*/i, '').trim();
   return cidade ? 'Mega Centro Logístico ' + cidade : nome;
 }
+
+
+// ==========================================
+// E-MAIL COMPARATIVO — OS TRÊS MEGAS NUM DOC SÓ
+// ==========================================
+// Mesmo formato do e-mail individual, mas com uma tabela dos três lado a
+// lado e uma leitura comparativa embaixo.
+//
+// O CUIDADO CENTRAL: nem todo indicador é comparável entre os Megas.
+//   - SLA, disponibilidade e variação vs orçado são percentuais — comparam
+//     direto;
+//   - R$ ABSOLUTO não compara: as áreas são diferentes, e o Mega maior
+//     sempre "gasta mais". A comparação financeira honesta é o R$/m², que
+//     já existe no deck;
+//   - BACKLOG absoluto tem o mesmo problema. A tabela mostra o número que o
+//     time acompanha, mas a leitura comparativa fala em variação do mês (que
+//     é comparável) e não em "quem tem mais chamados".
+//
+// A leitura embaixo da tabela é DERIVADA dos números (quem está acima da
+// meta, quem subiu, qual a diferença entre o maior e o menor). Não há
+// nenhuma frase sobre CAUSA — isso é contexto humano, como os motivos das
+// variações no e-mail individual.
+const EMAIL_COMPARATIVO_CIDADES = ['CURITIBA', 'ITAJAI', 'ESTEIO'];
+
+function gerarEmailComparativo() {
+  const cidades = EMAIL_COMPARATIVO_CIDADES.map(_emColetarCidade_).filter(Boolean);
+  if (!cidades.length) { Logger.log('E-mail comparativo: nenhuma cidade respondeu.'); return null; }
+
+  const meses = Array.from(new Set(cidades.map(c => c.mesAno)));
+  const mesAno = meses[0];
+
+  const doc  = DocumentApp.create('E-mail comparativo — Megas — ' + mesAno);
+  const body = doc.getBody();
+  body.clear();
+
+  const p = txt => {
+    const el = body.appendParagraph(txt);
+    el.setFontFamily('Arial').setFontSize(11).setForegroundColor('#000000');
+    el.setSpacingBefore(0).setSpacingAfter(0);
+    return el;
+  };
+
+  p('Boa tarde, tudo bem?');
+  p('');
+  p('Segue em anexo a apresentação mensal de resultados referente ao mês de ' +
+    mesAno + ' dos Megas Centros Logísticos.');
+  p('');
+
+  // Meses diferentes entre as planilhas é erro de fechamento, não detalhe:
+  // a tabela ficaria comparando períodos distintos sem avisar.
+  if (meses.length > 1) {
+    p('[ATENÇÃO: as planilhas não estão no mesmo mês de referência — ' +
+      cidades.map(c => c.nome + ': ' + c.mesAno).join('; ') +
+      '. Confira antes de enviar.]');
+    p('');
+    Logger.log('⚠ Mês de referência divergente entre as cidades: ' +
+               cidades.map(c => c.nome + '=' + c.mesAno).join(', '));
+  }
+
+  p('Visão comparativa:');
+  p('');
+  _emTabelaComparativa_(body, cidades);
+  p('');
+
+  p('Leitura do período:');
+  p('');
+  _emAnaliseComparativa_(cidades).forEach(l => { p(l); p(''); });
+
+  p('Os detalhes de cada empreendimento, incluindo as variações por conta, ' +
+    'estão nos anexos.');
+  p('');
+  p('Qualquer dúvida, fico à disposição.');
+  p('');
+  p('Atenciosamente,');
+
+  doc.saveAndClose();
+  Logger.log('E-mail comparativo (' + mesAno + '): ' + doc.getUrl());
+  return doc.getUrl();
+}
+
+// Junta, para uma cidade, tudo que a tabela e a leitura precisam. Devolve
+// null se a cidade não responder nada — melhor sair da comparação do que
+// entrar com uma coluna vazia.
+function _emColetarCidade_(chave) {
+  setProjetoAtivo(chave);
+  const nome = getProjetoAtivo().nome;
+  const ref  = _emSeguro_(() => obterMesReferencia_());
+  if (!ref) { Logger.log('E-mail comparativo: ' + chave + ' sem mês de referência.'); return null; }
+
+  const prev = _emSeguro_(() => obterDadosPreventivas());
+  const corr = _emSeguro_(() => obterDadosCorretivasV6());
+  const dre  = _emSeguro_(() => obterDadosDRE_());
+  const cm   = _emSeguro_(() => obterDadosCustoM2());
+  const flx  = _emSeguro_(() => obterFluxoCorretivasBD_());
+
+  const serie = _emSeguro_(() => obterDadosBacklogHistorico_()) || [];
+  const ord   = ref.ano * 100 + (ref.index + 1);
+  const i     = serie.findIndex(x => x.ord === ord);
+  const atual = i >= 0 ? serie[i] : null;
+  const ant   = i > 0  ? serie[i - 1] : null;
+
+  const mes  = dre && dre.total ? dre.total.mes  : null;
+  const acum = dre && dre.total ? dre.total.acum : null;
+
+  return {
+    chave, nome,
+    curto  : nome.replace(/^mega\s*/i, '').trim(),
+    mesAno : _emCapitalizar_(MESES_NOME_REF[ref.index]) + '/' + ref.ano,
+    sla    : prev && prev.mensal ? _emNum_(prev.mensal.sla) : null,
+    slaAcum: prev && prev.anual  ? _emNum_(prev.anual.sla)  : null,
+    disp   : corr && corr.mensal ? _emKpi_(corr.mensal, 'disponibilidade') : null,
+    backlog: atual && atual.geral != null ? atual.geral : null,
+    backlogAnt: ant && ant.geral != null ? ant.geral : null,
+    criados : flx ? flx.mCriados  : null,
+    fechados: flx ? flx.mFechados : null,
+    m2Real : cm && cm.kpis ? cm.kpis.custo : null,
+    m2Orc  : cm && cm.kpis ? cm.kpis.meta  : null,
+    mesReal: mes ? mes.real : null,
+    mesOrc : mes ? mes.orc  : null,
+    varMes : mes && mes.orc ? (mes.real - mes.orc) / mes.orc * 100 : null,
+    varAcum: acum && acum.orc ? (acum.real - acum.orc) / acum.orc * 100 : null
+  };
+}
+
+function _emTabelaComparativa_(body, cidades) {
+  const T = '—';
+  const linhas = [
+    ['Indicador'].concat(cidades.map(c => c.curto)),
+    ['SLA preventivas (mês)'].concat(cidades.map(c => c.sla == null ? T : _emPct_(c.sla))),
+    ['SLA preventivas (ano)'].concat(cidades.map(c => c.slaAcum == null ? T : _emPct_(c.slaAcum))),
+    ['Disponibilidade'].concat(cidades.map(c => c.disp == null ? T : _emPct_(c.disp))),
+    ['Backlog no fim do mês'].concat(cidades.map(c => c.backlog == null ? T : _emInt_(c.backlog))),
+    ['Variação do backlog'].concat(cidades.map(c => _emVariacaoBacklog_(c))),
+    ['Abertos / encerrados'].concat(cidades.map(c =>
+      c.criados == null ? T : _emInt_(c.criados) + ' / ' + _emInt_(c.fechados))),
+    ['Custo R$/m² (realizado)'].concat(cidades.map(c => c.m2Real == null ? T : _emRsM2_(c.m2Real))),
+    ['Custo R$/m² (orçado)'].concat(cidades.map(c => c.m2Orc == null ? T : _emRsM2_(c.m2Orc))),
+    ['Realizado x orçado (mês)'].concat(cidades.map(c => c.varMes == null ? T : _emVarPct_(c.varMes))),
+    ['Realizado x orçado (ano)'].concat(cidades.map(c => c.varAcum == null ? T : _emVarPct_(c.varAcum)))
+  ];
+
+  const tab = body.appendTable(linhas);
+  for (let r = 0; r < linhas.length; r++) {
+    for (let c = 0; c < linhas[r].length; c++) {
+      const cel = tab.getCell(r, c);
+      cel.setFontFamily('Arial').setFontSize(10);
+      if (r === 0 || c === 0) cel.setBold(true);
+      if (c > 0) cel.setPaddingLeft(6).setPaddingRight(6);
+    }
+  }
+  return tab;
+}
+
+function _emVariacaoBacklog_(c) {
+  if (c.backlog == null || c.backlogAnt == null) return '—';
+  const d = c.backlog - c.backlogAnt;
+  return d === 0 ? 'estável' : (d > 0 ? '+' : '−') + Math.abs(d);
+}
+
+// "−7,3%" / "+2,1%" — sinal explícito, porque num comparativo o leitor está
+// varrendo a linha e não pode ter que deduzir a direção.
+function _emVarPct_(n) {
+  return (n > 0 ? '+' : '−') + _emPct1_(Math.abs(n));
+}
+
+
+// ==========================================
+// LEITURA COMPARATIVA
+// ==========================================
+// Cada frase é derivada mecanicamente dos números. Nenhuma fala de CAUSA.
+function _emAnaliseComparativa_(cidades) {
+  const out = [];
+  const com = campo => cidades.filter(c => c[campo] != null);
+
+  // --- Preventivas ---
+  const cSla = com('sla');
+  if (cSla.length) {
+    const abaixo = cSla.filter(c => c.sla < EMAIL_META_SLA);
+    const melhor = _emExtremo_(cSla, 'sla', true);
+    let t = '• Preventivas: ';
+    t += abaixo.length === 0
+      ? 'os ' + _emQuantos_(cSla.length) + ' acima da meta de ' + EMAIL_META_SLA + '%'
+      : _emLista_(abaixo.map(c => c.curto)) + ' ' + (abaixo.length > 1 ? 'ficaram' : 'ficou') +
+        ' abaixo da meta de ' + EMAIL_META_SLA + '%';
+    t += ', com ' + _emLista_(cSla.map(c => c.curto + ' em ' + _emPct_(c.sla))) + '.';
+    if (cSla.length > 1) t += ' Melhor desempenho: ' + melhor.curto + '.';
+    out.push(t);
+  }
+
+  // --- Chamados: a variação é o que compara; o estoque absoluto reflete
+  //     também o tamanho de cada Mega.
+  const cBk = cidades.filter(c => c.backlog != null && c.backlogAnt != null);
+  if (cBk.length) {
+    const subiram  = cBk.filter(c => c.backlog > c.backlogAnt);
+    const caíram   = cBk.filter(c => c.backlog < c.backlogAnt);
+    const estaveis = cBk.filter(c => c.backlog === c.backlogAnt);
+
+    // Todo Mega tem que aparecer na frase de movimento. Citar só quem subiu
+    // deixa o leitor sem saber se os outros caíram ou ficaram parados.
+    const partes = [];
+    if (subiram.length) {
+      partes.push('alta em ' + _emLista_(subiram.map(c => c.curto + ' (' + _emVariacaoBacklog_(c) + ')')));
+    }
+    if (caíram.length) {
+      partes.push('queda em ' + _emLista_(caíram.map(c => c.curto + ' (' + _emVariacaoBacklog_(c) + ')')));
+    }
+    if (estaveis.length) {
+      partes.push((estaveis.length > 1 ? 'estáveis em ' : 'estável em ') +
+                  _emLista_(estaveis.map(c => c.curto)));
+    }
+    let t = '• Chamados: ' + (partes.length > 1 ? 'movimento misto — ' : 'backlog em ') +
+            _emLista_(partes) + '.';
+    t += ' Estoque no fim do mês: ' +
+         _emLista_(cBk.map(c => c.curto + ' ' + _emInt_(c.backlog))) + '.';
+    out.push(t);
+  }
+
+  // --- Disponibilidade ---
+  const cD = com('disp');
+  if (cD.length) {
+    const abaixo = cD.filter(c => c.disp < EMAIL_META_DISPONIBILIDADE);
+    let t = '• Disponibilidade dos ativos críticos: ' +
+      (abaixo.length === 0
+        ? 'os ' + _emQuantos_(cD.length) + ' acima da meta de ' + EMAIL_META_DISPONIBILIDADE + '%'
+        : _emLista_(abaixo.map(c => c.curto)) + ' abaixo da meta de ' + EMAIL_META_DISPONIBILIDADE + '%');
+    t += ' — ' + _emLista_(cD.map(c => c.curto + ' ' + _emPct_(c.disp))) + '.';
+    out.push(t);
+  }
+
+  // --- Financeiro: variação vs orçado (comparável) ---
+  const cV = com('varMes');
+  if (cV.length) {
+    const acima = cV.filter(c => c.varMes > 0);
+    let t = '• Financeiro (mês): ';
+    t += acima.length === 0
+      ? 'os ' + _emQuantos_(cV.length) + ' abaixo do orçado'
+      : _emLista_(acima.map(c => c.curto)) + ' ' + (acima.length > 1 ? 'acima' : 'acima') + ' do orçado';
+    t += ' — ' + _emLista_(cV.map(c => c.curto + ' ' + _emVarPct_(c.varMes))) + '.';
+    const cA = com('varAcum');
+    if (cA.length) {
+      t += ' No acumulado do ano: ' +
+           _emLista_(cA.map(c => c.curto + ' ' + _emVarPct_(c.varAcum))) + '.';
+    }
+    out.push(t);
+  }
+
+  // --- Custo por m²: a única comparação financeira legítima entre os três ---
+  const cM = com('m2Real');
+  if (cM.length > 1) {
+    const menor = _emExtremo_(cM, 'm2Real', false);
+    const maior = _emExtremo_(cM, 'm2Real', true);
+    let t = '• Custo por m²: ' + _emLista_(cM.map(c => c.curto + ' ' + _emRsM2_(c.m2Real))) + '.';
+    if (menor.curto !== maior.curto) {
+      t += ' ' + menor.curto + ' opera com o menor custo por metro quadrado e ' +
+           maior.curto + ' com o maior' +
+           (menor.m2Real > 0
+             ? ' (diferença de ' + _emPct1_((maior.m2Real - menor.m2Real) / menor.m2Real * 100) + ')'
+             : '') + '.';
+    }
+    t += ' É por aqui que a comparação financeira entre os empreendimentos se sustenta — ' +
+         'o valor absoluto acompanha a área de cada um.';
+    out.push(t);
+  } else if (cM.length === 1) {
+    out.push('• Custo por m²: ' + cM[0].curto + ' ' + _emRsM2_(cM[0].m2Real) +
+             '. [demais empreendimentos sem dado de R$/m² neste mês]');
+  }
+
+  return out;
+}
+
+function _emExtremo_(lista, campo, maior) {
+  return lista.reduce((a, b) => (maior ? (b[campo] > a[campo] ? b : a)
+                                       : (b[campo] < a[campo] ? b : a)));
+}
+
+// "A, B e C" — o "e" antes do último, como se escreve.
+function _emLista_(itens) {
+  if (itens.length <= 1) return itens[0] || '';
+  return itens.slice(0, -1).join(', ') + ' e ' + itens[itens.length - 1];
+}
+
+function _emQuantos_(n) {
+  return n === 2 ? 'dois' : n === 3 ? 'três' : String(n);
+}
