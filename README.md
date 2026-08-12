@@ -10,7 +10,8 @@ apresentações no Google Slides.
 | [`megas-mensal/`](megas-mensal/) | Apresentação Mensal dos Megas — Curitiba, Itajaí e Esteio |
 | [`boletim/`](boletim/) | Boletim 2026, incluindo os slides de controle de acessos |
 | [`gestao-tvs/`](gestao-tvs/) | Gestão à Vista exibida nas TVs |
-| [`controle-acessos/`](controle-acessos/) | Ver o README da pasta |
+| [`controle-acessos/`](controle-acessos/) | Boletim de Controle de Acessos |
+| [`propriedades-mensal/`](propriedades-mensal/) | Apresentação Mensal de Propriedades — **em construção** |
 
 Cada pasta é um **projeto Apps Script independente**, com seu próprio arquivo
 de configuração e seus próprios pontos de entrada. A pasta organiza o código
@@ -18,7 +19,7 @@ no git; não junta os projetos.
 
 ## Antes de mexer
 
-Leia o [`CLAUDE.md`](CLAUDE.md) da raiz. Ele reúne o que vale para os quatro
+Leia o [`CLAUDE.md`](CLAUDE.md) da raiz. Ele reúne o que vale para todos os
 projetos: a regra do namespace único do Apps Script (e por que as pastas não
 podem ser fundidas), o design system compartilhado, e as lições que já
 custaram retrabalho — quebra de texto em caixa estreita, conciliação entre

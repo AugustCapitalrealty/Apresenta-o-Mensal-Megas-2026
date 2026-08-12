@@ -1,6 +1,6 @@
 # Apresentações Capital Realty — repositório único
 
-Quatro projetos de Google Apps Script que geram apresentações no Google
+Cinco projetos de Google Apps Script que geram apresentações no Google
 Slides. Cada um vive numa pasta e **continua sendo um projeto Apps Script
 separado** — a pasta organiza o código no git, não junta os projetos.
 
@@ -10,6 +10,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `boletim/` | Boletim 2026 | 24 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 9 `.gs` |
+| `propriedades-mensal/` | Apresentação Mensal de Propriedades — **em construção** | 2 `.gs` |
 
 ## A regra que não dá para esquecer
 
@@ -21,7 +22,7 @@ Consequência prática: **as pastas deste repositório não podem ser juntadas
 num projeto Apps Script só.** Hoje existem 9 nomes duplicados entre elas:
 
 ```
-CR_DESIGN_SYSTEM       megas, boletim, tvs
+CR_DESIGN_SYSTEM       megas, boletim, tvs, propriedades
 FOTOS_SECAO            megas, acessos
 LOGOS_CLIENTES         megas, acessos
 METAS_COLS             megas, tvs
@@ -45,13 +46,13 @@ se os arquivos foram copiados para o editor.
 
 ## Design system
 
-`CR_DESIGN_SYSTEM` existe nos três projetos, com os mesmos valores de marca
+`CR_DESIGN_SYSTEM` existe em quatro projetos, com os mesmos valores de marca
 (`brandDark #151E49`, `brandMed #003D7B`, `brandLight #065CA9`,
 `bgSlide #F8FAFC`). É o mesmo sistema replicado por cópia — `gestao-tvs` está
 uma cor atrás (não tem `brandSoft`). Ao mexer na paleta de um, verifique os
 outros.
 
-## Lições que valem para os quatro projetos
+## Lições que valem para todos os projetos
 
 ### 1. Texto em caixa estreita quebra sozinho
 
