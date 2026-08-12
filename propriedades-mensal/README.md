@@ -34,22 +34,64 @@ aproveitada:
 Ou seja: a parte de **chamados de Propriedades** tem fonte pronta e já
 conciliada. É o caminho mais curto para o primeiro slide com dado real.
 
+## Decidido
+
+- **Escopo: o portfólio inteiro.** Megas e demais imóveis.
+- **Recorte:** a apresentação fala do desempenho nos Megas e nos demais, o
+  que pede um corte "Megas x demais" em cada indicador. `_propEhMega_`
+  (02_Dados.gs) faz essa separação pelo prefixo do Centro de Custos.
+- **Ponto de partida:** o que a base já tem. A BD-CORRETIVAS é
+  multi-empreendimento e a coluna "Centro de Custos" já lista todo o
+  portfólio — não há lista para digitar, há lista para descobrir.
+
+## Comece por aqui
+
+Rode **`descobrirPortfolio()`** (02_Dados.gs). Ela varre a BD-CORRETIVAS e
+lista, separando Megas dos demais: cada Centro de Custos, o volume de
+chamados, quantos seguem abertos e o período coberto.
+
+A saída é o que preenche `PROPRIEDADES` em `01_Config.gs` — o valor da coluna
+CENTRO DE CUSTOS tem que ser copiado **exatamente** para o campo `ccBD`, que
+compara string a string.
+
+Numa amostra da BD já aparecem, além de MEGA CURITIBA e MEGA ESTEIO: AR 3000,
+BRADO CUBATÃO, GAROTO, POSTO CURITIBA e POSTO ESTEIO. A lista completa sai da
+função.
+
 ## O que falta decidir
 
-Estas quatro respostas mudam a estrutura do projeto, então valem antes do
-primeiro slide:
+1. **Indicadores** — o que a área acompanha além de chamados? Vistorias,
+   contratos, ocupação, inadimplência, garantias de obra?
+2. **Fontes** — quais planilhas alimentam cada indicador.
+3. **SLA de preventivas** — ver a seção abaixo.
 
-1. **Escopo** — a apresentação cobre quais empreendimentos? Só os três Megas,
-   ou o portfólio inteiro de propriedades?
-2. **Recorte** — um deck por propriedade (como os Megas) ou um deck
-   consolidado com todas?
-3. **Indicadores** — o que a área acompanha? Vistorias realizadas, contratos,
-   ocupação, inadimplência, backlog de chamados PROPERTY, garantias de obra?
-4. **Fontes** — quais planilhas alimentam cada indicador?
+## SLA de preventivas: nenhum projeto do repositório calcula
 
-Enquanto isso não está definido, `01_Config.gs` fica com os IDs em branco e
-`00_Main.gs` com o pipeline vazio — rodar avisa o que falta em vez de gerar
-slide com dado inventado.
+Procurei nos quatro. **Todos leem um percentual já pronto da planilha**,
+nenhum faz a conta:
+
+| Projeto | De onde vem |
+|---|---|
+| `megas-mensal/` | aba PREVENTIVAS, linha cujo indicador contém "sla" ou "atend" |
+| `boletim/` | células fixas BM9 (Facilities), BM10 (Property), BM11 (Operação), BM12 (Geral) |
+| `gestao-tvs/` | célula de percentual da linha de preventiva de cada unidade |
+
+Ou seja: a regra de cálculo mora na planilha, não no código — e por isso não
+dá para aprendê-la lendo o repositório.
+
+Há ainda indício de **duas definições diferentes** em uso:
+
+- `megas-mensal` trabalha com **previstas x realizadas** (execução);
+- `gestao-tvs` trabalha com **conforme x não conforme** (cumprimento de
+  prazo), com meta de 90%.
+
+São coisas distintas: uma preventiva pode ter sido realizada (entra em
+"realizadas") e ainda assim fora do prazo (entra em "não conforme").
+
+E há um número que não fecha no e-mail modelo: *"SLA atendido de 94,74% no
+mês (189 realizadas de 190 previstas)"*. 189/190 dá **99,47%**, não 94,74%.
+O valor 94,74% corresponde a 180/190. Antes de replicar a conta aqui, vale
+esclarecer qual é o numerador e o denominador de verdade.
 
 ## Estrutura planejada
 
