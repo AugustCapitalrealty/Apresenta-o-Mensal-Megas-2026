@@ -470,17 +470,36 @@ function conferirSLA(ano, mes, nomeAba) {
 // no lugar do outro muda os dois indicadores.
 function calcularExecucao_(itens) {
   const previstas = itens.length;
-  const realizadas = itens.filter(it => {
+  let realizadas = 0, emAberto = 0;
+  itens.forEach(it => {
     const n = _histNorm_(it.estado);
-    return n === 'fechada' || n === 'fechado';
-  }).length;
+    if (n === 'fechada' || n === 'fechado') realizadas++;
+    // Nem fechada nem cancelada: ainda pode virar realizada antes do mês
+    // acabar. É o que faz o número do mês corrente ser provisório.
+    else if (n !== 'cancelada') emAberto++;
+  });
   return {
-    previstas: previstas,
+    previstas : previstas,
     realizadas: realizadas,
+    emAberto  : emAberto,
     // Sem nada agendado não há execução a informar — 0% diria "nada foi
     // feito", que é diferente de "nada foi programado".
     pct: previstas ? (realizadas / previstas) * 100 : null
   };
+}
+
+// MÊS AINDA ABERTO
+// ==========================================
+// O dado chega assim: uma preventiva agendada para o mês pode ser executada
+// até o último dia, e o "Sem SLA" só se resolve quando ela fecha. Enquanto o
+// mês não termina, execução e SLA estão INCOMPLETOS — não porque o
+// desempenho foi ruim, mas porque a conta ainda não acabou.
+//
+// Sem essa marca, o mês corrente apareceria com execução baixa ao lado de
+// meses fechados, e a comparação seria falsa: os slides mostrariam uma queda
+// que não existe.
+function _mesEncerrado_(ano, mesIndex) {
+  return new Date() >= new Date(Date.UTC(ano, mesIndex + 1, 1));
 }
 
 // Registros de um mês, na janela padrão. Base comum dos dois indicadores —
@@ -501,9 +520,11 @@ function indicadoresPorImovel_(nomeAba, ano, mesIndex, janela) {
   preventivasDoMes_(nomeAba, ano, mesIndex, janela)
     .forEach(it => { (porCC[it.cc] = porCC[it.cc] || []).push(it); });
 
+  const parcial = !_mesEncerrado_(ano, mesIndex);
   return Object.keys(porCC).map(cc => ({
     cc      : cc,
     mega    : _propEhMega_(cc),
+    parcial : parcial,
     sla     : calcularSLA_(porCC[cc]),
     execucao: calcularExecucao_(porCC[cc])
   })).sort((a, b) => b.execucao.previstas - a.execucao.previstas);
@@ -516,7 +537,8 @@ function indicadoresPortfolio_(nomeAba, ano, mesIndex, janela) {
   const megas  = noMes.filter(it => _propEhMega_(it.cc));
   const demais = noMes.filter(it => !_propEhMega_(it.cc));
   const bloco  = l => ({ sla: calcularSLA_(l), execucao: calcularExecucao_(l) });
-  return { total: bloco(noMes), megas: bloco(megas), demais: bloco(demais) };
+  return { total: bloco(noMes), megas: bloco(megas), demais: bloco(demais),
+           parcial: !_mesEncerrado_(ano, mesIndex) };
 }
 
 // Acumulado do ano até o mês de referência (inclusive) — é o número que o
@@ -529,7 +551,8 @@ function indicadoresAcumulado_(nomeAba, ano, mesIndexAte, janela) {
     const d = it[campo];
     return d && d >= ini && d < fim;
   });
-  return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista) };
+  return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista),
+           parcial: !_mesEncerrado_(ano, mesIndexAte) };
 }
 
 // Painel do mês: execução e SLA lado a lado, por imóvel, com Megas x demais
@@ -569,7 +592,18 @@ function conferirPreventivas(ano, mes, nomeAba) {
   Logger.log('\n  ' + '-'.repeat(66));
   linha('ACUMULADO ' + ref.ano, ac);
 
-  const semSla = lista.reduce((s, g) => s + g.sla.semSla, 0);
+  const semSla   = lista.reduce((s, g) => s + g.sla.semSla, 0);
+  const emAberto = lista.reduce((s, g) => s + g.execucao.emAberto, 0);
+
+  if (cons.parcial) {
+    Logger.log('\n  ⚠ MÊS AINDA ABERTO — números PROVISÓRIOS.');
+    Logger.log('    ' + emAberto + ' preventiva(s) nem fechada(s) nem cancelada(s): ainda podem');
+    Logger.log('    ser executadas até o fim do mês, e o "Sem SLA" delas só se resolve');
+    Logger.log('    no fechamento. Não compare com meses fechados nem leve para o slide.');
+  } else if (emAberto) {
+    Logger.log('\n  ' + emAberto + ' preventiva(s) do mês seguem sem fechar nem cancelar.');
+  }
+
   if (semSla) {
     Logger.log('\n  ' + semSla + ' registro(s) "Sem SLA" no mês: entram nas PREVISTAS ' +
                'e ficam fora do denominador do SLA.');

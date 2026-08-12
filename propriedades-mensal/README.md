@@ -132,6 +132,26 @@ denominador pelo outro muda os dois números.
 Os dois saem da mesma lista filtrada (`preventivasDoMes_`), então não podem
 divergir por recortar populações diferentes.
 
+### O mês corrente é provisório, não ruim
+
+O dado chega assim: uma preventiva agendada para o mês pode ser executada até
+o último dia, e o "Sem SLA" só se resolve quando ela fecha. Enquanto o mês
+não termina, execução e SLA estão **incompletos** — a conta ainda não acabou.
+
+Sem tratar isso, o mês corrente apareceria com execução baixa ao lado de
+meses fechados e a comparação seria falsa: o slide mostraria uma queda que
+não existe. Agosto/26 é o exemplo — 70,33% em Curitiba porque o mês estava
+correndo, não porque o desempenho caiu.
+
+Por isso `indicadoresPorImovel_`, `indicadoresPortfolio_` e
+`indicadoresAcumulado_` devolvem `parcial: true` quando o mês ainda não
+fechou, e `calcularExecucao_` conta separado o `emAberto` — o que nem fechou
+nem foi cancelado, ou seja, o que ainda pode virar realizada. É o teto até
+onde a execução daquele mês ainda pode subir.
+
+`conferirPreventivas()` avisa em destaque quando o mês está aberto. **Mês
+parcial não vai para o slide.**
+
 ### Números de 2026 (Megas, janela de agendamento)
 
 | | previstas | realizadas | execução |
@@ -139,6 +159,9 @@ divergir por recortar populações diferentes.
 | Curitiba | 1.765 | 1.702 | 96,43% |
 | Itajaí | 1.459 | 1.447 | 99,18% |
 | Esteio | 1.854 | 1.816 | 97,95% |
+
+Inclui agosto, que estava aberto na extração — o acumulado sobe quando ele
+fechar.
 
 ### Como usar
 
