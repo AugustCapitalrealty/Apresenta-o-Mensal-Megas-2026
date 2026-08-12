@@ -109,12 +109,45 @@ base tem ~254 preventivas/mês em Curitiba. São de outra fonte ou de outro
 recorte — não tentei reproduzir o número por engenharia reversa, porque
 acertá-lo por coincidência seria pior do que não acertá-lo.
 
+## Execução: realizadas ÷ previstas
+
+Indicador diferente do SLA, com denominador diferente:
+
+```
+PREVISTAS  = registros com data de agendamento no mês (mesma janela do SLA)
+REALIZADAS = dessas, as que estão com Estado "Fechada"
+Execução % = realizadas ÷ previstas × 100
+```
+
+| | Pergunta | Denominador |
+|---|---|---|
+| **Execução** | o serviço aconteceu? | tudo que foi agendado |
+| **SLA** | aconteceu no prazo? | só quem tinha prazo |
+
+A diferença é concreta na base: Curitiba/jan tem 225 previstas e 225 com SLA
+classificado (197+28), mas Esteio/jan tem 246 previstas e só 202 com SLA
+(197+5) — 44 registros entram na execução e ficam fora do SLA. Trocar um
+denominador pelo outro muda os dois números.
+
+Os dois saem da mesma lista filtrada (`preventivasDoMes_`), então não podem
+divergir por recortar populações diferentes.
+
+### Números de 2026 (Megas, janela de agendamento)
+
+| | previstas | realizadas | execução |
+|---|---|---|---|
+| Curitiba | 1.765 | 1.702 | 96,43% |
+| Itajaí | 1.459 | 1.447 | 99,18% |
+| Esteio | 1.854 | 1.816 | 97,95% |
+
 ### Como usar
 
-- `conferirSLA(2026, 6)` — SLA de preventivas do mês, por imóvel, com o corte
-  Megas × demais e o vocabulário real da coluna
+- `conferirPreventivas(2026, 6)` — execução e SLA lado a lado, por imóvel,
+  com Megas × demais e o acumulado do ano
+- `conferirSLA(2026, 6)` — só o SLA, com o vocabulário real da coluna
 - `conferirSLA(2026, 6, BD_ABA_CORRETIVAS)` — a mesma regra nas corretivas
-- `slaPortfolio_(aba, ano, mesIndex)` — o consolidado, para os slides
+- `indicadoresPortfolio_(aba, ano, mesIndex)` — o consolidado, para os slides
+- `indicadoresAcumulado_(aba, ano, mesIndexAte)` — o acumulado do ano
 
 ## Estrutura planejada
 

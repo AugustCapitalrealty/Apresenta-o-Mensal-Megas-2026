@@ -447,3 +447,136 @@ function conferirSLA(ano, mes, nomeAba) {
   Logger.log('\nA janela oficial é "data de agendamento" (SLA_JANELA_PADRAO), ' +
              'verificada contra a planilha de controle em 12 casos.');
 }
+
+
+// ==========================================
+// EXECUÇÃO — REALIZADAS x PREVISTAS
+// ==========================================
+// Regra do time:
+//   PREVISTAS  = registros com data de AGENDAMENTO no mês (mesma janela do SLA)
+//   REALIZADAS = dessas, as que estão com Estado "Fechada"
+//
+//     Execução % = realizadas ÷ previstas × 100
+//
+// NÃO confundir com o SLA. São perguntas diferentes e denominadores
+// diferentes de propósito:
+//
+//   Execução  o serviço ACONTECEU?      denominador = tudo que foi agendado
+//   SLA       aconteceu NO PRAZO?       denominador = só quem tinha prazo
+//
+// A diferença é real na base: Curitiba/jan tem 225 previstas e 225 com SLA
+// classificado (197+28), mas Esteio/jan tem 246 previstas e só 202 com SLA
+// (197+5) — 44 entram na execução e ficam fora do SLA. Usar um denominador
+// no lugar do outro muda os dois indicadores.
+function calcularExecucao_(itens) {
+  const previstas = itens.length;
+  const realizadas = itens.filter(it => {
+    const n = _histNorm_(it.estado);
+    return n === 'fechada' || n === 'fechado';
+  }).length;
+  return {
+    previstas: previstas,
+    realizadas: realizadas,
+    // Sem nada agendado não há execução a informar — 0% diria "nada foi
+    // feito", que é diferente de "nada foi programado".
+    pct: previstas ? (realizadas / previstas) * 100 : null
+  };
+}
+
+// Registros de um mês, na janela padrão. Base comum dos dois indicadores —
+// assim eles não podem divergir por filtrar populações diferentes.
+function preventivasDoMes_(nomeAba, ano, mesIndex, janela) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+  const campo  = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+  return _propLerBase_(nomeAba).filter(it => {
+    const d = it[campo];
+    return d && d >= refIni && d < refFim;
+  });
+}
+
+// SLA + execução por imóvel, de uma tacada só.
+function indicadoresPorImovel_(nomeAba, ano, mesIndex, janela) {
+  const porCC = {};
+  preventivasDoMes_(nomeAba, ano, mesIndex, janela)
+    .forEach(it => { (porCC[it.cc] = porCC[it.cc] || []).push(it); });
+
+  return Object.keys(porCC).map(cc => ({
+    cc      : cc,
+    mega    : _propEhMega_(cc),
+    sla     : calcularSLA_(porCC[cc]),
+    execucao: calcularExecucao_(porCC[cc])
+  })).sort((a, b) => b.execucao.previstas - a.execucao.previstas);
+}
+
+// Consolidado do portfólio com o corte Megas x demais — o recorte da
+// apresentação.
+function indicadoresPortfolio_(nomeAba, ano, mesIndex, janela) {
+  const noMes  = preventivasDoMes_(nomeAba, ano, mesIndex, janela);
+  const megas  = noMes.filter(it => _propEhMega_(it.cc));
+  const demais = noMes.filter(it => !_propEhMega_(it.cc));
+  const bloco  = l => ({ sla: calcularSLA_(l), execucao: calcularExecucao_(l) });
+  return { total: bloco(noMes), megas: bloco(megas), demais: bloco(demais) };
+}
+
+// Acumulado do ano até o mês de referência (inclusive) — é o número que o
+// e-mail chama de "No acumulado do ano".
+function indicadoresAcumulado_(nomeAba, ano, mesIndexAte, janela) {
+  const ini   = new Date(Date.UTC(ano, 0, 1));
+  const fim   = new Date(Date.UTC(ano, mesIndexAte + 1, 1));
+  const campo = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+  const lista = _propLerBase_(nomeAba).filter(it => {
+    const d = it[campo];
+    return d && d >= ini && d < fim;
+  });
+  return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista) };
+}
+
+// Painel do mês: execução e SLA lado a lado, por imóvel, com Megas x demais
+// e o acumulado do ano.
+function conferirPreventivas(ano, mes, nomeAba) {
+  const aba  = nomeAba || BD_ABA_PREVENTIVAS;
+  const hoje = new Date();
+  const ref  = (ano && mes) ? { ano: ano, index: mes - 1 }
+                            : { ano: hoje.getUTCFullYear(), index: hoje.getUTCMonth() - 1 };
+  if (ref.index < 0) { ref.index = 11; ref.ano--; }
+
+  Logger.log('======================================================');
+  Logger.log('PREVENTIVAS — ' + String(ref.index + 1).padStart(2, '0') + '/' + ref.ano);
+  Logger.log('======================================================');
+  Logger.log('Previstas = agendadas no mês · Realizadas = dessas, Estado "Fechada"');
+  Logger.log('SLA = cumpridos ÷ (cumpridos + não cumpridos); "Sem SLA" fora.');
+
+  const lista = indicadoresPorImovel_(aba, ref.ano, ref.index);
+  if (!lista.length) { Logger.log('\nNenhum registro no mês.'); return; }
+
+  const pct = v => v === null ? '—' : v.toFixed(2) + '%';
+  Logger.log('\n  ' + 'IMÓVEL'.padEnd(26) + 'PREV'.padStart(6) + 'REAL'.padStart(6) +
+             'EXECUÇÃO'.padStart(10) + 'C/NC'.padStart(9) + 'SLA'.padStart(9));
+  const linha = (rot, d) => Logger.log('  ' + rot.padEnd(26) +
+    String(d.execucao.previstas).padStart(6) + String(d.execucao.realizadas).padStart(6) +
+    pct(d.execucao.pct).padStart(10) +
+    (d.sla.cumpridos + '/' + d.sla.naoCumpridos).padStart(9) + pct(d.sla.pct).padStart(9));
+
+  lista.forEach(g => linha(g.cc, g));
+  const cons = indicadoresPortfolio_(aba, ref.ano, ref.index);
+  Logger.log('  ' + '-'.repeat(66));
+  linha('MEGAS', cons.megas);
+  linha('DEMAIS IMÓVEIS', cons.demais);
+  linha('PORTFÓLIO', cons.total);
+
+  const ac = indicadoresAcumulado_(aba, ref.ano, ref.index);
+  Logger.log('\n  ' + '-'.repeat(66));
+  linha('ACUMULADO ' + ref.ano, ac);
+
+  const semSla = lista.reduce((s, g) => s + g.sla.semSla, 0);
+  if (semSla) {
+    Logger.log('\n  ' + semSla + ' registro(s) "Sem SLA" no mês: entram nas PREVISTAS ' +
+               'e ficam fora do denominador do SLA.');
+  }
+  const desc = cons.total.desconhecidos;
+  if (desc.length) {
+    Logger.log('  ⚠ valores não reconhecidos na coluna SLA: ' +
+               Array.from(new Set(desc)).join(', '));
+  }
+}
