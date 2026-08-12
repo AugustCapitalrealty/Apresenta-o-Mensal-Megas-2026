@@ -172,6 +172,59 @@ fechar.
 - `indicadoresPortfolio_(aba, ano, mesIndex)` — o consolidado, para os slides
 - `indicadoresAcumulado_(aba, ano, mesIndexAte)` — o acumulado do ano
 
+## Estrutura da apresentação
+
+Definida com o time:
+
+| # | Seção | Dados |
+|---|---|---|
+| 1 | **Indicadores gerais** | consolidado do portfólio |
+| 2 | **Preventivas** | previstas, realizadas e SLA — mês e acumulado do ano |
+| 3 | **Corretivas** | abertas no mês, fechadas no mês |
+| 4 | **Backlog** | quantos chamados, com detalhe |
+| 5 | **Fotos de serviços** | espaço para registro |
+
+Todas com o corte **Megas × demais imóveis**. As preventivas têm também o
+corte **Propriedades × Facilities**.
+
+Os dados de 2, 3 e 4 já estão implementados em `02_Dados.gs` — falta o
+desenho dos slides.
+
+## Equipe: Propriedades × Facilities
+
+A lógica é quase a mesma das corretivas, com uma diferença na coluna:
+
+| | Coluna que define a equipe |
+|---|---|
+| Corretivas | `Responsáveis` (quem está atribuído) |
+| **Preventivas** | **`Fechado por`** (quem executou) |
+
+Regra do time: *"se foi fechado por propriedades é de propriedades, e foi
+fechado por facilities é de facilities"*.
+
+O mapa nome→equipe é cópia do `_RESPONSAVEL_EQUIPE_` de `megas-mensal`. Apps
+Script não tem import — ao acrescentar alguém lá, acrescente aqui também.
+
+### Uma decisão em aberto: a ronda
+
+Em 2026, das 5.462 preventivas agendadas:
+
+| Quem fechou | Registros | |
+|---|---|---|
+| `Ronda e Portaria (CTBA/ESTEIO/ITAJAÍ)` | **3.265** | 60% |
+| Nomes de Facilities | 1.719 | 31% |
+| Nomes de Operação | 184 | 3% |
+| Nomes de Propriedades | 142 | 3% |
+
+A ronda não é uma pessoa do mapa — é a conta da portaria, e responde por
+**60% da base**. Hoje ela sai como categoria própria (`RONDA`) em
+`conferirEquipes()`, justamente para a decisão ser tomada com o volume à
+vista: se ela entrar em Facilities, o número de Facilities quadruplica.
+
+Nas corretivas o projeto já usa o fallback "sem responsável reconhecido conta
+como FACILITIES", mas 60% da base é volume demais para resolver por fallback
+sem perguntar.
+
 ## Estrutura planejada
 
 Espelha `megas-mensal/`, porque é o formato que o time já conhece e é onde as

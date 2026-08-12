@@ -143,6 +143,8 @@ function _propLerBase_(nomeAba) {
     const cEstado = col('estado');
     const cSla    = col('sla');
     const cCli    = col('cliente');
+    // "Fechado por" define a equipe nas PREVENTIVAS (ver _propEquipePreventiva_).
+    const cQuem   = col('fechado por');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
@@ -165,6 +167,7 @@ function _propLerBase_(nomeAba) {
         estado   : cEstado >= 0 ? String(data[r][cEstado] || '').trim() : '',
         sla      : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
         cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
+        fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -613,4 +616,127 @@ function conferirPreventivas(ano, mes, nomeAba) {
     Logger.log('  ⚠ valores não reconhecidos na coluna SLA: ' +
                Array.from(new Set(desc)).join(', '));
   }
+}
+
+
+// ==========================================
+// EQUIPE — PROPRIEDADES x FACILITIES
+// ==========================================
+// A lógica é quase a mesma das corretivas, com UMA diferença na coluna:
+//
+//   CORRETIVAS   equipe vem de "Responsáveis" (quem está atribuído)
+//   PREVENTIVAS  equipe vem de "Fechado por"  (quem executou)
+//
+// Regra do time: "se foi fechado por propriedades é de propriedades, e foi
+// fechado por facilities é de facilities".
+//
+// O mapa nome→equipe é uma CÓPIA de megas-mensal/02_Dados.gs
+// (_RESPONSAVEL_EQUIPE_). Apps Script não tem import; ao acrescentar alguém
+// lá, acrescente aqui também — é o preço de projetos separados, e está no
+// CLAUDE.md da raiz.
+const _PROP_EQUIPE_ = (function () {
+  const bruto = {
+    PROPERTY: [
+      'Jonatas Augusto Ferreira', 'Matheus Ferreira Rompa', 'Luiz Guilherme Bernart',
+      'Nicolly Correa Branco', 'Ivan Fuscolin Neto', 'Jéssica Garcia de Holanda',
+      'Coordenação Propriedades', 'Lucas Beltrao Carneiro Santos', 'Ricardo Murilo da Silva',
+      'Analista de Propriedades II', 'Fernando Cesar Iurk', 'Cleverson Boeno Moro',
+      'Daniel Moreira', 'Pedro Henrique Dinalli Fidalgo', 'Wilson Francisco Leffer Junior'
+    ],
+    FACILITIES: [
+      'Guilherme Heck', 'Henrique Augusto Lobo', 'Jessé J. Do Prado', 'Jessé Jandir do Prado',
+      'José Ernesto', 'Leandro Genoveski', 'MEGA Curitiba', 'Mega Esteio', 'Mega Itajaí',
+      'Rodrigo Habitzreuter', 'Paulo Augusto Maximiano', 'Paulo Maximiano', 'Dionatan Rek',
+      'Mauro Sergio Silva Coelho', 'Mauro Coelho', 'Felipe Eduardo Campos',
+      'Amanda de Campos Alexandre', 'Amanda de Campos'
+    ],
+    OPERACAO: [
+      'Gerente Hangar', 'Leonardo Casagrande', 'Mariana Lucia Fernandes Rodrigues',
+      'Motorista', 'Motoristas', 'Anderson Matheus Da Cunha', 'Ariel Glisczeski Barbosa',
+      "Sergio Sivonei Sant'ana"
+    ]
+  };
+  const mapa = {};
+  Object.keys(bruto).forEach(eq => bruto[eq].forEach(n => { mapa[_histNorm_(n)] = eq; }));
+  return mapa;
+})();
+
+// "Ronda e Portaria (CTBA/ESTEIO/ITAJAÍ)" fecha 3.265 das 5.462 preventivas
+// de 2026 — 60% da base. Não é uma pessoa do mapa, é a conta da portaria.
+//
+// DECISÃO EM ABERTO: hoje cai em FACILITIES pelo mesmo fallback que as
+// corretivas já usam ("sem responsável reconhecido conta como FACILITIES,
+// não OUTROS", megas-mensal/02_Dados.gs). Como é a maior fatia da base, o
+// número de Facilities depende inteiramente dessa escolha — conferirEquipes()
+// mostra a ronda separada para a decisão ser tomada olhando o volume.
+function _propEhRonda_(quemFechou) {
+  return _histNorm_(quemFechou).indexOf('ronda') >= 0 ||
+         _histNorm_(quemFechou).indexOf('portaria') >= 0;
+}
+
+// Resolve a equipe de uma PREVENTIVA pela coluna "Fechado por".
+// Diferente das corretivas, aqui é um nome só, não uma lista — quem fechou
+// é quem executou.
+function _propEquipePreventiva_(quemFechou) {
+  const eq = _PROP_EQUIPE_[_histNorm_(quemFechou)];
+  if (eq) return eq;
+  if (_propEhRonda_(quemFechou)) return 'RONDA';
+  return '';   // sem quem fechou (ainda aberta) ou nome novo
+}
+
+// Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
+// apresentação pede. `RONDA` sai separada de propósito: enquanto a decisão
+// não for tomada, misturá-la em Facilities esconderia 60% da base dentro de
+// um número só.
+function indicadoresPorEquipe_(ano, mesIndex, janela) {
+  const porEq = {};
+  preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela).forEach(it => {
+    const eq = _propEquipePreventiva_(it.fechadoPor) || 'NÃO IDENTIFICADA';
+    (porEq[eq] = porEq[eq] || []).push(it);
+  });
+  const saida = {};
+  Object.keys(porEq).forEach(eq => {
+    saida[eq] = { sla: calcularSLA_(porEq[eq]), execucao: calcularExecucao_(porEq[eq]) };
+  });
+  saida.parcial = !_mesEncerrado_(ano, mesIndex);
+  return saida;
+}
+
+// Mostra a divisão por equipe com o volume de cada uma — inclusive a ronda,
+// para a decisão sobre ela ser tomada com o número na frente.
+function conferirEquipes(ano, mes) {
+  const hoje = new Date();
+  const ref  = (ano && mes) ? { ano: ano, index: mes - 1 }
+                            : { ano: hoje.getUTCFullYear(), index: hoje.getUTCMonth() - 1 };
+  if (ref.index < 0) { ref.index = 11; ref.ano--; }
+
+  Logger.log('======================================================');
+  Logger.log('PREVENTIVAS POR EQUIPE — ' + String(ref.index + 1).padStart(2, '0') + '/' + ref.ano);
+  Logger.log('======================================================');
+  Logger.log('Equipe = quem consta em "Fechado por" (regra das preventivas).');
+
+  const d = indicadoresPorEquipe_(ref.ano, ref.index);
+  const eqs = Object.keys(d).filter(k => k !== 'parcial');
+  if (!eqs.length) { Logger.log('\nNenhum registro no mês.'); return; }
+
+  const pct = v => v === null ? '—' : v.toFixed(2) + '%';
+  Logger.log('\n  ' + 'EQUIPE'.padEnd(20) + 'PREV'.padStart(6) + 'REAL'.padStart(6) +
+             'EXECUÇÃO'.padStart(10) + 'C/NC'.padStart(9) + 'SLA'.padStart(9));
+  eqs.sort((a, b) => d[b].execucao.previstas - d[a].execucao.previstas).forEach(eq => {
+    Logger.log('  ' + eq.padEnd(20) + String(d[eq].execucao.previstas).padStart(6) +
+      String(d[eq].execucao.realizadas).padStart(6) + pct(d[eq].execucao.pct).padStart(10) +
+      (d[eq].sla.cumpridos + '/' + d[eq].sla.naoCumpridos).padStart(9) +
+      pct(d[eq].sla.pct).padStart(9));
+  });
+
+  if (d.RONDA) {
+    Logger.log('\n  RONDA aparece separada: é a conta "Ronda e Portaria", não uma pessoa');
+    Logger.log('  do mapa de equipes. Some ' + d.RONDA.execucao.previstas + ' preventiva(s) no mês.');
+    Logger.log('  Decidir se ela entra em FACILITIES ou fica como categoria própria.');
+  }
+  if (d['NÃO IDENTIFICADA']) {
+    Logger.log('\n  ' + d['NÃO IDENTIFICADA'].execucao.previstas + ' sem equipe: ainda abertas ' +
+               '(sem "Fechado por") ou nome novo — acrescente em _PROP_EQUIPE_.');
+  }
+  if (d.parcial) Logger.log('\n  ⚠ mês ainda aberto — números provisórios.');
 }

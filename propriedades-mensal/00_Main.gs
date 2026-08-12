@@ -50,12 +50,31 @@ function gerarApresentacaoPropriedades_() {
   const prop = getPropriedadeAtiva();
   Logger.log('▶ Gerando apresentação de ' + prop.nome);
 
-  // Ordem oficial da apresentação. Cada entrada: { nome, fn }.
+  // Ordem oficial da apresentação, conforme definido com o time:
+  //
+  //   1. Indicadores gerais
+  //   2. Preventivas — previstas, realizadas e SLA, mês e acumulado do ano
+  //   3. Corretivas — abertas e fechadas no mês
+  //   4. Backlog — quantos chamados, com detalhe
+  //   5. Fotos de serviços
+  //
+  // Cada seção tem o corte Megas x demais imóveis e, nas preventivas, também
+  // o corte Propriedades x Facilities (_propEquipePreventiva_, 02_Dados.gs).
+  //
+  // Descomente conforme cada slide for implementado. Os dados de 2, 3 e 4 já
+  // existem em 02_Dados.gs — falta só o desenho.
   const passos = [
-    // { nome: 'Capa',                     fn: gerarSlideCapa },
-    // { nome: 'Backlog PROPERTY',         fn: gerarSlideBacklogProperty },
-    // { nome: 'Vistorias',                fn: gerarSlideVistorias },
-    // { nome: 'Encerramento',             fn: gerarSlideEncerramento }
+    // { nome: 'Capa',                  fn: gerarSlideCapa },
+    // { nome: 'Indicadores Gerais',    fn: gerarSlideIndicadoresGerais },
+    // { nome: 'Preventivas',           fn: gerarSlidePreventivas },
+    //     dados: indicadoresPortfolio_ / indicadoresAcumulado_ / indicadoresPorEquipe_
+    // { nome: 'Corretivas',            fn: gerarSlideCorretivas },
+    //     dados: fluxo do mês na BD-CORRETIVAS (abertas x fechadas)
+    // { nome: 'Backlog',               fn: gerarSlideBacklog },
+    //     dados: backlogPorCC_ (regra _histAbertoNoMes_, a mesma dos Megas)
+    // { nome: 'Backlog — Detalhe',     fn: gerarSlideBacklogDetalhe },
+    // { nome: 'Fotos de Serviços',     fn: gerarSlidesFotosServicos },
+    // { nome: 'Encerramento',          fn: gerarSlideEncerramento }
   ];
 
   if (!passos.length) {
