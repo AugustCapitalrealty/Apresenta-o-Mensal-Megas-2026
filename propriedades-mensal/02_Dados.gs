@@ -567,6 +567,25 @@ function indicadoresAcumulado_(nomeAba, ano, mesIndexAte, janela) {
            parcial: !_mesEncerrado_(ano, mesIndexAte) };
 }
 
+// Mesma ideia de indicadoresAcumulado_ (ano inteiro até o mês, inclusive),
+// mas filtrado pra equipe PROPRIEDADES — usada pelo card "ACUMULADO" de
+// Slide_Preventivas.gs, mesmo corte do resto do deck (nada de
+// Facilities/Terceiros).
+function obterAcumuladoPropriedades_(nomeAba, ano, mesIndexAte, janela) {
+  const resolver = nomeAba === BD_ABA_CORRETIVAS
+    ? (it => _propEquipeCorretiva_(it.responsaveis))
+    : (it => _propEquipePreventiva_(it.fechadoPor));
+  const ini   = new Date(Date.UTC(ano, 0, 1));
+  const fim   = new Date(Date.UTC(ano, mesIndexAte + 1, 1));
+  const campo = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+  const lista = _propLerBase_(nomeAba).filter(it => {
+    const d = it[campo];
+    return d && d >= ini && d < fim && resolver(it) === 'PROPERTY';
+  });
+  return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista),
+           parcial: !_mesEncerrado_(ano, mesIndexAte) };
+}
+
 // Painel do mês: execução e SLA lado a lado, por imóvel, com Megas x demais
 // e o acumulado do ano.
 function conferirPreventivas(ano, mes, nomeAba) {
@@ -964,15 +983,20 @@ function obterIndicadoresAcumulado_() {
 }
 
 // ==========================================
-// DASHBOARD OPERACIONAL — grid 2×2 comparativo
+// DASHBOARD OPERACIONAL — 2 quadrantes comparativos
 // ==========================================
 // Monta os 3 pontos no tempo (mês atual / mês anterior / mesmo mês ano
 // anterior) que o grid comparativo do Dashboard Operacional
 // (Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
 // Dashboard.gs) precisa — chamando obterIndicadoresPropriedades_/
 // obterBacklogPorCC_ com (ano, mesIndex) diferentes. Nenhum dado novo: são
-// as MESMAS funções que Preventivas/Corretivas/Backlog já usam pro mês
-// corrente, já filtradas pra equipe Propriedades.
+// as MESMAS funções que Preventivas/Backlog já usam pro mês corrente, já
+// filtradas pra equipe Propriedades.
+//
+// Só Preventivas e Backlog entram — Corretivas e o corte Megas x Demais
+// saíram do Dashboard por pedido do usuário (trabalhando por partes). O
+// mapa fica só com as chaves que Slide_IndicadoresGerais.gs lê hoje; se
+// Corretivas voltar ao grid, é só recalcular corr[] igual a prev[] abaixo.
 //
 // Recebimento de Obras fica FORA deste grid, de propósito: a planilha
 // (REL_RECEBIMENTO) é uma LISTA VIVA de pendências, não um registro
@@ -994,7 +1018,6 @@ function obterDashboardPropriedades_() {
   // Só a equipe PROPRIEDADES — Facilities e Terceiros não aparecem nesta
   // apresentação (pedido do usuário).
   const prev = pontos.map(p => obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, p.ano, p.index));
-  const corr = pontos.map(p => obterIndicadoresPropriedades_(BD_ABA_CORRETIVAS,  p.ano, p.index));
   const backlog = pontos.map(p =>
     obterBacklogPorCC_(p.ano, p.index).reduce((s, b) => s + b.total, 0));
 
@@ -1005,15 +1028,9 @@ function obterDashboardPropriedades_() {
   const map = new Map();
   map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
   map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
-  map.set('SLA Corretivas',         linha3(corr[0].total.sla.pct,      corr[1].total.sla.pct,      corr[2].total.sla.pct));
-  map.set('Execução Corretivas',    linha3(corr[0].total.execucao.pct, corr[1].total.execucao.pct, corr[2].total.execucao.pct));
   map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
-  map.set('SLA Preventivas Megas',  linha3(prev[0].megas.sla.pct,  prev[1].megas.sla.pct,  prev[2].megas.sla.pct));
-  map.set('SLA Preventivas Demais', linha3(prev[0].demais.sla.pct, prev[1].demais.sla.pct, prev[2].demais.sla.pct));
-  map.set('SLA Corretivas Megas',   linha3(corr[0].megas.sla.pct,  corr[1].megas.sla.pct,  corr[2].megas.sla.pct));
-  map.set('SLA Corretivas Demais',  linha3(corr[0].demais.sla.pct, corr[1].demais.sla.pct, corr[2].demais.sla.pct));
 
-  return { headers: headers, map: map, parcial: prev[0].parcial || corr[0].parcial };
+  return { headers: headers, map: map, parcial: prev[0].parcial };
 }
 
 // Backlog por Centro de Custos, em aberto NO FIM do mês (ano/mesIndex —

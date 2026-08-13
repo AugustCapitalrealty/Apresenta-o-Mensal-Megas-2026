@@ -2,81 +2,94 @@
  * ARQUIVO: Slide_Preventivas.gs
  * SLIDE — MANUTENÇÃO PREVENTIVA
  *
- * SLA de preventivas fechadas pela equipe PROPRIEDADES (nada de Facilities
- * nem Terceiros — esta apresentação é só do time de Propriedades), dois
- * blocos lado a lado (Megas e Demais Imóveis). O desenho da tabela é o
- * motor de 03_Tabelas.gs — a mesma faixa de legenda (_tabDesenharLegenda_)
- * e o mesmo grid de tabela (_tabDesenharTabela_) que Slide_RecebimentoObras.gs
- * e Slide_Contratacoes.gs já usam.
- *
- * _propLinhasEquipeSLA_/_propBlocoEquipeSLA_ são compartilhados com
- * Slide_Corretivas.gs (mesmo formato de dado — cumpridos/não cumpridos —,
- * só a fonte dos números muda). Definidos aqui por serem usados pela
- * primeira vez neste slide.
+ * Mesmo desenho do slide de Preventivas dos Megas
+ * (megas-mensal/Slide02_Preventivas.gs): dois cards lado a lado — MÊS DE
+ * REFERÊNCIA e ACUMULADO DO ANO —, cada um com PREVISTAS / REALIZADAS / SLA
+ * e uma barra de progresso (Realizadas ÷ Previstas). Dado 100% da equipe
+ * PROPRIEDADES (obterIndicadoresPropriedades_/obterAcumuladoPropriedades_,
+ * 02_Dados.gs) — nada de Facilities/Terceiros, nada de Megas x Demais por
+ * enquanto (trabalhando por partes, a pedido do usuário).
  */
 
 function gerarSlidePreventivas() {
-  const deck = getDeckMensal_();
-  const SW = deck.getPageWidth(), SH = deck.getPageHeight();
+  const deck  = getDeckMensal_();
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
+  const ref = obterMesReferencia_();
   criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA',
-    'SLA de preventivas fechadas pela equipe de Propriedades');
+    'Aderência ao cronograma — equipe de Propriedades · ' + ref.ano);
 
-  const megas  = obterIndicadoresAcumulado_().preventivas;
-  const demais = obterIndicadoresAcumulado_().preventivasDemais;
-  if (!megas || !demais) {
-    Logger.log('✗ Preventivas: sem dados disponíveis');
-    return;
+  const mensal     = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index).total;
+  const acumulado  = obterAcumuladoPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+
+  const dadosMensal = {
+    titulo    : (ref.curto || ref.nome) + ' / ' + ref.ano,
+    previstas : mensal.execucao.previstas,
+    realizadas: mensal.execucao.realizadas,
+    sla       : mensal.sla.pct
+  };
+  const dadosAcumulado = {
+    titulo    : 'ACUMULADO ' + ref.ano + ' (JAN–' + String(ref.curto || ref.nome).toUpperCase() + ')',
+    previstas : acumulado.execucao.previstas,
+    realizadas: acumulado.execucao.realizadas,
+    sla       : acumulado.sla.pct
+  };
+
+  const marginX = 30, topY = 80, gap = 30, cardH = 160;
+  const cardW = (W - marginX * 2 - gap) / 2;
+
+  _prevCardMetrica_(slide, marginX,               topY, cardW, cardH, dadosMensal,    DS.colors.themePrev);
+  _prevCardMetrica_(slide, marginX + cardW + gap, topY, cardW, cardH, dadosAcumulado, DS.colors.brandLight);
+
+  Logger.log('✓ Preventivas gerado — mês ' + dadosMensal.previstas + '/' + dadosMensal.realizadas +
+             ', acumulado ' + dadosAcumulado.previstas + '/' + dadosAcumulado.realizadas);
+}
+
+// Card com PREVISTAS/REALIZADAS/SLA lado a lado + barra de progresso
+// (Realizadas ÷ Previstas) — mesmo componente de
+// megas-mensal/Slide02_Preventivas.gs (_desenharCardMetrica).
+function _prevCardMetrica_(slide, x, y, w, h, dados, corTema) {
+  const DS = CR_DESIGN_SYSTEM;
+  const contentY = criarCardPainel(slide, x, y, w, h, dados.titulo, corTema) + 6;
+  const colW = (w - 20) / 3;
+
+  const slaTxt = dados.sla == null ? '—' : dados.sla.toFixed(1) + '%';
+  _prevItemSimples_(slide, x + 10,            contentY, colW, 'PREVISTAS',  dados.previstas,  DS.colors.textMuted, DS.colors.textMain);
+  _prevItemSimples_(slide, x + 10 + colW,     contentY, colW, 'REALIZADAS', dados.realizadas, DS.colors.textMuted, DS.colors.textMain);
+  _prevItemSimples_(slide, x + 10 + colW * 2, contentY, colW, 'SLA',        slaTxt,           DS.colors.textMuted, corPorSLA(dados.sla, corTema));
+
+  // Barra de progresso Realizadas/Previstas, no rodapé do card.
+  if (dados.previstas > 0) {
+    const pct = Math.max(0, Math.min(1, dados.realizadas / dados.previstas));
+    const bx = x + 15, bw = w - 105, by = y + h - 24, bh = 8;
+
+    const trilho = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, bx, by, bw, bh);
+    trilho.getFill().setSolidFill('#EEF2F7'); trilho.getBorder().setTransparent();
+
+    if (pct > 0.02) {
+      const fill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, bx, by, Math.max(bw * pct, 10), bh);
+      fill.getFill().setSolidFill(corTema); fill.getBorder().setTransparent();
+    }
+
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx + bw + 6, by - 4, 80, 16);
+    lbl.getText().setText(Math.round(pct * 100) + '% realizado').getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
   }
-
-  // Blocos compactos (1 linha de dado cada) centralizados no espaço abaixo
-  // do cabeçalho, em vez de esticados pela metade do slide como quando
-  // cada um tinha 3 linhas (Propriedades/Facilities/Terceiros).
-  const topY = 74, marginBottom = 16, gap = 16, blocoH = 92;
-  const availH = SH - topY - marginBottom;
-  const startY = topY + Math.max(0, (availH - (blocoH * 2 + gap)) / 2);
-
-  _propBlocoEquipeSLA_(slide, SW, SH, startY, blocoH, 'MEGAS', megas);
-  _propBlocoEquipeSLA_(slide, SW, SH, startY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
-
-  Logger.log('✓ Preventivas gerado');
 }
 
+function _prevItemSimples_(slide, x, y, w, label, valor, colorLabel, colorVal) {
+  const DS = CR_DESIGN_SYSTEM;
+  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
+  lbl.getText().setText(label).getTextStyle()
+    .setFontSize(7.5).setBold(true).setForegroundColor(colorLabel).setFontFamily(DS.typography.body);
+  lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-// ==========================================
-// TABELA DE SLA (equipe Propriedades) — compartilhada com Slide_Corretivas.gs
-// ==========================================
-const PROP_EQUIPE_COLUNAS_SLA = [
-  { nome: 'Equipe',         tipo: 'texto',  largura: 0.34 },
-  { nome: 'Cumpridos',      tipo: 'numero', largura: 0.20 },
-  { nome: 'Não Cumpridos',  tipo: 'numero', largura: 0.23 },
-  { nome: 'SLA',            tipo: 'numero', largura: 0.23 }
-];
-
-function _propSlaPct_(cumpridos, naoCumpridos) {
-  const total = (cumpridos || 0) + (naoCumpridos || 0);
-  return total > 0 ? (cumpridos / total * 100).toFixed(1) + '%' : '-';
-}
-
-// Uma linha só — Propriedades. Facilities e Terceiros não entram nesta
-// apresentação (pedido do usuário).
-function _propLinhasEquipeSLA_(dados) {
-  return [
-    ['Propriedades', dados.properties_cumpridos, dados.properties_nao_cumpridos,
-      _propSlaPct_(dados.properties_cumpridos, dados.properties_nao_cumpridos)]
-  ];
-}
-
-// Um bloco = faixa de legenda (mesmo componente usado por "HISTÓRICO ·
-// CONCLUÍDOS" no Recebimento de Obras) + tabela de 1 linha (Propriedades).
-function _propBlocoEquipeSLA_(slide, SW, SH, y, h, legenda, dados) {
-  const legH = SH * 0.045;
-  _tabDesenharLegenda_(slide, SW, y, legH, legenda);
-  const topoTab = y + legH + SH * 0.008;
-
-  _tabDesenharTabela_(slide, SW, SH, _propLinhasEquipeSLA_(dados), topoTab, y + h,
-    { colunas: PROP_EQUIPE_COLUNAS_SLA, maxLinhas: 1 });
+  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
+  val.getText().setText(String(valor)).getTextStyle()
+    .setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
+  val.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }

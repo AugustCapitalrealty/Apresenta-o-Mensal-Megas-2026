@@ -17,13 +17,10 @@
  * grid com tabela ▲/▼ dentro de cada painel, e é isso que este arquivo
  * desenha agora.
  *
- * OS 4 QUADRANTES (e por que Recebimento de Obras não é um deles)
- *   1. Manutenção Preventiva — SLA e Execução, série mensal real.
- *   2. Manutenção Corretiva  — SLA e Execução, série mensal real.
- *   3. Backlog em aberto     — contagem no fim do mês, série mensal real.
- *   4. SLA — Megas x Demais Imóveis — o recorte que esta apresentação
- *      inteira usa (ver 01_Config.gs, "PORTFÓLIO — O CORTE MEGAS x
- *      DEMAIS"), aplicado ao SLA de Preventivas e Corretivas.
+ * OS 2 QUADRANTES (por pedido do usuário — trabalhando por partes: tirou
+ * Manutenção Corretiva e SLA Megas x Demais Imóveis daqui, ficam só)
+ *   1. Manutenção Preventiva — SLA e "Em dia" (execução), série mensal real.
+ *   2. Backlog em aberto     — contagem no fim do mês, série mensal real.
  *   Recebimento de Obras NÃO entra: a planilha é uma lista viva de
  *   pendências, sem registro histórico por mês — não dá pra saber "quanto
  *   estava concluído em maio" sem inventar estado passado. Ver o comentário
@@ -53,36 +50,29 @@ function gerarSlideIndicadoresGerais() {
   // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
   // (colore a seta de tendência vs mês anterior). sla: aplica corPorSLA
   // (≥95 verde, ≥90 âmbar, <90 vermelho) no valor do mês atual.
+  //
+  // "Em dia (%)" é o mesmo rótulo que o Dashboard dos Megas usa pra
+  // execução (megas-mensal/Slide01_Dashboard.gs, linha 34) — pedido do
+  // usuário pra manter o vocabulário igual entre os dois decks.
   const structure = [
     { title: 'MANUTENÇÃO PREVENTIVA', color: DS.colors.themePrev, rows: [
-      { label: 'SLA (%)',      lookup: 'SLA Preventivas',      sentido: 'maior', sla: true },
-      { label: 'Execução (%)', lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
-    ] },
-    { title: 'MANUTENÇÃO CORRETIVA', color: DS.colors.themeCorr, rows: [
-      { label: 'SLA (%)',      lookup: 'SLA Corretivas',      sentido: 'maior', sla: true },
-      { label: 'Execução (%)', lookup: 'Execução Corretivas', sentido: 'maior', sla: true }
+      { label: 'SLA (%)',     lookup: 'SLA Preventivas',      sentido: 'maior', sla: true },
+      { label: 'Em dia (%)',  lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
     ] },
     { title: 'BACKLOG — CHAMADOS EM ABERTO', color: DS.colors.themeAtivos, rows: [
       { label: 'Total em aberto (Qtd)', lookup: 'Backlog em aberto', sentido: 'menor', sla: false }
-    ] },
-    { title: 'SLA — MEGAS x DEMAIS IMÓVEIS', color: DS.colors.themeAcesso, rows: [
-      { label: 'Preventivas · Megas (%)',  lookup: 'SLA Preventivas Megas',  sentido: 'maior', sla: true },
-      { label: 'Preventivas · Demais (%)', lookup: 'SLA Preventivas Demais', sentido: 'maior', sla: true },
-      { label: 'Corretivas · Megas (%)',   lookup: 'SLA Corretivas Megas',   sentido: 'maior', sla: true },
-      { label: 'Corretivas · Demais (%)',  lookup: 'SLA Corretivas Demais',  sentido: 'maior', sla: true }
     ] }
   ];
 
-  // Geometria igual à do Dashboard dos Megas, adaptada ao topo padrão (74)
-  // que o resto deste deck usa (criarHeaderPadrao termina a linha em y=62).
+  // Só 2 quadrantes agora — lado a lado, ocupando a altura toda abaixo do
+  // cabeçalho (em vez do grid 2×2 de quando eram 4).
   const marginX = 28, marginY = 74, gap = 16, footerMargin = 15;
   const cardW = (W - (2 * marginX) - gap) / 2;
-  const cardH = (H - marginY - footerMargin - gap) / 2;
+  const cardH = H - marginY - footerMargin;
 
   structure.forEach((cat, i) => {
-    const row = Math.floor(i / 2), col = i % 2;
-    const x = marginX + (col * (cardW + gap));
-    const y = marginY + (row * (cardH + gap));
+    const x = marginX + (i * (cardW + gap));
+    const y = marginY;
 
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
 
