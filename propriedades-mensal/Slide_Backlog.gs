@@ -3,11 +3,15 @@
  * SLIDE — BACKLOG (Demandas em Aberto)
  *
  * Backlog (chamados em aberto) por Centro de Custos, em GRÁFICO de barras —
- * uma barra por imóvel, dois blocos empilhados (Megas e Demais Imóveis).
- * Antes era tabela (motor de 03_Tabelas.gs); pedido do usuário pra virar
- * gráfico. _sTxt/_utilEscalaTeto_ já estão em Slide_Corretivas.gs (mesmo
- * namespace, reaproveitados aqui).
+ * uma barra por imóvel, todos juntos num gráfico só (Megas e Demais
+ * Imóveis misturados, maior primeiro — pedido do usuário, sem separar em
+ * blocos). Antes era tabela (motor de 03_Tabelas.gs), depois virou gráfico
+ * em dois blocos separados; agora é um gráfico único. _sTxt/
+ * _utilEscalaTeto_ já estão em Slide_Corretivas.gs (mesmo namespace,
+ * reaproveitados aqui).
  */
+
+const PROP_BACKLOG_MAX_BARRAS = 14;
 
 function gerarSlideBacklog() {
   const deck = getDeckMensal_();
@@ -25,38 +29,26 @@ function gerarSlideBacklog() {
     return;
   }
 
-  const megas  = backlog.filter(b => _propEhMega_(b.cc));
-  const demais = backlog.filter(b => !_propEhMega_(b.cc));
+  const topY = 74, marginBottom = 16;
+  _propGraficoBacklogCC_(slide, SW, SH, topY, SH - topY - marginBottom, backlog);
 
-  const topY = 74, marginBottom = 16, gap = 16;
-  const blocoH = (SH - topY - marginBottom - gap) / 2;
-
-  _propGraficoBacklogCC_(slide, SW, SH, topY, blocoH, 'MEGAS', megas);
-  _propGraficoBacklogCC_(slide, SW, SH, topY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
-
-  Logger.log('✓ Backlog gerado (gráfico)');
+  Logger.log('✓ Backlog gerado (gráfico único)');
 }
 
-// Barras por Centro de Custos antes de resumir o resto em "+ N outro(s)" —
-// Megas nunca bate nisso (só 3 cidades), Demais Imóveis pode ter mais
-// Centros de Custos do que cabe com barra legível.
-const PROP_BACKLOG_MAX_BARRAS = 8;
-
-// Um bloco = faixa de legenda (mesmo componente de "HISTÓRICO ·
-// CONCLUÍDOS" no Recebimento de Obras) + gráfico de barras por Centro de
-// Custos, maior primeiro.
-function _propGraficoBacklogCC_(slide, SW, SH, y, h, legenda, dados) {
+// Gráfico de barras por Centro de Custos, maior primeiro — sem separar
+// Megas de Demais Imóveis.
+function _propGraficoBacklogCC_(slide, SW, SH, y, h, dados) {
   const DS = CR_DESIGN_SYSTEM;
-  const legH = SH * 0.045;
-  _tabDesenharLegenda_(slide, SW, y, legH, legenda);
-
-  const chartY = y + legH + SH * 0.008;
-  const chartH = y + h - chartY;
   const M = SW * 0.020;
   const chartX = M, chartW = SW - M * 2;
 
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, chartX, y, chartW, h);
+  bg.getFill().setSolidFill(DS.colors.cardBg);
+  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  bg.getBorder().setWeight(1);
+
   if (!dados.length) {
-    _sTxt(slide, chartX, chartY, chartW, chartH, 'Nenhum chamado em aberto.', 9, false, DS.colors.textMuted, 'center');
+    _sTxt(slide, chartX, y, chartW, h, 'Nenhum chamado em aberto.', 10, false, DS.colors.textMuted, 'center');
     return;
   }
 
@@ -67,14 +59,9 @@ function _propGraficoBacklogCC_(slide, SW, SH, y, h, legenda, dados) {
   const barras = exibir.map(d => ({ cc: d.cc, total: d.total }));
   if (resto > 0) barras.push({ cc: '+ ' + (ordenado.length - exibir.length) + ' outro(s)', total: resto });
 
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, chartX, chartY, chartW, chartH);
-  bg.getFill().setSolidFill(DS.colors.cardBg);
-  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
-  bg.getBorder().setWeight(1);
-
-  const mL = 8, mR = 8, mT = 26, mB = 30;
+  const mL = 10, mR = 10, mT = 20, mB = 34;
   const plotX = chartX + mL, plotW = chartW - mL - mR;
-  const plotY = chartY + mT, plotH = chartH - mT - mB;
+  const plotY = y + mT, plotH = h - mT - mB;
 
   const n = barras.length;
   const slotW = plotW / n;
@@ -96,7 +83,7 @@ function _propGraficoBacklogCC_(slide, SW, SH, y, h, legenda, dados) {
     _sTxt(slide, plotX + i * slotW, plotY + plotH - hBar - 16, slotW, 14,
       formatarNumeroBR(b.total), 9, true, DS.colors.brandDark, 'center');
 
-    _sTxt(slide, plotX + i * slotW - slotW * 0.1, plotY + plotH + 4, slotW * 1.2, 24,
+    _sTxt(slide, plotX + i * slotW - slotW * 0.1, plotY + plotH + 4, slotW * 1.2, 28,
       b.cc, 6.5, true, DS.colors.textMain, 'center');
   });
 }
