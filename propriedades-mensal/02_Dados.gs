@@ -399,6 +399,65 @@ function inspecionarBase(nomeAba) {
   }
 }
 
+// Procura coluna de "motivo da pausa" (ou parecido) na BD-CORRETIVAS, pra
+// avaliar se dá pra montar um slide de "Chamados Pendentes por Motivo",
+// equivalente honesto ao "Chamados Pendentes (Backlog) por Estado" dos
+// Megas (que lá vem de aba digitada à mão, sem fonte bruta — não existe
+// pro portfólio de Propriedades). Mostra TODAS as colunas do cabeçalho e,
+// pra qualquer uma cujo nome pareça ser de status/motivo/pausa, o
+// vocabulário completo (valor + quantas linhas têm esse valor) — mesmo
+// espírito de conferirSLA(): responder "que coluna é essa e o que tem
+// dentro" sem abrir a planilha.
+function diagnosticarMotivoPausa_(nomeAba) {
+  const aba = nomeAba || BD_ABA_CORRETIVAS;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO — MOTIVO DA PAUSA — ' + aba);
+  Logger.log('======================================================');
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _propAba_(ss, aba);
+    if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) { Logger.log('Aba vazia.'); return; }
+
+    const hdrOriginal = data[0];
+    const hdrNorm      = hdrOriginal.map(_histNorm_);
+
+    Logger.log('\nTodas as colunas (' + hdrOriginal.length + '):');
+    hdrOriginal.forEach((h, i) => {
+      if (String(h).trim()) Logger.log('  [' + String(i).padStart(2) + '] ' + h);
+    });
+
+    // Candidatas: qualquer cabeçalho que contenha uma dessas palavras.
+    const CHAVES = ['motivo', 'pausa', 'status', 'situacao', 'fase', 'etapa', 'estagio'];
+    const candidatas = [];
+    hdrNorm.forEach((h, i) => {
+      if (CHAVES.some(k => h.indexOf(k) >= 0)) candidatas.push(i);
+    });
+
+    if (!candidatas.length) {
+      Logger.log('\n⚠ Nenhuma coluna com nome parecido com motivo/pausa/status/situação/fase/etapa.');
+      Logger.log('Se a coluna existir com outro nome, veja a lista completa acima e me diga qual é.');
+      return;
+    }
+
+    candidatas.forEach(ci => {
+      Logger.log('\n--- Coluna [' + ci + '] "' + hdrOriginal[ci] + '" ---');
+      const vocab = {};
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][ci] || '').trim() || '(vazio)';
+        vocab[v] = (vocab[v] || 0) + 1;
+      }
+      Object.keys(vocab).sort((a, b) => vocab[b] - vocab[a]).forEach(v => {
+        Logger.log('  ' + String(vocab[v]).padStart(6) + '  ' + v);
+      });
+    });
+  } catch (e) {
+    Logger.log('Erro: ' + e.message);
+  }
+}
+
 // Lista o portfólio conhecido pela base, separando Megas dos demais.
 //
 // É ferramenta de CONFERÊNCIA, não de cadastro: não existe lista de imóveis
