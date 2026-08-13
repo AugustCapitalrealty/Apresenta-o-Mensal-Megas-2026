@@ -12,6 +12,7 @@ apresentações no Google Slides.
 | [`gestao-tvs/`](gestao-tvs/) | Gestão à Vista exibida nas TVs |
 | [`controle-acessos/`](controle-acessos/) | Boletim de Controle de Acessos |
 | [`propriedades-mensal/`](propriedades-mensal/) | Apresentação Mensal de Propriedades — **em construção** |
+| [`tabelas/`](tabelas/) | Apresentações semanais — Mega Curitiba, Mega Itajaí, Previsão do Tempo, Propriedades |
 
 Cada pasta é um **projeto Apps Script independente**, com seu próprio arquivo
 de configuração e seus próprios pontos de entrada. A pasta organiza o código

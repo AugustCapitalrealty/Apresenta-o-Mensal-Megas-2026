@@ -1,7 +1,7 @@
 # Apresentações Capital Realty — repositório único
 
-Cinco projetos de Google Apps Script que geram apresentações no Google
-Slides. Cada um vive numa pasta e **continua sendo um projeto Apps Script
+Projetos de Google Apps Script que geram apresentações no Google Slides.
+Cada um vive numa pasta e **continua sendo um projeto Apps Script
 separado** — a pasta organiza o código no git, não junta os projetos.
 
 | Pasta | Projeto | Arquivos |
@@ -11,6 +11,14 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 9 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades — **em construção** | 2 `.gs` |
+| `tabelas/` | Apresentações semanais — **5 subprojetos**, um por apresentação (ver [`tabelas/README.md`](tabelas/README.md)) | 6 `.gs` |
+
+`tabelas/` é diferente das outras: a pasta em si não é um projeto, é um
+agrupamento de cinco (`mega-curitiba/`, `mega-itajai/`, `previsao-tempo/`,
+`propriedades-semanal/`, `template/`), cada subpasta o seu próprio projeto
+Apps Script — assim já vinha organizado no repositório de origem
+(`tabelas-Mega-Itajai`), e a estrutura foi trazida como estava. A regra do
+namespace único vale por subpasta, não pela pasta `tabelas/` inteira.
 
 ## A regra que não dá para esquecer
 
@@ -46,11 +54,12 @@ se os arquivos foram copiados para o editor.
 
 ## Design system
 
-`CR_DESIGN_SYSTEM` existe em quatro projetos, com os mesmos valores de marca
+`CR_DESIGN_SYSTEM` existe em nove projetos — os quatro de fora de `tabelas/`
+mais os cinco subprojetos de `tabelas/` — com os mesmos valores de marca
 (`brandDark #151E49`, `brandMed #003D7B`, `brandLight #065CA9`,
 `bgSlide #F8FAFC`). É o mesmo sistema replicado por cópia — `gestao-tvs` está
-uma cor atrás (não tem `brandSoft`). Ao mexer na paleta de um, verifique os
-outros.
+uma cor atrás (não tem `brandSoft`; os cinco de `tabelas/` têm). Ao mexer na
+paleta de um, verifique os outros.
 
 ## Lições que valem para todos os projetos
 
