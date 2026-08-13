@@ -31,15 +31,16 @@ function gerarSlideIndicadoresGerais() {
   const marginX = 28, topY = 74, cardH = 72, gap = 8;
   const cardW = (W - marginX * 2 - gap * 3) / 4;
 
+  const variacao = dados.backlogVariacao;
   const cards = [
-    { label: 'SLA RECEBIMENTO DE OBRAS', valor: dados.slaRecebimento.toFixed(1) + '%',
-      nota: 'R$ ' + dados.valorRecebimento, cor: DS.colors.accentGreen },
+    { label: 'RECEBIMENTO DE OBRAS', valor: dados.pctRecebimentoObras.toFixed(1) + '%',
+      nota: dados.recebimentoConcluidos + '/' + dados.recebimentoTotal + ' concluídos', cor: DS.colors.accentGreen },
     { label: 'SLA PREVENTIVAS', valor: dados.slaPreventivas.toFixed(1) + '%',
       nota: dados.previntivasRealizado + '/' + dados.previntivasTotal + ' realizadas', cor: DS.colors.brandLight },
     { label: 'EXECUÇÃO CORRETIVAS', valor: dados.execucaoCorretivas.toFixed(1) + '%',
       nota: dados.corretvasRealizado + '/' + dados.corretvasTotal + ' realizadas', cor: DS.colors.accentOrange },
     { label: 'BACKLOG ABERTO', valor: String(dados.backlogTotal),
-      sub: '+' + dados.backlogMesAnterior, corSub: DS.colors.accentRed, nota: 'vs mês anterior', cor: DS.colors.accentRed }
+      sub: (variacao >= 0 ? '+' : '') + variacao, corSub: DS.colors.accentRed, nota: 'vs mês anterior', cor: DS.colors.accentRed }
   ];
 
   cards.forEach((c, i) => {

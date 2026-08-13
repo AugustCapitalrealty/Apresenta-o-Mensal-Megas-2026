@@ -145,6 +145,9 @@ function _propLerBase_(nomeAba) {
     const cCli    = col('cliente');
     // "Fechado por" define a equipe nas PREVENTIVAS (ver _propEquipePreventiva_).
     const cQuem   = col('fechado por');
+    // "Responsáveis" define a equipe nas CORRETIVAS (ver _propEquipeCorretiva_)
+    // — lista separada por vírgula, diferente de "Fechado por" que é um nome só.
+    const cResp   = col('responsaveis', 'responsável');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
@@ -168,6 +171,7 @@ function _propLerBase_(nomeAba) {
         sla      : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
         cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
         fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
+        responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -690,21 +694,64 @@ function _propEquipePreventiva_(quemFechou) {
   return '';   // sem quem fechou (ainda aberta) ou nome novo
 }
 
-// Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
-// apresentação pede, mais TERCEIROS (ronda e portaria de cada
-// empreendimento), que é execução contratada e não da equipe interna.
-function indicadoresPorEquipe_(ano, mesIndex, janela) {
+// Resolve a equipe de uma CORRETIVA pela coluna "Responsáveis" — lista
+// separada por vírgula, pode ter mais de um nome no mesmo chamado. Mesma
+// regra de prioridade dos Megas (_resolverEquipeResponsaveis_ em
+// megas-mensal/02_Dados.gs): PROPERTY vence se estiver na lista, senão
+// FACILITIES, senão OPERACAO.
+function _propEquipeCorretiva_(responsaveisTxt) {
+  if (_propEhTerceiro_(responsaveisTxt)) return 'TERCEIROS';
+  const equipes = String(responsaveisTxt || '').split(',')
+    .map(n => _PROP_EQUIPE_[_histNorm_(n.trim())])
+    .filter(Boolean);
+  if (equipes.indexOf('PROPERTY') >= 0) return 'PROPERTY';
+  if (equipes.indexOf('FACILITIES') >= 0) return 'FACILITIES';
+  if (equipes.indexOf('OPERACAO') >= 0) return 'OPERACAO';
+  return '';   // ninguém reconhecido na lista, ou lista vazia
+}
+
+// Agrupa itens JÁ FILTRADOS (mês, e opcionalmente Megas x demais) por
+// equipe e calcula SLA + execução de cada grupo. Compartilhado entre
+// preventivas (_propEquipePreventiva_) e corretivas (_propEquipeCorretiva_)
+// — só muda a função que resolve a equipe de cada item.
+function _propAgruparPorEquipe_(itens, resolverEquipeFn) {
   const porEq = {};
-  preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela).forEach(it => {
-    const eq = _propEquipePreventiva_(it.fechadoPor) || 'NÃO IDENTIFICADA';
+  itens.forEach(it => {
+    const eq = resolverEquipeFn(it) || 'NÃO IDENTIFICADA';
     (porEq[eq] = porEq[eq] || []).push(it);
   });
   const saida = {};
   Object.keys(porEq).forEach(eq => {
     saida[eq] = { sla: calcularSLA_(porEq[eq]), execucao: calcularExecucao_(porEq[eq]) };
   });
+  return saida;
+}
+
+// Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
+// apresentação pede, mais TERCEIROS (ronda e portaria de cada
+// empreendimento), que é execução contratada e não da equipe interna.
+// Sem corte Megas x demais — usada por conferirEquipes(); para o slide,
+// ver indicadoresPorEquipeSegmento_.
+function indicadoresPorEquipe_(ano, mesIndex, janela) {
+  const itens = preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela);
+  const saida = _propAgruparPorEquipe_(itens, it => _propEquipePreventiva_(it.fechadoPor));
   saida.parcial = !_mesEncerrado_(ano, mesIndex);
   return saida;
+}
+
+// Mesma ideia de indicadoresPorEquipe_, mas com o corte Megas x demais que
+// os slides de Preventivas/Corretivas precisam — genérica na base (aba +
+// resolvedor de equipe) para servir às duas, sem duplicar a lógica de
+// filtro por mês/mega.
+function indicadoresPorEquipeSegmento_(nomeAba, resolverEquipeFn, ano, mesIndex, janela) {
+  const itens  = preventivasDoMes_(nomeAba, ano, mesIndex, janela);
+  const megas  = itens.filter(it => _propEhMega_(it.cc));
+  const demais = itens.filter(it => !_propEhMega_(it.cc));
+  return {
+    megas  : _propAgruparPorEquipe_(megas, resolverEquipeFn),
+    demais : _propAgruparPorEquipe_(demais, resolverEquipeFn),
+    parcial: !_mesEncerrado_(ano, mesIndex)
+  };
 }
 
 // Mostra a divisão por equipe com o volume de cada uma — inclusive a ronda,
@@ -786,84 +833,109 @@ function obterMesReferencia_() {
   };
 }
 
+// % de itens concluídos nos relatórios de Recebimento de Obras (Esteio +
+// Curitiba — "Análise de Projetos" é um relatório à parte, com o próprio
+// critério de conclusão, e não entra nesta média). Lê a mesma REL_RECEBIMENTO
+// e o mesmo _tabLerAba_ que Slide_RecebimentoObras.gs usa para desenhar as
+// tabelas — um número só de fonte, em vez de recalcular por conta própria e
+// arriscar divergir do que a tabela mostra.
+function obterRecebimentoObrasResumo_() {
+  let total = 0, concluidos = 0;
+  try {
+    ['esteio', 'ctba'].forEach(k => {
+      const rel = REL_RECEBIMENTO[k];
+      const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+      total += linhas.length;
+      concluidos += linhas.filter(rel.testeConcluido).length;
+    });
+  } catch (e) {
+    Logger.log('obterRecebimentoObrasResumo_: ' + e.message);
+    return { total: 0, concluidos: 0, pct: null };
+  }
+  return { total: total, concluidos: concluidos, pct: total ? (concluidos / total) * 100 : null };
+}
+
+// Backlog aberto do mês anterior (mesmo índice de mês, um a menos) — só
+// para o delta do card de KPI.
+function _propMesAnterior_(ano, mesIndex) {
+  return mesIndex === 0 ? { ano: ano - 1, index: 11 } : { ano: ano, index: mesIndex - 1 };
+}
+
 // Indicadores do portfólio para o mês de referência
 function obterIndicadoresPortfolio_() {
   const ref = obterMesReferencia_();
-  const dados = indicadoresPortfolio_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+  const dadosPrev = indicadoresPortfolio_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+  const dadosCorr = indicadoresPortfolio_(BD_ABA_CORRETIVAS, ref.ano, ref.index);
+  const recebimento = obterRecebimentoObrasResumo_();
+
+  const backlogAtual = obterBacklogPorCC_(ref.ano, ref.index).reduce((s, b) => s + b.total, 0);
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+  const backlogAnterior = obterBacklogPorCC_(mesAnt.ano, mesAnt.index).reduce((s, b) => s + b.total, 0);
+
   return {
-    slaRecebimento: 95.2, // TODO: calcular de verdade
-    valorRecebimento: '45.800',
-    slaPreventivas: dados.total.sla.pct || 0,
-    previntivasRealizado: dados.total.execucao.realizadas || 0,
-    previntivasTotal: dados.total.execucao.previstas || 0,
-    execucaoCorretivas: 87.5, // TODO: calcular de verdade
-    corretvasRealizado: 85,
-    corretvasTotal: 97,
-    backlogTotal: 342,
-    backlogMesAnterior: 18
+    pctRecebimentoObras: recebimento.pct || 0,
+    recebimentoConcluidos: recebimento.concluidos,
+    recebimentoTotal: recebimento.total,
+    slaPreventivas: dadosPrev.total.sla.pct || 0,
+    previntivasRealizado: dadosPrev.total.execucao.realizadas || 0,
+    previntivasTotal: dadosPrev.total.execucao.previstas || 0,
+    execucaoCorretivas: dadosCorr.total.execucao.pct || 0,
+    corretvasRealizado: dadosCorr.total.execucao.realizadas || 0,
+    corretvasTotal: dadosCorr.total.execucao.previstas || 0,
+    backlogTotal: backlogAtual,
+    backlogVariacao: backlogAtual - backlogAnterior
   };
 }
 
-// Indicadores acumulados por equipe
+// Indicadores acumulados por equipe, com o corte Megas x demais — usa
+// indicadoresPorEquipeSegmento_ nas duas bases (preventivas por "Fechado
+// por", corretivas por "Responsáveis"). As chaves de equipe são as que
+// _PROP_EQUIPE_ produz de fato (PROPERTY/FACILITIES/OPERACAO/TERCEIROS) —
+// não "PROPRIEDADES", que não existe no mapa e sempre lia 0.
 function obterIndicadoresAcumulado_() {
   const ref = obterMesReferencia_();
-  const dadosPreventivas = indicadoresPorEquipe_(ref.ano, ref.index);
-  const getVal = (obj, path, def) => {
-    const parts = path.split('.');
-    let val = obj;
-    for (let p of parts) {
-      val = val ? val[p] : null;
-      if (!val) return def;
-    }
-    return val || def;
-  };
+
+  const prevSeg = indicadoresPorEquipeSegmento_(BD_ABA_PREVENTIVAS,
+    it => _propEquipePreventiva_(it.fechadoPor), ref.ano, ref.index);
+  const corrSeg = indicadoresPorEquipeSegmento_(BD_ABA_CORRETIVAS,
+    it => _propEquipeCorretiva_(it.responsaveis), ref.ano, ref.index);
+
+  const bloco = seg => ({
+    properties_cumpridos:      (seg.PROPERTY   && seg.PROPERTY.sla.cumpridos)    || 0,
+    properties_nao_cumpridos:  (seg.PROPERTY   && seg.PROPERTY.sla.naoCumpridos) || 0,
+    facilities_cumpridos:      (seg.FACILITIES && seg.FACILITIES.sla.cumpridos)    || 0,
+    facilities_nao_cumpridos:  (seg.FACILITIES && seg.FACILITIES.sla.naoCumpridos) || 0,
+    terceiros_cumpridos:       (seg.TERCEIROS  && seg.TERCEIROS.sla.cumpridos)    || 0,
+    terceiros_nao_cumpridos:   (seg.TERCEIROS  && seg.TERCEIROS.sla.naoCumpridos) || 0
+  });
+
   return {
-    preventivas: {
-      properties_cumpridos: getVal(dadosPreventivas, 'PROPRIEDADES.sla.cumpridos', 0),
-      properties_nao_cumpridos: getVal(dadosPreventivas, 'PROPRIEDADES.sla.naoCumpridos', 0),
-      facilities_cumpridos: getVal(dadosPreventivas, 'FACILITIES.sla.cumpridos', 0),
-      facilities_nao_cumpridos: getVal(dadosPreventivas, 'FACILITIES.sla.naoCumpridos', 0),
-      terceiros_cumpridos: getVal(dadosPreventivas, 'TERCEIROS.sla.cumpridos', 0),
-      terceiros_nao_cumpridos: getVal(dadosPreventivas, 'TERCEIROS.sla.naoCumpridos', 0)
-    },
-    preventivasDemais: {
-      properties_cumpridos: 12,
-      properties_nao_cumpridos: 2,
-      facilities_cumpridos: 8,
-      facilities_nao_cumpridos: 1,
-      terceiros_cumpridos: 4,
-      terceiros_nao_cumpridos: 0
-    },
-    corretivas: {
-      properties_cumpridos: 45,
-      properties_nao_cumpridos: 8,
-      facilities_cumpridos: 32,
-      facilities_nao_cumpridos: 5,
-      terceiros_cumpridos: 18,
-      terceiros_nao_cumpridos: 2
-    },
-    corretvasDemais: {
-      properties_cumpridos: 28,
-      properties_nao_cumpridos: 5,
-      facilities_cumpridos: 15,
-      facilities_nao_cumpridos: 3,
-      terceiros_cumpridos: 8,
-      terceiros_nao_cumpridos: 1
-    }
+    preventivas:       bloco(prevSeg.megas),
+    preventivasDemais: bloco(prevSeg.demais),
+    corretivas:        bloco(corrSeg.megas),
+    corretvasDemais:   bloco(corrSeg.demais)
   };
 }
 
-// Backlog por Centro de Custos
-function obterBacklogPorCC_() {
-  // Lê todos os chamados abertos da BD-CORRETIVAS
-  const ref = obterMesReferencia_();
-  const base = _propLerCorretivas_();
-  const abertos = base.filter(it => !_bdChamadoFechado_(it.estado, it.dtFechado));
+// Backlog por Centro de Custos, em aberto NO FIM do mês (ano/mesIndex —
+// default o mês de referência). Usa _histAbertoNoMes_, a MESMA definição de
+// "aberto no mês" do resto do deck — não "aberto agora" — para que esta
+// tabela e o KPI de Indicadores Gerais (que soma este mesmo resultado)
+// nunca divirjam. Lição do backlog dos Megas (CLAUDE.md): estoque e KPI têm
+// que sair da mesma fonte, senão o mês não fecha.
+function obterBacklogPorCC_(ano, mesIndex) {
+  const ref     = obterMesReferencia_();
+  const anoRef  = ano != null ? ano : ref.ano;
+  const mesRef  = mesIndex != null ? mesIndex : ref.index;
+  const refIni  = new Date(Date.UTC(anoRef, mesRef, 1));
+  const refFim  = new Date(Date.UTC(anoRef, mesRef + 1, 1));
+
+  const abertos = _propLerCorretivas_()
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim));
   const porCC = {};
   abertos.forEach(it => {
     const cc = it.cc || 'Sem Centro de Custos';
     porCC[cc] = (porCC[cc] || 0) + 1;
   });
-  const resultado = Object.keys(porCC).map(cc => ({ cc, total: porCC[cc] }));
-  return resultado.sort((a, b) => b.total - a.total);
+  return Object.keys(porCC).map(cc => ({ cc, total: porCC[cc] })).sort((a, b) => b.total - a.total);
 }
