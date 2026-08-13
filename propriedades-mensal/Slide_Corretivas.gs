@@ -35,7 +35,9 @@ function gerarSlideCorretivas() {
   const ref  = obterMesReferencia_();
   const flux = obterFluxoCorretivasPropriedades_(ref.ano, ref.index);
 
-  const fmtTempo = h => h == null ? '—' : Math.round(h) + 'h';
+  // Em dias, não horas — o valor bruto (tempoMedioH) já vem em horas de
+  // obterFluxoCorretivasPropriedades_; só converte na exibição.
+  const fmtTempo = h => h == null ? '—' : formatarNumeroBR(h / 24) + 'd';
   const dadosMensal = {
     titulo: 'VISÃO MENSAL',
     kpis: [

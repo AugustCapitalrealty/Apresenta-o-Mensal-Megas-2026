@@ -1191,3 +1191,47 @@ function obterBacklogEmergencialPorMes_(n) {
     return { ano: m.ano, index: m.index, qtd: qtd };
   });
 }
+
+// Data curta dd/mm/aa — cópia de megas-mensal/02_Dados.gs.
+function _histFormatarDataCurta_(d) {
+  if (!d) return '';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  return dd + '/' + mm + '/' + yy;
+}
+
+// Dias em aberto NÃO é "até hoje" — é até o ÚLTIMO DIA do mês de referência
+// (refFim): a apresentação é gerada dias depois do mês já ter fechado, e o
+// número tem que refletir o estado NO FIM do mês, não no dia em que o
+// slide foi gerado. Cópia de megas-mensal/02_Dados.gs.
+function _histDiasAberto_(dtReporte, refFim) {
+  if (!dtReporte) return null;
+  return Math.max(0, Math.floor((refFim - dtReporte) / 86400000));
+}
+
+// Detalhe dos chamados EMERGENCIAIS (equipe Propriedades) em aberto no mês
+// de referência — um item por chamado, com Centro de Custos, descrição,
+// data de abertura e dias em aberto (até o fim do mês de referência).
+// Ordenado do mais antigo pro mais novo (dias desc) — os que mais
+// precisam de atenção aparecem primeiro. Usado por
+// Slide_BacklogEmergencialDetalhe.gs.
+function obterBacklogEmergencialDetalhe_() {
+  const ref    = obterMesReferencia_();
+  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+
+  const itens = _propLerCorretivas_()
+    .filter(it => it.prioridade === 'Emergencial')
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY')
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .map(it => ({
+      segmento    : _propEhMega_(it.cc) ? 'MEGAS' : 'DEMAIS IMÓVEIS',
+      cc          : it.cc,
+      descricao   : it.descricao || '(sem descrição)',
+      dataAbertura: _histFormatarDataCurta_(it.dtReporte),
+      dias        : _histDiasAberto_(it.dtReporte, refFim)
+    }));
+
+  return itens.sort((a, b) => (b.dias || 0) - (a.dias || 0));
+}
