@@ -63,8 +63,9 @@ função.
 1. **Indicadores gerais** — o que entra na seção 1 além de chamados?
    Vistorias, contratos, ocupação, inadimplência, garantias de obra?
 2. **Fontes** — quais planilhas alimentam esses indicadores.
-3. **`presentationId`** — falta o ID de um deck (mesmo de teste) para os
-   slides começarem a ser desenhados.
+3. **`DECK_PROPRIEDADES_ID`** — falta o ID do Google Slides da apresentação
+   mensal. Sem ele nada é gerado: as funções avisam em vez de escrever no
+   deck errado.
 
 O SLA das preventivas, a execução e a atribuição por equipe já estão
 resolvidos e implementados — ver as seções abaixo.
@@ -180,19 +181,74 @@ fechar.
 
 Definida com o time:
 
-| # | Seção | Dados |
-|---|---|---|
-| 1 | **Indicadores gerais** | consolidado do portfólio |
-| 2 | **Preventivas** | previstas, realizadas e SLA — mês e acumulado do ano |
-| 3 | **Corretivas** | abertas no mês, fechadas no mês |
-| 4 | **Backlog** | quantos chamados, com detalhe |
-| 5 | **Fotos de serviços** | espaço para registro |
+| # | Seção | Dados | Estado |
+|---|---|---|---|
+| 1 | **Indicadores gerais** | consolidado do portfólio | a definir |
+| 2 | **Preventivas** | previstas, realizadas e SLA — mês e acumulado do ano | dados prontos |
+| 3 | **Corretivas** | abertas no mês, fechadas no mês | dados prontos |
+| 4 | **Backlog** | quantos chamados, com detalhe | dados prontos |
+| 5 | **Recebimento de Obras** | Esteio, Curitiba e Análise de Projetos | **implementado** |
+| 6 | **Gestão de Contratações** | pipeline de contratações + histórico | **implementado** |
+| 7 | **Fotos de serviços** | espaço para registro | a fazer |
 
 Todas com o corte **Megas × demais imóveis**. As preventivas têm também o
 corte **Propriedades × Facilities**.
 
 Os dados de 2, 3 e 4 já estão implementados em `02_Dados.gs` — falta o
-desenho dos slides.
+desenho dos slides. As seções 5 e 6 estão completas (dados + desenho).
+
+## Tabelas: Recebimento de Obras e Gestão de Contratações
+
+Vieram da apresentação **semanal** (`../tabelas/propriedades-semanal/`), que
+já gerava esses dois relatórios. Fonte: a planilha da área
+(`PROPRIEDADES_SPREADSHEET_ID`), abas `Recebimento de Obras - Esteio`,
+`Recebimento de Obras - Ctba`, `Análise de Projetos` e
+`GESTÃO DE CONTRATAÇÕES`.
+
+| Arquivo | O que faz |
+|---|---|
+| `03_Tabelas.gs` | Motor: cabeçalho, zebra, badges de status, paginação, rodapé com KPIs |
+| `Slide_RecebimentoObras.gs` | As três fichas de recebimento + o cálculo de prazo |
+| `Slide_Contratacoes.gs` | Leitura e desenho da tabela densa de contratações |
+
+Rodar: **`gerarTabelasPropriedades()`**.
+
+### Por que é um ponto de entrada separado do pipeline
+
+`gerarApresentacaoPropriedades_` roda **por imóvel** (`setPropriedadeAtiva`).
+Estas duas tabelas são do **portfólio inteiro** — chamá-las de dentro do laço
+geraria a mesma tabela três vezes, e as duas últimas apagariam a anterior pela
+tag. Por isso escrevem direto em `DECK_PROPRIEDADES_ID`, o deck mensal único.
+
+### Três decisões que o port carrega
+
+- **Prefixo `_tab` / `TAB_` em todo o motor.** No projeto semanal os nomes são
+  genéricos (`_desenharTabela`, `CORES`, `FONTE`) porque lá só existe isso.
+  Aqui os slides de Preventivas/Corretivas/Backlog ainda vão ser escritos e vão
+  querer esses nomes — no namespace único do Apps Script, quem chega primeiro
+  não pode ocupar o nome genérico.
+- **A paleta ganhou os acentos, não perdeu os antigos.** As tabelas usam
+  `accentGreen #10B981` (verde de status); os slides de indicadores usam
+  `verde #00B050` (institucional). Os dois convivem em `CR_DESIGN_SYSTEM` —
+  trocar um pelo outro mudaria decks já aprovados.
+- **Cada bloco tem tag própria na nota do slide.** Principal e histórico usam
+  tags diferentes (`【RECEBIMENTO_AUTO】` / `【RECEBIMENTO_HIST_AUTO】`), senão
+  regerar um apagaria o outro.
+
+### É cópia, não import
+
+O código vive em dois lugares: aqui e em `../tabelas/propriedades-semanal/`.
+Apps Script não tem import — as duas cópias divergem se alguém mexer só numa.
+**Ao corrigir um bug de desenho aqui, verifique lá, e vice-versa.**
+
+### Pendências e histórico saem separados
+
+Cada relatório vira dois blocos: o principal só com o que está em aberto, e um
+histórico com o concluído. Misturar faz a reunião discutir linha já resolvida.
+
+Os KPIs mudam junto: no bloco principal só a contagem em aberto — um
+"% concluído" ao lado de uma lista de pendências confunde, porque o número
+fala do total e a lista não. O total geral e o % ficam no histórico.
 
 ## Equipe: Propriedades × Facilities
 

@@ -44,6 +44,40 @@ function gerarTodasAsPropriedades() {
 
 
 // ==========================================
+// TABELAS — PONTO DE ENTRADA DO PORTFÓLIO
+// ==========================================
+// Separado do pipeline por imóvel de propósito: Recebimento de Obras e Gestão
+// de Contratações são do PORTFÓLIO inteiro, não de um empreendimento. Chamá-los
+// de dentro de gerarApresentacaoPropriedades_ faria os slides serem gerados de
+// novo a cada imóvel do laço acima — três vezes a mesma tabela, e as duas
+// últimas apagando a anterior pela tag.
+//
+// Escrevem em DECK_PROPRIEDADES_ID (01_Config.gs), que é o deck mensal único.
+function gerarTabelasPropriedades() {
+  Logger.log('▶ Tabelas de Propriedades (portfólio)');
+
+  const passos = [
+    { nome: 'Recebimento de Obras', fn: gerarSlideRecebimentoObras },
+    { nome: 'Gestão de Contratações', fn: gerarSlideContratacoes }
+  ];
+
+  const erros = [];
+  passos.forEach(p => {
+    try {
+      p.fn();
+      Logger.log('  ✓ ' + p.nome);
+    } catch (e) {
+      erros.push(p.nome + ': ' + e.message);
+      Logger.log('  ✗ ' + p.nome + ' — ' + e.message);
+    }
+  });
+
+  if (erros.length) Logger.log('  ' + erros.length + ' slide(s) com erro.');
+  return erros;
+}
+
+
+// ==========================================
 // PIPELINE
 // ==========================================
 function gerarApresentacaoPropriedades_() {
