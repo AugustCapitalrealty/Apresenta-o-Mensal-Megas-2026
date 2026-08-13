@@ -917,6 +917,56 @@ function obterIndicadoresAcumulado_() {
   };
 }
 
+// ==========================================
+// DASHBOARD OPERACIONAL — grid 2×2 comparativo
+// ==========================================
+// Monta os 3 pontos no tempo (mês atual / mês anterior / mesmo mês ano
+// anterior) que o grid comparativo do Dashboard Operacional
+// (Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
+// Dashboard.gs) precisa — chamando indicadoresPortfolio_/obterBacklogPorCC_
+// com (ano, mesIndex) diferentes. Nenhum dado novo: são as MESMAS funções
+// que Preventivas/Corretivas/Backlog já usam pro mês corrente.
+//
+// Recebimento de Obras fica FORA deste grid, de propósito: a planilha
+// (REL_RECEBIMENTO) é uma LISTA VIVA de pendências, não um registro
+// histórico por mês — não existe "quantos estavam concluídos em maio" pra
+// reconstruir, a linha de uma pendência já concluída não guarda a data em
+// que isso aconteceu. Forçar uma coluna "mês anterior" aqui seria inventar
+// dado. Ele já aparece como card avulso (sem comparação histórica) no
+// primeiro slide de KPIs — ver obterIndicadoresPortfolio_ acima.
+function obterDashboardPropriedades_() {
+  const ref    = obterMesReferencia_();
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+  const anoAnt = { ano: ref.ano - 1, index: ref.index };
+  const pontos = [
+    { ano: ref.ano,    index: ref.index },
+    { ano: mesAnt.ano, index: mesAnt.index },
+    { ano: anoAnt.ano, index: anoAnt.index }
+  ];
+
+  const prev = pontos.map(p => indicadoresPortfolio_(BD_ABA_PREVENTIVAS, p.ano, p.index));
+  const corr = pontos.map(p => indicadoresPortfolio_(BD_ABA_CORRETIVAS,  p.ano, p.index));
+  const backlog = pontos.map(p =>
+    obterBacklogPorCC_(p.ano, p.index).reduce((s, b) => s + b.total, 0));
+
+  const nomesCurto = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const headers = pontos.map(p => nomesCurto[p.index] + "'" + String(p.ano).slice(-2));
+
+  const linha3 = (a, b, c) => ({ atual: a, mesAnt: b, anoAnt: c });
+  const map = new Map();
+  map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
+  map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
+  map.set('SLA Corretivas',         linha3(corr[0].total.sla.pct,      corr[1].total.sla.pct,      corr[2].total.sla.pct));
+  map.set('Execução Corretivas',    linha3(corr[0].total.execucao.pct, corr[1].total.execucao.pct, corr[2].total.execucao.pct));
+  map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
+  map.set('SLA Preventivas Megas',  linha3(prev[0].megas.sla.pct,  prev[1].megas.sla.pct,  prev[2].megas.sla.pct));
+  map.set('SLA Preventivas Demais', linha3(prev[0].demais.sla.pct, prev[1].demais.sla.pct, prev[2].demais.sla.pct));
+  map.set('SLA Corretivas Megas',   linha3(corr[0].megas.sla.pct,  corr[1].megas.sla.pct,  corr[2].megas.sla.pct));
+  map.set('SLA Corretivas Demais',  linha3(corr[0].demais.sla.pct, corr[1].demais.sla.pct, corr[2].demais.sla.pct));
+
+  return { headers: headers, map: map, parcial: prev[0].parcial || corr[0].parcial };
+}
+
 // Backlog por Centro de Custos, em aberto NO FIM do mês (ano/mesIndex —
 // default o mês de referência). Usa _histAbertoNoMes_, a MESMA definição de
 // "aberto no mês" do resto do deck — não "aberto agora" — para que esta

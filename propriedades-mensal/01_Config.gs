@@ -38,7 +38,16 @@ const CR_DESIGN_SYSTEM = {
     lines       : '#E2E8F0',
     accentGreen : '#10B981',
     accentOrange: '#F97316',
-    accentRed   : '#EF4444'
+    accentRed   : '#EF4444',
+    // Cores temáticas do grid 2×2 do Dashboard Operacional (Slide_
+    // IndicadoresGerais.gs), copiadas de megas-mensal/01_Config.gs (CORES).
+    // Lá coloriam "Ativos Críticos/Preventiva/Corretiva/Acesso"; aqui não há
+    // dado de acesso, então os 4 tons só emprestam a paleta — cada quadrante
+    // usa o que faz sentido pro dado real que este deck tem.
+    themeAtivos: '#1E3A8A',
+    themePrev  : '#10B981',
+    themeCorr  : '#F59E0B',
+    themeAcesso: '#0EA5E9'
   },
   typography: { titles: 'Montserrat', body: 'Open Sans' },
   // Logo Capital Realty — mesmo arquivo usado nos outros decks.
@@ -238,4 +247,77 @@ function criarCardKPI(slide, x, y, w, h, opts) {
       .setFontSize(6.5).setBold(false)
       .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
   }
+}
+
+/**
+ * Painel padrão (contêiner de conteúdo): card branco com borda fina, barra
+ * lateral e título opcional na cor do tema, com linha divisória. Retorna o Y
+ * onde o conteúdo interno deve começar. Copiado de megas-mensal/01_Config.gs
+ * (mesmo desenho) — usado pelo grid 2×2 do Dashboard Operacional
+ * (Slide_IndicadoresGerais.gs).
+ */
+function criarCardPainel(slide, x, y, w, h, titulo, cor) {
+  const DS = CR_DESIGN_SYSTEM;
+  const corTema = cor || DS.colors.brandLight;
+
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  bg.getFill().setSolidFill(DS.colors.cardBg);
+  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  bg.getBorder().setWeight(1);
+
+  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
+  side.getFill().setSolidFill(corTema);
+  side.getBorder().setTransparent();
+
+  if (titulo) {
+    // Marcador quadrado na cor do tema antes do título (substitui emojis)
+    const marca = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 11, 7, 7);
+    marca.getFill().setSolidFill(corTema);
+    marca.getBorder().setTransparent();
+
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 27, y + 6, w - 37, 18);
+    t.getText().setText(String(titulo)).getTextStyle()
+      .setFontSize(10).setBold(true)
+      .setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+
+    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 26, w - 28, 1);
+    div.getFill().setSolidFill(DS.colors.lines);
+    div.getBorder().setTransparent();
+    return y + 32;
+  }
+  return y + 10;
+}
+
+/**
+ * Formata número no padrão brasileiro quando o valor for numérico
+ * (66336 → "66.336"; 27.91 → "27,91"). Valores não numéricos passam direto.
+ * Copiado de megas-mensal/01_Config.gs — usado pelo Dashboard Operacional.
+ */
+function formatarNumeroBR(valor) {
+  if (valor === null || valor === undefined || valor === '' || valor === '-') return '-';
+  const s = String(valor).trim();
+  if (/[^\d.,\-\s]/.test(s)) return s;   // tem %, h, letras etc. → já formatado
+  let n;
+  if (s.includes(',')) n = Number(s.replace(/\./g, '').replace(',', '.'));
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) n = Number(s.replace(/\./g, ''));  // "61.245" = milhar pt-BR
+  else n = Number(s);
+  if (isNaN(n)) return s;
+  const temDecimal = Math.abs(n % 1) > 1e-9;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: temDecimal ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
+
+/**
+ * Cor semântica para percentuais de SLA (regra do boletim):
+ * ≥95 verde, ≥90 âmbar, <90 vermelho. Sem número → cor padrão.
+ * Copiado de megas-mensal/01_Config.gs — usado pelo Dashboard Operacional.
+ */
+function corPorSLA(valor, corPadrao) {
+  const n = parseFloat(String(valor == null ? '' : valor).replace('%', '').replace(',', '.'));
+  if (isNaN(n)) return corPadrao || CR_DESIGN_SYSTEM.colors.textMain;
+  if (n < 90) return CR_DESIGN_SYSTEM.colors.accentRed;
+  if (n < 95) return '#F59E0B';
+  return CR_DESIGN_SYSTEM.colors.accentGreen;
 }

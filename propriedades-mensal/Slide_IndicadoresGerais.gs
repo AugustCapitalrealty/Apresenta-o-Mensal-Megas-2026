@@ -1,52 +1,162 @@
 /**
  * ARQUIVO: Slide_IndicadoresGerais.gs
- * SLIDE — INDICADORES GERAIS
+ * SLIDE — DASHBOARD OPERACIONAL
  *
- * Cards de KPI mostrando os indicadores principais (SLA, Execução, Backlog)
- * do mês de referência. Cabeçalho e cards são os componentes REAIS dos
- * Megas (criarHeaderPadrao / criarCardKPI, copiados para 01_Config.gs) — não
- * mais um header/card inventados para este deck.
+ * Grid 2×2 de painéis (criarCardPainel) com tabela comparativa de 3 meses
+ * (mês atual / mês anterior / mesmo mês ano anterior) dentro de cada um —
+ * MESMO desenho de megas-mensal/Slide01_Dashboard.gs (o "Dashboard" que o
+ * usuário já conhece e pediu pra replicar), com dado 100% de
+ * obterDashboardPropriedades_() (02_Dados.gs): nada aqui é inventado, é
+ * indicadoresPortfolio_/obterBacklogPorCC_ chamados 3× com (ano, mesIndex)
+ * diferentes.
+ *
+ * Por que não é mais criarCardKPI (o desenho anterior deste slide): aquilo
+ * era um card de KPI avulso, sem comparação no tempo — o layout "de verdade"
+ * que o usuário mandou de exemplo (print "DASHBOARD OPERACIONAL") é este
+ * grid com tabela ▲/▼ dentro de cada painel, e é isso que este arquivo
+ * desenha agora.
+ *
+ * OS 4 QUADRANTES (e por que Recebimento de Obras não é um deles)
+ *   1. Manutenção Preventiva — SLA e Execução, série mensal real.
+ *   2. Manutenção Corretiva  — SLA e Execução, série mensal real.
+ *   3. Backlog em aberto     — contagem no fim do mês, série mensal real.
+ *   4. SLA — Megas x Demais Imóveis — o recorte que esta apresentação
+ *      inteira usa (ver 01_Config.gs, "PORTFÓLIO — O CORTE MEGAS x
+ *      DEMAIS"), aplicado ao SLA de Preventivas e Corretivas.
+ *   Recebimento de Obras NÃO entra: a planilha é uma lista viva de
+ *   pendências, sem registro histórico por mês — não dá pra saber "quanto
+ *   estava concluído em maio" sem inventar estado passado. Ver o comentário
+ *   em obterDashboardPropriedades_ (02_Dados.gs). O número dele já aparece
+ *   noutro lugar do deck (KPIs TOTAL/CONCLUÍDO/PENDENTE no rodapé de cada
+ *   página de Slide_RecebimentoObras.gs) — não precisa de um card aqui só
+ *   pra repetir o mesmo dado sem comparação. obterIndicadoresPortfolio_ e
+ *   obterRecebimentoObrasResumo_ (02_Dados.gs) ficam disponíveis, sem uso
+ *   no momento, caso um card avulso volte a fazer sentido neste slide.
  */
 
 function gerarSlideIndicadoresGerais() {
+  const dados = obterDashboardPropriedades_();
+  const valoresMap = dados.map;
+  const headers = dados.headers;
+
   const deck = getDeckMensal_();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const W = deck.getPageWidth();
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
 
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
-  criarHeaderPadrao(slide, 'INDICADORES GERAIS',
-    'Performance de SLA, execução e backlog · Megas x Demais Imóveis');
+  criarHeaderPadrao(slide, 'DASHBOARD OPERACIONAL',
+    'Comparativo de Performance: ' + headers[0] + (dados.parcial ? ' (mês em andamento)' : ''));
 
-  const dados = obterIndicadoresPortfolio_();
-  if (!dados) {
-    Logger.log('✗ Indicadores Gerais: sem dados disponíveis');
-    return;
-  }
-
-  // Uma linha de 4 cards — mesma geometria da linha de KPI de Backlog
-  // Facilities dos Megas (_backlogCardsKPI_ em Slide_BacklogFacilities.gs):
-  // marginX 28, topY 74, cardH 72, gap 8.
-  const marginX = 28, topY = 74, cardH = 72, gap = 8;
-  const cardW = (W - marginX * 2 - gap * 3) / 4;
-
-  const variacao = dados.backlogVariacao;
-  const cards = [
-    { label: 'RECEBIMENTO DE OBRAS', valor: dados.pctRecebimentoObras.toFixed(1) + '%',
-      nota: dados.recebimentoConcluidos + '/' + dados.recebimentoTotal + ' concluídos', cor: DS.colors.accentGreen },
-    { label: 'SLA PREVENTIVAS', valor: dados.slaPreventivas.toFixed(1) + '%',
-      nota: dados.previntivasRealizado + '/' + dados.previntivasTotal + ' realizadas', cor: DS.colors.brandLight },
-    { label: 'EXECUÇÃO CORRETIVAS', valor: dados.execucaoCorretivas.toFixed(1) + '%',
-      nota: dados.corretvasRealizado + '/' + dados.corretvasTotal + ' realizadas', cor: DS.colors.accentOrange },
-    { label: 'BACKLOG ABERTO', valor: String(dados.backlogTotal),
-      sub: (variacao >= 0 ? '+' : '') + variacao, corSub: DS.colors.accentRed, nota: 'vs mês anterior', cor: DS.colors.accentRed }
+  // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
+  // (colore a seta de tendência vs mês anterior). sla: aplica corPorSLA
+  // (≥95 verde, ≥90 âmbar, <90 vermelho) no valor do mês atual.
+  const structure = [
+    { title: 'MANUTENÇÃO PREVENTIVA', color: DS.colors.themePrev, rows: [
+      { label: 'SLA (%)',      lookup: 'SLA Preventivas',      sentido: 'maior', sla: true },
+      { label: 'Execução (%)', lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
+    ] },
+    { title: 'MANUTENÇÃO CORRETIVA', color: DS.colors.themeCorr, rows: [
+      { label: 'SLA (%)',      lookup: 'SLA Corretivas',      sentido: 'maior', sla: true },
+      { label: 'Execução (%)', lookup: 'Execução Corretivas', sentido: 'maior', sla: true }
+    ] },
+    { title: 'BACKLOG — CHAMADOS EM ABERTO', color: DS.colors.themeAtivos, rows: [
+      { label: 'Total em aberto (Qtd)', lookup: 'Backlog em aberto', sentido: 'menor', sla: false }
+    ] },
+    { title: 'SLA — MEGAS x DEMAIS IMÓVEIS', color: DS.colors.themeAcesso, rows: [
+      { label: 'Preventivas · Megas (%)',  lookup: 'SLA Preventivas Megas',  sentido: 'maior', sla: true },
+      { label: 'Preventivas · Demais (%)', lookup: 'SLA Preventivas Demais', sentido: 'maior', sla: true },
+      { label: 'Corretivas · Megas (%)',   lookup: 'SLA Corretivas Megas',   sentido: 'maior', sla: true },
+      { label: 'Corretivas · Demais (%)',  lookup: 'SLA Corretivas Demais',  sentido: 'maior', sla: true }
+    ] }
   ];
 
-  cards.forEach((c, i) => {
-    const x = marginX + i * (cardW + gap);
-    criarCardKPI(slide, x, topY, cardW, cardH, c);
+  // Geometria igual à do Dashboard dos Megas, adaptada ao topo padrão (74)
+  // que o resto deste deck usa (criarHeaderPadrao termina a linha em y=62).
+  const marginX = 28, marginY = 74, gap = 16, footerMargin = 15;
+  const cardW = (W - (2 * marginX) - gap) / 2;
+  const cardH = (H - marginY - footerMargin - gap) / 2;
+
+  structure.forEach((cat, i) => {
+    const row = Math.floor(i / 2), col = i % 2;
+    const x = marginX + (col * (cardW + gap));
+    const y = marginY + (row * (cardH + gap));
+
+    const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
+
+    // Faixa do comparativo entre o rótulo e a coluna do mês atual (sem
+    // cabeçalho de tabela): só a seta ▲/▼, grande, colada ao valor atual —
+    // o quanto variou já está detalhado nos slides de cada assunto.
+    const colNameW = cardW * 0.42, seloW = 14;
+    const dataX0 = x + 10 + colNameW + seloW;
+    const colDataW = (cardW - 20 - colNameW - seloW) / 3;
+    headers.forEach((h, idx) => {
+      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW), tableY, colDataW, 20);
+      t.getText().setText(h).getTextStyle()
+        .setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily(DS.typography.titles);
+      t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    });
+
+    const startDataY = tableY + 20;
+    const rowH = (y + cardH - startDataY - 10) / cat.rows.length;
+
+    cat.rows.forEach((r, rIdx) => {
+      const ry = startDataY + (rIdx * rowH);
+      if (rIdx < cat.rows.length - 1) {
+        const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, ry + rowH, cardW - 20, 1);
+        line.getFill().setSolidFill('#F1F5F9');
+        line.getBorder().setTransparent();
+      }
+
+      const nBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry, colNameW, rowH);
+      nBox.getText().setText(r.label).getTextStyle()
+        .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
+      nBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
+      const vals = valoresMap.get(r.lookup) || { atual: null, mesAnt: null, anoAnt: null };
+      const nAtual = _dashNum_(vals.atual), nAnt = _dashNum_(vals.mesAnt);
+
+      // Comparativo vs mês anterior: só a seta ▲/▼, grande, colada bem
+      // perto do valor atual — verde melhorou / vermelho piorou, conforme o
+      // sentido da métrica (backlog menor é melhor; SLA/execução maior é
+      // melhor).
+      if (nAtual != null && nAnt != null && nAtual !== nAnt) {
+        const subiu = nAtual > nAnt;
+        const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
+        const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW, ry, seloW + 8, rowH);
+        selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        selo.getText().setText(subiu ? '▲' : '▼').getTextStyle()
+          .setFontSize(12).setBold(true)
+          .setForegroundColor(melhorou ? DS.colors.accentGreen : DS.colors.accentRed)
+          .setFontFamily(DS.typography.titles);
+        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+      }
+
+      [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
+        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW), ry, colDataW, rowH);
+        const valStr = formatarNumeroBR(val);
+        const vText = vBox.getText();
+        vText.setText(valStr);
+        const vStyle = vText.getTextStyle();
+        vStyle.setFontSize(9).setBold(true).setFontFamily(DS.typography.titles);
+        vStyle.setForegroundColor(vIdx === 0
+          ? (r.sla ? corPorSLA(valStr, cat.color) : cat.color)
+          : DS.colors.textBody);
+        vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      });
+    });
   });
 
-  Logger.log('✓ Indicadores Gerais gerado');
+  Logger.log('✓ Dashboard Operacional gerado');
+}
+
+// null/NaN-safe: os valores do mapa já chegam como number|null (pct pode ser
+// null quando o denominador é zero — "sem base para informar", ver
+// calcularSLA_/calcularExecucao_ em 02_Dados.gs), nunca como texto da
+// planilha, então não precisa da conversão de string que o Dashboard dos
+// Megas faz.
+function _dashNum_(v) {
+  return (v == null || isNaN(v)) ? null : v;
 }

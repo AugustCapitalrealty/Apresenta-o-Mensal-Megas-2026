@@ -169,12 +169,14 @@ function _contSecao_(deck, SW, SH, hoje, linhas, opts) {
     slide.getBackground().setSolidFill(TAB_C.bgSlide);
     _tabMarcarSlide_(slide, opts.tag);
 
-    const bannerH = _tabDesenharBanner_(slide, SW, SH,
-      'GESTÃO DE CONTRATAÇÕES', 'PROPRIEDADES & FACILITIES');
+    // criarHeaderPadrao (01_Config.gs), não _tabDesenharBanner_ — ver a nota
+    // em Slide_RecebimentoObras.gs: os dois desenhavam cabeçalhos diferentes
+    // no mesmo deck. topo fixo em 74, mesma linha do resto do deck.
+    criarHeaderPadrao(slide, 'GESTÃO DE CONTRATAÇÕES', 'PROPRIEDADES & FACILITIES');
 
     const rodapeH = SH * 0.060;
     const rodapeY = SH - SH * 0.025 - rodapeH;
-    let topo      = bannerH + SH * 0.015;
+    let topo      = 74;
 
     if (opts.legenda) {
       const h = SH * 0.045;
