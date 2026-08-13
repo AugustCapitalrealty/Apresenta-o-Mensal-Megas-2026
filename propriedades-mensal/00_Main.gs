@@ -42,18 +42,20 @@ function gerarApresentacaoPropriedades() {
   //   4. Corretivas
   //   5. Backlog
   //   6. Backlog Emergencial — Detalhe
-  //   7. Recebimento de Obras (tabela)
-  //   8. Gestão de Contratações (tabela)
+  //   7. Chamados Pendentes (Backlog) — por motivo
+  //   8. Recebimento de Obras (tabela)
+  //   9. Gestão de Contratações (tabela)
   //
   const passos = [
-    { nome: 'Capa',                        fn: gerarSlideCapa },
-    { nome: 'Indicadores Gerais',          fn: gerarSlideIndicadoresGerais },
-    { nome: 'Preventivas',                 fn: gerarSlidePreventivas },
-    { nome: 'Corretivas',                  fn: gerarSlideCorretivas },
-    { nome: 'Backlog',                     fn: gerarSlideBacklog },
+    { nome: 'Capa',                          fn: gerarSlideCapa },
+    { nome: 'Indicadores Gerais',            fn: gerarSlideIndicadoresGerais },
+    { nome: 'Preventivas',                   fn: gerarSlidePreventivas },
+    { nome: 'Corretivas',                    fn: gerarSlideCorretivas },
+    { nome: 'Backlog',                       fn: gerarSlideBacklog },
     { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
-    { nome: 'Recebimento de Obras',        fn: gerarSlideRecebimentoObras },
-    { nome: 'Gestão de Contratações',      fn: gerarSlideContratacoes }
+    { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
+    { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
+    { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];

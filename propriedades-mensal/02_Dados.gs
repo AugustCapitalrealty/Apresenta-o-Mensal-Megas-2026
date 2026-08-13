@@ -191,6 +191,13 @@ function _propLerBase_(nomeAba) {
     // primeira ocorrência, que é a de texto — mesmo comportamento de
     // megas-mensal/02_Dados.gs na mesma base.
     const cPri    = col('prioridade');
+    // Só existe em BD-CORRETIVAS (BD-PREVENTIVAS não tem essa coluna) — o
+    // motivo de um chamado ABERTO estar pausado (ex.: "Orçamento 2026",
+    // "Alinhamento Operação", "Pendências de Obra"). Confirmado com
+    // diagnosticarMotivoPausa: quando preenchido, É o motivo de verdade;
+    // quando vazio, o chamado está "Em resolução" (sem pausa formal). Usada
+    // por obterBacklogPorMotivo_ (Slide_ChamadosPendentes.gs).
+    const cMotivo = col('motivo de pausa', 'motivo da pausa');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
@@ -217,6 +224,7 @@ function _propLerBase_(nomeAba) {
         responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
         descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(data[r][cDesc] || '').trim()) : '',
         prioridade: _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
+        motivoPausa: cMotivo >= 0 ? String(data[r][cMotivo] || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -1403,4 +1411,69 @@ function obterBacklogEmergencialDetalhe_() {
     }));
 
   return itens.sort((a, b) => (b.dias || 0) - (a.dias || 0));
+}
+
+
+// ==========================================
+// CHAMADOS PENDENTES (BACKLOG) POR MOTIVO — Slide_ChamadosPendentes.gs
+// ==========================================
+// Equivalente honesto do slide "Chamados Pendentes (Backlog)" dos Megas —
+// lá vem de uma aba digitada à mão (MÊS/ESTADO/QUANTIDADE); aqui é 100%
+// derivado da BD-CORRETIVAS, coluna "Motivo de pausa" (só existe nessa
+// base — confirmado com diagnosticarMotivoPausa). Regra confirmada com o
+// usuário: chamado aberto com "Motivo de pausa" preenchido → essa é a
+// categoria ("direcionado"); vazio → "Em resolução", não importa o que a
+// coluna Estado diga especificamente. Só equipe PROPRIEDADES, mesmo corte
+// do resto do deck.
+function obterBacklogPorMotivo_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+
+  const abertos = _propLerCorretivas_()
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  let emResolucao = 0;
+  const porMotivo = {};
+  abertos.forEach(it => {
+    const motivo = String(it.motivoPausa || '').trim();
+    if (motivo) porMotivo[motivo] = (porMotivo[motivo] || 0) + 1;
+    else emResolucao++;
+  });
+
+  return {
+    total: abertos.length,
+    emResolucao: emResolucao,
+    direcionados: Object.keys(porMotivo)
+      .sort((a, b) => porMotivo[b] - porMotivo[a])
+      .map(m => ({ estado: m, qtd: porMotivo[m] }))
+  };
+}
+
+// Mês de referência + mês anterior, prontos pro gráfico de barras (▲/▼ vs
+// mês anterior em cada categoria, igual ao slide dos Megas).
+function obterDadosChamadosPendentes_() {
+  const ref    = obterMesReferencia_();
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+
+  const atual    = obterBacklogPorMotivo_(ref.ano, ref.index);
+  const anterior = obterBacklogPorMotivo_(mesAnt.ano, mesAnt.index);
+
+  const mapaAnterior = {};
+  anterior.direcionados.forEach(d => { mapaAnterior[d.estado] = d.qtd; });
+
+  const direcionados = atual.direcionados.map(d => ({
+    estado: d.estado,
+    qtd: d.qtd,
+    anterior: mapaAnterior[d.estado] != null ? mapaAnterior[d.estado] : null
+  }));
+
+  return {
+    mesLabel: (ref.curto || ref.nome) + '/' + ref.ano,
+    total: atual.total,
+    totalAnterior: anterior.total,
+    emResolucao: atual.emResolucao,
+    emResolucaoAnterior: anterior.emResolucao,
+    direcionados: direcionados
+  };
 }
