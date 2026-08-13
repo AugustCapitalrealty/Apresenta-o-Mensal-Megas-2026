@@ -892,28 +892,74 @@ function obterIndicadoresPortfolio_() {
 // por", corretivas por "Responsáveis"). As chaves de equipe são as que
 // _PROP_EQUIPE_ produz de fato (PROPERTY/FACILITIES/OPERACAO/TERCEIROS) —
 // não "PROPRIEDADES", que não existe no mapa e sempre lia 0.
+// Soma dois blocos SLA (mesmo formato de calcularSLA_) — usado para juntar
+// Megas + Demais num total só. Soma CONTAGEM, nunca percentual (a média de
+// duas taxas com bases diferentes não é a taxa do total).
+function _propMergeSLA_(a, b) {
+  const cumpridos    = (a ? a.cumpridos    : 0) + (b ? b.cumpridos    : 0);
+  const naoCumpridos = (a ? a.naoCumpridos : 0) + (b ? b.naoCumpridos : 0);
+  const base = cumpridos + naoCumpridos;
+  return { cumpridos: cumpridos, naoCumpridos: naoCumpridos, base: base,
+           pct: base ? (cumpridos / base) * 100 : null };
+}
+
+// Idem para execução (mesmo formato de calcularExecucao_).
+function _propMergeExecucao_(a, b) {
+  const previstas  = (a ? a.previstas  : 0) + (b ? b.previstas  : 0);
+  const realizadas = (a ? a.realizadas : 0) + (b ? b.realizadas : 0);
+  return { previstas: previstas, realizadas: realizadas,
+           pct: previstas ? (realizadas / previstas) * 100 : null };
+}
+
+// Recorta indicadoresPorEquipeSegmento_ pra UMA equipe só (Megas, Demais e
+// as duas somadas) — base de obterIndicadoresPropriedades_ logo abaixo.
+function _propIndicadoresEquipeUnica_(seg, equipe) {
+  const bloco = grupo => {
+    const g = grupo && grupo[equipe];
+    return { sla: g ? g.sla : calcularSLA_([]), execucao: g ? g.execucao : calcularExecucao_([]) };
+  };
+  const megas = bloco(seg.megas), demais = bloco(seg.demais);
+  return {
+    megas: megas,
+    demais: demais,
+    total: { sla: _propMergeSLA_(megas.sla, demais.sla), execucao: _propMergeExecucao_(megas.execucao, demais.execucao) },
+    parcial: seg.parcial
+  };
+}
+
+// SLA + execução filtrados pra equipe PROPRIEDADES (equipe 'PROPERTY' no
+// mapa _PROP_EQUIPE_), com o corte Megas x Demais e o total das duas
+// somado. Usada por TODOS os slides de indicador deste deck — a
+// apresentação de Propriedades não mostra número de Facilities nem de
+// Terceiros (pedido do usuário: "não é para aparecer nada de facilities,
+// apenas de propriedades").
+function obterIndicadoresPropriedades_(nomeAba, ano, mesIndex, janela) {
+  const resolver = nomeAba === BD_ABA_CORRETIVAS
+    ? (it => _propEquipeCorretiva_(it.responsaveis))
+    : (it => _propEquipePreventiva_(it.fechadoPor));
+  const seg = indicadoresPorEquipeSegmento_(nomeAba, resolver, ano, mesIndex, janela);
+  return _propIndicadoresEquipeUnica_(seg, 'PROPERTY');
+}
+
+// Cumpridos/não cumpridos do SLA de Propriedades no mês de referência, com
+// o corte Megas x Demais — é só o que Slide_Preventivas.gs/Slide_
+// Corretivas.gs desenham (uma linha "Propriedades" por bloco; nada de
+// Facilities/Terceiros).
 function obterIndicadoresAcumulado_() {
   const ref = obterMesReferencia_();
+  const prev = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+  const corr = obterIndicadoresPropriedades_(BD_ABA_CORRETIVAS,  ref.ano, ref.index);
 
-  const prevSeg = indicadoresPorEquipeSegmento_(BD_ABA_PREVENTIVAS,
-    it => _propEquipePreventiva_(it.fechadoPor), ref.ano, ref.index);
-  const corrSeg = indicadoresPorEquipeSegmento_(BD_ABA_CORRETIVAS,
-    it => _propEquipeCorretiva_(it.responsaveis), ref.ano, ref.index);
-
-  const bloco = seg => ({
-    properties_cumpridos:      (seg.PROPERTY   && seg.PROPERTY.sla.cumpridos)    || 0,
-    properties_nao_cumpridos:  (seg.PROPERTY   && seg.PROPERTY.sla.naoCumpridos) || 0,
-    facilities_cumpridos:      (seg.FACILITIES && seg.FACILITIES.sla.cumpridos)    || 0,
-    facilities_nao_cumpridos:  (seg.FACILITIES && seg.FACILITIES.sla.naoCumpridos) || 0,
-    terceiros_cumpridos:       (seg.TERCEIROS  && seg.TERCEIROS.sla.cumpridos)    || 0,
-    terceiros_nao_cumpridos:   (seg.TERCEIROS  && seg.TERCEIROS.sla.naoCumpridos) || 0
+  const bloco = b => ({
+    properties_cumpridos:     b.sla.cumpridos,
+    properties_nao_cumpridos: b.sla.naoCumpridos
   });
 
   return {
-    preventivas:       bloco(prevSeg.megas),
-    preventivasDemais: bloco(prevSeg.demais),
-    corretivas:        bloco(corrSeg.megas),
-    corretvasDemais:   bloco(corrSeg.demais)
+    preventivas:       bloco(prev.megas),
+    preventivasDemais: bloco(prev.demais),
+    corretivas:        bloco(corr.megas),
+    corretvasDemais:   bloco(corr.demais)
   };
 }
 
@@ -923,9 +969,10 @@ function obterIndicadoresAcumulado_() {
 // Monta os 3 pontos no tempo (mês atual / mês anterior / mesmo mês ano
 // anterior) que o grid comparativo do Dashboard Operacional
 // (Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
-// Dashboard.gs) precisa — chamando indicadoresPortfolio_/obterBacklogPorCC_
-// com (ano, mesIndex) diferentes. Nenhum dado novo: são as MESMAS funções
-// que Preventivas/Corretivas/Backlog já usam pro mês corrente.
+// Dashboard.gs) precisa — chamando obterIndicadoresPropriedades_/
+// obterBacklogPorCC_ com (ano, mesIndex) diferentes. Nenhum dado novo: são
+// as MESMAS funções que Preventivas/Corretivas/Backlog já usam pro mês
+// corrente, já filtradas pra equipe Propriedades.
 //
 // Recebimento de Obras fica FORA deste grid, de propósito: a planilha
 // (REL_RECEBIMENTO) é uma LISTA VIVA de pendências, não um registro
@@ -944,8 +991,10 @@ function obterDashboardPropriedades_() {
     { ano: anoAnt.ano, index: anoAnt.index }
   ];
 
-  const prev = pontos.map(p => indicadoresPortfolio_(BD_ABA_PREVENTIVAS, p.ano, p.index));
-  const corr = pontos.map(p => indicadoresPortfolio_(BD_ABA_CORRETIVAS,  p.ano, p.index));
+  // Só a equipe PROPRIEDADES — Facilities e Terceiros não aparecem nesta
+  // apresentação (pedido do usuário).
+  const prev = pontos.map(p => obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, p.ano, p.index));
+  const corr = pontos.map(p => obterIndicadoresPropriedades_(BD_ABA_CORRETIVAS,  p.ano, p.index));
   const backlog = pontos.map(p =>
     obterBacklogPorCC_(p.ano, p.index).reduce((s, b) => s + b.total, 0));
 
@@ -973,6 +1022,11 @@ function obterDashboardPropriedades_() {
 // tabela e o KPI de Indicadores Gerais (que soma este mesmo resultado)
 // nunca divirjam. Lição do backlog dos Megas (CLAUDE.md): estoque e KPI têm
 // que sair da mesma fonte, senão o mês não fecha.
+//
+// Filtrado pra equipe PROPRIEDADES via "Responsáveis" (_propEquipeCorretiva_)
+// — mesmo corte do resto do deck, e mesmo padrão que
+// megas-mensal/Slide_BacklogClientesProperties.gs já usa pra separar
+// backlog aberto por equipe responsável a partir da mesma coluna.
 function obterBacklogPorCC_(ano, mesIndex) {
   const ref     = obterMesReferencia_();
   const anoRef  = ano != null ? ano : ref.ano;
@@ -981,7 +1035,8 @@ function obterBacklogPorCC_(ano, mesIndex) {
   const refFim  = new Date(Date.UTC(anoRef, mesRef + 1, 1));
 
   const abertos = _propLerCorretivas_()
-    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim));
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
   const porCC = {};
   abertos.forEach(it => {
     const cc = it.cc || 'Sem Centro de Custos';

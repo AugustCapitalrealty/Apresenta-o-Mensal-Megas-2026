@@ -2,10 +2,10 @@
  * ARQUIVO: Slide_Corretivas.gs
  * SLIDE — MANUTENÇÃO CORRETIVA
  *
- * Mesmo desenho de Slide_Preventivas.gs (tabela por equipe, motor de
- * 03_Tabelas.gs, dois blocos Megas/Demais Imóveis) — só a fonte dos números
- * muda. _propBlocoEquipeSLA_ e afins estão em Slide_Preventivas.gs, o
- * primeiro slide a precisar deles.
+ * Mesmo desenho de Slide_Preventivas.gs (SLA da equipe Propriedades, motor
+ * de 03_Tabelas.gs, dois blocos Megas/Demais Imóveis) — só a fonte dos
+ * números muda. _propBlocoEquipeSLA_ e afins estão em Slide_Preventivas.gs,
+ * o primeiro slide a precisar deles.
  */
 
 function gerarSlideCorretivas() {
@@ -16,7 +16,7 @@ function gerarSlideCorretivas() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   criarHeaderPadrao(slide, 'MANUTENÇÃO CORRETIVA',
-    'SLA de manutenção corretiva por segmento e equipe');
+    'SLA de corretivas fechadas pela equipe de Propriedades');
 
   const megas  = obterIndicadoresAcumulado_().corretivas;
   const demais = obterIndicadoresAcumulado_().corretvasDemais;
@@ -25,11 +25,12 @@ function gerarSlideCorretivas() {
     return;
   }
 
-  const topY = 74, marginBottom = 16, gap = 16;
-  const blocoH = (SH - topY - marginBottom - gap) / 2;
+  const topY = 74, marginBottom = 16, gap = 16, blocoH = 92;
+  const availH = SH - topY - marginBottom;
+  const startY = topY + Math.max(0, (availH - (blocoH * 2 + gap)) / 2);
 
-  _propBlocoEquipeSLA_(slide, SW, SH, topY, blocoH, 'MEGAS', megas);
-  _propBlocoEquipeSLA_(slide, SW, SH, topY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
+  _propBlocoEquipeSLA_(slide, SW, SH, startY, blocoH, 'MEGAS', megas);
+  _propBlocoEquipeSLA_(slide, SW, SH, startY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
 
   Logger.log('✓ Corretivas gerado');
 }

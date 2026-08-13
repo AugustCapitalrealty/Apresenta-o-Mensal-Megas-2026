@@ -7,8 +7,9 @@
  * MESMO desenho de megas-mensal/Slide01_Dashboard.gs (o "Dashboard" que o
  * usuário já conhece e pediu pra replicar), com dado 100% de
  * obterDashboardPropriedades_() (02_Dados.gs): nada aqui é inventado, é
- * indicadoresPortfolio_/obterBacklogPorCC_ chamados 3× com (ano, mesIndex)
- * diferentes.
+ * obterIndicadoresPropriedades_/obterBacklogPorCC_ chamados 3× com (ano,
+ * mesIndex) diferentes — já filtrados pra equipe PROPRIEDADES (nada de
+ * Facilities nem Terceiros aparece nesta apresentação).
  *
  * Por que não é mais criarCardKPI (o desenho anterior deste slide): aquilo
  * era um card de KPI avulso, sem comparação no tempo — o layout "de verdade"

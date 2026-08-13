@@ -54,9 +54,10 @@ function gerarSlideCapa() {
   // mínimo da própria interface) — <100 lança "Invalid argument: spacing".
   titulo.getText().getParagraphStyle().setLineSpacing(100);
 
-  // Subtítulo
+  // Subtítulo — sem "Facilities": esta apresentação é só do time de
+  // Propriedades (pedido do usuário).
   const subtitulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H * 0.30 + 158, W - 120, 40);
-  subtitulo.getText().setText('Gestão de Facilities e Projetos').getTextStyle()
+  subtitulo.getText().setText('Obras, Contratações e Indicadores do Mês').getTextStyle()
     .setFontSize(24).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
   // Período (pill)

@@ -2,18 +2,17 @@
  * ARQUIVO: Slide_Preventivas.gs
  * SLIDE — MANUTENÇÃO PREVENTIVA
  *
- * Tabela de preventivas por equipe (Propriedades/Facilities/Terceiros) com
- * cumpridos, não cumpridos e SLA, dois blocos empilhados (Megas e Demais
- * Imóveis). O desenho da tabela é o motor de 03_Tabelas.gs — a mesma faixa
- * de legenda (_tabDesenharLegenda_) e o mesmo grid de tabela
- * (_tabDesenharTabela_) que Slide_RecebimentoObras.gs e
- * Slide_Contratacoes.gs já usam — em vez do retângulo-a-retângulo desenhado
- * à mão que existia aqui antes.
+ * SLA de preventivas fechadas pela equipe PROPRIEDADES (nada de Facilities
+ * nem Terceiros — esta apresentação é só do time de Propriedades), dois
+ * blocos lado a lado (Megas e Demais Imóveis). O desenho da tabela é o
+ * motor de 03_Tabelas.gs — a mesma faixa de legenda (_tabDesenharLegenda_)
+ * e o mesmo grid de tabela (_tabDesenharTabela_) que Slide_RecebimentoObras.gs
+ * e Slide_Contratacoes.gs já usam.
  *
  * _propLinhasEquipeSLA_/_propBlocoEquipeSLA_ são compartilhados com
- * Slide_Corretivas.gs (mesmo formato de dado — cumpridos/não cumpridos por
- * equipe —, só a fonte dos números muda). Definidos aqui por serem usados
- * pela primeira vez neste slide.
+ * Slide_Corretivas.gs (mesmo formato de dado — cumpridos/não cumpridos —,
+ * só a fonte dos números muda). Definidos aqui por serem usados pela
+ * primeira vez neste slide.
  */
 
 function gerarSlidePreventivas() {
@@ -24,7 +23,7 @@ function gerarSlidePreventivas() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA',
-    'SLA de manutenção preventiva por segmento e equipe');
+    'SLA de preventivas fechadas pela equipe de Propriedades');
 
   const megas  = obterIndicadoresAcumulado_().preventivas;
   const demais = obterIndicadoresAcumulado_().preventivasDemais;
@@ -33,19 +32,22 @@ function gerarSlidePreventivas() {
     return;
   }
 
-  const topY = 74, marginBottom = 16, gap = 16;
-  const blocoH = (SH - topY - marginBottom - gap) / 2;
+  // Blocos compactos (1 linha de dado cada) centralizados no espaço abaixo
+  // do cabeçalho, em vez de esticados pela metade do slide como quando
+  // cada um tinha 3 linhas (Propriedades/Facilities/Terceiros).
+  const topY = 74, marginBottom = 16, gap = 16, blocoH = 92;
+  const availH = SH - topY - marginBottom;
+  const startY = topY + Math.max(0, (availH - (blocoH * 2 + gap)) / 2);
 
-  _propBlocoEquipeSLA_(slide, SW, SH, topY, blocoH, 'MEGAS', megas);
-  _propBlocoEquipeSLA_(slide, SW, SH, topY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
+  _propBlocoEquipeSLA_(slide, SW, SH, startY, blocoH, 'MEGAS', megas);
+  _propBlocoEquipeSLA_(slide, SW, SH, startY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
 
   Logger.log('✓ Preventivas gerado');
 }
 
 
 // ==========================================
-// TABELA POR EQUIPE (Propriedades/Facilities/Terceiros) — compartilhada
-// com Slide_Corretivas.gs
+// TABELA DE SLA (equipe Propriedades) — compartilhada com Slide_Corretivas.gs
 // ==========================================
 const PROP_EQUIPE_COLUNAS_SLA = [
   { nome: 'Equipe',         tipo: 'texto',  largura: 0.34 },
@@ -59,25 +61,22 @@ function _propSlaPct_(cumpridos, naoCumpridos) {
   return total > 0 ? (cumpridos / total * 100).toFixed(1) + '%' : '-';
 }
 
+// Uma linha só — Propriedades. Facilities e Terceiros não entram nesta
+// apresentação (pedido do usuário).
 function _propLinhasEquipeSLA_(dados) {
   return [
     ['Propriedades', dados.properties_cumpridos, dados.properties_nao_cumpridos,
-      _propSlaPct_(dados.properties_cumpridos, dados.properties_nao_cumpridos)],
-    ['Facilities', dados.facilities_cumpridos, dados.facilities_nao_cumpridos,
-      _propSlaPct_(dados.facilities_cumpridos, dados.facilities_nao_cumpridos)],
-    ['Terceiros', dados.terceiros_cumpridos, dados.terceiros_nao_cumpridos,
-      _propSlaPct_(dados.terceiros_cumpridos, dados.terceiros_nao_cumpridos)]
+      _propSlaPct_(dados.properties_cumpridos, dados.properties_nao_cumpridos)]
   ];
 }
 
 // Um bloco = faixa de legenda (mesmo componente usado por "HISTÓRICO ·
-// CONCLUÍDOS" no Recebimento de Obras) + tabela de 3 linhas fixas
-// (Propriedades/Facilities/Terceiros).
+// CONCLUÍDOS" no Recebimento de Obras) + tabela de 1 linha (Propriedades).
 function _propBlocoEquipeSLA_(slide, SW, SH, y, h, legenda, dados) {
   const legH = SH * 0.045;
   _tabDesenharLegenda_(slide, SW, y, legH, legenda);
   const topoTab = y + legH + SH * 0.008;
 
   _tabDesenharTabela_(slide, SW, SH, _propLinhasEquipeSLA_(dados), topoTab, y + h,
-    { colunas: PROP_EQUIPE_COLUNAS_SLA, maxLinhas: 3 });
+    { colunas: PROP_EQUIPE_COLUNAS_SLA, maxLinhas: 1 });
 }
