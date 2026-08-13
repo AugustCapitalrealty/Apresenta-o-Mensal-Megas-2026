@@ -152,6 +152,12 @@ function _propLerBase_(nomeAba) {
     // SLA (Slide_Preventivas.gs). Mesma coluna que megas-mensal/02_Dados.gs
     // já lê da mesma base.
     const cDesc   = col('descricao', 'descrição');
+    // Prioridade do chamado (Emergencial/Alta/Normal/Baixa) — usada no
+    // gráfico de Backlog Emergencial (Slide_Corretivas.gs). A aba tem duas
+    // colunas "Prioridade" (uma de texto, outra numérica); col() pega a
+    // primeira ocorrência, que é a de texto — mesmo comportamento de
+    // megas-mensal/02_Dados.gs na mesma base.
+    const cPri    = col('prioridade');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
@@ -177,6 +183,7 @@ function _propLerBase_(nomeAba) {
         fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
         responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
         descricao: cDesc   >= 0 ? String(data[r][cDesc]   || '').trim() : '',
+        prioridade: _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -730,6 +737,17 @@ function _propEhTerceiro_(quemFechou) {
   return n.indexOf('ronda') >= 0 || n.indexOf('portaria') >= 0;
 }
 
+// Cópia de megas-mensal/02_Dados.gs (mesmo nome, mesma base BD-CORRETIVAS —
+// ver CLAUDE.md sobre copiar por valor entre projetos separados).
+function _normalizarPrioridade_(v) {
+  const n = _histNorm_(v);
+  if (n.indexOf('emergenc') >= 0) return 'Emergencial';
+  if (n.indexOf('alta') >= 0)     return 'Alta';
+  if (n.indexOf('normal') >= 0)   return 'Normal';
+  if (n.indexOf('baixa') >= 0)    return 'Baixa';
+  return '';
+}
+
 // Resolve a equipe de uma PREVENTIVA pela coluna "Fechado por".
 // Diferente das corretivas, aqui é um nome só, não uma lista — quem fechou
 // é quem executou.
@@ -1087,4 +1105,89 @@ function obterBacklogPorCC_(ano, mesIndex) {
     porCC[cc] = (porCC[cc] || 0) + 1;
   });
   return Object.keys(porCC).map(cc => ({ cc, total: porCC[cc] })).sort((a, b) => b.total - a.total);
+}
+
+
+// ==========================================
+// INDICADORES DE CORRETIVAS — Slide_Corretivas.gs
+// ==========================================
+// Chamados criados/fechados e tempo médio entre criado e fechado, mensal e
+// acumulado do ano — os três direto da BD-CORRETIVAS (mesma base e mesma
+// regra de "fechado" — _bdChamadoFechado_ — do resto do deck), filtrados
+// pra equipe PROPRIEDADES via "Responsáveis". "Índice de disponibilidade"
+// (que o slide equivalente dos Megas mostra) NÃO entra: lá vem de uma aba
+// digitada à mão por Mega, sem fórmula na base bruta — não existe fonte
+// equivalente pro portfólio de Propriedades, e inventar a conta violaria a
+// mesma regra que já tirou Recebimento de Obras do Dashboard (nada de dado
+// reconstruído/inventado). Ver decisão do usuário no histórico do projeto.
+function obterFluxoCorretivasPropriedades_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+  const anoIni = new Date(Date.UTC(ano, 0, 1));
+
+  const itens = _propLerCorretivas_().filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  let mCriados = 0, mFechados = 0, aCriados = 0, aFechados = 0;
+  const temposMes = [], temposAno = [];
+
+  itens.forEach(it => {
+    if (it.dtReporte && it.dtReporte >= refIni && it.dtReporte < refFim) mCriados++;
+    if (it.dtReporte && it.dtReporte >= anoIni && it.dtReporte < refFim) aCriados++;
+
+    const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
+    if (fechado && it.dtReporte && it.dtFechado >= refIni && it.dtFechado < refFim) {
+      mFechados++;
+      temposMes.push(it.dtFechado - it.dtReporte);
+    }
+    if (fechado && it.dtReporte && it.dtFechado >= anoIni && it.dtFechado < refFim) {
+      aFechados++;
+      temposAno.push(it.dtFechado - it.dtReporte);
+    }
+  });
+
+  // Média em horas, só de quem fechou DENTRO da janela e tem as duas datas —
+  // não dá pra medir "tempo até fechar" de quem ainda está aberto.
+  const mediaHoras = arr => arr.length
+    ? arr.reduce((soma, ms) => soma + ms, 0) / arr.length / 3600000
+    : null;
+
+  return {
+    mensal:    { criados: mCriados, fechados: mFechados, tempoMedioH: mediaHoras(temposMes) },
+    acumulado: { criados: aCriados, fechados: aFechados, tempoMedioH: mediaHoras(temposAno) }
+  };
+}
+
+// Últimos `n` meses até o mês de referência (inclusive), mais antigo
+// primeiro — janela do gráfico de Backlog Emergencial.
+function _propUltimosMeses_(ref, n) {
+  const lista = [];
+  for (let i = n - 1; i >= 0; i--) {
+    let idx = ref.index - i, ano = ref.ano;
+    while (idx < 0) { idx += 12; ano--; }
+    lista.push({ ano: ano, index: idx });
+  }
+  return lista;
+}
+
+// Backlog de chamados EMERGENCIAIS (coluna "Prioridade"), mês a mês, dos
+// últimos `n` meses — mesma regra de "aberto no mês" (_histAbertoNoMes_) e
+// mesmo filtro de equipe (PROPERTY) do resto do deck. Diferente do
+// equivalente dos Megas (que conta emergencial de QUALQUER equipe, decisão
+// explícita de lá): aqui entra só Propriedades, pelo mesmo motivo que tirou
+// Facilities/Terceiros do resto da apresentação.
+function obterBacklogEmergencialPorMes_(n) {
+  const ref   = obterMesReferencia_();
+  const meses = _propUltimosMeses_(ref, n || 13);
+  const base  = _propLerCorretivas_();
+
+  return meses.map(m => {
+    const refIni = new Date(Date.UTC(m.ano, m.index, 1));
+    const refFim = new Date(Date.UTC(m.ano, m.index + 1, 1));
+    const qtd = base.filter(it =>
+      it.prioridade === 'Emergencial' &&
+      _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY' &&
+      _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)
+    ).length;
+    return { ano: m.ano, index: m.index, qtd: qtd };
+  });
 }
