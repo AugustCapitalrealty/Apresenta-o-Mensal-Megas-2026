@@ -60,10 +60,14 @@ função.
 
 ## O que falta decidir
 
-1. **Indicadores** — o que a área acompanha além de chamados? Vistorias,
-   contratos, ocupação, inadimplência, garantias de obra?
-2. **Fontes** — quais planilhas alimentam cada indicador.
-3. **SLA de preventivas** — ver a seção abaixo.
+1. **Indicadores gerais** — o que entra na seção 1 além de chamados?
+   Vistorias, contratos, ocupação, inadimplência, garantias de obra?
+2. **Fontes** — quais planilhas alimentam esses indicadores.
+3. **`presentationId`** — falta o ID de um deck (mesmo de teste) para os
+   slides começarem a ser desenhados.
+
+O SLA das preventivas, a execução e a atribuição por equipe já estão
+resolvidos e implementados — ver as seções abaixo.
 
 ## SLA de preventivas — regra confirmada e implementada
 
@@ -205,7 +209,7 @@ fechado por facilities é de facilities"*.
 O mapa nome→equipe é cópia do `_RESPONSAVEL_EQUIPE_` de `megas-mensal`. Apps
 Script não tem import — ao acrescentar alguém lá, acrescente aqui também.
 
-### Uma decisão em aberto: a ronda
+### A ronda é terceiro — categoria própria
 
 Em 2026, das 5.462 preventivas agendadas:
 
@@ -216,14 +220,21 @@ Em 2026, das 5.462 preventivas agendadas:
 | Nomes de Operação | 184 | 3% |
 | Nomes de Propriedades | 142 | 3% |
 
-A ronda não é uma pessoa do mapa — é a conta da portaria, e responde por
-**60% da base**. Hoje ela sai como categoria própria (`RONDA`) em
-`conferirEquipes()`, justamente para a decisão ser tomada com o volume à
-vista: se ela entrar em Facilities, o número de Facilities quadruplica.
+Regra do time: *"Ronda e Portaria (CTBA/ESTEIO/ITAJAÍ) são os terceiros de
+cada empreendimento"*. Não é uma pessoa do mapa nem equipe própria da Capital
+Realty — é execução contratada.
 
-Nas corretivas o projeto já usa o fallback "sem responsável reconhecido conta
-como FACILITIES", mas 60% da base é volume demais para resolver por fallback
-sem perguntar.
+Por isso `_propEquipePreventiva_` devolve **`TERCEIROS`**, uma terceira
+categoria ao lado de PROPRIEDADES e FACILITIES, e não o fallback "sem
+responsável reconhecido conta como FACILITIES" que as corretivas usam. Jogá-la
+em Facilities quadruplicaria a equipe interna no slide — de 1.719 para 4.984 —
+atribuindo a ela um volume que é de contratado.
+
+O vocabulário já existe no time: `CHECKLIST - TERCEIROS` aparece na coluna
+Descrição da própria base.
+
+`conferirEquipes()` mostra as três lado a lado, com o volume de terceiros
+destacado.
 
 ## Estrutura planejada
 

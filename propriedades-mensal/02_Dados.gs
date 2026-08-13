@@ -661,17 +661,18 @@ const _PROP_EQUIPE_ = (function () {
   return mapa;
 })();
 
-// "Ronda e Portaria (CTBA/ESTEIO/ITAJAÍ)" fecha 3.265 das 5.462 preventivas
-// de 2026 — 60% da base. Não é uma pessoa do mapa, é a conta da portaria.
+// "Ronda e Portaria (CTBA/ESTEIO/ITAJAÍ)" são os TERCEIROS de cada
+// empreendimento — não é uma pessoa do mapa nem equipe própria da Capital
+// Realty. Fecham 3.265 das 5.462 preventivas de 2026: 60% da base.
 //
-// DECISÃO EM ABERTO: hoje cai em FACILITIES pelo mesmo fallback que as
-// corretivas já usam ("sem responsável reconhecido conta como FACILITIES,
-// não OUTROS", megas-mensal/02_Dados.gs). Como é a maior fatia da base, o
-// número de Facilities depende inteiramente dessa escolha — conferirEquipes()
-// mostra a ronda separada para a decisão ser tomada olhando o volume.
-function _propEhRonda_(quemFechou) {
-  return _histNorm_(quemFechou).indexOf('ronda') >= 0 ||
-         _histNorm_(quemFechou).indexOf('portaria') >= 0;
+// Categoria própria, e não fallback para FACILITIES: jogá-las lá
+// quadruplicaria o número de Facilities (de 1.719 para 4.984) e o slide
+// atribuiria à equipe interna um volume que é de contratado. "CHECKLIST -
+// TERCEIROS" também aparece na coluna Descrição, então a categoria já existe
+// no vocabulário do time.
+function _propEhTerceiro_(quemFechou) {
+  const n = _histNorm_(quemFechou);
+  return n.indexOf('ronda') >= 0 || n.indexOf('portaria') >= 0;
 }
 
 // Resolve a equipe de uma PREVENTIVA pela coluna "Fechado por".
@@ -680,14 +681,13 @@ function _propEhRonda_(quemFechou) {
 function _propEquipePreventiva_(quemFechou) {
   const eq = _PROP_EQUIPE_[_histNorm_(quemFechou)];
   if (eq) return eq;
-  if (_propEhRonda_(quemFechou)) return 'RONDA';
+  if (_propEhTerceiro_(quemFechou)) return 'TERCEIROS';
   return '';   // sem quem fechou (ainda aberta) ou nome novo
 }
 
 // Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
-// apresentação pede. `RONDA` sai separada de propósito: enquanto a decisão
-// não for tomada, misturá-la em Facilities esconderia 60% da base dentro de
-// um número só.
+// apresentação pede, mais TERCEIROS (ronda e portaria de cada
+// empreendimento), que é execução contratada e não da equipe interna.
 function indicadoresPorEquipe_(ano, mesIndex, janela) {
   const porEq = {};
   preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela).forEach(it => {
@@ -729,10 +729,10 @@ function conferirEquipes(ano, mes) {
       pct(d[eq].sla.pct).padStart(9));
   });
 
-  if (d.RONDA) {
-    Logger.log('\n  RONDA aparece separada: é a conta "Ronda e Portaria", não uma pessoa');
-    Logger.log('  do mapa de equipes. Some ' + d.RONDA.execucao.previstas + ' preventiva(s) no mês.');
-    Logger.log('  Decidir se ela entra em FACILITIES ou fica como categoria própria.');
+  if (d.TERCEIROS) {
+    Logger.log('\n  TERCEIROS = ronda e portaria de cada empreendimento (' +
+               d.TERCEIROS.execucao.previstas + ' no mês).');
+    Logger.log('  Execução contratada, contada à parte da equipe interna.');
   }
   if (d['NÃO IDENTIFICADA']) {
     Logger.log('\n  ' + d['NÃO IDENTIFICADA'].execucao.previstas + ' sem equipe: ainda abertas ' +
