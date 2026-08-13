@@ -15,7 +15,7 @@ function gerarSlideCorretivas() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   // Cabeçalho
-  _headerPropriedades_(slide, 'MANUTENÇÃO CORRETIVA',
+  _headerPropriedades_(slide, W, 'MANUTENÇÃO CORRETIVA',
     'SLA de manutenção corretiva por segmento e equipe');
 
   const marginX = 28, topY = 74;

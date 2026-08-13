@@ -15,7 +15,7 @@ function gerarSlideBacklog() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   // Cabeçalho
-  _headerPropriedades_(slide, 'BACKLOG — DEMANDAS EM ABERTO',
+  _headerPropriedades_(slide, W, 'BACKLOG — DEMANDAS EM ABERTO',
     'Chamados aguardando atendimento, agrupados por Centro de Custos');
 
   const marginX = 28, topY = 74;

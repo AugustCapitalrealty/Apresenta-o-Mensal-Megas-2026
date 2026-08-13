@@ -15,7 +15,7 @@ function gerarSlideIndicadoresGerais() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   // Cabeçalho
-  _headerPropriedades_(slide, 'INDICADORES GERAIS DO PORTFÓLIO',
+  _headerPropriedades_(slide, W, 'INDICADORES GERAIS DO PORTFÓLIO',
     'Performance de SLA, execução e backlog por segmento');
 
   // Dados gerais
@@ -73,9 +73,8 @@ function _cardIndicador_(slide, x, y, w, h, titulo, valor, subtitulo, corAccento
     .setFontSize(8).setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
 }
 
-function _headerPropriedades_(slide, titulo, subtitulo) {
+function _headerPropriedades_(slide, W, titulo, subtitulo) {
   const DS = CR_DESIGN_SYSTEM;
-  const W = slide.getParentPresentation().getPageWidth();
 
   // Linha de separação
   const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 50, W, 1);

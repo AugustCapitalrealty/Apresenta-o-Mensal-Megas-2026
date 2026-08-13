@@ -15,7 +15,7 @@ function gerarSlidePreventivas() {
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
   // Cabeçalho
-  _headerPropriedades_(slide, 'MANUTENÇÃO PREVENTIVA',
+  _headerPropriedades_(slide, W, 'MANUTENÇÃO PREVENTIVA',
     'SLA de manutenção preventiva por segmento e equipe');
 
   const marginX = 28, topY = 74;
