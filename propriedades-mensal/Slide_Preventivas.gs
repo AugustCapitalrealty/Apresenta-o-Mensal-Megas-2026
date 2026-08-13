@@ -2,109 +2,82 @@
  * ARQUIVO: Slide_Preventivas.gs
  * SLIDE — MANUTENÇÃO PREVENTIVA
  *
- * Tabela resumida de preventivas por equipe com SLA (cumpridos vs não cumpridos),
- * split entre Megas e Demais Imóveis.
+ * Tabela de preventivas por equipe (Propriedades/Facilities/Terceiros) com
+ * cumpridos, não cumpridos e SLA, dois blocos empilhados (Megas e Demais
+ * Imóveis). O desenho da tabela é o motor de 03_Tabelas.gs — a mesma faixa
+ * de legenda (_tabDesenharLegenda_) e o mesmo grid de tabela
+ * (_tabDesenharTabela_) que Slide_RecebimentoObras.gs e
+ * Slide_Contratacoes.gs já usam — em vez do retângulo-a-retângulo desenhado
+ * à mão que existia aqui antes.
+ *
+ * _propLinhasEquipeSLA_/_propBlocoEquipeSLA_ são compartilhados com
+ * Slide_Corretivas.gs (mesmo formato de dado — cumpridos/não cumpridos por
+ * equipe —, só a fonte dos números muda). Definidos aqui por serem usados
+ * pela primeira vez neste slide.
  */
 
 function gerarSlidePreventivas() {
   const deck = getDeckMensal_();
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  const SW = deck.getPageWidth(), SH = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-
+  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
-  // Cabeçalho
-  _headerPropriedades_(slide, W, 'MANUTENÇÃO PREVENTIVA',
+  criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA',
     'SLA de manutenção preventiva por segmento e equipe');
 
-  const marginX = 28, topY = 74;
-  const contentW = W - marginX * 2;
-
-  // Dados
-  const megas = obterIndicadoresAcumulado_().preventivas;
+  const megas  = obterIndicadoresAcumulado_().preventivas;
   const demais = obterIndicadoresAcumulado_().preventivasDemais;
-
   if (!megas || !demais) {
     Logger.log('✗ Preventivas: sem dados disponíveis');
     return;
   }
 
-  // Tabela de Megas
-  let currentY = topY;
-  _desenharSecaoPreventivas_(slide, marginX, currentY, contentW, 'MEGAS', megas, DS);
+  const topY = 74, marginBottom = 16, gap = 16;
+  const blocoH = (SH - topY - marginBottom - gap) / 2;
 
-  // Tabela de Demais
-  currentY += 160;
-  _desenharSecaoPreventivas_(slide, marginX, currentY, contentW, 'DEMAIS IMÓVEIS', demais, DS);
+  _propBlocoEquipeSLA_(slide, SW, SH, topY, blocoH, 'MEGAS', megas);
+  _propBlocoEquipeSLA_(slide, SW, SH, topY + blocoH + gap, blocoH, 'DEMAIS IMÓVEIS', demais);
 
   Logger.log('✓ Preventivas gerado');
 }
 
-function _desenharSecaoPreventivas_(slide, x, y, w, titulo, dados, DS) {
-  const h = 30, gap = 2;
 
-  // Título da seção
-  const titleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
-  titleBox.getText().setText(titulo).getTextStyle()
-    .setFontSize(11).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily(DS.typography.titles);
+// ==========================================
+// TABELA POR EQUIPE (Propriedades/Facilities/Terceiros) — compartilhada
+// com Slide_Corretivas.gs
+// ==========================================
+const PROP_EQUIPE_COLUNAS_SLA = [
+  { nome: 'Equipe',         tipo: 'texto',  largura: 0.34 },
+  { nome: 'Cumpridos',      tipo: 'numero', largura: 0.20 },
+  { nome: 'Não Cumpridos',  tipo: 'numero', largura: 0.23 },
+  { nome: 'SLA',            tipo: 'numero', largura: 0.23 }
+];
 
-  y += 24;
+function _propSlaPct_(cumpridos, naoCumpridos) {
+  const total = (cumpridos || 0) + (naoCumpridos || 0);
+  return total > 0 ? (cumpridos / total * 100).toFixed(1) + '%' : '-';
+}
 
-  // Cabeçalho da tabela
-  const headBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  headBg.getFill().setSolidFill(DS.colors.brandDark);
-  headBg.getBorder().setTransparent();
-
-  const cols = [
-    { label: 'EQUIPE', width: 0.35 },
-    { label: 'CUMPRIDOS', width: 0.2 },
-    { label: 'NÃO CUMPRIDOS', width: 0.2 },
-    { label: 'SLA', width: 0.25 }
+function _propLinhasEquipeSLA_(dados) {
+  return [
+    ['Propriedades', dados.properties_cumpridos, dados.properties_nao_cumpridos,
+      _propSlaPct_(dados.properties_cumpridos, dados.properties_nao_cumpridos)],
+    ['Facilities', dados.facilities_cumpridos, dados.facilities_nao_cumpridos,
+      _propSlaPct_(dados.facilities_cumpridos, dados.facilities_nao_cumpridos)],
+    ['Terceiros', dados.terceiros_cumpridos, dados.terceiros_nao_cumpridos,
+      _propSlaPct_(dados.terceiros_cumpridos, dados.terceiros_nao_cumpridos)]
   ];
+}
 
-  let colX = x;
-  cols.forEach(col => {
-    const colW = w * col.width;
-    const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX, y + 8, colW, h - 16);
-    txt.getText().setText(col.label).getTextStyle()
-      .setFontSize(8).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.body);
-    colX += colW;
-  });
+// Um bloco = faixa de legenda (mesmo componente usado por "HISTÓRICO ·
+// CONCLUÍDOS" no Recebimento de Obras) + tabela de 3 linhas fixas
+// (Propriedades/Facilities/Terceiros).
+function _propBlocoEquipeSLA_(slide, SW, SH, y, h, legenda, dados) {
+  const legH = SH * 0.045;
+  _tabDesenharLegenda_(slide, SW, y, legH, legenda);
+  const topoTab = y + legH + SH * 0.008;
 
-  y += h + gap;
-
-  // Linhas de dados
-  const linhas = [
-    { label: 'Propriedades', cumpridos: dados.properties_cumpridos, nao_cumpridos: dados.properties_nao_cumpridos },
-    { label: 'Facilities', cumpridos: dados.facilities_cumpridos, nao_cumpridos: dados.facilities_nao_cumpridos },
-    { label: 'Terceiros', cumpridos: dados.terceiros_cumpridos, nao_cumpridos: dados.terceiros_nao_cumpridos }
-  ];
-
-  linhas.forEach((linha, idx) => {
-    const sla = linha.cumpridos + linha.nao_cumpridos > 0
-      ? (linha.cumpridos / (linha.cumpridos + linha.nao_cumpridos) * 100).toFixed(1)
-      : '-';
-
-    const corFundo = idx % 2 === 0 ? DS.colors.white : '#F8FAFC';
-    const rowBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-    rowBg.getFill().setSolidFill(corFundo);
-    rowBg.getBorder().getLineFill().setSolidFill(DS.colors.line);
-    rowBg.getBorder().setWeight(0.5);
-
-    colX = x;
-    const rowData = [linha.label, linha.cumpridos, linha.nao_cumpridos, sla + '%'];
-
-    rowData.forEach((valor, colIdx) => {
-      const colW = w * cols[colIdx].width;
-      const cellTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, colX + 8, y + 8, colW - 16, h - 16);
-      const align = colIdx === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER;
-      cellTxt.getText().setText(valor.toString()).getTextStyle()
-        .setFontSize(9).setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-      cellTxt.getText().getParagraphStyle().setParagraphAlignment(align);
-      colX += colW;
-    });
-
-    y += h + gap;
-  });
+  _tabDesenharTabela_(slide, SW, SH, _propLinhasEquipeSLA_(dados), topoTab, y + h,
+    { colunas: PROP_EQUIPE_COLUNAS_SLA, maxLinhas: 3 });
 }

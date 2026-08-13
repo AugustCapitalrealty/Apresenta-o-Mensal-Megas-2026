@@ -2,9 +2,17 @@
  * ARQUIVO: Slide_Capa.gs
  * SLIDE 00 — CAPA DA APRESENTAÇÃO MENSAL DE PROPRIEDADES
  *
- * Capa de abertura simples: fundo sólido institucional, título, período,
- * logo Capital Realty. Segue o padrão visual do design system Capital Realty
- * (CR_DESIGN_SYSTEM em 01_Config.gs).
+ * Mesmo tom institucional das capas dos Megas (Slide00_Capa.gs): fundo
+ * escuro brandDark, espinha lateral em brandLight, wordmark, overline
+ * espaçado, barra de destaque, título grande e pill de período. Sem a foto
+ * full-bleed das capas dos Megas — mais elaborada do que este deck precisa,
+ * já que aqui não há uma foto por empreendimento (é um deck só do
+ * portfólio inteiro, não um deck por Mega).
+ *
+ * "Propriedades", não "Portfólio": o título e o overline evitam a palavra
+ * de propósito — pedido do usuário, ela não deve aparecer em nenhum texto
+ * visível da apresentação (nomes internos de função, como
+ * indicadoresPortfolio_ em 02_Dados.gs, não contam — não aparecem na tela).
  */
 
 function gerarSlideCapa() {
@@ -33,15 +41,17 @@ function gerarSlideCapa() {
   over.getText().setText('APRESENTAÇÃO MENSAL').getTextStyle()
     .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
-  // Barra de destaque em gradiente acima do título
+  // Barra de destaque acima do título
   const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 46, H * 0.30 + 26, 66, 4);
   barra.getFill().setSolidFill(DS.colors.brandLight);
   barra.getBorder().setTransparent();
 
-  // Título principal
+  // Título principal — "Propriedades" é o herói, sem "Portfólio".
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
-  titulo.getText().setText('PORTFÓLIO DE\nPROPRIEDADES').getTextStyle()
+  titulo.getText().setText('GESTÃO DE\nPROPRIEDADES').getTextStyle()
     .setFontSize(44).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  // O Slides não aceita lineSpacing abaixo de 100 ("espaçamento simples" é o
+  // mínimo da própria interface) — <100 lança "Invalid argument: spacing".
   titulo.getText().getParagraphStyle().setLineSpacing(100);
 
   // Subtítulo
