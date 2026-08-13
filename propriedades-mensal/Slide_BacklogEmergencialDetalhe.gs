@@ -4,11 +4,11 @@
  *
  * Detalhamento dos chamados de prioridade Emergencial que estavam em
  * aberto no mês de referência (equipe Propriedades), um por linha:
- * Segmento (Megas/Demais Imóveis), Centro de Custos, Descrição, Data de
- * Abertura e Dias em Aberto. É o "de onde vêm" por trás do gráfico de
- * Backlog de Chamados Emergências em Slide_Corretivas.gs — mesma fonte
- * (obterBacklogEmergencialDetalhe_, 02_Dados.gs), mesmo mês de referência:
- * o total de linhas aqui bate com a última barra daquele gráfico.
+ * Empreendimento, Descrição, Data de Abertura e Dias em Aberto. É o "de
+ * onde vêm" por trás do gráfico de Backlog de Chamados Emergências em
+ * Slide_Corretivas.gs — mesma fonte (obterBacklogEmergencialDetalhe_,
+ * 02_Dados.gs), mesmo mês de referência: o total de linhas aqui bate com a
+ * última barra daquele gráfico.
  *
  * Desenhado com o motor de 03_Tabelas.gs (mesmo de Recebimento de
  * Obras/Contratações/Preventivas/Corretivas/Backlog neste deck) —
@@ -23,11 +23,10 @@ const BACKLOG_EMERG_MAX_LINHAS = 8;
 // 2 dígitos (dd/mm/aa), pra caber na coluna estreita. 'textoCentro' exibe
 // o texto como veio, sem essa validação.
 const BACKLOG_EMERG_COLUNAS = [
-  { nome: 'Segmento',         tipo: 'textoCentro', largura: 0.13 },
-  { nome: 'Centro de Custos', tipo: 'textoCentro', largura: 0.20 },
-  { nome: 'Descrição',        tipo: 'texto',        largura: 0.40 },
-  { nome: 'Data Abertura',    tipo: 'textoCentro',  largura: 0.13 },
-  { nome: 'Dias em Aberto',   tipo: 'numero',       largura: 0.14 }
+  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.20 },
+  { nome: 'Descrição',      tipo: 'texto',        largura: 0.53 },
+  { nome: 'Data Abertura',  tipo: 'textoCentro',  largura: 0.13 },
+  { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.14 }
 ];
 
 function gerarSlideBacklogEmergencialDetalhe() {
@@ -54,7 +53,7 @@ function gerarSlideBacklogEmergencialDetalhe() {
     return;
   }
 
-  const linhas = itens.map(it => [it.segmento, it.cc, it.descricao, it.dataAbertura, it.dias]);
+  const linhas = itens.map(it => [it.cc, it.descricao, it.dataAbertura, it.dias]);
   const pgs = _tabPaginar_(linhas, BACKLOG_EMERG_MAX_LINHAS);
 
   pgs.forEach((pagina, idx) => {

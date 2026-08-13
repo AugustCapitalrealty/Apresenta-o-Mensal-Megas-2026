@@ -117,6 +117,24 @@ function _propAba_(ss, nome) {
          null;
 }
 
+// A coluna Descrição vem com um prefixo de metadado de checklist na frente
+// do texto livre — ex.: "PMP.904036.68674893 CHECKLIST - FACILITIES |
+// Bombas de Drenagem | Posto SIM: C02. Em funcionamento os instrumentos do
+// painel: Não Conforme - Bomba não está no local". O prefixo (ID do
+// formulário + "CHECKLIST - <equipe>" + categorias separadas por "|",
+// terminando em "<local>: <código>.") não interessa pra quem lê o slide —
+// só a descrição real do problema, que vem depois. Remove só quando a
+// descrição REALMENTE começa com esse padrão; texto livre sem prefixo
+// (ex.: "Água voltando pelos tubos das bombas inundando o piso.") fica
+// intacto. Cópia deste mesmo comportamento em megas-mensal/02_Dados.gs —
+// pedido do usuário pra valer nos dois projetos.
+function _limparDescricaoChecklist_(desc) {
+  if (!desc) return desc;
+  const re = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
+  const limpo = desc.replace(re, '').trim();
+  return limpo || desc;
+}
+
 function _propLerBase_(nomeAba) {
   if (_propBaseCache[nomeAba]) return _propBaseCache[nomeAba];
   try {
@@ -182,7 +200,7 @@ function _propLerBase_(nomeAba) {
         cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
         fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
         responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
-        descricao: cDesc   >= 0 ? String(data[r][cDesc]   || '').trim() : '',
+        descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(data[r][cDesc] || '').trim()) : '',
         prioridade: _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
@@ -1211,8 +1229,9 @@ function _histDiasAberto_(dtReporte, refFim) {
 }
 
 // Detalhe dos chamados EMERGENCIAIS (equipe Propriedades) em aberto no mês
-// de referência — um item por chamado, com Centro de Custos, descrição,
-// data de abertura e dias em aberto (até o fim do mês de referência).
+// de referência — um item por chamado, com Empreendimento (Centro de
+// Custos), descrição, data de abertura e dias em aberto (até o fim do mês
+// de referência).
 // Ordenado do mais antigo pro mais novo (dias desc) — os que mais
 // precisam de atenção aparecem primeiro. Usado por
 // Slide_BacklogEmergencialDetalhe.gs.
@@ -1226,7 +1245,6 @@ function obterBacklogEmergencialDetalhe_() {
     .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY')
     .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
     .map(it => ({
-      segmento    : _propEhMega_(it.cc) ? 'MEGAS' : 'DEMAIS IMÓVEIS',
       cc          : it.cc,
       descricao   : it.descricao || '(sem descrição)',
       dataAbertura: _histFormatarDataCurta_(it.dtReporte),

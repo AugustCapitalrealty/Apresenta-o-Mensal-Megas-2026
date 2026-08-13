@@ -2926,7 +2926,7 @@ function _lerChamadosMes_(nomeAba) {
         id:         String(row[cId]   || '').trim(),
         cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
         prioridade: cPri  >= 0 ? String(row[cPri]  || '').trim() : '',
-        descricao:  cDesc >= 0 ? String(row[cDesc] || '').trim() : ''
+        descricao:  cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : ''
       });
     }
     return saida;
@@ -2943,6 +2943,24 @@ function _normalizarPrioridade_(v) {
   if (n.indexOf('normal') >= 0)   return 'Normal';
   if (n.indexOf('baixa') >= 0)    return 'Baixa';
   return '';
+}
+
+// A coluna Descrição vem com um prefixo de metadado de checklist na frente
+// do texto livre — ex.: "PMP.904036.68674893 CHECKLIST - FACILITIES |
+// Bombas de Drenagem | Posto SIM: C02. Em funcionamento os instrumentos do
+// painel: Não Conforme - Bomba não está no local". O prefixo (ID do
+// formulário + "CHECKLIST - <equipe>" + categorias separadas por "|",
+// terminando em "<local>: <código>.") não interessa pra quem lê o slide —
+// só a descrição real do problema, que vem depois. Remove só quando a
+// descrição REALMENTE começa com esse padrão; texto livre sem prefixo
+// (ex.: "Água voltando pelos tubos das bombas inundando o piso.") fica
+// intacto. Cópia deste mesmo comportamento em propriedades-mensal/
+// 02_Dados.gs — pedido do usuário pra valer nos dois projetos.
+function _limparDescricaoChecklist_(desc) {
+  if (!desc) return desc;
+  const re = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
+  const limpo = desc.replace(re, '').trim();
+  return limpo || desc;
 }
 
 // Retorna { abertos: {total, fatias:[{label,qtd}], emergencial:[{id,descricao}]},
@@ -3189,7 +3207,7 @@ function _lerBdCorretivasCru_() {
 
       saida.push({
         id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
-        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
         prioridade: _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
         // Chamado sem responsável preenchido (ou com um nome que não está
@@ -3485,7 +3503,7 @@ function _lerBacklogClientesDetalhes_() {
       saida.push({
         id:          String(row[cId] || '').trim(),
         cliente:     String(row[cCliente] || '').trim(),
-        descricao:   cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:      estado,
         equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
         dataReporte: _histFormatarDataCurta_(dtReporte),
@@ -3679,7 +3697,7 @@ function _lerBdCorretivasChamadosClientes_() {
       saida.push({
         id:          _idChamadoNormaliza_(row[cId]),
         cliente:     cliente,
-        descricao:   cDesc >= 0 ? String(row[cDesc] || '').trim() : '',
+        descricao:   cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         dataReporte: _histFormatarDataCurta_(dtReporte),
         diasAberto:  _histDiasAberto_(dtReporte, refFim),
         equipe:      _resolverEquipeResponsaveis_(responsaveis)
