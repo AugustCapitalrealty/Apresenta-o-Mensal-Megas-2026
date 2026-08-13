@@ -2958,8 +2958,23 @@ function _normalizarPrioridade_(v) {
 // 02_Dados.gs — pedido do usuário pra valer nos dois projetos.
 function _limparDescricaoChecklist_(desc) {
   if (!desc) return desc;
-  const re = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
-  const limpo = desc.replace(re, '').trim();
+  let limpo = desc;
+
+  // 1) Prefixo do formulário: "<ID> CHECKLIST - <equipe> | ... : <código>."
+  const reMeta = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
+  limpo = limpo.replace(reMeta, '');
+
+  // 2) Rótulo do item avaliado + resultado do checklist: "<campo
+  // avaliado>: [Não] Conforme -" — ex.: "Estado de conservação e aspecto
+  // geral da carcaça: Não Conforme -", "Em funcionamento os instrumentos
+  // do painel: Não Conforme -". Só age quando o texto REALMENTE começa
+  // com "<até 80 caracteres>: [Não] Conforme" — descrição livre sem
+  // esse padrão (ex.: "Água voltando pelos tubos das bombas inundando o
+  // piso.") não tem colon logo no início e fica intacta.
+  const reCampo = /^[^:\n]{1,80}:\s*(?:Não\s+)?Conforme\b[\s\-–]*/i;
+  limpo = limpo.replace(reCampo, '');
+
+  limpo = limpo.trim();
   return limpo || desc;
 }
 
