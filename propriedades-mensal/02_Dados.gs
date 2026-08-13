@@ -458,6 +458,83 @@ function diagnosticarMotivoPausa_(nomeAba) {
   }
 }
 
+// Confere a lógica que o usuário descreveu pro backlog "por motivo": não
+// existe coluna "Motivo" separada — inspecionarBase mostrou "Pausado por"
+// [8], "Pausado em" [9] e "Estado" [28]. A hipótese é: pra um chamado
+// ABERTO (Estado ≠ Fechada/Cancelada), se "Pausado por"/"Pausado em"
+// estiver preenchido, o valor de ESTADO nesse momento já É o motivo da
+// pausa (ex.: "Aguardando Aprovação Superior"); se não tiver pausa
+// registrada, é "Em resolução" — não importa o que Estado diga.
+//
+// Mostra, separadamente, o vocabulário de Estado dos abertos COM pausa e
+// dos abertos SEM pausa — se a hipótese estiver certa, o primeiro grupo
+// tem vários valores diferentes e ricos (os "motivos"), e o segundo tem
+// um valor só (ou poucos, genéricos) repetido em todas as linhas.
+function diagnosticarEstadosPausa_(nomeAba) {
+  const aba = nomeAba || BD_ABA_CORRETIVAS;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO — ESTADO x PAUSA — ' + aba);
+  Logger.log('======================================================');
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _propAba_(ss, aba);
+    if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) { Logger.log('Aba vazia.'); return; }
+
+    const hdr = data[0].map(_histNorm_);
+    const col = nome => hdr.findIndex(h => h.indexOf(nome) >= 0);
+    const cEstado     = col('estado');
+    const cPausadoPor = col('pausado por');
+    const cPausadoEm  = col('pausado em');
+    if (cEstado < 0) { Logger.log('⚠ Coluna Estado não encontrada.'); return; }
+
+    Logger.log('Colunas: Estado=[' + cEstado + ']  Pausado por=[' + cPausadoPor +
+               ']  Pausado em=[' + cPausadoEm + ']');
+
+    let abertos = 0, pausados = 0, semPausa = 0;
+    const vocabPausado  = {};
+    const vocabSemPausa = {};
+
+    for (let r = 1; r < data.length; r++) {
+      const estado = String(data[r][cEstado] || '').trim();
+      const n = _histNorm_(estado);
+      if (n === 'fechada' || n === 'fechado' || n === 'cancelada') continue;
+      abertos++;
+
+      const temPausa = (cPausadoPor >= 0 && String(data[r][cPausadoPor] || '').trim()) ||
+                        (cPausadoEm  >= 0 && String(data[r][cPausadoEm]  || '').trim());
+
+      if (temPausa) {
+        pausados++;
+        vocabPausado[estado] = (vocabPausado[estado] || 0) + 1;
+      } else {
+        semPausa++;
+        vocabSemPausa[estado] = (vocabSemPausa[estado] || 0) + 1;
+      }
+    }
+
+    Logger.log('\nTotal de linhas: ' + (data.length - 1));
+    Logger.log('Abertos (Estado ≠ Fechada/Cancelada): ' + abertos);
+    Logger.log('  · com Pausado por/em preenchido: ' + pausados);
+    Logger.log('  · sem pausa registrada: ' + semPausa);
+
+    const imprimeVocab = (titulo, vocab) => {
+      Logger.log('\n--- ' + titulo + ' ---');
+      const chaves = Object.keys(vocab);
+      if (!chaves.length) { Logger.log('  (nenhum registro)'); return; }
+      chaves.sort((a, b) => vocab[b] - vocab[a]).forEach(v => {
+        Logger.log('  ' + String(vocab[v]).padStart(6) + '  ' + (v || '(vazio)'));
+      });
+    };
+    imprimeVocab('ESTADO dos ABERTOS **COM** pausa (candidatos a "motivo")', vocabPausado);
+    imprimeVocab('ESTADO dos ABERTOS **SEM** pausa (deveria virar "Em resolução")', vocabSemPausa);
+  } catch (e) {
+    Logger.log('Erro: ' + e.message);
+  }
+}
+
 // Lista o portfólio conhecido pela base, separando Megas dos demais.
 //
 // É ferramenta de CONFERÊNCIA, não de cadastro: não existe lista de imóveis
