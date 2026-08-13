@@ -73,8 +73,12 @@ const PROPRIEDADES_SPREADSHEET_ID = '1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF
 // ==========================================
 // A apresentação mensal de Propriedades é UMA só, do portfólio inteiro — o
 // recorte é "Megas x demais imóveis" DENTRO dela, não um deck por imóvel.
-// Por isso o destino é este ID único, e não o presentationId de PROPRIEDADES
-// (que existe para o caso de algum imóvel ganhar deck próprio no futuro).
+//
+// É aqui que ela difere dos Megas, e a diferença já custou confusão: em
+// megas-mensal existe um registro de empreendimentos, cada um com o seu
+// presentationId, porque lá são TRÊS decks (Curitiba, Itajaí, Esteio). Copiar
+// essa estrutura para cá criou um cadastro que nunca seria preenchido e que
+// bloqueava a geração com "nenhuma propriedade cadastrada". Um deck, um ID.
 //
 // Apresentação Mensal de Propriedades:
 // https://docs.google.com/presentation/d/1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY/edit
@@ -90,53 +94,16 @@ function getDeckMensal_() {
 
 
 // ==========================================
-// EMPREENDIMENTOS
+// PORTFÓLIO — O CORTE "MEGAS x DEMAIS"
 // ==========================================
-// Estrutura pronta, valores a preencher. Cada entrada precisa de:
-//   nome           rótulo que aparece no slide
-//   ccBD           valor exato da coluna "Centro de Custos" na BD-CORRETIVAS
-//                  (é por ele que os chamados são filtrados — tem que bater
-//                  string a string, não é o nome de exibição)
-//   presentationId ID do Google Slides de destino
+// NÃO há cadastro de imóveis aqui, de propósito. A lista de empreendimentos
+// não é digitada: ela é DESCOBERTA na coluna "Centro de Custos" da
+// BD-CORRETIVAS (descobrirPortfolio(), 02_Dados.gs), que já é
+// multi-empreendimento e cobre o portfólio inteiro.
 //
-// Enquanto estiver vazio, gerarApresentacaoPropriedades_ avisa e não gera
-// nada — melhor que um deck com o empreendimento errado.
-const PROPRIEDADES = {
-  // EXEMPLO (não ative sem conferir o ccBD na planilha):
-  // CURITIBA: {
-  //   nome          : 'Mega Curitiba',
-  //   ccBD          : 'MEGA CURITIBA',
-  //   presentationId: ''
-  // },
-};
-
-let _propAtiva = null;
-
-function setPropriedadeAtiva(chave) {
-  if (!PROPRIEDADES[chave]) {
-    throw new Error('Propriedade "' + chave + '" não está em PROPRIEDADES (01_Config.gs). ' +
-                    'Disponíveis: ' + (Object.keys(PROPRIEDADES).join(', ') || 'nenhuma cadastrada'));
-  }
-  _propAtiva = chave;
-  Logger.log('▸ Propriedade ativa: ' + PROPRIEDADES[chave].nome);
-}
-
-function getPropriedadeAtiva() {
-  if (!_propAtiva) {
-    const chaves = Object.keys(PROPRIEDADES);
-    if (!chaves.length) {
-      throw new Error('Nenhuma propriedade cadastrada em PROPRIEDADES (01_Config.gs). ' +
-                      'Preencha ao menos uma antes de gerar.');
-    }
-    _propAtiva = chaves[0];
-  }
-  return PROPRIEDADES[_propAtiva];
-}
-
-function getDeckPropriedadeAtiva() {
-  const p = getPropriedadeAtiva();
-  if (!p.presentationId) {
-    throw new Error('A propriedade "' + p.nome + '" está sem presentationId em 01_Config.gs.');
-  }
-  return SlidesApp.openById(p.presentationId);
-}
+// O único recorte que a apresentação precisa é Megas x demais, e ele sai do
+// prefixo do centro de custos — _propEhMega_ em 02_Dados.gs. Um cadastro à
+// mão só criaria uma segunda fonte de verdade para divergir da base.
+//
+// Se um dia um imóvel específico precisar de rótulo próprio no slide, o lugar
+// é um mapa ccBD -> nome de exibição, não um registro com deck por imóvel.

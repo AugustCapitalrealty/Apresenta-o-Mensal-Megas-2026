@@ -46,17 +46,27 @@ conciliada. É o caminho mais curto para o primeiro slide com dado real.
 
 ## Comece por aqui
 
-Rode **`descobrirPortfolio()`** (02_Dados.gs). Ela varre a BD-CORRETIVAS e
-lista, separando Megas dos demais: cada Centro de Custos, o volume de
-chamados, quantos seguem abertos e o período coberto.
+Rode **`gerarApresentacaoPropriedades()`** — é o ponto de entrada único, e
+hoje ele gera as duas tabelas. Se algo não abrir,
+**`diagnosticarPropriedades()`** diz o que está faltando antes de qualquer
+conta.
 
-A saída é o que preenche `PROPRIEDADES` em `01_Config.gs` — o valor da coluna
-CENTRO DE CUSTOS tem que ser copiado **exatamente** para o campo `ccBD`, que
-compara string a string.
+**`descobrirPortfolio()`** (02_Dados.gs) varre a base e lista, separando Megas
+dos demais: cada Centro de Custos, o volume de chamados, quantos seguem
+abertos e o período coberto. Não serve para cadastrar nada — serve para
+conferir se o corte Megas × demais está classificando todo mundo do lado
+certo. Numa amostra já aparecem, além de MEGA CURITIBA e MEGA ESTEIO: AR 3000,
+BRADO CUBATÃO, GAROTO, POSTO CURITIBA e POSTO ESTEIO.
 
-Numa amostra da BD já aparecem, além de MEGA CURITIBA e MEGA ESTEIO: AR 3000,
-BRADO CUBATÃO, GAROTO, POSTO CURITIBA e POSTO ESTEIO. A lista completa sai da
-função.
+### Não há cadastro de imóveis
+
+Houve, e foi erro: copiei de `megas-mensal/` um registro com um
+`presentationId` por empreendimento. Lá faz sentido — são **três decks**, um
+por cidade. Aqui é **um deck do portfólio inteiro**, e o registro só
+conseguia uma coisa: barrar a geração com *"nenhuma propriedade cadastrada"*.
+
+A lista de imóveis não é digitada, é descoberta na coluna Centro de Custos. O
+único recorte de que a apresentação precisa sai do prefixo, em `_propEhMega_`.
 
 ## O que falta decidir
 
@@ -224,14 +234,8 @@ já gerava esses dois relatórios. Fonte: a planilha da área
 | `Slide_RecebimentoObras.gs` | As três fichas de recebimento + o cálculo de prazo |
 | `Slide_Contratacoes.gs` | Leitura e desenho da tabela densa de contratações |
 
-Rodar: **`gerarTabelasPropriedades()`**.
-
-### Por que é um ponto de entrada separado do pipeline
-
-`gerarApresentacaoPropriedades_` roda **por imóvel** (`setPropriedadeAtiva`).
-Estas duas tabelas são do **portfólio inteiro** — chamá-las de dentro do laço
-geraria a mesma tabela três vezes, e as duas últimas apagariam a anterior pela
-tag. Por isso escrevem direto em `DECK_PROPRIEDADES_ID`, o deck mensal único.
+Já estão no pipeline de **`gerarApresentacaoPropriedades()`**. Para
+reprocessar só elas sem tocar no resto do deck: `gerarTabelasPropriedades()`.
 
 ### Três decisões que o port carrega
 

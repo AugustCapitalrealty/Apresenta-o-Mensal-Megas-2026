@@ -350,9 +350,13 @@ function inspecionarBase(nomeAba) {
   }
 }
 
-// Lista o portfólio conhecido pela base, separando Megas dos demais. A saída
-// preenche PROPRIEDADES em 01_Config.gs — o valor de CENTRO DE CUSTOS tem que
-// ser copiado EXATAMENTE para o campo ccBD (o filtro compara string a string).
+// Lista o portfólio conhecido pela base, separando Megas dos demais.
+//
+// É ferramenta de CONFERÊNCIA, não de cadastro: não existe lista de imóveis
+// digitada em 01_Config.gs para preencher. O que importa aqui é ver se o
+// corte Megas x demais (_propEhMega_) está classificando todo mundo no lado
+// certo — um imóvel novo com centro de custos fora do padrão apareceria em
+// "DEMAIS" sem avisar ninguém.
 function descobrirPortfolio() {
   [BD_ABA_CORRETIVAS, BD_ABA_PREVENTIVAS].forEach(aba => {
     Logger.log('======================================================');
@@ -385,8 +389,9 @@ function descobrirPortfolio() {
                ' (Megas ' + megas.length + '/' + soma(megas) +
                ' · demais ' + demais.length + '/' + soma(demais) + ').\n');
   });
-  Logger.log('Copie o valor de CENTRO DE CUSTOS para o campo ccBD de PROPRIEDADES ' +
-             '(01_Config.gs) — tem que bater exatamente.');
+  Logger.log('Confira se todo imóvel caiu do lado certo do corte. Se um Mega ' +
+             'aparecer em DEMAIS, o padrão do centro de custos mudou — ' +
+             'ajuste _propEhMega_ (02_Dados.gs), não uma lista à mão.');
 }
 
 // Confere a regra de SLA contra a base real. Roda nas duas janelas porque só
