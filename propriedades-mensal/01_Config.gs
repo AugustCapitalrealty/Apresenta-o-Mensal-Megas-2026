@@ -76,9 +76,9 @@ const PROPRIEDADES_SPREADSHEET_ID = '1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF
 // Por isso o destino é este ID único, e não o presentationId de PROPRIEDADES
 // (que existe para o caso de algum imóvel ganhar deck próprio no futuro).
 //
-// Preencher antes de gerar: sem ID, getDeckMensal_ avisa em vez de escrever
-// no lugar errado.
-const DECK_PROPRIEDADES_ID = '';
+// Apresentação Mensal de Propriedades:
+// https://docs.google.com/presentation/d/1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY/edit
+const DECK_PROPRIEDADES_ID = '1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY';
 
 function getDeckMensal_() {
   if (!DECK_PROPRIEDADES_ID) {

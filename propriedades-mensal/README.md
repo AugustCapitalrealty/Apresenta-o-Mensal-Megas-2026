@@ -62,13 +62,26 @@ função.
 
 1. **Indicadores gerais** — o que entra na seção 1 além de chamados?
    Vistorias, contratos, ocupação, inadimplência, garantias de obra?
-2. **Fontes** — quais planilhas alimentam esses indicadores.
-3. **`DECK_PROPRIEDADES_ID`** — falta o ID do Google Slides da apresentação
-   mensal. Sem ele nada é gerado: as funções avisam em vez de escrever no
-   deck errado.
+2. **Fontes desses indicadores** — quais planilhas alimentam o que a
+   seção 1 for acompanhar.
 
-O SLA das preventivas, a execução e a atribuição por equipe já estão
-resolvidos e implementados — ver as seções abaixo.
+O SLA das preventivas, a execução, a atribuição por equipe, a planilha de
+Propriedades e o deck de destino já estão resolvidos — ver as seções abaixo.
+
+## Deck de destino
+
+A apresentação mensal é **uma só, do portfólio inteiro** (o corte "Megas ×
+demais" acontece dentro dela). `DECK_PROPRIEDADES_ID` em `01_Config.gs`:
+
+```
+1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY
+```
+
+Não confundir com o deck **semanal** (`1Te_E9Su…`), que é outra apresentação
+e segue sendo alimentada por `../tabelas/propriedades-semanal/`.
+
+Se o ID for apagado, as funções param com mensagem em vez de gerar — escrever
+no deck errado é pior que não gerar.
 
 ## SLA de preventivas — regra confirmada e implementada
 
