@@ -808,14 +808,23 @@ function obterIndicadoresPortfolio_() {
 function obterIndicadoresAcumulado_() {
   const ref = obterMesReferencia_();
   const dadosPreventivas = indicadoresPorEquipe_(ref.ano, ref.index);
+  const getVal = (obj, path, def) => {
+    const parts = path.split('.');
+    let val = obj;
+    for (let p of parts) {
+      val = val ? val[p] : null;
+      if (!val) return def;
+    }
+    return val || def;
+  };
   return {
     preventivas: {
-      properties_cumpridos: dadosPreventivas.PROPRIEDADES?.sla?.cumpridos || 0,
-      properties_nao_cumpridos: dadosPreventivas.PROPRIEDADES?.sla?.naoCumpridos || 0,
-      facilities_cumpridos: dadosPreventivas.FACILITIES?.sla?.cumpridos || 0,
-      facilities_nao_cumpridos: dadosPreventivas.FACILITIES?.sla?.naoCumpridos || 0,
-      terceiros_cumpridos: dadosPreventivas.TERCEIROS?.sla?.cumpridos || 0,
-      terceiros_nao_cumpridos: dadosPreventivas.TERCEIROS?.sla?.naoCumpridos || 0
+      properties_cumpridos: getVal(dadosPreventivas, 'PROPRIEDADES.sla.cumpridos', 0),
+      properties_nao_cumpridos: getVal(dadosPreventivas, 'PROPRIEDADES.sla.naoCumpridos', 0),
+      facilities_cumpridos: getVal(dadosPreventivas, 'FACILITIES.sla.cumpridos', 0),
+      facilities_nao_cumpridos: getVal(dadosPreventivas, 'FACILITIES.sla.naoCumpridos', 0),
+      terceiros_cumpridos: getVal(dadosPreventivas, 'TERCEIROS.sla.cumpridos', 0),
+      terceiros_nao_cumpridos: getVal(dadosPreventivas, 'TERCEIROS.sla.naoCumpridos', 0)
     },
     preventivasDemais: {
       properties_cumpridos: 12,
