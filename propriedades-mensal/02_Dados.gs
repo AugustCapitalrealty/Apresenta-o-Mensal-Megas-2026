@@ -148,6 +148,10 @@ function _propLerBase_(nomeAba) {
     // "Responsáveis" define a equipe nas CORRETIVAS (ver _propEquipeCorretiva_)
     // — lista separada por vírgula, diferente de "Fechado por" que é um nome só.
     const cResp   = col('responsaveis', 'responsável');
+    // Nome do serviço/atividade — usada na relação de preventivas fora do
+    // SLA (Slide_Preventivas.gs). Mesma coluna que megas-mensal/02_Dados.gs
+    // já lê da mesma base.
+    const cDesc   = col('descricao', 'descrição');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
@@ -172,6 +176,7 @@ function _propLerBase_(nomeAba) {
         cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
         fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
         responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
+        descricao: cDesc   >= 0 ? String(data[r][cDesc]   || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -584,6 +589,28 @@ function obterAcumuladoPropriedades_(nomeAba, ano, mesIndexAte, janela) {
   });
   return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista),
            parcial: !_mesEncerrado_(ano, mesIndexAte) };
+}
+
+// Relação de preventivas da equipe PROPRIEDADES que NÃO cumpriram o SLA no
+// mês de referência, agrupadas por descrição do serviço (mesma lógica do
+// slide equivalente dos Megas — megas-mensal/Slide02_Preventivas.gs — só
+// que sem chips de equipe: aqui só existe uma equipe pra mostrar). Serviço
+// sem descrição na base cai fora da lista (não dá pra citar "o quê" sem
+// nome), mas ainda conta pro SLA normalmente — só não aparece nesta relação.
+function obterPreventivasForaSla_(ano, mesIndex, janela) {
+  const lista = preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela)
+    .filter(it => _propEquipePreventiva_(it.fechadoPor) === 'PROPERTY')
+    .filter(it => _slaClasse_(it.sla) === 'NAO')
+    .filter(it => it.descricao);
+
+  const porDescricao = {};
+  lista.forEach(it => {
+    porDescricao[it.descricao] = (porDescricao[it.descricao] || 0) + 1;
+  });
+
+  return Object.keys(porDescricao)
+    .sort((a, b) => porDescricao[b] - porDescricao[a])
+    .map(nome => ({ nome: nome, qtd: porDescricao[nome] }));
 }
 
 // Painel do mês: execução e SLA lado a lado, por imóvel, com Megas x demais
