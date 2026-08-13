@@ -408,7 +408,7 @@ function inspecionarBase(nomeAba) {
 // vocabulário completo (valor + quantas linhas têm esse valor) — mesmo
 // espírito de conferirSLA(): responder "que coluna é essa e o que tem
 // dentro" sem abrir a planilha.
-function diagnosticarMotivoPausa_(nomeAba) {
+function diagnosticarMotivoPausa(nomeAba) {
   const aba = nomeAba || BD_ABA_CORRETIVAS;
   Logger.log('======================================================');
   Logger.log('DIAGNÓSTICO — MOTIVO DA PAUSA — ' + aba);
@@ -470,7 +470,7 @@ function diagnosticarMotivoPausa_(nomeAba) {
 // dos abertos SEM pausa — se a hipótese estiver certa, o primeiro grupo
 // tem vários valores diferentes e ricos (os "motivos"), e o segundo tem
 // um valor só (ou poucos, genéricos) repetido em todas as linhas.
-function diagnosticarEstadosPausa_(nomeAba) {
+function diagnosticarEstadosPausa(nomeAba) {
   const aba = nomeAba || BD_ABA_CORRETIVAS;
   Logger.log('======================================================');
   Logger.log('DIAGNÓSTICO — ESTADO x PAUSA — ' + aba);
