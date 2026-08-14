@@ -102,6 +102,12 @@ function CRIAR_ABA_METAS() {
 function normMega(s)  { return (s || "").toString().toUpperCase().replace(/^MEGA\s+/, "").trim(); }
 function normPapel(s) { return (s || "").toString().toUpperCase().trim(); }
 
+// Real Mês/Real Acum. dos indicadores que já calculamos (SLA Preventivas,
+// Custo M², Cumprir Orçamento, Taxa de Reabertura, SLA Terceiros) são
+// sobrescritos pelo valor calculado (obterMetaAutoUnit_, 08_Dados_MetasAuto.gs)
+// e ganham tendência ▲/▼ vs mês anterior (linha._trendMes/_trendAcum) — mesmo
+// comportamento do Megas mensal (Slide_Metas.gs). Índice de Disponibilidade
+// fica de fora de propósito: continua digitado à mão na aba METAS.
 function lerMetas(planilha, unit, papel) {
   const aba = planilha.getSheetByName(METAS_ABA);
   if (!aba) return null;
@@ -120,7 +126,29 @@ function lerMetas(planilha, unit, papel) {
   if (filtradas.length === 0) return null;
 
   const titulo = (filtradas[0][2] || "").toString().trim() || `METAS ${alvoPapel} - ${unit.name} 2026`;
-  const linhas = filtradas.map(l => l.slice(3, 3 + METAS_COLS.length)); // 11 colunas exibidas
+  const linhas = filtradas.map(l => {
+    const linha = l.slice(3, 3 + METAS_COLS.length); // 11 colunas exibidas
+    const descricao = linha[0];
+
+    const autoMes = obterMetaAutoUnit_(descricao, linha[5], 'mes', unit);
+    if (autoMes) {
+      if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
+      linha[6] = autoMes.valor;
+      // Status manual foi digitado em cima do Real antigo da aba METAS — com
+      // o Real recalculado, limpa pra forçar recálculo (statusMeta) a partir
+      // do valor que está de fato na tela (mesmo motivo do Megas mensal).
+      linha[7] = '';
+      linha._trendMes = _metasTrendUnit_(autoMes);
+    }
+    const autoAcum = obterMetaAutoUnit_(descricao, linha[8], 'acum', unit);
+    if (autoAcum) {
+      if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
+      linha[9] = autoAcum.valor;
+      linha[10] = '';
+      linha._trendAcum = _metasTrendUnit_(autoAcum);
+    }
+    return linha;
+  });
   return { titulo: titulo, papel: papel, linhas: linhas };
 }
 
@@ -284,12 +312,53 @@ function renderSlideMetas(slide, unit, metas) {
       cell.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
 
       if (!ehStatus) {
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3, ry, larg[c] - 6, rowH);
+        // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
+        // quebrar linha nas colunas de Meta/Real — mesmo tratamento de
+        // megas-mensal/Slide_Metas.gs.
+        let valStr = (linha[c] || "").toString();
+        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, "/");
+
+        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
+        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '');
+
+        // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra do
+        // CLAUDE.md): o recuo interno da TEXT_BOX (~7pt/lado, que a API não
+        // deixa desligar) faz valor curto em coluna estreita quebrar em 2
+        // linhas mesmo cabendo de sobra no espaço visual (ex.: "R$
+        // 4,21/80%"). Alarga só a TEXT_BOX (invisível, simétrica); a
+        // largura da coluna e a célula visível não mudam.
+        const folga = c === 0 ? 0 : 10;
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        t.getText().setText((linha[c] || "").toString())
+        t.getText().setText(valStr)
           .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body)
           .setForegroundColor(ds.colors.textMain).setBold(c === 0);
         t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+
+        // Comparativo ▲/▼ vs mês anterior (valores automáticos — ver
+        // 08_Dados_MetasAuto.gs): caixa própria sobreposta, centralizada no
+        // topo da célula, acima do valor (Real Mês [6] / Real Acum. [9]).
+        // Indicador composto (Custo M²) pode ter uma parte boa e outra ruim
+        // ao mesmo tempo — cada segmento colorido na própria cor via range
+        // de texto, em vez de uma cor só pro texto inteiro.
+        if (temTrend) {
+          const textoCompleto = trend.segmentos.map(s => s.txt).join(' / ');
+          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], ry + 1, larg[c], 10);
+          const tsr = selo.getText();
+          tsr.setText(textoCompleto);
+          tsr.getTextStyle().setFontSize(6).setBold(true).setFontFamily(ds.typography.titles);
+
+          let offset = 0;
+          trend.segmentos.forEach((seg, si) => {
+            tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
+            offset += seg.txt.length;
+            if (si < trend.segmentos.length - 1) {
+              tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(ds.colors.textBody);
+              offset += 3;
+            }
+          });
+          tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        }
       }
     }
   });

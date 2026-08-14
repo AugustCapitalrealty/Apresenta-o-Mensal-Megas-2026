@@ -5,6 +5,12 @@
 
 const ID_PLANILHA = "1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1WiRA";
 
+// Planilha de HISTÓRICO VALIDADO (mantida manualmente pelo time) — MESMA
+// fonte que megas-mensal/01_Config.gs usa para as tendências ▲/▼ vs mês
+// anterior. Necessária para os "valores automáticos" das Metas (ver
+// 08_Dados_MetasAuto.gs) baterem com os números que o Megas mensal mostra.
+const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
+
 // ==========================================
 // MAPEAMENTO DAS UNIDADES (TVs E LOGOMARCAS)
 // ==========================================
@@ -23,6 +29,12 @@ const UNITS = [
       preventiva: { conf: 24, nConf: 25, perc: 26 }
     },
     keys: { corr: "histFilaCorretivas_CWB", prev: "histFilaPreventivas_CWB" },
+    // Planilha operacional própria da cidade (mesma que megas-mensal/01_Config.gs
+    // usa em PROJETOS.CURITIBA) — fonte dos "valores automáticos" das Metas
+    // (abas PREVENTIVAS, METRO QUADRADO, FINANCEIRO BRIDGE, META, DADOS).
+    spreadsheetId: '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',
+    ppcId: '1a5OlMoeFtgsKagPlmPr-5UTXXBVufczUzDVSQvUe4Zo',        // PPC Mega Curitiba 2026
+    reaberturaId: '1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0', // Taxa de Reabertura
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -42,6 +54,9 @@ const UNITS = [
       preventiva: { conf: 31, nConf: 32, perc: 33 }
     },
     keys: { corr: "histFilaCorretivas_ITJ", prev: "histFilaPreventivas_ITJ" },
+    spreadsheetId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',
+    ppcId: '10wfrx335OaBeTuPcXIg42Wk6U6NsMNt4f97QwGT3hZU',        // PPC Mega Itajaí 2026
+    reaberturaId: '1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc',
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -61,6 +76,9 @@ const UNITS = [
       preventiva: { conf: 38, nConf: 39, perc: 40 }
     },
     keys: { corr: "histFilaCorretivas_EST", prev: "histFilaPreventivas_EST" },
+    spreadsheetId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',
+    ppcId: '1I9DWcd8HXVRkjcv8eTk4UdQ5IZRuqUhFikw8tVfPt2c',        // PPC Mega Esteio 2026
+    reaberturaId: '18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0',
     metas: [
       { papel: "SUPERVISOR" }
     ]
