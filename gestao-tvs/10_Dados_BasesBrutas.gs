@@ -195,10 +195,18 @@ function _resolverEquipeResponsaveis_(responsaveisTxt) {
   return '';
 }
 
-// Resolve a equipe de um item da base: usa uma coluna "Equipe" pronta quando
-// ela existe (BD-PREVENTIVAS costuma ter), senão deduz dos Responsáveis.
-// Necessário porque no BACKLOG preventivo o item ainda está ABERTO — logo
-// "Fechado por" está vazio e não serve para dizer de quem é a rotina.
+// Resolve a equipe de um item: usa uma coluna "Equipe" pronta quando existe,
+// senão deduz da lista de Responsáveis.
+//
+// ATENÇÃO — vale para CORRETIVAS, não para PREVENTIVAS. Conferido no
+// cabeçalho real da planilha: a BD-PREVENTIVAS não tem "Responsáveis" nem
+// "Equipe"; as únicas colunas de gente são "Fechado por", "Iniciado por",
+// "Utilizadores" e "Fornecedor". Numa rotina AINDA ABERTA (o caso do Backlog
+// Preventivo) "Fechado por" está necessariamente vazio, então não há de onde
+// tirar a equipe. Devolve '' — e quem chama tem que tratar isso como
+// "desconhecido", NÃO como Facilities: carimbar todo mundo de Facilities
+// daria um "MAIOR VOLUME: FACILITIES" que é só o default aparecendo, não um
+// fato sobre a operação.
 function _tvEquipeItem_(item) {
   const eq = _histNorm_(item.equipe);
   if (eq.indexOf('propert') >= 0 || eq.indexOf('propriedade') >= 0) return 'PROPERTY';
@@ -262,13 +270,15 @@ function _tvLerBase_(nomeAba) {
     // col() pega a primeira, que é a de texto — mesmo comportamento dos
     // outros dois projetos na mesma base.
     const cPri    = col('prioridade');
-    // Coluna da DISCIPLINA (painel "DISCIPLINAS" do Backlog Corretivo). O
-    // nome exato ainda não foi confirmado nesta base — a busca tenta os
-    // rótulos mais prováveis, em ordem, e registra qual casou. Não achando
-    // nenhum, o painel simplesmente não é desenhado (o slide não quebra) e o
-    // Logger diz que faltou: rode diagnosticarBasesBrutas() para ver o
-    // cabeçalho real e me diga o nome certo.
-    const cDisc   = col('disciplina', 'especialidade', 'familia', 'tipo de ativo', 'categoria');
+    // Coluna da DISCIPLINA (painel "DISCIPLINAS" do Backlog Corretivo). Na
+    // BD-CORRETIVAS ela se chama "Área" — valores como "Elétrica/Lógica/
+    // Telefonia", "Cobertura", "Hidrossanitário", "Portas/Esquadrias/
+    // Niveladoras". Não confundir com "Tipo", que é a mesma área concatenada
+    // com o sintoma ("Cobertura - Infiltração d' água") e explodiria o painel
+    // em dezenas de fatias. Os outros rótulos ficam como rede de segurança
+    // caso a base seja renomeada; não achando nenhum, o painel só não é
+    // desenhado (o slide não quebra).
+    const cDisc   = col('area', 'disciplina', 'especialidade', 'familia', 'categoria');
     // As duas bases nomeiam as datas de formas diferentes — a primeira que
     // existir vence:
     //   CORRETIVAS:  "Data de reporte"  / "Fechado em"
@@ -280,8 +290,12 @@ function _tvLerBase_(nomeAba) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode diagnosticarBasesBrutas().');
       return [];
     }
-    Logger.log(nomeAba + ': disciplina → ' +
-      (cDisc >= 0 ? '"' + data[0][cDisc] + '"' : 'NÃO ENCONTRADA (painel DISCIPLINAS fica vazio)'));
+    // Só a base de CORRETIVAS alimenta o painel DISCIPLINAS; avisar sobre a
+    // de PREVENTIVAS era ruído puro no Logger.
+    if (nomeAba === BD_ABA_CORRETIVAS) {
+      Logger.log(nomeAba + ': disciplina → ' +
+        (cDisc >= 0 ? '"' + data[0][cDisc] + '"' : 'NÃO ENCONTRADA (painel DISCIPLINAS fica vazio)'));
+    }
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
@@ -613,8 +627,11 @@ function obterBacklogPreventivoTV_(unit) {
 
     if (isEmAberto) countEmAberto++; else countEmCurso++;
 
-    const equipe = _tvEquipeItem_(it) === 'PROPERTY' ? 'PROPERTY' : 'FACILITIES';
-    if (equipe === 'PROPERTY') propCount++; else facilCount++;
+    // Sem coluna de equipe na base, rotina aberta fica '—' em vez de virar
+    // Facilities por omissão (ver _tvEquipeItem_).
+    const equipe = _tvEquipeItem_(it) || '—';
+    if (equipe === 'PROPERTY') propCount++;
+    else if (equipe === 'FACILITIES') facilCount++;
 
     // Agrupa rotinas irmãs: tira o sufixo numérico ("Bomba de incêndio 03")
     // para as três ocorrências virarem uma linha "3x".
@@ -649,11 +666,22 @@ function obterBacklogPreventivoTV_(unit) {
     return a.dataAntigaTs - b.dataAntigaTs;
   });
 
+  // "MAIOR VOLUME" só afirma alguma coisa se ALGUMA rotina teve equipe
+  // resolvida; senão é '—'. Empate com as duas em zero cairia em FACILITIES
+  // e mentiria com cara de dado.
+  const equipeLider = (facilCount === 0 && propCount === 0)
+    ? '—'
+    : (facilCount >= propCount ? 'FACILITIES' : 'PROPERTY');
+  if (facilCount === 0 && propCount === 0 && abertas.length) {
+    Logger.log('BD-PREVENTIVAS (' + unit.name + '): nenhuma rotina aberta tem equipe ' +
+               'identificável (a base não traz Responsáveis/Equipe) — o slide mostra "—".');
+  }
+
   return {
     countEmAberto: countEmAberto,
     countEmCurso : countEmCurso,
     lista        : lista.slice(0, 6),
-    equipeLider  : facilCount >= propCount ? 'FACILITIES' : 'PROPERTY'
+    equipeLider  : equipeLider
   };
 }
 
@@ -725,6 +753,65 @@ function diagnosticarBasesBrutas() {
     }
   });
 
-  Logger.log('\nPronto. Se "Disciplina" não foi localizada, o painel DISCIPLINAS ' +
-             'do Backlog Corretivo fica vazio até apontarmos a coluna certa.');
+  // A BD-PREVENTIVAS não tem coluna de Responsáveis/Equipe, então a coluna
+  // "RESPONSÁVEL" do Backlog Preventivo hoje sai como "—". Estas são as
+  // únicas colunas de gente da base: mostra quantas rotinas ABERTAS têm cada
+  // uma preenchida, para decidir se alguma serve de substituta.
+  Logger.log('\n──────────────────────────────────────────');
+  Logger.log('QUEM É RESPONSÁVEL POR UMA PREVENTIVA ABERTA?');
+  try {
+    const ss2   = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _tvAba_(ss2, BD_ABA_PREVENTIVAS);
+    if (!sheet) { Logger.log('  aba não encontrada'); return; }
+    const data = sheet.getDataRange().getDisplayValues();
+    const hdr  = data[0].map(_histNorm_);
+
+    const cCC  = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cEst = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cFim = hdr.findIndex(h => h.indexOf('fechada em') >= 0 || h.indexOf('fechado em') >= 0);
+
+    // Toda coluna cujo nome sugira pessoa/responsável.
+    const candidatas = [];
+    hdr.forEach((h, i) => {
+      if (h.indexOf('fornecedor') >= 0 || h.indexOf('utilizador') >= 0 ||
+          h.indexOf('iniciado por') >= 0 || h.indexOf('fechado por') >= 0 ||
+          h.indexOf('responsav') >= 0 || h.indexOf('equipe') >= 0 ||
+          h.indexOf('tipo trabalho') >= 0) {
+        candidatas.push({ i: i, nome: data[0][i] });
+      }
+    });
+
+    const megas = UNITS.map(u => _histNorm_(u.name));
+    let abertas = 0;
+    const preenchidas = {}, exemplos = {};
+    candidatas.forEach(c => { preenchidas[c.i] = 0; exemplos[c.i] = []; });
+
+    for (let r = 1; r < data.length; r++) {
+      if (cCC < 0 || megas.indexOf(_histNorm_(data[r][cCC])) < 0) continue;
+      if (_bdChamadoFechado_(cEst >= 0 ? data[r][cEst] : '', cFim >= 0 ? data[r][cFim] : '')) continue;
+      abertas++;
+      candidatas.forEach(c => {
+        const v = String(data[r][c.i] || '').trim();
+        if (v) {
+          preenchidas[c.i]++;
+          if (exemplos[c.i].length < 3 && exemplos[c.i].indexOf(v) < 0) exemplos[c.i].push(v);
+        }
+      });
+    }
+
+    Logger.log('  rotinas ABERTAS dos 3 Megas: ' + abertas);
+    if (!abertas) { Logger.log('  (nenhuma aberta agora — rode de novo quando houver)'); }
+    candidatas.forEach(c => {
+      const n = preenchidas[c.i];
+      const pct = abertas ? Math.round(n / abertas * 100) : 0;
+      Logger.log('    · "' + c.nome + '": ' + n + '/' + abertas + ' (' + pct + '%)' +
+                 (exemplos[c.i].length ? '  ex.: ' + exemplos[c.i].join(' / ') : ''));
+    });
+    Logger.log('  → a que estiver perto de 100% e trouxer NOME DE PESSOA serve de ' +
+               'substituta para a coluna RESPONSÁVEL do slide 4.');
+  } catch (e) {
+    Logger.log('  falhou: ' + e.message);
+  }
+
+  Logger.log('\nPronto.');
 }

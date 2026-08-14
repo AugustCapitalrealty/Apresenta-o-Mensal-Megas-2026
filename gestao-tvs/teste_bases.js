@@ -206,12 +206,35 @@ ok('agrupou as bombas irmãs em 1 linha 2x',
    blp.lista.some(l => l.desc === 'Bomba de drenagem' && l.qtd === 2),
    JSON.stringify(blp.lista.map(l => l.desc + '=' + l.qtd)));
 ok('atrasadas vêm antes das em curso', blp.lista[0].isEmAberto === true);
+// A BD-PREVENTIVAS real NÃO tem coluna de equipe; a fixture tem, então este
+// caso cobre o caminho "coluna existe". O caso de baixo cobre o real.
 ok('equipe do painel = PROPERTY',
    blp.lista.some(l => l.desc === 'Painel elétrico' && l.equipe === 'PROPERTY'),
    JSON.stringify(blp.lista.map(l => l.desc + ':' + l.equipe)));
 ok('equipe líder = FACILITIES', blp.equipeLider === 'FACILITIES', blp.equipeLider);
 ok('dias em aberto calculados', blp.lista.every(l => l.dataLabel !== '-'),
    JSON.stringify(blp.lista.map(l => l.dataLabel)));
+
+console.log('\n== Sem coluna de equipe (a base REAL é assim) ==');
+// Só a chave de PREVENTIVAS: o bloco seguinte confere que o cache de
+// CORRETIVAS continua quente.
+delete _tvBaseCache[BD_ABA_PREVENTIVAS];
+// Mesmas colunas da BD-PREVENTIVAS de verdade: sem Responsáveis, sem Equipe.
+const HDR_P_REAL = ['Centro de Custos', 'Estado', 'Descrição', 'SLA',
+                    'Fechado por', 'Data agendamento', 'Fechada em'];
+FAKE = {
+  'BD - PREVENTIVAS': [HDR_P_REAL,
+    ['Mega Curitiba', 'Atrasada', 'Bomba de drenagem', '', '', noMesMeio(mesesHist[0]), ''],
+    ['Mega Curitiba', 'Atrasada', 'Extintores',        '', '', noMesMeio(mesesHist[0]), '']
+  ]
+};
+const semEq = obterBacklogPreventivoTV_(unitCwb);
+ok('equipe vira "—", não FACILITIES por omissão',
+   semEq.lista.every(l => l.equipe === '—'), JSON.stringify(semEq.lista.map(l => l.equipe)));
+ok('MAIOR VOLUME vira "—" em vez de afirmar FACILITIES',
+   semEq.equipeLider === '—', semEq.equipeLider);
+ok('e o Logger registra o porquê',
+   logs.some(l => l.indexOf('equipe identificável') >= 0));
 
 console.log('\n== Cache e base vazia ==');
 // O cache é por aba e compartilhado pelas 3 unidades — uma leitura da
