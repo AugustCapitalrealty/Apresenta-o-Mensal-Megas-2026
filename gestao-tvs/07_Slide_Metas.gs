@@ -102,12 +102,6 @@ function CRIAR_ABA_METAS() {
 function normMega(s)  { return (s || "").toString().toUpperCase().replace(/^MEGA\s+/, "").trim(); }
 function normPapel(s) { return (s || "").toString().toUpperCase().trim(); }
 
-// Real Mês/Real Acum. dos indicadores que já calculamos (SLA Preventivas,
-// Custo M², Cumprir Orçamento, Taxa de Reabertura, SLA Terceiros) são
-// sobrescritos pelo valor calculado (obterMetaAutoUnit_, 08_Dados_MetasAuto.gs)
-// e ganham tendência ▲/▼ vs mês anterior (linha._trendMes/_trendAcum) — mesmo
-// comportamento do Megas mensal (Slide_Metas.gs). Índice de Disponibilidade
-// fica de fora de propósito: continua digitado à mão na aba METAS.
 function lerMetas(planilha, unit, papel) {
   const aba = planilha.getSheetByName(METAS_ABA);
   if (!aba) return null;
@@ -130,23 +124,27 @@ function lerMetas(planilha, unit, papel) {
     const linha = l.slice(3, 3 + METAS_COLS.length); // 11 colunas exibidas
     const descricao = linha[0];
 
-    const autoMes = obterMetaAutoUnit_(descricao, linha[5], 'mes', unit);
-    if (autoMes) {
-      if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
-      linha[6] = autoMes.valor;
-      // Status manual foi digitado em cima do Real antigo da aba METAS — com
-      // o Real recalculado, limpa pra forçar recálculo (statusMeta) a partir
-      // do valor que está de fato na tela (mesmo motivo do Megas mensal).
-      linha[7] = '';
-      linha._trendMes = _metasTrendUnit_(autoMes);
+    // Indicadores automáticos (ver 09_Metas_Auto.gs): sobrescreve o Real (e,
+    // para Custo M², também a Meta) com o valor calculado ao vivo, e guarda
+    // a tendência vs período anterior (linha._trendMes/_trendAcum) para
+    // desenhar como selo ▲/▼. Sem match/erro, a linha digitada não muda.
+    try {
+      const autoMes = obterMetaAuto(unit, descricao, linha[5], 'mes');
+      if (autoMes) {
+        if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
+        linha[6] = autoMes.valor;
+        linha._trendMes = autoMes.trend;
+      }
+      const autoAcum = obterMetaAuto(unit, descricao, linha[8], 'acum');
+      if (autoAcum) {
+        if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
+        linha[9] = autoAcum.valor;
+        linha._trendAcum = autoAcum.trend;
+      }
+    } catch (e) {
+      Logger.log(`⚠️ Metas auto (${unit.name}/${descricao}): ${e.message}`);
     }
-    const autoAcum = obterMetaAutoUnit_(descricao, linha[8], 'acum', unit);
-    if (autoAcum) {
-      if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
-      linha[9] = autoAcum.valor;
-      linha[10] = '';
-      linha._trendAcum = _metasTrendUnit_(autoAcum);
-    }
+
     return linha;
   });
   return { titulo: titulo, papel: papel, linhas: linhas };
@@ -251,50 +249,59 @@ function metaEhVerde(linha, qual) {
 function renderSlideMetas(slide, unit, metas) {
   const ds = CR_DESIGN_SYSTEM;
   const dataGlobal = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy");
+  const W = 720, H = 405;
 
   slide.getPageElements().forEach(el => el.remove());
   applyBrandHeaderAndBackground(slide, "Metas", `Objetivos e Resultados • ${metas.papel}`, dataGlobal, unit);
 
-  // Larguras das colunas. Descrição mais larga (quebra em menos linhas) e
-  // cabeçalhos curtos (Pontos, Unidade, Sentido, Status) largos p/ caber.
-  const larg = [150, 50, 78, 56, 54, 44, 44, 50, 44, 44, 50]; // 11 colunas
-  const totalW = larg.reduce((a, b) => a + b, 0);
-  const x0 = Math.round((720 - totalW) / 2); // centraliza a tabela no slide
+  // Layout IDÊNTICO ao slide de Metas da Apresentação Mensal dos Megas
+  // (AugustCapitalrealty/Apresenta-o-Mensal-Megas-2026, Slide_Metas.gs):
+  // mesmos pesos de coluna, mesmas cores (brandMed/brandDark), mesmos
+  // tamanhos de fonte e o selo de tendência no TOPO da célula do valor.
+  const pesos = [114, 54, 76, 62, 46, 68, 66, 44, 68, 66, 44]; // 11 colunas
+  const totalW = W - 12;
+  const somaPesos = pesos.reduce((a, b) => a + b, 0);
+  const larg = pesos.map(p => p / somaPesos * totalW);
+  const x0 = Math.round((W - totalW) / 2);
   const xs = []; let acc = x0;
   larg.forEach(w => { xs.push(acc); acc += w; });
 
-  // Tabela começa mais para cima (aproveita o espaço acima) p/ linhas mais altas
+  // Tabela começa logo abaixo do cabeçalho desta planilha (a Apresentação
+  // Mensal usa um cabeçalho mais baixo — aqui mantemos o nosso, y=96).
   let y = 96;
 
   // --- Barra de título ---
-  const tituloH = 24;
+  const tituloH = 22;
   const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, y, totalW, tituloH);
   barra.getFill().setSolidFill(ds.colors.brandMed); barra.getBorder().setTransparent();
   const tBar = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0, y, totalW, tituloH);
   tBar.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   tBar.getText().setText(metas.titulo || `METAS ${metas.papel} - ${unit.name} 2026`)
-    .getTextStyle().setFontSize(12).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
+    .getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
   tBar.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   y += tituloH;
 
   // --- Cabeçalho das colunas ---
-  const cabH = 34;
+  const cabH = 28;
   const titulosCab = [metas.papel, "Pontos", "Direcionador", "Unidade", "Sentido",
     "Meta Mês", "Real Mês", "Status", "Meta Ac.", "Real Ac.", "Status"];
   for (let c = 0; c < titulosCab.length; c++) {
     const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], y, larg[c], cabH);
     bg.getFill().setSolidFill(ds.colors.brandDark); bg.getBorder().setWeight(1).getLineFill().setSolidFill("#FFFFFF");
-    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 2, y, larg[c] - 4, cabH);
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y, larg[c] - 2, cabH);
     t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    t.getText().setText(titulosCab[c]).getTextStyle().setFontSize(8).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
+    t.getText().setText(titulosCab[c]).getTextStyle().setFontSize(7).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
     t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
   }
   y += cabH;
 
+  // --- Rodapé de pontuação (reserva espaço antes de calcular a altura das linhas) ---
+  const resumoH = 26, resumoY = H - resumoH - 8;
+
   // --- Linhas de dados ---
   const n = metas.linhas.length;
-  const dispH = 370 - y; // espaço disponível (deixa o rodapé p/ a pontuação)
-  const rowH = Math.max(26, Math.min(56, Math.floor(dispH / Math.max(1, n))));
+  const dispH = resumoY - 6 - y;
+  const rowH = Math.max(20, Math.min(78, Math.floor(dispH / Math.max(1, n))));
 
   metas.linhas.forEach((linha, i) => {
     const ry = y + i * rowH;
@@ -313,57 +320,40 @@ function renderSlideMetas(slide, unit, metas) {
 
       if (!ehStatus) {
         // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
-        // quebrar linha nas colunas de Meta/Real — mesmo tratamento de
-        // megas-mensal/Slide_Metas.gs.
+        // quebrar linha nas colunas de Meta/Real.
         let valStr = (linha[c] || "").toString();
-        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, "/");
+        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
 
-        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '');
-
-        // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra do
-        // CLAUDE.md): o recuo interno da TEXT_BOX (~7pt/lado, que a API não
-        // deixa desligar) faz valor curto em coluna estreita quebrar em 2
-        // linhas mesmo cabendo de sobra no espaço visual (ex.: "R$
-        // 4,21/80%"). Alarga só a TEXT_BOX (invisível, simétrica); a
-        // largura da coluna e a célula visível não mudam.
+        // Valor na caixa padrão da célula (célula inteira, centralizado) —
+        // o comparativo de tendência NÃO entra junto, para nunca quebrar o valor.
+        // Nas colunas centralizadas a caixa de texto é alargada além da
+        // célula (folga simétrica, sem alterar o retângulo visível nem a
+        // largura da coluna) só para vencer o recuo interno padrão do
+        // Slides, que faz valores como "R$ 6,46/100%" quebrarem linha
+        // mesmo cabendo de sobra no espaço visual da célula.
         const folga = c === 0 ? 0 : 10;
         const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         t.getText().setText(valStr)
-          .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body)
-          .setForegroundColor(ds.colors.textMain).setBold(c === 0);
+          .getTextStyle().setFontSize(c === 0 ? 7 : 7.5).setBold(c === 0).setFontFamily(ds.typography.body)
+          .setForegroundColor(ds.colors.textMain);
         t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
 
-        // Comparativo ▲/▼ vs mês anterior (valores automáticos — ver
-        // 08_Dados_MetasAuto.gs): caixa própria sobreposta, centralizada no
-        // topo da célula, acima do valor (Real Mês [6] / Real Acum. [9]).
-        // Indicador composto (Custo M²) pode ter uma parte boa e outra ruim
-        // ao mesmo tempo — cada segmento colorido na própria cor via range
-        // de texto, em vez de uma cor só pro texto inteiro.
-        if (temTrend) {
-          const textoCompleto = trend.segmentos.map(s => s.txt).join(' / ');
-          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], ry + 1, larg[c], 10);
-          const tsr = selo.getText();
-          tsr.setText(textoCompleto);
-          tsr.getTextStyle().setFontSize(6).setBold(true).setFontFamily(ds.typography.titles);
-
-          let offset = 0;
-          trend.segmentos.forEach((seg, si) => {
-            tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
-            offset += seg.txt.length;
-            if (si < trend.segmentos.length - 1) {
-              tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(ds.colors.textBody);
-              offset += 3;
-            }
-          });
-          tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        // Selo de tendência (▲/▼ vs período anterior) para Real Mês [6] /
+        // Real Acum. [9] — vindo de indicadores automáticos (09_Metas_Auto.gs).
+        // Caixa própria sobreposta, centralizada no TOPO da célula.
+        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
+        if (trend && trend.txt) {
+          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], ry + 2, larg[c], 11);
+          selo.getText().setText(trend.txt).getTextStyle()
+            .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor).setFontFamily(ds.typography.titles);
+          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         }
       }
     }
   });
 
-  // --- Barra de pontuação (metas verdes garantem os pontos) ---
+  // --- Barra de pontuação (metas Verdes no acumulado garantem os pontos) ---
   let totalPontos = 0, pontosAcum = 0;
   metas.linhas.forEach(linha => {
     const p = parseNum(linha[1]) || 0;
@@ -375,28 +365,24 @@ function renderSlideMetas(slide, unit, metas) {
   const PONTOS_ELEGIBILIDADE = 50;
   const elegivel = Math.round(pontosAcum) >= PONTOS_ELEGIBILIDADE;
 
-  const resumoY = 374, resumoH = 27;
   const barRes = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, resumoY, totalW, resumoH);
   barRes.getFill().setSolidFill(ds.colors.brandMed); barRes.getBorder().setTransparent();
 
-  // Tag de elegibilidade (à direita da barra)
-  const badgeW = 150, badgeH = 19;
-  const badgeX = x0 + totalW - badgeW - 12;
+  const badgeW = 130, badgeH = 18;
+  const badgeX = x0 + totalW - badgeW - 10;
   const badgeY = resumoY + (resumoH - badgeH) / 2;
 
-  // Texto da pontuação (à esquerda, sem invadir a tag)
-  const tRes = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + 16, resumoY, totalW - badgeW - 44, resumoH);
+  const tRes = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x0 + 12, resumoY, totalW - badgeW - 36, resumoH);
   tRes.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  tRes.getText().setText(`PONTUAÇÃO ACUMULADA   •   ${Math.round(pontosAcum)} / ${totalPontos} PONTOS   •   MÍN. ${PONTOS_ELEGIBILIDADE} P/ ELEGIBILIDADE`)
-    .getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
-  tRes.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
+  tRes.getText().setText(`PONTUAÇÃO ACUMULADA  •  ${Math.round(pontosAcum)} / ${totalPontos} PONTOS  •  MÍN. ${PONTOS_ELEGIBILIDADE} P/ ELEGIBILIDADE`)
+    .getTextStyle().setFontSize(9).setBold(true).setForegroundColor("#FFFFFF").setFontFamily(ds.typography.titles);
 
   const badge = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, badgeX, badgeY, badgeW, badgeH);
-  badge.getFill().setSolidFill(elegivel ? '#10B981' : '#EF4444'); badge.getBorder().setTransparent();
+  badge.getFill().setSolidFill(elegivel ? ds.colors.accentGreen : ds.colors.accentRed); badge.getBorder().setTransparent();
   const tBadge = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, badgeX, badgeY, badgeW, badgeH);
   tBadge.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   tBadge.getText().setText(elegivel ? "✓ ELEGÍVEL" : "✗ NÃO ELEGÍVEL")
-    .getTextStyle().setFontSize(10).setFontFamily(ds.typography.titles).setForegroundColor("#FFFFFF").setBold(true);
+    .getTextStyle().setFontSize(8.5).setBold(true).setForegroundColor("#FFFFFF").setFontFamily(ds.typography.titles);
   tBadge.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 
@@ -524,7 +510,7 @@ function SEED_METAS_EST() {
     ["Esteio", "Supervisor", t, "CUSTO M² MEGAS E 80% DAS MANUT PLANEJADAS", 25, "Performance", "R$ / %", "<=/>=", "R$ 6,87 / 80%", "R$ 8,45 / 200%", "", "R$ 8,16 / 80%", "R$ 8,27 / 75%", ""],
     ["Esteio", "Supervisor", t, "IMPLEMENTAR CONTRATO DE PREÇO ÚNICO", 25, "Performance", "SIM/NÃO", "=", "SIM", "NÃO", "", "SIM", "NÃO", ""],
     ["Esteio", "Supervisor", t, "CHECK-LIST/SLA", 20, "Performance", "%", ">=", "90", "98", "", "90", "98", ""],
-    ["Esteio", "Supervisor", t, "DISPONIBILIDADE DE ATIVOS CRÍTICOS", 15, "Performance", "%", ">=", "90", "83,31", "", "90", "83,59", ""],
+    ["Esteio", "Supervisor", t, "DISPONIBILIDADE DE ATIVOS CRÍTICOS", 20, "Performance", "%", ">=", "90", "83,31", "", "90", "83,59", ""],
     ["Esteio", "Supervisor", t, "TAXA DE REABERTURA", 10, "Performance", "%", "<=", "2", "0,00", "", "2", "4,76", ""]
   ];
 
