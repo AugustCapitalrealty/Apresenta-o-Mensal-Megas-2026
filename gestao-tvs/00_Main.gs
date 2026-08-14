@@ -7,7 +7,53 @@ function INICIAR_AQUI() {
   gerarApresentacao();
 }
 
+// ==========================================
+// CONFERE SE O PROJETO ESTÁ COMPLETO NO EDITOR
+// ==========================================
+// O código é copiado À MÃO para o editor do Apps Script (não há clasp — ver o
+// CLAUDE.md da raiz), então é comum sobrar arquivo de uma versão e faltar de
+// outra. Quando isso acontece com uma função cuja ASSINATURA mudou, o erro que
+// aparece é ilegível: 00_Main chama com 3 argumentos, o arquivo antigo espera
+// 5, `unit` chega undefined e o Apps Script diz só
+//     "Cannot read properties of undefined (reading 'rows')"
+// — que não aponta para arquivo nenhum.
+//
+// `fn.length` devolve quantos parâmetros a função DECLARA, então dá para
+// detectar o arquivo velho antes de rodar e dizer exatamente qual recopiar.
+function _tvConferirProjeto_() {
+  const esperado = [
+    { fn: 'gerarSlideCorretivas',          args: 3, arquivo: '01_Slide_Corretivas.gs' },
+    { fn: 'gerarSlideCorretivasDetalhe',   args: 3, arquivo: '02_Slide_Corretivas_Acao.gs' },
+    { fn: 'gerarSlidePreventivas',         args: 3, arquivo: '03_Slide_Preventivas.gs' },
+    { fn: 'gerarSlidePreventivasDetalhe',  args: 3, arquivo: '04_Slide_Preventivas_Acao.gs' },
+    { fn: 'obterCorretivasTV_',            args: 1, arquivo: '09_Dados_BasesBrutas.gs' },
+    { fn: 'obterMetaAutoUnit_',            args: 4, arquivo: '08_Dados_MetasAuto.gs' }
+  ];
+
+  const faltando = [], desatualizados = [];
+  esperado.forEach(e => {
+    // Declaração de função no topo de um .gs vira propriedade do objeto
+    // global, então globalThis acha sem eval e sem quebrar quando não existe.
+    const f = globalThis[e.fn];
+    if (typeof f !== 'function') { faltando.push(e.arquivo + ' (função ' + e.fn + ' não existe)'); return; }
+    if (f.length !== e.args) {
+      desatualizados.push(e.arquivo + ' (versão antiga: ' + e.fn + ' espera ' +
+                          f.length + ' argumentos, o esperado são ' + e.args + ')');
+    }
+  });
+
+  const problemas = faltando.concat(desatualizados);
+  if (problemas.length) {
+    throw new Error(
+      'O projeto está com arquivos de versões diferentes. Copie do git para o ' +
+      'editor:\n  · ' + problemas.join('\n  · ') +
+      '\n(git push não publica nada — o código precisa ser colado no editor.)');
+  }
+}
+
 function gerarApresentacao() {
+  _tvConferirProjeto_();
+
   const planilha = SpreadsheetApp.openById(ID_PLANILHA);
 
   // A aba CHAMADOS deixou de ser fonte de NÚMERO (os 4 slides operacionais
