@@ -10,24 +10,14 @@ function INICIAR_AQUI() {
 function gerarApresentacao() {
   const planilha = SpreadsheetApp.openById(ID_PLANILHA);
 
+  // A aba CHAMADOS deixou de ser fonte de NÚMERO (os 4 slides operacionais
+  // agora contam da BD-CORRETIVAS/BD-PREVENTIVAS — ver 09_Dados_BasesBrutas.gs).
+  // Ela continua sendo lida só para a data de sincronização mostrada no
+  // cabeçalho, e a aba METAS segue alimentando os slides de Metas.
   const abaChamados = planilha.getSheetByName("CHAMADOS");
   if (!abaChamados) throw new Error("Aba 'CHAMADOS' não encontrada.");
 
   const dataSincronizacao = abaChamados.getRange("C5").getDisplayValue();
-
-  const valChamados = abaChamados.getRange(39, 1, 1, abaChamados.getLastColumn()).getValues()[0];
-  let colAlvoChamados = -1;
-  for (let i = valChamados.length - 1; i >= 2; i--) {
-    if (valChamados[i] !== "" && valChamados[i] !== null) { colAlvoChamados = i + 1; break; }
-  }
-
-  const abaPreventivas = planilha.getSheetByName("PREVENTIVA");
-  if (!abaPreventivas) throw new Error("Aba 'PREVENTIVA' não encontrada.");
-  const valPrev = abaPreventivas.getRange(23, 1, 1, abaPreventivas.getLastColumn()).getValues()[0];
-  let colAlvoPrev = -1;
-  for (let i = valPrev.length - 1; i >= 3; i--) {
-    if (valPrev[i] !== "" && valPrev[i] !== null) { colAlvoPrev = i + 1; break; }
-  }
 
   UNITS.forEach(unit => {
     Logger.log(`🚀 Iniciando atualização: ${unit.name}`);
@@ -53,18 +43,19 @@ function gerarApresentacao() {
         slides = deck.getSlides();
       }
 
-      // 2. LIMPA APENAS OS ELEMENTOS DOS 5 PRIMEIROS SLIDES (dados)
-      // (Mantém o ID do Slide intacto; NÃO mexe no slide do tempo nem nos de Metas)
-      slides.forEach((slide, idx) => {
-        if (idx < 5) slide.getPageElements().forEach(el => el.remove());
-      });
-
-      // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES
+      // 2. DESENHA OS DADOS NOS SLIDES EXISTENTES (mantém o ID do slide
+      // intacto, então o link da TV não muda).
+      //
+      // A limpeza dos elementos agora acontece DENTRO de cada gerador, e só
+      // depois que ele já tem os dados em mãos. Antes era um laço aqui que
+      // esvaziava os 5 primeiros slides antes de qualquer leitura: bastava a
+      // fonte falhar para a TV ficar com a parede em branco. Agora, falha de
+      // leitura só registra no Logger e preserva o slide anterior.
       gerarSlideCapa(slides[0], dataSincronizacao, unit);
-      gerarSlideCorretivas(slides[1], abaChamados, dataSincronizacao, colAlvoChamados, unit);
-      gerarSlideCorretivasDetalhe(slides[2], planilha, dataSincronizacao, unit);
-      gerarSlidePreventivas(slides[3], abaPreventivas, dataSincronizacao, colAlvoPrev, unit);
-      gerarSlidePreventivasDetalhe(slides[4], planilha, dataSincronizacao, unit);
+      gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
+      gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
+      gerarSlidePreventivas(slides[3], dataSincronizacao, unit);
+      gerarSlidePreventivasDetalhe(slides[4], dataSincronizacao, unit);
 
       // 4. SE O SLIDE DO TEMPO AINDA ESTIVER VAZIO (primeira execução), preenche
       if (slides[5].getPageElements().length === 0) {

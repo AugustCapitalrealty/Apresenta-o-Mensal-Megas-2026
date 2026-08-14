@@ -1,41 +1,22 @@
 /**
  * ARQUIVO: 02_Slide_Corretivas_Acao.gs
  * DESCRIÇÃO: Foco de Ação (Matriz de Corretivas).
+ *
+ * FONTE: BD-CORRETIVAS (base bruta) via obterBacklogCorretivoTV_ em
+ * 09_Dados_BasesBrutas.gs. Antes lia a aba "CHAMADOS - DETALHE - <CIDADE>",
+ * que já era linha a linha mas era uma CÓPIA colada dentro da planilha da TV —
+ * some o trabalho de recolar a aba e o backlog passa a bater com o da
+ * apresentação mensal por construção.
  */
 
-function gerarSlideCorretivasDetalhe(slide, planilha, dataGlobal, unit) { // Recebe slide direto
-  const aba = planilha.getSheetByName(unit.sheetChamadosDetalhe);
-  if (!aba) return;
+function gerarSlideCorretivasDetalhe(slide, dataGlobal, unit) {
+  const d = obterBacklogCorretivoTV_(unit);
+  // Sem dado, NÃO limpa o slide: a TV segue com a última versão boa.
+  if (!d) { Logger.log('⚠️ Backlog Corretivo (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  const ultimaLinha = aba.getLastRow();
-  if (ultimaLinha < 9) return;
-
-  const dados = aba.getRange(9, 1, ultimaLinha - 8, 10).getValues();
-
-  let pEmergencial = 0, pAlta = 0, pNormal = 0, pBaixa = 0;
-  const areasMap = {};
-
-  dados.forEach(linha => {
-    const area = linha[4] ? linha[4].toString().trim() : "";
-    const prioridade = linha[9] ? linha[9].toString().trim().toUpperCase() : "";
-
-    if (!area && !prioridade) return;
-
-    if (prioridade === "EMERGENCIAL") pEmergencial++;
-    else if (prioridade === "ALTA") pAlta++;
-    else if (prioridade === "NORMAL") pNormal++;
-    else if (prioridade === "BAIXA") pBaixa++;
-
-    if (area) {
-      if (!areasMap[area]) areasMap[area] = 0;
-      areasMap[area]++;
-    }
-  });
-
-  const topAreas = Object.keys(areasMap).map(k => ({ area: k, count: areasMap[k] }))
-    .sort((a, b) => b.count - a.count).slice(0, 6);
-
-  criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardCorretivasDetalhe(slide, d.pEmergencial, d.pAlta, d.pNormal, d.pBaixa,
+    d.topAreas, dataGlobal, unit);
 }
 
 function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit) {
@@ -152,6 +133,6 @@ function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pB
   }
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak • * Comparações referem-se à semana anterior.")
+  txtFooter.getText().setText("Fonte: BD-CORRETIVAS (Infraspeak) • Fila em aberto na data da atualização.")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }

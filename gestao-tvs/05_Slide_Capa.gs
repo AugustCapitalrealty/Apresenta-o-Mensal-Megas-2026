@@ -6,6 +6,12 @@
 function gerarSlideCapa(slide, dataGlobal, unit) {
   const ds = CR_DESIGN_SYSTEM;
 
+  // Limpa o próprio slide: o laço que esvaziava os 5 primeiros de uma vez
+  // saiu de 00_Main.gs (ver o comentário lá — deixava a TV em branco quando a
+  // leitura de dados falhava). A capa não depende de fonte externa, então
+  // limpa direto.
+  slide.getPageElements().forEach(el => el.remove());
+
   slide.getBackground().setSolidFill(ds.colors.bgSlide);
 
   const circle1 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 400, -200, 600, 600);

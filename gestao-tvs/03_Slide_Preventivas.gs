@@ -1,29 +1,23 @@
 /**
  * ARQUIVO: 03_Slide_Preventivas.gs
  * DESCRIÇÃO: Volume e SLA Preventivas (Multi-TV).
+ *
+ * FONTE: BD-PREVENTIVAS (base bruta, uma linha por rotina) via
+ * obterPreventivasTV_ em 09_Dados_BasesBrutas.gs. Antes vinha das células já
+ * somadas da aba PREVENTIVA (linhas 24/25/26).
+ *
+ * O SLA passa a ser calculado pela mesma regra dos outros dois projetos —
+ * cumpridos ÷ (cumpridos + não cumpridos), com "Sem SLA" fora da fração — em
+ * vez de vir de uma célula com porcentagem pronta.
  */
 
-function gerarSlidePreventivas(slide, aba, dataGlobal, colAlvo, unit) { // Recebe slide direto
-  const historico = [];
-  const colInicial = Math.max(4, colAlvo - 4);
+function gerarSlidePreventivas(slide, dataGlobal, unit) {
+  const d = obterPreventivasTV_(unit);
+  // Sem dado, NÃO limpa o slide: a TV segue com a última versão boa.
+  if (!d) { Logger.log('⚠️ Preventivas (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  for (let c = colInicial; c <= colAlvo; c++) {
-    const valC = Number(aba.getRange(unit.rows.preventiva.conf, c).getValue()) || 0;
-    const valNC = Number(aba.getRange(unit.rows.preventiva.nConf, c).getValue()) || 0;
-
-    historico.push({
-      dataCurta: aba.getRange(23, c).getDisplayValue(),
-      conforme: valC,
-      naoConforme: valNC,
-      total: valC + valNC,
-      slaPerc: aba.getRange(unit.rows.preventiva.perc, c).getDisplayValue()
-    });
-  }
-
-  const atual = historico[historico.length - 1];
-  const anterior = historico.length > 1 ? historico[historico.length - 2] : { conforme: 0, naoConforme: 0, total: 0 };
-
-  criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardPreventivas(slide, d.atual, d.anterior, d.historico, dataGlobal, unit);
 }
 
 function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal, unit) {
@@ -128,6 +122,6 @@ function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal
   });
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak")
+  txtFooter.getText().setText("Fonte: BD-PREVENTIVAS (Infraspeak) • SLA = cumpridas ÷ (cumpridas + não cumpridas).")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }
