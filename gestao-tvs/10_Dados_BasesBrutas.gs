@@ -23,9 +23,10 @@
  * passa a valer por construção, em vez de depender de duas abas digitadas
  * concordarem entre si.
  *
- * DEPENDE de 08_Dados_MetasAuto.gs (usa _histNorm_ e formatarNumeroBR de lá).
- * Mesmo namespace global do Apps Script — os dois arquivos precisam estar no
- * projeto.
+ * INDEPENDENTE: não depende de nenhum outro arquivo do projeto. Repare que
+ * 09_Metas_Auto.gs já tem um `_histNorm` (sem underscore final) — o daqui é
+ * `_histNorm_` COM underscore, nome diferente, então os dois convivem no
+ * mesmo namespace global sem colidir.
  *
  * NOMES REPETIDOS DE PROPÓSITO: _histParseDataHora_, _bdChamadoFechado_,
  * _slaClasse_, _normalizarPrioridade_, _resolverEquipeResponsaveis_ e
@@ -52,6 +53,30 @@ const TV_SEMANAS_HISTORICO = 5;
 // ==========================================
 // HELPERS DE PARSE / CLASSIFICAÇÃO
 // ==========================================
+
+// Texto sem acento, minúsculo, espaços colapsados. Note o underscore FINAL:
+// 09_Metas_Auto.gs tem um `_histNorm` sem ele, e são funções distintas.
+function _histNorm_(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// Número no padrão brasileiro (66336 → "66.336"; 27.91 → "27,91").
+function formatarNumeroBR(valor) {
+  if (valor === null || valor === undefined || valor === '' || valor === '-') return '-';
+  const s = String(valor).trim();
+  if (/[^\d.,\-\s]/.test(s)) return s;
+  let n;
+  if (s.indexOf(',') >= 0) n = Number(s.replace(/\./g, '').replace(',', '.'));
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) n = Number(s.replace(/\./g, ''));
+  else n = Number(s);
+  if (isNaN(n)) return s;
+  const temDecimal = Math.abs(n % 1) > 1e-9;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: temDecimal ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
 
 // As bases trazem data em ISO "AAAA-MM-DD HH:MM:SS".
 function _histParseDataHora_(v) {

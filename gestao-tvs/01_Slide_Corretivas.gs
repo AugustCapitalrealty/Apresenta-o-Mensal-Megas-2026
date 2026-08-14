@@ -3,30 +3,14 @@
  * DESCRIÇÃO: Volume Histórico Corretivas.
  */
 
-function gerarSlideCorretivas(slide, aba, dataGlobal, colAlvo, unit) {
-  // 1. HISTÓRICO VARIÁVEL (Para o Gráfico de Barras)
-  const historico = [];
-  const colInicial = Math.max(3, colAlvo - 4);
-  for (let c = colInicial; c <= colAlvo; c++) {
-    historico.push({
-      dataCurta: aba.getRange(39, c).getDisplayValue(),
-      facilities: Number(aba.getRange(unit.rows.chamados.fac, c).getValue()) || 0,
-      propriedades: Number(aba.getRange(unit.rows.chamados.prop, c).getValue()) || 0,
-      total: Number(aba.getRange(unit.rows.chamados.tot, c).getValue()) || 0
-    });
-  }
+function gerarSlideCorretivas(slide, dataGlobal, unit) {
+  const d = obterCorretivasTV_(unit);
+  // Sem dado, NÃO limpa o slide: a TV continua mostrando a última versão boa
+  // em vez de ficar em branco na parede.
+  if (!d) { Logger.log('⚠️ Corretivas (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  // 2. DADOS FIXOS DIÁRIOS (Para os Cartões Principais - Lendo a Coluna D = 4)
-  const atual = {
-    facilities: Number(aba.getRange(unit.rows.chamadosDiario.fac, 4).getValue()) || 0,
-    propriedades: Number(aba.getRange(unit.rows.chamadosDiario.prop, 4).getValue()) || 0,
-    total: Number(aba.getRange(unit.rows.chamadosDiario.tot, 4).getValue()) || 0
-  };
-
-  // O "anterior" para comparação agora é a última semana fechada do histórico
-  const anterior = historico.length > 0 ? historico[historico.length - 1] : { facilities: 0, propriedades: 0, total: 0 };
-
-  criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardCorretivas(slide, d.atual, d.anterior, d.historico, dataGlobal, unit);
 }
 
 function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal, unit) {
@@ -123,6 +107,6 @@ function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal,
   });
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak • * Comparações referem-se à semana anterior.")
+  txtFooter.getText().setText("Fonte: BD-CORRETIVAS (Infraspeak) • Semana em curso vs. última semana fechada.")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }

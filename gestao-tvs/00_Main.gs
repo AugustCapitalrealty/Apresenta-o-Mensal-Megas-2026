@@ -10,7 +10,51 @@ function INICIAR_AQUI() {
   gerarApresentacao();
 }
 
+// ==========================================
+// CONFERE SE O PROJETO ESTÁ COMPLETO NO EDITOR
+// ==========================================
+// O código é copiado À MÃO para o editor do Apps Script (não há clasp), então
+// é comum sobrar arquivo de uma versão e faltar de outra. Quando isso acontece
+// com uma função cuja ASSINATURA mudou, o erro é ilegível: 00_Main chama com 3
+// argumentos, o arquivo antigo espera 5, `unit` chega undefined e o Apps
+// Script diz só "Cannot read properties of undefined (reading 'rows')" — sem
+// apontar arquivo nenhum. Já aconteceu.
+//
+// `fn.length` devolve quantos parâmetros a função DECLARA, então dá para
+// detectar o arquivo velho antes de rodar e dizer qual recopiar.
+function _tvConferirProjeto_() {
+  const esperado = [
+    { fn: 'gerarSlideCorretivas',         args: 3, arquivo: '01_Slide_Corretivas.gs' },
+    { fn: 'gerarSlideCorretivasDetalhe',  args: 3, arquivo: '02_Slide_Corretivas_Acao.gs' },
+    { fn: 'gerarSlidePreventivas',        args: 5, arquivo: '03_Slide_Preventivas.gs' },
+    { fn: 'gerarSlidePreventivasDetalhe', args: 3, arquivo: '04_Slide_Preventivas_Acao.gs' },
+    { fn: 'obterMetaAuto',                args: 4, arquivo: '09_Metas_Auto.gs' },
+    { fn: 'obterCorretivasTV_',           args: 1, arquivo: '10_Dados_BasesBrutas.gs' }
+  ];
+
+  const problemas = [];
+  esperado.forEach(e => {
+    // Declaração de função no topo de um .gs vira propriedade do objeto
+    // global, então globalThis acha sem eval e sem quebrar quando não existe.
+    const f = globalThis[e.fn];
+    if (typeof f !== 'function') { problemas.push(e.arquivo + ' (falta a função ' + e.fn + ')'); return; }
+    if (f.length !== e.args) {
+      problemas.push(e.arquivo + ' (versão antiga: ' + e.fn + ' espera ' +
+                     f.length + ' argumentos, o esperado são ' + e.args + ')');
+    }
+  });
+
+  if (problemas.length) {
+    throw new Error(
+      'O projeto está com arquivos de versões diferentes. Copie do git para o ' +
+      'editor:\n  · ' + problemas.join('\n  · ') +
+      '\n(git push não publica nada — o código precisa ser colado no editor.)');
+  }
+}
+
 function gerarApresentacao() {
+  _tvConferirProjeto_();
+
   const planilha = SpreadsheetApp.openById(ID_PLANILHA);
 
   const abaChamados = planilha.getSheetByName("CHAMADOS");
@@ -18,11 +62,9 @@ function gerarApresentacao() {
 
   const dataSincronizacao = abaChamados.getRange("C5").getDisplayValue();
 
-  const valChamados = abaChamados.getRange(39, 1, 1, abaChamados.getLastColumn()).getValues()[0];
-  let colAlvoChamados = -1;
-  for (let i = valChamados.length - 1; i >= 2; i--) {
-    if (valChamados[i] !== "" && valChamados[i] !== null) { colAlvoChamados = i + 1; break; }
-  }
+  // A aba CHAMADOS deixou de ser fonte de número (Corretivas e Backlog
+  // Corretivo agora contam da BD-CORRETIVAS). Continua sendo lida só para a
+  // data de sincronização do cabeçalho, logo acima.
 
   const abaPreventivas = planilha.getSheetByName("PREVENTIVA");
   if (!abaPreventivas) throw new Error("Aba 'PREVENTIVA' não encontrada.");
@@ -72,18 +114,21 @@ function gerarApresentacao() {
         slides = deck.getSlides();
       }
 
-      // 2. LIMPA APENAS OS ELEMENTOS DOS 5 PRIMEIROS SLIDES (dados)
-      // (Mantém o ID do Slide intacto; NÃO mexe no slide do tempo nem nos de Metas)
-      slides.forEach((slide, idx) => {
-        if (idx < 5) slide.getPageElements().forEach(el => el.remove());
-      });
+      // 2. A limpeza dos elementos acontece DENTRO de cada gerador, e só
+      // depois que ele já tem os dados em mãos. Antes era um laço aqui que
+      // esvaziava os 5 primeiros slides antes de qualquer leitura: bastava a
+      // fonte falhar para a TV ficar com a parede em branco.
 
       // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES
       gerarSlideCapa(slides[0], dataSincronizacao, unit);
-      gerarSlideCorretivas(slides[1], abaChamados, dataSincronizacao, colAlvoChamados, unit);
-      gerarSlideCorretivasDetalhe(slides[2], planilha, dataSincronizacao, unit);
+      // Corretivas (1 e 2) e Backlog Preventivo (4) contam da base bruta
+      // (10_Dados_BasesBrutas.gs) e não recebem mais aba/coluna. Preventivas
+      // (3) continua na aba PREVENTIVA — é o único que ainda lê célula
+      // pré-agregada, porque tem o comparativo mensal montado em cima dela.
+      gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
+      gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
       gerarSlidePreventivas(slides[3], abaPreventivas, dataSincronizacao, colAlvoPrev, unit);
-      gerarSlidePreventivasDetalhe(slides[4], planilha, dataSincronizacao, unit);
+      gerarSlidePreventivasDetalhe(slides[4], dataSincronizacao, unit);
 
       // 4. SE O SLIDE DO TEMPO AINDA ESTIVER VAZIO (primeira execução), preenche
       if (slides[5].getPageElements().length === 0) {

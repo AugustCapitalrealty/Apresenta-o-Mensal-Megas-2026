@@ -1,5 +1,5 @@
 /**
- * Teste das contas de 09_Dados_BasesBrutas.gs.
+ * Teste das contas de 10_Dados_BasesBrutas.gs.
  * Padrão do CLAUDE.md: lê os .gs como texto, dubla SpreadsheetApp/Logger e
  * roda asserções. Não abre planilha nem Slides.
  *
@@ -33,7 +33,7 @@ function sheet(nome) {
 }
 
 // ── Carrega o código de produção ─────────────────────────────────────────
-let fonte = ['Config.gs', '08_Dados_MetasAuto.gs', '09_Dados_BasesBrutas.gs']
+let fonte = ['Config.gs', '10_Dados_BasesBrutas.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 // Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
 // `const`/`let` de topo ficam presos no escopo do próprio eval. Vira `var`
@@ -133,7 +133,7 @@ FAKE = {
   ]
 };
 
-console.log('\n== Slide 3 — Visão Geral Preventiva (SLA) ==');
+console.log('\n== obterPreventivasTV_ (ainda não ligado a slide — ver 03_Slide_Preventivas.gs) ==');
 const prev = obterPreventivasTV_(unitCwb);
 ok('conforme=3',      prev.atual.conforme === 3, prev.atual.conforme);
 ok('não conforme=1',  prev.atual.naoConforme === 1, prev.atual.naoConforme);

@@ -4,6 +4,12 @@
  */
 
 function gerarSlidePreventivas(slide, aba, dataGlobal, colAlvo, unit) { // Recebe slide direto
+  // Limpa o próprio slide: o laço que esvaziava os 5 primeiros de uma vez
+  // saiu de 00_Main.gs (ver o comentário lá). Este slide ainda lê a aba
+  // PREVENTIVA, que está sempre presente, então limpar aqui no topo equivale
+  // ao comportamento anterior.
+  slide.getPageElements().forEach(el => el.remove());
+
   // colAlvo inválido (nenhuma coluna semanal encontrada na linha 23) — não
   // deixa quebrar a atualização inteira da unidade; desenha um aviso e sai.
   if (!colAlvo || colAlvo < 4) {
