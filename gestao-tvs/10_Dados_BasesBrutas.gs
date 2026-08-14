@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: 09_Dados_BasesBrutas.gs
+ * ARQUIVO: 10_Dados_BasesBrutas.gs
  * DESCRIÇÃO: Camada de dados dos 4 slides operacionais, lida das BASES BRUTAS
  * (uma linha por registro) em vez das células pré-agregadas da planilha da TV.
  *
@@ -7,7 +7,9 @@
  * Até aqui o Gestão à Vista TV lia número já somado:
  *   ▸ Visão Geral Corretiva  → células fixas da aba CHAMADOS (linhas 40/41/42
  *                              por semana, 78/79/80 col. D pro dia)
- *   ▸ Visão Geral Preventiva → células fixas da aba PREVENTIVA (24/25/26)
+ *   ▸ Visão Geral Preventiva → células fixas da aba PREVENTIVA (24/25/26),
+ *                              mais o histórico mensal e o comparativo de
+ *                              mesmo período em colunas à direita
  *   ▸ Backlog Corretivo      → aba "CHAMADOS - DETALHE - <CIDADE>"   (cópia local)
  *   ▸ Backlog Preventivo     → aba "PREVENTIVA - DETALHE - <CIDADE>" (cópia local)
  *
@@ -46,8 +48,12 @@ const BD_CORRETIVAS_ID = '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo';
 const BD_ABA_CORRETIVAS  = 'BD-CORRETIVAS';
 const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
 
-// Quantas semanas fechadas o gráfico "EVOLUÇÃO" mostra.
+// Quantas semanas fechadas o gráfico "EVOLUÇÃO" das Corretivas mostra.
 const TV_SEMANAS_HISTORICO = 5;
+
+// Quantos meses o gráfico "EVOLUÇÃO" das Preventivas mostra (o último é o
+// mês corrente, até hoje).
+const TV_MESES_HISTORICO = 5;
 
 
 // ==========================================
@@ -360,6 +366,67 @@ function _tvDentro_(d, janela) {
 
 
 // ==========================================
+// JANELAS MENSAIS (slide de Preventivas)
+// ==========================================
+// Preventivas raciocina por MÊS, não por semana: a aba PREVENTIVA tinha uma
+// coluna por mês escrita por extenso na linha 23, e o slide comparava o mês
+// corrente (até hoje) com o mês anterior RESTRITO AOS MESMOS DIAS — comparar
+// um mês pela metade com um mês fechado inteiro sempre acusaria queda. Essas
+// janelas reproduzem exatamente esse recorte a partir da base bruta.
+
+function _tvHojeUTC_() {
+  const d = new Date();
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+
+function _tvInicioDoMes_(ano, mesIdx) {
+  return new Date(Date.UTC(ano, mesIdx, 1));
+}
+
+// Mês inteiro [1º, 1º do mês seguinte).
+function _tvMesCompleto_(ano, mesIdx) {
+  return {
+    ini: _tvInicioDoMes_(ano, mesIdx),
+    fim: _tvInicioDoMes_(ano, mesIdx + 1),   // Date.UTC normaliza mês 12 → janeiro do ano seguinte
+    label: MESES_POR_EXTENSO[((mesIdx % 12) + 12) % 12]
+  };
+}
+
+// Os `n` últimos meses, sendo o ÚLTIMO o mês corrente (que vai só até hoje,
+// como a coluna do mês corrente na planilha ia). Em ordem cronológica.
+function _tvMesesHistorico_(n) {
+  const hoje = _tvHojeUTC_();
+  const ano = hoje.getUTCFullYear(), mes = hoje.getUTCMonth();
+  const meses = [];
+  for (let i = n - 1; i >= 1; i--) meses.push(_tvMesCompleto_(ano, mes - i));
+  const corrente = _tvMesCompleto_(ano, mes);
+  // mês corrente: só até o fim do dia de hoje
+  meses.push({ ini: corrente.ini, fim: new Date(hoje.getTime() + 864e5), label: corrente.label });
+  return meses;
+}
+
+// Mês ANTERIOR restrito aos mesmos dias já decorridos no mês corrente
+// (ex.: hoje é dia 14 → junho de 1 a 14). Nunca passa do fim do mês anterior:
+// se hoje for 31 e o mês anterior tiver 30 dias, para no dia 30.
+function _tvMesAnteriorMesmoPeriodo_() {
+  const hoje = _tvHojeUTC_();
+  const ano = hoje.getUTCFullYear(), mes = hoje.getUTCMonth();
+  const iniAtual = _tvInicioDoMes_(ano, mes);
+  const diasCorridos = Math.round((hoje.getTime() - iniAtual.getTime()) / 864e5) + 1;
+
+  const iniPrev = _tvInicioDoMes_(ano, mes - 1);
+  const fimPrevCheio = iniAtual;                              // 1º do mês corrente
+  const fimPrevPeriodo = new Date(iniPrev.getTime() + diasCorridos * 864e5);
+  return {
+    ini: iniPrev,
+    fim: new Date(Math.min(fimPrevPeriodo.getTime(), fimPrevCheio.getTime())),
+    label: MESES_POR_EXTENSO[((mes - 1) % 12 + 12) % 12],
+    dias: diasCorridos
+  };
+}
+
+
+// ==========================================
 // SLIDE 1 — VISÃO GERAL CORRETIVA (fluxo: chamados criados)
 // ==========================================
 // Conta os chamados ABERTOS na janela ("Data de reporte"), separados por
@@ -412,15 +479,24 @@ function obterCorretivasTV_(unit) {
 // SLIDE 3 — VISÃO GERAL PREVENTIVA (conforme / não conforme / SLA)
 // ==========================================
 // Mesma regra de SLA já validada nos outros dois projetos:
-//     SLA % = cumpridos / (cumpridos + não cumpridos) × 100
+//     SLA % = cumpridas / (cumpridas + não cumpridas) × 100
 // "Sem SLA" fica inteiramente fora da fração, em cima e embaixo. A janela vale
-// pela DATA DE AGENDAMENTO (a rotina pertence à semana em que estava
+// pela DATA DE AGENDAMENTO (a rotina pertence ao mês em que estava
 // programada), e as CANCELADAS ENTRAM na conta — as duas escolhas foram
 // conferidas contra a planilha oficial do time em 12 casos, ver o cabeçalho de
 // propriedades-mensal/02_Dados.gs.
 //
-// Substitui as células fixas das linhas 24/25/26 da aba PREVENTIVA.
-function obterPreventivasTV_(unit) {
+// Substitui TUDO que o slide lia da aba PREVENTIVA:
+//   ▸ células fixas das linhas 24/25/26 (conforme/não conforme/%)
+//   ▸ o histórico mensal das colunas com nome de mês na linha 23
+//   ▸ o bloco "SLA CUMPRIDO <unidade>" do comparativo de mesmo período
+//
+// Retorna { atual, anterior, historico[], comparativo } no MESMO formato que
+// 03_Slide_Preventivas.gs já consumia, para o desenho não mudar:
+//   atual       → mês corrente até hoje
+//   anterior    → mês anterior COMPLETO (só o fallback do desenho)
+//   comparativo → mês anterior restrito aos mesmos dias já decorridos
+function obterPreventivasMensalTV_(unit) {
   const itens = _tvItensUnidade_(BD_ABA_PREVENTIVAS, unit);
   if (!itens.length) {
     Logger.log('BD-PREVENTIVAS: nenhuma linha com Centro de Custos = "' + unit.name + '".');
@@ -445,21 +521,34 @@ function obterPreventivasTV_(unit) {
       conforme    : conforme,
       naoConforme : naoConforme,
       total       : total,
-      slaPerc     : total > 0 ? formatarNumeroBR(Math.round(conforme / total * 1000) / 10) + '%' : '-'
+      slaPerc     : total > 0 ? formatarNumeroBR(Math.round(conforme / total * 10000) / 100) + '%' : '-',
+      dataCurta   : janela.label
     };
   };
 
-  const historico = _tvSemanasCompletas_(TV_SEMANAS_HISTORICO).map(s => {
-    const c = contar(s);
-    c.dataCurta = s.label;
-    return c;
-  });
+  const meses     = _tvMesesHistorico_(TV_MESES_HISTORICO);
+  const historico = meses.map(contar);
+  const atual     = historico[historico.length - 1];
 
-  return {
-    atual    : contar(_tvSemanaCorrente_()),
-    anterior : historico[historico.length - 1] || { conforme: 0, naoConforme: 0, total: 0 },
-    historico: historico
+  // Mês anterior COMPLETO — o desenho usa isso só quando o comparativo de
+  // mesmo período não estiver disponível.
+  const hoje = _tvHojeUTC_();
+  const anterior = contar(_tvMesCompleto_(hoje.getUTCFullYear(), hoje.getUTCMonth() - 1));
+
+  // Mês anterior no MESMO período (1 até o dia de hoje).
+  const jPeriodo = _tvMesAnteriorMesmoPeriodo_();
+  const periodo  = contar(jPeriodo);
+
+  const comparativo = {
+    mesLabel            : atual.dataCurta,           // nome do mês CORRENTE (o desenho deriva o anterior daqui)
+    slaMesAtual         : atual.slaPerc,
+    slaMesAnterior      : periodo.slaPerc,
+    cumpridoAnterior    : periodo.conforme,
+    naoCumpridoAnterior : periodo.naoConforme,
+    diasComparados      : jPeriodo.dias
   };
+
+  return { atual, anterior, historico, comparativo };
 }
 
 

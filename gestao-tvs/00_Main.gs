@@ -26,7 +26,7 @@ function _tvConferirProjeto_() {
   const esperado = [
     { fn: 'gerarSlideCorretivas',         args: 3, arquivo: '01_Slide_Corretivas.gs' },
     { fn: 'gerarSlideCorretivasDetalhe',  args: 3, arquivo: '02_Slide_Corretivas_Acao.gs' },
-    { fn: 'gerarSlidePreventivas',        args: 5, arquivo: '03_Slide_Preventivas.gs' },
+    { fn: 'gerarSlidePreventivas',        args: 3, arquivo: '03_Slide_Preventivas.gs' },
     { fn: 'gerarSlidePreventivasDetalhe', args: 3, arquivo: '04_Slide_Preventivas_Acao.gs' },
     { fn: 'obterMetaAuto',                args: 4, arquivo: '09_Metas_Auto.gs' },
     { fn: 'obterCorretivasTV_',           args: 1, arquivo: '10_Dados_BasesBrutas.gs' }
@@ -66,27 +66,9 @@ function gerarApresentacao() {
   // Corretivo agora contam da BD-CORRETIVAS). Continua sendo lida só para a
   // data de sincronização do cabeçalho, logo acima.
 
-  const abaPreventivas = planilha.getSheetByName("PREVENTIVA");
-  if (!abaPreventivas) throw new Error("Aba 'PREVENTIVA' não encontrada.");
-  const valPrev = abaPreventivas.getRange(23, 1, 1, abaPreventivas.getLastColumn()).getValues()[0];
-  let colAlvoPrev = -1;
-  // A linha 23 inteira virou um cabeçalho MENSAL (um nome de mês por extenso
-  // por coluna — "janeiro", "fevereiro"... "agosto"), não mais semanal.
-  // Acha a ÚLTIMA coluna cujo cabeçalho é um nome de mês — essa é a coluna
-  // do mês corrente.
-  const ehNomeDeMes = v => MESES_POR_EXTENSO.indexOf(String(v).trim().toLowerCase()) >= 0;
-  for (let i = valPrev.length - 1; i >= 3; i--) {
-    if (ehNomeDeMes(valPrev[i])) { colAlvoPrev = i + 1; break; }
-  }
-  // Rede de segurança: se não achar nenhum nome de mês (ex.: layout mudou
-  // de novo), volta para a última coluna não vazia, sem o filtro — nunca
-  // pior do que travar o slide inteiro (colAlvoPrev = -1).
-  if (colAlvoPrev < 0) {
-    for (let i = valPrev.length - 1; i >= 3; i--) {
-      if (valPrev[i] !== "" && valPrev[i] !== null) { colAlvoPrev = i + 1; break; }
-    }
-  }
-  Logger.log(`ℹ️ PREVENTIVA: colAlvoPrev=${colAlvoPrev} (valor na linha 23: "${colAlvoPrev > 0 ? valPrev[colAlvoPrev - 1] : '-'}")`);
+  // A aba PREVENTIVA também deixou de ser fonte: o slide 3 conta da
+  // BD-PREVENTIVAS, inclusive o histórico mensal e o comparativo de mesmo
+  // período que antes eram lidos das colunas com nome de mês na linha 23.
 
   UNITS.forEach(unit => {
     Logger.log(`🚀 Iniciando atualização: ${unit.name}`);
@@ -121,13 +103,12 @@ function gerarApresentacao() {
 
       // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES
       gerarSlideCapa(slides[0], dataSincronizacao, unit);
-      // Corretivas (1 e 2) e Backlog Preventivo (4) contam da base bruta
-      // (10_Dados_BasesBrutas.gs) e não recebem mais aba/coluna. Preventivas
-      // (3) continua na aba PREVENTIVA — é o único que ainda lê célula
-      // pré-agregada, porque tem o comparativo mensal montado em cima dela.
+      // Os quatro slides operacionais contam da base bruta
+      // (10_Dados_BasesBrutas.gs) e não recebem mais aba/coluna da planilha
+      // da TV.
       gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
       gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
-      gerarSlidePreventivas(slides[3], abaPreventivas, dataSincronizacao, colAlvoPrev, unit);
+      gerarSlidePreventivas(slides[3], dataSincronizacao, unit);
       gerarSlidePreventivasDetalhe(slides[4], dataSincronizacao, unit);
 
       // 4. SE O SLIDE DO TEMPO AINDA ESTIVER VAZIO (primeira execução), preenche

@@ -33,7 +33,7 @@ function sheet(nome) {
 }
 
 // ── Carrega o código de produção ─────────────────────────────────────────
-let fonte = ['Config.gs', '10_Dados_BasesBrutas.gs']
+let fonte = ['Config.gs', '00_Main.gs', '10_Dados_BasesBrutas.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 // Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
 // `const`/`let` de topo ficam presos no escopo do próprio eval. Vira `var`
@@ -133,12 +133,70 @@ FAKE = {
   ]
 };
 
-console.log('\n== obterPreventivasTV_ (ainda não ligado a slide — ver 03_Slide_Preventivas.gs) ==');
-const prev = obterPreventivasTV_(unitCwb);
-ok('conforme=3',      prev.atual.conforme === 3, prev.atual.conforme);
-ok('não conforme=1',  prev.atual.naoConforme === 1, prev.atual.naoConforme);
-ok('total=4 ("Sem SLA" fora da conta)', prev.atual.total === 4, prev.atual.total);
-ok('SLA = 75%',       prev.atual.slaPerc === '75%', prev.atual.slaPerc);
+console.log('\n== Janelas mensais (slide 3) ==');
+const mesesHist = _tvMesesHistorico_(TV_MESES_HISTORICO);
+const periodoAnt = _tvMesAnteriorMesmoPeriodo_();
+const hojeUTC = _tvHojeUTC_();
+ok('5 meses no histórico', mesesHist.length === 5, mesesHist.length);
+ok('todos começam no dia 1', mesesHist.every(m => m.ini.getUTCDate() === 1));
+ok('meses são contíguos', mesesHist.every((m, i) => i === 0 || +m.ini === +mesesHist[i - 1].fim),
+   mesesHist.map(m => m.label).join(','));
+ok('o último é o mês corrente e para hoje',
+   mesesHist[4].ini.getUTCMonth() === hojeUTC.getUTCMonth() &&
+   +mesesHist[4].fim === hojeUTC.getTime() + 864e5);
+ok('rótulos são nomes de mês por extenso',
+   mesesHist.every(m => MESES_POR_EXTENSO.indexOf(m.label) >= 0), mesesHist.map(m => m.label).join(','));
+ok('mês anterior começa no dia 1', periodoAnt.ini.getUTCDate() === 1);
+ok('mês anterior é o mês de trás', periodoAnt.ini.getUTCMonth() === (hojeUTC.getUTCMonth() + 11) % 12);
+ok('período anterior cobre os mesmos dias já decorridos',
+   periodoAnt.dias === hojeUTC.getUTCDate(), periodoAnt.dias + ' vs dia ' + hojeUTC.getUTCDate());
+ok('período anterior nunca invade o mês corrente',
+   periodoAnt.fim <= _tvInicioDoMes_(hojeUTC.getUTCFullYear(), hojeUTC.getUTCMonth()));
+
+console.log('\n== Slide 3 — Visão Geral Preventiva (mensal + mesmo período) ==');
+// Monta a base ancorada nas janelas reais, para o teste não depender do dia.
+const noMesMeio = j => iso(new Date(j.ini.getTime() + 0 * 864e5));  // dia 1 de cada janela
+FAKE = {
+  'BD - PREVENTIVAS': [HDR_P,
+    // MÊS CORRENTE: 3 cumpridas + 1 não cumprida → SLA 75%
+    linhaP('Mega Curitiba', 'Fechada', 'Bomba de incêndio 01', 'Cumprido',     'FACILITIES', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Fechada', 'Bomba de incêndio 02', 'Cumprido',     'FACILITIES', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Fechada', 'Gerador',              'Cumprido',     'FACILITIES', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Fechada', 'Elevador',             'Não cumprido', 'FACILITIES', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4])),
+    // "Sem SLA" fica FORA da fração, em cima e embaixo
+    linhaP('Mega Curitiba', 'Fechada', 'Ar condicionado',      'Sem SLA',      'FACILITIES', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4])),
+    // MÊS ANTERIOR, dia 1 → cai DENTRO do mesmo período: 1 cumprida + 1 não → 50%
+    linhaP('Mega Curitiba', 'Fechada', 'Extintores',           'Cumprido',     'FACILITIES', noMesMeio(periodoAnt), noMesMeio(periodoAnt)),
+    linhaP('Mega Curitiba', 'Fechada', 'Hidrantes',            'Não cumprido', 'FACILITIES', noMesMeio(periodoAnt), noMesMeio(periodoAnt)),
+    // MÊS ANTERIOR, último dia → FORA do mesmo período (a não ser que hoje
+    // seja o fim do mês); entra só no mês anterior COMPLETO.
+    linhaP('Mega Curitiba', 'Fechada', 'Para-raios',           'Não cumprido', 'FACILITIES',
+           iso(new Date(_tvInicioDoMes_(hojeUTC.getUTCFullYear(), hojeUTC.getUTCMonth()).getTime() - 864e5)),
+           iso(new Date(_tvInicioDoMes_(hojeUTC.getUTCFullYear(), hojeUTC.getUTCMonth()).getTime() - 864e5))),
+    // abertas → não entram em SLA nenhum
+    linhaP('Mega Curitiba', 'Atrasada', 'Bomba de drenagem 01', '',            'FACILITIES', noMesMeio(mesesHist[0])),
+    linhaP('Mega Curitiba', 'Atrasada', 'Bomba de drenagem 02', '',            'FACILITIES', noMesMeio(mesesHist[0])),
+    linhaP('Mega Curitiba', 'Em curso', 'Painel elétrico',      '',            'PROPERTY',   noMesMeio(mesesHist[3]))
+  ]
+};
+
+const prev = obterPreventivasMensalTV_(unitCwb);
+ok('mês corrente: conforme=3',     prev.atual.conforme === 3, prev.atual.conforme);
+ok('mês corrente: não conforme=1', prev.atual.naoConforme === 1, prev.atual.naoConforme);
+ok('mês corrente: total=4 ("Sem SLA" fora da conta)', prev.atual.total === 4, prev.atual.total);
+ok('mês corrente: SLA = 75%',      prev.atual.slaPerc === '75%', prev.atual.slaPerc);
+ok('histórico com 5 meses',        prev.historico.length === 5);
+ok('último ponto do histórico é o mês corrente',
+   prev.historico[4].total === prev.atual.total && prev.historico[4].dataCurta === prev.atual.dataCurta);
+ok('comparativo: mesmo período tem 1 cumprida',     prev.comparativo.cumpridoAnterior === 1, prev.comparativo.cumpridoAnterior);
+ok('comparativo: mesmo período tem 1 não cumprida', prev.comparativo.naoCumpridoAnterior === 1, prev.comparativo.naoCumpridoAnterior);
+ok('comparativo: SLA anterior = 50%',               prev.comparativo.slaMesAnterior === '50%', prev.comparativo.slaMesAnterior);
+ok('comparativo: rótulo é o mês CORRENTE (o desenho deriva o anterior)',
+   prev.comparativo.mesLabel === mesesHist[4].label, prev.comparativo.mesLabel);
+ok('a rotina do fim do mês anterior NÃO entra no mesmo período',
+   prev.comparativo.cumpridoAnterior + prev.comparativo.naoCumpridoAnterior === 2,
+   'entraram ' + (prev.comparativo.cumpridoAnterior + prev.comparativo.naoCumpridoAnterior));
+ok('mas ENTRA no mês anterior completo', prev.anterior.total === 3, prev.anterior.total);
 
 console.log('\n== Slide 4 — Backlog Preventivo ==');
 const blp = obterBacklogPreventivoTV_(unitCwb);

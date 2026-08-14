@@ -3,123 +3,33 @@
  * DESCRIÇÃO: Volume e SLA Preventivas (Multi-TV).
  */
 
-function gerarSlidePreventivas(slide, aba, dataGlobal, colAlvo, unit) { // Recebe slide direto
-  // Limpa o próprio slide: o laço que esvaziava os 5 primeiros de uma vez
-  // saiu de 00_Main.gs (ver o comentário lá). Este slide ainda lê a aba
-  // PREVENTIVA, que está sempre presente, então limpar aqui no topo equivale
-  // ao comportamento anterior.
+/**
+ * FONTE: BD-PREVENTIVAS (base bruta, uma linha por rotina) via
+ * obterPreventivasMensalTV_ em 10_Dados_BasesBrutas.gs. Antes TUDO neste slide
+ * vinha da aba PREVENTIVA da planilha da TV: as células fixas 24/25/26, o
+ * histórico das colunas com nome de mês na linha 23 e o bloco
+ * "SLA CUMPRIDO <unidade>" do comparativo de mesmo período.
+ *
+ * O RECORTE NÃO MUDOU — é o que importa aqui. O cartão grande continua sendo o
+ * mês corrente até hoje, o gráfico continua sendo os 5 últimos meses, e o
+ * comparativo continua confrontando o mês corrente com o mês anterior
+ * RESTRITO AOS MESMOS DIAS (comparar meio mês com um mês fechado inteiro
+ * sempre acusaria queda). O que mudou é de onde os números saem.
+ *
+ * O SLA passa a ser calculado pela mesma regra dos outros dois projetos —
+ * cumpridas ÷ (cumpridas + não cumpridas), com "Sem SLA" fora da fração.
+ */
+function gerarSlidePreventivas(slide, dataGlobal, unit) {
+  const d = obterPreventivasMensalTV_(unit);
+  // Sem dado, NÃO limpa o slide: a TV segue com a última versão boa em vez de
+  // ficar em branco na parede.
+  if (!d) { Logger.log('⚠️ Preventivas (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
+
+  Logger.log('ℹ️ Preventivas (' + unit.name + '): atual=' + JSON.stringify(d.atual) +
+             ' comparativo=' + JSON.stringify(d.comparativo));
+
   slide.getPageElements().forEach(el => el.remove());
-
-  // colAlvo inválido (nenhuma coluna semanal encontrada na linha 23) — não
-  // deixa quebrar a atualização inteira da unidade; desenha um aviso e sai.
-  if (!colAlvo || colAlvo < 4) {
-    Logger.log(`⚠️ Preventivas (${unit.name}): coluna de dado semanal não encontrada (colAlvo=${colAlvo}).`);
-    const ds = CR_DESIGN_SYSTEM;
-    applyBrandHeaderAndBackground(slide, "Visão Geral Preventiva", "Volume e Cumprimento de SLA", dataGlobal, unit);
-    const txtErro = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 180, 620, 50);
-    txtErro.getText().setText("⚠️ Dados de Preventivas indisponíveis no momento.")
-      .getTextStyle().setFontSize(16).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-    txtErro.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    return;
-  }
-
-  const historico = [];
-  const colInicial = Math.max(4, colAlvo - 4);
-
-  for (let c = colInicial; c <= colAlvo; c++) {
-    const valC = Number(aba.getRange(unit.rows.preventiva.conf, c).getValue()) || 0;
-    const valNC = Number(aba.getRange(unit.rows.preventiva.nConf, c).getValue()) || 0;
-
-    historico.push({
-      dataCurta: aba.getRange(23, c).getDisplayValue(),
-      conforme: valC,
-      naoConforme: valNC,
-      total: valC + valNC,
-      slaPerc: aba.getRange(unit.rows.preventiva.perc, c).getDisplayValue()
-    });
-  }
-
-  const atual = historico[historico.length - 1];
-  const anterior = historico.length > 1 ? historico[historico.length - 2] : { conforme: 0, naoConforme: 0, total: 0 };
-
-  Logger.log(`ℹ️ Preventivas (${unit.name}): colAlvo=${colAlvo}, linhas conf/nConf/perc=${unit.rows.preventiva.conf}/${unit.rows.preventiva.nConf}/${unit.rows.preventiva.perc}, historico=${JSON.stringify(historico)}`);
-
-  const compMensal = obterComparativoSlaMensal(aba, unit);
-  Logger.log(`ℹ️ Preventivas (${unit.name}): compMensal=${JSON.stringify(compMensal)}`);
-
-  criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal, unit, compMensal);
-}
-
-// ==========================================
-// COMPARATIVO "MÊS ATUAL x MÊS ANTERIOR NO MESMO DIA" (aba PREVENTIVA)
-// Dois blocos, localizados por RÓTULO (não por linha fixa):
-//   1) Histórico mensal — mesmas linhas de unit.rows.preventiva (conf/
-//      nConf/perc), só que nas colunas mais à direita, uma por mês, com
-//      cabeçalho na linha 23 escrito por extenso ("janeiro", "fevereiro"…).
-//      A ÚLTIMA coluna preenchida é sempre o mês corrente (até hoje).
-//   2) Comparativo de período — bloco à parte (colunas mais à direita
-//      ainda), 3 linhas por unidade ("SLA CUMPRIDO"+nome / "SLA NÃO
-//      CUMPRIDO"+nome / "SLA"), com o SLA do mês ANTERIOR restrito aos
-//      mesmos dias do mês corrente até hoje (ex. "junho até 23").
-// ==========================================
-function obterComparativoSlaMensal(aba, unit) {
-  try {
-    const data = aba.getDataRange().getDisplayValues();
-
-    // --- Mês corrente: última coluna com nome de mês na linha 23 ---
-    const linha23 = data[22] || []; // 0-based
-    let colMesAtual = -1;
-    for (let c = linha23.length - 1; c >= 3; c--) {
-      if (MESES_POR_EXTENSO.indexOf(String(linha23[c]).trim().toLowerCase()) >= 0) { colMesAtual = c; break; }
-    }
-    if (colMesAtual < 0) return null;
-
-    const rowPerc = unit.rows.preventiva.perc - 1; // 0-based
-    const slaMesAtual = data[rowPerc] ? data[rowPerc][colMesAtual] : null;
-    if (!slaMesAtual) return null;
-
-    // --- Mês anterior até o mesmo dia: bloco "SLA CUMPRIDO"+unidade ---
-    // linhaCumprido = "SLA CUMPRIDO"+nome; +1 = "SLA NÃO CUMPRIDO"+nome; +2 = "SLA" (%).
-    // ATENÇÃO: o histórico mensal (bloco 1) usa o MESMO rótulo "SLA
-    // CUMPRIDO"+nome (uma coluna por mês); o comparativo de período (bloco
-    // 2) tem só UMA coluna de valor. Para não confundir os dois, só aceita
-    // a linha se, depois do nome da unidade, houver EXATAMENTE UM valor
-    // preenchido na linha (não uma série de vários meses). O valor fica
-    // sempre logo após o nome da unidade (coluna c+2) — sem precisar "achar
-    // a última coluna", que é frágil se as 3 linhas do bloco não tiverem
-    // exatamente a mesma largura de conteúdo.
-    let linhaCumprido = -1, colValor = -1;
-    for (let r = 0; r < data.length && linhaCumprido < 0; r++) {
-      const row = data[r];
-      for (let c = 0; c < row.length; c++) {
-        if (_histNorm(row[c]).indexOf('sla cumprido') >= 0 &&
-            _histNorm(row[c + 1] || '').indexOf(_histNorm(unit.name)) >= 0) {
-          const preenchidos = row.slice(c + 2).filter(v => String(v || '').trim() !== '').length;
-          if (preenchidos === 1) { linhaCumprido = r; colValor = c + 2; }
-          break;
-        }
-      }
-    }
-    if (linhaCumprido < 0 || colValor < 0) return null;
-    const slaMesAnterior = data[linhaCumprido + 2] ? data[linhaCumprido + 2][colValor] : null;
-    if (!slaMesAnterior) return null;
-
-    const numOuNull = v => {
-      const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
-      return isNaN(n) ? null : n;
-    };
-
-    return {
-      mesLabel: linha23[colMesAtual],
-      slaMesAtual: slaMesAtual,
-      slaMesAnterior: slaMesAnterior,
-      cumpridoAnterior: numOuNull(data[linhaCumprido][colValor]),
-      naoCumpridoAnterior: numOuNull(data[linhaCumprido + 1][colValor])
-    };
-  } catch (e) {
-    Logger.log(`⚠️ Falha ao ler comparativo mensal de SLA (${unit.name}): ${e.message}`);
-    return null;
-  }
+  criarDashboardPreventivas(slide, d.atual, d.anterior, d.historico, dataGlobal, unit, d.comparativo);
 }
 
 function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal, unit, compMensal) {
@@ -224,8 +134,15 @@ function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal
       // de compMensal.mesLabel na lista, com wrap de dezembro->janeiro.
       const idxMes = MESES_POR_EXTENSO.indexOf(String(compMensal.mesLabel).trim().toLowerCase());
       const mesAnteriorNome = idxMes >= 0 ? MESES_POR_EXTENSO[(idxMes + 11) % 12] : 'mês';
+      // Diz QUAIS dias entraram na comparação ("1 a 14") em vez de só "mesmo
+      // período": quem olha a TV consegue conferir o recorte sem perguntar.
+      // diasComparados vem da base bruta (10_Dados_BasesBrutas.gs); sem ele o
+      // texto cai no rótulo genérico de antes.
+      const periodoTxt = compMensal.diasComparados
+        ? `(1 a ${compMensal.diasComparados})`
+        : '(mesmo período)';
       const txtComp = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, startY+58, rW, 20);
-      txtComp.getText().setText(`${seta} ${diffTxt} p.p. vs ${mesAnteriorNome} (mesmo período)`)
+      txtComp.getText().setText(`${seta} ${diffTxt} p.p. vs ${mesAnteriorNome} ${periodoTxt}`)
         .getTextStyle().setFontSize(9).setFontFamily(ds.typography.body).setForegroundColor(cor).setBold(true);
     }
   }
@@ -254,6 +171,6 @@ function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal
   });
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak")
+  txtFooter.getText().setText("Fonte: BD-PREVENTIVAS (Infraspeak) • SLA = cumpridas ÷ (cumpridas + não cumpridas).")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }
