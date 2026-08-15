@@ -77,9 +77,11 @@ grep -hoE "^(function|const|let) [A-Za-z_0-9]+" gestao-tvs/*.gs \
   | awk '{print $2}' | sort | uniq -c | awk '$1>1'
 ```
 
-Saída vazia = sem colisão. Repare que `_histNorm` e `_histNorm_` são nomes
-DIFERENTES e convivem na mesma pasta (`gestao-tvs` tem os dois) — o
-underscore final não é decoração.
+Saída vazia = sem colisão. Cuidado com o underscore final, que NÃO é
+decoração: `_histNorm` e `_histNorm_` são nomes diferentes e o `grep` acima
+não acusa nada. O `gestao-tvs` chegou a ter os dois, em arquivos separados —
+a mesma função escrita duas vezes, sem que nada reclamasse. Ao juntar os
+arquivos num `Dados.gs` a duplicata apareceu; foi o que motivou juntar.
 
 ## Como isso vai pro ar
 

@@ -67,8 +67,10 @@ ok('semana corrente contém hoje', _tvDentro_(new Date(), corrente));
 
 // ── BD-CORRETIVAS de mentira ────────────────────────────────────────────
 // Guilherme Heck = FACILITIES, Ivan Fuscolin Neto = PROPERTY (mapa real).
+// Cabeçalhos REAIS da BD-CORRETIVAS. A coluna de disciplina chama "Área" —
+// usar o nome de verdade faz o teste quebrar se alguém tirar 'area' da busca.
 const HDR_C = ['Id chamado', 'Centro de Custos', 'Estado', 'Descrição', 'Prioridade',
-               'Responsáveis', 'SLA', 'Disciplina', 'Data de reporte', 'Fechado em'];
+               'Responsáveis', 'SLA', 'Área', 'Data de reporte', 'Fechado em'];
 const linhaC = (cc, estado, pri, resp, disc, dtRep, dtFec) =>
   ['1', cc, estado, 'x', pri, resp, '', disc, dtRep, dtFec || ''];
 
