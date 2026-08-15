@@ -7,48 +7,33 @@ function gerarSlidePreventivasDetalhe(slide, dataGlobal, unit) {
   const d = obterBacklogPreventivoTV_(unit);
   if (!d) { Logger.log('⚠️ Backlog Preventivo (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  const countEmAberto = d.countEmAberto;
-
-  // O comparativo da fila continua vindo do ScriptProperties: a base guarda o
-  // estado de AGORA, não o histórico do próprio backlog, então a série é
-  // montada a cada execução — como já era.
-  const scriptProps = PropertiesService.getScriptProperties();
-  const histStr = scriptProps.getProperty(unit.keys.prev);
-  let histFila = histStr ? JSON.parse(histStr) : [];
-
-  if (histFila.length === 0 || histFila[histFila.length - 1].count !== countEmAberto) {
-    histFila.push({ date: dataGlobal, count: countEmAberto });
-  }
-  if (histFila.length > 10) histFila = histFila.slice(histFila.length - 10);
-  scriptProps.setProperty(unit.keys.prev, JSON.stringify(histFila));
-
-  let prevEmAberto = countEmAberto;
-  if (histFila.length >= 2) prevEmAberto = histFila[histFila.length - 2].count;
-
-  const diff = countEmAberto - prevEmAberto;
+  // O comparativo é CALCULADO na base (fila de N dias atrás), não lembrado
+  // entre execuções. Ver TV_BACKLOG_DIAS_COMPARACAO em Dados.gs.
+  const diff  = d.countEmAberto - d.emAbertoAntes;
   const trend = diff < 0 ? 'DOWN' : (diff > 0 ? 'UP' : 'FLAT');
 
   slide.getPageElements().forEach(el => el.remove());
-  criarDashboardDetalhePreventivas(slide, countEmAberto, d.countEmCurso, d.lista,
-    d.equipeLider, dataGlobal, prevEmAberto, trend, diff, unit);
+  criarDashboardDetalhePreventivas(slide, d.countEmAberto, d.countEmCurso, d.lista,
+    d.equipeLider, dataGlobal, d.emAbertoAntes, trend, diff, unit, d.diasComparacao);
 }
 
-function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, lista, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit) {
+function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, lista, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit, diasComp) {
   const ds = CR_DESIGN_SYSTEM;
 
   applyBrandHeaderAndBackground(slide, "Backlog Preventivo", "Rotinas atrasadas ou em execução", dataGlobal, unit);
 
   if (countEmAberto > 0 || prevEmAberto > 0) {
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${countEmAberto})`;
+    const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
+    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${countEmAberto})${vs}`;
     let badgeBgColor = ds.colors.bgSlide;
     let badgeBorderColor = ds.colors.lines;
     let badgeTxtColor = ds.colors.textBody;
 
     if (trend === 'DOWN') {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})`;
+      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
       badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
     } else if (trend === 'UP') {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})`;
+      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
       badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
     }
 

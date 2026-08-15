@@ -9,42 +9,35 @@ function gerarSlideCorretivasDetalhe(slide, dataGlobal, unit) {
 
   slide.getPageElements().forEach(el => el.remove());
   criarDashboardCorretivasDetalhe(slide, d.pEmergencial, d.pAlta, d.pNormal, d.pBaixa,
-    d.topAreas, dataGlobal, unit);
+    d.topAreas, dataGlobal, unit, d.totalAnterior, d.diasComparacao);
 }
 
-function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit) {
+function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit, prevBacklog, diasComp) {
   const ds = CR_DESIGN_SYSTEM;
   const totalBacklog = pEmergencial + pAlta + pNormal + pBaixa;
   let topAreaName = topAreas.length > 0 ? topAreas[0].area.toUpperCase() : "N/D";
 
   if (topAreaName.includes("PREVENTIVO DE INCÊNDIO")) topAreaName = "SISTEMA DE INCÊNDIO";
 
-  const scriptProps = PropertiesService.getScriptProperties();
-  const histStr = scriptProps.getProperty(unit.keys.corr);
-  let histFila = histStr ? JSON.parse(histStr) : [];
-  if (histFila.length === 0 || histFila[histFila.length - 1].count !== totalBacklog) {
-    histFila.push({ date: dataGlobal, count: totalBacklog });
-  }
-  if (histFila.length > 10) histFila = histFila.slice(histFila.length - 10);
-  scriptProps.setProperty(unit.keys.corr, JSON.stringify(histFila));
-
-  let prevBacklog = totalBacklog;
-  if (histFila.length >= 2) prevBacklog = histFila[histFila.length - 2].count;
-  let diff = totalBacklog - prevBacklog;
+  // prevBacklog vem CALCULADO da base (fila de N dias atrás), não de um
+  // retrato guardado no ScriptProperties entre execuções.
+  if (prevBacklog == null) prevBacklog = totalBacklog;
+  const diff = totalBacklog - prevBacklog;
+  const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
 
   applyBrandHeaderAndBackground(slide, "Backlog Corretivo", "Matriz de Prioridade e Disciplinas", dataGlobal, unit);
 
   if (totalBacklog > 0 || prevBacklog > 0) {
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${totalBacklog})`;
+    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${totalBacklog})${vs}`;
     let badgeBgColor = ds.colors.bgSlide;
     let badgeBorderColor = ds.colors.lines;
     let badgeTxtColor = ds.colors.textBody;
 
     if (diff > 0) {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})`;
+      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
       badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
     } else if (diff < 0) {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})`;
+      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
       badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
     }
 

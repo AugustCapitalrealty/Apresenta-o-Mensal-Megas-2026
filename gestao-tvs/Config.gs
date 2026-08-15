@@ -30,7 +30,6 @@ const UNITS = [
     // Planilha "MEGA CURITIBA FACILITIES 2026" — só para "Taxa de
     // Reabertura" (Analista), aba TAXA DE ABERTURA.
     reaberturaId: "1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0",
-    keys: { corr: "histFilaCorretivas_CWB", prev: "histFilaPreventivas_CWB" },
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -44,7 +43,6 @@ const UNITS = [
     weather: { lat: -26.9101, lon: -48.6705, cidade: "Itajaí - SC" },
     metasAutoSpreadsheetId: "1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4",
     reaberturaId: "1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc",
-    keys: { corr: "histFilaCorretivas_ITJ", prev: "histFilaPreventivas_ITJ" },
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -72,7 +70,6 @@ const UNITS = [
     // Esteio essa meta é do Supervisor (não do Analista como em Curitiba/
     // Itajaí), mas a fonte é a mesma planilha externa.
     reaberturaId: "18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0",
-    keys: { corr: "histFilaCorretivas_EST", prev: "histFilaPreventivas_EST" },
     metas: [
       { papel: "SUPERVISOR" }
     ]

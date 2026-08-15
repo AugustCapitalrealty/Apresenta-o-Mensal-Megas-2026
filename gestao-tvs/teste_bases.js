@@ -112,6 +112,12 @@ ok('Normal=1', bl.pNormal === 1, bl.pNormal);
 ok('Baixa=0 (o único Baixa está fechado de verdade)', bl.pBaixa === 0, bl.pBaixa);
 ok('disciplina líder = Elétrica (2)', bl.topAreas[0].area === 'Elétrica' && bl.topAreas[0].count === 2,
    JSON.stringify(bl.topAreas));
+ok('total = soma das prioridades', bl.total === 4, bl.total);
+// O chamado da semana[4] foi aberto E fechado há mais de 7 dias, então não
+// estava na fila naquele instante; os 3 da semana corrente também não existiam.
+ok('backlog de 7 dias atrás é CALCULADO, não lembrado',
+   typeof bl.totalAnterior === 'number' && bl.totalAnterior < bl.total,
+   'hoje=' + bl.total + ' antes=' + bl.totalAnterior);
 
 // ── BD-PREVENTIVAS de mentira ───────────────────────────────────────────
 const HDR_P = ['Centro de Custos', 'Estado', 'Descrição', 'SLA', 'Equipe',
@@ -216,6 +222,32 @@ ok('equipe do painel = PROPERTY',
 ok('equipe líder = FACILITIES', blp.equipeLider === 'FACILITIES', blp.equipeLider);
 ok('dias em aberto calculados', blp.lista.every(l => l.dataLabel !== '-'),
    JSON.stringify(blp.lista.map(l => l.dataLabel)));
+
+console.log('\n== Corte de idade do backlog preventivo ==');
+delete _tvBaseCache[BD_ABA_PREVENTIVAS];
+const velha = iso(new Date(hojeUTC.getTime() - 1337 * 864e5));   // como a de 1337 dias da TV
+FAKE = {
+  'BD - PREVENTIVAS': [HDR_P,
+    linhaP('Mega Curitiba', 'Atrasada', 'Rotina recente', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Atrasada', 'Rotina de 2022',  '', 'FACILITIES', velha)
+  ]
+};
+const corte = obterBacklogPreventivoTV_(unitCwb);
+ok('rotina de 1337 dias fica FORA da fila', corte.countEmAberto === 1, corte.countEmAberto);
+ok('e o Logger diz quantas ficaram de fora',
+   logs.some(l => l.indexOf('fora da janela de') >= 0));
+ok('a recente continua na lista',
+   corte.lista.length === 1 && corte.lista[0].desc === 'Rotina recente',
+   JSON.stringify(corte.lista.map(l => l.desc)));
+
+console.log('\n== Limpeza da descrição (formato das preventivas) ==');
+ok('"CHECKLIST - Zelador | Caixa de Gordura" → "Caixa de Gordura"',
+   _limparDescricaoChecklist_('CHECKLIST - Zelador  | Caixa de Gordura') === 'Caixa de Gordura',
+   _limparDescricaoChecklist_('CHECKLIST - Zelador  | Caixa de Gordura'));
+ok('formato das corretivas (com ID na frente) continua funcionando',
+   _limparDescricaoChecklist_('PMP.9040 CHECKLIST - FACILITIES | Bombas | Posto SIM: C02. Água voltando') === 'Água voltando');
+ok('texto livre fica intacto',
+   _limparDescricaoChecklist_('Água voltando pelos tubos') === 'Água voltando pelos tubos');
 
 console.log('\n== Sem coluna de equipe (a base REAL é assim) ==');
 // Só a chave de PREVENTIVAS: o bloco seguinte confere que o cache de

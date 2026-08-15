@@ -70,6 +70,18 @@ Rode antes de discutir número.
   planilha; as de São Leopoldo e Porto Alegre são referência da Defesa Civil
   e precisam de confirmação.
 
+## Decisões que valem revisar
+
+- **`TV_BACKLOG_PREV_MESES = 12`** (`Dados.gs`) — rotina preventiva agendada
+  há mais de 12 meses e nunca fechada fica FORA do backlog. Sem esse corte a
+  TV mostrava 595 itens em aberto, com um de 1337 dias (2022): resíduo de
+  base, não trabalho pendente. O `Logger` diz quantas ficaram de fora a cada
+  execução. Se o time preferir outra janela, muda só esse número.
+- **`TV_BACKLOG_DIAS_COMPARACAO = 7`** — contra quantos dias atrás a seta
+  ▲/▼ dos backlogs compara. O backlog daquele dia é CALCULADO na base (item
+  aberto até lá e ainda não fechado), não um retrato guardado entre
+  execuções.
+
 ## Limitação conhecida
 
 A coluna **RESPONSÁVEL** do Backlog Preventivo (slide 4) mostra `—`. A

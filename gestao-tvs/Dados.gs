@@ -88,6 +88,26 @@ const TV_SEMANAS_HISTORICO = 5;
 // mês corrente, até hoje).
 const TV_MESES_HISTORICO = 5;
 
+// Janela do BACKLOG PREVENTIVO, em meses. A BD-PREVENTIVAS tem histórico
+// desde 2021 e "não fechada" não quer dizer "na fila": há rotinas de checklist
+// agendadas há anos que nunca foram fechadas formalmente. Sem corte, a TV
+// mostrava 595 itens em aberto, com um de 1337 dias (2022) — isso é resíduo de
+// base, não trabalho pendente, e afogava as rotinas que realmente importam.
+//
+// A aba de detalhe que alimentava este slide antes já vinha filtrada; o corte
+// aqui reproduz esse recorte. 12 meses é o padrão — se o time preferir outro,
+// muda só este número.
+const TV_BACKLOG_PREV_MESES = 12;
+
+// Contra quantos dias atrás o backlog é comparado (a seta ▲/▼ dos dois slides
+// de Backlog). Antes esse comparativo vinha de um retrato guardado no
+// ScriptProperties a cada execução — frágil, e mentiroso quando a base do
+// número muda (ao trocar a fonte, a TV chegou a mostrar "Fila subiu (+588)",
+// que era só a diferença entre duas contas diferentes). Como a base bruta tem
+// data de abertura E de fechamento, o backlog de qualquer dia passado é
+// CALCULADO, não lembrado.
+const TV_BACKLOG_DIAS_COMPARACAO = 7;
+
 
 // ==========================================
 // HELPERS DE PARSE / CLASSIFICAÇÃO
@@ -168,10 +188,23 @@ function _slaClasse_(valor) {
 function _limparDescricaoChecklist_(desc) {
   if (!desc) return desc;
   let limpo = desc;
+
+  // 1) Formato das CORRETIVAS: "<ID> CHECKLIST - <equipe> | <cat> | <local>: <cód>."
   const reMeta = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
   limpo = limpo.replace(reMeta, '');
+
+  // 2) Formato das PREVENTIVAS: começa DIRETO em "CHECKLIST - <equipe> | <nome>",
+  // sem o ID na frente — por isso a regra 1 não pegava e a TV mostrava
+  // "CHECKLIST - Zelador | Caixa de Gordu..." com o nome do serviço cortado
+  // fora da tela. Fica o que vem depois da PRIMEIRA barra, que é o nome real
+  // do serviço (mesmo recorte que a aba de detalhe fazia antes).
+  const reChecklist = /^CHECKLIST\s*-\s*[^|]*\|\s*/i;
+  limpo = limpo.replace(reChecklist, '');
+
+  // 3) Rótulo do item avaliado + resultado: "<campo>: [Não] Conforme -"
   const reCampo = /^[^:\n]{1,80}:\s*(?:Não\s+)?Conforme\b[\s\-–]*/i;
   limpo = limpo.replace(reCampo, '');
+
   limpo = limpo.trim();
   return limpo || desc;
 }
@@ -407,6 +440,27 @@ function _tvSemanaCorrente_() {
   return { ini: ini, fim: new Date(ini.getTime() + 7 * 864e5), label: _tvLabelDia_(ini) };
 }
 
+// Um item estava ABERTO na data `d`: já tinha sido reportado até ali e ainda
+// não estava fechado naquele momento. É o mesmo raciocínio do
+// _histAbertoNoMes_ da apresentação mensal, só que num instante em vez de num
+// mês. Item sem data de reporte conta como existente — não dá para julgar, e
+// sumir em silêncio seria pior.
+function _tvAbertoEm_(item, d) {
+  if (item.dtReporte && item.dtReporte > d) return false;
+  if (_bdChamadoFechado_(item.estado, item.dtFechado) && item.dtFechado && item.dtFechado <= d) return false;
+  return true;
+}
+
+// Fim do dia de hoje e o mesmo instante N dias atrás (limites das duas fotos
+// do backlog).
+function _tvInstantesBacklog_() {
+  const fimHoje = new Date(_tvHojeUTC_().getTime() + 864e5);
+  return {
+    hoje  : fimHoje,
+    antes : new Date(fimHoje.getTime() - TV_BACKLOG_DIAS_COMPARACAO * 864e5)
+  };
+}
+
 function _tvDentro_(d, janela) {
   return !!d && d >= janela.ini && d < janela.fim;
 }
@@ -610,9 +664,17 @@ function obterBacklogCorretivoTV_(unit) {
   const itens = _tvItensUnidade_(BD_ABA_CORRETIVAS, unit);
   if (!itens.length) return null;
 
-  const abertos = itens.filter(it => !_bdChamadoFechado_(it.estado, it.dtFechado));
+  const t = _tvInstantesBacklog_();
+  const abertos = itens.filter(it => _tvAbertoEm_(it, t.hoje));
 
-  const res = { pEmergencial: 0, pAlta: 0, pNormal: 0, pBaixa: 0, topAreas: [] };
+  const res = {
+    pEmergencial: 0, pAlta: 0, pNormal: 0, pBaixa: 0, topAreas: [],
+    total: abertos.length,
+    // Backlog calculado N dias atrás, na MESMA base — dá a seta ▲/▼ sem
+    // depender de retrato guardado entre execuções.
+    totalAnterior: itens.filter(it => _tvAbertoEm_(it, t.antes)).length,
+    diasComparacao: TV_BACKLOG_DIAS_COMPARACAO
+  };
   const areasMap = {};
 
   abertos.forEach(it => {
@@ -647,7 +709,28 @@ function obterBacklogPreventivoTV_(unit) {
   const itens = _tvItensUnidade_(BD_ABA_PREVENTIVAS, unit);
   if (!itens.length) return null;
 
-  const abertas = itens.filter(it => !_bdChamadoFechado_(it.estado, it.dtFechado));
+  const naoFechadas = itens.filter(it => !_bdChamadoFechado_(it.estado, it.dtFechado));
+
+  // Corte de idade (ver TV_BACKLOG_PREV_MESES): rotina agendada há mais de N
+  // meses e nunca fechada é resíduo da base, não fila. Rotina SEM data de
+  // agendamento fica — não dá para julgar a idade dela, e sumir em silêncio
+  // seria pior.
+  const hojeU = _tvHojeUTC_();
+  const limite = new Date(Date.UTC(
+    hojeU.getUTCFullYear(), hojeU.getUTCMonth() - TV_BACKLOG_PREV_MESES, hojeU.getUTCDate()));
+  const abertas = naoFechadas.filter(it => !it.dtReporte || it.dtReporte >= limite);
+
+  const descartadas = naoFechadas.length - abertas.length;
+  if (descartadas) {
+    const maisVelha = naoFechadas
+      .filter(it => it.dtReporte && it.dtReporte < limite)
+      .reduce((a, b) => (a && a.dtReporte < b.dtReporte ? a : b), null);
+    Logger.log('BD-PREVENTIVAS (' + unit.name + '): ' + descartadas + ' rotina(s) não fechada(s) ' +
+               'fora da janela de ' + TV_BACKLOG_PREV_MESES + ' meses ficaram de fora do backlog' +
+               (maisVelha ? ' (a mais antiga é de ' + maisVelha.dtReporte.toISOString().slice(0, 10) + ')' : '') +
+               '. Restaram ' + abertas.length + '.');
+  }
+
   const hoje = Date.now();
 
   const gruposMap = {};
@@ -710,11 +793,23 @@ function obterBacklogPreventivoTV_(unit) {
                'identificável (a base não traz Responsáveis/Equipe) — o slide mostra "—".');
   }
 
+  // Fila de N dias atrás, calculada na MESMA base e com o MESMO corte de
+  // idade (o `limite` é absoluto, não desliza junto com a data) — assim a
+  // seta ▲/▼ mede movimento real da fila, não a janela andando.
+  const t = _tvInstantesBacklog_();
+  const emAbertoAntes = naoFechadas.filter(it =>
+    (!it.dtReporte || it.dtReporte >= limite) &&
+    _tvAbertoEm_(it, t.antes) &&
+    !(_histNorm_(it.estado).indexOf('em curso') >= 0 || _histNorm_(it.estado).indexOf('em execucao') >= 0)
+  ).length;
+
   return {
     countEmAberto: countEmAberto,
     countEmCurso : countEmCurso,
     lista        : lista.slice(0, 6),
-    equipeLider  : equipeLider
+    equipeLider  : equipeLider,
+    emAbertoAntes: emAbertoAntes,
+    diasComparacao: TV_BACKLOG_DIAS_COMPARACAO
   };
 }
 
