@@ -124,7 +124,7 @@ function lerMetas(planilha, unit, papel) {
     const linha = l.slice(3, 3 + METAS_COLS.length); // 11 colunas exibidas
     const descricao = linha[0];
 
-    // Indicadores automáticos (ver 09_Metas_Auto.gs): sobrescreve o Real (e,
+    // Indicadores automáticos (ver Dados.gs): sobrescreve o Real (e,
     // para Custo M², também a Meta) com o valor calculado ao vivo, e guarda
     // a tendência vs período anterior (linha._trendMes/_trendAcum) para
     // desenhar como selo ▲/▼. Sem match/erro, a linha digitada não muda.
@@ -340,7 +340,7 @@ function renderSlideMetas(slide, unit, metas) {
         t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
 
         // Selo de tendência (▲/▼ vs período anterior) para Real Mês [6] /
-        // Real Acum. [9] — vindo de indicadores automáticos (09_Metas_Auto.gs).
+        // Real Acum. [9] — vindo de indicadores automáticos (Dados.gs).
         // Caixa própria sobreposta, centralizada no TOPO da célula.
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
         if (trend && trend.txt) {

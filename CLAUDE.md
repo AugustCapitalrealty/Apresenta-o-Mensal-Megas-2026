@@ -10,7 +10,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `boletim/` | Boletim 2026 | 24 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 13 `.gs` |
-| `gestao-tvs/` | Gestão à Vista — TVs | 12 `.gs` |
+| `gestao-tvs/` | Gestão à Vista — TVs | 11 `.gs` |
 
 ## Este repositório é a fonte única
 

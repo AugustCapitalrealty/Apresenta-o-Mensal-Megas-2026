@@ -5,7 +5,7 @@
 
 /**
  * FONTE: BD-PREVENTIVAS (base bruta, uma linha por rotina) via
- * obterPreventivasMensalTV_ em 10_Dados_BasesBrutas.gs. Antes TUDO neste slide
+ * obterPreventivasMensalTV_ em Dados.gs. Antes TUDO neste slide
  * vinha da aba PREVENTIVA da planilha da TV: as células fixas 24/25/26, o
  * histórico das colunas com nome de mês na linha 23 e o bloco
  * "SLA CUMPRIDO <unidade>" do comparativo de mesmo período.
@@ -136,7 +136,7 @@ function criarDashboardPreventivas(slide, atual, anterior, historico, dataGlobal
       const mesAnteriorNome = idxMes >= 0 ? MESES_POR_EXTENSO[(idxMes + 11) % 12] : 'mês';
       // Diz QUAIS dias entraram na comparação ("1 a 14") em vez de só "mesmo
       // período": quem olha a TV consegue conferir o recorte sem perguntar.
-      // diasComparados vem da base bruta (10_Dados_BasesBrutas.gs); sem ele o
+      // diasComparados vem da base bruta (Dados.gs); sem ele o
       // texto cai no rótulo genérico de antes.
       const periodoTxt = compMensal.diasComparados
         ? `(1 a ${compMensal.diasComparados})`

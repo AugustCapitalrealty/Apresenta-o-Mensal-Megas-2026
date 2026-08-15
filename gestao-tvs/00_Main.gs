@@ -28,8 +28,8 @@ function _tvConferirProjeto_() {
     { fn: 'gerarSlideCorretivasDetalhe',  args: 3, arquivo: '02_Slide_Corretivas_Acao.gs' },
     { fn: 'gerarSlidePreventivas',        args: 3, arquivo: '03_Slide_Preventivas.gs' },
     { fn: 'gerarSlidePreventivasDetalhe', args: 3, arquivo: '04_Slide_Preventivas_Acao.gs' },
-    { fn: 'obterMetaAuto',                args: 4, arquivo: '09_Metas_Auto.gs' },
-    { fn: 'obterCorretivasTV_',           args: 1, arquivo: '10_Dados_BasesBrutas.gs' }
+    { fn: 'obterMetaAuto',                args: 4, arquivo: 'Dados.gs' },
+    { fn: 'obterCorretivasTV_',           args: 1, arquivo: 'Dados.gs' }
   ];
 
   const problemas = [];
@@ -104,7 +104,7 @@ function gerarApresentacao() {
       // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES
       gerarSlideCapa(slides[0], dataSincronizacao, unit);
       // Os quatro slides operacionais contam da base bruta
-      // (10_Dados_BasesBrutas.gs) e não recebem mais aba/coluna da planilha
+      // (Dados.gs) e não recebem mais aba/coluna da planilha
       // da TV.
       gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
       gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
