@@ -528,15 +528,22 @@ function _tvMesAnteriorMesmoPeriodo_() {
 
 
 // ==========================================
-// SLIDE 1 — VISÃO GERAL CORRETIVA (fluxo: chamados criados)
+// SLIDE 1 — VISÃO GERAL CORRETIVA (estoque: fila em aberto, por equipe)
 // ==========================================
-// Conta os chamados ABERTOS na janela ("Data de reporte"), separados por
-// equipe responsável. Substitui as células fixas das linhas 40/41/42
-// (histórico) e 78/79/80 col. D (dia) da aba CHAMADOS.
+// É o MESMO backlog do slide 2, recortado por equipe em vez de por prioridade
+// e disciplina. Os dois totais TÊM que bater — por isso ambos usam
+// _tvAbertoEm_, e não duas definições paralelas de "aberto".
+//
+// NÃO é fluxo. Já foi implementado como "chamados criados na semana" e saiu
+// 2 na TV enquanto a fila real estava na casa das centenas: o cartão de um
+// painel de parede é a fila que existe agora, não quantos entraram ontem.
+//
+// Substitui as células fixas das linhas 40/41/42 (histórico) e 78/79/80
+// col. D (dia) da aba CHAMADOS.
 //
 // Retorna { atual, anterior, historico:[{dataCurta, facilities, propriedades,
-// total}] } ou null se a base não trouxer linha nenhuma da unidade — nesse
-// caso o slide é preservado como está, em vez de ir a zero na TV.
+// total}], diasComparacao } ou null se a base não trouxer linha nenhuma da
+// unidade — nesse caso o slide é preservado, em vez de ir a zero na TV.
 function obterCorretivasTV_(unit) {
   const itens = _tvItensUnidade_(BD_ABA_CORRETIVAS, unit);
   if (!itens.length) {
@@ -544,34 +551,41 @@ function obterCorretivasTV_(unit) {
     return null;
   }
   // Guarda contra coluna de data renomeada: sem "Data de reporte" legível
-  // todas as janelas dariam 0 e o slide zeraria em silêncio.
+  // todas as contas dariam 0 e o slide zeraria em silêncio.
   if (!itens.some(it => it.dtReporte)) {
     Logger.log('BD-CORRETIVAS: ' + itens.length + ' linhas de ' + unit.name +
                ', mas nenhuma com data legível — confira o cabeçalho da aba.');
     return null;
   }
 
-  const contar = janela => {
-    const res = { facilities: 0, propriedades: 0, total: 0 };
-    itens.forEach(it => {
-      if (!_tvDentro_(it.dtReporte, janela)) return;
-      res.total++;
-      const eq = _tvEquipeItem_(it);
-      if (eq === 'PROPERTY') res.propriedades++;
-      else res.facilities++;   // sem responsável reconhecido conta como Facilities (mesma regra dos Megas)
+  // MESMA regra de "aberto" do Backlog Corretivo (_tvAbertoEm_): os dois
+  // slides mostram o MESMO backlog, um por equipe e outro por prioridade e
+  // disciplina, então o total tem que bater entre eles por construção.
+  const contar = d => {
+    const abertos = itens.filter(it => _tvAbertoEm_(it, d));
+    let facilities = 0, propriedades = 0;
+    abertos.forEach(it => {
+      if (_tvEquipeItem_(it) === 'PROPERTY') propriedades++;
+      else facilities++;   // sem responsável reconhecido conta como Facilities (mesma regra dos Megas)
     });
-    return res;
+    return { facilities: facilities, propriedades: propriedades, total: abertos.length };
   };
 
-  const historico = _tvSemanasCompletas_(TV_SEMANAS_HISTORICO).map(s => {
-    const c = contar(s);
-    return { dataCurta: s.label, facilities: c.facilities, propriedades: c.propriedades, total: c.total };
+  const t = _tvInstantesBacklog_();
+
+  // Evolução: a fila no FIM de cada uma das últimas semanas fechadas — a foto
+  // do backlog naquele instante, não quantos entraram na semana.
+  const historico = _tvSemanasCompletas_(TV_SEMANAS_HISTORICO).map(sem => {
+    const c = contar(sem.fim);
+    c.dataCurta = sem.label;
+    return c;
   });
 
   return {
-    atual    : contar(_tvSemanaCorrente_()),
-    anterior : historico[historico.length - 1] || { facilities: 0, propriedades: 0, total: 0 },
-    historico: historico
+    atual         : contar(t.hoje),
+    anterior      : contar(t.antes),
+    historico     : historico,
+    diasComparacao: TV_BACKLOG_DIAS_COMPARACAO
   };
 }
 

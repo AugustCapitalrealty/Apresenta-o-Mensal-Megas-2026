@@ -70,6 +70,19 @@ Rode antes de discutir número.
   planilha; as de São Leopoldo e Porto Alegre são referência da Defesa Civil
   e precisam de confirmação.
 
+## Os dois slides de corretivas mostram o MESMO backlog
+
+O slide 1 (**Visão Geral Corretiva**) e o slide 2 (**Backlog Corretivo**) são
+duas fatias da mesma fila: o 1 recorta por equipe (Facilities x Property), o
+2 por prioridade e disciplina. **Os totais têm que bater** — e batem por
+construção, porque os dois usam `_tvAbertoEm_` em vez de duas definições
+paralelas de "aberto". `teste_bases.js` trava isso.
+
+Já quebrou: o slide 1 chegou a ser implementado como FLUXO (chamados criados
+na semana) e mostrava `2` enquanto a fila real era outra ordem de grandeza.
+Num painel de parede o número grande é a fila que existe agora, não quantos
+entraram ontem.
+
 ## Decisões que valem revisar
 
 - **`TV_BACKLOG_PREV_MESES = 12`** (`Dados.gs`) — rotina preventiva agendada

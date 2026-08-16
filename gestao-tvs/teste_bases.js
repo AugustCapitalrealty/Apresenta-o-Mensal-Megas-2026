@@ -92,15 +92,18 @@ FAKE = {
 const unitCwb = UNITS.find(u => u.name === 'MEGA CURITIBA');
 const unitItj = UNITS.find(u => u.name === 'MEGA ITAJAÍ');
 
-console.log('\n== Slide 1 — Visão Geral Corretiva (fluxo) ==');
+console.log('\n== Slide 1 — Visão Geral Corretiva (ESTOQUE: fila em aberto) ==');
 const corr = obterCorretivasTV_(unitCwb);
-ok('semana corrente = 3 criados', corr.atual.total === 3, JSON.stringify(corr.atual));
-ok('  2 Facilities', corr.atual.facilities === 2, corr.atual.facilities);
+// Abertos de Curitiba: os 3 da semana corrente + o "Fechado sem data" = 4.
+// O de semana[4] fechou de verdade, então saiu da fila.
+ok('fila hoje = 4 (não os 3 criados na semana)', corr.atual.total === 4, JSON.stringify(corr.atual));
+ok('  3 Facilities', corr.atual.facilities === 3, corr.atual.facilities);
 ok('  1 Property',   corr.atual.propriedades === 1, corr.atual.propriedades);
-ok('última fechada = 1', corr.anterior.total === 1, corr.anterior.total);
+ok('Facilities + Property = total', corr.atual.facilities + corr.atual.propriedades === corr.atual.total);
 ok('histórico com 5 pontos', corr.historico.length === 5);
-ok('não vaza Itajaí', corr.historico.reduce((s, h) => s + h.total, 0) + corr.atual.total === 5,
-   'soma=' + (corr.historico.reduce((s, h) => s + h.total, 0) + corr.atual.total));
+ok('histórico é FOTO da fila, não fluxo — a última é <= a de hoje',
+   corr.historico[4].total <= corr.atual.total,
+   'fim da última semana=' + corr.historico[4].total + ' hoje=' + corr.atual.total);
 ok('Itajaí conta só o seu', obterCorretivasTV_(unitItj).atual.total === 1);
 
 console.log('\n== Slide 2 — Backlog Corretivo (estoque) ==');
@@ -118,6 +121,16 @@ ok('total = soma das prioridades', bl.total === 4, bl.total);
 ok('backlog de 7 dias atrás é CALCULADO, não lembrado',
    typeof bl.totalAnterior === 'number' && bl.totalAnterior < bl.total,
    'hoje=' + bl.total + ' antes=' + bl.totalAnterior);
+
+// A RECONCILIAÇÃO: slides 1 e 2 são o MESMO backlog, um por equipe e outro
+// por prioridade. Foi exatamente isso que quebrou na TV — o slide 1 mostrava
+// 2 (chamados criados na semana) enquanto a fila real era outra ordem de
+// grandeza. Se estes dois desencontrarem de novo, o teste acusa.
+ok('slide 1 e slide 2 mostram o MESMO total de fila',
+   corr.atual.total === bl.total, 'slide1=' + corr.atual.total + ' slide2=' + bl.total);
+ok('e o mesmo comparativo de 7 dias atrás',
+   corr.anterior.total === bl.totalAnterior,
+   'slide1=' + corr.anterior.total + ' slide2=' + bl.totalAnterior);
 
 // ── BD-PREVENTIVAS de mentira ───────────────────────────────────────────
 const HDR_P = ['Centro de Custos', 'Estado', 'Descrição', 'SLA', 'Equipe',
