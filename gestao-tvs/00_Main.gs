@@ -6,9 +6,8 @@
 const MESES_POR_EXTENSO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-function INICIAR_AQUI() {
-  gerarApresentacao();
-}
+// Atalho histórico — mantido porque é o que está no acionador.
+function INICIAR_AQUI() { return gerarApresentacao(); }
 
 // ==========================================
 // CONFERE SE O PROJETO ESTÁ COMPLETO NO EDITOR
@@ -52,95 +51,143 @@ function _tvConferirProjeto_() {
   }
 }
 
-function gerarApresentacao() {
+// ==========================================
+// PONTOS DE ENTRADA
+// ==========================================
+// O menu "Selecionar função" do editor só lista funções SEM parâmetro (e
+// esconde as que começam/terminam com "_"), então cada recorte que alguém
+// vai querer rodar precisa da sua própria função sem argumento.
+//
+// Rodar UMA unidade é o caso comum: conferir um ajuste na TV do Esteio não
+// deveria custar reprocessar Curitiba e Itajaí junto — são ~30s por unidade,
+// e mexer nas três multiplica o risco de deixar as outras num estado
+// intermediário se algo falhar no meio.
+function gerarApresentacao() { return _tvGerar_(UNITS); }
+
+function gerarCuritiba() { return _tvGerar_([_tvUnidade_('CURITIBA')]); }
+function gerarItajai()   { return _tvGerar_([_tvUnidade_('ITAJA')]); }
+function gerarEsteio()   { return _tvGerar_([_tvUnidade_('ESTEIO')]); }
+
+// Acha a unidade em UNITS por um trecho do nome, sem acento e sem caixa
+// ("ITAJA" casa com "MEGA ITAJAÍ"). Erro explícito se não achar — melhor que
+// um `undefined` viajando até estourar lá dentro sem dizer o motivo.
+function _tvUnidade_(trecho) {
+  const alvo = _histNorm_(trecho);
+  const u = UNITS.filter(x => _histNorm_(x.name).indexOf(alvo) >= 0)[0];
+  if (!u) {
+    throw new Error('Unidade "' + trecho + '" não está em UNITS (Config.gs). ' +
+                    'Disponíveis: ' + UNITS.map(x => x.name).join(', ') + '.');
+  }
+  return u;
+}
+
+
+// ==========================================
+// MOTOR
+// ==========================================
+// Roda as unidades pedidas. Cada uma é isolada: a que falha registra o erro e
+// não impede as outras — um deck desatualizado é melhor que três.
+// Devolve a lista de erros (vazia = tudo certo).
+function _tvGerar_(unidades) {
   _tvConferirProjeto_();
 
   const planilha = SpreadsheetApp.openById(ID_PLANILHA);
 
+  // A aba CHAMADOS deixou de ser fonte de número (os 4 slides operacionais
+  // contam da BD-CORRETIVAS/BD-PREVENTIVAS — ver Dados.gs). Continua sendo
+  // lida só para a data de sincronização mostrada no cabeçalho dos slides.
   const abaChamados = planilha.getSheetByName("CHAMADOS");
   if (!abaChamados) throw new Error("Aba 'CHAMADOS' não encontrada.");
-
   const dataSincronizacao = abaChamados.getRange("C5").getDisplayValue();
 
-  // A aba CHAMADOS deixou de ser fonte de número (Corretivas e Backlog
-  // Corretivo agora contam da BD-CORRETIVAS). Continua sendo lida só para a
-  // data de sincronização do cabeçalho, logo acima.
-
-  // A aba PREVENTIVA também deixou de ser fonte: o slide 3 conta da
-  // BD-PREVENTIVAS, inclusive o histórico mensal e o comparativo de mesmo
-  // período que antes eram lidos das colunas com nome de mês na linha 23.
-
-  UNITS.forEach(unit => {
+  const erros = [];
+  unidades.forEach(unit => {
     Logger.log(`🚀 Iniciando atualização: ${unit.name}`);
     try {
-      const deck = SlidesApp.openById(unit.deckId);
-      let slides = deck.getSlides();
-
-      // Estrutura por unidade:
-      // 0: capa | 1-4: corretivas/preventivas | 5: previsão do tempo
-      // 6...: slides de Metas (1 por papel em unit.metas)
-      // último slide (apenas unidades com cheiasSheetId): monitoramento de cheias
-      const numMetas = (unit.metas || []).length;
-      const temCheias = !!unit.cheiasSheetId;
-      const totalSlides = 6 + numMetas + (temCheias ? 1 : 0);
-
-      // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
-      // Os novos slides são SEMPRE acrescentados no fim, então os slides já
-      // existentes (e seus IDs/links na TV) são preservados.
-      while (slides.length < totalSlides) {
-        deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-        slides = deck.getSlides();
-      }
-      while (slides.length > totalSlides) {
-        slides[slides.length - 1].remove();
-        slides = deck.getSlides();
-      }
-
-      // 2. A limpeza dos elementos acontece DENTRO de cada gerador, e só
-      // depois que ele já tem os dados em mãos. Antes era um laço aqui que
-      // esvaziava os 5 primeiros slides antes de qualquer leitura: bastava a
-      // fonte falhar para a TV ficar com a parede em branco.
-
-      // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES
-      gerarSlideCapa(slides[0], dataSincronizacao, unit);
-      // Os quatro slides operacionais contam da base bruta
-      // (Dados.gs) e não recebem mais aba/coluna da planilha
-      // da TV.
-      gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
-      gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
-      gerarSlidePreventivas(slides[3], dataSincronizacao, unit);
-      gerarSlidePreventivasDetalhe(slides[4], dataSincronizacao, unit);
-
-      // 4. SE O SLIDE DO TEMPO AINDA ESTIVER VAZIO (primeira execução), preenche
-      if (slides[5].getPageElements().length === 0) {
-        try { atualizarSlideTempo(slides[5], unit); } catch(e) {}
-      }
-
-      // 5. SLIDES DE METAS: só redesenha se a aba correspondente tiver dados.
-      // Sempre no mesmo slide (mesmo ID), então o link da TV não muda. Enquanto
-      // a aba estiver vazia, o slide atual é preservado (não apaga o que está na TV).
-      (unit.metas || []).forEach((cfg, i) => {
-        try {
-          const metas = lerMetas(planilha, unit, cfg.papel);
-          if (metas) renderSlideMetas(slides[6 + i], unit, metas);
-        } catch(e) { Logger.log(`⚠️ Metas (${unit.name}/${cfg.papel}): ${e.message}\n${e.stack || '(sem stack)'}`); }
-      });
-
-      // 6. SLIDE DE CHEIAS: só na(s) unidade(s) com cheiasSheetId configurado.
-      // Se já estiver vazio (primeira execução), preenche. Atualizações
-      // recorrentes ficam a cargo de ATUALIZAR_MONITORAMENTO_CHEIAS().
-      if (temCheias && slides[6 + numMetas].getPageElements().length === 0) {
-        try { atualizarSlideCheias(slides[6 + numMetas], unit); } catch(e) {}
-      }
-
+      _tvAtualizarUnidade_(unit, planilha, dataSincronizacao);
       Logger.log(`✅ Concluído: ${unit.name}`);
     } catch (erro) {
+      erros.push(`${unit.name}: ${erro.message}`);
       Logger.log(`❌ Erro ao atualizar ${unit.name}: ${erro.message}\n${erro.stack || '(sem stack)'}`);
     }
   });
 
-  Logger.log("🎉 Todas as 3 TVs foram atualizadas com sucesso!");
+  // Relatório honesto: a mensagem antiga era "Todas as 3 TVs foram
+  // atualizadas com sucesso!" impressa SEMPRE, mesmo depois de três erros
+  // seguidos logo acima.
+  const ok = unidades.length - erros.length;
+  if (erros.length) {
+    Logger.log(`⚠️ ${ok} de ${unidades.length} atualizada(s). Com erro:\n  · ${erros.join('\n  · ')}`);
+  } else {
+    Logger.log(`🎉 ${ok} de ${unidades.length} TV(s) atualizada(s).`);
+  }
+  return erros;
 }
+
+
+// Atualiza UMA unidade. Sem try/catch aqui de propósito: quem chama decide o
+// que fazer com a falha (_tvGerar_ isola por unidade).
+function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
+  const deck = SlidesApp.openById(unit.deckId);
+  let slides = deck.getSlides();
+
+  // Estrutura por unidade:
+  // 0: capa | 1-4: corretivas/preventivas | 5: previsão do tempo
+  // 6...: slides de Metas (1 por papel em unit.metas)
+  // último slide (apenas unidades com cheiasSheetId): monitoramento de cheias
+  const numMetas = (unit.metas || []).length;
+  const temCheias = !!unit.cheiasSheetId;
+  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0);
+
+  // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
+  // Os novos slides são SEMPRE acrescentados no fim, então os slides já
+  // existentes (e seus IDs/links na TV) são preservados.
+  while (slides.length < totalSlides) {
+    deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    slides = deck.getSlides();
+  }
+  while (slides.length > totalSlides) {
+    slides[slides.length - 1].remove();
+    slides = deck.getSlides();
+  }
+
+  // 2. A limpeza dos elementos acontece DENTRO de cada gerador, e só depois
+  // que ele já tem os dados em mãos. Antes era um laço aqui que esvaziava os
+  // 5 primeiros slides antes de qualquer leitura: bastava a fonte falhar para
+  // a TV ficar com a parede em branco.
+
+  // 3. DESENHA OS DADOS NOS SLIDES EXISTENTES. Os quatro slides operacionais
+  // contam da base bruta (Dados.gs) e não recebem mais aba/coluna da planilha
+  // da TV.
+  gerarSlideCapa(slides[0], dataSincronizacao, unit);
+  gerarSlideCorretivas(slides[1], dataSincronizacao, unit);
+  gerarSlideCorretivasDetalhe(slides[2], dataSincronizacao, unit);
+  gerarSlidePreventivas(slides[3], dataSincronizacao, unit);
+  gerarSlidePreventivasDetalhe(slides[4], dataSincronizacao, unit);
+
+  // 4. SE O SLIDE DO TEMPO AINDA ESTIVER VAZIO (primeira execução), preenche
+  if (slides[5].getPageElements().length === 0) {
+    try { atualizarSlideTempo(slides[5], unit); } catch (e) {}
+  }
+
+  // 5. SLIDES DE METAS: só redesenha se a aba correspondente tiver dados.
+  // Sempre no mesmo slide (mesmo ID), então o link da TV não muda. Enquanto a
+  // aba estiver vazia, o slide atual é preservado.
+  (unit.metas || []).forEach((cfg, i) => {
+    try {
+      const metas = lerMetas(planilha, unit, cfg.papel);
+      if (metas) renderSlideMetas(slides[6 + i], unit, metas);
+    } catch (e) { Logger.log(`⚠️ Metas (${unit.name}/${cfg.papel}): ${e.message}\n${e.stack || '(sem stack)'}`); }
+  });
+
+  // 6. SLIDE DE CHEIAS: só na(s) unidade(s) com cheiasSheetId configurado.
+  // Se já estiver vazio (primeira execução), preenche. Atualizações
+  // recorrentes ficam a cargo de ATUALIZAR_MONITORAMENTO_CHEIAS().
+  if (temCheias && slides[6 + numMetas].getPageElements().length === 0) {
+    try { atualizarSlideCheias(slides[6 + numMetas], unit); } catch (e) {}
+  }
+}
+
 
 function insertLogoProportional(slide, blob, targetX, targetY, maxW, maxH) {
   try {

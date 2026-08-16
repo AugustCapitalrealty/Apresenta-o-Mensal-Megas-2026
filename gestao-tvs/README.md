@@ -1,7 +1,27 @@
 # Gestão à Vista — TVs
 
 Projeto Apps Script que atualiza os três decks de TV (Mega Curitiba, Mega
-Itajaí, Mega Esteio). Ponto de entrada: `INICIAR_AQUI()` / `gerarApresentacao()`.
+Itajaí, Mega Esteio).
+
+## O que rodar
+
+O menu "Selecionar função" do editor só lista função **sem parâmetro** e
+esconde as que começam ou terminam com `_` — por isso cada recorte tem a sua
+própria entrada.
+
+| Função | O que faz |
+|---|---|
+| `gerarApresentacao()` | Atualiza as **três** TVs (é o que o acionador chama, via `INICIAR_AQUI`) |
+| `gerarCuritiba()` / `gerarItajai()` / `gerarEsteio()` | Atualiza **uma** TV só |
+| `ATUALIZAR_METAS()` | Redesenha só os slides de Metas das três |
+| `ATUALIZAR_METAS_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só as Metas de uma |
+| `ATUALIZAR_MONITORAMENTO_CHEIAS()` | Só o slide de cheias (Esteio) |
+| `ATUALIZAR_PREVISAO_TEMPO()` | Só o slide do tempo |
+| `diagnosticarBasesBrutas()` | Mostra o dado bruto das bases — rode antes de discutir número |
+
+Prefira a entrada de **uma** unidade ao conferir um ajuste: são ~30s por TV,
+e mexer nas três multiplica o risco de deixar as outras num estado
+intermediário se algo falhar no meio.
 
 ## Arquivos do projeto
 

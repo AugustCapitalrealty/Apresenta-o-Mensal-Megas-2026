@@ -37,17 +37,29 @@ const METAS_COLS = [
 // Redesenha apenas os slides de Metas das 3 TVs, sem tocar nos demais.
 // Sempre no mesmo slide (mesmo ID), então o link da TV não muda.
 // ==========================================
-function ATUALIZAR_METAS() {
-  const planilha = SpreadsheetApp.openById(ID_PLANILHA);
+// Uma entrada por unidade, além da que roda as três — mesma razão dos pontos
+// de entrada de 00_Main.gs: o menu do editor só lista função sem parâmetro, e
+// corrigir uma linha da aba METAS de Curitiba não deveria redesenhar as TVs
+// de Itajaí e Esteio junto.
+function ATUALIZAR_METAS()          { return _tvMetas_(UNITS); }
+function ATUALIZAR_METAS_CURITIBA() { return _tvMetas_([_tvUnidade_('CURITIBA')]); }
+function ATUALIZAR_METAS_ITAJAI()   { return _tvMetas_([_tvUnidade_('ITAJA')]); }
+function ATUALIZAR_METAS_ESTEIO()   { return _tvMetas_([_tvUnidade_('ESTEIO')]); }
 
-  UNITS.forEach(unit => {
+function _tvMetas_(unidades) {
+  const planilha = SpreadsheetApp.openById(ID_PLANILHA);
+  const erros = [];
+
+  unidades.forEach(unit => {
     Logger.log(`🎯 Atualizando metas: ${unit.name}`);
     try {
       const deck = SlidesApp.openById(unit.deckId);
       let slides = deck.getSlides();
       const totalSlides = 6 + (unit.metas || []).length;
 
-      // Garante que os slides de metas existem (só acrescenta no fim; não deleta nada)
+      // Garante que os slides de metas existem (só acrescenta no fim; não
+      // deleta nada — quem cuida da contagem total é _tvAtualizarUnidade_,
+      // que também conhece o slide de cheias).
       while (slides.length < totalSlides) {
         deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
         slides = deck.getSlides();
@@ -56,15 +68,20 @@ function ATUALIZAR_METAS() {
       (unit.metas || []).forEach((cfg, i) => {
         const metas = lerMetas(planilha, unit, cfg.papel);
         if (metas) renderSlideMetas(slides[6 + i], unit, metas);
+        else Logger.log(`  · ${cfg.papel}: sem linhas na aba METAS — slide preservado.`);
       });
 
       Logger.log(`✅ Metas atualizadas: ${unit.name}`);
     } catch (erro) {
+      erros.push(`${unit.name}: ${erro.message}`);
       Logger.log(`❌ Erro ao atualizar metas de ${unit.name}: ${erro.message}`);
     }
   });
 
-  Logger.log("🎉 Metas atualizadas em todas as TVs.");
+  const ok = unidades.length - erros.length;
+  if (erros.length) Logger.log(`⚠️ Metas: ${ok} de ${unidades.length}. Com erro:\n  · ${erros.join('\n  · ')}`);
+  else Logger.log(`🎉 Metas atualizadas em ${ok} TV(s).`);
+  return erros;
 }
 
 // ==========================================
