@@ -109,6 +109,22 @@ const TV_BACKLOG_PREV_MESES = 12;
 // CALCULADO, não lembrado.
 const TV_BACKLOG_DIAS_COMPARACAO = 7;
 
+// ESTADOS que contam como fila no Backlog Preventivo. É a mesma lista que o
+// código original usava ao ler a aba de detalhe — uma decisão de quem
+// conhece a operação, não um detalhe de implementação. Cheguei a trocá-la por
+// "tudo que não está fechado" e a TV passou a mostrar 197 rotinas em aberto,
+// número que ninguém reconheceu: a base tem estados que não são fila
+// (canceladas, planejadas, suspensas...) e todos entravam.
+//
+// Comparação por texto normalizado, contendo. Estado fora desta lista fica de
+// fora E é registrado no Logger com a contagem — se algum deles for fila de
+// verdade, é só acrescentar aqui, com evidência.
+const TV_PREV_ESTADOS_FILA = {
+  'atrasada' : 'EM_ABERTO',
+  'em aberto': 'EM_ABERTO',
+  'em curso' : 'EM_CURSO'
+};
+
 
 // ==========================================
 // HELPERS DE PARSE / CLASSIFICAÇÃO
@@ -260,6 +276,38 @@ function _resolverEquipeResponsaveis_(responsaveisTxt) {
   if (equipes.indexOf('FACILITIES') >= 0) return 'FACILITIES';
   if (equipes.indexOf('OPERACAO') >= 0)   return 'OPERACAO';
   return '';
+}
+
+// Classifica o Estado de uma preventiva: 'EM_ABERTO', 'EM_CURSO' ou null
+// (não é fila). Ver TV_PREV_ESTADOS_FILA.
+function _tvEstadoFila_(estado) {
+  const n = _histNorm_(estado);
+  if (!n) return null;
+  const chaves = Object.keys(TV_PREV_ESTADOS_FILA);
+  for (let i = 0; i < chaves.length; i++) {
+    if (n.indexOf(chaves[i]) >= 0) return TV_PREV_ESTADOS_FILA[chaves[i]];
+  }
+  return null;
+}
+
+// Nome do serviço, pronto para a coluna "DESCRIÇÃO DO SERVIÇO":
+//   "CHECKLIST - Zelador | Leitura Diária | MEGA Curitiba" → "Leitura Diária"
+// _limparDescricaoChecklist_ tira o prefixo; aqui sai o SUFIXO com o nome da
+// unidade, que é redundante num slide que já diz MEGA CURITIBA no cabeçalho e
+// ainda roubava metade da largura útil da coluna. Só remove quando o trecho
+// final é mesmo o nome da unidade — texto livre depois de "|" fica.
+function _tvDescricaoRotina_(descricao, unit) {
+  let d = String(descricao || '').trim();
+  const alvo = _histNorm_(unit.name);
+  const partes = d.split('|').map(x => x.trim()).filter(Boolean);
+  while (partes.length > 1 && _histNorm_(partes[partes.length - 1]) === alvo) partes.pop();
+  d = partes.join(' | ');
+
+  // Rotinas irmãs viram uma linha só: "Bomba de incêndio 03" → "Bomba de incêndio".
+  let agrupada = d.replace(/[\s-]+\d+$/, '').trim();
+  if (agrupada.length < 3) agrupada = d;
+  if (agrupada.length > 40) agrupada = agrupada.substring(0, 37) + '...';
+  return agrupada;
 }
 
 // Resolve a equipe de um item: usa uma coluna "Equipe" pronta quando existe,
@@ -718,34 +766,51 @@ function obterBacklogPreventivoTV_(unit) {
 
   const naoFechadas = itens.filter(it => !_bdChamadoFechado_(it.estado, it.dtFechado));
 
-  // Corte de idade (ver TV_BACKLOG_PREV_MESES): rotina agendada há mais de N
-  // meses e nunca fechada é resíduo da base, não fila. Rotina SEM data de
-  // agendamento fica — não dá para julgar a idade dela, e sumir em silêncio
-  // seria pior.
+  // Só os estados da LISTA entram na fila (_tvEstadoFila_). Cheguei a contar
+  // "tudo que não está fechado" e a TV mostrou 197 rotinas em aberto — número
+  // que ninguém reconheceu. Estado que não está na lista fica de fora E
+  // aparece no Logger, para a lista poder crescer com evidência em vez de
+  // palpite.
+  const forasEstado = {};
+  const naFila = naoFechadas.filter(it => {
+    const cls = _tvEstadoFila_(it.estado);
+    if (cls) return true;
+    const chave = String(it.estado || '(vazio)').trim() || '(vazio)';
+    forasEstado[chave] = (forasEstado[chave] || 0) + 1;
+    return false;
+  });
+  const nomesFora = Object.keys(forasEstado);
+  if (nomesFora.length) {
+    Logger.log('BD-PREVENTIVAS (' + unit.name + '): estados FORA da fila — ' +
+               nomesFora.sort((a, b) => forasEstado[b] - forasEstado[a])
+                        .map(k => k + '=' + forasEstado[k]).join(' | ') +
+               '. Se algum destes for fila de verdade, acrescente em TV_PREV_ESTADOS_FILA.');
+  }
+
+  // Segundo filtro: corte de idade (TV_BACKLOG_PREV_MESES). Rotina agendada
+  // há mais de N meses e nunca fechada é resíduo da base, não fila.
   const hojeU = _tvHojeUTC_();
   const limite = new Date(Date.UTC(
     hojeU.getUTCFullYear(), hojeU.getUTCMonth() - TV_BACKLOG_PREV_MESES, hojeU.getUTCDate()));
-  const abertas = naoFechadas.filter(it => !it.dtReporte || it.dtReporte >= limite);
+  const dentroDaJanela = it => !!it.dtReporte && it.dtReporte >= limite;
+  const abertas = naFila.filter(dentroDaJanela);
 
-  const descartadas = naoFechadas.length - abertas.length;
+  const descartadas = naFila.length - abertas.length;
   if (descartadas) {
-    const maisVelha = naoFechadas
-      .filter(it => it.dtReporte && it.dtReporte < limite)
-      .reduce((a, b) => (a && a.dtReporte < b.dtReporte ? a : b), null);
-    Logger.log('BD-PREVENTIVAS (' + unit.name + '): ' + descartadas + ' rotina(s) não fechada(s) ' +
-               'fora da janela de ' + TV_BACKLOG_PREV_MESES + ' meses ficaram de fora do backlog' +
-               (maisVelha ? ' (a mais antiga é de ' + maisVelha.dtReporte.toISOString().slice(0, 10) + ')' : '') +
+    const semData = naFila.filter(it => !it.dtReporte).length;
+    Logger.log('BD-PREVENTIVAS (' + unit.name + '): ' + descartadas + ' de ' + naFila.length +
+               ' rotina(s) da fila ficaram de fora por idade (janela de ' +
+               TV_BACKLOG_PREV_MESES + ' meses)' +
+               (semData ? ', sendo ' + semData + ' sem data de agendamento' : '') +
                '. Restaram ' + abertas.length + '.');
   }
 
   const hoje = Date.now();
-
   const gruposMap = {};
   let countEmAberto = 0, countEmCurso = 0, facilCount = 0, propCount = 0;
 
   abertas.forEach(it => {
-    const n = _histNorm_(it.estado);
-    const isEmCurso  = n.indexOf('em curso') >= 0 || n.indexOf('em execucao') >= 0;
+    const isEmCurso  = _tvEstadoFila_(it.estado) === 'EM_CURSO';
     const isEmAberto = !isEmCurso;
 
     if (isEmAberto) countEmAberto++; else countEmCurso++;
@@ -756,29 +821,31 @@ function obterBacklogPreventivoTV_(unit) {
     if (equipe === 'PROPERTY') propCount++;
     else if (equipe === 'FACILITIES') facilCount++;
 
-    // Agrupa rotinas irmãs: tira o sufixo numérico ("Bomba de incêndio 03")
-    // para as três ocorrências virarem uma linha "3x".
-    let desc = String(it.descricao || '').trim();
-    let descAgrupada = desc.replace(/[\s-]+\d+$/, '').trim();
-    if (descAgrupada.length < 3) descAgrupada = desc;
-    if (descAgrupada.length > 40) descAgrupada = descAgrupada.substring(0, 37) + '...';
+    const descAgrupada = _tvDescricaoRotina_(it.descricao, unit);
     if (!descAgrupada) return;
 
-    const chave = descAgrupada + '|' + equipe + '|' + isEmAberto;
+    // A chave NÃO inclui a equipe. Incluía, e o resultado era "Análise de
+    // Cloro" aparecendo duas vezes na tela — 17x e 15x — só porque parte das
+    // rotinas resolveu a equipe e parte não. Para quem lê, é o mesmo serviço.
+    const chave = descAgrupada + '|' + isEmAberto;
     if (!gruposMap[chave]) {
       gruposMap[chave] = {
         desc: descAgrupada, equipe: equipe, isEmAberto: isEmAberto,
         qtd: 0, dataAntigaTs: Infinity, dataLabel: '-'
       };
     }
-    gruposMap[chave].qtd++;
+    const g = gruposMap[chave];
+    g.qtd++;
+    // Se qualquer rotina do grupo tiver equipe conhecida, ela vale para o
+    // grupo — melhor que deixar '—' porque a primeira do lote não tinha.
+    if (g.equipe === '—' && equipe !== '—') g.equipe = equipe;
 
     const ts = it.dtReporte ? it.dtReporte.getTime() : Infinity;
-    if (ts < gruposMap[chave].dataAntigaTs) {
-      gruposMap[chave].dataAntigaTs = ts;
+    if (ts < g.dataAntigaTs) {
+      g.dataAntigaTs = ts;
       if (ts !== Infinity) {
         const dias = Math.max(0, Math.floor((hoje - ts) / 864e5));
-        gruposMap[chave].dataLabel = dias === 0 ? 'Hoje' : dias + ' dias';
+        g.dataLabel = dias === 0 ? 'Hoje' : dias + ' dias';
       }
     }
   });
@@ -800,14 +867,13 @@ function obterBacklogPreventivoTV_(unit) {
                'identificável (a base não traz Responsáveis/Equipe) — o slide mostra "—".');
   }
 
-  // Fila de N dias atrás, calculada na MESMA base e com o MESMO corte de
-  // idade (o `limite` é absoluto, não desliza junto com a data) — assim a
-  // seta ▲/▼ mede movimento real da fila, não a janela andando.
+  // Fila de N dias atrás: MESMOS dois filtros (estado e idade), para a seta
+  // ▲/▼ medir movimento real e não a janela andando.
   const t = _tvInstantesBacklog_();
-  const emAbertoAntes = naoFechadas.filter(it =>
-    (!it.dtReporte || it.dtReporte >= limite) &&
+  const emAbertoAntes = naFila.filter(it =>
+    dentroDaJanela(it) &&
     _tvAbertoEm_(it, t.antes) &&
-    !(_histNorm_(it.estado).indexOf('em curso') >= 0 || _histNorm_(it.estado).indexOf('em execucao') >= 0)
+    _tvEstadoFila_(it.estado) !== 'EM_CURSO'
   ).length;
 
   return {

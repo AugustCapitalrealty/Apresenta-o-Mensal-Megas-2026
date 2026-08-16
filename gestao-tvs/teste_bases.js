@@ -250,6 +250,52 @@ ok('equipe líder = FACILITIES', blp.equipeLider === 'FACILITIES', blp.equipeLid
 ok('dias em aberto calculados', blp.lista.every(l => l.dataLabel !== '-'),
    JSON.stringify(blp.lista.map(l => l.dataLabel)));
 
+console.log('\n== Só os estados da fila entram (não "tudo que não fechou") ==');
+delete _tvBaseCache[BD_ABA_PREVENTIVAS];
+FAKE = {
+  'BD - PREVENTIVAS': [HDR_P,
+    linhaP('Mega Curitiba', 'Atrasada',  'Bomba', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Em aberto', 'Filtro', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Em curso',  'Painel', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    // estes NÃO são fila — antes entravam todos e inflavam o número
+    linhaP('Mega Curitiba', 'Cancelada', 'Ruído 1', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Planeada',  'Ruído 2', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', '',          'Ruído 3', '', 'FACILITIES', noMesMeio(mesesHist[4]))
+  ]
+};
+const est = obterBacklogPreventivoTV_(unitCwb);
+ok('em aberto = 2 (Atrasada + Em aberto)', est.countEmAberto === 2, est.countEmAberto);
+ok('em curso = 1', est.countEmCurso === 1, est.countEmCurso);
+ok('Cancelada/Planeada/vazio ficam FORA', est.lista.length === 3,
+   JSON.stringify(est.lista.map(l => l.desc)));
+ok('e o Logger lista os estados excluídos com a contagem',
+   logs.some(l => l.indexOf('estados FORA da fila') >= 0 && l.indexOf('Cancelada') >= 0));
+
+console.log('\n== Nome do serviço na coluna DESCRIÇÃO ==');
+const uCwb = { name: 'MEGA CURITIBA' };
+ok('tira o prefixo do checklist E o sufixo com o nome da unidade',
+   _tvDescricaoRotina_(_limparDescricaoChecklist_('CHECKLIST - Zelador | Leitura Diária | MEGA Curitiba'), uCwb) === 'Leitura Diária');
+ok('texto livre depois da barra é preservado',
+   _tvDescricaoRotina_('COLETA - Especializada | CDF e MTR', uCwb) === 'COLETA - Especializada | CDF e MTR');
+ok('rotinas irmãs agrupam ("Bomba de incêndio 03" → "Bomba de incêndio")',
+   _tvDescricaoRotina_('Bomba de incêndio 03', uCwb) === 'Bomba de incêndio');
+
+console.log('\n== Mesmo serviço não vira duas linhas por causa da equipe ==');
+delete _tvBaseCache[BD_ABA_PREVENTIVAS];
+FAKE = {
+  'BD - PREVENTIVAS': [HDR_P,
+    // mesma descrição, uma com equipe reconhecida e outra sem — na TV isso
+    // aparecia como "Análise de Cloro" 17x e "Análise de Cloro" 15x.
+    linhaP('Mega Curitiba', 'Atrasada', 'Análise de Cloro', '', 'FACILITIES', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Atrasada', 'Análise de Cloro', '', '',           noMesMeio(mesesHist[4]))
+  ]
+};
+const dup = obterBacklogPreventivoTV_(unitCwb);
+ok('uma linha só, 2x', dup.lista.length === 1 && dup.lista[0].qtd === 2,
+   JSON.stringify(dup.lista.map(l => l.desc + '=' + l.qtd)));
+ok('e a equipe conhecida do lote vale para o grupo',
+   dup.lista[0].equipe === 'FACILITIES', dup.lista[0].equipe);
+
 console.log('\n== Corte de idade do backlog preventivo ==');
 delete _tvBaseCache[BD_ABA_PREVENTIVAS];
 const velha = iso(new Date(hojeUTC.getTime() - 1337 * 864e5));   // como a de 1337 dias da TV
@@ -261,8 +307,8 @@ FAKE = {
 };
 const corte = obterBacklogPreventivoTV_(unitCwb);
 ok('rotina de 1337 dias fica FORA da fila', corte.countEmAberto === 1, corte.countEmAberto);
-ok('e o Logger diz quantas ficaram de fora',
-   logs.some(l => l.indexOf('fora da janela de') >= 0));
+ok('e o Logger diz quantas ficaram de fora por idade',
+   logs.some(l => l.indexOf('ficaram de fora por idade') >= 0));
 ok('a recente continua na lista',
    corte.lista.length === 1 && corte.lista[0].desc === 'Rotina recente',
    JSON.stringify(corte.lista.map(l => l.desc)));

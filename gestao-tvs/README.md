@@ -105,6 +105,13 @@ entraram ontem.
 
 ## Decisões que valem revisar
 
+- **`TV_PREV_ESTADOS_FILA`** (`Dados.gs`) — quais Estados contam como fila no
+  Backlog Preventivo: `atrasada`, `em aberto`, `em curso`. É a lista que o
+  código original usava; trocá-la por "tudo que não está fechado" fez a TV
+  mostrar 197 rotinas em aberto, porque a base tem estados que não são fila
+  (canceladas, planejadas, sem estado...). O `Logger` lista a cada execução os
+  estados que ficaram de fora, com a contagem — se algum for fila de verdade,
+  acrescente ali **com essa evidência na mão**.
 - **`TV_BACKLOG_PREV_MESES = 12`** (`Dados.gs`) — rotina preventiva agendada
   há mais de 12 meses e nunca fechada fica FORA do backlog. Sem esse corte a
   TV mostrava 595 itens em aberto, com um de 1337 dias (2022): resíduo de
