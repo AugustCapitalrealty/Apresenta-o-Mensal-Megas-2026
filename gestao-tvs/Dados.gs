@@ -290,6 +290,24 @@ function _tvEstadoFila_(estado) {
   return null;
 }
 
+// Equipe responsável por uma PREVENTIVA. Regra do time: se o nome da rotina
+// tem "propriedades", é de Propriedades; todo o resto é Facilities.
+//
+// Vale para preventiva, não para corretiva — lá existe a coluna
+// "Responsáveis" com nomes de gente, e é dela que a equipe sai
+// (_resolverEquipeResponsaveis_). A BD-PREVENTIVAS não tem coluna de equipe
+// nenhuma, e numa rotina ainda ABERTA o "Fechado por" está vazio por
+// definição: o nome do serviço é a única informação disponível. Antes disso a
+// coluna RESPONSÁVEL do slide mostrava "—" em tudo.
+//
+// Olha a descrição BRUTA porque a palavra costuma estar no prefixo do
+// checklist ("CHECKLIST - PROPRIEDADES | Piso"), que a limpeza remove antes
+// de chegar na tela.
+function _tvEquipePreventiva_(item) {
+  const txt = _histNorm_(item.descricaoBruta || item.descricao);
+  return txt.indexOf('propriedades') >= 0 ? 'PROPERTY' : 'FACILITIES';
+}
+
 // Nome do serviço, pronto para a coluna "DESCRIÇÃO DO SERVIÇO":
 //   "CHECKLIST - Zelador | Leitura Diária | MEGA Curitiba" → "Leitura Diária"
 // _limparDescricaoChecklist_ tira o prefixo; aqui sai o SUFIXO com o nome da
@@ -300,8 +318,14 @@ function _tvDescricaoRotina_(descricao, unit) {
   let d = String(descricao || '').trim();
   const alvo = _histNorm_(unit.name);
   const partes = d.split('|').map(x => x.trim()).filter(Boolean);
+  // Fora o sufixo com o nome da unidade ("... | MEGA Curitiba"), redundante
+  // num slide que já diz MEGA CURITIBA no cabeçalho.
   while (partes.length > 1 && _histNorm_(partes[partes.length - 1]) === alvo) partes.pop();
-  d = partes.join(' | ');
+  // Do que sobrou, vale só o ÚLTIMO trecho: é ele que identifica a rotina.
+  // O que vem antes da barra é a família ("INSPEÇÃO PREDIAL - PROPRIEDADES",
+  // "COLETA - Especializada") — igual em dezenas de linhas, e enchia a coluna
+  // a ponto de cortar justamente a parte que distingue uma da outra.
+  d = partes[partes.length - 1] || d;
 
   // Rotinas irmãs viram uma linha só: "Bomba de incêndio 03" → "Bomba de incêndio".
   let agrupada = d.replace(/[\s-]+\d+$/, '').trim();
@@ -425,6 +449,11 @@ function _tvLerBase_(nomeAba) {
         equipe     : cEquipe >= 0 ? String(data[r][cEquipe] || '').trim() : '',
         disciplina : cDisc   >= 0 ? String(data[r][cDisc]   || '').trim() : '',
         descricao  : cDesc   >= 0 ? _limparDescricaoChecklist_(String(data[r][cDesc] || '').trim()) : '',
+        // Texto ORIGINAL, sem a limpeza do prefixo de checklist. A equipe
+        // responsável por uma preventiva é decidida pela palavra
+        // "PROPRIEDADES" no nome (_tvEquipePreventiva_), e ela pode estar
+        // justamente no prefixo que a limpeza remove.
+        descricaoBruta: cDesc >= 0 ? String(data[r][cDesc] || '').trim() : '',
         prioridade : _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
         dtReporte  : cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado  : cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
@@ -815,11 +844,10 @@ function obterBacklogPreventivoTV_(unit) {
 
     if (isEmAberto) countEmAberto++; else countEmCurso++;
 
-    // Sem coluna de equipe na base, rotina aberta fica '—' em vez de virar
-    // Facilities por omissão (ver _tvEquipeItem_).
-    const equipe = _tvEquipeItem_(it) || '—';
-    if (equipe === 'PROPERTY') propCount++;
-    else if (equipe === 'FACILITIES') facilCount++;
+    // Equipe pelo NOME da rotina (ver _tvEquipePreventiva_) — a base não tem
+    // coluna de equipe.
+    const equipe = _tvEquipePreventiva_(it);
+    if (equipe === 'PROPERTY') propCount++; else facilCount++;
 
     const descAgrupada = _tvDescricaoRotina_(it.descricao, unit);
     if (!descAgrupada) return;
@@ -836,9 +864,6 @@ function obterBacklogPreventivoTV_(unit) {
     }
     const g = gruposMap[chave];
     g.qtd++;
-    // Se qualquer rotina do grupo tiver equipe conhecida, ela vale para o
-    // grupo — melhor que deixar '—' porque a primeira do lote não tinha.
-    if (g.equipe === '—' && equipe !== '—') g.equipe = equipe;
 
     const ts = it.dtReporte ? it.dtReporte.getTime() : Infinity;
     if (ts < g.dataAntigaTs) {
@@ -856,16 +881,11 @@ function obterBacklogPreventivoTV_(unit) {
     return a.dataAntigaTs - b.dataAntigaTs;
   });
 
-  // "MAIOR VOLUME" só afirma alguma coisa se ALGUMA rotina teve equipe
-  // resolvida; senão é '—'. Empate com as duas em zero cairia em FACILITIES
-  // e mentiria com cara de dado.
+  // Fila vazia não tem "maior volume" — sem isso, zero a zero cairia em
+  // FACILITIES e afirmaria algo sobre um conjunto vazio.
   const equipeLider = (facilCount === 0 && propCount === 0)
     ? '—'
     : (facilCount >= propCount ? 'FACILITIES' : 'PROPERTY');
-  if (facilCount === 0 && propCount === 0 && abertas.length) {
-    Logger.log('BD-PREVENTIVAS (' + unit.name + '): nenhuma rotina aberta tem equipe ' +
-               'identificável (a base não traz Responsáveis/Equipe) — o slide mostra "—".');
-  }
 
   // Fila de N dias atrás: MESMOS dois filtros (estado e idade), para a seta
   // ▲/▼ medir movimento real e não a janela andando.

@@ -241,10 +241,10 @@ ok('agrupou as bombas irmãs em 1 linha 2x',
    blp.lista.some(l => l.desc === 'Bomba de drenagem' && l.qtd === 2),
    JSON.stringify(blp.lista.map(l => l.desc + '=' + l.qtd)));
 ok('atrasadas vêm antes das em curso', blp.lista[0].isEmAberto === true);
-// A BD-PREVENTIVAS real NÃO tem coluna de equipe; a fixture tem, então este
-// caso cobre o caminho "coluna existe". O caso de baixo cobre o real.
-ok('equipe do painel = PROPERTY',
-   blp.lista.some(l => l.desc === 'Painel elétrico' && l.equipe === 'PROPERTY'),
+// A equipe da preventiva sai do NOME, não de coluna nenhuma: sem
+// "propriedades" no nome, é Facilities.
+ok('rotinas sem "propriedades" no nome saem como FACILITIES',
+   blp.lista.every(l => l.equipe === 'FACILITIES'),
    JSON.stringify(blp.lista.map(l => l.desc + ':' + l.equipe)));
 ok('equipe líder = FACILITIES', blp.equipeLider === 'FACILITIES', blp.equipeLider);
 ok('dias em aberto calculados', blp.lista.every(l => l.dataLabel !== '-'),
@@ -271,30 +271,51 @@ ok('Cancelada/Planeada/vazio ficam FORA', est.lista.length === 3,
 ok('e o Logger lista os estados excluídos com a contagem',
    logs.some(l => l.indexOf('estados FORA da fila') >= 0 && l.indexOf('Cancelada') >= 0));
 
-console.log('\n== Nome do serviço na coluna DESCRIÇÃO ==');
+console.log('\n== Nome do serviço: vale o que vem DEPOIS da barra ==');
 const uCwb = { name: 'MEGA CURITIBA' };
-ok('tira o prefixo do checklist E o sufixo com o nome da unidade',
-   _tvDescricaoRotina_(_limparDescricaoChecklist_('CHECKLIST - Zelador | Leitura Diária | MEGA Curitiba'), uCwb) === 'Leitura Diária');
-ok('texto livre depois da barra é preservado',
-   _tvDescricaoRotina_('COLETA - Especializada | CDF e MTR', uCwb) === 'COLETA - Especializada | CDF e MTR');
+const nome = d => _tvDescricaoRotina_(_limparDescricaoChecklist_(d), uCwb);
+ok('tira prefixo do checklist, família e sufixo da unidade',
+   nome('CHECKLIST - Zelador | INSPEÇÃO PREDIAL - PROPRIEDADES | Piso e Pavimentação | MEGA Curitiba') === 'Piso e Pavimentação',
+   nome('CHECKLIST - Zelador | INSPEÇÃO PREDIAL - PROPRIEDADES | Piso e Pavimentação | MEGA Curitiba'));
+ok('a família some e fica só o que identifica a rotina',
+   nome('COLETA - Especializada | CDF e MTR Resíduos') === 'CDF e MTR Resíduos',
+   nome('COLETA - Especializada | CDF e MTR Resíduos'));
+ok('sem barra nenhuma, o texto fica inteiro',
+   nome('Carro Locado') === 'Carro Locado');
 ok('rotinas irmãs agrupam ("Bomba de incêndio 03" → "Bomba de incêndio")',
    _tvDescricaoRotina_('Bomba de incêndio 03', uCwb) === 'Bomba de incêndio');
 
-console.log('\n== Mesmo serviço não vira duas linhas por causa da equipe ==');
+console.log('\n== Equipe da preventiva sai do NOME ==');
+const eq = d => _tvEquipePreventiva_({ descricaoBruta: d, descricao: _limparDescricaoChecklist_(d) });
+ok('"PROPRIEDADES" no nome → PROPERTY',
+   eq('INSPEÇÃO PREDIAL - PROPRIEDADES | Piso') === 'PROPERTY');
+ok('o resto → FACILITIES',
+   eq('COLETA - Especializada | CDF e MTR') === 'FACILITIES');
+ok('pega mesmo quando a palavra está no prefixo que a limpeza remove',
+   eq('CHECKLIST - PROPRIEDADES | Corrimão | MEGA Curitiba') === 'PROPERTY',
+   'limpo="' + _limparDescricaoChecklist_('CHECKLIST - PROPRIEDADES | Corrimão | MEGA Curitiba') + '"');
+ok('sem acento/caixa também casa', eq('inspecao predial - propriedades | x') === 'PROPERTY');
+
+console.log('\n== Agrupamento e equipe no backlog de verdade ==');
 delete _tvBaseCache[BD_ABA_PREVENTIVAS];
 FAKE = {
   'BD - PREVENTIVAS': [HDR_P,
-    // mesma descrição, uma com equipe reconhecida e outra sem — na TV isso
-    // aparecia como "Análise de Cloro" 17x e "Análise de Cloro" 15x.
-    linhaP('Mega Curitiba', 'Atrasada', 'Análise de Cloro', '', 'FACILITIES', noMesMeio(mesesHist[4])),
-    linhaP('Mega Curitiba', 'Atrasada', 'Análise de Cloro', '', '',           noMesMeio(mesesHist[4]))
+    // duas irmãs da mesma família → uma linha "2x", equipe pelo nome
+    linhaP('Mega Curitiba', 'Atrasada', 'INSPEÇÃO PREDIAL - PROPRIEDADES | Piso', '', '', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Atrasada', 'INSPEÇÃO PREDIAL - PROPRIEDADES | Piso', '', '', noMesMeio(mesesHist[4])),
+    linhaP('Mega Curitiba', 'Atrasada', 'COLETA - Especializada | CDF e MTR',     '', '', noMesMeio(mesesHist[4]))
   ]
 };
 const dup = obterBacklogPreventivoTV_(unitCwb);
-ok('uma linha só, 2x', dup.lista.length === 1 && dup.lista[0].qtd === 2,
+ok('agrupou as duas iguais numa linha 2x',
+   dup.lista.some(l => l.desc === 'Piso' && l.qtd === 2),
    JSON.stringify(dup.lista.map(l => l.desc + '=' + l.qtd)));
-ok('e a equipe conhecida do lote vale para o grupo',
-   dup.lista[0].equipe === 'FACILITIES', dup.lista[0].equipe);
+ok('a de PROPRIEDADES sai como PROPERTY',
+   dup.lista.filter(l => l.desc === 'Piso')[0].equipe === 'PROPERTY');
+ok('a outra sai como FACILITIES',
+   dup.lista.filter(l => l.desc === 'CDF e MTR')[0].equipe === 'FACILITIES');
+ok('MAIOR VOLUME resolve (não é mais "—")',
+   dup.equipeLider === 'PROPERTY', dup.equipeLider);
 
 console.log('\n== Corte de idade do backlog preventivo ==');
 delete _tvBaseCache[BD_ABA_PREVENTIVAS];
@@ -322,26 +343,14 @@ ok('formato das corretivas (com ID na frente) continua funcionando',
 ok('texto livre fica intacto',
    _limparDescricaoChecklist_('Água voltando pelos tubos') === 'Água voltando pelos tubos');
 
-console.log('\n== Sem coluna de equipe (a base REAL é assim) ==');
-// Só a chave de PREVENTIVAS: o bloco seguinte confere que o cache de
-// CORRETIVAS continua quente.
+console.log('\n== Fila vazia não afirma "maior volume" ==');
 delete _tvBaseCache[BD_ABA_PREVENTIVAS];
-// Mesmas colunas da BD-PREVENTIVAS de verdade: sem Responsáveis, sem Equipe.
-const HDR_P_REAL = ['Centro de Custos', 'Estado', 'Descrição', 'SLA',
-                    'Fechado por', 'Data agendamento', 'Fechada em'];
-FAKE = {
-  'BD - PREVENTIVAS': [HDR_P_REAL,
-    ['Mega Curitiba', 'Atrasada', 'Bomba de drenagem', '', '', noMesMeio(mesesHist[0]), ''],
-    ['Mega Curitiba', 'Atrasada', 'Extintores',        '', '', noMesMeio(mesesHist[0]), '']
-  ]
-};
-const semEq = obterBacklogPreventivoTV_(unitCwb);
-ok('equipe vira "—", não FACILITIES por omissão',
-   semEq.lista.every(l => l.equipe === '—'), JSON.stringify(semEq.lista.map(l => l.equipe)));
-ok('MAIOR VOLUME vira "—" em vez de afirmar FACILITIES',
-   semEq.equipeLider === '—', semEq.equipeLider);
-ok('e o Logger registra o porquê',
-   logs.some(l => l.indexOf('equipe identificável') >= 0));
+FAKE = { 'BD - PREVENTIVAS': [HDR_P,
+  linhaP('Mega Curitiba', 'Fechada', 'Tudo fechado', 'Cumprido', '', noMesMeio(mesesHist[4]), noMesMeio(mesesHist[4]))
+] };
+const vazio = obterBacklogPreventivoTV_(unitCwb);
+ok('sem nada na fila, MAIOR VOLUME é "—"', vazio.equipeLider === '—', vazio.equipeLider);
+ok('e a lista fica vazia', vazio.lista.length === 0);
 
 console.log('\n== Cache e base vazia ==');
 // O cache é por aba e compartilhado pelas 3 unidades — uma leitura da

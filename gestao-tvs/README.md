@@ -125,12 +125,17 @@ entraram ontem.
   base (item aberto até lá e ainda não fechado), não um retrato guardado
   entre execuções.
 
-## Limitação conhecida
+## Como a equipe é decidida
 
-A coluna **RESPONSÁVEL** do Backlog Preventivo (slide 4) mostra `—`. A
-`BD-PREVENTIVAS` não tem coluna de Responsáveis nem de Equipe, e numa rotina
-ainda aberta o "Fechado por" está vazio por definição — não há de onde tirar
-a equipe. Mostrar `—` é deliberado: antes o código caía num default e
-carimbava todas as rotinas como Facilities, o que parecia dado apurado e não
-era. `diagnosticarBasesBrutas()` mede as colunas candidatas para o caso de
-alguma servir de substituta.
+Depende da base, porque as duas trazem informação diferente:
+
+- **Corretivas** — coluna `Responsáveis` (lista de nomes). O mapa
+  nome → equipe está em `Dados.gs` (`_RESPONSAVEL_EQUIPE_`); Property
+  prevalece quando há gente das duas no mesmo chamado. Nome desconhecido cai
+  em Facilities, mesma regra da apresentação mensal.
+- **Preventivas** — pelo **nome da rotina**: se tem "propriedades", é de
+  Propriedades; o resto é Facilities. A `BD-PREVENTIVAS` não tem coluna de
+  Responsáveis nem de Equipe, e numa rotina ainda aberta o "Fechado por" está
+  vazio por definição — o nome é a única informação disponível. A palavra é
+  procurada na descrição BRUTA, porque costuma estar no prefixo do checklist
+  (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove antes da tela.
