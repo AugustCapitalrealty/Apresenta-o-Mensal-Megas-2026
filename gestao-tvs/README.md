@@ -110,10 +110,13 @@ entraram ontem.
   TV mostrava 595 itens em aberto, com um de 1337 dias (2022): resíduo de
   base, não trabalho pendente. O `Logger` diz quantas ficaram de fora a cada
   execução. Se o time preferir outra janela, muda só esse número.
-- **`TV_BACKLOG_DIAS_COMPARACAO = 7`** — contra quantos dias atrás a seta
-  ▲/▼ dos backlogs compara. O backlog daquele dia é CALCULADO na base (item
-  aberto até lá e ainda não fechado), não um retrato guardado entre
-  execuções.
+- **`TV_BACKLOG_DIAS_COMPARACAO = 7`** — o passo do gráfico de evolução E o
+  período da seta
+  ▲/▼ dos backlogs. O gráfico da Visão Geral Corretiva são 5 fotos espaçadas
+  desse tanto, terminando HOJE — então a última barra É o cartão grande e a
+  penúltima É o comparativo da seta. O backlog de cada foto é CALCULADO na
+  base (item aberto até lá e ainda não fechado), não um retrato guardado
+  entre execuções.
 
 ## Limitação conhecida
 

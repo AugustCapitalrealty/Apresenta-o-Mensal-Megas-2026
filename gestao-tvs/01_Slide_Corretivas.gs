@@ -85,7 +85,7 @@ function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal,
 
   const histY = startY + 85;
   const lblHist = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, histY, rW, 25);
-  lblHist.getText().setText("EVOLUÇÃO DA FILA (FIM DE SEMANA)").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
+  lblHist.getText().setText("EVOLUÇÃO DA FILA (A CADA 7 DIAS)").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
 
   const maxVal = Math.max(...historico.map(h => h.total), 1);
   const hW = 35; const hGap = (rW - (historico.length*hW)) / Math.max(1, historico.length-1);

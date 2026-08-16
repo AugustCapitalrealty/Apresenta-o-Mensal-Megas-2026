@@ -52,18 +52,25 @@ const iso = d => d.toISOString().slice(0, 19).replace('T', ' ');
 
 // Datas ancoradas nas MESMAS janelas que o código calcula, para o teste não
 // depender do dia em que roda.
-const semanas = _tvSemanasCompletas_(TV_SEMANAS_HISTORICO);
-const corrente = _tvSemanaCorrente_();
-const noMeio = j => iso(new Date(j.ini.getTime() + 3 * 864e5));
+const fotos = _tvDatasBacklog_(TV_HISTORICO_PONTOS);
+const hojeU = _tvHojeUTC_();
+// Uma data alguns dias ANTES do fim da janela, para o item já existir ali.
+// Aceita tanto uma foto ({instante}) quanto uma janela ({ini, fim}).
+const noMeio = j => iso(new Date((j.instante || j.fim).getTime() - 3 * 864e5));
+const corrente = { ini: new Date(fotos[4].instante.getTime() - 7 * 864e5), fim: fotos[4].instante };
+const semanas = fotos.map(f => ({ ini: new Date(f.instante.getTime() - 7 * 864e5), fim: f.instante }));
 
-console.log('\n== Janelas semanais ==');
-ok('5 semanas fechadas', semanas.length === 5, semanas.length);
-ok('cada semana tem 7 dias', semanas.every(s => (s.fim - s.ini) === 7 * 864e5));
-ok('semanas são contíguas', semanas.every((s, i) => i === 0 || +s.ini === +semanas[i - 1].fim));
-ok('última fechada encosta na corrente', +semanas[4].fim === +corrente.ini);
-ok('todas começam numa segunda', semanas.concat([corrente]).every(s => s.ini.getUTCDay() === 1),
-   semanas.map(s => s.ini.getUTCDay()).join(','));
-ok('semana corrente contém hoje', _tvDentro_(new Date(), corrente));
+console.log('\n== Fotos da fila a cada 7 dias ==');
+ok('5 pontos', fotos.length === 5, fotos.length);
+ok('espaçados de 7 dias exatos',
+   fotos.every((f, i) => i === 0 || (f.instante - fotos[i - 1].instante) === 7 * 864e5));
+ok('o ÚLTIMO ponto é HOJE (não o fim da última semana fechada)',
+   +fotos[4].instante === hojeU.getTime() + 864e5,
+   fotos[4].label + ' vs hoje ' + _tvLabelDia_(hojeU));
+ok('o rótulo do último ponto é a data de hoje',
+   fotos[4].label === _tvLabelDia_(hojeU), fotos[4].label);
+ok('o penúltimo é exatamente 7 dias atrás',
+   +fotos[3].instante === hojeU.getTime() + 864e5 - 7 * 864e5, fotos[3].label);
 
 // ── BD-CORRETIVAS de mentira ────────────────────────────────────────────
 // Guilherme Heck = FACILITIES, Ivan Fuscolin Neto = PROPERTY (mapa real).
@@ -101,9 +108,16 @@ ok('  3 Facilities', corr.atual.facilities === 3, corr.atual.facilities);
 ok('  1 Property',   corr.atual.propriedades === 1, corr.atual.propriedades);
 ok('Facilities + Property = total', corr.atual.facilities + corr.atual.propriedades === corr.atual.total);
 ok('histórico com 5 pontos', corr.historico.length === 5);
-ok('histórico é FOTO da fila, não fluxo — a última é <= a de hoje',
-   corr.historico[4].total <= corr.atual.total,
-   'fim da última semana=' + corr.historico[4].total + ' hoje=' + corr.atual.total);
+// O cartão grande, a seta e a última barra têm que ser o MESMO número — era
+// o que não acontecia com semanas de calendário (cartão 203, barra 205).
+ok('a última barra É o cartão grande',
+   corr.historico[4].total === corr.atual.total,
+   'barra=' + corr.historico[4].total + ' cartão=' + corr.atual.total);
+ok('a penúltima barra É o comparativo da seta',
+   corr.historico[3].total === corr.anterior.total,
+   'barra=' + corr.historico[3].total + ' seta=' + corr.anterior.total);
+ok('o rótulo da última barra é hoje',
+   corr.historico[4].dataCurta === _tvLabelDia_(hojeU), corr.historico[4].dataCurta);
 ok('Itajaí conta só o seu', obterCorretivasTV_(unitItj).atual.total === 1);
 
 console.log('\n== Slide 2 — Backlog Corretivo (estoque) ==');

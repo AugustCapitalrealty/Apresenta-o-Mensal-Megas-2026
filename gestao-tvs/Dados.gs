@@ -81,8 +81,9 @@ const BD_CORRETIVAS_ID = '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo';
 const BD_ABA_CORRETIVAS  = 'BD-CORRETIVAS';
 const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
 
-// Quantas semanas fechadas o gráfico "EVOLUÇÃO" das Corretivas mostra.
-const TV_SEMANAS_HISTORICO = 5;
+// Quantos pontos o gráfico "EVOLUÇÃO DA FILA" das Corretivas mostra. Os
+// pontos são espaçados de TV_BACKLOG_DIAS_COMPARACAO dias e o ÚLTIMO é hoje.
+const TV_HISTORICO_PONTOS = 5;
 
 // Quantos meses o gráfico "EVOLUÇÃO" das Preventivas mostra (o último é o
 // mês corrente, até hoje).
@@ -402,42 +403,34 @@ function _tvItensUnidade_(nomeAba, unit) {
 // ==========================================
 // JANELAS SEMANAIS
 // ==========================================
-// A TV é semanal ("Comparações referem-se à semana anterior" no rodapé), então
-// o recorte é a semana de SEGUNDA a DOMINGO. O gráfico mostra as N últimas
-// semanas FECHADAS e o cartão grande mostra a semana CORRENTE em andamento —
-// exatamente a estrutura que a leitura por células já tinha (histórico =
-// colunas fechadas, cartão = número do dia), só que agora contada da base.
+// FOTOS DA FILA A CADA N DIAS, terminando HOJE (hoje, 7 dias atrás, 14, 21…).
+//
+// Antes o gráfico usava semanas de calendário (segunda a domingo), e o efeito
+// colateral era feio: a última barra era o fim da última semana FECHADA, que
+// não é hoje — o cartão grande dizia 203 e a barra ao lado 205, sem que nada
+// na tela explicasse a diferença. Ancorando em HOJE, a última barra É o
+// cartão grande e a penúltima É o comparativo ▲/▼ (mesmo passo de
+// TV_BACKLOG_DIAS_COMPARACAO): os três viram o mesmo número em três lugares,
+// em vez de três recortes parecidos.
 //
 // Tudo em UTC porque _histParseDataHora_ constrói as datas em UTC; misturar
-// fuso local aqui deslocaria os itens de sexta/domingo de semana.
-function _tvSegundaDaSemana_(d) {
-  const base = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dow  = base.getUTCDay();            // 0=dom … 6=sáb
-  return new Date(base.getTime() - ((dow + 6) % 7) * 864e5);   // volta até a segunda
-}
-
+// fuso local aqui deslocaria os itens da virada do dia.
 function _tvLabelDia_(d) {
   return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0');
 }
 
-// As `n` últimas semanas COMPLETAS, em ordem cronológica. A mais recente é a
-// que terminou no domingo passado.
-function _tvSemanasCompletas_(n) {
-  const segundaCorrente = _tvSegundaDaSemana_(new Date());
-  const semanas = [];
-  for (let i = n; i >= 1; i--) {
-    const ini = new Date(segundaCorrente.getTime() - i * 7 * 864e5);
-    semanas.push({ ini: ini, fim: new Date(ini.getTime() + 7 * 864e5), label: _tvLabelDia_(ini) });
+// Cada instante é o FIM do dia (início do dia seguinte), para incluir tudo que
+// aconteceu naquela data. Em ordem cronológica.
+function _tvDatasBacklog_(n) {
+  const fimHoje = new Date(_tvHojeUTC_().getTime() + 864e5);
+  const passo = TV_BACKLOG_DIAS_COMPARACAO * 864e5;
+  const datas = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const instante = new Date(fimHoje.getTime() - i * passo);
+    // rótulo = o DIA daquela foto (o instante é a virada para o dia seguinte)
+    datas.push({ instante: instante, label: _tvLabelDia_(new Date(instante.getTime() - 864e5)) });
   }
-  return semanas;
-}
-
-// A semana em andamento. O fim é o domingo (exclusivo): como não existe
-// registro no futuro, contar a janela inteira dá o acumulado da semana até
-// agora, sem depender do relógio.
-function _tvSemanaCorrente_() {
-  const ini = _tvSegundaDaSemana_(new Date());
-  return { ini: ini, fim: new Date(ini.getTime() + 7 * 864e5), label: _tvLabelDia_(ini) };
+  return datas;
 }
 
 // Um item estava ABERTO na data `d`: já tinha sido reportado até ali e ainda
@@ -571,19 +564,19 @@ function obterCorretivasTV_(unit) {
     return { facilities: facilities, propriedades: propriedades, total: abertos.length };
   };
 
-  const t = _tvInstantesBacklog_();
-
-  // Evolução: a fila no FIM de cada uma das últimas semanas fechadas — a foto
-  // do backlog naquele instante, não quantos entraram na semana.
-  const historico = _tvSemanasCompletas_(TV_SEMANAS_HISTORICO).map(sem => {
-    const c = contar(sem.fim);
-    c.dataCurta = sem.label;
+  // Evolução: a fila fotografada a cada N dias, terminando HOJE.
+  const historico = _tvDatasBacklog_(TV_HISTORICO_PONTOS).map(x => {
+    const c = contar(x.instante);
+    c.dataCurta = x.label;
     return c;
   });
 
+  // atual e anterior SAEM do próprio histórico, em vez de serem calculados à
+  // parte: assim o cartão grande é literalmente a última barra e a seta ▲/▼ é
+  // literalmente a diferença para a penúltima. Não há como divergirem.
   return {
-    atual         : contar(t.hoje),
-    anterior      : contar(t.antes),
+    atual         : historico[historico.length - 1],
+    anterior      : historico[historico.length - 2],
     historico     : historico,
     diasComparacao: TV_BACKLOG_DIAS_COMPARACAO
   };
