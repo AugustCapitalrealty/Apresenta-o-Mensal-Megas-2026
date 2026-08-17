@@ -153,9 +153,32 @@ ok('a última barra É o cartão grande',
    'barra=' + q.historico[3].total + ' cartão=' + q.kpis.total);
 ok('cada mês do histórico também fecha',
    q.historico.every(h => h.FACILITIES + h.PROPERTY + h.LOCATARIO + h.OPERACAO === h.total));
-ok('composição por disciplina sai da coluna Área',
-   q.tipoDisciplina[0].label === 'Elétrica' && q.tipoDisciplina[0].val === 5,
-   JSON.stringify(q.tipoDisciplina));
+console.log('\n== Composição do backlog por disciplina ==');
+ok('sai da coluna Área e vem junto no quadro',
+   q.composicao[0].label === 'Elétrica' && q.composicao[0].val === 5,
+   JSON.stringify(q.composicao));
+// É a razão de trocar o recorte: o painel por TIPO vinha de células digitadas
+// e apareceu na tela com quatro zeros. Por disciplina ele fecha sozinho.
+ok('a composição FECHA com o backlog total',
+   q.composicao.reduce((a, c) => a + c.val, 0) === q.kpis.total,
+   JSON.stringify(q.composicao) + ' vs ' + q.kpis.total);
+ok('percentuais calculados', q.composicao[0].pct === 100, q.composicao[0].pct);
+
+// Com mais disciplinas que linhas, o excedente vira "OUTRAS" — o painel
+// continua curto e ainda assim soma o backlog inteiro.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+const areas = ['Elétrica', 'Cobertura', 'Hidrossanitário', 'Piso', 'Civil', 'Outros'];
+FAKE = { 'BD-CORRETIVAS': [HDR].concat(areas.map(a => {
+  const l = L('MEGA CURITIBA', 'Aberto', 'Guilherme Heck', mesPassado);
+  l[7] = a;   // coluna Área
+  return l;
+})) };
+const comp = obterComposicaoBacklogBoletim_(4);
+ok('4 linhas + OUTRAS', comp.length === 5 && comp[4].label === 'OUTRAS',
+   JSON.stringify(comp.map(c => c.label + '=' + c.val)));
+ok('OUTRAS junta as 2 sobrando', comp[4].val === 2, comp[4].val);
+ok('e a soma continua sendo o backlog inteiro',
+   comp.reduce((a, c) => a + c.val, 0) === 6);
 
 console.log('\n== Zero falso ==');
 Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);

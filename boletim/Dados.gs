@@ -438,19 +438,6 @@ function obterQuadroCorretivasBoletim_(nMeses) {
   const hoje = historico[historico.length - 1];
   const anterior = historico.length > 1 ? historico[historico.length - 2] : hoje;
 
-  // Composição da fila de hoje por DISCIPLINA (coluna "Área" da base). É o
-  // único recorte de "tipo" que a base sustenta — ver o comentário em
-  // diagnosticarBoletim() sobre Melhorias/Projetos.
-  const porArea = {};
-  itens.forEach(function (it) {
-    if (!_bolAbertoEm_(it, _bolInstante_(0))) return;
-    const a = String(it.area || '').trim() || '(sem área)';
-    porArea[a] = (porArea[a] || 0) + 1;
-  });
-  const tipoDisciplina = Object.keys(porArea)
-    .map(function (k) { return { label: k, val: porArea[k] }; })
-    .sort(function (a, b) { return b.val - a.val; });
-
   return {
     kpis: {
       total     : hoje.total,
@@ -463,8 +450,52 @@ function obterQuadroCorretivasBoletim_(nMeses) {
     },
     historico: historico,
     meses: meses.map(function (m) { return m.label; }),
-    tipoDisciplina: tipoDisciplina
+    composicao: obterComposicaoBacklogBoletim_(4)
   };
+}
+
+
+// Composição da fila de HOJE por DISCIPLINA (coluna "Área" da base:
+// Elétrica/Lógica/Telefonia, Cobertura, Hidrossanitário, Piso...).
+//
+// POR QUE DISCIPLINA E NÃO "TIPO": o painel original mostrava Corretivas /
+// Melhorias / Projetos / Locatários, lido das células D40:G40 digitadas à
+// mão — e elas vieram VAZIAS, deixando o painel com quatro zeros na tela. A
+// BD-CORRETIVAS não tem coluna que faça essa separação (conferido no
+// cabeçalho real: "Tipo de reporte" é OPERATOR/CONTACT e "Tipo" é
+// área+sintoma). Disciplina é o recorte que a base sustenta, responde a
+// mesma pergunta — "onde está a fila?" — e FECHA com o total, porque cada
+// chamado em aberto tem exatamente uma área.
+//
+// As `n` maiores viram linhas; o resto é somado em "OUTRAS", para o painel
+// continuar com poucas linhas e ainda assim somar o backlog inteiro.
+// Devolve [{ label, val, pct }] ou [] se a base não responder.
+function obterComposicaoBacklogBoletim_(n) {
+  n = n || 4;
+  const itens = _bolLerBase_(BD_ABA_CORRETIVAS);
+  if (!itens.length) return [];
+
+  const instante = _bolInstante_(0);
+  const porArea = {};
+  let total = 0;
+  itens.forEach(function (it) {
+    if (!_bolAbertoEm_(it, instante)) return;
+    total++;
+    const a = String(it.area || '').trim() || '(sem área)';
+    porArea[a] = (porArea[a] || 0) + 1;
+  });
+  if (!total) return [];
+
+  const ordenado = Object.keys(porArea)
+    .map(function (k) { return { label: k, val: porArea[k] }; })
+    .sort(function (a, b) { return b.val - a.val; });
+
+  const linhas = ordenado.slice(0, n);
+  const resto  = ordenado.slice(n).reduce(function (s, d) { return s + d.val; }, 0);
+  if (resto > 0) linhas.push({ label: 'OUTRAS', val: resto });
+
+  linhas.forEach(function (l) { l.pct = Math.round(l.val / total * 100); });
+  return linhas;
 }
 
 

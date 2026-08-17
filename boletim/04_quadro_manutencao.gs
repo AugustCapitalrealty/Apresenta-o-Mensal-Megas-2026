@@ -108,15 +108,12 @@ function gerarSlide05_QuadroManutencao() {
                ' (Fac ' + kpiFac + ' / Prop ' + kpiProp + ' / Loc ' + locFromBase +
                ' / Oper ' + kpiOper + ').');
 
-    // A composição por tipo vem de OUTRA fonte (planilha) e por isso pode não
-    // fechar com o total. Avisar é melhor que a divergência aparecer na
-    // reunião: o slide já saiu com 465 na composição e 504 nos cartões.
-    const somaTipo = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
-    if (somaTipo && somaTipo !== kpiTot) {
-      Logger.log('⚠️ Slide 05: "Composição por tipo" soma ' + somaTipo +
-                 ' mas o backlog é ' + kpiTot + ' (diferença de ' + (kpiTot - somaTipo) +
-                 '). São fontes diferentes: a composição é digitada em D40:G40 e a ' +
-                 'BD-CORRETIVAS não tem coluna que separe Melhorias/Projetos.');
+    // A composição também sai da base (por disciplina), então FECHA com o
+    // total por construção. Confere mesmo assim: se um dia não fechar, é
+    // porque a regra de "aberto" divergiu entre as duas contas.
+    const somaComp = (q.composicao || []).reduce(function (a, c) { return a + c.val; }, 0);
+    if (somaComp && somaComp !== kpiTot) {
+      Logger.log('⚠️ Slide 05: composição soma ' + somaComp + ' mas o backlog é ' + kpiTot + '.');
     }
   } else {
     Logger.log('Slide 05: base bruta indisponível — usando os valores digitados na planilha.');
@@ -328,21 +325,50 @@ function gerarSlide05_QuadroManutencao() {
   rankFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
   rankFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
 
+  // COMPOSIÇÃO: da base quando ela responde (por disciplina), senão a antiga
+  // por tipo lida de D40:G40. Ver obterComposicaoBacklogBoletim_ em Dados.gs
+  // para o porquê de disciplina — resumo: a BD-CORRETIVAS não tem coluna que
+  // separe Corretivas/Melhorias/Projetos, e as células digitadas vieram
+  // vazias, deixando o painel com quatro zeros na tela.
+  const compBase = (q && q.composicao && q.composicao.length) ? q.composicao : null;
+
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rankCardX + 15, mainAreaY + 12, sideWidth - 30, 25).getText()
-    .setText('COMPOSIÇÃO POR TIPO').getTextStyle()
+    .setText(compBase ? 'COMPOSIÇÃO POR DISCIPLINA' : 'COMPOSIÇÃO POR TIPO').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
 
-  // Base = D40+E40+F40+G40 = 471 = C40 — fecha exato com a planilha
-  const rankTot = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
-  const getRankPct    = (val) => rankTot > 0 ? Math.round((val / rankTot) * 100) : 0;
-  const getRankFactor = (val) => rankTot > 0 ? (val / rankTot) : 0;
-
-  const rankData = [
-    { label: 'CORRETIVAS',            val: valCorretivas,     pct: getRankPct(valCorretivas)     + '%', color: CR_DESIGN_SYSTEM.colors.brandDark,    factor: getRankFactor(valCorretivas)     },
-    { label: 'MELHORIAS /\nPROJETOS', val: valMelhorias,      pct: getRankPct(valMelhorias)      + '%', color: CR_DESIGN_SYSTEM.colors.accentOrange, factor: getRankFactor(valMelhorias)      },
-    { label: 'PROJETOS',              val: valProjetos,        pct: getRankPct(valProjetos)        + '%', color: CR_DESIGN_SYSTEM.colors.brandMed,     factor: getRankFactor(valProjetos)        },
-    { label: 'LOCATÁRIOS',            val: valLocatariosComp, pct: getRankPct(valLocatariosComp) + '%', color: CR_DESIGN_SYSTEM.colors.brandLight,   factor: getRankFactor(valLocatariosComp) }
+  const PALETA_COMP = [
+    CR_DESIGN_SYSTEM.colors.brandDark,
+    CR_DESIGN_SYSTEM.colors.accentOrange,
+    CR_DESIGN_SYSTEM.colors.brandMed,
+    CR_DESIGN_SYSTEM.colors.brandLight,
+    CR_DESIGN_SYSTEM.colors.brandSoft
   ];
+
+  let rankData;
+  if (compBase) {
+    // A maior fatia define a escala da barra — assim a leitura é comparativa
+    // entre as disciplinas, que é a pergunta ("onde está concentrada a fila?").
+    const maiorComp = Math.max.apply(null, compBase.map(function (c) { return c.val; }));
+    rankData = compBase.map(function (c, i) {
+      return {
+        label : c.label.toUpperCase(),
+        val   : c.val,
+        pct   : c.pct + '%',
+        color : PALETA_COMP[i % PALETA_COMP.length],
+        factor: maiorComp > 0 ? c.val / maiorComp : 0
+      };
+    });
+  } else {
+    const rankTot = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
+    const getRankPct    = (val) => rankTot > 0 ? Math.round((val / rankTot) * 100) : 0;
+    const getRankFactor = (val) => rankTot > 0 ? (val / rankTot) : 0;
+    rankData = [
+      { label: 'CORRETIVAS',            val: valCorretivas,     pct: getRankPct(valCorretivas)     + '%', color: CR_DESIGN_SYSTEM.colors.brandDark,    factor: getRankFactor(valCorretivas)     },
+      { label: 'MELHORIAS /\nPROJETOS', val: valMelhorias,      pct: getRankPct(valMelhorias)      + '%', color: CR_DESIGN_SYSTEM.colors.accentOrange, factor: getRankFactor(valMelhorias)      },
+      { label: 'PROJETOS',              val: valProjetos,        pct: getRankPct(valProjetos)        + '%', color: CR_DESIGN_SYSTEM.colors.brandMed,     factor: getRankFactor(valProjetos)        },
+      { label: 'LOCATÁRIOS',            val: valLocatariosComp, pct: getRankPct(valLocatariosComp) + '%', color: CR_DESIGN_SYSTEM.colors.brandLight,   factor: getRankFactor(valLocatariosComp) }
+    ];
+  }
 
   // Calcula rowH dinamicamente para caber todos os itens dentro do painel
   const rankHeaderH = 45;
