@@ -349,6 +349,126 @@ function obterCorretivasBoletim_(dataRef) {
 
 
 // ==========================================
+// SLIDE 05 — MANUTENÇÃO CORRETIVA (Visão Executiva)
+// ==========================================
+// Fila de HOJE por equipe + como ela se comportou nos últimos meses.
+// Substitui as células C37:C40 (backlog por equipe) e as linhas 182/183/185
+// (histórico mensal) da aba QUADRO COMPARATIVO.
+//
+// Os cinco cartões do topo passam a fechar entre si por construção: cada
+// chamado em aberto cai em EXATAMENTE uma equipe, então
+//     Facilities + Property + Locatários + Operação = Backlog Total
+// Hoje são quatro células digitadas em lugares diferentes que precisam
+// concordar — e o slide já saiu com a composição somando 465 enquanto os
+// cartões somavam 504.
+//
+// O "vs período anterior" também deixa de ser comparação entre fontes
+// distintas (cartão da tabela resumo x histórico da linha 182): passa a ser a
+// mesma conta em dois instantes.
+
+// Fim do mês (início do 1º dia do mês seguinte, exclusivo) — o instante em
+// que se fotografa a fila daquele mês.
+function _bolFimDoMes_(ano, mesIdx) {
+  return new Date(Date.UTC(ano, mesIdx + 1, 1));
+}
+
+const BOL_MESES_NOME = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
+                        'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+
+// Os `n` últimos meses, do mais antigo ao mais recente. O ÚLTIMO é o mês
+// corrente e é fotografado HOJE (não no fim do mês, que ainda não chegou) —
+// senão a última barra mostraria o futuro.
+function _bolMesesFila_(n) {
+  const hoje = _bolHojeUTC_();
+  const ano = hoje.getUTCFullYear(), mes = hoje.getUTCMonth();
+  const saida = [];
+  for (let i = n - 1; i >= 1; i--) {
+    const d = new Date(Date.UTC(ano, mes - i, 1));
+    saida.push({
+      label: BOL_MESES_NOME[d.getUTCMonth()],
+      instante: _bolFimDoMes_(d.getUTCFullYear(), d.getUTCMonth())
+    });
+  }
+  saida.push({ label: BOL_MESES_NOME[mes], instante: _bolInstante_(0) });
+  return saida;
+}
+
+// Equipe de um chamado para o slide 05. Nome fora do mapa cai em FACILITIES —
+// mesma regra da apresentação mensal, e o motivo é o mesmo: "OUTROS" dava a
+// impressão falsa de que ninguém da operação era responsável.
+function _bolEquipeChamado_(item) {
+  return _resolverEquipeResponsaveis_(item.responsaveis) || 'FACILITIES';
+}
+
+// Retorna { kpis, historico[], meses, tipoDisciplina[] } ou null.
+//   kpis      → fila de hoje por equipe + total + o mesmo de N meses atrás
+//   historico → uma entrada por mês: { label, FACILITIES, PROPERTY, ... , total }
+function obterQuadroCorretivasBoletim_(nMeses) {
+  nMeses = nMeses || 4;
+  const itens = _bolLerBase_(BD_ABA_CORRETIVAS);
+  if (!itens.length) return null;
+  if (!itens.some(function (it) { return it.dtReporte; })) {
+    Logger.log('BD-CORRETIVAS: linhas sem data legível — o slide 05 fica com a fonte antiga.');
+    return null;
+  }
+
+  const EQUIPES = ['FACILITIES', 'PROPERTY', 'LOCATARIO', 'OPERACAO'];
+
+  const fotografar = function (instante) {
+    const o = { total: 0 };
+    EQUIPES.forEach(function (e) { o[e] = 0; });
+    itens.forEach(function (it) {
+      if (!_bolAbertoEm_(it, instante)) return;
+      o.total++;
+      const eq = _bolEquipeChamado_(it);
+      o[eq] = (o[eq] || 0) + 1;
+    });
+    return o;
+  };
+
+  const meses = _bolMesesFila_(nMeses);
+  const historico = meses.map(function (m) {
+    const f = fotografar(m.instante);
+    f.label = m.label;
+    return f;
+  });
+
+  // A foto de HOJE é a última do histórico — o cartão grande e a última barra
+  // do gráfico passam a ser literalmente o mesmo número.
+  const hoje = historico[historico.length - 1];
+  const anterior = historico.length > 1 ? historico[historico.length - 2] : hoje;
+
+  // Composição da fila de hoje por DISCIPLINA (coluna "Área" da base). É o
+  // único recorte de "tipo" que a base sustenta — ver o comentário em
+  // diagnosticarBoletim() sobre Melhorias/Projetos.
+  const porArea = {};
+  itens.forEach(function (it) {
+    if (!_bolAbertoEm_(it, _bolInstante_(0))) return;
+    const a = String(it.area || '').trim() || '(sem área)';
+    porArea[a] = (porArea[a] || 0) + 1;
+  });
+  const tipoDisciplina = Object.keys(porArea)
+    .map(function (k) { return { label: k, val: porArea[k] }; })
+    .sort(function (a, b) { return b.val - a.val; });
+
+  return {
+    kpis: {
+      total     : hoje.total,
+      facilities: hoje.FACILITIES,
+      property  : hoje.PROPERTY,
+      locatarios: hoje.LOCATARIO,
+      operacao  : hoje.OPERACAO,
+      totalAnterior: anterior.total,
+      mesAnterior  : anterior.label
+    },
+    historico: historico,
+    meses: meses.map(function (m) { return m.label; }),
+    tipoDisciplina: tipoDisciplina
+  };
+}
+
+
+// ==========================================
 // DIAGNÓSTICO — RODE ISTO PRIMEIRO
 // ==========================================
 // Responde as perguntas que decidem as etapas 2 a 4, ANTES de trocar

@@ -121,6 +121,42 @@ ok('Property e Facilities separados no backlog de hoje',
    cwb.equipes['PROPERTY'] === 1 && cwb.equipes['FACILITIES'] === 1,
    JSON.stringify(cwb.equipes));
 
+console.log('\n== Slide 05 — quadro de manutenção corretiva ==');
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+const mesPassado = iso(new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - 1, 5)));
+FAKE = {
+  'BD-CORRETIVAS': [HDR,
+    L('MEGA CURITIBA',  'Aberto',  'Guilherme Heck',              mesPassado),   // FACILITIES
+    L('MEGA CURITIBA',  'Aberto',  'Ivan Fuscolin Neto',          mesPassado),   // PROPERTY
+    L('POSTO CURITIBA', 'Aberto',  'Responsabilidade Locatario',  mesPassado),   // LOCATARIO
+    L('MEGA ESTEIO',    'Aberto',  'Gerente Hangar',              mesPassado),   // OPERACAO
+    L('MEGA ESTEIO',    'Aberto',  'Fulano Desconhecido',         mesPassado),   // cai em FACILITIES
+    L('MEGA ESTEIO',    'Fechado', 'Guilherme Heck', iso(d(60)), iso(d(50)))     // fechado, fora
+  ]
+};
+const q = obterQuadroCorretivasBoletim_(4);
+ok('total = 5 (o fechado fica fora)', q.kpis.total === 5, q.kpis.total);
+ok('Facilities = 2 (inclui o responsável desconhecido)', q.kpis.facilities === 2, q.kpis.facilities);
+ok('Property = 1', q.kpis.property === 1, q.kpis.property);
+ok('Locatários = 1', q.kpis.locatarios === 1, q.kpis.locatarios);
+ok('Operação = 1', q.kpis.operacao === 1, q.kpis.operacao);
+// É a razão de existir desta troca: hoje são quatro células digitadas em
+// lugares diferentes, e o slide saiu com composição 465 x cartões 504.
+ok('AS QUATRO EQUIPES SOMAM O TOTAL (fecha por construção)',
+   q.kpis.facilities + q.kpis.property + q.kpis.locatarios + q.kpis.operacao === q.kpis.total,
+   JSON.stringify(q.kpis));
+ok('histórico com 4 meses', q.historico.length === 4, q.historico.length);
+ok('o último mês do histórico é o mês corrente',
+   q.meses[3] === BOL_MESES_NOME[hoje.getUTCMonth()], q.meses.join(','));
+ok('a última barra É o cartão grande',
+   q.historico[3].total === q.kpis.total,
+   'barra=' + q.historico[3].total + ' cartão=' + q.kpis.total);
+ok('cada mês do histórico também fecha',
+   q.historico.every(h => h.FACILITIES + h.PROPERTY + h.LOCATARIO + h.OPERACAO === h.total));
+ok('composição por disciplina sai da coluna Área',
+   q.tipoDisciplina[0].label === 'Elétrica' && q.tipoDisciplina[0].val === 5,
+   JSON.stringify(q.tipoDisciplina));
+
 console.log('\n== Zero falso ==');
 Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
 FAKE = { 'BD-CORRETIVAS': [

@@ -57,12 +57,20 @@ function gerarSlide05_QuadroManutencao() {
       histProp = getValsFromCols(183);
       histOper = getValsFromCols(185);
 
-      // Backlog atual — lido da tabela resumo (linha 37-40), não do histórico
+      // Backlog atual — lido da tabela resumo (linha 37-40), não do histórico.
+      // RESERVA: se a base bruta responder (bloco logo abaixo), estes valores
+      // são substituídos. Ficam aqui para o slide não quebrar se a base
+      // estiver fora do ar.
       kpiFac  = Number(sheet1.getRange('C37').getValue()) || 0;
       kpiProp = Number(sheet1.getRange('C38').getValue()) || 0;
       kpiOper = Number(sheet1.getRange('C39').getValue()) || 0;
       kpiTot  = Number(sheet1.getRange('C40').getValue()) || 0;
 
+      // COMPOSIÇÃO POR TIPO continua vindo da planilha: a BD-CORRETIVAS não
+      // tem coluna que separe Corretivas / Melhorias / Projetos (conferido no
+      // cabeçalho real — "Tipo de reporte" é OPERATOR/CONTACT, "Tipo" é
+      // área+sintoma). Só "Locatários" seria derivável. Ver o aviso de
+      // reconciliação mais abaixo.
       valCorretivas     = Number(sheet1.getRange('G40').getValue()) || 0;
       valMelhorias      = Number(sheet1.getRange('D40').getValue()) || 0;
       valProjetos       = Number(sheet1.getRange('E40').getValue()) || 0;
@@ -75,18 +83,58 @@ function gerarSlide05_QuadroManutencao() {
     Logger.log("Erro ao extrair dados para Manutenção: " + e.message);
   }
 
-  // --- MATEMÁTICA DOS KPIs SUPERIORES — fonte: tabela C37-C40/F40 (backlog atual) ---
+  // --- FONTE PREFERENCIAL: BASE BRUTA (Dados.gs) ---------------------------
+  // Os cinco cartões e o gráfico passam a sair da BD-CORRETIVAS, contados com
+  // a mesma regra de "aberto". Com isso a soma FECHA por construção — cada
+  // chamado cai em exatamente uma equipe — em vez de depender de quatro
+  // células digitadas em lugares diferentes concordarem entre si.
+  // Falhando a leitura, tudo continua com os valores da planilha lidos acima.
+  let locFromBase = null;
+  const q = (typeof obterQuadroCorretivasBoletim_ === 'function')
+    ? obterQuadroCorretivasBoletim_(4) : null;
+  if (q) {
+    kpiFac  = q.kpis.facilities;
+    kpiProp = q.kpis.property;
+    kpiOper = q.kpis.operacao;
+    kpiTot  = q.kpis.total;
+    locFromBase = q.kpis.locatarios;
+
+    histFac  = q.historico.map(function (h) { return h.FACILITIES; });
+    histProp = q.historico.map(function (h) { return h.PROPERTY;   });
+    histOper = q.historico.map(function (h) { return h.OPERACAO;   });
+    timeline = q.meses;
+
+    Logger.log('Slide 05: fonte = BD-CORRETIVAS. Fila hoje ' + kpiTot +
+               ' (Fac ' + kpiFac + ' / Prop ' + kpiProp + ' / Loc ' + locFromBase +
+               ' / Oper ' + kpiOper + ').');
+
+    // A composição por tipo vem de OUTRA fonte (planilha) e por isso pode não
+    // fechar com o total. Avisar é melhor que a divergência aparecer na
+    // reunião: o slide já saiu com 465 na composição e 504 nos cartões.
+    const somaTipo = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
+    if (somaTipo && somaTipo !== kpiTot) {
+      Logger.log('⚠️ Slide 05: "Composição por tipo" soma ' + somaTipo +
+                 ' mas o backlog é ' + kpiTot + ' (diferença de ' + (kpiTot - somaTipo) +
+                 '). São fontes diferentes: a composição é digitada em D40:G40 e a ' +
+                 'BD-CORRETIVAS não tem coluna que separe Melhorias/Projetos.');
+    }
+  } else {
+    Logger.log('Slide 05: base bruta indisponível — usando os valores digitados na planilha.');
+  }
+
+  // --- MATEMÁTICA DOS KPIs SUPERIORES ---
   const facCur  = kpiFac;
   const propCur = kpiProp;
   const operCur = kpiOper;
-  const locCur  = valLocatariosComp; // F40 — Responsabilidade Locatário
-  const totCur  = kpiTot;            // C40 — total real da planilha
+  // Locatários: da base quando ela responde (Responsabilidade Locatário na
+  // coluna Responsáveis); senão a célula F40.
+  const locCur  = (locFromBase !== null) ? locFromBase : valLocatariosComp;
+  const totCur  = kpiTot;
 
-  // Variação vs período anterior: último vs penúltimo valor do histórico
-  const facPrev  = histFac[2];
-  const propPrev = histProp[2];
-  const operPrev = histOper[2];
-  const totPrev  = facPrev + propPrev + operPrev;
+  // Variação vs período anterior: mesma conta em dois instantes, na mesma
+  // base. Antes era o cartão (tabela resumo) contra o histórico (linha 182) —
+  // duas fontes, então a seta podia mostrar movimento que não houve.
+  const totPrev  = q ? q.kpis.totalAnterior : (histFac[2] + histProp[2] + histOper[2]);
   const diffTot  = totCur - totPrev;
 
   const formatTrend = (diff) => {
@@ -256,10 +304,21 @@ function gerarSlide05_QuadroManutencao() {
       rect.getFill().setSolidFill(series.color);
       rect.getBorder().setTransparent();
       
-      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bX - 10, bY - 14, barW + 20, 15);
+      // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra do CLAUDE.md):
+      // a TEXT_BOX tem ~7pt de recuo interno de cada lado que a API não deixa
+      // desligar. Numa caixa de 32pt isso deixa ~18pt úteis, e um valor de 3
+      // dígitos quebrava a linha — a TV do boletim chegou a mostrar "29" em
+      // cima de uma barra de 329, com o "3" empurrado para fora. A caixa
+      // (invisível) é alargada simetricamente; a barra e o espaçamento não
+      // mudam. setLineSpacing(100) impede que uma quebra residual empurre o
+      // número para longe da barra.
+      const folga = 16;
+      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+        bX - 10 - folga, bY - 14, barW + 20 + folga * 2, 15);
       txtBox.getText().setText(val.toString()).getTextStyle()
         .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true).setForegroundColor(series.color);
-      txtBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      txtBox.getText().getParagraphStyle()
+        .setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
     }
   });
 
@@ -534,7 +593,9 @@ function gerarSlide05_QuadroManutencao_Facilities() {
       const bY  = (plotY + plotH) - h;
       const rect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bX, bY, barW, h);
       rect.getFill().setSolidFill(series.color); rect.getBorder().setTransparent();
-      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bX - 5, bY - 14, barW + 10, 14);
+      // Mesma folga do gráfico acima — caixa de 24pt não cabe 3 dígitos.
+      const folgaF = 16;
+      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bX - 5 - folgaF, bY - 14, barW + 10 + folgaF * 2, 14);
       txtBox.getText().setText(val.toString()).getTextStyle()
         .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
         .setForegroundColor(series.color);
