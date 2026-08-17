@@ -1,0 +1,134 @@
+/**
+ * Teste das contas de Dados.gs (etapa 1 do boletim).
+ * Padrão do CLAUDE.md: lê os .gs como texto, dubla SpreadsheetApp/Logger e
+ * roda asserções. Não abre planilha nem Slides.
+ *
+ * Rode com:  node boletim/teste_dados.js
+ */
+const fs = require('fs');
+const path = require('path');
+const DIR = __dirname;
+
+// ── Dublês ──────────────────────────────────────────────────────────────
+const logs = [];
+global.Logger = { log: m => logs.push(String(m)) };
+
+let FAKE = {};   // { nomeAba: matriz }
+global.SpreadsheetApp = {
+  openById: () => ({
+    getName: () => 'BASE DE DADOS — QUADRO REM (dublê)',
+    getSheets: () => Object.keys(FAKE).map(n => sheet(n)),
+    getSheetByName: n => (FAKE[n] ? sheet(n) : null)
+  })
+};
+function sheet(nome) {
+  return {
+    getName: () => nome,
+    getLastColumn: () => FAKE[nome][0].length,
+    getDataRange: () => ({ getDisplayValues: () => FAKE[nome] }),
+    getRange: (r, c, nr, nc) => ({
+      getDisplayValues: () => FAKE[nome].slice(r - 1, r - 1 + nr).map(l => l.slice(c - 1, c - 1 + nc))
+    })
+  };
+}
+
+// ── Carrega o código de produção ─────────────────────────────────────────
+// config.gs traz intervaloSemanaISO, que Dados.gs usa para a janela semanal.
+let fonte = ['config.gs', 'Dados.gs']
+  .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
+// Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
+// `const`/`let` de topo ficam presos no escopo do próprio eval.
+fonte = fonte.replace(/^(const|let) /gm, 'var ');
+(0, eval)(fonte);
+
+// ── Helpers do teste ────────────────────────────────────────────────────
+let falhas = 0, testes = 0;
+function ok(desc, cond, extra) {
+  testes++;
+  if (cond) console.log('  ✓ ' + desc);
+  else { falhas++; console.log('  ✗ ' + desc + (extra ? '  → ' + extra : '')); }
+}
+const iso = d => d.toISOString().slice(0, 19).replace('T', ' ');
+
+const hoje = _bolHojeUTC_();
+const semana = _bolJanelaSemana_();
+
+console.log('\n== Janela da semana ISO ==');
+ok('começa numa segunda', semana.ini.getUTCDay() === 1, semana.ini.toISOString().slice(0, 10));
+ok('tem 7 dias', (semana.fim - semana.ini) === 7 * 864e5);
+ok('contém hoje', hoje >= semana.ini && hoje < semana.fim,
+   iso(semana.ini) + ' .. ' + iso(semana.fim));
+
+console.log('\n== Fotos do backlog ==');
+ok('hoje = fim do dia de hoje', +_bolInstante_(0) === hoje.getTime() + 864e5);
+ok('7 dias atrás', +_bolInstante_(7) === hoje.getTime() + 864e5 - 7 * 864e5);
+ok('28 dias atrás', +_bolInstante_(28) === hoje.getTime() + 864e5 - 28 * 864e5);
+
+console.log('\n== Um item estava aberto naquele instante? ==');
+const d = n => new Date(hoje.getTime() - n * 864e5);
+const item = (rep, fec, est) => ({ dtReporte: rep, dtFechado: fec, estado: est || (fec ? 'Fechado' : 'Aberto') });
+// Aberto há 10 dias e nunca fechado: está nas fotos de hoje e de 7 dias
+// atrás, mas NÃO na de 28 — naquele momento ele ainda não existia.
+ok('aberto há 10 dias entra nas fotos de hoje e de 7d',
+   _bolAbertoEm_(item(d(10), null), _bolInstante_(0)) === true &&
+   _bolAbertoEm_(item(d(10), null), _bolInstante_(7)) === true);
+ok('e NÃO na de 28d, porque ainda não existia',
+   _bolAbertoEm_(item(d(10), null), _bolInstante_(28)) === false);
+ok('fechado há 3 dias: fora de hoje, dentro de 7 dias atrás',
+   _bolAbertoEm_(item(d(20), d(3)), _bolInstante_(0)) === false &&
+   _bolAbertoEm_(item(d(20), d(3)), _bolInstante_(7)) === true);
+ok('"Fechado" SEM data de fechamento continua aberto (lição do CLAUDE.md)',
+   _bolAbertoEm_({ dtReporte: d(20), dtFechado: null, estado: 'Fechado' }, _bolInstante_(0)) === true);
+
+console.log('\n== Nome do empreendimento: boletim x base ==');
+ok('acento e caixa não separam', _bolChaveEmp_('MEGA ITAJAI') === _bolChaveEmp_('Mega Itajaí'));
+ok('pontuação não separa', _bolChaveEmp_('ARMAZÉM MONOUSUÁRIO ESTEIO II') === _bolChaveEmp_('armazem monousuario esteio ii'));
+ok('nomes diferentes seguem diferentes', _bolChaveEmp_('POSTO CURITIBA') !== _bolChaveEmp_('MEGA CURITIBA'));
+
+console.log('\n== Contas por empreendimento ==');
+const HDR = ['Id chamado', 'Centro de Custos', 'Estado', 'Descrição', 'Prioridade',
+             'Responsáveis', 'SLA', 'Área', 'Equipamentos', 'Tipo de reporte',
+             'Tempo para fechar (segundos)', 'Data de reporte', 'Fechado em'];
+const L = (cc, est, resp, rep, fec) =>
+  ['1', cc, est, 'x', 'Alta', resp, '', 'Elétrica', '', 'Corretiva', '', rep, fec || ''];
+
+const naSemana = iso(new Date(semana.ini.getTime() + 864e5));   // 2º dia da semana corrente
+FAKE = {
+  'BD-CORRETIVAS': [HDR,
+    // aberto nesta semana e ainda aberto
+    L('MEGA CURITIBA', 'Aberto',  'Guilherme Heck',     naSemana),
+    // aberto há 40 dias, ainda aberto → está nas três fotos
+    L('MEGA CURITIBA', 'Aberto',  'Ivan Fuscolin Neto', iso(d(40))),
+    // aberto há 40 dias e fechado nesta semana
+    L('MEGA CURITIBA', 'Fechado', 'Guilherme Heck',     iso(d(40)), naSemana),
+    // locatário, ainda aberto
+    L('POSTO CURITIBA', 'Aberto', 'Responsabilidade Locatario', iso(d(15)))
+  ]
+};
+
+const c = obterCorretivasBoletim_();
+const cwb = c.porEmp[_bolChaveEmp_('MEGA CURITIBA')];
+ok('abertos na semana = 1', cwb.abertosSemana === 1, cwb.abertosSemana);
+ok('fechados na semana = 1', cwb.fechadosSemana === 1, cwb.fechadosSemana);
+ok('backlog hoje = 2', cwb.backlog[0] === 2, cwb.backlog[0]);
+ok('backlog 28 dias atrás = 2 (os dois antigos ainda abertos)', cwb.backlog[28] === 2, cwb.backlog[28]);
+ok('separa empreendimentos', c.porEmp[_bolChaveEmp_('POSTO CURITIBA')].backlog[0] === 1);
+ok('total soma os dois', c.total.backlog[0] === 3, c.total.backlog[0]);
+ok('equipe do locatário vira LOCATARIO',
+   c.porEmp[_bolChaveEmp_('POSTO CURITIBA')].equipes['LOCATARIO'] === 1,
+   JSON.stringify(c.porEmp[_bolChaveEmp_('POSTO CURITIBA')].equipes));
+ok('Property e Facilities separados no backlog de hoje',
+   cwb.equipes['PROPERTY'] === 1 && cwb.equipes['FACILITIES'] === 1,
+   JSON.stringify(cwb.equipes));
+
+console.log('\n== Zero falso ==');
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD-CORRETIVAS': [
+  ['Id chamado', 'Centro de Custos', 'Estado'],
+  ['1', 'MEGA CURITIBA', 'Aberto']
+] };
+ok('linhas sem coluna de data → null, não zero', obterCorretivasBoletim_() === null);
+ok('e avisa no Logger', logs.some(l => l.indexOf('nenhuma com data legível') >= 0));
+
+console.log('\n' + (falhas ? `✗ ${falhas} de ${testes} falharam` : `✓ ${testes}/${testes} passaram`));
+process.exit(falhas ? 1 : 0);
