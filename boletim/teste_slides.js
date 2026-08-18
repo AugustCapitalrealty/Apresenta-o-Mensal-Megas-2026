@@ -1,13 +1,22 @@
 /**
- * Teste dos slides unificados (Corretiva e Preventiva, três escopos cada).
+ * Teste dos slides de Manutenção Corretiva e Preventiva, nos três escopos.
  *
- * Enquanto eram seis arquivos, "os três escopos desenham o mesmo slide" era
- * uma promessa que ninguém verificava — e não era verdade: a variante Hangar
- * tinha ficado sem a folga do rótulo de barra. Agora que o desenho é um só,
- * este teste trava as duas coisas que a unificação precisa garantir:
+ * DUAS COISAS QUE ESTE TESTE EXISTE PARA IMPEDIR:
  *
- *   1. cada escopo lê a SUA aba, as SUAS linhas e as SUAS células;
- *   2. o desenho sai igual para todos (mesma folga, mesma régua de cartões).
+ * 1. ENDEREÇO DE CÉLULA QUE MUDA EM SILÊNCIO. A tabela EQUIPE do QUADRO
+ *    COMPARATIVO ganhou a linha "Resp. Locatário", e com isso o TOTAL foi de
+ *    C40 para C41 e a composição de D40:G40 para D41:G41. Quem continuasse
+ *    lendo C40 mostraria o número dos locatários no cartão de Backlog Total,
+ *    sem erro nenhum. Cada endereço está travado aqui.
+ *
+ * 2. RÓTULO DE BARRA CORTADO. A TEXT_BOX tem ~7pt de recuo interno de cada
+ *    lado que a API não deixa desligar; caixa estreita corta o número ("331"
+ *    aparecia "33"). Os três escopos precisam de caixa larga o bastante.
+ *
+ * Preventiva está num arquivo só (BOL_PREVENTIVAS) porque os três escopos
+ * desenham literalmente o mesmo slide. Corretiva NÃO está: a variante
+ * Facilities lê de outra aba, com gráfico mensal somando os 3 Megas e setas
+ * semanais por cartão — modelo de dados diferente, não só células diferentes.
  *
  * Padrão do CLAUDE.md: lê os .gs como texto, dubla SlidesApp/SpreadsheetApp e
  * registra cada shape inserida para conferir a geometria depois.
@@ -145,7 +154,8 @@ global.SlidesApp = {
 };
 
 // ── Carrega o código de produção ─────────────────────────────────────────
-let fonte = ['Config.gs', 'Dados.gs', '04_quadro_manutencao.gs', '06_preventivas.gs']
+let fonte = ['Config.gs', 'Dados.gs', '04_quadro_manutencao.gs',
+              '05_quadro_manutencao_hangar.gs', '06_preventivas.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 // Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
 // `const`/`let` de topo ficam presos no escopo do próprio eval.
@@ -169,43 +179,66 @@ global.obterQuadroCorretivasBoletim_ = () => null;
 
 
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n== Corretiva: cada escopo lê a SUA fonte ==');
+console.log('\n== Corretiva: cada escopo lê a SUA aba e as SUAS células ==');
+// Estas células JÁ MUDARAM uma vez sem o repositório saber: a tabela EQUIPE
+// ganhou a linha "Resp. Locatário", empurrando o TOTAL de C40 para C41 e a
+// composição de D40:G40 para D41:G41. Ler C40 achando que é o total passa a
+// mostrar o número dos locatários no cartão grande, sem erro nenhum — por
+// isso cada endereço está travado aqui.
 
-function fixtureCorretivaGeral() {
+function fxCompleto() {
   setLinha(GRID, 180, 60, ['ABR/26', 'MAI/26', 'JUN/26', 'JUL/26']);
   setLinha(GRID, 182, 60, [10, 20, 30, 40]);       // Facilities
   setLinha(GRID, 183, 60, [5, 6, 7, 8]);           // Property
   setLinha(GRID, 185, 60, [1, 2, 3, 4]);           // Operação
-  setCel(GRID, 'C37', 111); setCel(GRID, 'C38', 222);
-  setCel(GRID, 'C39', 333); setCel(GRID, 'C40', 666);
-  setCel(GRID, 'G40', 40); setCel(GRID, 'D40', 30);
-  setCel(GRID, 'E40', 20); setCel(GRID, 'F40', 10);
+  setCel(GRID, 'C37', 111); setCel(GRID, 'C38', 222); setCel(GRID, 'C39', 333);
+  setCel(GRID, 'C40', 44);                          // Resp. Locatário
+  setCel(GRID, 'C41', 710);                         // TOTAL
+  setCel(GRID, 'G41', 400); setCel(GRID, 'D41', 200);
+  setCel(GRID, 'E41', 100); setCel(GRID, 'F41', 10);
 }
 
-reset(); fixtureCorretivaGeral();
+reset(); fxCompleto();
 gerarSlide05_QuadroManutencao();
 ok('COMPLETO abre a aba padrão do design system',
    ABAS_PEDIDAS.includes(CR_DESIGN_SYSTEM.assets.sheetName), ABAS_PEDIDAS.join(','));
-ok('5 cartões (Total, Fac, Prop, Locat, Oper)',
-   BOL_CORRETIVAS.COMPLETO.cards.length === 5);
-ok('backlog total vem de C40', temTexto(/^BACKLOG TOTAL\n666\n/));
-ok('Facilities vem de C37',    temTexto(/^FACILITIES\n111\n/));
-ok('Locatários vem de F40',    temTexto(/^LOCATÁRIOS\n10\n/));
-ok('a seta compara com a soma do 3º ponto (30+7+3=40): 666-40',
-   temTexto(/BACKLOG TOTAL\n666\n↑ \+626 vs per\. ant\./));
-ok('rótulo do eixo veio como texto, não como data', temTexto(/^JUL\/26$/));
+ok('backlog total vem de C41 (não de C40)', temTexto(/^BACKLOG TOTAL\n710\n/),
+   textos().find(t => /BACKLOG TOTAL/.test(t)));
+ok('Locatários vem de C40 (tabela EQUIPE), não de F41', temTexto(/^LOCATÁRIOS\n44\n/),
+   textos().find(t => /^LOCATÁRIOS/.test(t)));
+ok('Facilities vem de C37', temTexto(/^FACILITIES\n111\n/));
+ok('Operação Hangar vem de C39', temTexto(/^OPERAÇÃO HANGAR\n333\n/));
+ok('composição vem da linha 41: CORRETIVAS = G41', temTexto(/^400 \(56%\)$/), textos().join(' | '));
+ok('MELHORIAS e PROJETOS em linhas separadas',
+   temTexto(/^MELHORIAS$/) && temTexto(/^PROJETOS$/), textos().join(' | '));
+ok('rótulo do eixo é o texto do mês', temTexto(/^JUL\/26$/));
 
 reset();
-setLinha(GRID, 180, 60, ['ABR/26', 'MAI/26', 'JUN/26', 'JUL/26']);
-setLinha(GRID, 182, 60, [10, 20, 30, 40]);
-setLinha(GRID, 183, 60, [5, 6, 7, 8]);
-setCel(GRID, 'C37', 111); setCel(GRID, 'C38', 222); setCel(GRID, 'C40', 999);
-setCel(GRID, 'F40', 10);
+setCel(GRID, 'C26', 111); setCel(GRID, 'C27', 222);
+setCel(GRID, 'C28', 33);  setCel(GRID, 'C29', 366);
+setCel(GRID, 'D29', 60);  setCel(GRID, 'E29', 6); setCel(GRID, 'F29', 300);
+setLinha(GRID, 111, 3, ['ABRIL', 'MAIO', 'JUNHO']);
+[117,118,119].forEach(r => setLinha(GRID, r, 3, [10, 20, 30]));   // Facilities, 3 Megas
+[121,122,123].forEach(r => setLinha(GRID, r, 3, [5, 6, 7]));      // Property, 3 Megas
+[66,67,68].forEach(r => setLinha(GRID, r, 3, [10, 20]));          // semanal Facilities
+[70,71,72].forEach(r => setLinha(GRID, r, 3, [5, 9]));            // semanal Property
+[62,63,64].forEach(r => setLinha(GRID, r, 3, [1, 1]));            // semanal Locatário
+setCel(GRID, 'C37', 999); setCel(GRID, 'C41', 999);               // células do escopo geral
 gerarSlide05_QuadroManutencao_Facilities();
-ok('FACILITIES tem 4 cartões', BOL_CORRETIVAS.FACILITIES.cards.length === 4);
-ok('total do Facilities IGNORA C40 e soma Fac+Prop (111+222)',
-   temTexto(/^BACKLOG TOTAL\n333\n/), textos().find(t => /BACKLOG TOTAL/.test(t)));
+ok('FACILITIES abre "megas QUADRO COMPARATIVO", não a aba padrão',
+   ABAS_PEDIDAS.includes('megas QUADRO COMPARATIVO'), ABAS_PEDIDAS.join(','));
+ok('total vem de C29, ignorando as células do escopo geral', temTexto(/^BACKLOG TOTAL\n366\n/),
+   textos().find(t => /BACKLOG TOTAL/.test(t)));
+ok('Locatários vem de C28', temTexto(/^LOCATÁRIOS\n33\n/));
 ok('não desenha cartão de Operação Hangar', !temTexto(/OPERAÇÃO HANGAR/));
+// O gráfico soma os 3 Megas por mês — 3 linhas viram 1 barra.
+ok('gráfico mensal soma os 3 Megas (10+10+10 = 30)', temTexto(/^30$/), textos().join(' | '));
+ok('e tem um ponto por mês com dado, não 4 fixos', temTexto(/^JUN$/) && !temTexto(/^JUL$/));
+// As setas comparam a última semana com a penúltima, por categoria.
+ok('seta de Facilities: (20*3) - (10*3) = +30', temTexto(/FACILITIES\n\d+\n▲ \+30 vs sem\. ant\./),
+   textos().find(t => /^FACILITIES/.test(t)));
+ok('seta do total soma as três categorias: 30+12+0', temTexto(/▲ \+42 vs sem\. ant\./),
+   textos().find(t => /BACKLOG TOTAL/.test(t)));
 
 reset();
 setLinha(GRID, 40, 60, [new Date(2026, 6, 5), new Date(2026, 6, 12),
@@ -214,55 +247,45 @@ setLinha(GRID, 41, 60, [1, 1, 1, 1]);
 setLinha(GRID, 42, 60, [5, 6, 7, 8]);
 setLinha(GRID, 43, 60, [2, 2, 3, 4]);
 setCel(GRID, 'C11', 77); setCel(GRID, 'C12', 33); setCel(GRID, 'C13', 110);
-setCel(GRID, 'C37', 111); setCel(GRID, 'C40', 666);   // células do escopo geral
+setCel(GRID, 'C41', 999);                                   // célula do escopo geral
 setCel(GRID, 'F13', 60); setCel(GRID, 'D13', 30); setCel(GRID, 'E13', 20);
 gerarSlide05_QuadroManutencao_Hangar();
 ok('HANGAR abre a aba do hangar', ABAS_PEDIDAS.includes('hangar QUADRO COMPARATIVO'));
-ok('HANGAR lê C13, não C40', temTexto(/^BACKLOG TOTAL\n110\n/));
-ok('HANGAR não lê C37 (não desenha cartão Facilities)', !temTexto(/^FACILITIES\n/));
-ok('HANGAR tem 3 cartões', BOL_CORRETIVAS.HANGAR.cards.length === 3);
+ok('HANGAR lê C13, não C41', temTexto(/^BACKLOG TOTAL\n110\n/));
+ok('HANGAR não desenha cartão Facilities', !temTexto(/^FACILITIES\n/));
 ok('cabeçalho do Hangar vira DD/MM', temTexto(/^26\/07$/), textos().join(' | '));
 
 
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n== Corretiva: a folga do rótulo vale para os TRÊS ==');
-// Era o bug que a duplicação escondia: o Hangar desenhava a caixa sem folga e
-// quebrava valor de 3 dígitos. A caixa tem ~7pt de recuo interno de cada lado
-// que a API não deixa desligar, então precisa sobrar largura de verdade.
-function larguraMinimaRotulos(gerar, fixture) {
+console.log('\n== Corretiva: o rótulo da barra cabe em 3 dígitos ==');
+// O bug "331 aparecia 33": a TEXT_BOX tem ~7pt de recuo interno de cada lado
+// que a API não deixa desligar, então uma caixa estreita corta o número. Os
+// três escopos precisam de caixa larga o bastante — 26pt é o piso.
+function caixasDeRotulo(gerar, fixture) {
   reset(); fixture();
   gerar();
-  const rotulos = SHAPES.filter(s => s.tipo === 'TEXT_BOX' && /^\d+$/.test(s.texto) && s.h <= 16);
-  return { n: rotulos.length, min: Math.min(...rotulos.map(s => s.w)) };
+  const r = SHAPES.filter(s => s.tipo === 'TEXT_BOX' && /^\d+$/.test(s.texto) && s.h <= 16);
+  return { n: r.length, min: Math.min(...r.map(s => s.w)) };
 }
-
-const fxHangar = () => {
+const fxHangarG = () => {
   setLinha(GRID, 40, 60, ['S1', 'S2', 'S3', 'S4']);
-  setLinha(GRID, 42, 60, [100, 200, 300, 329]);
+  setLinha(GRID, 42, 60, [100, 200, 300, 331]);
   setLinha(GRID, 43, 60, [111, 222, 333, 444]);
   setCel(GRID, 'C13', 110);
 };
-const fxFac = () => {
-  setLinha(GRID, 180, 60, ['A', 'B', 'C', 'D']);
-  setLinha(GRID, 182, 60, [100, 200, 300, 329]);
-  setLinha(GRID, 183, 60, [111, 222, 333, 444]);
+const fxFacG = () => {
+  setLinha(GRID, 111, 3, ['ABRIL', 'MAIO']);
+  [117,118,119].forEach(r => setLinha(GRID, r, 3, [100, 111]));
+  [121,122,123].forEach(r => setLinha(GRID, r, 3, [110, 120]));
+  setCel(GRID, 'C29', 366);
 };
-
-const rGeral = larguraMinimaRotulos(gerarSlide05_QuadroManutencao, fixtureCorretivaGeral);
-const rFac   = larguraMinimaRotulos(gerarSlide05_QuadroManutencao_Facilities, fxFac);
-const rHang  = larguraMinimaRotulos(gerarSlide05_QuadroManutencao_Hangar, fxHangar);
-
-ok('COMPLETO: 12 rótulos de barra (3 séries x 4 pontos)', rGeral.n === 12, 'n=' + rGeral.n);
-ok('FACILITIES: 8 rótulos (2 séries x 4)', rFac.n === 8, 'n=' + rFac.n);
-ok('HANGAR: 8 rótulos (2 séries x 4)', rHang.n === 8, 'n=' + rHang.n);
-ok('COMPLETO tem folga (caixa > 40pt)', rGeral.min > 40, 'min=' + rGeral.min);
-ok('FACILITIES tem folga (caixa > 40pt)', rFac.min > 40, 'min=' + rFac.min);
-ok('HANGAR TAMBÉM tem folga — era o que faltava', rHang.min > 40, 'min=' + rHang.min);
-// Largura da caixa = barW + 20 + folga*2. Conferir o número exato (e não só
-// "é maior que X") é o que trava a folga contra alguém removê-la sem querer.
-ok('COMPLETO: barra 12 → caixa 64', rGeral.min === 12 + 20 + 32, 'min=' + rGeral.min);
-ok('FACILITIES: barra 14 → caixa 66', rFac.min === 14 + 20 + 32, 'min=' + rFac.min);
-ok('HANGAR: barra 14 → caixa 66', rHang.min === 14 + 20 + 32, 'min=' + rHang.min);
+const rG = caixasDeRotulo(gerarSlide05_QuadroManutencao, fxCompleto);
+const rF = caixasDeRotulo(gerarSlide05_QuadroManutencao_Facilities, fxFacG);
+const rH = caixasDeRotulo(gerarSlide05_QuadroManutencao_Hangar, fxHangarG);
+ok('COMPLETO: 12 rótulos (3 séries x 4 pontos)', rG.n === 12, 'n=' + rG.n);
+ok('COMPLETO: caixa >= 26pt', rG.min >= 26, 'min=' + rG.min);
+ok('FACILITIES: caixa >= 26pt', rF.min >= 26, 'min=' + rF.min);
+ok('HANGAR: caixa >= 26pt', rH.min >= 26, 'min=' + rH.min);
 
 
 // ════════════════════════════════════════════════════════════════════════
@@ -282,32 +305,26 @@ global.obterQuadroCorretivasBoletim_ = () => ({
   ]
 });
 
-reset(); fixtureCorretivaGeral();
+reset(); fxCompleto();
 gerarSlide05_QuadroManutencao();
-ok('COMPLETO usa o total da base (30), não a célula C40 (666)', temTexto(/^BACKLOG TOTAL\n30\n/));
+ok('COMPLETO usa o total da base (30), não a célula C41 (710)', temTexto(/^BACKLOG TOTAL\n30\n/));
 ok('a seta usa totalAnterior da base: 30-25 = +5', temTexto(/BACKLOG TOTAL\n30\n↑ \+5 /));
-ok('o painel continua sendo POR TIPO nos dois caminhos',
-   temTexto(/^COMPOSIÇÃO POR TIPO$/));
-ok('e mostra as fatias da base', temTexto(/^18 \(60%\)$/) && temTexto(/^6 \(20%\)$/));
-// A barra é a fatia do backlog, o mesmo número do "%" escrito ao lado — se
-// fosse escalada pela maior fatia, CORRETIVAS ficaria sempre cheia e a barra
-// diria uma coisa diferente do texto.
+ok('e as fatias da base', temTexto(/^18 \(60%\)$/) && temTexto(/^6 \(20%\)$/));
+// A barra é a fatia do backlog, o mesmo número do "%" ao lado — se fosse
+// escalada pela maior fatia, CORRETIVAS ficaria sempre cheia.
 const barras = SHAPES.filter(s => s.tipo === 'RECTANGLE' && s.x > 700 && s.h === 12);
 ok('a barra de CORRETIVAS ocupa 60% da régua, não 100%',
    barras.length === 2 && Math.abs(barras[1].w / barras[0].w - 0.6) < 0.01,
    JSON.stringify(barras.map(b => b.w)));
 ok('o log diz de onde veio o número', logs.some(l => /fonte = BD-CORRETIVAS/.test(l)));
 
-reset(); fixtureCorretivaGeral();
-setCel(GRID, 'C37', 111); setCel(GRID, 'C38', 222); setCel(GRID, 'C40', 999);
+reset();
+setCel(GRID, 'C26', 111); setCel(GRID, 'C27', 222); setCel(GRID, 'C29', 366);
 gerarSlide05_QuadroManutencao_Facilities();
 ok('FACILITIES NÃO usa a base bruta (ainda não sabe recortar por Megas)',
-   temTexto(/^BACKLOG TOTAL\n333\n/), textos().find(t => /BACKLOG TOTAL/.test(t)));
-ok('e por isso lê a composição das células digitadas', temTexto(/^COMPOSIÇÃO POR TIPO$/));
-ok('com MELHORIAS e PROJETOS em linhas separadas (o rótulo antigo juntava as duas)',
-   temTexto(/^MELHORIAS$/) && temTexto(/^PROJETOS$/), textos().join(' | '));
+   temTexto(/^BACKLOG TOTAL\n366\n/), textos().find(t => /BACKLOG TOTAL/.test(t)));
 
-reset(); fxHangar();
+reset(); fxHangarG();
 gerarSlide05_QuadroManutencao_Hangar();
 ok('HANGAR também não usa a base bruta', temTexto(/^BACKLOG TOTAL\n110\n/));
 
@@ -389,7 +406,7 @@ ok('cartão de 3 é mais largo que o de 4', c3.w > c4.w);
 
 // ════════════════════════════════════════════════════════════════════════
 console.log('\n== Escopo inexistente falha dizendo o que existe ==');
-[['_bolCorretivas_', _bolCorretivas_], ['_bolPreventivas_', _bolPreventivas_]].forEach(([nome, fn]) => {
+[['_bolPreventivas_', _bolPreventivas_]].forEach(([nome, fn]) => {
   let msg = '';
   try { fn('MEGAS'); } catch (e) { msg = e.message; }
   ok(nome + ' recusa escopo desconhecido', /não existe/.test(msg), msg);

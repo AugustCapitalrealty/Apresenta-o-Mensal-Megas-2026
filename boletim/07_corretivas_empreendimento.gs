@@ -2,8 +2,10 @@
  * ARQUIVO: 07_corretivas_empreendimento.gs
  * Cria o slide "Manutenções Corretivas por Empreendimento".
  * Fonte: Planilha QUADRO DE INDICADORES — Aba BOLETIM - CORRETIVAS
- *   - Linhas 7 a 25: empreendimentos
- *   - Linha 26: TOTAL
+ *   - A partir da linha 7: empreendimentos, um por linha
+ *   - TOTAL detectado pelo texto (não por linha fixa) — a busca para assim
+ *     que encontra a linha "TOTAL", ignorando qualquer cabeçalho repetido
+ *     ou conteúdo que exista abaixo dele na planilha.
  * Layout adaptativo: apenasMegas=false usa layout compacto (muitas linhas),
  *                    apenasMegas=true usa layout espaçado para apresentação Facilities (3 Megas).
  */
@@ -48,17 +50,26 @@ function gerarSlide07_CorretivasEmpreendimento(apenasMegas = false, filtroNome =
 
     const MEGAS_3   = ['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO'];
     const filtroNorm = filtroNome ? filtroNome.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "") : null;
-    for (let i = 7; i <= 25; i++) {
+    // Detecta o TOTAL pelo texto (não por número de linha fixo) e para de
+    // procurar assim que encontra — evita capturar cabeçalho repetido ou
+    // qualquer outra coisa que exista abaixo do TOTAL na planilha. O limite
+    // superior (40) é só uma rede de segurança generosa; quem realmente
+    // encerra a busca é o "break" ao achar o TOTAL.
+    for (let i = 7; i <= 40; i++) {
       const row = readRow(i);
-      if (row.emp && row.emp.toString().trim() !== "") {
-        const empNorm = row.emp.toString().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        if      (filtroNorm)  { if (empNorm.includes(filtroNorm))           rows.push(row); }
-        else if (apenasMegas) { if (MEGAS_3.some(m => empNorm.includes(m))) rows.push(row); }
-        else                  { rows.push(row); }
-      }
-    }
+      const empNorm = (row.emp || "").toString().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+      if (!empNorm) continue; // linha em branco: pula, mas continua procurando
 
-    totalRow = readRow(26);
+      if (empNorm === "TOTAL" || empNorm.includes("TOTAL GERAL")) {
+        totalRow = row;
+        break; // achou o TOTAL — para de ler, nunca mais desce além dele
+      }
+      if (empNorm === "EMPREENDIMENTO") continue; // cabeçalho repetido na planilha — ignora
+
+      if      (filtroNorm)  { if (empNorm.includes(filtroNorm))           rows.push(row); }
+      else if (apenasMegas) { if (MEGAS_3.some(m => empNorm.includes(m))) rows.push(row); }
+      else                  { rows.push(row); }
+    }
 
   } catch(e) {
     Logger.log("Erro ao extrair dados: " + e.message);
@@ -94,9 +105,10 @@ function gerarSlide07_CorretivasEmpreendimento(apenasMegas = false, filtroNome =
   // =========================================================
   // --- 2. TABELA — layout adaptativo por modo ---
   // =========================================================
-  const tableX = marginX;
+  // Largura LARGA, sincronizada com os slides 08 e 09: margem 20pt cada lado.
+  const tableX = 20;
   const tableY = marginY + 75;
-  const tableW = pageWidth - (marginX * 2);
+  const tableW = pageWidth - 40;
   const footerH = 25;
   const tableH  = pageHeight - tableY - footerH - 10;
 

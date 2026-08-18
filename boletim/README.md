@@ -53,12 +53,14 @@ Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
 | `Config.gs` | IDs das planilhas, design system e os temas MEGA/HANGAR |
 | `Dados.gs` | **Tudo que lê base bruta.** BD-CORRETIVAS: backlog, quadro do slide 05, composição |
 | `00_Main.gs` | `BOLETINS` (a sequência de slides de cada escopo) e o motor que a executa |
+| `01_menu.gs` | Menu "📊 Boletim 2026" na barra do Slides (`onOpen`) — roda sem abrir o editor |
 | `00_capa.gs` | Slide 01 — capa |
 | `Capas.gs` | Capas de seção (Manutenções, Controle de Acesso, Sustentabilidade, Final) |
 | `03_indice.gs` | Slide 02 — índice |
 | `02_overview.gs` | Slide 03 — overview executivo |
 | `03_manutencoes.gs` | Slide 04 — estratificação |
-| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva, **os três escopos** (`BOL_CORRETIVAS`) |
+| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva: escopos completo e Facilities |
+| `05_quadro_manutencao_hangar.gs` | Slide 05 — variante Hangar |
 | `06_preventivas.gs` | Slide 06 — manutenção preventiva, **os três escopos** (`BOL_PREVENTIVAS`) |
 | `07_corretivas_empreendimento.gs` | Slide 07 — corretivas por empreendimento |
 | `08_preventivas_empreendimento.gs` | Slide 08 — preventivas por empreendimento |
@@ -74,6 +76,31 @@ Node:
 ```sh
 node boletim/teste_dados.js    # as contas da BD-CORRETIVAS
 node boletim/teste_slides.js   # o desenho dos slides, nos três escopos
+```
+
+## De onde veio este código
+
+Do repositório `AugustCapitalrealty/Boletim-2026`, branch
+**`claude/bulletin-design-system-xP63m`** — **não** da `main`.
+
+Isso não é detalhe. A primeira importação pegou a `main`, que estava **21
+commits atrás**, e o monorepo passou semanas com uma versão que não era a que
+rodava. O que se perdeu, entre outras coisas: o slide de Controle de Acesso
+procurava a aba pelo nome ANTIGO (`Cópia de PAINEL INDICADORES`) depois de ela
+ter sido renomeada para `BOLETIM`, então a tabela vinha **vazia**; e a tabela
+EQUIPE do QUADRO COMPARATIVO tinha ganhado uma linha, movendo o TOTAL de `C40`
+para `C41` — ler `C40` mostrava o número dos locatários no cartão de Backlog
+Total, sem erro nenhum.
+
+É o mesmo erro que já tinha acontecido com o `gestao-tvs`. **Antes de importar
+qualquer coisa, liste as branches por data**, não confie na `main`:
+
+```sh
+git ls-remote --heads <repo>
+# ou, no clone:
+git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+git for-each-ref --sort=-committerdate \
+  --format='%(committerdate:short)  %(refname:short)' refs/remotes/origin
 ```
 
 ## Se o editor não tiver exatamente esses arquivos
@@ -97,7 +124,6 @@ Nomes que já existiram e **não** devem estar no editor:
 |---|---|
 | `config.gs`, `config_mega.gs`, `config_hangar.gs` | `Config.gs` |
 | `99_main.gs`, `99_main_facilities.gs`, `99_main_hangar.gs`, `99_main_todas.gs` | `00_Main.gs` |
-| `05_quadro_manutencao_hangar.gs` | `04_quadro_manutencao.gs` |
 | `06_preventivas_facilities.gs`, `06_preventivas_hangar.gs` | `06_preventivas.gs` |
 
 ## Por que os mains viraram um só
@@ -115,33 +141,27 @@ virou um só. Além de tirar três arquivos, isso consertou três coisas:
 - **o tema volta no `finally`**, então erro no meio do Hangar não deixa o
   próximo boletim saindo com a paleta errada.
 
-## Por que os slides viraram um arquivo cada
+## Preventiva num arquivo só, Corretiva não
 
-Manutenção Corretiva tinha três cópias (geral, Facilities, Hangar) e
-Preventiva também. As seis desenhavam o **mesmo** slide e divergiam só em:
-qual aba ler, em que linha/célula está cada número, e quais cartões aparecem.
+**Preventiva** tinha três cópias (geral, Facilities, Hangar) que desenhavam
+literalmente o mesmo slide e divergiam só em qual aba ler, em que linha estão
+os números e quais cartões de SLA aparecem. Isso virou dado (`BOL_PREVENTIVAS`,
+no topo do arquivo) e o desenho é um só.
 
-Agora isso é dado — `BOL_CORRETIVAS` e `BOL_PREVENTIVAS`, no topo de cada
-arquivo — e o desenho é um só. Para mexer num escopo, mexa no descritor; para
-mexer no slide, mexa no desenho, uma vez.
+A prova de que valia juntar: os quatro últimos ajustes desses slides — tirar o
+selo de semana, subir o teto do gráfico para 1.42, abrir o vão entre as barras
+para 10pt e descer o rótulo 1pt — tiveram que ser feitos **três vezes**, um em
+cada arquivo, exatamente iguais.
 
-**Isso não é arrumação: as cópias já tinham divergido.** A variante Hangar
-estava sem a folga "sem quebra" do rótulo de barra, então quebrava valor de 3
-dígitos em duas linhas em cima da barra — defeito já corrigido no escopo geral
-que nunca chegou lá. A variante Facilities tinha a folga mas não o
-`setLineSpacing(100)` que a acompanha. `teste_slides.js` agora confere a
-largura exata da caixa nos três.
+**Corretiva ficou separada de propósito.** Chegou a ser unificada e foi
+desfeito: a variante Facilities não é "o mesmo slide com outras células". Ela
+lê da aba `megas QUADRO COMPARATIVO`, monta o gráfico somando os 3 Megas mês a
+mês (N pontos, não 4 fixos) e calcula uma seta ▲/▼ semanal por cartão a partir
+de outra seção da planilha. Expressar isso num descritor exigiria três
+interruptores de modo — a função deixaria de ser um desenho e viraria um
+`switch`. Duas funções honestas custam menos que uma abstração que mente.
 
-O que **não** mudou: cada escopo continua lendo exatamente as células que lia,
-e o gráfico continua com a largura de barra e os deslocamentos que já tinha —
-esses ficam escritos no descritor em vez de calculados, para a barra não sair
-do lugar sem ninguém ter pedido.
-
-Um escopo ainda difere de propósito: **só o COMPLETO usa a base bruta**
-(`usaBaseBruta: true`). `obterQuadroCorretivasBoletim_` conta a carteira
-inteira e ainda não sabe recortar por Megas ou por Hangar — ligar os outros
-dois mudaria o número na tela. Quando souber filtrar, é virar a chave no
-descritor.
+## Os atalhos `testarSlide*` saíram
 
 As antigas `testarSlide05_Hangar`, `testarSlide06_Preventivas_Facilities`,
 `testarSlide06_Preventivas_Hangar`, `testarSlide07_Corretivas` e

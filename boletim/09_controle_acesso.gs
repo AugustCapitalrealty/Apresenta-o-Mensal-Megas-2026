@@ -1,7 +1,8 @@
 /**
  * ARQUIVO: 09_controle_acesso.gs
  * Cria o slide "Controle de Acesso — KPIs por Empreendimento".
- * Fonte: spreadsheetGraficosId — Aba "Cópia de PAINEL INDICADORES"
+ * Fonte: spreadsheetGraficosId — Aba "BOLETIM"
+ *   (fallback: "PAINEL INDICADORES" / "Cópia de PAINEL INDICADORES", nomes antigos)
  *   - Linha 38: cabeçalho nível 1 (grupos)
  *   - Linha 39: cabeçalho nível 2 (Sem. Ant., KPI, Comp.)
  *   - Linhas 40 a 48: dados dos KPIs
@@ -26,9 +27,22 @@ function gerarSlide09_ControleAcesso() {
   let rows = [];
 
   try {
-    const ss    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetGraficosId);
-    const sheet = ss.getSheetByName('Cópia de PAINEL INDICADORES');
-    if (!sheet) throw new Error("Aba não encontrada.");
+    const ss = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetGraficosId);
+    // Nome da aba mudou de "Cópia de PAINEL INDICADORES" para "BOLETIM".
+    // Busca tolerante a maiúsculas/minúsculas e espaços — evita cair no
+    // fallback errado por uma diferença sutil no nome da aba.
+    const sheet = encontrarAbaPorNomes(ss, ['BOLETIM', 'PAINEL INDICADORES', 'Cópia de PAINEL INDICADORES'], 'Slide09-ControleAcesso');
+    if (!sheet) throw new Error("Aba não encontrada (nem 'BOLETIM', 'PAINEL INDICADORES' nem 'Cópia de PAINEL INDICADORES').");
+
+    // Checagem de sanidade: o cabeçalho da linha 38, coluna D, deve conter
+    // "MEGA CURITIBA". Se não bater, a aba encontrada não tem a estrutura
+    // esperada (tabela de KPIs) — melhor avisar alto no log do que
+    // desenhar dados de outra tabela sem ninguém perceber.
+    const headerD38 = sheet.getRange(38, 4).getDisplayValue().toString().toUpperCase();
+    if (!headerD38.includes('MEGA CURITIBA')) {
+      Logger.log('⚠️ AVISO (Slide09): cabeçalho esperado "MEGA CURITIBA" não encontrado em D38 da aba "' +
+        sheet.getName() + '" (valor lido: "' + headerD38 + '"). A estrutura da aba pode ter mudado — verifique linhas 38-48.');
+    }
 
     // Linhas 40 a 48 — dados
     for (let i = 40; i <= 48; i++) {
@@ -131,6 +145,19 @@ function gerarSlide09_ControleAcesso() {
     return CR_DESIGN_SYSTEM.colors.textBody;
   }
 
+  // Helper: garante a seta ▲/▼ no texto de comparativo, mesmo que a planilha
+  // já não traga o glifo (deriva o sinal a partir do número embutido no texto).
+  function comSeta(val) {
+    if (!val || val === "-") return val;
+    let txt = val.toString().trim();
+    if (txt.includes('▲') || txt.includes('▼')) return txt; // já vem formatado
+    const numMatch = txt.replace(',', '.').match(/-?\d+(\.\d+)?/);
+    if (!numMatch) return txt;
+    const num = parseFloat(numMatch[0]);
+    if (isNaN(num) || num === 0) return txt;
+    return (num > 0 ? '▲ ' : '▼ ') + txt.replace(/^-/, '');
+  }
+
   // Cabeçalho nível 1
   groups.forEach(g => {
     const x1 = colPositions[g.startCol];
@@ -179,18 +206,23 @@ function gerarSlide09_ControleAcesso() {
       const isLabel = col.key === 'label';
       const isTotGroup = ['totAnt','totKpi','totComp'].includes(col.key);
 
-      // Fundo
-      let bgColor = isTotGroup
-        ? (isAlt ? '#EFF6FF' : '#DBEAFE')
-        : (isAlt ? '#F8FAFC' : CR_DESIGN_SYSTEM.colors.cardBg);
-
       const cell = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, y, cw, dataH);
-      cell.getFill().setSolidFill(bgColor);
+      // Fundo do grupo TOTAL usa a cor da marca (brandSoft) com transparência,
+      // então acompanha o tema — azul suave no Capital, laranja suave no Mega —
+      // em vez de um azul fixo que destoava no tema Mega.
+      if (isTotGroup) {
+        cell.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandSoft, isAlt ? 0.22 : 0.40);
+      } else {
+        cell.getFill().setSolidFill(isAlt ? '#F8FAFC' : CR_DESIGN_SYSTEM.colors.cardBg);
+      }
       cell.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
 
       // Texto
       const rawVal = row[col.key] || "-";
       let safeVal = (!rawVal || rawVal.toString().trim() === "" || rawVal.toString().includes("#DIV") || rawVal.toString().includes("#ERR")) ? "-" : rawVal.toString().trim();
+
+      // Comparativo: garante seta ▲/▼ indicando aumento/queda vs. semana anterior
+      if (isComp) safeVal = comSeta(safeVal);
 
       // Formatar tempo: 10:49 → 10m49s | 0:09:19 → 09m19s
       if (!isLabel && !isComp && safeVal.includes(":")) {
@@ -202,8 +234,12 @@ function gerarSlide09_ControleAcesso() {
         }
       }
 
-      const txtX = isLabel ? cx + 4 : cx;
-      const txtW = isLabel ? cw - 8 : cw;
+      // Caixa numérica levemente mais larga que a célula (folga simétrica),
+      // para números longos como "404.680" não quebrarem. O texto continua
+      // centralizado (o centro da caixa coincide com o centro da célula) e a
+      // pequena invasão nas células vizinhas não colide (valores curtos).
+      const txtX = isLabel ? cx + 4 : cx - 8;
+      const txtW = isLabel ? cw - 8 : cw + 16;
       const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, txtX, y, txtW, dataH);
       txt.getText().setText(safeVal);
       txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);

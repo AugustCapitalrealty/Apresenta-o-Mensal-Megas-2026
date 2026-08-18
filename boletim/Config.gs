@@ -110,6 +110,29 @@ function getSemanaBoletim(dataRef) {
   };
 }
 
+/**
+ * Busca uma aba pelo nome IGNORANDO maiúsculas/minúsculas e espaços nas
+ * pontas — evita que uma comparação exata (getSheetByName) falhe em
+ * silêncio e caia num fallback errado por causa de uma diferença sutil
+ * de digitação (ex.: "Boletim " com espaço, ou "boletim" minúsculo).
+ * Recebe uma lista de nomes candidatos, em ordem de prioridade.
+ * Registra no Logger qual aba foi de fato encontrada (ou nenhuma).
+ */
+function encontrarAbaPorNomes(spreadsheet, nomesCandidatos, contexto) {
+  const abas = spreadsheet.getSheets();
+  for (const candidato of nomesCandidatos) {
+    const alvo = candidato.trim().toLowerCase();
+    const achada = abas.find(sh => sh.getName().trim().toLowerCase() === alvo);
+    if (achada) {
+      Logger.log('[' + (contexto || 'aba') + '] Usando aba "' + achada.getName() + '" (buscado: "' + candidato + '").');
+      return achada;
+    }
+  }
+  Logger.log('[' + (contexto || 'aba') + '] NENHUMA aba encontrada entre: ' + nomesCandidatos.join(', ') +
+    ' | Abas existentes: ' + abas.map(sh => sh.getName()).join(', '));
+  return null;
+}
+
 
 // ==========================================================================
 // DESIGN SYSTEM — MEGA CENTRO LOGÍSTICO

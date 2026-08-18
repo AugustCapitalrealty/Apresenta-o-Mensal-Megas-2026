@@ -7,7 +7,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | Pasta | Projeto | Arquivos |
 |---|---|---|
 | `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 43 `.gs` |
-| `boletim/` | Boletim 2026 | 24 `.gs` |
+| `boletim/` | Boletim 2026 | 19 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 11 `.gs` |
@@ -19,15 +19,46 @@ veio de `AugustCapitalrealty/Gest-o-a-vistas-TV`). **Esses repositórios de
 origem não são mais usados.** Toda alteração acontece aqui; não abra PR lá,
 não sincronize de volta.
 
-O motivo é concreto. O `gestao-tvs` foi importado da branch `main` do repo
-de origem, mas o código que estava de fato rodando vivia numa branch 35
-commits à frente — e dois arquivos inteiros (`08_Slide_Cheias.gs`,
-`09_Metas_Auto.gs`) nunca tinham sido commitados em lugar nenhum, existindo
-só dentro do editor do Apps Script. Trabalhar em cima da cópia velha
-produziu código que duplicava função existente, reintroduzia bug já
-corrigido e configurava `ppcId` em cidades que não têm PPC.
+### A `main` do repo de origem quase nunca é o código que roda
 
-Duas regras que saem daí:
+Isso já aconteceu **duas vezes**, com projetos diferentes, pelo mesmo motivo:
+
+| Pasta | Importada de | O que estava mesmo rodando |
+|---|---|---|
+| `gestao-tvs` | `Gest-o-a-vistas-TV`, `main` | uma branch **35 commits à frente** |
+| `boletim` | `Boletim-2026`, `main` | `claude/bulletin-design-system-xP63m`, **21 commits à frente** |
+
+No `gestao-tvs`, dois arquivos inteiros (`08_Slide_Cheias.gs`,
+`09_Metas_Auto.gs`) nunca tinham sido commitados em lugar nenhum, existindo só
+dentro do editor do Apps Script. Trabalhar na cópia velha produziu código que
+duplicava função existente, reintroduzia bug já corrigido e configurava
+`ppcId` em cidades que não têm PPC.
+
+No `boletim` foi pior, porque o estrago era **invisível**: a aba de KPIs de
+acesso tinha sido renomeada de `Cópia de PAINEL INDICADORES` para `BOLETIM`, e
+a cópia velha continuava procurando o nome antigo — a tabela do slide 09 vinha
+vazia. E a tabela EQUIPE do QUADRO COMPARATIVO tinha ganhado uma linha,
+movendo o TOTAL de `C40` para `C41`: ler `C40` mostrava o número dos
+locatários no cartão de Backlog Total. Nenhum dos dois dá erro na tela.
+
+**Antes de importar ou de comparar com a origem, liste as branches por data.**
+Um `git clone` traz só a `main`, e `--unshallow` não traz as outras:
+
+```sh
+git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+git for-each-ref --sort=-committerdate \
+  --format='%(committerdate:short)  %(refname:short)' refs/remotes/origin
+```
+
+Ao trazer código de uma branch para cá, o merge de três vias com a `main` como
+base preserva o que já foi feito no monorepo:
+`git merge-file -p <nossa> <base-main> <branch>`. **Normalize CRLF antes** — o
+`boletim` tem uns arquivos em LF e outros em CRLF, e sem `sed 's/\r$//'` nos
+três lados todo merge vira conflito de arquivo inteiro e parece que nada é
+reaproveitável.
+
+### As outras duas regras
+
 
 1. **Antes de mexer numa pasta, confirme que ela reflete o editor.** O
    editor é onde o código roda; o git só o acompanha se alguém colar de

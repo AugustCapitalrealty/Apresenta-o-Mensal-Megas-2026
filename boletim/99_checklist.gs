@@ -70,7 +70,7 @@ function gerarSlideChecklist() {
 
   try {
     const ss2   = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetGraficosId);
-    const sheet2 = ss2.getSheetByName('Cópia de PAINEL INDICADORES');
+    const sheet2 = encontrarAbaPorNomes(ss2, ['BOLETIM', 'PAINEL INDICADORES', 'Cópia de PAINEL INDICADORES'], 'Checklist');
     const sheet3 = ss2.getSheetByName('2026 GRÁFICOS');
 
     const kpiAcesso = sheet2 ? sheet2.getRange('E40').getValue() : null;

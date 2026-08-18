@@ -47,17 +47,25 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
 
     const MEGAS_3    = ['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO'];
     const filtroNorm = filtroNome ? filtroNome.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "") : null;
-    for (let i = 6; i <= 13; i++) {
+    // Detecta o TOTAL pelo texto (não por número de linha fixo) e para de
+    // procurar assim que encontra. Assim, remover/adicionar empreendimentos
+    // na planilha (linhas sobem/descem) não quebra a leitura — o limite
+    // superior (30) é só uma rede de segurança generosa.
+    for (let i = 6; i <= 30; i++) {
       const row = readRow(i);
-      if (row.emp && row.emp.toString().trim() !== "") {
-        const empNorm = row.emp.toString().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-        if      (filtroNorm)  { if (empNorm.includes(filtroNorm))           rows.push(row); }
-        else if (apenasMegas) { if (MEGAS_3.some(m => empNorm.includes(m))) rows.push(row); }
-        else                  { rows.push(row); }
-      }
-    }
+      const empNorm = (row.emp || "").toString().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+      if (!empNorm) continue; // linha em branco: pula, mas continua procurando
 
-    totalRow = readRow(14);
+      if (empNorm === "TOTAL" || empNorm.includes("TOTAL GERAL")) {
+        totalRow = row;
+        break; // achou o TOTAL — para de ler, nunca mais desce além dele
+      }
+      if (empNorm === "EMPREENDIMENTO") continue; // cabeçalho repetido na planilha — ignora
+
+      if      (filtroNorm)  { if (empNorm.includes(filtroNorm))           rows.push(row); }
+      else if (apenasMegas) { if (MEGAS_3.some(m => empNorm.includes(m))) rows.push(row); }
+      else                  { rows.push(row); }
+    }
 
   } catch(e) {
     Logger.log("Erro ao extrair dados: " + e.message);
@@ -93,9 +101,11 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
   // =========================================================
   // --- 2. TABELA — layout adaptativo por modo ---
   // =========================================================
-  const tableX = marginX;
+  // Largura LARGA, sincronizada com o slide 09 (Controle de Acesso): margem 20pt
+  // cada lado. Dá ~60pt extras p/ as colunas e mantém as 3 tabelas alinhadas.
+  const tableX = 20;
   const tableY = marginY + 75;
-  const tableW = pageWidth - (marginX * 2);
+  const tableW = pageWidth - 40;
   const footerH = 25;
   const tableH  = pageHeight - tableY - footerH - 10;
 
@@ -114,27 +124,30 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
   const drawY    = tableY + vOffset;
 
   const cols = layoutEsp ? [
-    // Facilities/Hangar: EMPREENDIMENTO mais largo p/ não quebrar; UF com folga p/ "PR"
-    { label: 'EMPREENDIMENTO', key: 'emp',   w: 0.170, align: 'LEFT'   },
-    { label: 'UF',             key: 'uf',    w: 0.045, align: 'CENTER' },
-    { label: 'CANC',           key: 'canc',  w: 0.058, align: 'CENTER' },
-    { label: 'ATR',            key: 'atr',   w: 0.045, align: 'CENTER' },
-    { label: 'SEM',            key: 'sem',   w: 0.048, align: 'CENTER' },
-    { label: 'ANO',            key: 'ano',   w: 0.055, align: 'CENTER' },
-    { label: 'PLAN',           key: 'plan',  w: 0.055, align: 'CENTER' },
-    { label: 'EM DIA',         key: 'emDia', w: 0.065, align: 'CENTER' },
-    { label: 'SLA\nATEND.',    key: 'sla',   w: 0.065, align: 'CENTER' },
-    { label: 'ESTADO',         key: 'est',   w: 0.065, align: 'CENTER' },
+    // Facilities/Hangar: MESMA densidade da versão Completo (que comprovadamente
+    // não quebra). Fonte do corpo travada em 6.5pt; o ar "espaçoso" vem das linhas
+    // altas + centralização vertical, NÃO de fonte grande. Larguras folgadas p/
+    // números (3.028) e percentuais (95,77%). Soma = 1.000.
+    { label: 'EMPREENDIMENTO', key: 'emp',   w: 0.150, align: 'LEFT'   },
+    { label: 'UF',             key: 'uf',    w: 0.038, align: 'CENTER' },
+    { label: 'CAN',            key: 'canc',  w: 0.050, align: 'CENTER' },
+    { label: 'ATR',            key: 'atr',   w: 0.044, align: 'CENTER' },
+    { label: 'SEM',            key: 'sem',   w: 0.047, align: 'CENTER' },
+    { label: 'ANO',            key: 'ano',   w: 0.064, align: 'CENTER' },
+    { label: 'PLAN',           key: 'plan',  w: 0.058, align: 'CENTER' },
+    { label: 'EM DIA',         key: 'emDia', w: 0.070, align: 'CENTER' },
+    { label: 'SLA\nATEND.',    key: 'sla',   w: 0.068, align: 'CENTER' },
+    { label: 'ESTADO',         key: 'est',   w: 0.068, align: 'CENTER' },
     { label: '% NÃO\nFEITO',   key: 'pend',  w: 0.062, align: 'CENTER' },
-    { label: '4 SEM.\nATRÁS',  key: 'p4sem', w: 0.066, align: 'CENTER' },
-    { label: '1 SEM.\nATRÁS',  key: 'p1sem', w: 0.066, align: 'CENTER' },
-    { label: 'HOJE',           key: 'hoje',  w: 0.066, align: 'CENTER' },
-    { label: 'COMP.\nSEM.',    key: 'seta',  w: 0.069, align: 'CENTER' },
+    { label: '4 SEM.\nATRÁS',  key: 'p4sem', w: 0.071, align: 'CENTER' },
+    { label: '1 SEM.\nATRÁS',  key: 'p1sem', w: 0.071, align: 'CENTER' },
+    { label: 'HOJE',           key: 'hoje',  w: 0.071, align: 'CENTER' },
+    { label: 'COMP.\nSEM.',    key: 'seta',  w: 0.068, align: 'CENTER' },
   ] : [
     // Completo: colunas originais para 8+ linhas
     { label: 'EMPREENDIMENTO', key: 'emp',   w: 0.14,  align: 'LEFT'   },
     { label: 'UF',             key: 'uf',    w: 0.05,  align: 'CENTER' },
-    { label: 'CANC.',          key: 'canc',  w: 0.04,  align: 'CENTER' },
+    { label: 'CAN',            key: 'canc',  w: 0.04,  align: 'CENTER' },
     { label: 'ATR.',           key: 'atr',   w: 0.05,  align: 'CENTER' },
     { label: 'SEM.',           key: 'sem',   w: 0.05,  align: 'CENTER' },
     { label: 'ANO',            key: 'ano',   w: 0.07,  align: 'CENTER' },
@@ -181,7 +194,7 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
   });
 
   // Cabeçalho nível 2
-  const hFont2 = layoutEsp ? 6.5 : 5.5;
+  const hFont2 = layoutEsp ? 5.5 : 5.5;
   cols.forEach((col, ci) => {
     const cx = colPositions[ci];
     const cw = tableW * col.w;
@@ -229,8 +242,8 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
     return CR_DESIGN_SYSTEM.colors.textBody;
   }
 
-  const dataFontEmp  = layoutEsp ? 8.5 : 6.5;
-  const dataFontBody = layoutEsp ? 7.5 : 6.5;
+  const dataFontEmp  = layoutEsp ? 8   : 6.5;
+  const dataFontBody = layoutEsp ? 6.5 : 6.5;
 
   const isPct  = ['p4sem','p1sem','hoje'];
   const isSeta = 'seta';
@@ -252,7 +265,7 @@ function gerarSlide08_PreventivasEmpreendimento(apenasMegas = false, filtroNome 
 
       const rawVal = rowData[col.key] || "-";
       let safeVal = (!rawVal || rawVal.toString().trim() === "" || rawVal.toString().includes("#DIV") || rawVal.toString().includes("#ERR"))
-        ? "-" : rawVal.toString().replace(/[\r\n]+/g, ' ').replace(/\s+%/g, '%').trim();
+        ? "-" : rawVal.toString().replace(/[\r\n]+/g, ' ').replace(/[\s ]+%/g, '%').trim();
       if (numericKeys.has(col.key)) safeVal = formatNum(safeVal);
 
       const txtX = col.key === 'emp' ? cx + 2 : cx;

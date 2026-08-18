@@ -35,8 +35,21 @@ function gerarSlide03_OverviewExecutivo() {
         return val ? val.toString() : "N/D";
       };
 
-      vDisp     = getVal('F19');
-      vConf     = getVal('G19');
+      // Disponibilidade (ANO, col. F) e Confiabilidade (col. G) vêm da linha
+      // "TOTAL GERAL" da tabela de Itens Críticos. A posição muda quando
+      // empreendimentos são adicionados/removidos, então buscamos a linha
+      // pelo texto em vez de fixar F19/G19.
+      const blocoItens = sheet1.getRange(8, 2, 25, 1).getDisplayValues(); // coluna B, linhas 8-32
+      for (let i = 0; i < blocoItens.length; i++) {
+        const nomeItem = (blocoItens[i][0] || '').toString().toUpperCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (nomeItem.includes('TOTAL GERAL')) {
+          const linhaTot = 8 + i;
+          vDisp = getVal('F' + linhaTot);
+          vConf = getVal('G' + linhaTot);
+          break;
+        }
+      }
       
       const formatKwh = (val) => {
         if (val === "N/D") return val;

@@ -3,16 +3,19 @@
  * Slide "Manutenção Preventiva" — os três escopos num arquivo só.
  *
  * Junta o que eram 06_preventivas.gs, 06_preventivas_facilities.gs e
- * 06_preventivas_hangar.gs. Os três desenhavam o MESMO slide (selo de semana,
- * cartões de SLA, gráfico agendadas x realizadas, rodapé) e divergiam só em:
+ * 06_preventivas_hangar.gs. Os três desenhavam o MESMO slide (cartões de SLA,
+ * gráfico agendadas x realizadas, rodapé) e divergiam só em:
  *
  *   · qual aba ler;
  *   · em que linha estão datas / agendadas / realizadas;
  *   · quais cartões de SLA aparecem e de que célula sai cada um.
  *
- * Isso agora é DADO (BOL_PREVENTIVAS) e o desenho é um só. Enquanto eram três
- * cópias, um ajuste no gráfico precisava ser feito três vezes — e bastava
- * esquecer uma para o boletim sair com dois slides diferentes do terceiro.
+ * Isso agora é DADO (BOL_PREVENTIVAS) e o desenho é um só.
+ *
+ * A PROVA DE QUE VALIA JUNTAR: os últimos quatro ajustes destes slides —
+ * tirar o selo de semana, subir o teto do gráfico para 1.42, abrir o vão
+ * entre as barras para 10pt e descer o rótulo 1pt — tiveram que ser feitos
+ * TRÊS VEZES, um em cada arquivo, exatamente iguais. Agora é uma vez.
  */
 
 // ==========================================================================
@@ -184,24 +187,9 @@ function _bolPreventivas_(chave) {
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11)
     .setForegroundColor(cor('textBody'));
 
-  // =========================================================
-  // --- 1b. SELO DETECTOR DE SEMANA (canto superior direito) ---
-  // =========================================================
-  const semInfo = getSemanaBoletim(ultimaDataSemana);
-  if (semInfo) {
-    const seloW = 175, seloH = 24;
-    const seloX = pageWidth - marginX - seloW;
-    const seloY = marginY + 48; // logo abaixo do logo, acima dos cards
-    const selo = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, seloX, seloY, seloW, seloH);
-    selo.getFill().setSolidFill(cor('brandDark'));
-    selo.getBorder().setTransparent();
-    const seloTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, seloX, seloY, seloW, seloH);
-    seloTxt.getText().setText('SEMANA ' + semInfo.numero + '  •  ' + semInfo.intervalo).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(9).setBold(true)
-      .setForegroundColor('#FFFFFF');
-    seloTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    seloTxt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  }
+  // O SELO DE SEMANA foi removido do topo destes slides (decisão de layout do
+  // boletim). `ultimaDataSemana` continua sendo calculado porque é ele que dá
+  // o rótulo DD/MM do eixo — só não vira mais selo.
 
   // =========================================================
   // --- 2. CARDS DE SLA ---
@@ -293,21 +281,17 @@ function _bolPreventivas_(chave) {
     .getLineFill().setSolidFill(cor('lines'));
 
   const maxVal = Math.max.apply(null, agendadas.concat(realizadas).concat([10]));
-  const scaleY = plotH / (maxVal * 1.25);
+  // 1.42 de teto (era 1.25) e 10pt entre as barras (era 4): é a folga que os
+  // rótulos precisam para não colidirem nem serem cortados pelo topo. Estes
+  // números foram medidos no deck real — não mexa neles sem olhar o slide.
+  const scaleY = plotH / (maxVal * 1.42);
   const stepX  = plotW / timeline.length; // divide em fatias iguais
   const barW   = 16;
-  const barGap = 4;                       // espaço entre as duas barras do grupo
-
-  // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra do CLAUDE.md): a
-  // TEXT_BOX tem ~7pt de recuo interno de CADA lado que a API não deixa
-  // desligar. A caixa do rótulo tinha 26pt, sobrando ~12pt úteis — um valor de
-  // 3 dígitos quebrava a linha em cima da barra. A caixa é invisível, então
-  // alargá-la simetricamente não muda nada na tela além de não quebrar.
-  const folga = 16;
+  const barGap = 10;                      // espaço entre as duas barras do grupo
 
   const rotulo = function (x, y, texto, corTexto) {
     const cx = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-      x - 5 - folga, y, barW + 10 + folga * 2, 14);
+      x - 5, y, barW + 10, 14);
     cx.getText().setText(texto).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
       .setForegroundColor(corTexto);
@@ -336,13 +320,13 @@ function _bolPreventivas_(chave) {
     const agRect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, agX, (plotY + plotH) - hAgend, barW, hAgend);
     agRect.getFill().setSolidFill('#CBD5E1');
     agRect.getBorder().setTransparent();
-    rotulo(agX, (plotY + plotH) - hAgend - 17, agendadas[i].toLocaleString('pt-BR'), '#94A3B8');
+    rotulo(agX, (plotY + plotH) - hAgend - 18, agendadas[i].toLocaleString('pt-BR'), '#94A3B8');
 
     const hReal = Math.max(realizadas[i] * scaleY, 1);
     const reRect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, reX, (plotY + plotH) - hReal, barW, hReal);
     reRect.getFill().setSolidFill(cor('brandDark'));
     reRect.getBorder().setTransparent();
-    rotulo(reX, (plotY + plotH) - hReal - 17, realizadas[i].toLocaleString('pt-BR'), cor('brandDark'));
+    rotulo(reX, (plotY + plotH) - hReal - 18, realizadas[i].toLocaleString('pt-BR'), cor('brandDark'));
   });
 
   // =========================================================

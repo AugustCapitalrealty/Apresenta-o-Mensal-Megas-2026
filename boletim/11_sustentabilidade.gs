@@ -125,7 +125,7 @@ function gerarSlide11_Sustentabilidade() {
 
   // Escala Y (ignora dias sem dados / null)
   const valoresValidos = [...dados.consumoD, ...dados.geracaoD].filter(v => v != null);
-  const maxVal = (valoresValidos.length ? Math.max(...valoresValidos) : 100) * 1.25;
+  const maxVal = (valoresValidos.length ? Math.max(...valoresValidos) : 100) * 1.42;
   const scaleY = plotH / maxVal;
   const stepX  = plotW / dados.dias.length;
   const barW   = stepX * 0.35;
