@@ -4,7 +4,7 @@
  *
  * Mesma estrutura de propriedades-mensal/00_Main.gs e megas-mensal/00_Main.gs:
  * um array `passos` com os slides na ordem, e um laço que roda cada um
- * isolado — slide que falha registra o erro e não derruba os outros.
+ * isolado — slide que falha é removido e substituído por um placeholder.
  *
  * Os slides temáticos são gerados somente a partir dos contratos de
  * 02_Dados.gs — slide com dado inventado é pior que slide nenhum.
@@ -94,7 +94,7 @@ function _passosApresentacaoFinanceiro_() {
 // completo e limpo, quantas vezes for rodada.
 function regerarApresentacaoFinanceiro() {
   limparApresentacaoFinanceiro_();
-  const erros = gerarApresentacaoFinanceiro();
+  const avisos = gerarApresentacaoFinanceiro();
 
   // O deck do Slides não pode ficar sem nenhum slide, então limpar... preserva
   // o primeiro e ele só é removido AGORA, depois que a capa gerada já ocupou
@@ -120,8 +120,9 @@ function regerarApresentacaoFinanceiro() {
     }
   }
 
-  Logger.log('✔ Financeiro — ' + (erros.length ? erros.length + ' erro(s).' : 'sem erros.'));
-  return erros;
+  const total = getDeckMensal_().getSlides().length;
+  Logger.log('✔ Financeiro — ' + total + ' páginas; ' + avisos.length + ' aviso(s)/placeholder(s).');
+  return avisos;
 }
 
 // Decks com muitas tabelas podem exceder o tempo máximo de uma única
@@ -168,25 +169,55 @@ function _removerSlideAntigo_() {
 }
 
 
-// Roda cada passo isolado: slide que falha registra o erro e não derruba os
-// outros — um deck parcial é mais útil que um deck que não abriu.
+// Roda cada passo isolado. Se um gerador falhar depois de criar parte do
+// slide, tudo que ele acrescentou é removido e um placeholder ocupa a mesma
+// posição. Assim cada passo acrescenta exatamente uma página.
 function _rodarPassos_(passos) {
   if (!passos.length) {
     Logger.log('  Nenhum slide no pipeline.');
     return [];
   }
-  const erros = [];
+  const avisos = [];
+  const deck = getDeckMensal_();
   passos.forEach(p => {
+    const antes = deck.getSlides().length;
     try {
       p.fn();
-      Logger.log('  ✓ ' + p.nome);
+      const criados = deck.getSlides().length - antes;
+      if (criados !== 1) throw new Error('gerador criou ' + criados + ' página(s); esperado: 1');
+      if (DC_PAGINAS_PLACEHOLDER.indexOf(p.nome) >= 0) {
+        avisos.push(p.nome + ': fonte de dados não disponível');
+        Logger.log('  ◇ ' + p.nome + ' — placeholder sem fonte confirmada');
+      } else {
+        Logger.log('  ✓ ' + p.nome);
+      }
     } catch (e) {
-      erros.push(p.nome + ': ' + e.message);
-      Logger.log('  ✗ ' + p.nome + ' — ' + e.message);
+      _removerSlidesCriadosApos_(deck, antes);
+      const mensagem = p.nome + ': ' + e.message;
+      avisos.push(mensagem);
+      try {
+        gerarSlidePlaceholderFinanceiro_(p.nome, 'Resultados Financeiros',
+          'Falha ao ler ou renderizar a fonte: ' + e.message);
+        // Se a tentativa de placeholder também criou mais de uma página,
+        // limpa novamente e cai no placeholder mínimo abaixo.
+        if (deck.getSlides().length - antes !== 1) throw new Error('placeholder criou quantidade inesperada de páginas');
+      } catch (placeholderErro) {
+        _removerSlidesCriadosApos_(deck, antes);
+        // Última barreira de contagem: mesmo em instabilidade dos shapes, um
+        // slide em branco é melhor que deslocar todas as páginas seguintes.
+        deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+        Logger.log('  ⚠ Placeholder visual indisponível: ' + placeholderErro.message);
+      }
+      Logger.log('  ⚠ ' + p.nome + ' — substituído por placeholder: ' + e.message);
     }
   });
-  if (erros.length) Logger.log('  ' + erros.length + ' slide(s) com erro.');
-  return erros;
+  Logger.log('  Lote concluído: ' + passos.length + ' passo(s), ' + avisos.length + ' aviso(s).');
+  return avisos;
+}
+
+function _removerSlidesCriadosApos_(deck, quantidadeAnterior) {
+  const slides = deck.getSlides();
+  for (let i = slides.length - 1; i >= quantidadeAnterior; i--) slides[i].remove();
 }
 
 
@@ -233,28 +264,21 @@ function diagnosticarFinanceiro() {
 }
 
 
-// Somente lê metadados e valores: não abre o deck para edição, não chama
-// gerador e não cria slide. Os blocos temáticos podem mudar de aba, por isso
-// são conferidos pelo título distintivo, enquanto os dois quadros existentes
-// têm abas contratuais fixas.
+// Somente lê metadados: não abre o deck para edição, não chama gerador e não
+// cria slide. Apenas as fontes registradas explicitamente são obrigatórias.
 function _diagnosticarAbasFinanceiro_(ss, pend) {
-  Logger.log('  Abas/blocos necessários:');
+  Logger.log('  Abas confirmadas necessárias:');
   [QUADRO_EBITDA_SHEET, QUADRO_DRE_SHEET].forEach(nome => {
     if (ss.getSheetByName(nome)) Logger.log('    ✓ aba "' + nome + '"');
     else { Logger.log('    ✗ aba "' + nome + '" ausente'); pend.push('aba "' + nome + '" ausente'); }
   });
-
-  const localizados = {};
-  ss.getSheets().forEach(sheet => {
-    const valores = sheet.getDataRange().getDisplayValues();
-    Object.keys(BLOCOS_FINANCEIROS).forEach(chave => {
-      const titulo = _finNorm_(BLOCOS_FINANCEIROS[chave].titulo);
-      if (valores.some(l => l.some(v => _finNorm_(v) === titulo))) localizados[chave] = sheet.getName();
-    });
+  const abas = ss.getSheets();
+  const nomes = abas.map(sheet => _dcNorm_(sheet.getName()));
+  Object.keys(DC_FONTES_CONFIRMADAS).map(chave => DC_FONTES_CONFIRMADAS[chave])
+    .filter(fonte => fonte.tipo === 'agenda' || fonte.tipo === 'comparativo')
+    .forEach(fonte => {
+      if (nomes.indexOf(_dcNorm_(fonte.aba)) >= 0) Logger.log('    ✓ aba "' + fonte.aba + '"');
+      else { Logger.log('    ✗ aba "' + fonte.aba + '" ausente'); pend.push('aba "' + fonte.aba + '" ausente'); }
   });
-  Object.keys(BLOCOS_FINANCEIROS).forEach(chave => {
-    const titulo = BLOCOS_FINANCEIROS[chave].titulo;
-    if (localizados[chave]) Logger.log('    ✓ bloco "' + titulo + '" — aba "' + localizados[chave] + '"');
-    else { Logger.log('    ✗ bloco "' + titulo + '" não localizado'); pend.push('bloco "' + titulo + '" ausente'); }
-  });
+  Logger.log('    ◇ 34 páginas usam placeholder por ausência de fonte confirmada.');
 }

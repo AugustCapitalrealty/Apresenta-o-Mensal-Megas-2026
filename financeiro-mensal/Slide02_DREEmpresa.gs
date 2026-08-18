@@ -56,6 +56,7 @@ function gerarSlideDREEmpresa_(chave) {
   _rrUmaLinha_(slide, mX, H * 0.128, W * 0.55, H * 0.052,
     'Painel Executivo — ' + _rrMesAno_(dre.mes, dre.ano),
     { fs: W * 0.018, cor: DS.colors.brandMed, fonte: DS.typography.body, align: 'L', folga: 0 });
+  _rrAvisoMesFonte_(slide, W, H, dre.mes, dre.ano, QUADRO_DRE_SHEET);
 
   // ── Logo Capital Realty, no topo (mesmo lugar do Resumo do Resultado) ──
   try {

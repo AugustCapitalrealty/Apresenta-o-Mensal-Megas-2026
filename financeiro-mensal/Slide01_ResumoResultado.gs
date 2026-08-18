@@ -71,6 +71,7 @@ function gerarSlideResumoResultado() {
 
   _rrUmaLinha_(slide, mX, H * 0.128, W * 0.55, H * 0.052, _rrMesAno_(dados.mes, dados.ano),
     { fs: W * 0.018, cor: DS.colors.brandMed, fonte: DS.typography.body, align: 'L', folga: 0 });
+  _rrAvisoMesFonte_(slide, W, H, dados.mes, dados.ano, QUADRO_EBITDA_SHEET);
 
   // ── Logo Capital Realty ──
   // Vai no TOPO, ao lado do título, e não no rodapé: no rodapé ele disputava
@@ -110,6 +111,19 @@ function _rrMesAno_(mesNome, ano) {
   const nome = String(mesNome || '').trim();
   const curto = nome ? nome.charAt(0) + nome.slice(1).toLowerCase() : '';
   return curto + '/' + ano;
+}
+
+// O mês do quadro pertence à fonte e nunca é renomeado para acompanhar a
+// referência geral do deck. Quando diverge, o aviso deixa as duas referências
+// visíveis sem alterar os números nem o rótulo original.
+function _rrAvisoMesFonte_(slide, W, H, mesNome, ano, fonte) {
+  const fonteLabel = String(mesNome || '').toUpperCase() + ' / ' + ano;
+  if (_finNorm_(fonteLabel) === _finNorm_(obterMesReferencia_().label)) return;
+  const x = W * .57, y = H * .135, w = W * .405, h = H * .052;
+  _rrCelula_(slide, x, y, w, h, '#FFF7ED');
+  _rrUmaLinha_(slide, x + 6, y, w - 12, h,
+    'Fonte ' + fonte + ': ' + fonteLabel + ' · deck: ' + obterMesReferencia_().label,
+    { fs: W * .0082, fsMin: 5.5, bold: true, cor: '#C2410C', align: 'L', folga: 0 });
 }
 
 // O rótulo da planilha vem com quebra ("Ebitda Pré-Premiação Anual\nRitmo
