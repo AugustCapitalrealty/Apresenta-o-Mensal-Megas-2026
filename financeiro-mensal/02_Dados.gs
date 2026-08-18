@@ -281,11 +281,25 @@ function _dmNormalizar_(v) {
     .replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
-function _dmAba_(termos) {
+function _dmAba_(termos, termosExcluidos) {
   const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
   const abas = ss.getSheets();
   const norm = termos.map(_dmNormalizar_);
-  const aba = abas.find(s => norm.every(t => _dmNormalizar_(s.getName()).indexOf(t) >= 0));
+  const excluidos = (termosExcluidos || []).map(_dmNormalizar_);
+  // Não usa find() de propósito: se houver "Receitas" e "Composição da
+  // Receita", escolhemos a correspondência mais específica, e não a primeira
+  // aba na ordem do arquivo (ordem que o usuário pode mudar a qualquer hora).
+  const candidatas = abas.filter(s => {
+    const nome = _dmNormalizar_(s.getName());
+    return norm.every(t => nome.indexOf(t) >= 0) &&
+      !excluidos.some(t => nome.indexOf(t) >= 0);
+  }).sort((a, b) => {
+    const an = _dmNormalizar_(a.getName()), bn = _dmNormalizar_(b.getName());
+    const ae = norm.some(t => an === t) ? 1 : 0;
+    const be = norm.some(t => bn === t) ? 1 : 0;
+    return be - ae || an.length - bn.length;
+  });
+  const aba = candidatas[0];
   if (!aba) throw new Error('Aba não encontrada (nome deve conter: ' + termos.join(', ') + ').');
   return aba;
 }
@@ -298,12 +312,30 @@ function _dmMatriz_(sheet) {
 function _dmLinhaCabecalho_(m, obrigatorios) {
   let achada = -1, pontos = 0;
   m.forEach((row, i) => {
-    const texto = row.map(_dmNormalizar_);
+    const texto = row.concat(_dmCabecalhos_(m, i)).map(_dmNormalizar_);
     const p = obrigatorios.filter(grupo => grupo.some(t => texto.some(c => c.indexOf(_dmNormalizar_(t)) >= 0))).length;
     if (p > pontos || (p === pontos && p === obrigatorios.length)) { pontos = p; achada = i; }
   });
   if (pontos < obrigatorios.length) throw new Error('Cabeçalhos esperados não encontrados: ' + obrigatorios.join(' / ') + '.');
   return achada;
+}
+
+// Planilhas financeiras frequentemente usam cabeçalhos em duas linhas, com
+// "REALIZADO" mesclado acima de "ANTERIOR" e "ATUAL". Combinar as duas
+// linhas evita depender da posição das colunas e também evita confundir os
+// dois Realizados ao procurar apenas pelo texto da última linha.
+function _dmCabecalhos_(m, headerRow) {
+  const atual = m[headerRow] || [];
+  const anterior = headerRow > 0 ? m[headerRow - 1] : [];
+  let grupo = '';
+  return atual.map((valor, col) => {
+    const acima = String(anterior[col] || '').trim();
+    if (acima) grupo = acima;
+    const abaixo = String(valor || '').trim();
+    if (!abaixo) return grupo;
+    if (!grupo || _dmNormalizar_(grupo) === _dmNormalizar_(abaixo)) return abaixo;
+    return grupo + ' ' + abaixo;
+  });
 }
 
 function _dmCol_(headers, aliases, opcional) {
@@ -331,9 +363,9 @@ function _dmLinhas_(m, hr, cols) {
 }
 
 function obterReceitasDemercado_() {
-  const s = _dmAba_(['receita']); const m = _dmMatriz_(s);
+  const s = _dmAba_(['receita'], ['compos']); const m = _dmMatriz_(s);
   const hr = _dmLinhaCabecalho_(m, [['realizado','real'], ['orcamento','orcado'], ['variacao','var']]);
-  const h = m[hr];
+  const h = _dmCabecalhos_(m, hr);
   const c = { nome:_dmCol_(h,['cliente','receita','descricao']), anterior:_dmCol_(h,['realizado anterior','real anterior']),
     orcamento:_dmCol_(h,['orcamento','orcado']), atual:_dmCol_(h,['realizado atual','real atual']),
     variacao:_dmCol_(h,['variacao','var.','var ']), tipo:_dmCol_(h,['tipo','classificacao'],true) };
@@ -344,7 +376,7 @@ function obterReceitasDemercado_() {
 
 function obterComposicaoReceitaDemercado_() {
   const s=_dmAba_(['compos','receita']); const m=_dmMatriz_(s);
-  const hr=_dmLinhaCabecalho_(m,[['cliente','empreendimento'],['participacao','percentual','%']]); const h=m[hr];
+  const hr=_dmLinhaCabecalho_(m,[['cliente','empreendimento'],['participacao','percentual','%']]); const h=_dmCabecalhos_(m,hr);
   const c={nome:_dmCol_(h,['cliente','empreendimento','descricao']),participacao:_dmCol_(h,['participacao','percentual','%']),tipo:_dmCol_(h,['tipo','visao','categoria'],true)};
   const linhas=_dmLinhas_(m,hr,c); const porCliente=[], porEmpreendimento=[];
   linhas.forEach(x => (_dmNormalizar_(x.tipo).indexOf('EMPREEND')>=0 ? porEmpreendimento : porCliente).push(x));
@@ -353,7 +385,7 @@ function obterComposicaoReceitaDemercado_() {
 
 function obterDespesasDemercado_() {
   const s=_dmAba_(['despesa']); const m=_dmMatriz_(s);
-  const hr=_dmLinhaCabecalho_(m,[['orcamento','orcado'],['realizado','real'],['variacao','var']]); const h=m[hr];
+  const hr=_dmLinhaCabecalho_(m,[['orcamento','orcado'],['realizado','real'],['variacao','var']]); const h=_dmCabecalhos_(m,hr);
   const c={nome:_dmCol_(h,['despesa','descricao','conta']),orcamento:_dmCol_(h,['orcamento','orcado']),realizado:_dmCol_(h,['realizado','real']),variacao:_dmCol_(h,['variacao','var']),tipo:_dmCol_(h,['tipo','classificacao'],true)};
   const linhas=_dmLinhas_(m,hr,c); linhas.forEach(x=>{const n=_dmNormalizar_(x.tipo||x.nome);x.grupo=n.indexOf('DEFENSOR')>=0?'defensores':'ofensores';});
   return {aba:s.getName(),ofensores:linhas.filter(x=>x.grupo==='ofensores'),defensores:linhas.filter(x=>x.grupo==='defensores')};
@@ -361,14 +393,14 @@ function obterDespesasDemercado_() {
 
 function obterVacanciaDemercado_() {
   const s=_dmAba_(['vac']); const m=_dmMatriz_(s);
-  const hr=_dmLinhaCabecalho_(m,[['mes'],['orcamento','orcado'],['realizado','real']]); const h=m[hr];
+  const hr=_dmLinhaCabecalho_(m,[['mes'],['orcamento','orcado'],['realizado','real']]); const h=_dmCabecalhos_(m,hr);
   const c={nome:_dmCol_(h,['mes','periodo']),orcamento:_dmCol_(h,['orcamento','orcado']),realizado:_dmCol_(h,['realizado','real']),ocupada:_dmCol_(h,['area ocupada','abl ocupada'],true),disponivel:_dmCol_(h,['area disponivel','abl disponivel'],true),construida:_dmCol_(h,['area construida','abl total'],true)};
   return {aba:s.getName(),serie:_dmLinhas_(m,hr,c)};
 }
 
 function obterContratosDemercado_() {
   const s=_dmAba_(['contrat']); const m=_dmMatriz_(s);
-  const hr=_dmLinhaCabecalho_(m,[['contrato','cliente'],['abl','area'],['receita','valor'],['vencimento','ano']]); const h=m[hr];
+  const hr=_dmLinhaCabecalho_(m,[['contrato','cliente'],['abl','area'],['receita','valor'],['vencimento','ano']]); const h=_dmCabecalhos_(m,hr);
   const c={nome:_dmCol_(h,['contrato','cliente','locatario']),vencimento:_dmCol_(h,['vencimento','ano','prazo']),abl:_dmCol_(h,['abl','area']),receita:_dmCol_(h,['receita','valor'])};
   const contratos=_dmLinhas_(m,hr,c); const grupos={};
   contratos.forEach(x=>{const ano=(_dmNormalizar_(x.vencimento).match(/20\d{2}/)||['INDETERMINADO'])[0];(grupos[ano]||(grupos[ano]={ano:ano,contratos:[],abl:0,receita:0})).contratos.push(x);grupos[ano].abl+=_dmNumero_(x.abl);grupos[ano].receita+=_dmNumero_(x.receita);});

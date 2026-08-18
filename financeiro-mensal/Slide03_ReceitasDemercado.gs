@@ -12,6 +12,13 @@ function _dmTabelaComparativa_(slide,W,h,y,x,w,titulo,linhas,despesa) {
   cols.forEach((v,i)=>{const xx=x+w*widths.slice(0,i).reduce((a,b)=>a+b,0);_rrCelula_(slide,xx,y,w*widths[i],rowH,DS.colors.brandDark);_rrUmaLinha_(slide,xx,y,w*widths[i],rowH,v,{fs:W*.0088,bold:true,cor:'#FFFFFF'});}); y+=rowH;
   linhas.slice(0,9).forEach(l=>{const vals=[l.nome,l.anterior||'',l.orcamento||'',l.atual||l.realizado||'',l.variacao||''];const fav=_dmVariacaoFavoravel_(l,despesa);vals.forEach((v,i)=>{const xx=x+w*widths.slice(0,i).reduce((a,b)=>a+b,0);_rrCelula_(slide,xx,y,w*widths[i],rowH,'#FFFFFF');_rrUmaLinha_(slide,xx,y,w*widths[i],rowH,v,{fs:W*.0085,cor:i===4?(fav?DS.colors.accentGreen:DS.colors.accentRed):DS.colors.textMain,align:i?'C':'L',bold:i===4});});y+=rowH;});
 }
-function _dmVariacaoFavoravel_(l,despesa){const n=_dmNumero_(l.variacao);const defensor=l.grupo==='defensores';return despesa ? (defensor||n<=0) : (defensor||n>=0);}
+function _dmVariacaoFavoravel_(linha, despesa) {
+  // Ofensor/defensor é a semântica editorial da própria planilha e prevalece
+  // sobre o sinal. O sinal só é fallback para uma eventual linha sem grupo.
+  if (linha.grupo === 'defensores') return true;
+  if (linha.grupo === 'ofensores') return false;
+  const variacao = _dmNumero_(linha.variacao);
+  return despesa ? variacao <= 0 : variacao >= 0;
+}
 
 function _dmNovoSlide_(titulo,subtitulo){const deck=getDeckMensal_(),slide=deck.appendSlide(SlidesApp.PredefinedLayout.BLANK),W=deck.getPageWidth(),H=deck.getPageHeight(),DS=CR_DESIGN_SYSTEM;slide.getBackground().setSolidFill('#FFFFFF');const e=slide.insertShape(SlidesApp.ShapeType.ELLIPSE,W*.66,-H*.38,W*.52,W*.52);e.getFill().setSolidFill(DS.colors.brandLight,.045);e.getBorder().setTransparent();_rrUmaLinha_(slide,W*.045,H*.05,W*.62,H*.07,titulo,{fs:W*.028,bold:true,cor:DS.colors.textMain,align:'L',folga:0});_rrUmaLinha_(slide,W*.045,H*.13,W*.62,H*.045,subtitulo,{fs:W*.014,cor:DS.colors.brandMed,fonte:DS.typography.body,align:'L',folga:0});try{const b=DriveApp.getFileById(DS.assets.logoId).getBlob();slide.insertImage(b,W-W*.045-DS.assets.logoW,H*.055,DS.assets.logoW,DS.assets.logoH);}catch(e){Logger.log('Logo não carregado: '+e.message);}return{slide:slide,W:W,H:H};}
