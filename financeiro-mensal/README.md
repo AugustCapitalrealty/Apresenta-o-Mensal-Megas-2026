@@ -167,6 +167,59 @@ indentadas. O desenho passou pelo mesmo oráculo de medição real (Montserrat
 via Chromium) do Resumo do Resultado: sem quebra no meio de palavra, sem
 vazamento de coluna, sem estouro de altura, menor fonte 7,06pt (720×405).
 
+## Contrato dos blocos financeiros
+
+Os próximos cinco slides não dependem de número fixo de linha nem de uma aba
+codificada: `02_Dados.gs` percorre as abas da planilha configurada em
+`FINANCEIRO_SPREADSHEET_ID`, localiza o **último bloco válido** pelo título
+distintivo e registra no retorno `aba`, `linhaTitulo` e `linhaCabecalho`. Isso
+é importante porque a planilha é mensal e os blocos podem ser copiados para
+baixo ou movidos de aba. `diagnosticarFinanceiro()` imprime a aba efetivamente
+encontrada para cada título antes de qualquer geração.
+
+| Slide / bloco | Aba de origem | Título e cabeçalhos obrigatórios | Unidade | Período e variação |
+|---|---|---|---|---|
+| **Receitas** | Aba que contém o título exato **“Receitas”** (informada pelo diagnóstico) | `Empreendimento` ou `Empresa`; `Real 2025`; `Orç 2026`; `Real 2026`; `Variação` | R$ mil, salvo indicação explícita diferente no próprio cabeçalho | Mês de referência. `Real 2025` é o mesmo mês do exercício anterior; `Orç 2026` é o orçamento **mensal**. Variações: `(Real 2026 / comparador) - 1`; se o comparador for zero, a variação não é calculável, nunca zero. |
+| **Composição de Receita** | Aba que contém **“Composição de Receita”** | `Empreendimento`, `Empresa` ou `Carteira`; `Receita`; `%` | Receita em R$ mil e participação em % | Mesmo mês do bloco Receitas. Participação = receita do empreendimento / receita total da carteira; a base é **receita**, não ABL nem quantidade de contratos. |
+| **Despesas** | Aba que contém **“Despesas”** | `Empreendimento` ou `Empresa`; `Real 2025`; `Orç 2026`; `Real 2026`; `Variação` | R$ mil, salvo indicação explícita no cabeçalho | Mesmo mês das Receitas. Ano anterior e orçamento são mensais. Variação usa `(Real 2026 / comparador) - 1`; por se tratar de despesa, o slide deve explicar visualmente se aumento é desfavorável, sem inverter o cálculo. |
+| **Vacância** | Aba que contém **“Vacância”** | `Empreendimento`; `Área construída`; `Área ocupada`; `Área disponível`; `Vacância física` | m² para áreas; % para vacância | Posição no fechamento do mês. Vacância física = área disponível locável / área construída **locável**; áreas técnicas/comuns ou outras áreas não locáveis ficam fora tanto do numerador quanto do denominador. |
+| **Cronograma dos Contratos** | Aba que contém **“Cronograma dos Contratos”** | `Empreendimento`; `Prazo indeterminado` ou `Indeterminado`; `Contratos` ou `Quantidade`; `%` | Quantidade de contratos e % | Posição no fechamento do mês, distribuída por vencimento. Contratos por prazo indeterminado entram no total da carteira e aparecem numa faixa própria; não são distribuídos artificialmente entre anos de vencimento. Percentuais = quantidade da faixa / quantidade total de contratos. |
+
+### Definições confirmadas para não deixar o slide ambíguo
+
+* **“Real 2025”** é o realizado do mesmo mês do exercício anterior (comparável
+  mês contra mês), e não o acumulado de 2025.
+* **“Orç 2026”** nos blocos mensais é orçamento do mês. Somente uma coluna ou
+  grupo identificado como **“Acumulado”** representa janeiro até o mês de
+  referência.
+* A composição da carteira do slide **Composição de Receita** é ponderada pela
+  receita. ABL e contagem de contratos pertencem, respectivamente, aos blocos
+  de Vacância e Cronograma.
+* A vacância física considera apenas área locável: áreas não locáveis são
+  excluídas da área disponível e do denominador.
+* Prazo indeterminado conta no total de contratos, em categoria separada.
+* Percentuais por empreendimento nos slides de receita usam **receita bruta
+  faturada** (antes de deduções), coerente com a linha de faturamento bruto do
+  DRE; não usam receita líquida/ROL nem regime de caixa.
+
+Essas definições são o contrato do relatório. Se a planilha passar a usar
+outra base, o cabeçalho deve ser alterado de forma explícita e o leitor deve
+ser ajustado — não se deve reinterpretar silenciosamente uma coluna existente.
+
+### Falha rápida e conciliações
+
+Cada leitor (`obterReceitas_`, `obterComposicaoReceita_`, `obterDespesas_`,
+`obterVacancia_` e `obterCronogramaContratos_`) lança erro com título, aba e
+cabeçalhos ausentes quando o contrato não é atendido. Nenhum deles devolve
+matriz vazia ou zeros de reserva. Antes de retornar, eles também verificam:
+
+* mesma quantidade de colunas em cabeçalho e em todas as linhas;
+* linhas `TOTAL` contra a soma das linhas-fonte (tolerância de 0,1%, com piso
+  de 0,01 para arredondamento);
+* colunas de composição entre 98% e 102%;
+* em Vacância, `área ocupada + área disponível = área construída` (tolerância
+  de 0,1%, com piso de 1 m²).
+
 ## Como usar
 
 1. Abra a apresentação (link acima) → **Extensões → Apps Script**.

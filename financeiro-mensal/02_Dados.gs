@@ -10,6 +10,37 @@
 // Aba com o quadro-resumo de EBITDA por empresa e o quadro de Pré-Premiação.
 const QUADRO_EBITDA_SHEET = 'Quadro EBITDA';
 
+// Blocos dos próximos slides. A localização é deliberadamente por conteúdo,
+// e não por coordenada: a planilha mensal insere novos blocos e desloca os
+// antigos. Cada leitor exige o título e TODOS os cabeçalhos distintivos.
+const BLOCOS_FINANCEIROS = {
+  receitas: {
+    titulo: 'Receitas',
+    cabecalhos: [['empreendimento', 'empresa'], ['real 2025'], ['orç 2026', 'orc 2026'],
+      ['real 2026'], ['variação', 'variacao']]
+  },
+  composicaoReceita: {
+    titulo: 'Composição de Receita',
+    cabecalhos: [['empreendimento', 'empresa', 'carteira'], ['receita'], ['%']]
+  },
+  despesas: {
+    titulo: 'Despesas',
+    cabecalhos: [['empreendimento', 'empresa'], ['real 2025'], ['orç 2026', 'orc 2026'],
+      ['real 2026'], ['variação', 'variacao']]
+  },
+  vacancia: {
+    titulo: 'Vacância',
+    cabecalhos: [['empreendimento'], ['área construída', 'area construida'],
+      ['área ocupada', 'area ocupada'], ['área disponível', 'area disponivel'],
+      ['vacância física', 'vacancia fisica']]
+  },
+  cronogramaContratos: {
+    titulo: 'Cronograma dos Contratos',
+    cabecalhos: [['empreendimento'], ['prazo indeterminado', 'indeterminado'],
+      ['contratos', 'quantidade'], ['%']]
+  }
+};
+
 const MESES_NOME_REF = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
@@ -81,6 +112,7 @@ function obterResumoResultadoEBITDA_() {
   const ritmoLabel  = sheet.getRange(blockRow, 13).getDisplayValue(); // col M: "RITMO"
   const headerRow   = blockRow + 1;
   const headers     = sheet.getRange(headerRow, 3, 1, 15).getDisplayValues()[0]; // col C..Q
+  _exigirCabecalhosResumo_(headers, 'EBITDA', QUADRO_EBITDA_SHEET);
 
   // Ano do quadro: o maior ano citado nos cabeçalhos (ex.: "Real 2025" e
   // "Orç 2026" convivem — o ano corrente é o maior dos dois).
@@ -110,6 +142,10 @@ function obterResumoResultadoEBITDA_() {
       margem: temMargem ? _linhaResumoEbitda_(sheet, r + 1) : null
     });
     r += temMargem ? 2 : 1;
+  }
+
+  if (!empresas.length || !empresas.some(e => e.total)) {
+    throw new Error('Bloco "EBITDA (Em R$/Mil)" sem linhas ou sem linha TOTAL na aba "' + QUADRO_EBITDA_SHEET + '".');
   }
 
   return { mes: mesNome, ano: ano, acumuladoLabel: acumLabel, ritmoLabel: ritmoLabel,
@@ -157,6 +193,7 @@ function obterEbitdaPrePremiacao_() {
     if (!nome) break;
     colunas.push(nome);
   }
+  if (colunas.length < 3) throw new Error('Cabeçalhos esperados (Orçado, Ritmo e variação) não encontrados no bloco "Ebitda Pré-Premiação Anual".');
 
   const linhas = [];
   let r = headerRow + 1;
@@ -169,6 +206,8 @@ function obterEbitdaPrePremiacao_() {
     });
     r++;
   }
+
+  if (!linhas.length) throw new Error('Bloco "Ebitda Pré-Premiação Anual" não contém linhas de dados.');
 
   return { titulo: titulo, colunas: colunas, linhas: linhas };
 }
@@ -227,6 +266,7 @@ function _lerBlocoDRE_(sheet, titleRow) {
   const ritmoLabel = sheet.getRange(titleRow, 13).getDisplayValue();
   const headerRow  = titleRow + 1;
   const headers    = sheet.getRange(headerRow, 3, 1, 15).getDisplayValues()[0];
+  _exigirCabecalhosResumo_(headers, 'DRE ' + nomeEmpresa, QUADRO_DRE_SHEET);
 
   const anos = [];
   headers.forEach(h => {
@@ -255,6 +295,9 @@ function _lerBlocoDRE_(sheet, titleRow) {
     r++;
     if (ehMargem) { margemEncontrada = true; break; }
   }
+  if (!linhas.length || !margemEncontrada) {
+    throw new Error('Bloco "DRE ' + nomeEmpresa + '" sem linhas ou sem o cabeçalho final "Margem EBITDA/ROL".');
+  }
 
   // Nota logo abaixo da Margem (ex.: "* Sem Equivalência Patrimonial") — só
   // serve para desempatar quando a empresa tem mais de um bloco.
@@ -266,4 +309,174 @@ function _lerBlocoDRE_(sheet, titleRow) {
   return { empresa: nomeEmpresa, mes: mesNome, ano: ano, acumuladoLabel: acumLabel,
            ritmoLabel: ritmoLabel, headers: headers, linhas: linhas,
            nota: nota, notaPreferida: notaPreferida };
+}
+
+function _exigirCabecalhosResumo_(headers, bloco, aba) {
+  if (headers.length !== 15 || headers.some(h => !String(h || '').trim())) {
+    throw new Error('Bloco "' + bloco + '" na aba "' + aba + '" deve ter 15 cabeçalhos preenchidos (Mês, Acumulado e Ritmo).');
+  }
+  const texto = _finNorm_(headers.join(' | '));
+  ['real', 'orc', 'variacao'].forEach(nome => {
+    if (texto.indexOf(nome) < 0) throw new Error('Cabeçalho "' + nome + '" não encontrado no bloco "' + bloco + '" da aba "' + aba + '".');
+  });
+}
+
+
+// ==========================================
+// BLOCOS TEMÁTICOS — localização e validação
+// ==========================================
+
+function obterReceitas_() { return _lerBlocoFinanceiro_('receitas'); }
+function obterComposicaoReceita_() { return _lerBlocoFinanceiro_('composicaoReceita'); }
+function obterDespesas_() { return _lerBlocoFinanceiro_('despesas'); }
+function obterVacancia_() { return _lerBlocoFinanceiro_('vacancia'); }
+function obterCronogramaContratos_() { return _lerBlocoFinanceiro_('cronogramaContratos'); }
+
+/** Localiza o último bloco válido em todas as abas e nunca fabrica zeros. */
+function _lerBlocoFinanceiro_(chave) {
+  const spec = BLOCOS_FINANCEIROS[chave];
+  if (!spec) throw new Error('Leitor financeiro desconhecido: "' + chave + '".');
+  const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
+  const candidatos = [];
+
+  ss.getSheets().forEach(sheet => {
+    const range = sheet.getDataRange();
+    const exibidos = range.getDisplayValues();
+    for (let r = 0; r < exibidos.length; r++) {
+      for (let c = 0; c < exibidos[r].length; c++) {
+        if (_finNorm_(exibidos[r][c]) === _finNorm_(spec.titulo)) {
+          candidatos.push({ sheet: sheet, titleRow: r, titleCol: c, exibidos: exibidos });
+        }
+      }
+    }
+  });
+  if (!candidatos.length) {
+    throw new Error('Bloco "' + spec.titulo + '" não encontrado em nenhuma aba da planilha do Financeiro.');
+  }
+
+  const erros = [];
+  for (let i = candidatos.length - 1; i >= 0; i--) {
+    try { return _materializarBlocoFinanceiro_(candidatos[i], spec); }
+    catch (e) { erros.push(candidatos[i].sheet.getName() + ': ' + e.message); }
+  }
+  throw new Error('Bloco "' + spec.titulo + '" encontrado, mas sem os cabeçalhos esperados. ' + erros.join(' | '));
+}
+
+function _materializarBlocoFinanceiro_(cand, spec) {
+  const exibidos = cand.exibidos;
+  let headerRow = -1;
+  let indices = null;
+  // Cabeçalhos podem ocupar até três linhas abaixo do título (células mescladas).
+  for (let r = cand.titleRow; r < Math.min(exibidos.length, cand.titleRow + 5); r++) {
+    const combinados = exibidos[r].map((v, c) => {
+      const acima = r > cand.titleRow ? exibidos[r - 1][c] : '';
+      return _finNorm_(String(acima || '') + ' ' + String(v || ''));
+    });
+    const encontrados = spec.cabecalhos.map(opcoes => _finIndiceCabecalho_(combinados, opcoes));
+    if (encontrados.every(c => c >= 0)) { headerRow = r; indices = encontrados; break; }
+  }
+  if (headerRow < 0) {
+    throw new Error('cabeçalhos ausentes: ' + spec.cabecalhos.map(x => x.join('/')).join(', '));
+  }
+
+  const primeiraColuna = Math.min.apply(null, indices);
+  let ultimaColuna = Math.max.apply(null, indices);
+  while (ultimaColuna + 1 < exibidos[headerRow].length &&
+         String(exibidos[headerRow][ultimaColuna + 1] || '').trim()) ultimaColuna++;
+  const headers = exibidos[headerRow].slice(primeiraColuna, ultimaColuna + 1);
+  if (headers.some(h => !String(h || '').trim())) {
+    throw new Error('cabeçalho contém coluna sem nome entre as colunas usadas.');
+  }
+
+  const linhas = [];
+  for (let r = headerRow + 1; r < exibidos.length; r++) {
+    const row = exibidos[r].slice(primeiraColuna, ultimaColuna + 1);
+    if (row.every(v => !String(v || '').trim())) break;
+    linhas.push(row);
+  }
+  if (!linhas.length) throw new Error('bloco não contém linhas de dados.');
+
+  const resultado = { titulo: spec.titulo, aba: cand.sheet.getName(),
+    linhaTitulo: cand.titleRow + 1, linhaCabecalho: headerRow + 1,
+    cabecalhos: headers, linhas: linhas };
+  _validarBlocoFinanceiro_(resultado);
+  return resultado;
+}
+
+function _finIndiceCabecalho_(headers, opcoes) {
+  for (let c = 0; c < headers.length; c++) {
+    if (opcoes.some(o => headers[c].indexOf(_finNorm_(o)) >= 0)) return c;
+  }
+  return -1;
+}
+
+function _finNorm_(valor) {
+  return String(valor || '').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function _finNumero_(valor) {
+  if (typeof valor === 'number') return valor;
+  let s = String(valor == null ? '' : valor).trim();
+  if (!s || s === '-') return null;
+  const negativo = /^\(.*\)$/.test(s);
+  const percentual = s.indexOf('%') >= 0;
+  s = s.replace(/[R$%\s()]/g, '').replace(/\./g, '').replace(',', '.');
+  const n = Number(s);
+  if (!isFinite(n)) return null;
+  return (negativo ? -n : n) / (percentual ? 100 : 1);
+}
+
+function _validarBlocoFinanceiro_(bloco) {
+  const largura = bloco.cabecalhos.length;
+  bloco.linhas.forEach((linha, i) => {
+    if (linha.length !== largura) throw new Error('Tabela "' + bloco.titulo +
+      '": linha ' + (bloco.linhaCabecalho + i + 1) + ' tem ' + linha.length +
+      ' colunas; esperado: ' + largura + '.');
+  });
+  _validarTotalFinanceiro_(bloco);
+  if (bloco.titulo === 'Composição de Receita') _validarComposicaoFinanceira_(bloco);
+  if (bloco.titulo === 'Vacância') _validarAreasVacancia_(bloco);
+}
+
+function _validarTotalFinanceiro_(bloco) {
+  const totalIdx = bloco.linhas.findIndex(l => /^total\b/i.test(String(l[0]).trim()));
+  if (totalIdx < 0) return;
+  for (let c = 1; c < bloco.cabecalhos.length; c++) {
+    const informado = _finNumero_(bloco.linhas[totalIdx][c]);
+    const fontes = bloco.linhas.slice(0, totalIdx).map(l => _finNumero_(l[c])).filter(v => v !== null);
+    if (informado === null || !fontes.length) continue;
+    const calculado = fontes.reduce((a, b) => a + b, 0);
+    const tol = Math.max(0.01, Math.abs(informado) * 0.001);
+    if (Math.abs(calculado - informado) > tol) throw new Error('Total não concilia em "' +
+      bloco.cabecalhos[c] + '": fonte=' + calculado + ', total=' + informado + '.');
+  }
+}
+
+function _validarComposicaoFinanceira_(bloco) {
+  bloco.cabecalhos.forEach((h, c) => {
+    if (_finNorm_(h).indexOf('%') < 0 && _finNorm_(h).indexOf('participacao') < 0) return;
+    const valores = bloco.linhas.filter(l => !/^total\b/i.test(String(l[0]).trim()))
+      .map(l => _finNumero_(l[c])).filter(v => v !== null);
+    if (!valores.length) return;
+    const soma = valores.reduce((a, b) => a + b, 0);
+    if (Math.abs(soma - 1) > 0.02) throw new Error('Composição em "' + h +
+      '" soma ' + (soma * 100).toFixed(2) + '%, fora da tolerância de 98% a 102%.');
+  });
+}
+
+function _validarAreasVacancia_(bloco) {
+  const hs = bloco.cabecalhos.map(_finNorm_);
+  const cConstruida = hs.findIndex(h => h.indexOf('area construida') >= 0);
+  const cOcupada = hs.findIndex(h => h.indexOf('area ocupada') >= 0);
+  const cDisponivel = hs.findIndex(h => h.indexOf('area disponivel') >= 0);
+  bloco.linhas.forEach((l, i) => {
+    const construida = _finNumero_(l[cConstruida]);
+    const ocupada = _finNumero_(l[cOcupada]);
+    const disponivel = _finNumero_(l[cDisponivel]);
+    if ([construida, ocupada, disponivel].some(v => v === null)) return;
+    const tol = Math.max(1, Math.abs(construida) * 0.001);
+    if (Math.abs(ocupada + disponivel - construida) > tol) throw new Error('Áreas não conciliam na linha ' +
+      (bloco.linhaCabecalho + i + 1) + ': ocupada + disponível != construída.');
+  });
 }
