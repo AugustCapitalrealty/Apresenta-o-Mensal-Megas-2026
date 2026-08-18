@@ -80,7 +80,28 @@ Ester acrescentar o próximo mês.
 Os valores são lidos com `getDisplayValue()` — texto exatamente como a
 planilha mostra (milhar, decimal, parênteses de negativo, casas percentuais
 que variam célula a célula) — em vez de reconstruídos a partir do número
-bruto. O slide nunca formata número por conta própria.
+bruto. O slide nunca formata número por conta própria. Os rótulos das colunas
+da Pré-Premiação também vêm da planilha, porque citam o ano.
+
+### Todo texto é medido antes de ser desenhado
+
+São 16 colunas num slide só: cada coluna de valor fica com ~38pt, e a
+`TEXT_BOX` do Slides come ~7pt de cada lado em recuo interno que a API não
+desliga. Com fonte fixa isso estourou de três jeitos na primeira versão:
+
+| Sintoma | Causa |
+|---|---|
+| `Ritmo` virou `Ritm` / `o` no cabeçalho | palavra maior que a largura útil da coluna |
+| `CR Estacionamentos` vazou da coluna de rótulo | rótulo maior que a coluna |
+| `Ebitda Pré-Premiação Anual` cortado ao meio | a tabela era desenhada depois, por cima do título |
+
+A correção segue o padrão de `../megas-mensal/Farol_Guilherme.gs`:
+`_rrUmaLinha_` (texto curto — mede e encolhe até caber numa linha) e
+`_rrBloco_` (cabeçalho — encolhe até o texto quebrado caber na altura, e nunca
+deixa a maior palavra ficar mais larga que a caixa). As alturas das linhas
+saem de pesos e as posições são proporcionais a `W`/`H`, então o slide
+continua fechando se a Ester acrescentar uma empresa na planilha e funciona
+tanto num deck 720×405 quanto 960×540.
 
 Os números que aparecem no print de referência da Ester podem sair
 ligeiramente diferentes dos gerados pelo código: a planilha é viva, os

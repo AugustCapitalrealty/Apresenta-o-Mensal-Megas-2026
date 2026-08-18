@@ -126,6 +126,10 @@ function _linhaResumoEbitda_(sheet, row) {
  * Lê o quadro "Ebitda Pré-Premiação Anual — Ritmo <ano>": uma linha por
  * grupo (ex.: Presidência/Diretoria, Capital Realty/Demercado, CR
  * Estacionamentos) com Orçado, Ritmo e a variação entre os dois.
+ *
+ * Os RÓTULOS das colunas também vêm da planilha ("Orçado 2026", "Ritmo 2026",
+ * "Ritmo 2026 x Orç 2026"): eles citam o ano, e escrevê-los no código faria o
+ * slide mostrar o ano errado na virada do exercício.
  */
 function obterEbitdaPrePremiacao_() {
   const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
@@ -144,6 +148,16 @@ function obterEbitdaPrePremiacao_() {
 
   const titulo = sheet.getRange(headerRow, 2).getDisplayValue();
 
+  // Colunas do quadro: tudo que tem rótulo a partir da coluna C. Uma coluna
+  // acrescentada na planilha entra sozinha, sem mexer no código.
+  const cabecalho = sheet.getRange(headerRow, 3, 1, 6).getDisplayValues()[0];
+  const colunas = [];
+  for (let c = 0; c < cabecalho.length; c++) {
+    const nome = String(cabecalho[c] || '').trim();
+    if (!nome) break;
+    colunas.push(nome);
+  }
+
   const linhas = [];
   let r = headerRow + 1;
   while (r <= lastRow) {
@@ -151,12 +165,10 @@ function obterEbitdaPrePremiacao_() {
     if (!rotulo) break;
     linhas.push({
       nome: rotulo,
-      orcado: sheet.getRange(r, 3).getDisplayValue(),
-      ritmo: sheet.getRange(r, 4).getDisplayValue(),
-      variacao: sheet.getRange(r, 5).getDisplayValue()
+      valores: sheet.getRange(r, 3, 1, colunas.length).getDisplayValues()[0]
     });
     r++;
   }
 
-  return { titulo: titulo, linhas: linhas };
+  return { titulo: titulo, colunas: colunas, linhas: linhas };
 }
