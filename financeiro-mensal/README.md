@@ -1,12 +1,10 @@
 # Apresentação Mensal — Financeiro
 
-Projeto **em construção**, para ajudar a Ester (financeiro) a montar a
-apresentação mensal de resultados do grupo Capital Realty, no mesmo padrão
-visual das outras apresentações do repositório.
-
-O projeto contém a **capa**, o **Resumo do Resultado**, o **Painel Executivo**
-de Demercado e os cinco painéis temáticos: **Receitas**, **Composição de
-Receita**, **Despesas**, **Vacância** e **Cronograma dos Contratos**.
+Projeto que gera a apresentação mensal de resultados do grupo Capital Realty,
+no mesmo padrão visual das outras apresentações do repositório. O pipeline
+reproduz a sequência de **55 páginas** da referência “Resultado Junho 2026”:
+abertura, metas, Demercado, Capital Realty, locação consolidada, indicadores,
+anexos, ritmo de fluxo de caixa e encerramento.
 
 ## Por que uma pasta nova
 
@@ -26,8 +24,9 @@ Pelo que já foi lido: é um DRE por empresa do grupo (Capital Realty,
 Demercado, Garoto, Hangar Vip, Postos Curitiba/Esteio, DCL Shopping Center,
 D-Espaço, Deminvest, CR Comb, CR Estacionamentos, CR Infra...), com colunas
 Real / Orçado / Ritmo por mês e acumulado, mais uma aba de pauta da reunião
-de resultados. O mapeamento exato de aba/coluna para cada slide ainda não foi
-feito — entra em `02_Dados.gs` conforme os slides forem especificados.
+de resultados. Os quadros contratuais têm leitores específicos em
+`02_Dados.gs`; os blocos complementares são localizados por título, entidade
+e cabeçalho em `03_DadosDeckCompleto.gs`.
 
 ## Deck de destino
 
@@ -43,6 +42,7 @@ https://docs.google.com/presentation/d/10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkO
 00_Main.gs                 pontos de entrada e pipeline
 01_Config.gs                design system, IDs de planilha e deck
 02_Dados.gs                  todos os leitores e contratos de dados
+03_DadosDeckCompleto.gs      autodetecção dos blocos complementares
 Slide_CapasComuns.gs         helpers visuais da capa (gradiente simulado, fundo
                               premium, wordmark, rodapé — portado de megas-mensal)
 Slide00_Capa.gs               a capa
@@ -53,20 +53,27 @@ Slide04_ComposicaoReceita.gs    composição da receita bruta faturada
 Slide05_Despesas.gs             despesas e semântica favorável/desfavorável
 Slide06_Vacancia.gs             vacância física e conciliação das áreas locáveis
 Slide07_CronogramaContratos.gs  vencimentos e prazo indeterminado
+Slide08_DeckCompleto.gs         capas, metas, indicadores, anexos e ritmo
 ```
 
-## Ordem final do deck e funções de entrada
+## Ordem final do deck
 
-| Ordem | Slide | Gerador | Leitor exclusivo |
-|---:|---|---|---|
-| 1 | Capa | `gerarSlideCapa()` | `obterMesReferencia_()` |
-| 2 | Resumo do Resultado | `gerarSlideResumoResultado()` | `obterResumoResultadoEBITDA_()` e `obterEbitdaPrePremiacao_()` |
-| 3 | DRE — Demercado | `gerarSlideDREDemercado()` | `obterDREEmpresa_()` |
-| 4 | Receitas | `gerarSlideReceitas()` | `obterReceitas_()` |
-| 5 | Composição de Receita | `gerarSlideComposicaoReceita()` | `obterComposicaoReceita_()` |
-| 6 | Despesas | `gerarSlideDespesas()` | `obterDespesas_()` |
-| 7 | Vacância | `gerarSlideVacancia()` | `obterVacancia_()` |
-| 8 | Cronograma dos Contratos | `gerarSlideCronogramaContratos()` | `obterCronogramaContratos_()` |
+| Páginas | Bloco |
+|---:|---|
+| 1–5 | Capa, agenda, metas e resumo do resultado |
+| 6–12 | Demercado |
+| 13–19 | Capital Realty |
+| 20–22 | Resultado consolidado de locação |
+| 23–28 | Indicadores financeiros |
+| 29–33 | Anexos e fluxos de caixa |
+| 34–54 | Ritmo de fluxo de caixa por empresa |
+| 55 | Encerramento |
+
+As 55 chamadas, na ordem exata, ficam no array `passos` de `00_Main.gs`.
+Os novos leitores carregam cada aba da planilha uma vez por execução e
+localizam o último bloco aplicável por título, entidade e cabeçalhos. Rode
+`diagnosticarDeckCompleto()` para ver a aba e a linha escolhidas antes de
+gerar o deck.
 
 Os arquivos de slide não usam `SpreadsheetApp`: recebem exclusivamente o
 objeto validado pelo respectivo leitor de `02_Dados.gs`. Todos os pontos de
@@ -77,16 +84,13 @@ de um painel parcial.
 ## Slide 00 — Capa
 
 Fundo escuro premium (sem foto — este projeto não tem asset de foto de fundo
-ainda), wordmark Capital Realty, título "RESULTADOS FINANCEIROS", "Grupo
-Capital Realty" como herói do co-branding, pill com o mês de referência e
-rodapé com o slogan da marca. Mesma linguagem visual das capas de
-`megas-mensal/`.
+ainda), wordmark Capital Realty, título "REUNIÃO DE RESULTADOS", linha de
+apoio "Resultados Financeiros", pill com o mês de referência e rodapé com o
+slogan da marca. Mesma linguagem visual das capas de `megas-mensal/`.
 
-O **mês de referência** (`obterMesReferencia_` em `02_Dados.gs`) hoje é só
-calendário: mês fechado anterior a hoje. É provisório — quando soubermos qual
-aba/célula da planilha registra o mês de fato coberto pelos números (mesmo
-padrão de `megas-mensal/02_Dados.gs`), troque pela leitura real, para a capa
-nunca divergir do conteúdo dos outros slides.
+O **mês de referência** (`obterMesReferencia_` em `02_Dados.gs`) vem do
+último bloco EBITDA da planilha. O calendário é apenas reserva quando a aba
+está inacessível, para a capa não avançar antes do fechamento financeiro.
 
 ## Slide 01 — Resumo do Resultado
 
@@ -250,7 +254,8 @@ matriz vazia ou zeros de reserva. Antes de retornar, eles também verificam:
    `.gs` por arquivo daqui — não há `clasp`, `git push` não publica nada, ver
    o `CLAUDE.md` da raiz).
 3. Rode `diagnosticarFinanceiro()` para conferir se o deck e a planilha abrem.
-4. Rode **`regerarApresentacaoFinanceiro()`**.
+4. Rode `diagnosticarDeckCompleto()` para conferir a autodetecção dos blocos.
+5. Rode **`regerarApresentacaoFinanceiro()`**.
 
 ### Qual função rodar
 
@@ -258,6 +263,9 @@ matriz vazia ou zeros de reserva. Antes de retornar, eles também verificam:
 |---|---|
 | **`regerarApresentacaoFinanceiro()`** | **Limpa o deck e gera tudo de novo.** É a do dia a dia — pode rodar quantas vezes quiser que o resultado é sempre o mesmo deck limpo |
 | `gerarApresentacaoFinanceiro()` | ACRESCENTA os slides ao que já existe. Rodar duas vezes deixa tudo repetido |
+| `regerarApresentacaoFinanceiroParte1()` | Limpa e gera as páginas 1–22; use se a execução completa atingir o limite de tempo |
+| `continuarApresentacaoFinanceiroParte2()` | Acrescenta as páginas 23–34 |
+| `finalizarApresentacaoFinanceiroParte3()` | Acrescenta as páginas 35–55 e remove o slide antigo preservado |
 | `diagnosticarFinanceiro()` | Só confere se o deck e a planilha abrem, antes de qualquer conta |
 
 O Slides não aceita um deck sem nenhum slide, então `regerar...` preserva o

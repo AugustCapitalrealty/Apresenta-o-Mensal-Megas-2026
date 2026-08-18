@@ -18,23 +18,70 @@
 
 function gerarApresentacaoFinanceiro() {
   Logger.log('▶ Apresentação Mensal do Financeiro');
+  return _rodarPassos_(_passosApresentacaoFinanceiro_());
+}
 
-  const passos = [
-    { nome: 'Capa', fn: gerarSlideCapa },
-    { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado },
-    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado },
-    { nome: 'Receitas', fn: gerarSlideReceitas },
-    { nome: 'Composição de Receita', fn: gerarSlideComposicaoReceita },
-    { nome: 'Despesas', fn: gerarSlideDespesas },
-    { nome: 'Vacância', fn: gerarSlideVacancia },
-    { nome: 'Cronograma dos Contratos', fn: gerarSlideCronogramaContratos }
-    // Próximos slides entram aqui, na ordem que a Ester definir. Para outra
-    // empresa do DRE, acrescente { nome: 'DRE — X', fn: () =>
-    // gerarSlideDREEmpresa_('X') } — a chave precisa existir em DRE_EMPRESAS
-    // (Slide02_DREEmpresa.gs).
+function _passosApresentacaoFinanceiro_() {
+  return [
+    // Ordem do PDF "Resultado Junho 2026": 55 páginas. As closures são
+    // usadas só nos geradores parametrizados; cada passo continua isolado,
+    // portanto uma aba ausente não impede os demais slides de serem criados.
+    { nome: '01 · Capa', fn: gerarSlideCapa },
+    { nome: '02 · Agenda', fn: gerarSlideAgendaResultados },
+    { nome: '03 · Meta Diretoria', fn: gerarSlideMetaDiretoria },
+    { nome: '04 · Meta Gerência Financeira', fn: gerarSlideMetaGerenciaFinanceira },
+    { nome: '05 · Resumo do Resultado', fn: gerarSlideResumoResultado },
+    { nome: '06 · Capa Demercado', fn: gerarSlideCapaDemercado },
+    { nome: '07 · DRE Demercado', fn: gerarSlideDREDemercado },
+    { nome: '08 · Receitas Demercado', fn: gerarSlideReceitasDemercadoCompleto },
+    { nome: '09 · Composição Demercado', fn: gerarSlideComposicaoDemercadoCompleto },
+    { nome: '10 · Despesas Demercado', fn: gerarSlideDespesasDemercadoCompleto },
+    { nome: '11 · Vacância Demercado', fn: gerarSlideVacanciaDemercadoCompleto },
+    { nome: '12 · Contratos Demercado', fn: gerarSlideContratosDemercadoCompleto },
+    { nome: '13 · Capa Capital Realty', fn: gerarSlideCapaCapitalRealty },
+    { nome: '14 · DRE Capital Realty', fn: () => gerarSlideDREEmpresa_('CAPITAL REALTY') },
+    { nome: '15 · Receitas Capital Realty', fn: gerarSlideReceitasCapitalRealty },
+    { nome: '16 · Composição Capital Realty', fn: gerarSlideComposicaoCapitalRealty },
+    { nome: '17 · Despesas Capital Realty', fn: gerarSlideDespesasCapitalRealty },
+    { nome: '18 · Vacância Capital Realty', fn: gerarSlideVacanciaCapitalRealty },
+    { nome: '19 · Contratos Capital Realty', fn: gerarSlideContratosCapitalRealty },
+    { nome: '20 · Capa Locação Consolidada', fn: gerarSlideCapaLocacaoConsolidada },
+    { nome: '21 · Composição Locação Consolidada', fn: gerarSlideComposicaoLocacaoConsolidada },
+    { nome: '22 · Vacância Locação Consolidada', fn: gerarSlideVacanciaLocacaoConsolidada },
+    { nome: '23 · Capa Indicadores', fn: gerarSlideCapaIndicadoresFinanceiros },
+    { nome: '24 · Endividamento', fn: gerarSlideEndividamento },
+    { nome: '25 · Prazo de Pagamento', fn: gerarSlidePrazoPagamento },
+    { nome: '26 · Prazo de Recebimento', fn: gerarSlidePrazoRecebimento },
+    { nome: '27 · Liquidez Corrente', fn: gerarSlideLiquidezCorrente },
+    { nome: '28 · Margem EBITDA', fn: gerarSlideMargemEbitdaIndicador },
+    { nome: '29 · Capa Anexos', fn: gerarSlideCapaAnexos },
+    { nome: '30 · Fluxo de Caixa Demercado', fn: gerarSlideFluxoCaixaDemercado },
+    { nome: '31 · Fluxo de Caixa CR Infra', fn: gerarSlideFluxoCaixaCRInfra },
+    { nome: '32 · Fluxo de Caixa CR Estacionamentos', fn: gerarSlideFluxoCaixaCREstacionamentos },
+    { nome: '33 · DRE Hangar Vip', fn: () => gerarSlideDREEmpresa_('HANGAR VIP') },
+    { nome: '34 · Capa Ritmo Fluxo de Caixa', fn: gerarSlideCapaRitmoFluxoCaixa },
+    { nome: '35 · Capa Demercado Ritmo', fn: gerarSlideCapaDemercado },
+    { nome: '36 · Ritmo Entradas Demercado', fn: gerarSlideRitmoEntradasDemercado },
+    { nome: '37 · Ritmo Saídas Demercado', fn: gerarSlideRitmoSaidasDemercado },
+    { nome: '38 · Ritmo Saldo Demercado', fn: gerarSlideRitmoSaldoDemercado },
+    { nome: '39 · Ritmo Fluxo Demercado', fn: gerarSlideRitmoFluxoDemercado },
+    { nome: '40 · Capa Deminvest', fn: gerarSlideCapaDeminvest },
+    { nome: '41 · Ritmo Entradas Deminvest', fn: gerarSlideRitmoEntradasDeminvest },
+    { nome: '42 · Ritmo Saídas Deminvest', fn: gerarSlideRitmoSaidasDeminvest },
+    { nome: '43 · Ritmo Saldo Deminvest', fn: gerarSlideRitmoSaldoDeminvest },
+    { nome: '44 · Ritmo Fluxo Deminvest', fn: gerarSlideRitmoFluxoDeminvest },
+    { nome: '45 · Capa CR Infra', fn: gerarSlideCapaCRInfra },
+    { nome: '46 · Ritmo Entradas CR Infra', fn: gerarSlideRitmoEntradasCRInfra },
+    { nome: '47 · Ritmo Saídas CR Infra', fn: gerarSlideRitmoSaidasCRInfra },
+    { nome: '48 · Ritmo Saldo CR Infra', fn: gerarSlideRitmoSaldoCRInfra },
+    { nome: '49 · Ritmo Fluxo CR Infra', fn: gerarSlideRitmoFluxoCRInfra },
+    { nome: '50 · Capa CR Estacionamentos', fn: gerarSlideCapaCREstacionamentos },
+    { nome: '51 · Ritmo Entradas CR Estacionamentos', fn: gerarSlideRitmoEntradasCREstacionamentos },
+    { nome: '52 · Ritmo Saídas CR Estacionamentos', fn: gerarSlideRitmoSaidasCREstacionamentos },
+    { nome: '53 · Ritmo Saldo CR Estacionamentos', fn: gerarSlideRitmoSaldoCREstacionamentos },
+    { nome: '54 · Ritmo Fluxo CR Estacionamentos', fn: gerarSlideRitmoFluxoCREstacionamentos },
+    { nome: '55 · Encerramento', fn: gerarSlideEncerramentoFinanceiro }
   ];
-
-  return _rodarPassos_(passos);
 }
 
 
@@ -74,6 +121,34 @@ function regerarApresentacaoFinanceiro() {
   }
 
   Logger.log('✔ Financeiro — ' + (erros.length ? erros.length + ' erro(s).' : 'sem erros.'));
+  return erros;
+}
+
+// Decks com muitas tabelas podem exceder o tempo máximo de uma única
+// execução do Apps Script. Estas três entradas geram exatamente a mesma
+// sequência em lotes manuais. Rode PARTE 1, depois PARTE 2 e por fim PARTE 3.
+// A primeira limpa o deck; somente a terceira remove o slide antigo que o
+// Google Slides exige preservar enquanto ainda não existe uma capa nova.
+function regerarApresentacaoFinanceiroParte1() {
+  limparApresentacaoFinanceiro_();
+  DC_CACHE_ABAS_ = null;
+  const erros = _rodarPassos_(_passosApresentacaoFinanceiro_().slice(0, 22));
+  Logger.log('Parte 1 concluída: páginas 1–22. Agora rode continuarApresentacaoFinanceiroParte2().');
+  return erros;
+}
+
+function continuarApresentacaoFinanceiroParte2() {
+  DC_CACHE_ABAS_ = null;
+  const erros = _rodarPassos_(_passosApresentacaoFinanceiro_().slice(22, 34));
+  Logger.log('Parte 2 concluída: páginas 23–34. Agora rode finalizarApresentacaoFinanceiroParte3().');
+  return erros;
+}
+
+function finalizarApresentacaoFinanceiroParte3() {
+  DC_CACHE_ABAS_ = null;
+  const erros = _rodarPassos_(_passosApresentacaoFinanceiro_().slice(34));
+  _removerSlideAntigo_();
+  Logger.log('Parte 3 concluída: páginas 35–55. Deck completo.');
   return erros;
 }
 

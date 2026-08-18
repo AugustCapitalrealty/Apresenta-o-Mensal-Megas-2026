@@ -27,7 +27,7 @@ function gerarSlideCapa() {
 
   // Overline espaçado
   const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, H * 0.30, W - 200, 20);
-  over.getText().setText(_capaEspacado_('Apresentação Mensal')).getTextStyle()
+  over.getText().setText(_capaEspacado_('Grupo Capital Realty')).getTextStyle()
     .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
   // Barra de destaque em gradiente acima do título
@@ -35,7 +35,7 @@ function gerarSlideCapa() {
 
   // Título principal
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
-  titulo.getText().setText('RESULTADOS\nFINANCEIROS').getTextStyle()
+  titulo.getText().setText('REUNIÃO DE\nRESULTADOS').getTextStyle()
     .setFontSize(44).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
   // O Slides não aceita lineSpacing abaixo de 100 (mínimo "espaçamento
   // simples" da própria interface) — usar <100 lança "Invalid argument:
@@ -45,7 +45,7 @@ function gerarSlideCapa() {
   // "Grupo Capital Realty" — herói do co-branding, mesmo lugar que o nome do
   // Mega ocupa nas outras capas.
   const grupo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H * 0.30 + 158, W - 120, 40);
-  grupo.getText().setText('Grupo Capital Realty').getTextStyle()
+  grupo.getText().setText('Resultados Financeiros').getTextStyle()
     .setFontSize(24).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
   // Pill de período em gradiente

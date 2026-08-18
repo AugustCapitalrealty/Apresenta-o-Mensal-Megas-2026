@@ -43,6 +43,7 @@ const BLOCOS_FINANCEIROS = {
 
 const MESES_NOME_REF = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+var FIN_MES_REFERENCIA_CACHE_ = null;
 
 /**
  * Mês de referência da apresentação. PROVISÓRIO: usa só o calendário (mês
@@ -53,18 +54,44 @@ const MESES_NOME_REF = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
  * deve divergir do conteúdo dos outros slides.
  */
 function obterMesReferencia_() {
+  if (FIN_MES_REFERENCIA_CACHE_) return FIN_MES_REFERENCIA_CACHE_;
+  // O Quadro EBITDA é a fonte comum do deck. Usá-lo aqui impede a capa de
+  // avançar para o mês seguinte apenas porque o calendário virou antes de o
+  // fechamento financeiro estar pronto.
+  try {
+    const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(QUADRO_EBITDA_SHEET);
+    if (sheet && sheet.getLastRow()) {
+      const valores = sheet.getRange(1, 2, sheet.getLastRow(), 16).getDisplayValues();
+      let linha = -1;
+      for (let r = 0; r < valores.length; r++) {
+        if (/^EBITDA\b/i.test(String(valores[r][0] || '').trim())) linha = r;
+      }
+      if (linha >= 0) {
+        const nomeLido = String(valores[linha][1] || '').trim().toUpperCase();
+        const index = MESES_NOME_REF.map(_finNorm_).indexOf(_finNorm_(nomeLido));
+        const anos = valores.slice(linha, Math.min(valores.length, linha + 2))
+          .reduce((a, row) => a.concat(row.join(' ').match(/20\d{2}/g) || []), [])
+          .map(Number);
+        const anoLido = anos.length ? Math.max.apply(null, anos) : new Date().getFullYear();
+        if (index >= 0) {
+          FIN_MES_REFERENCIA_CACHE_ = { index: index, nome: MESES_NOME_REF[index],
+            curto: MESES_NOME_REF[index].charAt(0) + MESES_NOME_REF[index].slice(1).toLowerCase(),
+            ano: anoLido, label: MESES_NOME_REF[index] + ' / ' + anoLido };
+          return FIN_MES_REFERENCIA_CACHE_;
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Mês de referência: Quadro EBITDA indisponível; usando calendário. ' + e.message);
+  }
+
   const hoje = new Date();
-  const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior
-  const idx = ant.getMonth();
-  const ano = ant.getFullYear();
-  const nome = MESES_NOME_REF[idx];
-  return {
-    index: idx,
-    nome: nome,
-    curto: nome.charAt(0) + nome.slice(1).toLowerCase(),
-    ano: ano,
-    label: nome + ' / ' + ano
-  };
+  const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+  const idx = ant.getMonth(), ano = ant.getFullYear(), nome = MESES_NOME_REF[idx];
+  FIN_MES_REFERENCIA_CACHE_ = { index: idx, nome: nome,
+    curto: nome.charAt(0) + nome.slice(1).toLowerCase(), ano: ano, label: nome + ' / ' + ano };
+  return FIN_MES_REFERENCIA_CACHE_;
 }
 
 
