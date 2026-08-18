@@ -13,19 +13,36 @@
  *
  * POR QUE TUDO É MEDIDO ANTES DE DESENHAR
  * São 16 colunas num slide só: cada coluna de valor tem ~38pt, e a TEXT_BOX do
- * Slides come ~7pt de cada lado em recuo interno que a API não desliga. Com
- * fonte fixa isso estourou de três jeitos na primeira versão: "Ritmo" quebrou
- * em "Ritm"/"o" no cabeçalho, "CR Estacionamentos" vazou da coluna de rótulo,
- * e a tabela de Pré-Premiação subiu por cima do próprio título.
+ * Slides come ~7pt de cada lado em recuo interno que a API não desliga. Foram
+ * três rodadas até fechar, e vale registrar o que cada uma ensinou:
  *
- * A correção é o padrão de megas-mensal/Farol_Guilherme.gs: _rrUmaLinha_
- * (texto curto — mede e encolhe até caber numa linha) e _rrBloco_ (cabeçalho —
- * encolhe até o texto quebrado caber na altura da célula). Nenhuma caixa
- * estoura quando o conteúdo muda, e o slide continua legível se a Ester
- * acrescentar uma empresa ou trocar os rótulos das colunas na planilha.
+ *   1ª  fonte fixa → "Ritmo" quebrou em "Ritm"/"o", "CR Estacionamentos" vazou
+ *       da coluna de rótulo e a tabela de baixo cobriu o próprio título.
+ *   2ª  passou a medir, mas com a média única de caractere (0,58) herdada do
+ *       Farol e folga de 9pt. As duas coisas erraram para o mesmo lado: a média
+ *       subestima MAIÚSCULA e dígito, que é do que os cabeçalhos são feitos, e
+ *       a folga de 9 deixava a largura útil PASSAR da largura da célula. Os
+ *       cabeçalhos de RITMO rendiam ~2pt mais largos que a coluna e invadiam a
+ *       vizinha.
+ *   3ª  medição por CLASSE de caractere (_rrLarguraTexto_) e folga amarrada ao
+ *       recuo (_RR_FOLGA), de forma que a linha não tem como render mais larga
+ *       que a célula — e ainda sobra o _RR_RESPIRO.
+ *
+ * As helpers seguem megas-mensal/Farol_Guilherme.gs: _rrUmaLinha_ (texto curto,
+ * encolhe até caber numa linha) e _rrBloco_ (cabeçalho, encolhe até o texto
+ * quebrado caber na altura). Nenhuma caixa estoura quando o conteúdo muda, e o
+ * slide continua fechando se a Ester acrescentar uma empresa na planilha.
  *
  * Tudo também é proporcional a W/H (nada de pt fixo), porque o deck pode ser
  * 720x405 ou 960x540 dependendo de como foi criado.
+ *
+ * COMO ISSO FOI CONFERIDO (vale para a próxima vez)
+ * Medir o slide com a MESMA função de largura que o código usa não prova nada —
+ * o teste concorda com o erro do código e passa. Foi o que aconteceu na 2ª
+ * rodada. A conferência que valeu mede o texto com a métrica REAL do Montserrat
+ * (canvas do Chromium com a fonte do Google Fonts) e compara com a largura da
+ * célula; rodada contra a 2ª versão, ela acusa exatamente os dois cabeçalhos de
+ * RITMO que apareciam vazando no slide.
  */
 
 function gerarSlideResumoResultado() {
@@ -33,7 +50,9 @@ function gerarSlideResumoResultado() {
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-  const mX = W * 0.028;
+  // Margem enxuta: com 16 colunas, cada ponto de margem sai da largura das
+  // colunas, que é justamente o recurso escasso deste slide.
+  const mX = W * 0.022;
 
   const dados     = obterResumoResultadoEBITDA_();
   const premiacao = obterEbitdaPrePremiacao_();
@@ -42,43 +61,46 @@ function gerarSlideResumoResultado() {
 
   // Grafismo de fundo — elipse suave no canto superior direito (mesma
   // assinatura do cabeçalho padrão dos outros projetos do repositório).
-  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W * 0.60, -H * 0.30, W * 0.55, W * 0.55);
+  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W * 0.62, -H * 0.32, W * 0.55, W * 0.55);
   ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.045);
   ellipse.getBorder().setTransparent();
 
   // ── Título + subtítulo (mês/ano vêm dos DADOS — nunca diverge da tabela) ──
-  _rrUmaLinha_(slide, mX, H * 0.040, W * 0.60, H * 0.085, 'Resumo do Resultado',
-    { fs: W * 0.030, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
+  _rrUmaLinha_(slide, mX, H * 0.045, W * 0.55, H * 0.080, 'Resumo do Resultado',
+    { fs: W * 0.029, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
 
-  _rrUmaLinha_(slide, mX, H * 0.128, W * 0.60, H * 0.055, _rrMesAno_(dados.mes, dados.ano),
-    { fs: W * 0.019, cor: DS.colors.brandMed, fonte: DS.typography.body, align: 'L', folga: 0 });
+  _rrUmaLinha_(slide, mX, H * 0.128, W * 0.55, H * 0.052, _rrMesAno_(dados.mes, dados.ano),
+    { fs: W * 0.018, cor: DS.colors.brandMed, fonte: DS.typography.body, align: 'L', folga: 0 });
 
-  // ── Tabela principal — EBITDA por empresa ──
-  const tabTopo   = H * 0.215;
-  const tabAltura = H * 0.415;
-  _rrTabelaEbitda_(slide, W, H, mX, tabTopo, tabAltura, dados);
-
-  // ── Ebitda Pré-Premiação ──
-  // O título ganha faixa própria acima da tabela: na primeira versão a tabela
-  // era desenhada 18pt abaixo do título e, como shape mais nova fica por cima,
-  // ela cobria a metade de baixo das letras.
-  const ppTituloY = H * 0.680;
-  const ppTabelaY = H * 0.750;
-  const ppBase    = H * 0.950;
-
-  _rrUmaLinha_(slide, mX, ppTituloY, W * 0.50, H * 0.055, _rrPrimeiraLinha_(premiacao.titulo),
-    { fs: W * 0.019, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
-
-  _rrTabelaPremiacao_(slide, W, mX, ppTabelaY, ppBase - ppTabelaY, premiacao);
-
-  // ── Logo Capital Realty, canto inferior direito ──
+  // ── Logo Capital Realty ──
+  // Vai no TOPO, ao lado do título, e não no rodapé: no rodapé ele disputava
+  // espaço com a tabela de Pré-Premiação e obrigava essa tabela a ficar
+  // espremida na metade esquerda do slide. Aqui em cima, as duas tabelas usam
+  // a largura inteira.
   try {
     const blob = DriveApp.getFileById(DS.assets.logoId).getBlob();
-    slide.insertImage(blob, W - mX - DS.assets.logoW, H - H * 0.055 - DS.assets.logoH,
-      DS.assets.logoW, DS.assets.logoH);
+    slide.insertImage(blob, W - mX - DS.assets.logoW, H * 0.055, DS.assets.logoW, DS.assets.logoH);
   } catch (e) {
     Logger.log('Resumo do Resultado: logo não carregado. ' + e.message);
   }
+
+  // ── Tabela principal — EBITDA por empresa ──
+  const tabTopo   = H * 0.205;
+  const tabAltura = H * 0.435;
+  _rrTabelaEbitda_(slide, W, mX, tabTopo, tabAltura, dados);
+
+  // ── Ebitda Pré-Premiação ──
+  // O título tem faixa própria ACIMA da tabela: quando os dois quase se
+  // encostavam, a tabela (shape mais nova, portanto por cima) cobria a metade
+  // de baixo das letras do título.
+  const ppTituloY = H * 0.685;
+  const ppTabelaY = H * 0.762;
+  const ppBase    = H * 0.955;
+
+  _rrUmaLinha_(slide, mX, ppTituloY, W * 0.55, H * 0.058, _rrPrimeiraLinha_(premiacao.titulo),
+    { fs: W * 0.020, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
+
+  _rrTabelaPremiacao_(slide, W, mX, ppTabelaY, ppBase - ppTabelaY, premiacao);
 
   Logger.log('Slide "Resumo do Resultado" gerado → ' + dados.mes + '/' + dados.ano);
 }
@@ -107,15 +129,19 @@ function _rrPrimeiraLinha_(txt) {
 // As alturas das linhas saem de pesos, não de pt fixo: se a Ester acrescentar
 // uma empresa na planilha, a tabela redistribui a altura em vez de vazar para
 // fora do slide.
-function _rrTabelaEbitda_(slide, W, H, mX, topo, altura, dados) {
+function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados) {
   const DS = CR_DESIGN_SYSTEM;
   const larguraTotal = W - mX * 2;
   const nCols  = dados.headers.length || 15;
-  const labelW = larguraTotal * 0.155;
+  // "CR Estacionamentos" é o rótulo mais longo e é ele que dimensiona esta
+  // coluna — com 0,155 ele encostava no primeiro valor.
+  const labelW = larguraTotal * 0.175;
   const valW   = (larguraTotal - labelW) / nCols;
 
-  const hBanda = altura * 0.095;   // faixa dos grupos (JUNHO / ACUMULADO / RITMO)
-  const hSub   = altura * 0.215;   // faixa dos 15 rótulos de coluna
+  const hBanda = altura * 0.100;   // faixa dos grupos (JUNHO / ACUMULADO / RITMO)
+  // Faixa alta de propósito: "Real 2026 x Real 2025" quebra em 3–4 linhas numa
+  // coluna de ~38pt, e é melhor dar altura do que encolher a fonte até sumir.
+  const hSub   = altura * 0.260;
   const restante = altura - hBanda - hSub;
 
   const nEmpresas = dados.empresas.filter(e => !e.total).length;
@@ -208,8 +234,11 @@ function _rrLinha_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, cor
 // exercício se estivessem no código.
 function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados) {
   const DS = CR_DESIGN_SYSTEM;
-  const largura = W * 0.56;
-  const labelW  = largura * 0.42;
+  // Largura cheia, igual à tabela de cima: com o logo movido para o topo, não
+  // há mais nada disputando o rodapé, e uma tabela estreita deixava metade do
+  // slide vazia.
+  const largura = W - mX * 2;
+  const labelW  = largura * 0.34;
   const nCols   = dados.colunas.length || 3;
   const valW    = (largura - labelW) / nCols;
 
@@ -256,19 +285,39 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados) {
 // ==========================================
 // MEDIÇÃO DE TEXTO
 // ==========================================
-// A API do Slides não expõe métrica de fonte, então estimamos pela largura
-// média do caractere. Mesmos fatores de megas-mensal/Farol_Guilherme.gs
-// (Montserrat é mais larga que Open Sans; negrito soma ~4%) — é cópia, não
-// import: ao calibrar um, confira o outro.
-const _RR_FATOR_FONTE = { 'Montserrat': 0.58, 'Open Sans': 0.52 };
+// A API do Slides não expõe métrica de fonte, então a largura é estimada.
+//
+// POR QUE NÃO USAR A MÉDIA ÚNICA DE Farol_Guilherme.gs (0,58 por caractere):
+// lá as caixas são largas e um erro de 10% não aparece. Aqui as colunas têm
+// ~38pt e a média achatava justamente o caso ruim — "Ritmo 2026 x Real 2025" é
+// quase todo MAIÚSCULA e dígito, que em Montserrat são bem mais largos que a
+// média, então a conta dizia "cabe" e o Slides quebrava assim mesmo.
+//
+// Medir por CLASSE de caractere corrige isso: em Montserrat a maiúscula ocupa
+// ~0,72em, o dígito ~0,60em, a minúscula ~0,58em, a pontuação ~0,34em e o
+// espaço ~0,26em.
+const _RR_EM = { maiuscula: 0.72, digito: 0.60, minuscula: 0.58, pontuacao: 0.34, espaco: 0.26 };
 
 // Recuo interno que toda TEXT_BOX tem e a API não deixa desligar (~7pt de
 // cada lado). É ele que faz texto curto quebrar dentro de caixa estreita.
 const _RR_RECUO_TEXTBOX = 14;
 
 function _rrLarguraTexto_(texto, fs, fonte, bold) {
-  const f = (_RR_FATOR_FONTE[fonte] || 0.55) * (bold ? 1.04 : 1);
-  return String(texto).length * fs * f;
+  const t = String(texto);
+  let em = 0;
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charAt(i);
+    if (c === ' ') em += _RR_EM.espaco;
+    else if (c >= '0' && c <= '9') em += _RR_EM.digito;
+    // Maiúscula, incluindo acentuada (Ç, Á): só ela difere de si mesma em
+    // minúsculo E é igual a si mesma em maiúsculo.
+    else if (c !== c.toLowerCase() && c === c.toUpperCase()) em += _RR_EM.maiuscula;
+    else if ('.,;:%-/()'.indexOf(c) >= 0) em += _RR_EM.pontuacao;
+    else em += _RR_EM.minuscula;
+  }
+  // Montserrat é a referência das medidas acima; Open Sans é mais estreita.
+  const fonteF = (fonte === 'Open Sans') ? 0.93 : 1;
+  return em * fs * fonteF * (bold ? 1.05 : 1);
 }
 
 // Quantas linhas o texto ocupa numa caixa de largura `larguraCaixa`, quebrando
@@ -317,6 +366,21 @@ function _rrCelula_(slide, x, y, w, h, corFundo) {
   return bg;
 }
 
+// Espaço que fica GARANTIDO livre dentro da célula, para o texto não encostar
+// na borda nem no vizinho.
+const _RR_RESPIRO = 4;
+
+// A folga não é chute: é o recuo interno menos o respiro, dividido pelos dois
+// lados. Assim a largura útil da caixa (bw − 14) fica igual à largura visível
+// da célula MENOS o respiro — o Slides quebra a linha antes de encostar na
+// borda, e o texto não tem como render mais largo que a célula.
+//
+// Foi isso que faltou nas duas versões anteriores: com folga maior que este
+// valor, a largura útil passava da largura da célula e o cabeçalho
+// ("Ritmo 2026 x Orç 2026") rendia ~2pt mais largo que a coluna, invadindo a
+// vizinha — exatamente o que aparecia no slide.
+const _RR_FOLGA = (_RR_RECUO_TEXTBOX - _RR_RESPIRO) / 2;
+
 /**
  * Texto curto que TEM que caber numa linha só (valor de célula, rótulo de
  * empresa, título). Duas defesas combinadas, como em Farol_Guilherme.gs:
@@ -334,7 +398,7 @@ function _rrUmaLinha_(slide, x, y, w, h, texto, op) {
   const o = op || {};
   const fonte  = o.fonte || CR_DESIGN_SYSTEM.typography.titles;
   const centro = o.align !== 'L';
-  const folga  = o.folga === undefined ? 9 : o.folga;
+  const folga  = o.folga === undefined ? _RR_FOLGA : o.folga;
   const fsMin  = o.fsMin || 5;
   let   fs     = o.fs === undefined ? 10 : o.fs;
 
@@ -367,7 +431,7 @@ function _rrBloco_(slide, x, y, w, h, texto, op) {
   const o = op || {};
   const fonte  = o.fonte || CR_DESIGN_SYSTEM.typography.titles;
   const centro = o.align !== 'L';
-  const folga  = o.folga === undefined ? 9 : o.folga;
+  const folga  = o.folga === undefined ? _RR_FOLGA : o.folga;
   const fsMin  = o.fsMin || 4.5;
   let   fs     = o.fs === undefined ? 8 : o.fs;
 

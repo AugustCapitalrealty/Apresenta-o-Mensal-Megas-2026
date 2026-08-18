@@ -87,21 +87,41 @@ da Pré-Premiação também vêm da planilha, porque citam o ano.
 
 São 16 colunas num slide só: cada coluna de valor fica com ~38pt, e a
 `TEXT_BOX` do Slides come ~7pt de cada lado em recuo interno que a API não
-desliga. Com fonte fixa isso estourou de três jeitos na primeira versão:
+desliga. Levou três rodadas para fechar:
 
-| Sintoma | Causa |
-|---|---|
-| `Ritmo` virou `Ritm` / `o` no cabeçalho | palavra maior que a largura útil da coluna |
-| `CR Estacionamentos` vazou da coluna de rótulo | rótulo maior que a coluna |
-| `Ebitda Pré-Premiação Anual` cortado ao meio | a tabela era desenhada depois, por cima do título |
+| Rodada | O que quebrou | Por quê |
+|---|---|---|
+| 1ª | `Ritmo` virou `Ritm`/`o`; `CR Estacionamentos` vazou; título coberto pela tabela | fonte e posições fixas em pt |
+| 2ª | cabeçalhos de RITMO invadindo a coluna vizinha | média única de 0,58 por caractere subestima MAIÚSCULA e dígito, e a folga de 9pt deixava a largura útil passar da largura da célula |
+| 3ª | — | medição por classe de caractere + folga amarrada ao recuo |
 
 A correção segue o padrão de `../megas-mensal/Farol_Guilherme.gs`:
 `_rrUmaLinha_` (texto curto — mede e encolhe até caber numa linha) e
 `_rrBloco_` (cabeçalho — encolhe até o texto quebrado caber na altura, e nunca
-deixa a maior palavra ficar mais larga que a caixa). As alturas das linhas
-saem de pesos e as posições são proporcionais a `W`/`H`, então o slide
-continua fechando se a Ester acrescentar uma empresa na planilha e funciona
-tanto num deck 720×405 quanto 960×540.
+deixa a maior palavra ficar mais larga que a caixa). Duas constantes carregam
+a garantia:
+
+- **`_RR_FOLGA`** = `(recuo − respiro) / 2`. Não é chute: com esse valor a
+  largura útil da caixa fica igual à da célula menos o respiro, então a linha
+  **não tem como** render mais larga que a célula.
+- **`_RR_RESPIRO`** = 4pt que ficam garantidamente livres, para o texto não
+  encostar na borda.
+
+As alturas das linhas saem de pesos e as posições são frações de `W`/`H`,
+então o slide continua fechando se a Ester acrescentar uma empresa na planilha
+e funciona tanto num deck 720×405 quanto 960×540.
+
+#### Conferir isso com a própria estimativa do código não prova nada
+
+Foi o erro da 2ª rodada: o teste media o texto com a mesma função otimista que
+o código usava, concordava com o erro e passava — enquanto o slide de verdade
+saía com o cabeçalho vazando.
+
+A conferência que vale mede com a métrica **real** do Montserrat (canvas do
+Chromium carregando a fonte do Google Fonts) e compara com a largura da
+célula. Rodada contra a 2ª versão, ela acusa exatamente os dois cabeçalhos de
+RITMO que apareciam errados no slide. Se for mexer nas larguras ou nas fontes
+deste slide, confira assim — não pela estimativa interna.
 
 Os números que aparecem no print de referência da Ester podem sair
 ligeiramente diferentes dos gerados pelo código: a planilha é viva, os
@@ -116,8 +136,19 @@ valor congelado de um print.
    `.gs` por arquivo daqui — não há `clasp`, `git push` não publica nada, ver
    o `CLAUDE.md` da raiz).
 3. Rode `diagnosticarFinanceiro()` para conferir se o deck e a planilha abrem.
-4. Rode `gerarApresentacaoFinanceiro()` (ou só `gerarSlideCapa()` para testar
-   a capa isolada).
+4. Rode **`regerarApresentacaoFinanceiro()`**.
+
+### Qual função rodar
+
+| Função | O que faz |
+|---|---|
+| **`regerarApresentacaoFinanceiro()`** | **Limpa o deck e gera tudo de novo.** É a do dia a dia — pode rodar quantas vezes quiser que o resultado é sempre o mesmo deck limpo |
+| `gerarApresentacaoFinanceiro()` | ACRESCENTA os slides ao que já existe. Rodar duas vezes deixa tudo repetido |
+| `diagnosticarFinanceiro()` | Só confere se o deck e a planilha abrem, antes de qualquer conta |
+
+O Slides não aceita um deck sem nenhum slide, então `regerar...` preserva o
+primeiro slide durante a limpeza e só o remove no fim, depois que a capa nova
+já tomou o lugar dele.
 
 ## Próximos passos
 
