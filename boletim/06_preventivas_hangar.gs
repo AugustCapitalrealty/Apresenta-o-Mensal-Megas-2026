@@ -285,11 +285,7 @@ function gerarSlide06_Preventivas_Hangar() {
   Logger.log("✅ Slide 06 HANGAR VIP (Preventivas) concluído!");
 }
 
-/**
- * PRÉVIA RÁPIDA — gera SOMENTE este slide Hangar VIP.
- */
-function testarSlide06_Preventivas_Hangar() {
-  limparApresentacao();
-  gerarSlide06_Preventivas_Hangar();
-  Logger.log("✅ Prévia do Slide 06 Hangar VIP gerada.");
-}
+// Para ver só este slide, use `verManutencaoPreventivaHangar()` em
+// 06_preventivas.gs — ela passa pelo motor do 00_Main.gs, que aplica o tema
+// Hangar e restaura o da Capital no fim. A antiga
+// `testarSlide06_Preventivas_Hangar` desenhava com a paleta errada.

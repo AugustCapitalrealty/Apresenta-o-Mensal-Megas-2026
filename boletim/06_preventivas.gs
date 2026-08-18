@@ -304,3 +304,13 @@ function gerarSlide06_Preventivas() {
 
   Logger.log("✅ Slide 06 (Preventivas) concluído!");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só a Manutenção Preventiva, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verManutencaoPreventiva()            { return _bolVerSlide_('COMPLETO',   'Manutenção Preventiva'); }
+function verManutencaoPreventivaFacilities()  { return _bolVerSlide_('FACILITIES', 'Manutenção Preventiva'); }
+function verManutencaoPreventivaHangar()      { return _bolVerSlide_('HANGAR',     'Manutenção Preventiva'); }

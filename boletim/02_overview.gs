@@ -276,3 +276,12 @@ function gerarSlide03_OverviewExecutivo() {
 
   Logger.log("✅ Slide 02 concluído! Semana dinâmica, CO² com unidade, Árvores sem decimal.");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só o Overview Executivo, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verOverview()            { return _bolVerSlide_('COMPLETO',   'Overview Executivo'); }
+function verOverviewFacilities()  { return _bolVerSlide_('FACILITIES', 'Overview Executivo'); }

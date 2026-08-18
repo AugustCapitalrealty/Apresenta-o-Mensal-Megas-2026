@@ -33,8 +33,8 @@ function sheet(nome) {
 }
 
 // ── Carrega o código de produção ─────────────────────────────────────────
-// config.gs traz intervaloSemanaISO, que Dados.gs usa para a janela semanal.
-let fonte = ['config.gs', 'Dados.gs']
+// Config.gs traz intervaloSemanaISO, que Dados.gs usa para a janela semanal.
+let fonte = ['Config.gs', 'Dados.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 // Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
 // `const`/`let` de topo ficam presos no escopo do próprio eval.

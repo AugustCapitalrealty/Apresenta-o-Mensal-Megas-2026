@@ -289,12 +289,12 @@ function gerarSlide07_CorretivasEmpreendimento(apenasMegas = false, filtroNome =
   Logger.log("✅ Slide 07 (Corretivas por Empreendimento) concluído!");
 }
 
-/**
- * PRÉVIA RÁPIDA — gera SOMENTE este slide na versão Facilities (3 Megas).
- * Selecione esta função no editor do Apps Script e clique em Executar.
- */
-function testarSlide07_Corretivas() {
-  limparApresentacao();
-  gerarSlide07_CorretivasEmpreendimento(true);
-  Logger.log("✅ Prévia do Slide 07 Facilities gerada.");
-}
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só as Corretivas por Empreendimento, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verCorretivasEmpreendimento()            { return _bolVerSlide_('COMPLETO',   'Corretivas / Empreend.'); }
+function verCorretivasEmpreendimentoFacilities()  { return _bolVerSlide_('FACILITIES', 'Corretivas / Empreend.'); }
+function verCorretivasEmpreendimentoHangar()      { return _bolVerSlide_('HANGAR',     'Corretivas / Empreend.'); }

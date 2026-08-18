@@ -693,3 +693,13 @@ function gerarSlide05_QuadroManutencao_Facilities() {
 
   Logger.log("✅ Slide 05 Facilities (sem Hangar) concluído!");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só a Manutenção Corretiva, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verManutencaoCorretiva()            { return _bolVerSlide_('COMPLETO',   'Manutenção Corretiva'); }
+function verManutencaoCorretivaFacilities()  { return _bolVerSlide_('FACILITIES', 'Manutenção Corretiva'); }
+function verManutencaoCorretivaHangar()      { return _bolVerSlide_('HANGAR',     'Manutenção Corretiva'); }

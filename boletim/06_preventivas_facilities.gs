@@ -287,12 +287,7 @@ function gerarSlide06_Preventivas_Facilities() {
   Logger.log("✅ Slide 06 Facilities (Preventivas) concluído!");
 }
 
-/**
- * PRÉVIA RÁPIDA — gera SOMENTE este slide Facilities.
- * Selecione esta função no editor do Apps Script e clique em Executar.
- */
-function testarSlide06_Preventivas_Facilities() {
-  limparApresentacao();
-  gerarSlide06_Preventivas_Facilities();
-  Logger.log("✅ Prévia do Slide 06 Facilities gerada.");
-}
+// Para ver só este slide, use `verManutencaoPreventivaFacilities()` em
+// 06_preventivas.gs — ela passa pelo motor do 00_Main.gs, que aplica e
+// restaura o tema. A antiga `testarSlide06_Preventivas_Facilities` desenhava
+// sem tema.

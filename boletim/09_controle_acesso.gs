@@ -241,3 +241,11 @@ function gerarSlide09_ControleAcesso() {
 
   Logger.log("✅ Slide 09 (Controle de Acesso) concluído!");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só o Controle de Acesso, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verControleAcesso() { return _bolVerSlide_('COMPLETO', 'Controle de Acesso'); }

@@ -299,11 +299,7 @@ function gerarSlide05_QuadroManutencao_Hangar() {
   Logger.log("✅ Slide 05 HANGAR VIP concluído!");
 }
 
-/**
- * PRÉVIA RÁPIDA — gera apenas o slide de Corretiva Hangar VIP.
- */
-function testarSlide05_Hangar() {
-  limparApresentacao();
-  gerarSlide05_QuadroManutencao_Hangar();
-  Logger.log("✅ Prévia Manutenção Corretiva Hangar VIP gerada.");
-}
+// Para ver só este slide, use `verManutencaoCorretivaHangar()` em
+// 04_quadro_manutencao.gs — ela passa pelo motor do 00_Main.gs, que aplica o
+// tema Hangar e restaura o da Capital no fim. A antiga `testarSlide05_Hangar`
+// desenhava com a paleta errada.

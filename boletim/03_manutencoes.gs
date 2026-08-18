@@ -206,3 +206,12 @@ function gerarSlide04_Manutencoes(apenasMegas = false) {
 
   Logger.log("✅ Slide 03 concluído! Badge ⚠ em indicadores abaixo da meta e sombra nos cards.");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só a Estratificação de Manutenções, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verEstratificacao()            { return _bolVerSlide_('COMPLETO',   'Estratificação'); }
+function verEstratificacaoFacilities()  { return _bolVerSlide_('FACILITIES', 'Estratificação'); }
