@@ -160,12 +160,43 @@ cai nela e o `Logger` registra a divergência (lição 3 do CLAUDE.md).
 Os demais slides ainda saem das abas com o número já somado à mão. Migrá-los
 é o resto do plano.
 
+## Como a composição por tipo é decidida
+
+O painel do slide 05 mostra **Corretivas / Melhorias / Projetos / Locatários**.
+A regra é a mesma que a planilha já usava nos `CONT.SES`, agora calculada na
+base:
+
+| Fatia | Como é reconhecida |
+|---|---|
+| **Locatários** | `Responsabilidade Locatário` na coluna Responsáveis |
+| **Melhorias** | a coluna de tipo (coluna C) contém "Melhoria" |
+| **Projetos** | a coluna de tipo contém "Consulta" |
+| **Corretivas** | tudo o que sobra |
+
+A ordem importa e é uma decisão: um chamado pode ser Melhoria **e** de
+responsabilidade do locatário. Locatário vem primeiro, para o número do cartão
+de KPI e o do painel serem o mesmo. O `Logger` diz a cada execução quantos
+chamados são os dois ao mesmo tempo — se esse número crescer, a ordem passa a
+mudar o slide e vale rediscutir.
+
+**Calculado, as quatro fatias fecham com o backlog** — cada chamado em aberto
+cai em exatamente uma. Lendo as células não fechava: o slide saía com
+`348 + 83 + 2 + 46 = 479` embaixo de um backlog de `525`, porque as quatro
+contagens da planilha eram independentes e ninguém via os 46 que sumiam.
+
+A coluna de tipo é achada pelo **cabeçalho** (ignorando "Tipo de reporte", que
+é OPERATOR/CONTACT — outra coluna). Não achando, tenta a posição C, mas **só
+aceita se a coluna realmente trouxer "Melhoria" ou "Consulta"** em alguma
+linha. Sem essa conferência, um layout diferente faria a reserva cair numa
+coluna qualquer e o painel mostraria 100% Corretivas sem erro nenhum.
+
+`diagnosticarBoletim()` mostra os valores reais dessa coluna e compara a
+composição calculada com as células `G40/D40/E40/F40`.
+
 ## O que a base não sustenta
 
-- **Corretivas × Melhorias × Projetos** — a `BD-CORRETIVAS` não tem coluna
-  que separe os três. `Tipo de reporte` é OPERATOR/CONTACT (quem abriu) e
-  `Tipo` é área + sintoma. Por isso o painel de composição do slide 05 passou
-  a ser **por disciplina** (coluna `Área`), que a base sustenta, em vez de
-  por tipo, que ela não sustenta. Se a divisão por tipo for necessária,
-  alguém precisa classificar na origem.
 - **Índice de Disponibilidade** e **MTBF** — continuam digitados à mão.
+- **Recorte por escopo no slide 05** — `obterQuadroCorretivasBoletim_` conta a
+  carteira inteira, então só o boletim COMPLETO usa a base bruta. Facilities e
+  Hangar continuam nas células até a função aprender a filtrar por Centro de
+  Custos (é o que a fórmula da planilha faz com `$AY:$AY`).

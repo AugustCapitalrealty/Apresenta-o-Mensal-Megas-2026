@@ -276,15 +276,26 @@ global.obterQuadroCorretivasBoletim_ = () => ({
     { FACILITIES: 7, PROPERTY: 8, OPERACAO: 9 }
   ],
   meses: ['ABR', 'MAI', 'JUN', 'JUL'],
-  composicao: [{ label: 'Elétrica', val: 18, pct: 60 }, { label: 'Hidráulica', val: 12, pct: 40 }]
+  composicao: [
+    { label: 'CORRETIVAS', val: 18, pct: 60 }, { label: 'MELHORIAS',  val: 6, pct: 20 },
+    { label: 'PROJETOS',   val: 2,  pct: 7  }, { label: 'LOCATÁRIOS', val: 4, pct: 13 }
+  ]
 });
 
 reset(); fixtureCorretivaGeral();
 gerarSlide05_QuadroManutencao();
 ok('COMPLETO usa o total da base (30), não a célula C40 (666)', temTexto(/^BACKLOG TOTAL\n30\n/));
 ok('a seta usa totalAnterior da base: 30-25 = +5', temTexto(/BACKLOG TOTAL\n30\n↑ \+5 /));
-ok('composição vira POR DISCIPLINA', temTexto(/^COMPOSIÇÃO POR DISCIPLINA$/));
-ok('e mostra as disciplinas da base', temTexto(/^18 \(60%\)$/));
+ok('o painel continua sendo POR TIPO nos dois caminhos',
+   temTexto(/^COMPOSIÇÃO POR TIPO$/));
+ok('e mostra as fatias da base', temTexto(/^18 \(60%\)$/) && temTexto(/^6 \(20%\)$/));
+// A barra é a fatia do backlog, o mesmo número do "%" escrito ao lado — se
+// fosse escalada pela maior fatia, CORRETIVAS ficaria sempre cheia e a barra
+// diria uma coisa diferente do texto.
+const barras = SHAPES.filter(s => s.tipo === 'RECTANGLE' && s.x > 700 && s.h === 12);
+ok('a barra de CORRETIVAS ocupa 60% da régua, não 100%',
+   barras.length === 2 && Math.abs(barras[1].w / barras[0].w - 0.6) < 0.01,
+   JSON.stringify(barras.map(b => b.w)));
 ok('o log diz de onde veio o número', logs.some(l => /fonte = BD-CORRETIVAS/.test(l)));
 
 reset(); fixtureCorretivaGeral();
@@ -292,7 +303,9 @@ setCel(GRID, 'C37', 111); setCel(GRID, 'C38', 222); setCel(GRID, 'C40', 999);
 gerarSlide05_QuadroManutencao_Facilities();
 ok('FACILITIES NÃO usa a base bruta (ainda não sabe recortar por Megas)',
    temTexto(/^BACKLOG TOTAL\n333\n/), textos().find(t => /BACKLOG TOTAL/.test(t)));
-ok('e por isso mantém a composição POR TIPO', temTexto(/^COMPOSIÇÃO POR TIPO$/));
+ok('e por isso lê a composição das células digitadas', temTexto(/^COMPOSIÇÃO POR TIPO$/));
+ok('com MELHORIAS e PROJETOS em linhas separadas (o rótulo antigo juntava as duas)',
+   temTexto(/^MELHORIAS$/) && temTexto(/^PROJETOS$/), textos().join(' | '));
 
 reset(); fxHangar();
 gerarSlide05_QuadroManutencao_Hangar();

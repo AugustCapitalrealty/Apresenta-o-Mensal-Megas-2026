@@ -59,10 +59,14 @@ const BOL_CORRETIVAS = {
     ],
     barW: 12,
     composicao: [
-      { label: 'CORRETIVAS',            celula: 'G40', cor: 'brandDark'    },
-      { label: 'MELHORIAS /\nPROJETOS', celula: 'D40', cor: 'accentOrange' },
-      { label: 'PROJETOS',              celula: 'E40', cor: 'brandMed'     },
-      { label: 'LOCATÁRIOS',            celula: 'F40', cor: 'brandLight'   }
+      // D40 = Melhorias, E40 = Projetos: são as duas fórmulas CONT.SES da
+      // planilha ("*Melhoria*" e "*Consulta*"). O rótulo do D40 dizia
+      // "MELHORIAS / PROJETOS", o que deixava duas linhas do painel
+      // parecendo a mesma coisa.
+      { label: 'CORRETIVAS', celula: 'G40', cor: 'brandDark'    },
+      { label: 'MELHORIAS',  celula: 'D40', cor: 'accentOrange' },
+      { label: 'PROJETOS',   celula: 'E40', cor: 'brandMed'     },
+      { label: 'LOCATÁRIOS', celula: 'F40', cor: 'brandLight'   }
     ]
   },
 
@@ -87,10 +91,14 @@ const BOL_CORRETIVAS = {
     ],
     barW: 14,
     composicao: [
-      { label: 'CORRETIVAS',            celula: 'G40', cor: 'brandDark'    },
-      { label: 'MELHORIAS /\nPROJETOS', celula: 'D40', cor: 'accentOrange' },
-      { label: 'PROJETOS',              celula: 'E40', cor: 'brandMed'     },
-      { label: 'LOCATÁRIOS',            celula: 'F40', cor: 'brandLight'   }
+      // D40 = Melhorias, E40 = Projetos: são as duas fórmulas CONT.SES da
+      // planilha ("*Melhoria*" e "*Consulta*"). O rótulo do D40 dizia
+      // "MELHORIAS / PROJETOS", o que deixava duas linhas do painel
+      // parecendo a mesma coisa.
+      { label: 'CORRETIVAS', celula: 'G40', cor: 'brandDark'    },
+      { label: 'MELHORIAS',  celula: 'D40', cor: 'accentOrange' },
+      { label: 'PROJETOS',   celula: 'E40', cor: 'brandMed'     },
+      { label: 'LOCATÁRIOS', celula: 'F40', cor: 'brandLight'   }
     ]
   },
 
@@ -440,31 +448,43 @@ function _bolCorretivas_(chave) {
   rankFrame.getFill().setSolidFill(cor('cardBg'));
   rankFrame.getBorder().getLineFill().setSolidFill(cor('lines'));
 
-  // Da base quando ela responde (por DISCIPLINA), senão as células por TIPO.
-  // Ver obterComposicaoBacklogBoletim_ em Dados.gs para o porquê: a
-  // BD-CORRETIVAS não tem coluna que separe Corretivas/Melhorias/Projetos, e
-  // as células digitadas vieram vazias, deixando o painel com zeros na tela.
+  // Da base quando ela responde, senão as células digitadas. Os dois caminhos
+  // mostram a MESMA coisa — Corretivas / Melhorias / Projetos / Locatários —
+  // porque a base sabe separá-los: Melhoria e Projeto saem da coluna C
+  // (as mesmas palavras dos CONT.SES da planilha) e Locatário sai de
+  // Responsáveis. Ver obterComposicaoTipoBoletim_ em Dados.gs.
+  //
+  // A diferença é que pela base as quatro fatias FECHAM com o backlog total,
+  // porque cada chamado em aberto cai em exatamente uma. Nas células as quatro
+  // contagens eram independentes e não fechavam.
   const compBase = (q && q.composicao && q.composicao.length) ? q.composicao : null;
 
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rankCardX + 15, mainAreaY + 12, sideWidth - 30, 25).getText()
-    .setText(compBase ? 'COMPOSIÇÃO POR DISCIPLINA' : 'COMPOSIÇÃO POR TIPO').getTextStyle()
+    .setText('COMPOSIÇÃO POR TIPO').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
     .setForegroundColor(cor('brandMed'));
 
-  const PALETA_COMP = ['brandDark', 'accentOrange', 'brandMed', 'brandLight', 'brandSoft'];
+  // Cor por RÓTULO, não por posição: a fatia Melhorias tem que sair laranja
+  // esteja ela em que linha estiver, senão a mesma cor muda de significado
+  // entre um escopo e outro.
+  const COR_COMP = {
+    'CORRETIVAS': 'brandDark', 'MELHORIAS': 'accentOrange',
+    'PROJETOS':   'brandMed',  'LOCATÁRIOS': 'brandLight'
+  };
 
   let rankData;
   if (compBase) {
-    // A maior fatia define a escala da barra — assim a leitura é comparativa
-    // entre as disciplinas, que é a pergunta ("onde está concentrada a fila?").
-    const maiorComp = Math.max.apply(null, compBase.map(function (c) { return c.val; }));
+    // A barra é a fatia do backlog TOTAL — o mesmo número que o "%" ao lado.
+    // Escalar pela maior fatia deixaria Corretivas sempre cheia e as outras
+    // ilegíveis, além de a barra dizer algo diferente do percentual escrito.
+    const totalComp = compBase.reduce(function (a, c) { return a + c.val; }, 0);
     rankData = compBase.map(function (c, i) {
       return {
         label : c.label.toUpperCase(),
         val   : c.val,
         pct   : c.pct + '%',
-        color : cor(PALETA_COMP[i % PALETA_COMP.length]),
-        factor: maiorComp > 0 ? c.val / maiorComp : 0
+        color : cor(COR_COMP[c.label.toUpperCase()] || 'brandSoft'),
+        factor: totalComp > 0 ? c.val / totalComp : 0
       };
     });
   } else {

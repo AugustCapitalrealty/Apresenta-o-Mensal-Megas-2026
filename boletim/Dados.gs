@@ -41,6 +41,18 @@ const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
 // Fotos do backlog que o slide 07 mostra hoje (colunas p28 / p7 / hoje).
 const BOL_BACKLOG_DIAS = [28, 7, 0];
 
+// Coluna C da BD-CORRETIVAS (0-based = 2). RESERVA de posição para o tipo de
+// serviço, usada só quando nenhum cabeçalho casa — ver _bolLerBase_.
+const BOL_COL_TIPO_SERVICO = 2;
+
+// Como o tipo de serviço vira fatia da composição. As palavras são as mesmas
+// dos CONT.SES da planilha ("*Melhoria*" / "*Consulta*"), procuradas sem
+// acento e sem caixa. Acrescentar um sinônimo aqui muda os quatro lugares.
+const BOL_TIPO_REGRAS = [
+  { bucket: 'MELHORIAS', palavras: ['melhoria'] },
+  { bucket: 'PROJETOS',  palavras: ['consulta'] }
+];
+
 
 // ==========================================
 // HELPERS DE PARSE / CLASSIFICAÇÃO
@@ -143,6 +155,38 @@ function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
   return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0;
 }
 
+/**
+ * Em que fatia da composição o chamado cai: CORRETIVAS, MELHORIAS, PROJETOS
+ * ou LOCATARIO. Cada chamado cai em EXATAMENTE UMA — é isso que faz o painel
+ * fechar com o backlog total.
+ *
+ * A ORDEM importa e é uma decisão, não um detalhe: "Responsabilidade
+ * Locatário" (quem paga) e "Melhoria" (que tipo de obra é) são perguntas
+ * diferentes, e um chamado pode ser as duas coisas. Locatário vem primeiro
+ * porque é a fatia que o cartão de KPI já mostra — assim o 46 do cartão e o 46
+ * do painel são o mesmo número. obterComposicaoTipoBoletim_ registra no Logger
+ * quantos chamados são os dois ao mesmo tempo: se for um número grande, a
+ * ordem passa a mudar o slide e vale decidir com esse dado na mão.
+ */
+function _bolTipoServico_(item) {
+  if (_chamadoResponsabilidadeLocatario_(item.responsaveis)) return 'LOCATARIO';
+  const t = _histNorm_(item.tipoServico);
+  for (let i = 0; i < BOL_TIPO_REGRAS.length; i++) {
+    const r = BOL_TIPO_REGRAS[i];
+    for (let k = 0; k < r.palavras.length; k++) {
+      if (t.indexOf(r.palavras[k]) >= 0) return r.bucket;
+    }
+  }
+  return 'CORRETIVAS';
+}
+
+// 0 → 'A', 2 → 'C', 26 → 'AA'. Só para o log dizer de que coluna leu.
+function _bolLetraColuna_(i) {
+  let s = '', n = i + 1;
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = (n - 1 - r) / 26; }
+  return s;
+}
+
 // Prioridade: locatário → PROPERTY → FACILITIES → OPERACAO → '' se ninguém
 // reconhecido. Nome desconhecido cai em FACILITIES no consumo (mesma regra da
 // apresentação mensal), mas aqui devolvemos '' para o diagnóstico conseguir
@@ -208,6 +252,37 @@ function _bolLerBase_(nomeAba) {
     const cArea   = acha(['area']);              // disciplina
     const cEquip  = acha(['equipamento']);        // viabilidade de MTBF
     const cTipo   = acha(['tipo de reporte', 'tipo']);
+    // TIPO DE SERVIÇO (Melhoria / Consulta-projeto / corretiva) — coluna C.
+    // NÃO é a "Tipo de reporte", que traz OPERATOR/CONTACT (quem abriu). É a
+    // coluna que as fórmulas da planilha sempre usaram:
+    //   CONT.SES('BD-CORRETIVAS'!$C:$C; "*Melhoria*")  → Melhorias
+    //   CONT.SES('BD-CORRETIVAS'!$C:$C; "*Consulta*")  → Projetos
+    // Procura por cabeçalho ignorando "tipo de reporte"; não achando, tenta a
+    // posição C — mas só ACEITA a posição se a coluna realmente contiver as
+    // palavras procuradas. Sem essa conferência, uma base com outro layout
+    // faria a reserva cair numa coluna qualquer (no limite a de Estado), nada
+    // casaria com "melhoria"/"consulta" e o painel mostraria 100% Corretivas
+    // sem erro nenhum — o zero falso da lição 3, com outra roupa.
+    const cTipoSrv = (function () {
+      for (let k = 0; k < hdr.length; k++) {
+        if (hdr[k].indexOf('tipo de reporte') >= 0) continue;
+        if (hdr[k].indexOf('tipo') >= 0 || hdr[k].indexOf('servico') >= 0) return k;
+      }
+      const p = BOL_COL_TIPO_SERVICO;
+      const casa = data.some(function (l, r) {
+        if (!r || p >= l.length) return false;
+        const v = _histNorm_(l[p]);
+        return BOL_TIPO_REGRAS.some(function (g) {
+          return g.palavras.some(function (w) { return v.indexOf(w) >= 0; });
+        });
+      });
+      if (casa) return p;
+      Logger.log(nomeAba + ': nenhuma coluna de tipo de serviço reconhecida — nem por ' +
+                 'cabeçalho, nem na coluna ' + _bolLetraColuna_(p) + ' (que não traz ' +
+                 '"Melhoria" nem "Consulta" em linha nenhuma). A composição por tipo ' +
+                 'fica com as células digitadas.');
+      return -1;
+    })();
     const cTfec   = acha(['tempo para fechar (segundos)', 'tempo para fechar']);
     // CORRETIVAS: "Data de reporte"/"Fechado em" · PREVENTIVAS: "Data agendamento"/"Fechada em"
     const cIni = acha(['data de reporte', 'data agendamento', 'data de agendamento']);
@@ -232,11 +307,21 @@ function _bolLerBase_(nomeAba) {
         area        : cArea   >= 0 ? String(data[r][cArea]   || '').trim() : '',
         equipamento : cEquip  >= 0 ? String(data[r][cEquip]  || '').trim() : '',
         tipo        : cTipo   >= 0 ? String(data[r][cTipo]   || '').trim() : '',
+        tipoServico : cTipoSrv >= 0 && cTipoSrv < data[r].length
+                        ? String(data[r][cTipoSrv] || '').trim() : '',
         tempoFechar : cTfec   >= 0 ? String(data[r][cTfec]   || '').trim() : '',
         dtReporte   : cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado   : cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
       });
     }
+    // Diz de que coluna saiu o tipo de serviço. Se um dia a coluna mudar de
+    // lugar e a reserva por posição pegar a errada, o sintoma seria "tudo
+    // virou Corretiva" — silencioso. Com o cabeçalho no log, aparece.
+    if (nomeAba === BD_ABA_CORRETIVAS && cTipoSrv >= 0) {
+      Logger.log('BD-CORRETIVAS: tipo de serviço lido da coluna ' +
+                 _bolLetraColuna_(cTipoSrv) + ' ("' + (data[0][cTipoSrv] || '(sem cabeçalho)') + '").');
+    }
+
     // Só cacheia resultado bom: leitura vazia por falha transitória não pode
     // ficar grudada na rodada inteira.
     if (saida.length) _bolBaseCache[nomeAba] = saida;
@@ -450,22 +535,100 @@ function obterQuadroCorretivasBoletim_(nMeses) {
     },
     historico: historico,
     meses: meses.map(function (m) { return m.label; }),
-    composicao: obterComposicaoBacklogBoletim_(4)
+    composicao: obterComposicaoTipoBoletim_()
   };
+}
+
+
+/**
+ * Composição da fila de HOJE por TIPO: Corretivas / Melhorias / Projetos /
+ * Locatários — o recorte que o painel do slide 05 sempre teve.
+ *
+ * DE ONDE VEM A REGRA: das fórmulas que a planilha já usava. Melhoria e
+ * Projeto estão na coluna C da BD-CORRETIVAS, achados por trecho de texto
+ * ("*Melhoria*", "*Consulta*"); Locatário sai da coluna Responsáveis. O que
+ * sobra é corretiva. A conta de "em aberto" é a mesma dos cartões
+ * (_bolAbertoEm_), que é o equivalente do
+ *     CONT.SES(reportado <= D) − CONT.SES(fechado <= D)
+ * das fórmulas.
+ *
+ * O QUE MUDA EM RELAÇÃO ÀS CÉLULAS DIGITADAS: aqui as quatro fatias FECHAM
+ * com o backlog total, porque cada chamado em aberto cai em exatamente uma.
+ * Nas células não fechava — o slide saía com Corretivas 348 + Melhorias 83 +
+ * Projetos 2 + Locatários 46 = 479 embaixo de um backlog de 525, e as quatro
+ * contagens eram independentes, então ninguém percebia os 46 que sumiam.
+ *
+ * Devolve [{ label, val, pct }] na ordem fixa do painel, ou [] se a base não
+ * responder.
+ */
+function obterComposicaoTipoBoletim_() {
+  const itens = _bolLerBase_(BD_ABA_CORRETIVAS);
+  if (!itens.length) return [];
+
+  const instante = _bolInstante_(0);
+  const ORDEM  = ['CORRETIVAS', 'MELHORIAS', 'PROJETOS', 'LOCATARIO'];
+  const ROTULO = { CORRETIVAS: 'CORRETIVAS', MELHORIAS: 'MELHORIAS',
+                   PROJETOS: 'PROJETOS', LOCATARIO: 'LOCATÁRIOS' };
+
+  const cont = {};
+  ORDEM.forEach(function (k) { cont[k] = 0; });
+  let total = 0, ambos = 0, semTipo = 0;
+
+  itens.forEach(function (it) {
+    if (!_bolAbertoEm_(it, instante)) return;
+    total++;
+    const t = _histNorm_(it.tipoServico);
+    if (!t) semTipo++;
+    // Chamado que é obra E é do locatário: conta em Locatários (ver a ordem em
+    // _bolTipoServico_), mas fica registrado para a escolha ser visível.
+    const ehObra = BOL_TIPO_REGRAS.some(function (r) {
+      return r.palavras.some(function (p) { return t.indexOf(p) >= 0; });
+    });
+    if (ehObra && _chamadoResponsabilidadeLocatario_(it.responsaveis)) ambos++;
+    cont[_bolTipoServico_(it)]++;
+  });
+
+  if (!total) return [];
+
+  Logger.log('Composição por tipo (fila de hoje = ' + total + '): ' +
+    ORDEM.map(function (k) { return ROTULO[k] + '=' + cont[k]; }).join(' | '));
+  if (ambos) {
+    Logger.log('  · ' + ambos + ' chamado(s) são Melhoria/Projeto E de responsabilidade do ' +
+               'locatário. Estão contados em Locatários. Se esse número crescer, a ordem ' +
+               'das fatias passa a mudar o slide.');
+  }
+  // Zero falso: coluna renomeada faria tipoServico vir vazio em TODAS as
+  // linhas, e o painel mostraria 100% Corretivas sem erro nenhum.
+  if (semTipo === total) {
+    Logger.log('  ⚠ NENHUM chamado em aberto tem tipo de serviço preenchido — a coluna ' +
+               'provavelmente mudou de nome/lugar. O painel cairia em 100% Corretivas; ' +
+               'devolvendo vazio para o slide usar a fonte antiga.');
+    return [];
+  }
+  if (semTipo) {
+    Logger.log('  · ' + semTipo + ' chamado(s) em aberto sem tipo de serviço — contados como Corretivas.');
+  }
+
+  return ORDEM.map(function (k) {
+    return { label: ROTULO[k], val: cont[k], pct: Math.round(cont[k] / total * 100) };
+  });
 }
 
 
 // Composição da fila de HOJE por DISCIPLINA (coluna "Área" da base:
 // Elétrica/Lógica/Telefonia, Cobertura, Hidrossanitário, Piso...).
 //
-// POR QUE DISCIPLINA E NÃO "TIPO": o painel original mostrava Corretivas /
-// Melhorias / Projetos / Locatários, lido das células D40:G40 digitadas à
-// mão — e elas vieram VAZIAS, deixando o painel com quatro zeros na tela. A
-// BD-CORRETIVAS não tem coluna que faça essa separação (conferido no
-// cabeçalho real: "Tipo de reporte" é OPERATOR/CONTACT e "Tipo" é
-// área+sintoma). Disciplina é o recorte que a base sustenta, responde a
-// mesma pergunta — "onde está a fila?" — e FECHA com o total, porque cada
-// chamado em aberto tem exatamente uma área.
+// NÃO é o que o slide 05 mostra — ele usa obterComposicaoTipoBoletim_. Esta
+// aqui responde outra pergunta ("em que disciplina a fila está concentrada?")
+// e serve ao diagnóstico. Vale manter porque é o recorte que diz onde alocar
+// gente, enquanto o por-tipo diz que natureza de trabalho está represada.
+//
+// HISTÓRICO, para não repetir o engano: esta função chegou a substituir o
+// painel por tipo, com a justificativa de que a base não separava Corretivas
+// de Melhorias e Projetos. Estava errado — separa, na coluna C, e as fórmulas
+// da planilha já usavam isso. O erro foi olhar só os cabeçalhos "Tipo de
+// reporte" (OPERATOR/CONTACT) e "Tipo", e concluir que não havia de onde tirar
+// em vez de perguntar como a planilha fazia.
 //
 // As `n` maiores viram linhas; o resto é somado em "OUTRAS", para o painel
 // continuar com poucas linhas e ainda assim somar o backlog inteiro.
@@ -652,6 +815,39 @@ function diagnosticarBoletim() {
   };
   Logger.log('  Valores de "Tipo" (top 8): ' + amostra('tipo', 8));
   Logger.log('  Valores de "Área"  (top 8): ' + amostra('area', 8));
+
+  // ── 3b. A composição por tipo bate? ─────────────────────────────────────
+  // É o painel do slide 05. As palavras procuradas são as mesmas dos CONT.SES
+  // da planilha; se a base trouxer um "Melhoria" escrito de outro jeito, ele
+  // aparece aqui como Corretiva e a lista abaixo mostra onde.
+  Logger.log('\n── 3b. COMPOSIÇÃO POR TIPO (painel do slide 05) ────────');
+  Logger.log('  Valores de tipo de serviço, coluna C (top 12):');
+  Logger.log('    ' + amostra('tipoServico', 12));
+
+  const comp = obterComposicaoTipoBoletim_();
+  if (!comp.length) {
+    Logger.log('  ✗ não deu para calcular — o slide cai nas células digitadas.');
+  } else {
+    const somaComp = comp.reduce(function (a, c) { return a + c.val; }, 0);
+    Logger.log('  ' + comp.map(function (c) { return c.label + '=' + c.val + ' (' + c.pct + '%)'; }).join(' | '));
+    Logger.log('  soma=' + somaComp + '  |  backlog de hoje=' + abertos.length +
+               (somaComp === abertos.length ? '  ✓ fecha'
+                : '  ⚠ NÃO fecha — as fatias deveriam particionar o backlog'));
+
+    // O que a planilha tem digitado nas mesmas quatro células, para comparar.
+    try {
+      const ss    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
+      const sheet = ss.getSheetByName(CR_DESIGN_SYSTEM.assets.sheetName);
+      if (sheet) {
+        const cel = function (c) { return Number(sheet.getRange(c).getValue()) || 0; };
+        const g = cel('G40'), d = cel('D40'), e = cel('E40'), f = cel('F40');
+        Logger.log('  Planilha (G40/D40/E40/F40): CORRETIVAS=' + g + ' | MELHORIAS=' + d +
+                   ' | PROJETOS=' + e + ' | LOCATÁRIOS=' + f + '  → soma=' + (g + d + e + f));
+      }
+    } catch (err) {
+      Logger.log('  (não deu para ler as células da planilha: ' + err.message + ')');
+    }
+  }
 
   // MTTR: dá para medir de "Data de reporte" até "Fechado em".
   const fechados = itens.filter(function (it) {
