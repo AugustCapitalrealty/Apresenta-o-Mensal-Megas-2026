@@ -58,11 +58,8 @@ Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
 | `03_indice.gs` | Slide 02 — índice |
 | `02_overview.gs` | Slide 03 — overview executivo |
 | `03_manutencoes.gs` | Slide 04 — estratificação |
-| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva (geral e Facilities) |
-| `05_quadro_manutencao_hangar.gs` | Slide 05 — variante Hangar |
-| `06_preventivas.gs` | Slide 06 — manutenção preventiva (geral) |
-| `06_preventivas_facilities.gs` | Slide 06 — variante Facilities |
-| `06_preventivas_hangar.gs` | Slide 06 — variante Hangar |
+| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva, **os três escopos** (`BOL_CORRETIVAS`) |
+| `06_preventivas.gs` | Slide 06 — manutenção preventiva, **os três escopos** (`BOL_PREVENTIVAS`) |
 | `07_corretivas_empreendimento.gs` | Slide 07 — corretivas por empreendimento |
 | `08_preventivas_empreendimento.gs` | Slide 08 — preventivas por empreendimento |
 | `09_controle_acesso.gs` | Slide 09 — controle de acesso |
@@ -71,8 +68,13 @@ Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
 | `12_capa_final.gs` | Encerramento |
 | `99_checklist.gs` | Checklist final |
 
-`teste_dados.js` **não vai para o editor** — é um teste de Node, roda com
-`node boletim/teste_dados.js`.
+`teste_dados.js` e `teste_slides.js` **não vão para o editor** — são testes de
+Node:
+
+```sh
+node boletim/teste_dados.js    # as contas da BD-CORRETIVAS
+node boletim/teste_slides.js   # o desenho dos slides, nos três escopos
+```
 
 ## Se o editor não tiver exatamente esses arquivos
 
@@ -95,6 +97,8 @@ Nomes que já existiram e **não** devem estar no editor:
 |---|---|
 | `config.gs`, `config_mega.gs`, `config_hangar.gs` | `Config.gs` |
 | `99_main.gs`, `99_main_facilities.gs`, `99_main_hangar.gs`, `99_main_todas.gs` | `00_Main.gs` |
+| `05_quadro_manutencao_hangar.gs` | `04_quadro_manutencao.gs` |
+| `06_preventivas_facilities.gs`, `06_preventivas_hangar.gs` | `06_preventivas.gs` |
 
 ## Por que os mains viraram um só
 
@@ -110,6 +114,34 @@ virou um só. Além de tirar três arquivos, isso consertou três coisas:
   Agora o relatório diz quantos de quantos saíram e nomeia os que falharam;
 - **o tema volta no `finally`**, então erro no meio do Hangar não deixa o
   próximo boletim saindo com a paleta errada.
+
+## Por que os slides viraram um arquivo cada
+
+Manutenção Corretiva tinha três cópias (geral, Facilities, Hangar) e
+Preventiva também. As seis desenhavam o **mesmo** slide e divergiam só em:
+qual aba ler, em que linha/célula está cada número, e quais cartões aparecem.
+
+Agora isso é dado — `BOL_CORRETIVAS` e `BOL_PREVENTIVAS`, no topo de cada
+arquivo — e o desenho é um só. Para mexer num escopo, mexa no descritor; para
+mexer no slide, mexa no desenho, uma vez.
+
+**Isso não é arrumação: as cópias já tinham divergido.** A variante Hangar
+estava sem a folga "sem quebra" do rótulo de barra, então quebrava valor de 3
+dígitos em duas linhas em cima da barra — defeito já corrigido no escopo geral
+que nunca chegou lá. A variante Facilities tinha a folga mas não o
+`setLineSpacing(100)` que a acompanha. `teste_slides.js` agora confere a
+largura exata da caixa nos três.
+
+O que **não** mudou: cada escopo continua lendo exatamente as células que lia,
+e o gráfico continua com a largura de barra e os deslocamentos que já tinha —
+esses ficam escritos no descritor em vez de calculados, para a barra não sair
+do lugar sem ninguém ter pedido.
+
+Um escopo ainda difere de propósito: **só o COMPLETO usa a base bruta**
+(`usaBaseBruta: true`). `obterQuadroCorretivasBoletim_` conta a carteira
+inteira e ainda não sabe recortar por Megas ou por Hangar — ligar os outros
+dois mudaria o número na tela. Quando souber filtrar, é virar a chave no
+descritor.
 
 As antigas `testarSlide05_Hangar`, `testarSlide06_Preventivas_Facilities`,
 `testarSlide06_Preventivas_Hangar`, `testarSlide07_Corretivas` e

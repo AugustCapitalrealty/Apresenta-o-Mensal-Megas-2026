@@ -1,66 +1,131 @@
 /**
  * ARQUIVO: 06_preventivas.gs
- * Cria o slide de Manutenção Preventiva.
- * Dados: Planilha QUADRO COMPARATIVO
- *   - SLA: BM9 (Facilities), BM10 (Property), BM11 (Operação), BM12 (Geral)
- *   - Agendadas: Linha 37 — últimas 8 colunas com dados
- *   - Realizadas: Linha 43 — últimas 8 colunas com dados
+ * Slide "Manutenção Preventiva" — os três escopos num arquivo só.
+ *
+ * Junta o que eram 06_preventivas.gs, 06_preventivas_facilities.gs e
+ * 06_preventivas_hangar.gs. Os três desenhavam o MESMO slide (selo de semana,
+ * cartões de SLA, gráfico agendadas x realizadas, rodapé) e divergiam só em:
+ *
+ *   · qual aba ler;
+ *   · em que linha estão datas / agendadas / realizadas;
+ *   · quais cartões de SLA aparecem e de que célula sai cada um.
+ *
+ * Isso agora é DADO (BOL_PREVENTIVAS) e o desenho é um só. Enquanto eram três
+ * cópias, um ajuste no gráfico precisava ser feito três vezes — e bastava
+ * esquecer uma para o boletim sair com dois slides diferentes do terceiro.
  */
 
-function gerarSlide06_Preventivas() {
+// ==========================================================================
+// OS TRÊS ESCOPOS
+// ==========================================================================
+// `aba: null` = a aba padrão do design system. As cores vão como NOME, não
+// como valor: este `const` pode ser avaliado antes do Config.gs, e ler
+// `CR_DESIGN_SYSTEM.colors.x` aqui em cima estouraria ReferenceError. Mesmo
+// motivo pelo qual o `tema` em 00_Main.gs é texto.
+const BOL_PREVENTIVAS = {
+  COMPLETO: {
+    aba: null,
+    subtitulo: 'SLA por Área • Agendadas x Realizadas',
+    linhas: { datas: 33, agendadas: 37, realizadas: 43 },
+    cards: [
+      { titulo: 'SLA GERAL',       celula: 'BM12', cor: 'brandDark',  principal: true },
+      { titulo: 'FACILITIES',      celula: 'BM9',  cor: 'brandSoft'  },
+      { titulo: 'PROPERTY',        celula: 'BM10', cor: 'brandMed'   },
+      { titulo: 'OPERAÇÃO HANGAR', celula: 'BM11', cor: 'brandLight' }
+    ]
+  },
+
+  FACILITIES: {
+    aba: 'megas QUADRO COMPARATIVO',
+    subtitulo: 'SLA por Área • Agendadas x Realizadas',
+    linhas: { datas: 23, agendadas: 39, realizadas: 45 },
+    cards: [
+      { titulo: 'SLA GERAL',        celula: 'BP10', cor: 'brandDark', principal: true },
+      { titulo: 'SLA FACILITIES',   celula: 'BP8',  cor: 'brandSoft' },
+      { titulo: 'SLA PROPRIEDADES', celula: 'BP9',  cor: 'brandMed'  }
+    ]
+  },
+
+  HANGAR: {
+    aba: 'hangar QUADRO COMPARATIVO',
+    subtitulo: 'SLA por Área • Agendadas x Realizadas — Hangar VIP',
+    linhas: { datas: 24, agendadas: 28, realizadas: 26 },
+    cards: [
+      { titulo: 'SLA GERAL',          celula: 'BO11', cor: 'brandDark',  principal: true },
+      { titulo: 'SLA PROPERTY',       celula: 'BO9',  cor: 'brandMed'   },
+      { titulo: 'SLA OP. HANGAR VIP', celula: 'BO10', cor: 'brandLight' }
+    ]
+  }
+};
+
+
+// ==========================================================================
+// PONTOS DE ENTRADA
+// ==========================================================================
+// Sem parâmetro: o menu "Selecionar função" do editor não lista função que
+// declara argumento. São estes nomes que o BOLETINS de 00_Main.gs chama.
+function gerarSlide06_Preventivas()            { return _bolPreventivas_('COMPLETO');   }
+function gerarSlide06_Preventivas_Facilities() { return _bolPreventivas_('FACILITIES'); }
+function gerarSlide06_Preventivas_Hangar()     { return _bolPreventivas_('HANGAR');     }
+
+
+// ==========================================================================
+// DESENHO — um só, para os três
+// ==========================================================================
+function _bolPreventivas_(chave) {
+  const cfg = BOL_PREVENTIVAS[chave];
+  if (!cfg) {
+    throw new Error('Escopo "' + chave + '" não existe em BOL_PREVENTIVAS. Tem: ' +
+                    Object.keys(BOL_PREVENTIVAS).join(', ') + '.');
+  }
+  const cor = function (nome) { return CR_DESIGN_SYSTEM.colors[nome]; };
+
   const presentation = SlidesApp.openById(CR_DESIGN_SYSTEM.assets.presentationId);
-  const slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const pageWidth  = presentation.getPageWidth();
-  const pageHeight = presentation.getPageHeight();
+  const slide        = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  const pageWidth    = presentation.getPageWidth();
+  const pageHeight   = presentation.getPageHeight();
 
   // =========================================================
   // --- 0. EXTRAÇÃO DE DADOS ---
   // =========================================================
-  Logger.log("Extraindo dados para Manutenção Preventiva...");
+  const nomeAba = cfg.aba || CR_DESIGN_SYSTEM.assets.sheetName;
+  Logger.log('Extraindo Preventivas (' + chave + ') da aba "' + nomeAba + '"...');
 
-  let slaFac = "N/D", slaProp = "N/D", slaOper = "N/D", slaGeral = "N/D";
+  const slaVals = cfg.cards.map(function () { return 'N/D'; });
   let agendadas = [], realizadas = [], timeline = [];
   let ultimaDataSemana = null; // última data com dados — base do detector de semana
 
   try {
     const ss    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
-    const sheet = ss.getSheetByName(CR_DESIGN_SYSTEM.assets.sheetName);
-    if (!sheet) throw new Error("Aba não encontrada.");
+    const sheet = ss.getSheetByName(nomeAba);
+    if (!sheet) throw new Error('Aba "' + nomeAba + '" não encontrada.');
 
-    // --- SLA por área ---
-    const getVal = (cell) => {
-      const v = sheet.getRange(cell).getDisplayValue();
-      return v ? v.toString().trim() : "N/D";
-    };
-    slaFac   = getVal('BM9');
-    slaProp  = getVal('BM10');
-    slaOper  = getVal('BM11');
-    slaGeral = getVal('BM12');
+    // --- SLA por área: cada cartão sabe de que célula sai ---
+    cfg.cards.forEach(function (c, i) {
+      const v = sheet.getRange(c.celula).getDisplayValue();
+      slaVals[i] = v ? v.toString().trim() : 'N/D';
+    });
 
     // --- Agendadas x Realizadas: últimas 8 colunas com dados ---
-    const lastCol    = sheet.getLastColumn();
-    const rowAgend   = sheet.getRange(37, 1, 1, lastCol).getValues()[0];
-    const rowReal    = sheet.getRange(43, 1, 1, lastCol).getValues()[0];
+    const lastCol  = sheet.getLastColumn();
+    const rowAgend = sheet.getRange(cfg.linhas.agendadas,  1, 1, lastCol).getValues()[0];
+    const rowReal  = sheet.getRange(cfg.linhas.realizadas, 1, 1, lastCol).getValues()[0];
+    const rowDate  = sheet.getRange(cfg.linhas.datas,      1, 1, lastCol).getValues()[0];
 
-    // Cabeçalhos de semana na linha 33
-    const rowHeader = sheet.getRange(33, 1, 1, lastCol).getValues()[0];
-
-    // Pegar índices das últimas 8 colunas que têm dado em Agendadas
     let colIndexes = [];
     for (let i = lastCol - 1; i >= 1 && colIndexes.length < 8; i--) {
-      if (rowAgend[i] !== "" && rowAgend[i] !== null && rowAgend[i] !== 0) {
+      if (rowAgend[i] !== '' && rowAgend[i] !== null && rowAgend[i] !== 0) {
         colIndexes.unshift(i);
       }
     }
 
-    colIndexes.forEach(i => {
-      agendadas.push(Number(rowAgend[i])  || 0);
-      realizadas.push(Number(rowReal[i])  || 0);
+    colIndexes.forEach(function (i) {
+      agendadas.push(Number(rowAgend[i]) || 0);
+      realizadas.push(Number(rowReal[i]) || 0);
 
-      // Formata rótulo como DD/MM — suporta Date object e string de data
-      let lbl = "S" + (colIndexes.indexOf(i) + 1);
-      if (rowHeader[i]) {
-        const raw = rowHeader[i];
+      let lbl = 'S' + (colIndexes.indexOf(i) + 1);
+      if (rowDate[i]) {
+        const raw = rowDate[i];
         let dateObj = null;
         if (raw instanceof Date) {
           dateObj = new Date(raw.getTime());
@@ -69,12 +134,13 @@ function gerarSlide06_Preventivas() {
           if (!isNaN(parsed.getTime())) dateObj = new Date(parsed.getTime());
         }
         if (dateObj) {
-          // Regra de negócio: subtrai 1 dia
+          // Regra de negócio: subtrai 1 dia — a planilha marca a semana pelo
+          // dia 01, e o que se quer mostrar é o último dia do mês anterior.
           dateObj.setDate(dateObj.getDate() - 1);
           const dd = String(dateObj.getDate()).padStart(2, '0');
           const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
           lbl = dd + '/' + mm;
-          ultimaDataSemana = new Date(dateObj.getTime()); // guarda a data mais recente
+          ultimaDataSemana = dateObj;
         } else {
           lbl = raw.toString().trim();
         }
@@ -82,9 +148,9 @@ function gerarSlide06_Preventivas() {
       timeline.push(lbl);
     });
 
-  } catch(e) {
-    Logger.log("Erro ao extrair dados Preventivas: " + e.message);
-    // Fallback para não travar o slide
+  } catch (e) {
+    Logger.log('Erro Preventivas ' + chave + ': ' + e.message);
+    // Reserva para o slide não sumir do boletim por causa de uma aba renomeada.
     agendadas  = [0,0,0,0,0,0,0,0];
     realizadas = [0,0,0,0,0,0,0,0];
     timeline   = ['S1','S2','S3','S4','S5','S6','S7','S8'];
@@ -93,10 +159,10 @@ function gerarSlide06_Preventivas() {
   // =========================================================
   // --- 1. SETUP VISUAL E CABEÇALHO ---
   // =========================================================
-  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
+  slide.getBackground().setSolidFill(cor('bgSlide'));
 
   const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, pageWidth - 350, -80, 450, 450);
-  ellipse.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandLight, 0.03);
+  ellipse.getFill().setSolidFill(cor('brandLight'), 0.03);
   ellipse.getBorder().setTransparent();
 
   const marginX = CR_DESIGN_SYSTEM.layout.marginX;
@@ -104,18 +170,19 @@ function gerarSlide06_Preventivas() {
 
   try {
     const logoBlob = DriveApp.getFileById(CR_DESIGN_SYSTEM.assets.logoId).getBlob();
-    slide.insertImage(logoBlob, pageWidth - marginX - CR_DESIGN_SYSTEM.assets.logoW, marginY, CR_DESIGN_SYSTEM.assets.logoW, CR_DESIGN_SYSTEM.assets.logoH);
-  } catch(e) {}
+    slide.insertImage(logoBlob, pageWidth - marginX - CR_DESIGN_SYSTEM.assets.logoW, marginY,
+                      CR_DESIGN_SYSTEM.assets.logoW, CR_DESIGN_SYSTEM.assets.logoH);
+  } catch (e) {}
 
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY, pageWidth - 300, 40)
     .getText().setText('Manutenção Preventiva').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(24)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textMain).setBold(true);
+    .setForegroundColor(cor('textMain')).setBold(true);
 
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY + 35, pageWidth - 300, 30)
-    .getText().setText('SLA por Área • Agendadas x Realizadas').getTextStyle()
+    .getText().setText(cfg.subtitulo).getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+    .setForegroundColor(cor('textBody'));
 
   // =========================================================
   // --- 1b. SELO DETECTOR DE SEMANA (canto superior direito) ---
@@ -126,7 +193,7 @@ function gerarSlide06_Preventivas() {
     const seloX = pageWidth - marginX - seloW;
     const seloY = marginY + 48; // logo abaixo do logo, acima dos cards
     const selo = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, seloX, seloY, seloW, seloH);
-    selo.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark);
+    selo.getFill().setSolidFill(cor('brandDark'));
     selo.getBorder().setTransparent();
     const seloTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, seloX, seloY, seloW, seloH);
     seloTxt.getText().setText('SEMANA ' + semInfo.numero + '  •  ' + semInfo.intervalo).getTextStyle()
@@ -137,52 +204,49 @@ function gerarSlide06_Preventivas() {
   }
 
   // =========================================================
-  // --- 2. CARDS DE SLA (linha superior) ---
+  // --- 2. CARDS DE SLA ---
   // =========================================================
+  // A largura sai da QUANTIDADE de cartões do escopo: 4 no completo, 3 nos
+  // outros. Antes cada cópia tinha o divisor escrito na mão, e acrescentar um
+  // cartão exigia lembrar de mexer nos dois lugares.
+  const nCards = cfg.cards.length;
   const kpiY   = marginY + 75;
   const kpiH   = 65;
   const kpiGap = 12;
-  const kpiW   = (pageWidth - (marginX * 2) - (kpiGap * 3)) / 4;
+  const kpiW   = (pageWidth - (marginX * 2) - (kpiGap * (nCards - 1))) / nCards;
 
-  const slaItems = [
-    { title: 'SLA GERAL',     val: slaGeral, col: CR_DESIGN_SYSTEM.colors.brandDark,    main: true  },
-    { title: 'FACILITIES',    val: slaFac,   col: CR_DESIGN_SYSTEM.colors.brandSoft,                            main: false },
-    { title: 'PROPERTY',      val: slaProp,  col: CR_DESIGN_SYSTEM.colors.brandMed,     main: false },
-    { title: 'OPERAÇÃO HANGAR',      val: slaOper,  col: CR_DESIGN_SYSTEM.colors.brandLight,   main: false },
-  ];
+  cfg.cards.forEach(function (item, i) {
+    const x   = marginX + (i * (kpiW + kpiGap));
+    const val = slaVals[i];
+    const c   = cor(item.cor);
 
-  slaItems.forEach((item, i) => {
-    const x = marginX + (i * (kpiW + kpiGap));
-
-    // Card
     const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, kpiW, kpiH);
-    card.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-    card.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+    card.getFill().setSolidFill(cor('cardBg'));
+    card.getBorder().getLineFill().setSolidFill(cor('lines'));
 
     const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, 4, kpiH);
-    side.getFill().setSolidFill(item.col);
+    side.getFill().setSolidFill(c);
     side.getBorder().setTransparent();
 
-    // Textos
     const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, kpiY + 8, kpiW - 15, kpiH - 10);
-    box.getText().setText(item.title + '\n' + item.val);
+    box.getText().setText(item.titulo + '\n' + val);
     const txt = box.getText();
     txt.getParagraphStyle().setLineSpacing(110);
-    txt.getRange(0, item.title.length).getTextStyle()
+    txt.getRange(0, item.titulo.length).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+      .setForegroundColor(cor('textBody'));
 
-    // Cor do valor: verde se >= 95%, laranja se >= 90%, vermelho se < 90%
-    const num = parseFloat((item.val || "0").replace('%','').replace(',','.'));
-    let valColor = CR_DESIGN_SYSTEM.colors.accentGreen;
+    // Cor do valor: verde >= 95%, laranja >= 90%, vermelho < 90%.
+    const num = parseFloat((val || '0').replace('%', '').replace(',', '.'));
+    let valColor = cor('accentGreen');
     if (!isNaN(num)) {
-      if (num < 90)       valColor = CR_DESIGN_SYSTEM.colors.accentRed;
-      else if (num < 95)  valColor = CR_DESIGN_SYSTEM.colors.accentOrange;
+      if (num < 90)      valColor = cor('accentRed');
+      else if (num < 95) valColor = cor('accentOrange');
     }
 
-    txt.getRange(item.title.length + 1, txt.getLength()).getTextStyle()
+    txt.getRange(item.titulo.length + 1, txt.getLength()).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(22).setBold(true)
-      .setForegroundColor(item.main ? item.col : valColor);
+      .setForegroundColor(item.principal ? c : valColor);
   });
 
   // =========================================================
@@ -191,101 +255,95 @@ function gerarSlide06_Preventivas() {
   const chartAreaY = kpiY + kpiH + 15;
   const chartAreaH = pageHeight - chartAreaY - marginY - 20;
 
-  // Frame do gráfico
-  const chartFrame = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX, chartAreaY, pageWidth - (marginX * 2), chartAreaH);
-  chartFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-  chartFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+  const chartFrame = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX, chartAreaY,
+                                       pageWidth - (marginX * 2), chartAreaH);
+  chartFrame.getFill().setSolidFill(cor('cardBg'));
+  chartFrame.getBorder().getLineFill().setSolidFill(cor('lines'));
 
-  // Título do gráfico
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 20, chartAreaY + 12, 400, 20)
     .getText().setText('AGENDADAS X REALIZADAS — ÚLTIMAS 8 SEMANAS').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
+    .setForegroundColor(cor('brandMed'));
 
-  // Legenda
   const legY = chartAreaY + 30;
   let legX = marginX + 20;
   const legItems = [
-    { label: 'REALIZADAS', color: CR_DESIGN_SYSTEM.colors.brandDark },
+    { label: 'REALIZADAS', color: cor('brandDark') },
     { label: 'AGENDADAS',  color: '#CBD5E1' }
   ];
-  legItems.forEach(item => {
+  legItems.forEach(function (item) {
     const sq = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, legX, legY + 3, 7, 7);
     sq.getFill().setSolidFill(item.color);
     sq.getBorder().setTransparent();
     const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, legX + 10, legY, 75, 14);
     lbl.getText().setText(item.label).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(8).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+      .setForegroundColor(cor('textBody'));
     lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     legX += 90;
   });
 
-  // Área do plot
   const pMarginX = 55, pMarginY = 55;
   const plotX = marginX + pMarginX;
   const plotY = chartAreaY + pMarginY;
   const plotW = (pageWidth - (marginX * 2)) - (pMarginX * 2);
   const plotH = chartAreaH - pMarginY - 30;
 
-  // Linha base
   slide.insertLine(SlidesApp.LineCategory.STRAIGHT, plotX, plotY + plotH, plotX + plotW, plotY + plotH)
-    .getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+    .getLineFill().setSolidFill(cor('lines'));
 
-  const maxVal    = Math.max(...agendadas, ...realizadas, 10);
-  const scaleY    = plotH / (maxVal * 1.25);
-  const stepX     = plotW / timeline.length; // divide em fatias iguais
-  const barW      = 16;
-  const barGap    = 4; // espaço entre as duas barras do grupo
+  const maxVal = Math.max.apply(null, agendadas.concat(realizadas).concat([10]));
+  const scaleY = plotH / (maxVal * 1.25);
+  const stepX  = plotW / timeline.length; // divide em fatias iguais
+  const barW   = 16;
+  const barGap = 4;                       // espaço entre as duas barras do grupo
 
-  timeline.forEach((label, i) => {
-    // Centro do grupo de barras
+  // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra do CLAUDE.md): a
+  // TEXT_BOX tem ~7pt de recuo interno de CADA lado que a API não deixa
+  // desligar. A caixa do rótulo tinha 26pt, sobrando ~12pt úteis — um valor de
+  // 3 dígitos quebrava a linha em cima da barra. A caixa é invisível, então
+  // alargá-la simetricamente não muda nada na tela além de não quebrar.
+  const folga = 16;
+
+  const rotulo = function (x, y, texto, corTexto) {
+    const cx = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      x - 5 - folga, y, barW + 10 + folga * 2, 14);
+    cx.getText().setText(texto).getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
+      .setForegroundColor(corTexto);
+    cx.getText().getParagraphStyle()
+      .setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
+  };
+
+  timeline.forEach(function (label, i) {
     const groupCX = plotX + (i * stepX) + (stepX / 2);
 
-    // Linha de grade vertical no centro do grupo
     const vl = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, groupCX, plotY, groupCX, plotY + plotH);
-    vl.getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+    vl.getLineFill().setSolidFill(cor('lines'));
     vl.setDashStyle(SlidesApp.DashStyle.DASH);
 
-    // Rótulo eixo X
     const xlbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, groupCX - 35, plotY + plotH + 5, 70, 16);
     xlbl.getText().setText(label).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(7).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+      .setForegroundColor(cor('textBody'));
     xlbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // Posições lado a lado: AGENDADAS à esquerda, REALIZADAS à direita
+    // AGENDADAS à esquerda, REALIZADAS à direita
     const agX = groupCX - barW - (barGap / 2);
     const reX = groupCX + (barGap / 2);
 
-    // Barra AGENDADAS (cinza)
     const hAgend = Math.max(agendadas[i] * scaleY, 1);
     const agRect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, agX, (plotY + plotH) - hAgend, barW, hAgend);
     agRect.getFill().setSolidFill('#CBD5E1');
     agRect.getBorder().setTransparent();
+    rotulo(agX, (plotY + plotH) - hAgend - 17, agendadas[i].toLocaleString('pt-BR'), '#94A3B8');
 
-    // Rótulo agendadas
-    const agLbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, agX - 5, (plotY + plotH) - hAgend - 17, barW + 10, 14);
-    agLbl.getText().setText(agendadas[i].toLocaleString('pt-BR')).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
-      .setForegroundColor('#94A3B8');
-    agLbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    // Barra REALIZADAS (azul escuro)
     const hReal = Math.max(realizadas[i] * scaleY, 1);
     const reRect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, reX, (plotY + plotH) - hReal, barW, hReal);
-    reRect.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark);
+    reRect.getFill().setSolidFill(cor('brandDark'));
     reRect.getBorder().setTransparent();
-
-    // Rótulo realizadas
-    const reLbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, reX - 5, (plotY + plotH) - hReal - 17, barW + 10, 14);
-    reLbl.getText().setText(realizadas[i].toLocaleString('pt-BR')).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandDark);
-    reLbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    rotulo(reX, (plotY + plotH) - hReal - 17, realizadas[i].toLocaleString('pt-BR'), cor('brandDark'));
   });
-
-
 
   // =========================================================
   // --- 4. RODAPÉ ---
@@ -294,23 +352,24 @@ function gerarSlide06_Preventivas() {
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, footerY, 400, 20)
     .getText().setText('Capital Realty • Gestão de Facilities & Property').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+    .setForegroundColor(cor('textBody'));
 
   const footerRight = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, pageWidth - marginX - 100, footerY, 100, 20);
   footerRight.getText().setText('Página 06').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+    .setForegroundColor(cor('textBody'));
   footerRight.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 
-  Logger.log("✅ Slide 06 (Preventivas) concluído!");
+  Logger.log('✅ Slide 06 (Preventivas — ' + chave + ') concluído!');
 }
+
 
 // ==========================================================================
 // ATALHOS — VER SÓ ESTE SLIDE
 // ==========================================================================
-// Limpa a apresentação e desenha só a Manutenção Preventiva, no escopo pedido. Serve para
-// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
-// aparecer no menu "Selecionar função" do editor.
+// Limpa a apresentação e desenha só a Manutenção Preventiva, no escopo pedido.
+// Passam pelo motor do 00_Main.gs, que aplica e restaura o tema. Sem
+// parâmetro, para aparecer no menu "Selecionar função" do editor.
 function verManutencaoPreventiva()            { return _bolVerSlide_('COMPLETO',   'Manutenção Preventiva'); }
 function verManutencaoPreventivaFacilities()  { return _bolVerSlide_('FACILITIES', 'Manutenção Preventiva'); }
 function verManutencaoPreventivaHangar()      { return _bolVerSlide_('HANGAR',     'Manutenção Preventiva'); }
