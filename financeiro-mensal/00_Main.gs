@@ -21,7 +21,8 @@ function gerarApresentacaoFinanceiro() {
   Logger.log('▶ Apresentação Mensal do Financeiro');
 
   const passos = [
-    { nome: 'Capa', fn: gerarSlideCapa }
+    { nome: 'Capa', fn: gerarSlideCapa },
+    { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado }
     // Próximos slides entram aqui, na ordem que a Ester definir.
   ];
 
