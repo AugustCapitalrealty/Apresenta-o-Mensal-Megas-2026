@@ -485,16 +485,51 @@ function _bolEquipeChamado_(item) {
   return _resolverEquipeResponsaveis_(item.responsaveis) || 'FACILITIES';
 }
 
-// Retorna { kpis, historico[], meses, tipoDisciplina[] } ou null.
-//   kpis      → fila de hoje por equipe + total + o mesmo de N meses atrás
+/**
+ * Um chamado está dentro do escopo pedido?
+ *
+ * `filtro` é a lista de Centros de Custo do escopo (["MEGA CURITIBA", ...]) ou
+ * null para a carteira inteira. A comparação é por TRECHO e sem acento: na
+ * base o Centro de Custos vem com sufixos ("MEGA ITAJAÍ - GALPÃO 2"), então
+ * igualdade exata deixaria linhas de fora em silêncio.
+ */
+function _bolNoEscopo_(cc, filtro) {
+  if (!filtro || !filtro.length) return true;
+  const alvo = _bolChaveEmp_(cc);
+  return filtro.some(function (n) { return alvo.indexOf(_bolChaveEmp_(n)) >= 0; });
+}
+
+// Retorna { kpis, historico[], meses, composicao[] } ou null.
+//   kpis      → fila de hoje por equipe + total + o mesmo do ponto anterior
 //   historico → uma entrada por mês: { label, FACILITIES, PROPERTY, ... , total }
-function obterQuadroCorretivasBoletim_(nMeses) {
+//
+// `filtroCC` recorta por Centro de Custos (null = carteira inteira). É o que
+// permite os boletins Facilities e Hangar saírem da mesma base do completo —
+// equivale ao CONT.SES(...;'BD-CORRETIVAS'!$AY:$AY; <empreendimento>; ...) das
+// fórmulas da planilha.
+function obterQuadroCorretivasBoletim_(nMeses, filtroCC) {
   nMeses = nMeses || 4;
-  const itens = _bolLerBase_(BD_ABA_CORRETIVAS);
-  if (!itens.length) return null;
-  if (!itens.some(function (it) { return it.dtReporte; })) {
+  const todos = _bolLerBase_(BD_ABA_CORRETIVAS);
+  if (!todos.length) return null;
+  if (!todos.some(function (it) { return it.dtReporte; })) {
     Logger.log('BD-CORRETIVAS: linhas sem data legível — o slide 05 fica com a fonte antiga.');
     return null;
+  }
+
+  const itens = todos.filter(function (it) { return _bolNoEscopo_(it.cc, filtroCC); });
+  // Filtro que não casa com nada quase nunca é "backlog zerado" — é nome
+  // escrito diferente. Devolver 0 encheria o slide de zeros sem erro nenhum
+  // (a lição 3 do CLAUDE.md), então cai na fonte antiga dizendo o porquê.
+  if (filtroCC && filtroCC.length && !itens.length) {
+    Logger.log('⚠️ BD-CORRETIVAS: nenhum chamado em [' + filtroCC.join(', ') + ']. ' +
+               'Centros de Custo na base: ' +
+               Object.keys(todos.reduce(function (a, it) { a[it.cc] = 1; return a; }, {})).join(' | ') +
+               ' — o slide fica com a fonte antiga.');
+    return null;
+  }
+  if (filtroCC && filtroCC.length) {
+    Logger.log('BD-CORRETIVAS: escopo [' + filtroCC.join(', ') + '] = ' +
+               itens.length + ' de ' + todos.length + ' chamado(s).');
   }
 
   const EQUIPES = ['FACILITIES', 'PROPERTY', 'LOCATARIO', 'OPERACAO'];
@@ -533,9 +568,20 @@ function obterQuadroCorretivasBoletim_(nMeses) {
       totalAnterior: anterior.total,
       mesAnterior  : anterior.label
     },
+    // Ponto anterior por EQUIPE, não só o total. É o que deixa a seta de cada
+    // cartão sair da mesma contagem que o número do cartão — antes o cartão
+    // vinha da tabela resumo e a seta do histórico, duas fontes, e a seta
+    // podia mostrar movimento que não houve.
+    anterior: {
+      total     : anterior.total,
+      facilities: anterior.FACILITIES,
+      property  : anterior.PROPERTY,
+      locatarios: anterior.LOCATARIO,
+      operacao  : anterior.OPERACAO
+    },
     historico: historico,
     meses: meses.map(function (m) { return m.label; }),
-    composicao: obterComposicaoTipoBoletim_()
+    composicao: obterComposicaoTipoBoletim_(filtroCC)
   };
 }
 
@@ -558,11 +604,15 @@ function obterQuadroCorretivasBoletim_(nMeses) {
  * Projetos 2 + Locatários 46 = 479 embaixo de um backlog de 525, e as quatro
  * contagens eram independentes, então ninguém percebia os 46 que sumiam.
  *
+ * `filtroCC` recorta por Centro de Custos (null = carteira inteira), para o
+ * painel bater com os cartões do mesmo escopo.
+ *
  * Devolve [{ label, val, pct }] na ordem fixa do painel, ou [] se a base não
  * responder.
  */
-function obterComposicaoTipoBoletim_() {
-  const itens = _bolLerBase_(BD_ABA_CORRETIVAS);
+function obterComposicaoTipoBoletim_(filtroCC) {
+  const itens = _bolLerBase_(BD_ABA_CORRETIVAS)
+    .filter(function (it) { return _bolNoEscopo_(it.cc, filtroCC); });
   if (!itens.length) return [];
 
   const instante = _bolInstante_(0);

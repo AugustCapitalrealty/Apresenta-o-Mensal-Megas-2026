@@ -7,7 +7,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | Pasta | Projeto | Arquivos |
 |---|---|---|
 | `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 43 `.gs` |
-| `boletim/` | Boletim 2026 | 19 `.gs` |
+| `boletim/` | Boletim 2026 | 18 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 11 `.gs` |

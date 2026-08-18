@@ -59,8 +59,7 @@ Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
 | `03_indice.gs` | Slide 02 — índice |
 | `02_overview.gs` | Slide 03 — overview executivo |
 | `03_manutencoes.gs` | Slide 04 — estratificação |
-| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva: escopos completo e Facilities |
-| `05_quadro_manutencao_hangar.gs` | Slide 05 — variante Hangar |
+| `04_quadro_manutencao.gs` | Slide 05 — manutenção corretiva, **os três escopos** (`BOL_CORRETIVAS`) |
 | `06_preventivas.gs` | Slide 06 — manutenção preventiva, **os três escopos** (`BOL_PREVENTIVAS`) |
 | `07_corretivas_empreendimento.gs` | Slide 07 — corretivas por empreendimento |
 | `08_preventivas_empreendimento.gs` | Slide 08 — preventivas por empreendimento |
@@ -125,6 +124,7 @@ Nomes que já existiram e **não** devem estar no editor:
 | `config.gs`, `config_mega.gs`, `config_hangar.gs` | `Config.gs` |
 | `99_main.gs`, `99_main_facilities.gs`, `99_main_hangar.gs`, `99_main_todas.gs` | `00_Main.gs` |
 | `06_preventivas_facilities.gs`, `06_preventivas_hangar.gs` | `06_preventivas.gs` |
+| `05_quadro_manutencao_hangar.gs` | `04_quadro_manutencao.gs` |
 
 ## Por que os mains viraram um só
 
@@ -141,25 +141,36 @@ virou um só. Além de tirar três arquivos, isso consertou três coisas:
 - **o tema volta no `finally`**, então erro no meio do Hangar não deixa o
   próximo boletim saindo com a paleta errada.
 
-## Preventiva num arquivo só, Corretiva não
+## Um arquivo por slide, três escopos como dado
 
-**Preventiva** tinha três cópias (geral, Facilities, Hangar) que desenhavam
-literalmente o mesmo slide e divergiam só em qual aba ler, em que linha estão
-os números e quais cartões de SLA aparecem. Isso virou dado (`BOL_PREVENTIVAS`,
-no topo do arquivo) e o desenho é um só.
+Manutenção Corretiva e Preventiva tinham três cópias cada. Agora cada uma é um
+arquivo, com os escopos num descritor no topo (`BOL_CORRETIVAS`,
+`BOL_PREVENTIVAS`).
 
-A prova de que valia juntar: os quatro últimos ajustes desses slides — tirar o
-selo de semana, subir o teto do gráfico para 1.42, abrir o vão entre as barras
-para 10pt e descer o rótulo 1pt — tiveram que ser feitos **três vezes**, um em
-cada arquivo, exatamente iguais.
+**O desenho é idêntico nos três** — cartões, gráfico, legenda, painel de
+composição, rodapé. Era isso que a duplicação escondia: os últimos ajustes das
+Preventivas (tirar o selo de semana, teto do gráfico em 1.42, vão de 10pt
+entre as barras, rótulo 1pt abaixo) tiveram que ser feitos **três vezes**,
+iguais; e a legenda do tamanho da palavra e a folga do rótulo chegaram a duas
+variantes da Corretiva e não à terceira.
 
-**Corretiva ficou separada de propósito.** Chegou a ser unificada e foi
-desfeito: a variante Facilities não é "o mesmo slide com outras células". Ela
-lê da aba `megas QUADRO COMPARATIVO`, monta o gráfico somando os 3 Megas mês a
-mês (N pontos, não 4 fixos) e calcula uma seta ▲/▼ semanal por cartão a partir
-de outra seção da planilha. Expressar isso num descritor exigiria três
-interruptores de modo — a função deixaria de ser um desenho e viraria um
-`switch`. Duas funções honestas custam menos que uma abstração que mente.
+**O que diverge é a aquisição dos dados**, e não em detalhe — em estratégia.
+Por isso há duas leitoras nomeadas, escolhidas pelo descritor:
+
+| Leitora | Quem usa | O que faz |
+|---|---|---|
+| `_bolLerUltimasColunas_` | completo, Hangar | últimas N colunas preenchidas; uma linha por equipe |
+| `_bolLerSomaLinhas_` | Facilities | soma um bloco de linhas por coluna (cada mês = os 3 Megas), com N pontos variável |
+
+O mesmo vale para a seta dos cartões: `PERIODO` compara com o ponto anterior
+do próprio histórico; `SEMANAL` lê a seção POR MEGA SEMANAL. Uma tentativa
+anterior de unificar tratou essa diferença como "outra célula" e teria
+quebrado o boletim Facilities — o descritor precisa expressar a estratégia,
+não só o endereço.
+
+`barW`, `offset` e `lblCaixa` ficam **escritos** no descritor, não calculados:
+são valores medidos no deck real. `'auto'` só no Facilities, onde o número de
+meses varia e não dá para fixar.
 
 ## Os atalhos `testarSlide*` saíram
 
@@ -173,9 +184,32 @@ a prévia do Hangar saía com a cor da Capital e não parecia erro.
 
 O slide 05 (Manutenção Corretiva) conta da planilha **BASE DE DADOS —
 QUADRO REM**, aba `BD-CORRETIVAS`, uma linha por chamado — a mesma fonte da
-apresentação mensal dos Megas, da de Propriedades e das TVs. A aba do
-boletim continua servindo de **reserva**: se a base não responder, o slide
-cai nela e o `Logger` registra a divergência (lição 3 do CLAUDE.md).
+apresentação mensal dos Megas, da de Propriedades e das TVs. **Os três
+escopos**, cada um com o seu recorte de Centro de Custos:
+
+| Escopo | Recorte (`escopoCC`) |
+|---|---|
+| Propriedades & Facilities | nenhum — a carteira inteira |
+| MEGAS | `MEGA CURITIBA`, `MEGA ITAJAI`, `MEGA ESTEIO` |
+| Hangar VIP | `HANGAR VIP` |
+
+É o equivalente ao `CONT.SES(...;'BD-CORRETIVAS'!$AY:$AY; <empreendimento>;...)`
+das fórmulas da planilha. A comparação é por **trecho** e sem acento, porque
+na base o Centro de Custos vem com sufixos (`MEGA ITAJAÍ - GALPÃO 2`) —
+igualdade exata deixaria linhas de fora em silêncio.
+
+**Filtro que não casa com nada devolve `null`, não zero.** Quase nunca é
+backlog zerado; é nome escrito diferente. O slide cai na célula digitada e o
+`Logger` lista os Centros de Custo que existem de verdade na base.
+
+A aba do boletim continua servindo de **reserva** em todos os escopos: se a
+base não responder, o slide cai nela e o `Logger` registra (lição 3 do
+CLAUDE.md).
+
+Vindo da base, **a seta de cada cartão sai do mesmo histórico que o número do
+cartão**. A seção semanal da aba dos Megas só entra quando a base não
+respondeu — misturar as duas faria o cartão dizer um número e a seta comparar
+outro, que é a lição 2 do CLAUDE.md.
 
 Os demais slides ainda saem das abas com o número já somado à mão. Migrá-los
 é o resto do plano.
@@ -216,7 +250,5 @@ composição calculada com as células `G40/D40/E40/F40`.
 ## O que a base não sustenta
 
 - **Índice de Disponibilidade** e **MTBF** — continuam digitados à mão.
-- **Recorte por escopo no slide 05** — `obterQuadroCorretivasBoletim_` conta a
-  carteira inteira, então só o boletim COMPLETO usa a base bruta. Facilities e
-  Hangar continuam nas células até a função aprender a filtrar por Centro de
-  Custos (é o que a fórmula da planilha faz com `$AY:$AY`).
+- **MTTR / MTBF** — ainda não calculados; `diagnosticarBoletim()` mostra se os
+  campos necessários estão preenchidos o bastante.

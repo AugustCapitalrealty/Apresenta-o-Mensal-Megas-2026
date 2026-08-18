@@ -158,6 +158,53 @@ ok('a última barra É o cartão grande',
    'barra=' + q.historico[3].total + ' cartão=' + q.kpis.total);
 ok('cada mês do histórico também fecha',
    q.historico.every(h => h.FACILITIES + h.PROPERTY + h.LOCATARIO + h.OPERACAO === h.total));
+console.log('\n== Recorte por escopo (Centro de Custos) ==');
+// É o que permite Facilities e Hangar saírem da MESMA base do completo —
+// equivale ao CONT.SES(...;$AY:$AY;<empreendimento>;...) das fórmulas.
+ok('sem filtro, tudo entra', _bolNoEscopo_('MEGA CURITIBA', null) === true);
+ok('casa por trecho: "MEGA ITAJAÍ - GALPÃO 2" entra no filtro "MEGA ITAJAI"',
+   _bolNoEscopo_('MEGA ITAJAÍ - GALPÃO 2', ['MEGA ITAJAI']) === true);
+ok('acento e caixa não separam', _bolNoEscopo_('mega esteio', ['MEGA ESTEIO']) === true);
+ok('e o que não é do escopo fica de fora',
+   _bolNoEscopo_('POSTO CURITIBA', ['MEGA CURITIBA', 'MEGA ITAJAI']) === false);
+
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD-CORRETIVAS': [HDR,
+  L('MEGA CURITIBA', 'Aberto', 'Guilherme Heck',     mesPassado),
+  L('MEGA ITAJAÍ',   'Aberto', 'Ivan Fuscolin Neto', mesPassado),
+  L('HANGAR VIP',    'Aberto', 'Gerente Hangar',     mesPassado),
+  L('HANGAR VIP',    'Aberto', 'Guilherme Heck',     mesPassado)
+] };
+const qTudo = obterQuadroCorretivasBoletim_(4, null);
+const qMega = obterQuadroCorretivasBoletim_(4, ['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO']);
+const qHang = obterQuadroCorretivasBoletim_(4, ['HANGAR VIP']);
+ok('sem filtro conta os 4', qTudo.kpis.total === 4, qTudo.kpis.total);
+ok('filtro dos Megas conta 2', qMega.kpis.total === 2, qMega.kpis.total);
+ok('filtro do Hangar conta 2', qHang.kpis.total === 2, qHang.kpis.total);
+ok('e os dois recortes somam o total', qMega.kpis.total + qHang.kpis.total === qTudo.kpis.total);
+ok('a composição também é recortada',
+   qHang.composicao.reduce((a, c) => a + c.val, 0) === 2,
+   JSON.stringify(qHang.composicao));
+ok('o log diz quantos entraram no escopo',
+   logs.some(l => /escopo \[HANGAR VIP\] = 2 de 4/.test(l)), logs.slice(-6).join(' | '));
+
+// Ponto anterior POR EQUIPE: é o que deixa a seta de cada cartão sair da
+// mesma contagem que o número do cartão.
+ok('devolve o ponto anterior por equipe, não só o total',
+   qTudo.anterior && typeof qTudo.anterior.facilities === 'number',
+   JSON.stringify(qTudo.anterior));
+ok('e o anterior bate com o penúltimo ponto do histórico',
+   qTudo.anterior.total === qTudo.historico[qTudo.historico.length - 2].total);
+
+// Filtro que não casa quase nunca é backlog zerado — é nome escrito diferente.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+logs.length = 0;
+const qNada = obterQuadroCorretivasBoletim_(4, ['MEGA CANOAS']);
+ok('escopo sem nenhum chamado devolve null, não um slide de zeros', qNada === null);
+ok('e o log mostra os Centros de Custo que existem de verdade',
+   logs.some(l => /nenhum chamado em \[MEGA CANOAS\]/.test(l) && /HANGAR VIP/.test(l)),
+   logs.join(' | '));
+
 console.log('\n== Composição por TIPO (painel do slide 05) ==');
 // A regra é a das fórmulas da planilha: "*Melhoria*" e "*Consulta*" na coluna
 // Tipo, Locatário pela coluna Responsáveis, o resto é corretiva.
