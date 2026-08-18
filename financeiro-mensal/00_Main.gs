@@ -141,6 +141,7 @@ function diagnosticarFinanceiro() {
     try {
       const ss = SpreadsheetApp.openById(id);
       Logger.log('  ✓ ' + nome + ' — "' + ss.getName() + '" (' + ss.getSheets().length + ' abas)');
+      if (id === FINANCEIRO_SPREADSHEET_ID) _diagnosticarAbasFinanceiro_(ss, pend);
     } catch (e) {
       Logger.log('  ✗ ' + nome + ' — não abriu: ' + e.message);
       pend.push(nome + ' inacessível');
@@ -150,4 +151,31 @@ function diagnosticarFinanceiro() {
   Logger.log('\n' + (pend.length
     ? 'PENDÊNCIAS (' + pend.length + '):\n    ' + pend.join('\n    ')
     : 'Configuração completa. Rode gerarApresentacaoFinanceiro().'));
+}
+
+
+// Somente lê metadados e valores: não abre o deck para edição, não chama
+// gerador e não cria slide. Os blocos temáticos podem mudar de aba, por isso
+// são conferidos pelo título distintivo, enquanto os dois quadros existentes
+// têm abas contratuais fixas.
+function _diagnosticarAbasFinanceiro_(ss, pend) {
+  Logger.log('  Abas/blocos necessários:');
+  [QUADRO_EBITDA_SHEET, QUADRO_DRE_SHEET].forEach(nome => {
+    if (ss.getSheetByName(nome)) Logger.log('    ✓ aba "' + nome + '"');
+    else { Logger.log('    ✗ aba "' + nome + '" ausente'); pend.push('aba "' + nome + '" ausente'); }
+  });
+
+  const localizados = {};
+  ss.getSheets().forEach(sheet => {
+    const valores = sheet.getDataRange().getDisplayValues();
+    Object.keys(BLOCOS_FINANCEIROS).forEach(chave => {
+      const titulo = _finNorm_(BLOCOS_FINANCEIROS[chave].titulo);
+      if (valores.some(l => l.some(v => _finNorm_(v) === titulo))) localizados[chave] = sheet.getName();
+    });
+  });
+  Object.keys(BLOCOS_FINANCEIROS).forEach(chave => {
+    const titulo = BLOCOS_FINANCEIROS[chave].titulo;
+    if (localizados[chave]) Logger.log('    ✓ bloco "' + titulo + '" — aba "' + localizados[chave] + '"');
+    else { Logger.log('    ✗ bloco "' + titulo + '" não localizado'); pend.push('bloco "' + titulo + '" ausente'); }
+  });
 }
