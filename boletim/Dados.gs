@@ -1074,6 +1074,15 @@ function diagnosticarBoletim() {
     }
   }
 
+  // ── 3c. PREVENTIVAS: a equipe está sendo reconhecida? ───────────────────
+  // Facilities é o DEFAULT da regra, não uma classificação. Se ele estiver
+  // levando quase tudo, a regra não está achando nada e o slide 06 mostra um
+  // Property minúsculo com SLA instável — foi o que aconteceu na 1ª execução
+  // (1077 Facilities x 15 Property x 44 Operação).
+  Logger.log('\n── 3c. PREVENTIVAS: A EQUIPE ESTÁ SENDO RECONHECIDA? ───');
+  diagnosticarEquipePreventiva();
+
+
   // MTTR: dá para medir de "Data de reporte" até "Fechado em".
   const fechados = itens.filter(function (it) {
     return _bdChamadoFechado_(it.estado, it.dtFechado) && it.dtReporte && it.dtFechado;
@@ -1090,4 +1099,90 @@ function diagnosticarBoletim() {
   }
 
   Logger.log('\nPronto. Nada na tela mudou — esta etapa só mede.');
+}
+
+
+/**
+ * Mostra COMO as rotinas preventivas estão sendo classificadas e, mais
+ * importante, o texto de onde a classificação sai.
+ *
+ * SEM sufixo "_" de propósito: é ponto de entrada, e o menu do editor esconde
+ * função que começa ou termina com underscore.
+ */
+function diagnosticarEquipePreventiva() {
+  const itens = _bolLerBase_(BD_ABA_PREVENTIVAS);
+  if (!itens.length) { Logger.log('  BD - PREVENTIVAS: sem linhas.'); return; }
+
+  const semanas = _bolSemanasBoletim_(BOL_PREV_SEMANAS);
+  const janela = { ini: semanas[0].ini, fim: semanas[semanas.length - 1].fim };
+  const fechadas = itens.filter(function (it) {
+    return _bdChamadoFechado_(it.estado, it.dtFechado) && _bolDentro_(it.dtFechado, janela);
+  });
+  Logger.log('  ' + itens.length + ' rotina(s) na base, ' + fechadas.length +
+             ' fechada(s) na janela do slide (' + semanas[0].label + ' a ' +
+             semanas[semanas.length - 1].label + ').');
+
+  // 1. Por que cada uma caiu onde caiu.
+  const motivo = {};
+  fechadas.forEach(function (it) {
+    let m;
+    if (_resolverEquipeResponsaveis_(it.responsaveis))      m = 'Responsáveis (coluna existe!)';
+    else if (_bolNoEscopo_(it.cc, ['HANGAR VIP']))          m = 'Centro de Custos = HANGAR VIP → OPERACAO';
+    else if (_histNorm_(it.descricaoBruta || it.descricao).indexOf('propriedades') >= 0)
+                                                            m = 'nome contém "propriedades" → PROPERTY';
+    else                                                    m = 'NENHUMA regra casou → cai em FACILITIES';
+    motivo[m] = (motivo[m] || 0) + 1;
+  });
+  Logger.log('  Por que cada uma caiu onde caiu:');
+  Object.keys(motivo).sort(function (a, b) { return motivo[b] - motivo[a]; })
+    .forEach(function (k) {
+      const pct = Math.round(motivo[k] / fechadas.length * 100);
+      Logger.log('    · ' + motivo[k] + ' (' + pct + '%) — ' + k);
+    });
+
+  // 2. O TEXTO de onde a regra tenta ler. É isto que decide a regra certa.
+  const semRegra = fechadas.filter(function (it) {
+    return !_resolverEquipeResponsaveis_(it.responsaveis) &&
+           !_bolNoEscopo_(it.cc, ['HANGAR VIP']) &&
+           _histNorm_(it.descricaoBruta || it.descricao).indexOf('propriedades') < 0;
+  });
+  Logger.log('  Amostra do nome BRUTO das que não casaram com nada (as que viram Facilities):');
+  semRegra.slice(0, 12).forEach(function (it) {
+    const t = String(it.descricaoBruta || it.descricao || '(vazio)').slice(0, 110);
+    Logger.log('    · [' + it.cc + '] ' + t);
+  });
+
+  // 3. Os prefixos mais comuns — se houver um "CHECKLIST - <ALGO> |", é dali
+  //    que a regra deveria sair, e este bloco mostra quais <ALGO> existem.
+  const prefixos = {};
+  fechadas.forEach(function (it) {
+    const bruto = String(it.descricaoBruta || it.descricao || '');
+    const m = bruto.match(/CHECKLIST\s*-\s*([^|]{1,40})\|/i);
+    const k = m ? m[1].trim().toUpperCase() : '(sem prefixo CHECKLIST - ... |)';
+    prefixos[k] = (prefixos[k] || 0) + 1;
+  });
+  Logger.log('  Prefixos "CHECKLIST - <X> |" encontrados (é daqui que sai a equipe):');
+  Object.keys(prefixos).sort(function (a, b) { return prefixos[b] - prefixos[a]; })
+    .slice(0, 15).forEach(function (k) { Logger.log('    · ' + prefixos[k] + '  ' + k); });
+
+  // 4. Que colunas a base tem, para saber se existe uma melhor que o nome.
+  try {
+    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sh = _bolAba_(ss, BD_ABA_PREVENTIVAS);
+    if (sh) {
+      Logger.log('  Cabeçalho REAL da BD - PREVENTIVAS:');
+      Logger.log('    ' + sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0]
+        .map(function (h, i) { return _bolLetraColuna_(i) + '=' + h; })
+        .filter(function (t) { return t.split('=')[1]; }).join(' | '));
+    }
+  } catch (e) {
+    Logger.log('  (não deu para ler o cabeçalho: ' + e.message + ')');
+  }
+
+  // 5. Centros de Custo, para conferir o recorte dos escopos.
+  const porCC = {};
+  fechadas.forEach(function (it) { porCC[it.cc] = (porCC[it.cc] || 0) + 1; });
+  Logger.log('  Centros de Custo na janela: ' +
+    Object.keys(porCC).sort(function (a, b) { return porCC[b] - porCC[a]; })
+      .map(function (k) { return k + '=' + porCC[k]; }).join(' | '));
 }
