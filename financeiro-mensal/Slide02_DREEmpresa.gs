@@ -87,6 +87,7 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
   const DS = CR_DESIGN_SYSTEM;
   const larguraTotal = W - mX * 2;
   const nCols = dre.headers.length || 15;
+  const colunasComparativas = dre.headers.map(_rrEhCabecalhoComparativo_);
   // A coluna de rótulo aqui precisa ser mais larga que a do Resumo do
   // Resultado: "10 - OUTRAS RECEITAS E DESPESAS" e os sub-itens indentados
   // ("10.1 - RECEITAS FINANCEIRAS") são mais longos que o maior nome de
@@ -132,7 +133,8 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
   x = mX + labelW;
   dre.headers.forEach(h => {
     _rrCelula_(slide, x, y, valW, hSub, DS.colors.brandDark);
-    _rrBloco_(slide, x, y, valW, hSub, h, { fs: fsHeader, bold: true, cor: '#FFFFFF' });
+    _rrBloco_(slide, x, y, valW, hSub, _rrFormatarCabecalhoTabela_(h),
+      { fs: fsHeader, bold: true, cor: '#FFFFFF' });
     x += valW;
   });
   y += hSub;
@@ -143,16 +145,16 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
 
     if (linha.margem) {
       _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        DS.colors.brandMed, '#FFFFFF', fsValor, true, false);
+        DS.colors.brandMed, '#FFFFFF', fsValor, true, false, colunasComparativas);
     } else if (linha.ebitda) {
       _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#EEF2F7', DS.colors.brandDark, fsValor, true, false);
+        '#EEF2F7', DS.colors.brandDark, fsValor, true, false, colunasComparativas);
     } else if (linha.indentado) {
       _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#FFFFFF', DS.colors.textBody, fsSub, false, true);
+        '#FFFFFF', DS.colors.textBody, fsSub, false, true, colunasComparativas);
     } else {
       _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#FFFFFF', DS.colors.textMain, fsValor, true, false);
+        '#FFFFFF', DS.colors.textMain, fsValor, true, false, colunasComparativas);
     }
     y += h;
   });
@@ -160,16 +162,18 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
 
 // Uma linha do DRE: rótulo à esquerda (indentado quando é sub-item, ex.:
 // "10.1 - Receitas Financeiras") + os valores centralizados.
-function _rrLinhaDRE_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, corTexto, fs, negrito, indentado) {
+function _rrLinhaDRE_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, corTexto, fs, negrito, indentado, colunasComparativas) {
   const padL = labelW * (indentado ? 0.11 : 0.055);
   _rrCelula_(slide, mX, y, labelW, h, corFundo);
   _rrUmaLinha_(slide, mX + padL, y, labelW - padL, h, rotulo,
     { fs: fs, bold: negrito, cor: corTexto, align: 'L' });
 
   let x = mX + labelW;
-  valores.forEach(v => {
+  valores.forEach((v, i) => {
+    const corValor = colunasComparativas && colunasComparativas[i]
+      ? _rrCorValorComparativo_(v, corTexto, corTexto === '#FFFFFF') : corTexto;
     _rrCelula_(slide, x, y, valW, h, corFundo);
-    _rrUmaLinha_(slide, x, y, valW, h, v, { fs: fs, bold: negrito, cor: corTexto });
+    _rrUmaLinha_(slide, x, y, valW, h, v, { fs: fs, bold: negrito, cor: corValor });
     x += valW;
   });
 }

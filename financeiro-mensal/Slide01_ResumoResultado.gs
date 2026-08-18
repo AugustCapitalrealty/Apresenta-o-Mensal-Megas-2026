@@ -132,6 +132,43 @@ function _rrPrimeiraLinha_(txt) {
   return String(txt || '').split('\n')[0].trim();
 }
 
+/**
+ * Padroniza somente a apresentação dos cabeçalhos. O texto armazenado na
+ * planilha não é alterado: quebras existentes são primeiro normalizadas e as
+ * referências de período recebem quebras semânticas previsíveis.
+ *
+ *   Orç 2026                 → Orç\n2026
+ *   Real 2026 x Orç 2026    → Real 2026\nx\nOrç 2026
+ */
+function _rrFormatarCabecalhoTabela_(texto) {
+  const limpo = String(texto == null ? '' : texto).replace(/\s+/g, ' ').trim();
+  if (!limpo) return '';
+
+  const comparativo = limpo.match(/^(.+?\s+20\d{2})\s+x\s+(.+?\s+20\d{2})$/i);
+  if (comparativo) return comparativo[1].trim() + '\n' + 'x' + '\n' + comparativo[2].trim();
+
+  const periodo = limpo.match(/^(Real|Orç|Orcado|Orçado|Ritmo)\s+(20\d{2})$/i);
+  if (periodo) return periodo[1] + '\n' + periodo[2];
+
+  return limpo;
+}
+
+function _rrEhCabecalhoComparativo_(texto) {
+  const normalizado = String(texto == null ? '' : texto).toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9%]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  return /(^| )x( |$)/.test(normalizado) || /^(variacao|var)( |$)/.test(normalizado);
+}
+
+// Comparativos seguem o sinal matemático, independentemente de a linha ser
+// receita ou despesa. Zero, “N/C” e células vazias mantêm a cor original.
+function _rrCorValorComparativo_(valor, corNeutra, fundoEscuro) {
+  const numero = typeof valor === 'number' ? valor : _finNumero_(valor);
+  if (numero === null || !isFinite(numero) || numero === 0) return corNeutra;
+  if (fundoEscuro) return numero > 0 ? '#86EFAC' : '#FCA5A5';
+  return numero > 0 ? '#15803D' : '#DC2626';
+}
+
 
 // ==========================================
 // TABELA — EBITDA (Em R$/Mil)
@@ -147,6 +184,7 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados) {
   const DS = CR_DESIGN_SYSTEM;
   const larguraTotal = W - mX * 2;
   const nCols  = dados.headers.length || 15;
+  const colunasComparativas = dados.headers.map(_rrEhCabecalhoComparativo_);
   // "CR Estacionamentos" é o rótulo mais longo e é ele que dimensiona esta
   // coluna — com 0,155 ele encostava no primeiro valor.
   const labelW = larguraTotal * 0.175;
@@ -200,7 +238,8 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados) {
   x = mX + labelW;
   dados.headers.forEach(h => {
     _rrCelula_(slide, x, y, valW, hSub, DS.colors.brandDark);
-    _rrBloco_(slide, x, y, valW, hSub, h, { fs: fsHeader, bold: true, cor: '#FFFFFF' });
+    _rrBloco_(slide, x, y, valW, hSub, _rrFormatarCabecalhoTabela_(h),
+      { fs: fsHeader, bold: true, cor: '#FFFFFF' });
     x += valW;
   });
   y += hSub;
@@ -209,32 +248,34 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados) {
   dados.empresas.forEach(emp => {
     if (emp.total) {
       _rrLinha_(slide, mX, y, labelW, valW, hTotal, 'TOTAL', emp.valores,
-        DS.colors.brandMed, '#FFFFFF', fsValor, true);
+        DS.colors.brandMed, '#FFFFFF', fsValor, true, colunasComparativas);
       y += hTotal;
       return;
     }
     _rrLinha_(slide, mX, y, labelW, valW, hEmpresa, emp.nome, emp.valores,
-      '#FFFFFF', DS.colors.textMain, fsValor, true);
+      '#FFFFFF', DS.colors.textMain, fsValor, true, colunasComparativas);
     y += hEmpresa;
     if (emp.margem) {
       _rrLinha_(slide, mX, y, labelW, valW, hMargem, 'Margem EBITDA/ROL', emp.margem,
-        '#EEF2F7', DS.colors.textBody, fsMargem, false);
+        '#EEF2F7', DS.colors.textBody, fsMargem, false, colunasComparativas);
       y += hMargem;
     }
   });
 }
 
 // Uma linha completa: rótulo (à esquerda) + os valores (centralizados).
-function _rrLinha_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, corTexto, fs, negrito) {
+function _rrLinha_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, corTexto, fs, negrito, colunasComparativas) {
   const padL = labelW * 0.09;
   _rrCelula_(slide, mX, y, labelW, h, corFundo);
   _rrUmaLinha_(slide, mX + padL, y, labelW - padL, h, rotulo,
     { fs: fs, bold: negrito, cor: corTexto, align: 'L' });
 
   let x = mX + labelW;
-  valores.forEach(v => {
+  valores.forEach((v, i) => {
+    const corValor = colunasComparativas && colunasComparativas[i]
+      ? _rrCorValorComparativo_(v, corTexto, corTexto === '#FFFFFF') : corTexto;
     _rrCelula_(slide, x, y, valW, h, corFundo);
-    _rrUmaLinha_(slide, x, y, valW, h, v, { fs: fs, bold: negrito, cor: corTexto });
+    _rrUmaLinha_(slide, x, y, valW, h, v, { fs: fs, bold: negrito, cor: corValor });
     x += valW;
   });
 }
@@ -254,6 +295,7 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados) {
   const largura = W - mX * 2;
   const labelW  = largura * 0.34;
   const nCols   = dados.colunas.length || 3;
+  const colunasComparativas = dados.colunas.map(_rrEhCabecalhoComparativo_);
   const valW    = (largura - labelW) / nCols;
 
   // O cabeçalho tem rótulo longo em coluna estreita, então precisa de mais
@@ -274,7 +316,8 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados) {
   let x = mX + labelW;
   dados.colunas.forEach(nome => {
     _rrCelula_(slide, x, y, valW, hHeader, DS.colors.brandDark);
-    _rrBloco_(slide, x, y, valW, hHeader, nome, { fs: fsHeader, bold: true, cor: '#FFFFFF' });
+    _rrBloco_(slide, x, y, valW, hHeader, _rrFormatarCabecalhoTabela_(nome),
+      { fs: fsHeader, bold: true, cor: '#FFFFFF' });
     x += valW;
   });
   y += hHeader;
@@ -286,9 +329,11 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados) {
       { fs: fsLinha, bold: true, cor: DS.colors.textMain, align: 'L' });
 
     x = mX + labelW;
-    linha.valores.forEach(v => {
+    linha.valores.forEach((v, coluna) => {
+      const corValor = colunasComparativas[coluna]
+        ? _rrCorValorComparativo_(v, DS.colors.textMain, false) : DS.colors.textMain;
       _rrCelula_(slide, x, y, valW, hLinha, corFundo);
-      _rrUmaLinha_(slide, x, y, valW, hLinha, v, { fs: fsLinha, cor: DS.colors.textMain });
+      _rrUmaLinha_(slide, x, y, valW, hLinha, v, { fs: fsLinha, cor: corValor });
       x += valW;
     });
     y += hLinha;

@@ -100,20 +100,25 @@ function _dcDesenharTabela_(c, matriz, op) {
   const demaisW = nCol === 1 ? 0 : (w - primeiraW) / (nCol - 1);
   const fs = Math.max(5.2, Math.min(9.2, op.fs || c.W * .0095));
   const elementos = [];
+  let colunasComparativas = [];
 
   m.forEach((row, r) => {
     const norm = _dcNorm_(row.join(' '));
     const header = r === 0 || /^(ofensores|defensores)\b/.test(norm);
     const total = /^total\b/.test(_dcNorm_(row[0]));
+    if (header) colunasComparativas = row.map(_rrEhCabecalhoComparativo_);
     let xx = x;
     row.forEach((valor, col) => {
       const cw = col === 0 ? primeiraW : demaisW;
       const fundo = header ? c.DS.colors.brandDark :
         (total ? '#DBEAFE' : (r % 2 ? '#F8FAFC' : '#FFFFFF'));
       elementos.push(_rrCelula_(c.slide, xx, y + r * hLinha, cw, hLinha, fundo));
-      const texto = String(valor == null ? '' : valor);
+      const textoOriginal = String(valor == null ? '' : valor);
+      const texto = header ? _rrFormatarCabecalhoTabela_(textoOriginal) : textoOriginal;
       const estilo = { fs: fs, fsMin: 4.8, bold: header || total || col === 0,
-        cor: header ? '#FFFFFF' : c.DS.colors.textMain,
+        cor: header ? '#FFFFFF' : (colunasComparativas[col]
+          ? _rrCorValorComparativo_(textoOriginal, c.DS.colors.textMain, false)
+          : c.DS.colors.textMain),
         align: col === 0 ? 'L' : 'C', folga: 0 };
       if (col === 0 || header) {
         _rrBloco_(c.slide, xx + (col === 0 ? 4 : 1), y + r * hLinha,

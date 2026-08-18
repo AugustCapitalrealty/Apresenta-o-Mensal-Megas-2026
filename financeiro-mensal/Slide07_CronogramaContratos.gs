@@ -30,6 +30,6 @@ function _fmCronogramaDesenhar_(c, rows) {
     _rrUmaLinha_(c.slide, left + cw * .86, y, cw * .14, rh, r.percentual, { fs: c.W * .0105, bold: true });
   });
   const x = c.W * .64, w = c.W * .31, ws = [w * .50, w * .25, w * .25], heads = ['Vencimento', 'Contratos', '%']; let xx = x;
-  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .08, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, top, ws[i], c.H * .08, h, { fs: c.W * .010, bold: true, cor: '#FFF' }); xx += ws[i]; });
+  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .08, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, top, ws[i], c.H * .08, _rrFormatarCabecalhoTabela_(h), { fs: c.W * .010, bold: true, cor: '#FFF' }); xx += ws[i]; });
   rows.forEach((r, ri) => { xx = x; [r.categoria, r.quantidade, r.percentual].forEach((v, i) => { _rrCelula_(c.slide, xx, top + c.H * .08 + ri * rh, ws[i], rh, ri % 2 ? '#F1F5F9' : '#FFF'); _rrUmaLinha_(c.slide, xx + (i ? 0 : 3), top + c.H * .08 + ri * rh, ws[i] - (i ? 0 : 3), rh, v, { fs: c.W * .010, bold: i === 0, align: i ? 'C' : 'L' }); xx += ws[i]; }); });
 }

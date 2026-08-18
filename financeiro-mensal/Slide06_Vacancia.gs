@@ -26,6 +26,6 @@ function _fmVacanciaDesenhar_(c, rows) {
   });
   const x = c.W * .45, totalW = c.W * .515, ws = [totalW * .31, totalW * .23, totalW * .23, totalW * .23];
   const heads = ['Empreendimento', 'Área construída', 'Ocupada', 'Disponível']; let xx = x;
-  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .09, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, top, ws[i], c.H * .09, h, { fs: c.W * .010, bold: true, cor: '#FFF' }); xx += ws[i]; });
+  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .09, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, top, ws[i], c.H * .09, _rrFormatarCabecalhoTabela_(h), { fs: c.W * .010, bold: true, cor: '#FFF' }); xx += ws[i]; });
   rows.forEach((r, ri) => { xx = x; [r.nome, r.area, r.ocupada, r.disponivel].forEach((v, i) => { _rrCelula_(c.slide, xx, top + c.H * .09 + ri * rh, ws[i], rh, ri % 2 ? '#F1F5F9' : '#FFF'); _rrUmaLinha_(c.slide, xx + (i ? 0 : 3), top + c.H * .09 + ri * rh, ws[i] - (i ? 0 : 3), rh, v, { fs: c.W * .010, bold: i === 0, align: i ? 'C' : 'L' }); xx += ws[i]; }); });
 }

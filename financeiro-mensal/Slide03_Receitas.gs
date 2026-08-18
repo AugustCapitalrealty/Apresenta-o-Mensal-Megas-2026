@@ -65,20 +65,20 @@ function _fmRodape_(c) {
 
 function _fmTabelaComparativa_(c, modelo, despesas) {
   const headers = ['Empreendimento', 'Real 2025', 'Orçado 2026', 'Real 2026', 'Var. ano ant.', 'Var. orçamento'];
+  const colunasComparativas = headers.map(_rrEhCabecalhoComparativo_);
   const rows = modelo.linhas, x = c.m, y0 = c.H * .205, totalW = c.W - c.m * 2;
   const ws = [totalW * .28].concat(Array(5).fill(totalW * .144));
   const hHead = c.H * .095, h = Math.min(c.H * .075, c.H * .66 / (rows.length + 1));
   let xx = x;
-  headers.forEach((v, i) => { _rrCelula_(c.slide, xx, y0, ws[i], hHead, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, y0, ws[i], hHead, v, { fs: c.W * .011, bold: true, cor: '#FFFFFF' }); xx += ws[i]; });
+  headers.forEach((v, i) => { _rrCelula_(c.slide, xx, y0, ws[i], hHead, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, y0, ws[i], hHead, _rrFormatarCabecalhoTabela_(v), { fs: c.W * .011, bold: true, cor: '#FFFFFF' }); xx += ws[i]; });
   rows.forEach((r, ri) => {
     const vals = [r.nome, r.anterior, r.orcado, r.real, r.varAnterior.texto, r.varOrcado.texto]; xx = x;
     vals.forEach((v, i) => {
-      let bg = ri % 2 ? '#F1F5F9' : '#FFFFFF', cor = c.DS.colors.textMain;
-      if (i >= 4 && (i === 4 ? r.varAnterior.valor : r.varOrcado.valor) !== null) {
-        const variacao = i === 4 ? r.varAnterior.valor : r.varOrcado.valor;
-        const favoravel = despesas ? variacao < 0 : variacao > 0;
-        bg = favoravel ? '#DCFCE7' : (variacao === 0 ? bg : '#FEE2E2'); cor = favoravel ? '#047857' : (variacao === 0 ? cor : '#B91C1C');
-      }
+      const bg = ri % 2 ? '#F1F5F9' : '#FFFFFF';
+      const valorComparativo = i === 4 ? r.varAnterior.valor : (i === 5 ? r.varOrcado.valor : null);
+      const cor = colunasComparativas[i]
+        ? _rrCorValorComparativo_(valorComparativo, c.DS.colors.textMain, false)
+        : c.DS.colors.textMain;
       _rrCelula_(c.slide, xx, y0 + hHead + ri * h, ws[i], h, bg);
       _rrUmaLinha_(c.slide, xx + (i === 0 ? 4 : 0), y0 + hHead + ri * h, ws[i] - (i === 0 ? 4 : 0), h, v,
         { fs: c.W * .011, bold: i === 0 || i >= 4, cor: cor, align: i === 0 ? 'L' : 'C' }); xx += ws[i];
