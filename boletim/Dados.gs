@@ -303,6 +303,11 @@ function _bolLerBase_(nomeAba) {
         sla         : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
         responsaveis: cResp   >= 0 ? String(data[r][cResp]   || '').trim() : '',
         descricao   : cDesc   >= 0 ? _limparDescricaoChecklist_(String(data[r][cDesc] || '').trim()) : '',
+        // A descrição BRUTA importa: a equipe da preventiva sai do prefixo do
+        // checklist ("CHECKLIST - PROPRIEDADES | ..."), que _limparDescricaoChecklist_
+        // remove justamente por ser metadado. Sem guardar o bruto, a regra de
+        // equipe olharia um texto de onde a palavra já foi tirada.
+        descricaoBruta: cDesc >= 0 ? String(data[r][cDesc] || '').trim() : '',
         prioridade  : _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
         area        : cArea   >= 0 ? String(data[r][cArea]   || '').trim() : '',
         equipamento : cEquip  >= 0 ? String(data[r][cEquip]  || '').trim() : '',
@@ -709,6 +714,176 @@ function obterComposicaoBacklogBoletim_(n) {
 
   linhas.forEach(function (l) { l.pct = Math.round(l.val / total * 100); });
   return linhas;
+}
+
+
+// ==========================================
+// PREVENTIVAS (slide 06)
+// ==========================================
+
+// Quantas semanas o gráfico Agendadas x Realizadas mostra.
+const BOL_PREV_SEMANAS = 8;
+
+/**
+ * Equipe de uma rotina preventiva.
+ *
+ * A BD-PREVENTIVAS não tem coluna de Responsáveis nem de Equipe — e numa
+ * rotina ainda aberta o "Fechado por" está vazio por definição. Então a ordem
+ * é: usa Responsáveis SE a base ganhar a coluna um dia (informação direta
+ * manda), senão o Centro de Custos para o Hangar, senão o nome da rotina.
+ *
+ * A palavra é procurada na descrição BRUTA, porque costuma estar no prefixo do
+ * checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove.
+ */
+function _bolEquipePreventiva_(item) {
+  const porResp = _resolverEquipeResponsaveis_(item.responsaveis);
+  if (porResp) return porResp;
+  if (_bolNoEscopo_(item.cc, ['HANGAR VIP'])) return 'OPERACAO';
+  const txt = _histNorm_(item.descricaoBruta || item.descricao);
+  return txt.indexOf('propriedades') >= 0 ? 'PROPERTY' : 'FACILITIES';
+}
+
+/**
+ * As N últimas semanas ISO COMPLETAS, da mais antiga para a mais recente.
+ * Cada uma: { ini, fim, label } — `fim` é exclusivo, `label` é o DOMINGO em
+ * DD/MM, que é como o eixo do slide sempre mostrou.
+ *
+ * COMPLETAS de propósito: a semana corrente ainda está enchendo, e uma barra
+ * de "realizadas" pela metade ao lado de sete semanas inteiras parece queda
+ * de produtividade quando é só terça-feira.
+ */
+function _bolSemanasBoletim_(n) {
+  n = n || BOL_PREV_SEMANAS;
+  const hoje = _bolHojeUTC_();
+  const estaSemana = _bolJanelaSemana_(new Date(hoje.getTime()));
+  const semanas = [];
+  for (let k = n; k >= 1; k--) {
+    const ini = new Date(estaSemana.ini.getTime() - k * 7 * 864e5);
+    const fim = new Date(ini.getTime() + 7 * 864e5);
+    const domingo = new Date(fim.getTime() - 864e5);
+    semanas.push({
+      ini: ini, fim: fim,
+      label: String(domingo.getUTCDate()).padStart(2, '0') + '/' +
+             String(domingo.getUTCMonth() + 1).padStart(2, '0')
+    });
+  }
+  return semanas;
+}
+
+// SLA de um conjunto de rotinas: cumpridos ÷ (cumpridos + não cumpridos).
+// "Sem SLA" fica FORA das duas pontas — está no denominador só quem tinha
+// prazo para cumprir. Ver _slaClasse_ para a armadilha do "Não cumprido".
+function _bolSla_(itens) {
+  let cumpridos = 0, nao = 0, sem = 0, desconhecido = 0;
+  itens.forEach(function (it) {
+    const c = _slaClasse_(it.sla);
+    if (c === 'CUMPRIDO') cumpridos++;
+    else if (c === 'NAO')  nao++;
+    else if (c === 'SEM')  sem++;
+    else desconhecido++;
+  });
+  const base = cumpridos + nao;
+  return {
+    cumpridos: cumpridos, nao: nao, sem: sem, desconhecido: desconhecido,
+    base: base,
+    pct: base > 0 ? (cumpridos / base) * 100 : null
+  };
+}
+
+/**
+ * Dados do slide 06 (Manutenção Preventiva), da BD - PREVENTIVAS.
+ *
+ * Devolve { sla: {GERAL, FACILITIES, PROPERTY, OPERACAO}, semanas: [...] } ou
+ * null se a base não responder.
+ *
+ * DUAS DEFINIÇÕES QUE VALE SABER:
+ *
+ * · AGENDADAS na semana = rotinas com data de agendamento dentro dela.
+ *   REALIZADAS na semana = rotinas FECHADAS dentro dela, tenham sido agendadas
+ *   quando for. São entrada e saída, não a mesma coisa contada duas vezes —
+ *   é por isso que realizadas pode passar agendadas numa semana de recuperar
+ *   atraso, como o slide já mostrava.
+ *
+ * · O SLA sai das rotinas FECHADAS na MESMA janela do gráfico. Um indicador
+ *   só é comparável se a janela dele for a mesma que está desenhada ao lado —
+ *   o Logger mostra o mesmo cálculo no mês e no ano para conferência.
+ */
+function obterPreventivasBoletim_(filtroCC, nSemanas) {
+  const todos = _bolLerBase_(BD_ABA_PREVENTIVAS);
+  if (!todos.length) return null;
+  if (!todos.some(function (it) { return it.dtReporte; })) {
+    Logger.log('BD-PREVENTIVAS: linhas sem data de agendamento legível — o slide 06 ' +
+               'fica com a fonte antiga.');
+    return null;
+  }
+
+  const itens = todos.filter(function (it) { return _bolNoEscopo_(it.cc, filtroCC); });
+  if (filtroCC && filtroCC.length && !itens.length) {
+    Logger.log('⚠️ BD-PREVENTIVAS: nenhuma rotina em [' + filtroCC.join(', ') + ']. ' +
+               'Centros de Custo na base: ' +
+               Object.keys(todos.reduce(function (a, it) { a[it.cc] = 1; return a; }, {})).join(' | ') +
+               ' — o slide fica com a fonte antiga.');
+    return null;
+  }
+
+  const semanas = _bolSemanasBoletim_(nSemanas);
+  const janela = { ini: semanas[0].ini, fim: semanas[semanas.length - 1].fim };
+
+  const linhas = semanas.map(function (s) {
+    let agendadas = 0, realizadas = 0;
+    itens.forEach(function (it) {
+      if (_bolDentro_(it.dtReporte, s)) agendadas++;
+      if (_bdChamadoFechado_(it.estado, it.dtFechado) && _bolDentro_(it.dtFechado, s)) realizadas++;
+    });
+    return { label: s.label, agendadas: agendadas, realizadas: realizadas };
+  });
+
+  // SLA das rotinas fechadas na janela do gráfico, por equipe.
+  const fechadasNaJanela = itens.filter(function (it) {
+    return _bdChamadoFechado_(it.estado, it.dtFechado) && _bolDentro_(it.dtFechado, janela);
+  });
+  const porEquipe = { FACILITIES: [], PROPERTY: [], OPERACAO: [] };
+  fechadasNaJanela.forEach(function (it) {
+    const eq = _bolEquipePreventiva_(it);
+    (porEquipe[eq] || porEquipe.FACILITIES).push(it);
+  });
+
+  const sla = { GERAL: _bolSla_(fechadasNaJanela) };
+  Object.keys(porEquipe).forEach(function (eq) { sla[eq] = _bolSla_(porEquipe[eq]); });
+
+  const fmt = function (nome, o) {
+    return nome + '=' + (o.pct === null ? 'sem base' : o.pct.toFixed(1) + '%') +
+           ' (' + o.cumpridos + '/' + o.base + (o.sem ? ', ' + o.sem + ' sem SLA' : '') + ')';
+  };
+  Logger.log('Slide 06: fonte = BD-PREVENTIVAS. ' + fechadasNaJanela.length +
+             ' rotina(s) fechada(s) nas ' + semanas.length + ' semanas (' +
+             semanas[0].label + ' a ' + semanas[semanas.length - 1].label + '). ' +
+             ['GERAL', 'FACILITIES', 'PROPERTY', 'OPERACAO']
+               .map(function (k) { return fmt(k, sla[k]); }).join(' | '));
+
+  if (sla.GERAL.desconhecido) {
+    Logger.log('  ⚠ ' + sla.GERAL.desconhecido + ' rotina(s) com valor de SLA fora do ' +
+               'esperado (nem cumprido, nem não cumprido, nem sem SLA). Ficaram fora ' +
+               'da conta — se forem muitas, o valor da coluna mudou.');
+  }
+
+  // A MESMA conta em outras janelas, só para conferência: é assim que se
+  // descobre qual janela o número digitado na planilha usava.
+  const outra = function (nome, filtro) {
+    const o = _bolSla_(itens.filter(filtro));
+    Logger.log('  · ' + nome + ': ' + fmt('SLA geral', o));
+  };
+  const hoje = _bolHojeUTC_();
+  const iniMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
+  const iniAno = new Date(Date.UTC(hoje.getUTCFullYear(), 0, 1));
+  outra('mês corrente', function (it) {
+    return _bdChamadoFechado_(it.estado, it.dtFechado) && it.dtFechado >= iniMes;
+  });
+  outra('ano corrente', function (it) {
+    return _bdChamadoFechado_(it.estado, it.dtFechado) && it.dtFechado >= iniAno;
+  });
+
+  return { sla: sla, semanas: linhas, janela: janela };
 }
 
 

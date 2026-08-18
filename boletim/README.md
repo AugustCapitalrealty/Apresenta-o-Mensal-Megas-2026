@@ -211,6 +211,50 @@ cartão**. A seção semanal da aba dos Megas só entra quando a base não
 respondeu — misturar as duas faria o cartão dizer um número e a seta comparar
 outro, que é a lição 2 do CLAUDE.md.
 
+### Slide 06 — Manutenção Preventiva
+
+Sai da aba **`BD - PREVENTIVAS`** da mesma planilha, com o mesmo recorte por
+Centro de Custos.
+
+| No slide | Como é calculado |
+|---|---|
+| Cartões de SLA | `cumpridos ÷ (cumpridos + não cumpridos)`. **"Sem SLA" fica fora das duas pontas** — no denominador só entra quem tinha prazo a cumprir |
+| Agendadas na semana | rotinas com data de agendamento dentro dela |
+| Realizadas na semana | rotinas **fechadas** dentro dela, tenham sido agendadas quando for |
+
+Agendadas e realizadas são **entrada e saída**, não a mesma coisa contada duas
+vezes — por isso realizadas pode passar agendadas numa semana de recuperar
+atraso, como o slide já mostrava.
+
+O eixo são as **8 últimas semanas ISO completas**, rotuladas pelo domingo.
+Completas de propósito: a semana corrente ainda está enchendo, e meia barra de
+"realizadas" ao lado de sete inteiras parece queda de produtividade quando é
+só terça-feira.
+
+**O SLA usa a mesma janela do gráfico** (as rotinas fechadas nessas 8 semanas).
+Um indicador só é comparável se a janela dele for a mesma que está desenhada
+ao lado — antes o SLA vinha de uma célula acumulada sabe-se lá desde quando. O
+`Logger` mostra o mesmo cálculo no mês e no ano a cada execução, para conferir
+qual janela a planilha usava.
+
+Equipe sem nenhuma rotina fechada na janela mostra **`N/D`, não `0%`** — 0%
+diria "não cumpriu nada", quando o certo é "não houve o que cumprir".
+
+#### Como a equipe da preventiva é decidida
+
+A `BD - PREVENTIVAS` não tem coluna de Responsáveis nem de Equipe, e numa
+rotina ainda aberta o "Fechado por" está vazio por definição. A ordem é:
+
+1. **Responsáveis**, se a base ganhar a coluna um dia — informação direta manda;
+2. **Centro de Custos `HANGAR VIP`** → Operação Hangar;
+3. **Nome da rotina**: contém "propriedades" → Property; o resto é Facilities.
+
+A palavra é procurada na descrição **bruta**, porque costuma estar no prefixo
+do checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove antes da
+tela. É a mesma regra do `gestao-tvs`.
+
+### O resto
+
 Os demais slides ainda saem das abas com o número já somado à mão. Migrá-los
 é o resto do plano.
 

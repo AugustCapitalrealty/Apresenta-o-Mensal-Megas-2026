@@ -397,6 +397,53 @@ ok('subtítulo identifica o Hangar', temTexto(/Hangar VIP$/));
 
 
 // ════════════════════════════════════════════════════════════════════════
+console.log('\n== Preventiva: os três escopos leem da BD - PREVENTIVAS ==');
+let filtrosPrev = [];
+global.obterPreventivasBoletim_ = (filtro) => {
+  filtrosPrev.push(filtro);
+  return {
+    sla: {
+      GERAL:      { pct: 87.37, base: 100, cumpridos: 87, nao: 13, sem: 4, desconhecido: 0 },
+      FACILITIES: { pct: 97.1,  base: 70,  cumpridos: 68, nao: 2,  sem: 1, desconhecido: 0 },
+      PROPERTY:   { pct: 78.0,  base: 20,  cumpridos: 16, nao: 4,  sem: 0, desconhecido: 0 },
+      OPERACAO:   { pct: null,  base: 0,   cumpridos: 0,  nao: 0,  sem: 3, desconhecido: 0 }
+    },
+    semanas: ['28/06','05/07','12/07','19/07','26/07','02/08','09/08','16/08']
+      .map((l, i) => ({ label: l, agendadas: 130 + i, realizadas: 140 + i }))
+  };
+};
+
+reset(); filtrosPrev = [];
+fixturePreventiva({ datas: 33, agendadas: 37, realizadas: 43 },
+                  { BM9: '1%', BM10: '2%', BM11: '3%', BM12: '4%' });
+gerarSlide06_Preventivas();
+ok('COMPLETO pede a carteira inteira', filtrosPrev[0] === null, JSON.stringify(filtrosPrev));
+ok('SLA GERAL vem da base (87,4%), não de BM12 (4%)', temTexto(/^SLA GERAL\n87,4%$/),
+   textos().find(t => /SLA GERAL/.test(t)));
+ok('FACILITIES vem da base', temTexto(/^FACILITIES\n97,1%$/));
+// Equipe sem nada fechado na janela não vira 0% — 0% diria "não cumpriu
+// nada", quando o certo é "não houve o que cumprir".
+ok('equipe sem base de SLA mostra N/D, não 0%', temTexto(/^OPERAÇÃO HANGAR\nN\/D$/),
+   textos().find(t => /OPERAÇÃO/.test(t)));
+ok('o eixo passa a ser o das semanas da base', temTexto(/^16\/08$/) && temTexto(/^28\/06$/));
+ok('e as barras também', temTexto(/^137$/) && temTexto(/^147$/), textos().join(' | '));
+
+reset(); filtrosPrev = [];
+fixturePreventiva({ datas: 23, agendadas: 39, realizadas: 45 }, { BP8: '1%' });
+gerarSlide06_Preventivas_Facilities();
+ok('FACILITIES pede os 3 Megas',
+   JSON.stringify(filtrosPrev[0]) === '["MEGA CURITIBA","MEGA ITAJAI","MEGA ESTEIO"]',
+   JSON.stringify(filtrosPrev));
+
+reset(); filtrosPrev = [];
+fixturePreventiva({ datas: 24, agendadas: 28, realizadas: 26 }, { BO9: '1%' });
+gerarSlide06_Preventivas_Hangar();
+ok('HANGAR pede o Hangar VIP', JSON.stringify(filtrosPrev[0]) === '["HANGAR VIP"]',
+   JSON.stringify(filtrosPrev));
+
+global.obterPreventivasBoletim_ = () => null;
+
+// ════════════════════════════════════════════════════════════════════════
 console.log('\n== Preventiva: a régua dos cartões sai da quantidade ==');
 // 4 cartões no completo, 3 nos outros — a largura tem que fechar a linha nos
 // dois casos, sem sobra nem estouro. Antes o divisor era escrito na mão em

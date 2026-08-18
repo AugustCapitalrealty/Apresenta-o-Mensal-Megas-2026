@@ -29,34 +29,37 @@ const BOL_PREVENTIVAS = {
   COMPLETO: {
     aba: null,
     subtitulo: 'SLA por Área • Agendadas x Realizadas',
+    escopoCC: null,                  // carteira inteira
     linhas: { datas: 33, agendadas: 37, realizadas: 43 },
     cards: [
-      { titulo: 'SLA GERAL',       celula: 'BM12', cor: 'brandDark',  principal: true },
-      { titulo: 'FACILITIES',      celula: 'BM9',  cor: 'brandSoft'  },
-      { titulo: 'PROPERTY',        celula: 'BM10', cor: 'brandMed'   },
-      { titulo: 'OPERAÇÃO HANGAR', celula: 'BM11', cor: 'brandLight' }
+      { titulo: 'SLA GERAL',       fonte: 'GERAL',      celula: 'BM12', cor: 'brandDark',  principal: true },
+      { titulo: 'FACILITIES',      fonte: 'FACILITIES', celula: 'BM9',  cor: 'brandSoft'  },
+      { titulo: 'PROPERTY',        fonte: 'PROPERTY',   celula: 'BM10', cor: 'brandMed'   },
+      { titulo: 'OPERAÇÃO HANGAR', fonte: 'OPERACAO',   celula: 'BM11', cor: 'brandLight' }
     ]
   },
 
   FACILITIES: {
     aba: 'megas QUADRO COMPARATIVO',
     subtitulo: 'SLA por Área • Agendadas x Realizadas',
+    escopoCC: ['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO'],
     linhas: { datas: 23, agendadas: 39, realizadas: 45 },
     cards: [
-      { titulo: 'SLA GERAL',        celula: 'BP10', cor: 'brandDark', principal: true },
-      { titulo: 'SLA FACILITIES',   celula: 'BP8',  cor: 'brandSoft' },
-      { titulo: 'SLA PROPRIEDADES', celula: 'BP9',  cor: 'brandMed'  }
+      { titulo: 'SLA GERAL',        fonte: 'GERAL',      celula: 'BP10', cor: 'brandDark', principal: true },
+      { titulo: 'SLA FACILITIES',   fonte: 'FACILITIES', celula: 'BP8',  cor: 'brandSoft' },
+      { titulo: 'SLA PROPRIEDADES', fonte: 'PROPERTY',   celula: 'BP9',  cor: 'brandMed'  }
     ]
   },
 
   HANGAR: {
     aba: 'hangar QUADRO COMPARATIVO',
     subtitulo: 'SLA por Área • Agendadas x Realizadas — Hangar VIP',
+    escopoCC: ['HANGAR VIP'],
     linhas: { datas: 24, agendadas: 28, realizadas: 26 },
     cards: [
-      { titulo: 'SLA GERAL',          celula: 'BO11', cor: 'brandDark',  principal: true },
-      { titulo: 'SLA PROPERTY',       celula: 'BO9',  cor: 'brandMed'   },
-      { titulo: 'SLA OP. HANGAR VIP', celula: 'BO10', cor: 'brandLight' }
+      { titulo: 'SLA GERAL',          fonte: 'GERAL',    celula: 'BO11', cor: 'brandDark',  principal: true },
+      { titulo: 'SLA PROPERTY',       fonte: 'PROPERTY', celula: 'BO9',  cor: 'brandMed'   },
+      { titulo: 'SLA OP. HANGAR VIP', fonte: 'OPERACAO', celula: 'BO10', cor: 'brandLight' }
     ]
   }
 };
@@ -157,6 +160,29 @@ function _bolPreventivas_(chave) {
     agendadas  = [0,0,0,0,0,0,0,0];
     realizadas = [0,0,0,0,0,0,0,0];
     timeline   = ['S1','S2','S3','S4','S5','S6','S7','S8'];
+  }
+
+  // --- FONTE PREFERENCIAL: BASE BRUTA (Dados.gs) ---------------------------
+  // Os cartões de SLA e o gráfico saem da BD - PREVENTIVAS, recortados pelo
+  // Centro de Custos do escopo. Ganho principal: SLA e barras passam a sair da
+  // MESMA janela e da MESMA base — antes o SLA vinha de uma célula acumulada
+  // sabe-se lá desde quando, ao lado de um gráfico de 8 semanas.
+  const p = (typeof obterPreventivasBoletim_ === 'function')
+    ? obterPreventivasBoletim_(cfg.escopoCC, 8) : null;
+  if (p) {
+    agendadas  = p.semanas.map(function (w) { return w.agendadas; });
+    realizadas = p.semanas.map(function (w) { return w.realizadas; });
+    timeline   = p.semanas.map(function (w) { return w.label; });
+    cfg.cards.forEach(function (c, i) {
+      const o = p.sla[c.fonte];
+      // Equipe sem nenhuma rotina fechada na janela não vira 0% — 0% diria
+      // "não cumpriu nada", quando o certo é "não houve o que cumprir".
+      slaVals[i] = (o && o.pct !== null)
+        ? o.pct.toFixed(1).replace('.', ',') + '%'
+        : 'N/D';
+    });
+  } else {
+    Logger.log('Slide 06 (' + chave + '): base bruta indisponível — usando os valores digitados na planilha.');
   }
 
   // =========================================================

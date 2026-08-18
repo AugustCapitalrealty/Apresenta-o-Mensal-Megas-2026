@@ -285,6 +285,94 @@ ok('OUTRAS junta as 2 sobrando', comp[4].val === 2, comp[4].val);
 ok('e a soma continua sendo o backlog inteiro',
    comp.reduce((a, c) => a + c.val, 0) === 6);
 
+console.log('\n== Preventivas: as 8 semanas do eixo ==');
+// O eixo do slide sempre mostrou DOMINGOS (28/06 ... 16/08), e só de semanas
+// COMPLETAS: a semana corrente ainda está enchendo, e meia barra de
+// "realizadas" ao lado de sete inteiras parece queda de produtividade quando
+// é só terça-feira.
+const sems = _bolSemanasBoletim_(8);
+ok('são 8', sems.length === 8);
+ok('cada uma começa numa segunda', sems.every(w => w.ini.getUTCDay() === 1),
+   sems.map(w => w.ini.toISOString().slice(0, 10)).join(' '));
+ok('e dura 7 dias', sems.every(w => (w.fim - w.ini) === 7 * 864e5));
+ok('em ordem, da mais antiga para a mais recente',
+   sems.every((w, i) => i === 0 || w.ini > sems[i - 1].ini));
+ok('a última JÁ ACABOU (não inclui hoje)', sems[7].fim <= hoje,
+   'fim=' + sems[7].fim.toISOString().slice(0, 10) + ' hoje=' + hoje.toISOString().slice(0, 10));
+ok('o rótulo é o domingo da semana, em DD/MM',
+   /^\d{2}\/\d{2}$/.test(sems[7].label) &&
+   sems[7].label === String(new Date(sems[7].fim - 864e5).getUTCDate()).padStart(2, '0') + '/' +
+                    String(new Date(sems[7].fim - 864e5).getUTCMonth() + 1).padStart(2, '0'),
+   sems[7].label);
+ok('as 8 são contíguas, sem buraco',
+   sems.every((w, i) => i === 0 || +w.ini === +sems[i - 1].fim));
+
+console.log('\n== Preventivas: SLA e o gráfico ==');
+// Regra do SLA: cumpridos ÷ (cumpridos + não cumpridos). "Sem SLA" fica FORA
+// das duas pontas — no denominador só entra quem tinha prazo a cumprir.
+const semAtual = sems[7];
+const dentroSem = new Date(semAtual.ini.getTime() + 2 * 864e5);
+const HDRP = ['Id', 'Centro de Custos', 'Estado', 'Descrição', 'Prioridade',
+              'Responsáveis', 'SLA', 'Área', 'Data agendamento', 'Fechada em'];
+const P = (cc, est, desc, sla, agend, fech) =>
+  ['1', cc, est, desc, 'Normal', '', sla, 'Elétrica', agend, fech || ''];
+
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD - PREVENTIVAS': [HDRP,
+  P('MEGA CURITIBA', 'Fechada', 'CHECKLIST - FACILITIES | Bombas',      'Cumprido',     iso(dentroSem), iso(dentroSem)),
+  P('MEGA CURITIBA', 'Fechada', 'CHECKLIST - FACILITIES | Ar',          'Não cumprido', iso(dentroSem), iso(dentroSem)),
+  P('MEGA ITAJAÍ',   'Fechada', 'CHECKLIST - PROPRIEDADES | Fachada',   'Cumprido',     iso(dentroSem), iso(dentroSem)),
+  P('HANGAR VIP',    'Fechada', 'CHECKLIST - Pista',                    'Sem SLA',      iso(dentroSem), iso(dentroSem)),
+  P('MEGA ESTEIO',   'Atrasada','CHECKLIST - FACILITIES | Telhado',     '',             iso(dentroSem))
+] };
+const pv = obterPreventivasBoletim_(null, 8);
+ok('GERAL = 2 de 3 (o "Sem SLA" sai do denominador)',
+   Math.round(pv.sla.GERAL.pct) === 67 && pv.sla.GERAL.base === 3,
+   JSON.stringify(pv.sla.GERAL));
+ok('"Sem SLA" é contado à parte, não some', pv.sla.GERAL.sem === 1);
+ok('FACILITIES = 1 de 2 = 50%', pv.sla.FACILITIES.pct === 50, JSON.stringify(pv.sla.FACILITIES));
+// Equipe pelo NOME da rotina, na descrição bruta — a limpeza tira o prefixo
+// "CHECKLIST - PROPRIEDADES |" justamente por ser metadado.
+ok('"PROPRIEDADES" no nome manda para Property', pv.sla.PROPERTY.base === 1,
+   JSON.stringify(pv.sla.PROPERTY));
+// Hangar não sai do nome: sai do Centro de Custos.
+ok('HANGAR VIP vira OPERACAO pelo Centro de Custos',
+   pv.sla.OPERACAO.sem === 1 && pv.sla.OPERACAO.base === 0,
+   JSON.stringify(pv.sla.OPERACAO));
+ok('equipe sem base de SLA devolve null, não 0%', pv.sla.OPERACAO.pct === null);
+
+const ultima = pv.semanas[7];
+ok('agendadas da última semana = 5', ultima.agendadas === 5, JSON.stringify(ultima));
+ok('realizadas = 4 (a Atrasada não fechou)', ultima.realizadas === 4, JSON.stringify(ultima));
+ok('o gráfico tem 8 colunas', pv.semanas.length === 8);
+ok('e o rótulo da última bate com a semana', ultima.label === sems[7].label);
+ok('o log diz de onde veio e com que janela',
+   logs.some(l => /fonte = BD-PREVENTIVAS/.test(l) && /GERAL=66,7%|GERAL=66\.7%/.test(l)),
+   logs.filter(l => /BD-PREVENTIVAS/.test(l)).join(' | '));
+
+// Recorte por escopo, igual ao das corretivas.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+const pvHang = obterPreventivasBoletim_(['HANGAR VIP'], 8);
+ok('escopo do Hangar pega só a rotina do Hangar', pvHang.semanas[7].agendadas === 1,
+   JSON.stringify(pvHang.semanas[7]));
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+const pvMega = obterPreventivasBoletim_(['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO'], 8);
+ok('escopo dos Megas pega as outras 4', pvMega.semanas[7].agendadas === 4);
+ok('e os dois recortes somam o total',
+   pvHang.semanas[7].agendadas + pvMega.semanas[7].agendadas === 5);
+
+// "Fechada" sem data de fechamento NÃO conta como realizada — mesma regra das
+// corretivas, e é a que já descasou estoque e fluxo nos Megas.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD - PREVENTIVAS': [HDRP,
+  P('MEGA CURITIBA', 'Fechada', 'CHECKLIST - FACILITIES | X', 'Cumprido', iso(dentroSem))
+] };
+const pvSemData = obterPreventivasBoletim_(null, 8);
+ok('"Fechada" sem data de fechamento não vira realizada',
+   pvSemData.semanas[7].realizadas === 0, JSON.stringify(pvSemData.semanas[7]));
+ok('e como nada fechou, o SLA fica sem base (N/D, não 0%)',
+   pvSemData.sla.GERAL.pct === null);
+
 console.log('\n== Zero falso ==');
 Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
 FAKE = { 'BD-CORRETIVAS': [
