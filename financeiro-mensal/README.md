@@ -30,10 +30,11 @@ feito — entra em `02_Dados.gs` conforme os slides forem especificados.
 
 ## Deck de destino
 
-**Ainda não temos o ID.** `DECK_FINANCEIRO_ID` em `01_Config.gs` está vazio —
-assim que a Ester mandar o link do Google Slides, preencha com o ID (trecho
-entre `/d/` e `/edit` da URL). Sem ele, `getDeckMensal_()` lança um erro claro
-em vez de gerar no lugar errado.
+`DECK_FINANCEIRO_ID` em `01_Config.gs`:
+
+```
+https://docs.google.com/presentation/d/10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkOSwQ/edit
+```
 
 ## Estrutura
 
@@ -62,9 +63,10 @@ nunca divergir do conteúdo dos outros slides.
 
 ## Como usar
 
-1. Preencha `DECK_FINANCEIRO_ID` em `01_Config.gs`.
-2. Copie os arquivos `.gs` para o editor do Apps Script do projeto (não há
-   `clasp` — `git push` não publica nada, ver o `CLAUDE.md` da raiz).
+1. Abra a apresentação (link acima) → **Extensões → Apps Script**.
+2. Copie o conteúdo dos arquivos `.gs` desta pasta para o editor (um arquivo
+   `.gs` por arquivo daqui — não há `clasp`, `git push` não publica nada, ver
+   o `CLAUDE.md` da raiz).
 3. Rode `diagnosticarFinanceiro()` para conferir se o deck e a planilha abrem.
 4. Rode `gerarApresentacaoFinanceiro()` (ou só `gerarSlideCapa()` para testar
    a capa isolada).

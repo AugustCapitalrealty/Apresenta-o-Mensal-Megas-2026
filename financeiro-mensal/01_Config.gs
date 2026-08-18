@@ -68,10 +68,9 @@ const FINANCEIRO_SPREADSHEET_ID = '1tBWt4JfBWE7LidnxnwBMXKlGewjZEvuBBE6Z3CP8ibM'
 // ==========================================
 // DECK DE DESTINO
 // ==========================================
-// AINDA NÃO TEMOS O ID do Google Slides desta apresentação — a Ester vai
-// mandar os slides/especificação. Preencha aqui assim que tiver o link
-// (copie só o ID, o trecho entre /d/ e /edit da URL do Slides).
-const DECK_FINANCEIRO_ID = '';
+// Apresentação Mensal do Financeiro:
+// https://docs.google.com/presentation/d/10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkOSwQ/edit
+const DECK_FINANCEIRO_ID = '10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkOSwQ';
 
 function getDeckMensal_() {
   if (!DECK_FINANCEIRO_ID) {
