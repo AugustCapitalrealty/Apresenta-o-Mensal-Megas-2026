@@ -10,6 +10,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `boletim/` | Boletim 2026 | 24 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 9 `.gs` |
+| `financeiro-mensal/` | Apresentação Mensal do Financeiro — **em construção** | 5 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades — **em construção** | 2 `.gs` |
 | `tabelas/` | Apresentações semanais — **5 subprojetos**, um por apresentação (ver [`tabelas/README.md`](tabelas/README.md)) | 6 `.gs` |
 
