@@ -287,6 +287,12 @@ function _bolLerBase_(nomeAba) {
     // CORRETIVAS: "Data de reporte"/"Fechado em" · PREVENTIVAS: "Data agendamento"/"Fechada em"
     const cIni = acha(['data de reporte', 'data agendamento', 'data de agendamento']);
     const cFim = acha(['fechado em', 'fechada em']);
+    // QUEM FECHOU. Na BD - PREVENTIVAS é a coluna K, e é a informação que
+    // faltava: como o SLA só existe para rotina FECHADA, "Fechado por" está
+    // preenchido exatamente nas linhas que contam. Cuidado com "Iniciado por"
+    // e "Pausado por", que são outras colunas — daí o trecho ser 'fechado por'
+    // inteiro, e vir depois de 'fechado em' na busca.
+    const cFechPor = acha(['fechado por', 'fechada por']);
 
     if (cCC < 0) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode diagnosticarBoletim().');
@@ -316,7 +322,8 @@ function _bolLerBase_(nomeAba) {
                         ? String(data[r][cTipoSrv] || '').trim() : '',
         tempoFechar : cTfec   >= 0 ? String(data[r][cTfec]   || '').trim() : '',
         dtReporte   : cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
-        dtFechado   : cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
+        dtFechado   : cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null,
+        fechadoPor  : cFechPor >= 0 ? String(data[r][cFechPor] || '').trim() : ''
       });
     }
     // Diz de que coluna saiu o tipo de serviço. Se um dia a coluna mudar de
@@ -724,23 +731,48 @@ function obterComposicaoBacklogBoletim_(n) {
 // Quantas semanas o gráfico Agendadas x Realizadas mostra.
 const BOL_PREV_SEMANAS = 8;
 
+// Reserva de classificação pelo NOME da rotina, quando quem fechou não é
+// reconhecido. Procurada na descrição BRUTA, porque vive no prefixo do
+// checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove.
+// Acrescentar um prefixo aqui é a forma de corrigir sem mexer no código.
+const BOL_PREV_EQUIPE_NOME = [
+  { equipe: 'PROPERTY',   palavras: ['propriedades'] },
+  { equipe: 'FACILITIES', palavras: ['ronda', 'portaria'] }
+];
+
+const BOL_PREV_EQUIPES = ['FACILITIES', 'PROPERTY', 'OPERACAO'];
+
 /**
  * Equipe de uma rotina preventiva.
  *
- * A BD-PREVENTIVAS não tem coluna de Responsáveis nem de Equipe — e numa
- * rotina ainda aberta o "Fechado por" está vazio por definição. Então a ordem
- * é: usa Responsáveis SE a base ganhar a coluna um dia (informação direta
- * manda), senão o Centro de Custos para o Hangar, senão o nome da rotina.
+ * QUEM FECHOU MANDA. O SLA só existe para rotina fechada, então "Fechado por"
+ * está preenchido exatamente nas linhas que entram na conta — e o mesmo mapa
+ * nome → equipe dos chamados vale aqui. Isso troca adivinhação por dado.
  *
- * A palavra é procurada na descrição BRUTA, porque costuma estar no prefixo do
- * checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove.
+ * A regra anterior olhava só o nome da rotina e mandava 95% das linhas para
+ * Facilities por omissão: Facilities era o DEFAULT, não uma classificação, e
+ * o cartão de Property saía calculado sobre 14 rotinas.
+ *
+ * A ordem depois disso é: Hangar pelo Centro de Custos, depois o prefixo do
+ * checklist, e só então o default.
  */
 function _bolEquipePreventiva_(item) {
+  const porQuemFechou = _resolverEquipeResponsaveis_(item.fechadoPor);
+  if (BOL_PREV_EQUIPES.indexOf(porQuemFechou) >= 0) return porQuemFechou;
+
   const porResp = _resolverEquipeResponsaveis_(item.responsaveis);
-  if (porResp) return porResp;
+  if (BOL_PREV_EQUIPES.indexOf(porResp) >= 0) return porResp;
+
   if (_bolNoEscopo_(item.cc, ['HANGAR VIP'])) return 'OPERACAO';
+
   const txt = _histNorm_(item.descricaoBruta || item.descricao);
-  return txt.indexOf('propriedades') >= 0 ? 'PROPERTY' : 'FACILITIES';
+  for (let i = 0; i < BOL_PREV_EQUIPE_NOME.length; i++) {
+    const r = BOL_PREV_EQUIPE_NOME[i];
+    for (let k = 0; k < r.palavras.length; k++) {
+      if (txt.indexOf(r.palavras[k]) >= 0) return r.equipe;
+    }
+  }
+  return 'FACILITIES';
 }
 
 /**
@@ -1122,15 +1154,24 @@ function diagnosticarEquipePreventiva() {
              ' fechada(s) na janela do slide (' + semanas[0].label + ' a ' +
              semanas[semanas.length - 1].label + ').');
 
-  // 1. Por que cada uma caiu onde caiu.
+  // 1. Por que cada uma caiu onde caiu. QUEM FECHOU manda primeiro: o SLA só
+  // existe para rotina fechada, então "Fechado por" está preenchido
+  // exatamente nas linhas que entram na conta.
   const motivo = {};
   fechadas.forEach(function (it) {
     let m;
-    if (_resolverEquipeResponsaveis_(it.responsaveis))      m = 'Responsáveis (coluna existe!)';
-    else if (_bolNoEscopo_(it.cc, ['HANGAR VIP']))          m = 'Centro de Custos = HANGAR VIP → OPERACAO';
-    else if (_histNorm_(it.descricaoBruta || it.descricao).indexOf('propriedades') >= 0)
-                                                            m = 'nome contém "propriedades" → PROPERTY';
-    else                                                    m = 'NENHUMA regra casou → cai em FACILITIES';
+    const porQuemFechou = _resolverEquipeResponsaveis_(it.fechadoPor);
+    const porResp       = _resolverEquipeResponsaveis_(it.responsaveis);
+    if (BOL_PREV_EQUIPES.indexOf(porQuemFechou) >= 0)      m = 'Fechado por (' + porQuemFechou + ')';
+    else if (BOL_PREV_EQUIPES.indexOf(porResp) >= 0)       m = 'Responsáveis (' + porResp + ')';
+    else if (_bolNoEscopo_(it.cc, ['HANGAR VIP']))         m = 'Centro de Custos = HANGAR VIP → OPERACAO';
+    else {
+      const txt = _histNorm_(it.descricaoBruta || it.descricao);
+      const bateu = BOL_PREV_EQUIPE_NOME.filter(function (r) {
+        return r.palavras.some(function (p) { return txt.indexOf(p) >= 0; });
+      })[0];
+      m = bateu ? 'nome da rotina (' + bateu.equipe + ')' : 'NENHUMA regra casou → default FACILITIES';
+    }
     motivo[m] = (motivo[m] || 0) + 1;
   });
   Logger.log('  Por que cada uma caiu onde caiu:');
@@ -1140,16 +1181,39 @@ function diagnosticarEquipePreventiva() {
       Logger.log('    · ' + motivo[k] + ' (' + pct + '%) — ' + k);
     });
 
-  // 2. O TEXTO de onde a regra tenta ler. É isto que decide a regra certa.
-  const semRegra = fechadas.filter(function (it) {
-    return !_resolverEquipeResponsaveis_(it.responsaveis) &&
-           !_bolNoEscopo_(it.cc, ['HANGAR VIP']) &&
-           _histNorm_(it.descricaoBruta || it.descricao).indexOf('propriedades') < 0;
+  // 2. Valores de "Fechado por" que NÃO bateram com o mapa nome→equipe — é a
+  // lista que diz quem falta acrescentar em _RESPONSAVEL_EQUIPE_.
+  const fechouDesconhecido = {};
+  fechadas.forEach(function (it) {
+    if (!it.fechadoPor) return;
+    if (_resolverEquipeResponsaveis_(it.fechadoPor)) return;
+    const k = it.fechadoPor;
+    fechouDesconhecido[k] = (fechouDesconhecido[k] || 0) + 1;
   });
-  Logger.log('  Amostra do nome BRUTO das que não casaram com nada (as que viram Facilities):');
+  const semFecho = fechadas.filter(function (it) { return !it.fechadoPor; }).length;
+  Logger.log('  "Fechado por" vazio: ' + semFecho + ' de ' + fechadas.length + '.');
+  const nomesDesc = Object.keys(fechouDesconhecido);
+  if (nomesDesc.length) {
+    Logger.log('  "Fechado por" preenchido mas FORA do mapa de equipes (' +
+               nomesDesc.length + ' nome(s) — acrescente em _RESPONSAVEL_EQUIPE_ se for gente de verdade):');
+    nomesDesc.sort(function (a, b) { return fechouDesconhecido[b] - fechouDesconhecido[a]; })
+      .slice(0, 15).forEach(function (n) {
+        Logger.log('    · ' + n + ' (' + fechouDesconhecido[n] + 'x)');
+      });
+  }
+
+  // 3. O TEXTO de onde a regra pelo nome tenta ler, só para quem chegou até
+  // ali (fechado por vazio/desconhecido, fora do Hangar).
+  const semRegra = fechadas.filter(function (it) {
+    return !(BOL_PREV_EQUIPES.indexOf(_resolverEquipeResponsaveis_(it.fechadoPor)) >= 0) &&
+           !(BOL_PREV_EQUIPES.indexOf(_resolverEquipeResponsaveis_(it.responsaveis)) >= 0) &&
+           !_bolNoEscopo_(it.cc, ['HANGAR VIP']);
+  });
+  Logger.log('  Amostra do nome BRUTO das que dependem da regra por nome (' +
+             semRegra.length + ' no total):');
   semRegra.slice(0, 12).forEach(function (it) {
     const t = String(it.descricaoBruta || it.descricao || '(vazio)').slice(0, 110);
-    Logger.log('    · [' + it.cc + '] ' + t);
+    Logger.log('    · [' + it.cc + '] fechadoPor="' + (it.fechadoPor || '(vazio)') + '" — ' + t);
   });
 
   // 3. Os prefixos mais comuns — se houver um "CHECKLIST - <ALGO> |", é dali

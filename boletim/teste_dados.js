@@ -313,9 +313,9 @@ console.log('\n== Preventivas: SLA e o gráfico ==');
 const semAtual = sems[7];
 const dentroSem = new Date(semAtual.ini.getTime() + 2 * 864e5);
 const HDRP = ['Id', 'Centro de Custos', 'Estado', 'Descrição', 'Prioridade',
-              'Responsáveis', 'SLA', 'Área', 'Data agendamento', 'Fechada em'];
-const P = (cc, est, desc, sla, agend, fech) =>
-  ['1', cc, est, desc, 'Normal', '', sla, 'Elétrica', agend, fech || ''];
+              'Responsáveis', 'SLA', 'Área', 'Data agendamento', 'Fechada em', 'Fechado por'];
+const P = (cc, est, desc, sla, agend, fech, fechadoPor) =>
+  ['1', cc, est, desc, 'Normal', '', sla, 'Elétrica', agend, fech || '', fechadoPor || ''];
 
 Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
 FAKE = { 'BD - PREVENTIVAS': [HDRP,
@@ -372,6 +372,44 @@ ok('"Fechada" sem data de fechamento não vira realizada',
    pvSemData.semanas[7].realizadas === 0, JSON.stringify(pvSemData.semanas[7]));
 ok('e como nada fechou, o SLA fica sem base (N/D, não 0%)',
    pvSemData.sla.GERAL.pct === null);
+
+console.log('\n== Preventivas: QUEM FECHOU manda na equipe ==');
+// O SLA só existe para rotina FECHADA, então "Fechado por" está preenchido
+// exatamente nas linhas que entram na conta — é informação melhor que
+// adivinhar pelo nome, e usa o MESMO mapa nome→equipe dos chamados.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD - PREVENTIVAS': [HDRP,
+  // nome diz "FACILITIES" mas quem fechou é do Property — Property vence
+  P('MEGA CURITIBA', 'Fechada', 'CHECKLIST - FACILITIES | Bombas', 'Cumprido',
+    iso(dentroSem), iso(dentroSem), 'Ivan Fuscolin Neto'),
+  // nome diz "RONDA" (viraria Facilities pela regra de nome) mas fechado por
+  // alguém do Hangar — Operação vence
+  P('MEGA ESTEIO', 'Fechada', 'CHECKLIST - RONDA | Central SDAI', 'Cumprido',
+    iso(dentroSem), iso(dentroSem), 'Gerente Hangar')
+] };
+const pvFecho = obterPreventivasBoletim_(null, 8);
+ok('quem fechou (Property) vence o nome (Facilities)', pvFecho.sla.PROPERTY.base === 1,
+   JSON.stringify(pvFecho.sla.PROPERTY));
+ok('e não conta em Facilities', pvFecho.sla.FACILITIES.base === 0,
+   JSON.stringify(pvFecho.sla.FACILITIES));
+ok('quem fechou (Hangar) vence o nome "RONDA"', pvFecho.sla.OPERACAO.base === 1,
+   JSON.stringify(pvFecho.sla.OPERACAO));
+
+console.log('\n== Preventivas: RONDA e PORTARIA no nome viram FACILITIES ==');
+// Achado no diagnóstico real: RONDA é o prefixo mais comum (479 de 1136) e
+// caía inteiro no default por não ter "propriedades" no nome. Sem "Fechado
+// por" (rotina ainda sem essa coluna preenchida na amostra), a regra por
+// nome precisa reconhecer os prefixos que existem de verdade.
+Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);
+FAKE = { 'BD - PREVENTIVAS': [HDRP,
+  P('MEGA ESTEIO',   'Fechada', 'CHECKLIST - RONDA | Central SDAI',      'Cumprido', iso(dentroSem), iso(dentroSem)),
+  P('MEGA ITAJAÍ',   'Fechada', 'CHECKLIST - PORTARIA | Controle',       'Cumprido', iso(dentroSem), iso(dentroSem)),
+  P('MEGA CURITIBA', 'Fechada', 'CHECKLIST - PROPRIEDADES | Fachada',    'Cumprido', iso(dentroSem), iso(dentroSem))
+] };
+const pvNomes = obterPreventivasBoletim_(null, 8);
+ok('RONDA vira Facilities', pvNomes.sla.FACILITIES.base === 2, JSON.stringify(pvNomes.sla));
+ok('PORTARIA também', pvNomes.sla.FACILITIES.cumpridos === 2);
+ok('e PROPRIEDADES continua indo para Property', pvNomes.sla.PROPERTY.base === 1);
 
 console.log('\n== Zero falso ==');
 Object.keys(_bolBaseCache).forEach(k => delete _bolBaseCache[k]);

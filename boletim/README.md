@@ -242,16 +242,32 @@ diria "não cumpriu nada", quando o certo é "não houve o que cumprir".
 
 #### Como a equipe da preventiva é decidida
 
-A `BD - PREVENTIVAS` não tem coluna de Responsáveis nem de Equipe, e numa
-rotina ainda aberta o "Fechado por" está vazio por definição. A ordem é:
+A `BD - PREVENTIVAS` não tem coluna de Responsáveis nem de Equipe — mas tem
+**"Fechado por"** (coluna K), e é essa a informação boa: o SLA só existe para
+rotina **fechada**, então "Fechado por" está preenchido exatamente nas linhas
+que entram na conta. A ordem:
 
-1. **Responsáveis**, se a base ganhar a coluna um dia — informação direta manda;
-2. **Centro de Custos `HANGAR VIP`** → Operação Hangar;
-3. **Nome da rotina**: contém "propriedades" → Property; o resto é Facilities.
+1. **Quem fechou** — mesmo mapa nome → equipe usado nos chamados (`_RESPONSAVEL_EQUIPE_`);
+2. **Responsáveis**, se a base ganhar essa coluna um dia;
+3. **Centro de Custos `HANGAR VIP`** → Operação Hangar;
+4. **Nome da rotina**: contém "propriedades" → Property; "ronda" ou "portaria" → Facilities; o resto é Facilities por padrão.
 
-A palavra é procurada na descrição **bruta**, porque costuma estar no prefixo
-do checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza remove antes da
-tela. É a mesma regra do `gestao-tvs`.
+A primeira versão usava só o passo 4, com a comparação apenas contra
+"propriedades" — e por isso classificou **95% das rotinas fechadas como
+Facilities por omissão**, não por dado (`diagnosticarEquipePreventiva()` no
+diagnóstico real: 1077 de 1136 caindo no default, Property calculado sobre só
+14 rotinas). O prefixo mais comum de verdade era `RONDA` (479 rotinas), que
+não tinha regra nenhuma.
+
+A palavra do passo 4 é procurada na descrição **bruta**, porque costuma estar
+no prefixo do checklist (`CHECKLIST - PROPRIEDADES | ...`) que a limpeza
+remove antes da tela. Acrescentar um prefixo novo é mudar `BOL_PREV_EQUIPE_NOME`
+em `Dados.gs` — a lista existe justamente para isso.
+
+`diagnosticarEquipePreventiva()` (também na seção 3c de `diagnosticarBoletim()`)
+mostra por que cada rotina caiu onde caiu, os valores de "Fechado por" que não
+bateram com o mapa de equipes, e os prefixos `CHECKLIST - <X> |` que existem
+na base — rode antes de mexer na regra.
 
 ### O resto
 
