@@ -267,3 +267,115 @@ function _lerBlocoDRE_(sheet, titleRow) {
            ritmoLabel: ritmoLabel, headers: headers, linhas: linhas,
            nota: nota, notaPreferida: notaPreferida };
 }
+
+// ==========================================
+// DEMERCADO — LEITORES DOS SLIDES 03 A 07
+// ==========================================
+// Estes leitores não dependem de letras de coluna nem de números de linha.
+// A aba é escolhida por palavras do nome e as colunas por seus cabeçalhos;
+// dentro dela, o último bloco cujo título contém DEMERCADO é usado. Assim, um
+// novo bloco mensal pode ser acrescentado embaixo sem alterar o código.
+
+function _dmNormalizar_(v) {
+  return String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function _dmAba_(termos) {
+  const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
+  const abas = ss.getSheets();
+  const norm = termos.map(_dmNormalizar_);
+  const aba = abas.find(s => norm.every(t => _dmNormalizar_(s.getName()).indexOf(t) >= 0));
+  if (!aba) throw new Error('Aba não encontrada (nome deve conter: ' + termos.join(', ') + ').');
+  return aba;
+}
+
+function _dmMatriz_(sheet) {
+  if (!sheet.getLastRow() || !sheet.getLastColumn()) return [];
+  return sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getDisplayValues();
+}
+
+function _dmLinhaCabecalho_(m, obrigatorios) {
+  let achada = -1, pontos = 0;
+  m.forEach((row, i) => {
+    const texto = row.map(_dmNormalizar_);
+    const p = obrigatorios.filter(grupo => grupo.some(t => texto.some(c => c.indexOf(_dmNormalizar_(t)) >= 0))).length;
+    if (p > pontos || (p === pontos && p === obrigatorios.length)) { pontos = p; achada = i; }
+  });
+  if (pontos < obrigatorios.length) throw new Error('Cabeçalhos esperados não encontrados: ' + obrigatorios.join(' / ') + '.');
+  return achada;
+}
+
+function _dmCol_(headers, aliases, opcional) {
+  const ns = headers.map(_dmNormalizar_);
+  for (let a = 0; a < aliases.length; a++) {
+    const alvo = _dmNormalizar_(aliases[a]);
+    const i = ns.findIndex(h => h === alvo || h.indexOf(alvo) >= 0);
+    if (i >= 0) return i;
+  }
+  if (opcional) return -1;
+  throw new Error('Coluna não encontrada: ' + aliases.join(' / ') + '.');
+}
+
+function _dmLinhas_(m, hr, cols) {
+  const out = [];
+  for (let r = hr + 1; r < m.length; r++) {
+    const nome = String(m[r][cols.nome] || '').trim();
+    if (!nome) continue;
+    if (_dmNormalizar_(nome).indexOf('DEMERCADO') >= 0 && out.length) { out.length = 0; continue; }
+    const item = { nome: nome };
+    Object.keys(cols).forEach(k => { if (k !== 'nome' && cols[k] >= 0) item[k] = m[r][cols[k]]; });
+    out.push(item);
+  }
+  return out;
+}
+
+function obterReceitasDemercado_() {
+  const s = _dmAba_(['receita']); const m = _dmMatriz_(s);
+  const hr = _dmLinhaCabecalho_(m, [['realizado','real'], ['orcamento','orcado'], ['variacao','var']]);
+  const h = m[hr];
+  const c = { nome:_dmCol_(h,['cliente','receita','descricao']), anterior:_dmCol_(h,['realizado anterior','real anterior']),
+    orcamento:_dmCol_(h,['orcamento','orcado']), atual:_dmCol_(h,['realizado atual','real atual']),
+    variacao:_dmCol_(h,['variacao','var.','var ']), tipo:_dmCol_(h,['tipo','classificacao'],true) };
+  const linhas = _dmLinhas_(m,hr,c);
+  linhas.forEach(x => { const n=_dmNormalizar_(x.tipo || x.nome); x.grupo=n.indexOf('DEFENSOR')>=0?'defensores':'ofensores'; });
+  return { aba:s.getName(), headers:h, ofensores:linhas.filter(x=>x.grupo==='ofensores'), defensores:linhas.filter(x=>x.grupo==='defensores') };
+}
+
+function obterComposicaoReceitaDemercado_() {
+  const s=_dmAba_(['compos','receita']); const m=_dmMatriz_(s);
+  const hr=_dmLinhaCabecalho_(m,[['cliente','empreendimento'],['participacao','percentual','%']]); const h=m[hr];
+  const c={nome:_dmCol_(h,['cliente','empreendimento','descricao']),participacao:_dmCol_(h,['participacao','percentual','%']),tipo:_dmCol_(h,['tipo','visao','categoria'],true)};
+  const linhas=_dmLinhas_(m,hr,c); const porCliente=[], porEmpreendimento=[];
+  linhas.forEach(x => (_dmNormalizar_(x.tipo).indexOf('EMPREEND')>=0 ? porEmpreendimento : porCliente).push(x));
+  return {aba:s.getName(),porCliente:porCliente,porEmpreendimento:porEmpreendimento};
+}
+
+function obterDespesasDemercado_() {
+  const s=_dmAba_(['despesa']); const m=_dmMatriz_(s);
+  const hr=_dmLinhaCabecalho_(m,[['orcamento','orcado'],['realizado','real'],['variacao','var']]); const h=m[hr];
+  const c={nome:_dmCol_(h,['despesa','descricao','conta']),orcamento:_dmCol_(h,['orcamento','orcado']),realizado:_dmCol_(h,['realizado','real']),variacao:_dmCol_(h,['variacao','var']),tipo:_dmCol_(h,['tipo','classificacao'],true)};
+  const linhas=_dmLinhas_(m,hr,c); linhas.forEach(x=>{const n=_dmNormalizar_(x.tipo||x.nome);x.grupo=n.indexOf('DEFENSOR')>=0?'defensores':'ofensores';});
+  return {aba:s.getName(),ofensores:linhas.filter(x=>x.grupo==='ofensores'),defensores:linhas.filter(x=>x.grupo==='defensores')};
+}
+
+function obterVacanciaDemercado_() {
+  const s=_dmAba_(['vac']); const m=_dmMatriz_(s);
+  const hr=_dmLinhaCabecalho_(m,[['mes'],['orcamento','orcado'],['realizado','real']]); const h=m[hr];
+  const c={nome:_dmCol_(h,['mes','periodo']),orcamento:_dmCol_(h,['orcamento','orcado']),realizado:_dmCol_(h,['realizado','real']),ocupada:_dmCol_(h,['area ocupada','abl ocupada'],true),disponivel:_dmCol_(h,['area disponivel','abl disponivel'],true),construida:_dmCol_(h,['area construida','abl total'],true)};
+  return {aba:s.getName(),serie:_dmLinhas_(m,hr,c)};
+}
+
+function obterContratosDemercado_() {
+  const s=_dmAba_(['contrat']); const m=_dmMatriz_(s);
+  const hr=_dmLinhaCabecalho_(m,[['contrato','cliente'],['abl','area'],['receita','valor'],['vencimento','ano']]); const h=m[hr];
+  const c={nome:_dmCol_(h,['contrato','cliente','locatario']),vencimento:_dmCol_(h,['vencimento','ano','prazo']),abl:_dmCol_(h,['abl','area']),receita:_dmCol_(h,['receita','valor'])};
+  const contratos=_dmLinhas_(m,hr,c); const grupos={};
+  contratos.forEach(x=>{const ano=(_dmNormalizar_(x.vencimento).match(/20\d{2}/)||['INDETERMINADO'])[0];(grupos[ano]||(grupos[ano]={ano:ano,contratos:[],abl:0,receita:0})).contratos.push(x);grupos[ano].abl+=_dmNumero_(x.abl);grupos[ano].receita+=_dmNumero_(x.receita);});
+  const totalA=Object.keys(grupos).reduce((n,k)=>n+grupos[k].abl,0), totalR=Object.keys(grupos).reduce((n,k)=>n+grupos[k].receita,0);
+  const anos=Object.keys(grupos).sort().map(k=>{const g=grupos[k];g.pctAbl=totalA?g.abl/totalA:0;g.pctReceita=totalR?g.receita/totalR:0;return g;});
+  _dmValidar100_(anos.map(x=>x.pctAbl),'ABL'); _dmValidar100_(anos.map(x=>x.pctReceita),'receita');
+  return {aba:s.getName(),contratos:contratos,anos:anos};
+}
+function _dmNumero_(v){let s=String(v||'').replace(/[^0-9,().-]/g,'');const neg=/\(|^-/.test(s);s=s.replace(/[()-]/g,'').replace(/\./g,'').replace(',','.');const n=Number(s)||0;return neg?-n:n;}
+function _dmValidar100_(v,nome){const soma=v.reduce((a,b)=>a+b,0);if(v.length&&Math.abs(soma-1)>0.001)throw new Error('Percentuais de '+nome+' não totalizam 100% ('+(soma*100).toFixed(2)+'%).');}

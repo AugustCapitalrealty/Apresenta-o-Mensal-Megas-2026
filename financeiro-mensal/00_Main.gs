@@ -23,7 +23,12 @@ function gerarApresentacaoFinanceiro() {
   const passos = [
     { nome: 'Capa', fn: gerarSlideCapa },
     { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado },
-    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado }
+    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado },
+    { nome: 'Receitas — Demercado', fn: gerarSlideReceitasDemercado },
+    { nome: 'Composição da Receita — Demercado', fn: gerarSlideComposicaoReceitaDemercado },
+    { nome: 'Despesas — Demercado', fn: gerarSlideDespesasDemercado },
+    { nome: 'Vacância — Demercado', fn: gerarSlideVacanciaDemercado },
+    { nome: 'Cronograma dos Contratos — Demercado', fn: gerarSlideContratosDemercado }
     // Próximos slides entram aqui, na ordem que a Ester definir. Para outra
     // empresa do DRE, acrescente { nome: 'DRE — X', fn: () =>
     // gerarSlideDREEmpresa_('X') } — a chave precisa existir em DRE_EMPRESAS

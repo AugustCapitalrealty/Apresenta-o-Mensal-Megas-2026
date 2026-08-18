@@ -188,6 +188,35 @@ O Slides não aceita um deck sem nenhum slide, então `regerar...` preserva o
 primeiro slide durante a limpeza e só o remove no fim, depois que a capa nova
 já tomou o lugar dele.
 
-## Próximos passos
+## Slides 03 a 07 — Demercado
 
-Aguardando a especificação dos demais slides.
+As fontes são as abas cujos nomes contêm, respectivamente, **Receita**,
+**Composição + Receita**, **Despesa**, **Vacância** e **Contrato**. Os leitores
+localizam colunas pelos cabeçalhos e rótulos (com aliases como Real/Realizado e
+Orçado/Orçamento), nunca por coordenadas fixas, e usam `getDisplayValues()`
+para preservar moeda, percentuais, sinais e parênteses exibidos.
+
+Os leitores são `obterReceitasDemercado_`,
+`obterComposicaoReceitaDemercado_`, `obterDespesasDemercado_`,
+`obterVacanciaDemercado_` e `obterContratosDemercado_`. As funções públicas de
+geração isolada são `gerarSlideReceitasDemercado`,
+`gerarSlideComposicaoReceitaDemercado`, `gerarSlideDespesasDemercado`,
+`gerarSlideVacanciaDemercado` e `gerarSlideContratosDemercado`.
+
+Variação de receita favorável é verde e desfavorável é vermelha, considerando
+também ofensor/defensor. Em despesas a semântica é inversa: estouro do
+orçamento é vermelho e economia é verde. A composição usa barras 2D e reúne
+categorias excedentes em **Outros**. Vacância distingue orçamento e realizado
+e põe as áreas abaixo do gráfico. Contratos indeterminados formam grupo próprio;
+ABL e receita usam a mesma base e têm seus 100% validados separadamente.
+
+### Nova ordem do deck
+
+1. Capa
+2. Resumo do Resultado
+3. DRE — Demercado
+4. Receitas — Demercado
+5. Composição da Receita — Demercado
+6. Despesas — Demercado
+7. Vacância — Demercado
+8. Cronograma dos Contratos — Demercado
