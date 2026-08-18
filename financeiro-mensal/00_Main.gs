@@ -6,9 +6,8 @@
  * um array `passos` com os slides na ordem, e um laço que roda cada um
  * isolado — slide que falha registra o erro e não derruba os outros.
  *
- * ESTADO: só a Capa está implementada. Os demais slides entram no pipeline
- * conforme a Ester for especificando — slide com dado inventado é pior que
- * slide nenhum.
+ * Os slides temáticos são gerados somente a partir dos contratos de
+ * 02_Dados.gs — slide com dado inventado é pior que slide nenhum.
  *
  * COMO ACRESCENTAR UM SLIDE
  *   1. Crie Slide<N>_<Nome>.gs com uma função gerarSlide<Nome>().
@@ -23,7 +22,12 @@ function gerarApresentacaoFinanceiro() {
   const passos = [
     { nome: 'Capa', fn: gerarSlideCapa },
     { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado },
-    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado }
+    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado },
+    { nome: 'Receitas', fn: gerarSlideReceitas },
+    { nome: 'Composição de Receita', fn: gerarSlideComposicaoReceita },
+    { nome: 'Despesas', fn: gerarSlideDespesas },
+    { nome: 'Vacância', fn: gerarSlideVacancia },
+    { nome: 'Cronograma dos Contratos', fn: gerarSlideCronogramaContratos }
     // Próximos slides entram aqui, na ordem que a Ester definir. Para outra
     // empresa do DRE, acrescente { nome: 'DRE — X', fn: () =>
     // gerarSlideDREEmpresa_('X') } — a chave precisa existir em DRE_EMPRESAS

@@ -4,10 +4,9 @@ Projeto **em construção**, para ajudar a Ester (financeiro) a montar a
 apresentação mensal de resultados do grupo Capital Realty, no mesmo padrão
 visual das outras apresentações do repositório.
 
-Hoje aqui há o esqueleto (design system, configuração, pipeline), a **capa**,
-o **Resumo do Resultado** (quadro de EBITDA por empresa + Pré-Premiação) e o
-**Painel Executivo** (DRE completo, por enquanto só de Demercado). Os demais
-slides entram conforme forem especificados.
+O projeto contém a **capa**, o **Resumo do Resultado**, o **Painel Executivo**
+de Demercado e os cinco painéis temáticos: **Receitas**, **Composição de
+Receita**, **Despesas**, **Vacância** e **Cronograma dos Contratos**.
 
 ## Por que uma pasta nova
 
@@ -43,13 +42,37 @@ https://docs.google.com/presentation/d/10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkO
 ```
 00_Main.gs                 pontos de entrada e pipeline
 01_Config.gs                design system, IDs de planilha e deck
-02_Dados.gs                  leitura de dados (mês de referência, Quadro EBITDA, DRE por empresa)
+02_Dados.gs                  todos os leitores e contratos de dados
 Slide_CapasComuns.gs         helpers visuais da capa (gradiente simulado, fundo
                               premium, wordmark, rodapé — portado de megas-mensal)
 Slide00_Capa.gs               a capa
 Slide01_ResumoResultado.gs     Resumo do Resultado (EBITDA + Pré-Premiação)
 Slide02_DREEmpresa.gs           Painel Executivo — DRE de uma empresa (hoje: Demercado)
+Slide03_Receitas.gs             Receitas + helpers visuais compartilhadas (_fm*)
+Slide04_ComposicaoReceita.gs    composição da receita bruta faturada
+Slide05_Despesas.gs             despesas e semântica favorável/desfavorável
+Slide06_Vacancia.gs             vacância física e conciliação das áreas locáveis
+Slide07_CronogramaContratos.gs  vencimentos e prazo indeterminado
 ```
+
+## Ordem final do deck e funções de entrada
+
+| Ordem | Slide | Gerador | Leitor exclusivo |
+|---:|---|---|---|
+| 1 | Capa | `gerarSlideCapa()` | `obterMesReferencia_()` |
+| 2 | Resumo do Resultado | `gerarSlideResumoResultado()` | `obterResumoResultadoEBITDA_()` e `obterEbitdaPrePremiacao_()` |
+| 3 | DRE — Demercado | `gerarSlideDREDemercado()` | `obterDREEmpresa_()` |
+| 4 | Receitas | `gerarSlideReceitas()` | `obterReceitas_()` |
+| 5 | Composição de Receita | `gerarSlideComposicaoReceita()` | `obterComposicaoReceita_()` |
+| 6 | Despesas | `gerarSlideDespesas()` | `obterDespesas_()` |
+| 7 | Vacância | `gerarSlideVacancia()` | `obterVacancia_()` |
+| 8 | Cronograma dos Contratos | `gerarSlideCronogramaContratos()` | `obterCronogramaContratos_()` |
+
+Os arquivos de slide não usam `SpreadsheetApp`: recebem exclusivamente o
+objeto validado pelo respectivo leitor de `02_Dados.gs`. Todos os pontos de
+entrada temáticos validam novamente as colunas necessárias antes de criar o
+slide, para que uma quebra de contrato produza uma mensagem explícita em vez
+de um painel parcial.
 
 ## Slide 00 — Capa
 
@@ -169,7 +192,7 @@ vazamento de coluna, sem estouro de altura, menor fonte 7,06pt (720×405).
 
 ## Contrato dos blocos financeiros
 
-Os próximos cinco slides não dependem de número fixo de linha nem de uma aba
+Os cinco slides temáticos não dependem de número fixo de linha nem de uma aba
 codificada: `02_Dados.gs` percorre as abas da planilha configurada em
 `FINANCEIRO_SPREADSHEET_ID`, localiza o **último bloco válido** pelo título
 distintivo e registra no retorno `aba`, `linhaTitulo` e `linhaCabecalho`. Isso
@@ -240,7 +263,3 @@ matriz vazia ou zeros de reserva. Antes de retornar, eles também verificam:
 O Slides não aceita um deck sem nenhum slide, então `regerar...` preserva o
 primeiro slide durante a limpeza e só o remove no fim, depois que a capa nova
 já tomou o lugar dele.
-
-## Próximos passos
-
-Aguardando a especificação dos demais slides.
