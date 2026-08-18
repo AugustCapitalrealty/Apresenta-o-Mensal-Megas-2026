@@ -4,9 +4,10 @@ Projeto **em construção**, para ajudar a Ester (financeiro) a montar a
 apresentação mensal de resultados do grupo Capital Realty, no mesmo padrão
 visual das outras apresentações do repositório.
 
-Hoje aqui há o esqueleto (design system, configuração, pipeline), a **capa**
-e o **Resumo do Resultado** (quadro de EBITDA por empresa + Pré-Premiação).
-Os demais slides entram conforme forem especificados.
+Hoje aqui há o esqueleto (design system, configuração, pipeline), a **capa**,
+o **Resumo do Resultado** (quadro de EBITDA por empresa + Pré-Premiação) e o
+**Painel Executivo** (DRE completo, por enquanto só de Demercado). Os demais
+slides entram conforme forem especificados.
 
 ## Por que uma pasta nova
 
@@ -42,11 +43,12 @@ https://docs.google.com/presentation/d/10LL0oerPM_3KD0yQitt509HQV6k1h8VEK2OssMkO
 ```
 00_Main.gs                 pontos de entrada e pipeline
 01_Config.gs                design system, IDs de planilha e deck
-02_Dados.gs                  leitura de dados (mês de referência + Quadro EBITDA)
+02_Dados.gs                  leitura de dados (mês de referência, Quadro EBITDA, DRE por empresa)
 Slide_CapasComuns.gs         helpers visuais da capa (gradiente simulado, fundo
                               premium, wordmark, rodapé — portado de megas-mensal)
 Slide00_Capa.gs               a capa
 Slide01_ResumoResultado.gs     Resumo do Resultado (EBITDA + Pré-Premiação)
+Slide02_DREEmpresa.gs           Painel Executivo — DRE de uma empresa (hoje: Demercado)
 ```
 
 ## Slide 00 — Capa
@@ -128,6 +130,42 @@ ligeiramente diferentes dos gerados pelo código: a planilha é viva, os
 valores mudam entre uma leitura e outra (Ritmo é recalculado). O slide sempre
 mostra o que a planilha tiver **no momento em que for gerado** — nunca um
 valor congelado de um print.
+
+## Slide 02 — Painel Executivo (DRE por empresa)
+
+Reproduz o segundo print da Ester: o DRE completo de uma empresa — a cascata
+`1 - FATURAMENTO BRUTO` até `13 - LUCRO LÍQUIDO` (com os sub-itens `10.1` /
+`10.2 - RECEITAS/DESPESAS FINANCEIRAS` indentados), a linha `7 - EBITDA` com
+um realce cinza, e a `Margem EBITDA/ROL` como faixa de destaque no rodapé.
+Mesmas 3 colunas de grupo (Mês | Acumulado do ano | Ritmo) do Resumo do
+Resultado.
+
+Fonte: aba **"Quadro DRE Apresentação"**, um bloco por empresa. A função
+genérica é `gerarSlideDREEmpresa_(chave)` (`Slide02_DREEmpresa.gs`) — hoje só
+tem um ponto de entrada ligado no pipeline, `gerarSlideDREDemercado()`. Para
+acrescentar outra empresa (Capital Realty, Garoto, Hangar Vip, Postos, BMFD,
+DCL...), duas linhas: uma entrada em `DRE_EMPRESAS` (chave → título de
+exibição) e um passo no `00_Main.gs` chamando `gerarSlideDREEmpresa_('CHAVE')`.
+
+### Empresa com dois blocos no DRE (equivalência patrimonial)
+
+A Demercado tem **dois** blocos "DRE DEMERCADO" na planilha: um "Sem
+Equivalência Patrimonial" e um "Com Equivalência Patrimonial" (por causa da
+participação na DCL). O Painel Executivo usa o **Sem** — é a versão que bate
+com o print da Ester. `obterDREEmpresa_` (`02_Dados.gs`) decide pela nota que
+fica logo abaixo da Margem EBITDA/ROL de cada bloco; sem nota reconhecida em
+nenhum candidato, fica com o primeiro bloco encontrado. Se uma empresa nova
+tiver a mesma situação, confira se a nota bate com esse padrão antes de gerar.
+
+### Conferido contra a planilha de verdade, não só a olho
+
+A leitura (`obterDREEmpresa_`) foi testada com os valores reais exportados da
+aba (não digitados à mão) — confirma que escolhe o bloco "Sem Equivalência",
+que a linha 1 e a linha 10 batem exatamente com os números do print, que `7 -
+EBITDA` fica marcada para o realce e que `10.1`/`10.2` ficam marcadas como
+indentadas. O desenho passou pelo mesmo oráculo de medição real (Montserrat
+via Chromium) do Resumo do Resultado: sem quebra no meio de palavra, sem
+vazamento de coluna, sem estouro de altura, menor fonte 7,06pt (720×405).
 
 ## Como usar
 

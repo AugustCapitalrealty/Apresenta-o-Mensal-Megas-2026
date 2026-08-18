@@ -172,3 +172,98 @@ function obterEbitdaPrePremiacao_() {
 
   return { titulo: titulo, colunas: colunas, linhas: linhas };
 }
+
+
+// ==========================================
+// DRE POR EMPRESA — Painel Executivo
+// ==========================================
+// Aba "Quadro DRE Apresentação": um bloco por empresa (Capital Realty,
+// Demercado, Garoto, Hangar Vip, Postos, BMFD, DCL...), cada um com a mesma
+// estrutura de 15 colunas (Mês | Acumulado do ano | Ritmo) do Quadro EBITDA,
+// e uma cascata de linhas numeradas (1 - FATURAMENTO BRUTO ... 13 - LUCRO
+// LÍQUIDO, com sub-itens indentados como "10.1 - RECEITAS FINANCEIRAS")
+// terminando na linha "Margem EBITDA/ROL".
+const QUADRO_DRE_SHEET = 'Quadro DRE Apresentação';
+
+/**
+ * Lê o DRE de UMA empresa pelo nome (ex.: 'DEMERCADO', 'CAPITAL REALTY' —
+ * comparação sem diferenciar maiúsculas). Lança erro claro se não achar.
+ *
+ * Algumas empresas têm DOIS blocos (ex.: Demercado — "Sem Equivalência
+ * Patrimonial" e "Com Equivalência Patrimonial", por causa da participação na
+ * DCL). O Painel Executivo usa a versão SEM equivalência — é a nota logo
+ * abaixo da linha Margem EBITDA/ROL que desempata; sem nota reconhecida em
+ * nenhum candidato, fica com o primeiro bloco encontrado.
+ */
+function obterDREEmpresa_(nomeEmpresa) {
+  const ss = SpreadsheetApp.openById(FINANCEIRO_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(QUADRO_DRE_SHEET);
+  if (!sheet) throw new Error('Aba "' + QUADRO_DRE_SHEET + '" não encontrada na planilha do Financeiro.');
+
+  const lastRow = sheet.getLastRow();
+  const colB = sheet.getRange(1, 2, lastRow, 1).getDisplayValues();
+  const alvo = String(nomeEmpresa).toUpperCase().trim();
+
+  const titleRows = [];
+  for (let r = 0; r < colB.length; r++) {
+    const v = String(colB[r][0] || '');
+    if (/^DRE\s/i.test(v) && v.toUpperCase().indexOf(alvo) >= 0) titleRows.push(r + 1);
+  }
+  if (!titleRows.length) {
+    throw new Error('Bloco "DRE ' + nomeEmpresa + '" não encontrado na aba "' + QUADRO_DRE_SHEET + '".');
+  }
+
+  const blocos = titleRows.map(r => _lerBlocoDRE_(sheet, r));
+  let escolhido = blocos.find(b => b.notaPreferida === true);
+  if (!escolhido) escolhido = blocos.find(b => b.notaPreferida !== false) || blocos[0];
+  return escolhido;
+}
+
+function _lerBlocoDRE_(sheet, titleRow) {
+  const nomeEmpresa = String(sheet.getRange(titleRow, 2).getDisplayValue() || '')
+    .split('\n')[0].replace(/^DRE\s+/i, '').trim();
+  const mesNome    = sheet.getRange(titleRow, 3).getDisplayValue();
+  const acumLabel  = sheet.getRange(titleRow, 8).getDisplayValue();
+  const ritmoLabel = sheet.getRange(titleRow, 13).getDisplayValue();
+  const headerRow  = titleRow + 1;
+  const headers    = sheet.getRange(headerRow, 3, 1, 15).getDisplayValues()[0];
+
+  const anos = [];
+  headers.forEach(h => {
+    const m = String(h).match(/\d{4}/g);
+    if (m) m.forEach(a => anos.push(Number(a)));
+  });
+  const ano = anos.length ? Math.max.apply(null, anos) : new Date().getFullYear();
+
+  const linhas = [];
+  let r = headerRow + 1;
+  let margemEncontrada = false;
+  while (true) {
+    const raw = sheet.getRange(r, 2).getDisplayValue();
+    const rotulo = String(raw || '').trim();
+    if (!rotulo) break;
+
+    const ehMargem = /^margem\s+ebitda/i.test(rotulo);
+    linhas.push({
+      rotulo: rotulo,
+      valores: _linhaResumoEbitda_(sheet, r),   // mesmas 15 colunas do Quadro EBITDA
+      margem: ehMargem,
+      ebitda: /^7\s*-\s*ebitda\b/i.test(rotulo),
+      indentado: /^\s/.test(String(raw))
+    });
+
+    r++;
+    if (ehMargem) { margemEncontrada = true; break; }
+  }
+
+  // Nota logo abaixo da Margem (ex.: "* Sem Equivalência Patrimonial") — só
+  // serve para desempatar quando a empresa tem mais de um bloco.
+  const nota = margemEncontrada ? String(sheet.getRange(r, 2).getDisplayValue() || '').trim() : '';
+  let notaPreferida = null;
+  if (/sem\s+equival/i.test(nota)) notaPreferida = true;
+  else if (/com\s+equival/i.test(nota)) notaPreferida = false;
+
+  return { empresa: nomeEmpresa, mes: mesNome, ano: ano, acumuladoLabel: acumLabel,
+           ritmoLabel: ritmoLabel, headers: headers, linhas: linhas,
+           nota: nota, notaPreferida: notaPreferida };
+}

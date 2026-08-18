@@ -22,8 +22,12 @@ function gerarApresentacaoFinanceiro() {
 
   const passos = [
     { nome: 'Capa', fn: gerarSlideCapa },
-    { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado }
-    // Próximos slides entram aqui, na ordem que a Ester definir.
+    { nome: 'Resumo do Resultado', fn: gerarSlideResumoResultado },
+    { nome: 'DRE — Demercado', fn: gerarSlideDREDemercado }
+    // Próximos slides entram aqui, na ordem que a Ester definir. Para outra
+    // empresa do DRE, acrescente { nome: 'DRE — X', fn: () =>
+    // gerarSlideDREEmpresa_('X') } — a chave precisa existir em DRE_EMPRESAS
+    // (Slide02_DREEmpresa.gs).
   ];
 
   return _rodarPassos_(passos);
