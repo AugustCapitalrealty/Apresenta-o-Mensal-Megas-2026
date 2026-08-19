@@ -52,9 +52,7 @@ function gerarSlideResumoResultado() {
   const c = _dsNovoSlideClaro_({
     entidade: 'Resumo do Resultado',
     topico: _rrMesAno_(dados.mes, dados.ano),
-    fonte: 'Fonte: ' + QUADRO_EBITDA_SHEET,
-    aviso: _rrAvisoMesFonteTexto_(dados.mes, dados.ano),
-    conteudoY: .16
+    aviso: _rrAvisoMesFonteTexto_(dados.mes, dados.ano)
   });
   const slide = c.slide, W = c.W, H = c.H, DS = c.DS;
   // A tabela de 16 colunas usa uma margem própria menor; o cabeçalho externo
@@ -65,24 +63,33 @@ function gerarSlideResumoResultado() {
 
   // ── Tabela principal — EBITDA por empresa ──
   const tabTopo   = H * DS.layout.light.contentTop;
-  const tabAltura = H * 0.405;
+  const tabAltura = H * 0.375;
   // Um único tamanho para todos os cabeçalhos de coluna das duas tabelas.
   // As bandas de grupo continuam maiores por serem outro nível hierárquico.
   const fsCabecalhoTabelas = W * DS.typography.scale.tableHeader;
   _rrTabelaEbitda_(slide, W, mX, tabTopo, tabAltura, dados, fsCabecalhoTabelas);
 
   // ── Ebitda Pré-Premiação ──
+  // Bloco SECUNDÁRIO: são 3 linhas de fechamento anual, não o assunto do
+  // slide. Ocupa menos da metade da largura e fica centralizado, com o título
+  // centralizado sobre ele — em largura cheia ele competia visualmente com a
+  // tabela de EBITDA, que é a informação principal.
+  //
   // O título tem faixa própria ACIMA da tabela: quando os dois quase se
   // encostavam, a tabela (shape mais nova, portanto por cima) cobria a metade
   // de baixo das letras do título.
-  const ppTituloY = H * 0.595;
-  const ppTabelaY = H * 0.665;
+  const ppLargura = W * 0.46;
+  const ppX       = (W - ppLargura) / 2;
+  const ppTituloY = H * 0.600;
+  const ppTabelaY = H * 0.668;
   const ppBase    = H * DS.layout.light.tableBottom;
 
-  _rrUmaLinha_(slide, mX, ppTituloY, W * 0.55, H * 0.058, _rrPrimeiraLinha_(premiacao.titulo),
-    { fs: W * 0.020, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
+  _rrUmaLinha_(slide, ppX, ppTituloY, ppLargura, H * 0.052,
+    _rrPrimeiraLinha_(premiacao.titulo),
+    { fs: W * 0.0185, bold: true, cor: DS.colors.textMain,
+      fonte: DS.typography.titles, folga: 0 });
 
-  _rrTabelaPremiacao_(slide, W, mX, ppTabelaY, ppBase - ppTabelaY,
+  _rrTabelaPremiacao_(slide, ppX, ppLargura, ppTabelaY, ppBase - ppTabelaY,
     premiacao, fsCabecalhoTabelas);
 
   Logger.log('Slide "Resumo do Resultado" gerado → ' + dados.mes + '/' + dados.ano);
@@ -164,7 +171,11 @@ function _rrEhCabecalhoComparativo_(texto) {
 // cabeçalhos mantêm a mesma fonte: comparativos recebem o necessário e as
 // colunas simples dividem o restante, em vez de cada caixa reduzir sua fonte.
 function _rrLargurasCabecalhoTemporal_(headers, larguraTotal, fs) {
-  const DS = CR_DESIGN_SYSTEM, fonte = DS.typography.titles;
+  // Mede com a MESMA fonte em que a célula será desenhada (Calibri). Medir
+  // com Montserrat aqui e renderizar em Calibri lá superdimensionava as
+  // colunas comparativas e roubava largura das colunas simples — é o mesmo
+  // descasamento medir-x-renderizar que já tinha estourado o cabeçalho antes.
+  const DS = CR_DESIGN_SYSTEM, fonte = DS.typography.tables;
   const comparativas = headers.map(_rrEhCabecalhoComparativo_);
   const qtdComp = comparativas.filter(Boolean).length;
   if (!qtdComp) return headers.map(() => larguraTotal / Math.max(1, headers.length));
@@ -260,7 +271,7 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados, fsCabecalhoUniforme
   _rrCelula_(slide, mX, y, labelW, hBanda + hSub, DS.colors.tableGroup);
   _rrBloco_(slide, mX, y, labelW, hBanda + hSub, 'EBITDA\n(Em R$/Mil)',
     { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
-      fonte: DS.typography.titles });
+      fonte: DS.typography.tables });
 
   const grupos = [dados.mes, dados.acumuladoLabel, dados.ritmoLabel];
   const colsPorGrupo = Math.round(nCols / grupos.length);
@@ -274,7 +285,7 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados, fsCabecalhoUniforme
     _rrCelula_(slide, x, y, gw, hBanda, DS.colors.tableGroup);
     _rrUmaLinha_(slide, x, y, gw, hBanda, titulo,
       { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
-        fonte: DS.typography.titles });
+        fonte: DS.typography.tables });
     x += gw;
     primeiraColunaGrupo += cols;
   });
@@ -289,7 +300,7 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados, fsCabecalhoUniforme
     _rrCelula_(slide, x, y, cw, hSub, DS.colors.tableHeader);
     _rrBloco_(slide, x, y, cw, hSub, _rrFormatarCabecalhoTabela_(h),
       { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-        fonte: DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 });
+        fonte: DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
     x += cw;
   });
   y += hSub;
@@ -319,7 +330,7 @@ function _rrLinha_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo, co
   _rrCelula_(slide, mX, y, labelW, h, corFundo);
   _rrUmaLinha_(slide, mX + padL, y, labelW - padL, h, rotulo,
     { fs: fs, fsMin: fs, bold: negrito, cor: corTexto,
-      fonte: CR_DESIGN_SYSTEM.typography.body, align: 'L' });
+      fonte: CR_DESIGN_SYSTEM.typography.tables, align: 'L' });
 
   let x = mX + labelW;
   valores.forEach((v, i) => {
@@ -329,7 +340,7 @@ function _rrLinha_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo, co
     _rrCelula_(slide, x, y, cw, h, corFundo);
     _rrUmaLinha_(slide, x, y, cw, h, v,
       { fs: fs, fsMin: fs, bold: negrito, cor: corValor,
-        fonte: CR_DESIGN_SYSTEM.typography.body });
+        fonte: CR_DESIGN_SYSTEM.typography.tables });
     x += cw;
   });
 }
@@ -341,15 +352,14 @@ function _rrLinha_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo, co
 // Os rótulos das colunas vêm da planilha (não são escritos aqui): eles citam o
 // ano ("Orçado 2026", "Ritmo 2026 x Orç 2026") e ficariam errados na virada do
 // exercício se estivessem no código.
-function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados, fsCabecalhoUniforme) {
+// Recebe x e largura já resolvidos pelo chamador (o bloco é centralizado e
+// mais estreito que a tabela principal — ver gerarSlideResumoResultado).
+function _rrTabelaPremiacao_(slide, x0, largura, topo, alturaDisp, dados, fsCabecalhoUniforme) {
   const DS = CR_DESIGN_SYSTEM;
-  // Largura cheia, igual à tabela de cima. O limite inferior institucional
-  // reserva uma faixa própria para o logo canônico.
-  const largura = W - mX * 2;
-  // Mesma decisão da tabela de cima: a coluna de rótulo cede espaço para os
-  // cabeçalhos comparativos de duas linhas. Aqui sobra bem mais folga (são 3
-  // colunas, não 15), mas o corte mantém as duas tabelas com a mesma cara.
-  const labelW  = largura * 0.30;
+  const mX = x0;
+  // A coluna de rótulo aqui é a mais larga das duas tabelas porque guarda
+  // "Capital Realty / Demercado"; as três colunas de valor dividem o resto.
+  const labelW  = largura * 0.40;
   const nCols   = dados.colunas.length || 3;
   const colunasComparativas = dados.colunas.map(_rrEhCabecalhoComparativo_);
   const valW    = (largura - labelW) / nCols;
@@ -371,14 +381,14 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados, fsCabecalhoU
   _rrCelula_(slide, mX, y, labelW, hHeader, DS.colors.tableHeader);
   _rrBloco_(slide, mX + padL, y, labelW - padL, hHeader, _rrPrimeiraLinha_(dados.titulo),
     { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-      fonte: DS.typography.titles, align: 'L' });
+      fonte: DS.typography.tables, align: 'L' });
 
   let x = mX + labelW;
   dados.colunas.forEach(nome => {
     _rrCelula_(slide, x, y, valW, hHeader, DS.colors.tableHeader);
     _rrBloco_(slide, x, y, valW, hHeader, _rrFormatarCabecalhoTabela_(nome),
       { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-        fonte: DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 });
+        fonte: DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
     x += valW;
   });
   y += hHeader;
@@ -388,7 +398,7 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados, fsCabecalhoU
     _rrCelula_(slide, mX, y, labelW, hLinha, corFundo);
     _rrUmaLinha_(slide, mX + padL, y, labelW - padL, hLinha, linha.nome,
       { fs: fsLinha, fsMin: fsLinha, bold: true, cor: DS.colors.textMain,
-        fonte: DS.typography.body, align: 'L' });
+        fonte: DS.typography.tables, align: 'L' });
 
     x = mX + labelW;
     linha.valores.forEach((v, coluna) => {
@@ -396,7 +406,7 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados, fsCabecalhoU
         ? _rrCorValorComparativo_(v, DS.colors.textMain, false) : DS.colors.textMain;
       _rrCelula_(slide, x, y, valW, hLinha, corFundo);
       _rrUmaLinha_(slide, x, y, valW, hLinha, v,
-        { fs: fsLinha, fsMin: fsLinha, cor: corValor, fonte: DS.typography.body });
+        { fs: fsLinha, fsMin: fsLinha, cor: corValor, fonte: DS.typography.tables });
       x += valW;
     });
     y += hLinha;
@@ -437,8 +447,12 @@ function _rrLarguraTexto_(texto, fs, fonte, bold) {
     else if ('.,;:%-/()'.indexOf(c) >= 0) em += _RR_EM.pontuacao;
     else em += _RR_EM.minuscula;
   }
-  // Montserrat é a referência das medidas acima; Open Sans é mais estreita.
-  const fonteF = (fonte === 'Open Sans') ? 0.93 : 1;
+  // Montserrat é a referência das medidas acima. Open Sans é um pouco mais
+  // estreita; Calibri é bem mais estreita — é justamente essa diferença que
+  // faz as 16 colunas caberem, então medir Calibri como se fosse Montserrat
+  // desperdiçaria largura e o layout ficaria calibrado errado.
+  const fonteF = (fonte === 'Open Sans') ? 0.93
+    : (fonte === 'Calibri' || fonte === 'Carlito') ? 0.80 : 1;
   return em * fs * fonteF * (bold ? 1.05 : 1);
 }
 

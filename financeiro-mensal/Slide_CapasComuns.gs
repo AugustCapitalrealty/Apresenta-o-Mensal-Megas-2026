@@ -164,27 +164,50 @@ function _capaEspacado_(txt) {
 // SHELL CANÔNICO — SLIDES FINANCEIROS
 // ==========================================
 
-// A marca d'água é única para todos os slides claros. Ela entra antes de
-// qualquer conteúdo para nunca cobrir texto nem células da tabela.
-function _dsMarcaDaguaClara_(slide, W, H) {
-  const DS = CR_DESIGN_SYSTEM;
-  const outer = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
-    -W * .04, 0, W * .57, W * .57);
-  outer.getFill().setSolidFill(DS.colors.watermark, .62);
-  outer.getBorder().setTransparent();
+// Cabeçalho padrão dos slides claros, no mesmo desenho de
+// megas-mensal/01_Config.gs (criarHeaderPadrao): elipse suave no canto
+// superior direito, barra de destaque à esquerda do título, subtítulo,
+// logo à direita e linha separadora de largura total com trecho realçado.
+//
+// Substituiu a marca d'água circular grande que ficava atrás da tabela: ela
+// competia com os números em vez de emoldurá-los, que é o oposto do que uma
+// marca de fundo deve fazer numa página densa de dados.
+function _dsCabecalhoPadrao_(slide, W, H, titulo, subtitulo) {
+  const DS = CR_DESIGN_SYSTEM, cfg = DS.layout.light, escala = DS.typography.scale;
+  const m = W * cfg.marginX;
 
-  const inner = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
-    W * .06, H * .178, W * .37, W * .37);
-  inner.getFill().setSolidFill('#FFFFFF');
-  inner.getBorder().setTransparent();
+  // Grafismo de fundo — assinatura do boletim, discreta o bastante para não
+  // disputar com o conteúdo (3% de opacidade).
+  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
+    W - W * .486, -H * .198, W * .625, W * .625);
+  ellipse.getFill().setSolidFill(DS.colors.brandLight, .03);
+  ellipse.getBorder().setTransparent();
 
-  const corte = slide.insertShape(SlidesApp.ShapeType.RECTANGLE,
-    W * .22, H * .035, W * .17, H * .22);
-  corte.getFill().setSolidFill('#FFFFFF');
-  corte.getBorder().setTransparent();
+  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE,
+    m, H * cfg.barY, W * cfg.barX, H * cfg.barH);
+  bar.getFill().setSolidFill(DS.colors.brandLight);
+  bar.getBorder().setTransparent();
 
-  _capaTriangulo_(slide, W * .30, H * .045, W * .34, DS.colors.watermark, .58);
-  _capaTriangulo_(slide, W * .37, H * .145, W * .20, '#FFFFFF', 1);
+  const textoX = m + W * cfg.entityX;
+  _rrUmaLinha_(slide, textoX, H * cfg.entityY, W * .55, H * cfg.entityH, titulo || '',
+    { fs: W * escala.entity, fsMin: W * escala.entityCompact, bold: true,
+      cor: DS.colors.textMain, fonte: DS.typography.titles, align: 'L', folga: 0 });
+
+  if (subtitulo) {
+    _rrUmaLinha_(slide, textoX, H * cfg.topicY, W * .55, H * cfg.topicH, subtitulo,
+      { fs: W * escala.topic, fsMin: W * escala.topicCompact,
+        cor: DS.colors.textBody, fonte: DS.typography.body, align: 'L', folga: 0 });
+  }
+
+  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT,
+    0, H * cfg.sepY, W, H * cfg.sepY);
+  sep.getLineFill().setSolidFill(DS.colors.lines);
+  sep.setWeight(1);
+
+  const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT,
+    m, H * cfg.sepY, m + W * cfg.sepAccentW, H * cfg.sepY);
+  acc.getLineFill().setSolidFill(DS.colors.brandLight);
+  acc.setWeight(3);
 }
 
 // Fallback determinístico: se o arquivo oficial estiver indisponível, mantém
@@ -208,12 +231,15 @@ function _dsLogoCanonico_(slide, W, H, escuro) {
   const cfg = escuro ? DS.layout.dark : DS.layout.light;
   const id = escuro ? DS.assets.logoDarkId : DS.assets.logoLightId;
   const targetH = H * cfg.logoH;
+  // Nos slides claros a logo passou para o TOPO direito, dentro do cabeçalho
+  // padrão dos Megas. No rodapé ela disputava espaço com a última tabela.
+  const topoY = H * (cfg.logoTop == null ? cfg.logoBottom : cfg.logoTop);
   let x, y, w;
   try {
     const img = _capaLogoImg_(slide, id, targetH);
     w = img.getWidth();
     x = escuro ? W * cfg.logoX : W - W * cfg.logoRight - w;
-    y = escuro ? H * cfg.logoY : H - H * cfg.logoBottom - targetH;
+    y = escuro ? H * cfg.logoY : topoY;
     img.setLeft(x).setTop(y);
     return { elemento: img, x: x, y: y, w: w, h: targetH, fallback: false };
   } catch (e) {
@@ -221,48 +247,39 @@ function _dsLogoCanonico_(slide, W, H, escuro) {
       ' indisponível; usando wordmark textual na mesma posição. ' + e.message);
     w = escuro ? W * .27 : W * .19;
     x = escuro ? W * cfg.logoX : W - W * cfg.logoRight - w;
-    y = escuro ? H * cfg.logoY : H - H * cfg.logoBottom - targetH;
+    y = escuro ? H * cfg.logoY : topoY;
     _dsWordmarkTexto_(slide, x, y, w, targetH, escuro);
     return { elemento: null, x: x, y: y, w: w, h: targetH, fallback: true };
   }
 }
 
-// Estrutura de todos os slides claros. A hierarquia é sempre Entidade →
-// Tema/Mês; fonte e divergência ficam no bloco compacto superior direito.
+/**
+ * Estrutura de todos os slides claros: cabeçalho padrão dos Megas (barra +
+ * título + subtítulo + logo + separadora) e a área de conteúdo abaixo.
+ *
+ * O QUE SAIU DAQUI E POR QUÊ
+ * A marca d'água circular e o bloco de metadados ("Fonte: <aba>" e o aviso
+ * laranja de divergência de mês) foram removidos por decisão de leitura: numa
+ * página que é quase toda tabela, os dois competiam com os números.
+ *
+ * A divergência de mês NÃO deixou de ser detectada — ela agora vai só para o
+ * Logger (op.aviso), então quem gera continua sabendo que a fonte está num mês
+ * diferente da referência do deck, sem que isso ocupe espaço no slide. O
+ * rótulo do mês na tabela continua sendo o da fonte, nunca renomeado.
+ */
 function _dsNovoSlideClaro_(op) {
   op = op || {};
   const deck = getDeckMensal_();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const DS = CR_DESIGN_SYSTEM, cfg = DS.layout.light, escala = DS.typography.scale;
+  const DS = CR_DESIGN_SYSTEM, cfg = DS.layout.light;
   const m = W * cfg.marginX;
 
   slide.getBackground().setSolidFill('#FFFFFF');
-  _dsMarcaDaguaClara_(slide, W, H);
+  _dsCabecalhoPadrao_(slide, W, H,
+    op.entidade || 'Resultados Financeiros', op.topico || '');
 
-  _rrUmaLinha_(slide, m, H * cfg.entityY, W * .50, H * cfg.entityH,
-    op.entidade || 'Resultados Financeiros',
-    { fs: W * escala.entity, fsMin: W * escala.entityCompact, bold: true,
-      cor: DS.colors.brandDark, fonte: DS.typography.titles, align: 'L', folga: 0 });
-  _rrUmaLinha_(slide, m, H * cfg.topicY, W * .52, H * cfg.topicH,
-    op.topico || '',
-    { fs: W * escala.topic, fsMin: W * escala.topicCompact,
-      cor: DS.colors.brandDark, fonte: DS.typography.titles, align: 'L', folga: 0 });
-
-  const metaX = W * cfg.metadataX, metaY = H * cfg.metadataY;
-  const metaW = W * cfg.metadataW, metaFs = W * escala.metadata;
-  const metaLinhaH = H * cfg.metadataH * .48;
-  if (op.fonte) {
-    _rrBloco_(slide, metaX, metaY, metaW, metaLinhaH, op.fonte,
-      { fs: metaFs, fsMin: metaFs, cor: DS.colors.textBody,
-        fonte: DS.typography.body, align: 'R', folga: 0, preservarLinhas: false });
-  }
-  if (op.aviso) {
-    _rrBloco_(slide, metaX, metaY + H * cfg.metadataH * .52,
-      metaW, metaLinhaH, op.aviso,
-      { fs: metaFs, fsMin: metaFs, bold: true, cor: DS.colors.warningText,
-        fonte: DS.typography.body, align: 'R', folga: 0, preservarLinhas: false });
-  }
+  if (op.aviso) Logger.log('  ⚠ ' + (op.entidade || '') + ': ' + op.aviso);
 
   const logo = _dsLogoCanonico_(slide, W, H, false);
   return {

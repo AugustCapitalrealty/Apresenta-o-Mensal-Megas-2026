@@ -49,7 +49,6 @@ function _fmNovoSlide_(titulo, subtitulo) {
   return _dsNovoSlideClaro_({
     entidade: 'Resultados Financeiros',
     topico: titulo + ' – ' + ref.texto,
-    fonte: subtitulo || '',
     conteudoY: .16
   });
 }

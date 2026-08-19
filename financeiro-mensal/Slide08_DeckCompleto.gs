@@ -16,7 +16,6 @@ function _dcNovoSlide_(titulo, entidade, subtitulo, aviso) {
   return _dsNovoSlideClaro_({
     entidade: entidade || 'Indicadores Financeiros',
     topico: titulo + ' – ' + ref.texto,
-    fonte: subtitulo || '',
     aviso: aviso || '',
     conteudoY: CR_DESIGN_SYSTEM.layout.light.contentTop
   });
@@ -52,23 +51,23 @@ function _dcReferenciaFonteCurta_(bloco) {
   return mes + '/' + partes[1];
 }
 
-// Marca d'água geométrica inspirada no rascunho: arco grande à esquerda e
-// triângulo central. É desenhada antes da tabela para permanecer ao fundo.
-function _dcMarcaDaguaComparativo_(slide, W, H) {
-  _dsMarcaDaguaClara_(slide, W, H);
-}
+// A marca d'água foi removida do design (ver _dsCabecalhoPadrao_): numa
+// página densa de tabela ela competia com os números. Mantida como no-op para
+// não quebrar chamadas antigas.
+function _dcMarcaDaguaComparativo_() {}
 
 function _dcNovoSlideComparativo_(titulo, entidade, bloco) {
   const referenciaFonte = _dcReferenciaFonteCurta_(bloco);
-  const fonte = 'Fonte: ' + bloco.aba + ' · linha ' + bloco.linha +
-    (bloco.mapeamento ? ' · ' + bloco.mapeamento : '');
+  // A procedência (aba + linha + mapeamento) segue registrada, mas vai para o
+  // Logger em vez do slide — na página ela roubava atenção da tabela.
+  Logger.log('  · ' + entidade + ' / ' + titulo + ' ← ' + bloco.aba +
+    ' linha ' + bloco.linha + (bloco.mapeamento ? ' · ' + bloco.mapeamento : ''));
   const aviso = bloco.divergenciaMes
     ? 'Referência geral: ' + _dcReferencia_().texto + ' · fonte preservada: ' + referenciaFonte
     : '';
   return _dsNovoSlideClaro_({
     entidade: entidade,
     topico: titulo + ' – ' + referenciaFonte,
-    fonte: fonte,
     aviso: aviso,
     conteudoY: .21
   });
@@ -161,7 +160,8 @@ function _dcDesenharTabela_(c, matriz, op) {
       elementos.push(_rrCelula_(c.slide, xx, yy, cw, hLinha, fundo));
       const textoOriginal = String(valor == null ? '' : valor);
       const texto = header ? _rrFormatarCabecalhoTabela_(textoOriginal) : textoOriginal;
-      const fonte = header ? c.DS.typography.titles : c.DS.typography.body;
+      // Tabela inteira em Calibri (cabeçalho e corpo) — ver typography.tables.
+      const fonte = c.DS.typography.tables;
       const tamanho = header ? fsHeader : fsBody;
       const estilo = { fs: tamanho, fsMin: tamanho,
         bold: header || total || col === 0,
@@ -249,11 +249,11 @@ function _dcDesenharTabelaComparativa_(c, matriz, op) {
         if (col === 0) {
           _rrUmaLinha_(c.slide, xx + 4, yy, cw - 8, h, texto,
             { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-              fonte: c.DS.typography.titles, align: 'L', folga: 0 });
+              fonte: c.DS.typography.tables, align: 'L', folga: 0 });
         } else {
           _rrBloco_(c.slide, xx + 1, yy, cw - 2, h, texto,
             { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-              fonte: c.DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 });
+              fonte: c.DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
         }
       } else {
         const corNeutra = c.DS.colors.textMain;
@@ -262,7 +262,7 @@ function _dcDesenharTabelaComparativa_(c, matriz, op) {
         _rrUmaLinha_(c.slide, xx + (col === 0 ? 4 : 1), yy,
           cw - (col === 0 ? 8 : 2), h, textoOriginal,
           { fs: fsBody, fsMin: fsBody, bold: tipo.total || colunasComparativas[col], cor: cor,
-            fonte: c.DS.typography.body, align: col === 0 ? 'L' : 'C', folga: 0 });
+            fonte: c.DS.typography.tables, align: col === 0 ? 'L' : 'C', folga: 0 });
       }
       xx += cw;
     });

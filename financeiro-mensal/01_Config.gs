@@ -47,6 +47,12 @@ const CR_DESIGN_SYSTEM = {
   typography: {
     titles: 'Montserrat',
     body: 'Open Sans',
+    // Calibri é EXCLUSIVA das tabelas. Ela é bem mais estreita que Montserrat
+    // no mesmo corpo, e é isso que faz as 16 colunas caberem sem apertar: o
+    // ganho de largura vem da fonte, não de reduzir o tamanho do texto.
+    // Fora das tabelas (títulos, subtítulos, capas, rodapés) o design system
+    // continua sendo Montserrat/Open Sans — nada mais muda.
+    tables: 'Calibri',
     // Escala proporcional à largura do deck. Os três tamanhos de corpo são
     // modos de densidade da TABELA inteira — nunca ajustes célula a célula.
     scale: {
@@ -67,17 +73,25 @@ const CR_DESIGN_SYSTEM = {
     headerH: 64,
     light: {
       marginX: .03,
-      entityY: .02,
-      entityH: .055,
-      topicY: .073,
-      topicH: .048,
-      metadataX: .58,
-      metadataY: .025,
-      metadataW: .39,
-      metadataH: .075,
-      contentTop: .16,
+      // Cabeçalho no padrão da apresentação dos Megas (criarHeaderPadrao em
+      // megas-mensal/01_Config.gs): barra de destaque + título + subtítulo à
+      // esquerda, logo à direita e linha separadora de largura total. Lá os
+      // valores são pt fixos num deck 720x405; aqui viram frações para o
+      // layout valer em qualquer tamanho de deck.
+      barX: .007,        // largura da barra de destaque (5pt em 720)
+      barY: .032,        // topo da barra (13pt em 405)
+      barH: .089,        // altura da barra (36pt em 405)
+      entityX: .019,     // recuo do texto após a barra (14pt em 720)
+      entityY: .015,
+      entityH: .074,
+      topicY: .084,
+      topicH: .044,
+      sepY: .153,        // linha separadora (62pt em 405)
+      sepAccentW: .153,  // trecho destacado da separadora (110pt em 720)
+      contentTop: .19,
       tableBottom: .875,
-      logoH: .068,
+      logoH: .079,       // 32pt em 405, como no header dos Megas
+      logoTop: .035,
       logoRight: .03,
       logoBottom: .018
     },

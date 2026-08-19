@@ -39,7 +39,6 @@ function gerarSlideDREEmpresa_(chave) {
   const c = _dsNovoSlideClaro_({
     entidade: titulo,
     topico: 'Painel Executivo – ' + _rrMesAno_(dre.mes, dre.ano),
-    fonte: 'Fonte: ' + QUADRO_DRE_SHEET,
     aviso: _rrAvisoMesFonteTexto_(dre.mes, dre.ano),
     conteudoY: .16
   });
@@ -102,7 +101,7 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
   _rrCelula_(slide, mX, y, labelW, hBanda + hSub, DS.colors.tableGroup);
   _rrBloco_(slide, mX, y, labelW, hBanda + hSub, 'DRE\n(Em R$/Mil)',
     { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
-      fonte: DS.typography.titles });
+      fonte: DS.typography.tables });
 
   const grupos = [dre.mes, dre.acumuladoLabel, dre.ritmoLabel];
   const colsPorGrupo = Math.round(nCols / grupos.length);
@@ -114,7 +113,7 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
     _rrCelula_(slide, x, y, gw, hBanda, DS.colors.tableGroup);
     _rrUmaLinha_(slide, x, y, gw, hBanda, titulo,
       { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
-        fonte: DS.typography.titles });
+        fonte: DS.typography.tables });
     x += gw;
     primeiraColunaGrupo += cols;
   });
@@ -127,7 +126,7 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
     _rrCelula_(slide, x, y, cw, hSub, DS.colors.tableHeader);
     _rrBloco_(slide, x, y, cw, hSub, _rrFormatarCabecalhoTabela_(h),
       { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
-        fonte: DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 });
+        fonte: DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
     x += cw;
   });
   y += hSub;
@@ -160,7 +159,7 @@ function _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo,
   _rrCelula_(slide, mX, y, labelW, h, corFundo);
   _rrUmaLinha_(slide, mX + padL, y, labelW - padL, h, rotulo,
     { fs: fs, fsMin: fs, bold: negrito, cor: corTexto,
-      fonte: CR_DESIGN_SYSTEM.typography.body, align: 'L' });
+      fonte: CR_DESIGN_SYSTEM.typography.tables, align: 'L' });
 
   let x = mX + labelW;
   valores.forEach((v, i) => {
@@ -170,7 +169,7 @@ function _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo,
     _rrCelula_(slide, x, y, cw, h, corFundo);
     _rrUmaLinha_(slide, x, y, cw, h, v,
       { fs: fs, fsMin: fs, bold: negrito, cor: corValor,
-        fonte: CR_DESIGN_SYSTEM.typography.body,
+        fonte: CR_DESIGN_SYSTEM.typography.tables,
         folga: _RR_RECUO_TEXTBOX / 2 });
     x += cw;
   });
