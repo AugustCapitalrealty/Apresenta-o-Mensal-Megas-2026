@@ -58,8 +58,10 @@ function gerarSlideResumoResultado() {
   });
   const slide = c.slide, W = c.W, H = c.H, DS = c.DS;
   // A tabela de 16 colunas usa uma margem própria menor; o cabeçalho externo
-  // e a marca continuam exatamente nos tokens do shell canônico.
-  const mX = W * 0.022;
+  // e a marca continuam exatamente nos tokens do shell canônico. Com o
+  // cabeçalho comparativo em duas linhas ("Real 2026 x" / "Orç 2026") cada
+  // coluna de comparação ficou mais larga, então a margem cede o que puder.
+  const mX = W * 0.016;
 
   // ── Tabela principal — EBITDA por empresa ──
   const tabTopo   = H * DS.layout.light.contentTop;
@@ -128,14 +130,22 @@ function _rrPrimeiraLinha_(txt) {
  * referências de período recebem quebras semânticas previsíveis.
  *
  *   Orç 2026                 → Orç\n2026
- *   Real 2026 x Orç 2026    → Real 2026\nx\nOrç 2026
+ *   Real 2026 x Orç 2026    → Real 2026 x\nOrç 2026
+ *
+ * O comparativo quebra em DUAS linhas, com o "x" preso ao primeiro período.
+ * A versão de três linhas (isolando o "x") era mais estreita, mas deixava o
+ * operador solto no meio do cabeçalho e desalinhava a altura entre grupos:
+ * "Real 2026 x Orç 2026" ficava com três linhas enquanto "Orç 2026" ficava
+ * com duas. Em duas linhas todos os grupos leem igual — em troca, cada coluna
+ * comparativa precisa de mais largura, que sai da coluna de rótulo e da
+ * margem lateral (ver labelW/mX).
  */
 function _rrFormatarCabecalhoTabela_(texto) {
   const limpo = String(texto == null ? '' : texto).replace(/\s+/g, ' ').trim();
   if (!limpo) return '';
 
   const comparativo = limpo.match(/^(.+?\s+20\d{2})\s+x\s+(.+?\s+20\d{2})$/i);
-  if (comparativo) return comparativo[1].trim() + '\n' + 'x' + '\n' + comparativo[2].trim();
+  if (comparativo) return comparativo[1].trim() + ' x' + '\n' + comparativo[2].trim();
 
   const periodo = limpo.match(/^(Real|Orç|Orcado|Orçado|Ritmo)\s+(20\d{2})$/i);
   if (periodo) return periodo[1] + '\n' + periodo[2];
@@ -212,8 +222,12 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados, fsCabecalhoUniforme
   const nCols  = dados.headers.length || 15;
   const colunasComparativas = dados.headers.map(_rrEhCabecalhoComparativo_);
   // "CR Estacionamentos" é o rótulo mais longo e é ele que dimensiona esta
-  // coluna — com 0,155 ele encostava no primeiro valor.
-  const labelW = larguraTotal * 0.175;
+  // coluna. Ela cede espaço para os 15 comparativos de duas linhas, mas tem
+  // um piso: as linhas usam fsMin = fs (fonte fixa, sem encolher), então
+  // rótulo que não couber QUEBRA em vez de diminuir. 0,150 é o menor valor
+  // que ainda deixa "CR Estacionamentos" numa linha só — conferido com a
+  // métrica real do Montserrat/Open Sans, não com a estimativa interna.
+  const labelW = larguraTotal * 0.150;
   const larguraValores = larguraTotal - labelW;
   const fsHeader = fsCabecalhoUniforme || W * DS.typography.scale.tableHeader;
   const valWs = _rrLargurasCabecalhoTemporal_(dados.headers, larguraValores, fsHeader);
@@ -332,7 +346,10 @@ function _rrTabelaPremiacao_(slide, W, mX, topo, alturaDisp, dados, fsCabecalhoU
   // Largura cheia, igual à tabela de cima. O limite inferior institucional
   // reserva uma faixa própria para o logo canônico.
   const largura = W - mX * 2;
-  const labelW  = largura * 0.34;
+  // Mesma decisão da tabela de cima: a coluna de rótulo cede espaço para os
+  // cabeçalhos comparativos de duas linhas. Aqui sobra bem mais folga (são 3
+  // colunas, não 15), mas o corte mantém as duas tabelas com a mesma cara.
+  const labelW  = largura * 0.30;
   const nCols   = dados.colunas.length || 3;
   const colunasComparativas = dados.colunas.map(_rrEhCabecalhoComparativo_);
   const valW    = (largura - labelW) / nCols;
