@@ -167,6 +167,11 @@ function _rrEhCabecalhoComparativo_(texto) {
   return /(^| )x( |$)/.test(normalizado) || /^(variacao|var)( |$)/.test(normalizado);
 }
 
+// Folga lateral de cada coluna do cabeçalho, em múltiplo do corpo da fonte
+// (não em pt fixo, para acompanhar decks de tamanhos diferentes). Antes era
+// 1pt cravado — suficiente para "caber", mas visualmente colado na borda.
+const _RR_RESPIRO_CABECALHO = 0.85;
+
 // Distribui a largura pela necessidade real dos trechos explícitos. Todos os
 // cabeçalhos mantêm a mesma fonte: comparativos recebem o necessário e as
 // colunas simples dividem o restante, em vez de cada caixa reduzir sua fonte.
@@ -180,27 +185,33 @@ function _rrLargurasCabecalhoTemporal_(headers, larguraTotal, fs) {
   const qtdComp = comparativas.filter(Boolean).length;
   if (!qtdComp) return headers.map(() => larguraTotal / Math.max(1, headers.length));
 
-  let larguraComp = 0;
-  headers.forEach((h, i) => {
-    if (!comparativas[i]) return;
-    const formatado = _rrFormatarCabecalhoTabela_(h);
-    larguraComp = Math.max(larguraComp,
-      _rrMaiorLinhaExplicita_(formatado, fs, fonte, true) + 1);
-  });
+  // Cada comparativa recebe a largura que ELA precisa, não a maior de todas.
+  // Com largura única, quem definia o máximo era sempre "Ritmo 2026 x" (o
+  // texto mais largo dos seis) e sobrava só a margem mínima justamente para
+  // ele: as colunas de RITMO ficavam espremidas enquanto as de JUNHO e
+  // ACUMULADO, com texto mais curto na mesma caixa, ficavam folgadas.
+  // Dimensionando uma a uma, a faixa RITMO fica um pouco mais larga que as
+  // outras — que é exatamente a diferença que o texto dela exige.
+  const respiro = fs * _RR_RESPIRO_CABECALHO;
+  const largurasComp = headers.map((h, i) => comparativas[i]
+    ? _rrMaiorLinhaExplicita_(_rrFormatarCabecalhoTabela_(h), fs, fonte, true) + respiro
+    : 0);
+  const totalComp = largurasComp.reduce((soma, largura) => soma + largura, 0);
+
   const qtdSimples = headers.length - qtdComp;
   const larguraSimples = qtdSimples
-    ? (larguraTotal - larguraComp * qtdComp) / qtdSimples : 0;
+    ? (larguraTotal - totalComp) / qtdSimples : 0;
   if (larguraSimples <= 0) throw new Error('Cabeçalho temporal sem largura para as colunas simples.');
 
   headers.forEach((h, i) => {
     if (comparativas[i]) return;
     const necessaria = _rrMaiorLinhaExplicita_(
-      _rrFormatarCabecalhoTabela_(h), fs, fonte, true) + 1;
+      _rrFormatarCabecalhoTabela_(h), fs, fonte, true) + respiro;
     if (necessaria > larguraSimples) {
       throw new Error('Cabeçalho "' + h + '" não cabe no tamanho institucional.');
     }
   });
-  return comparativas.map(c => c ? larguraComp : larguraSimples);
+  return comparativas.map((c, i) => c ? largurasComp[i] : larguraSimples);
 }
 
 // Comparativos gerais seguem o sinal matemático. Em Despesas, o modo explícito
@@ -233,12 +244,17 @@ function _rrTabelaEbitda_(slide, W, mX, topo, altura, dados, fsCabecalhoUniforme
   const nCols  = dados.headers.length || 15;
   const colunasComparativas = dados.headers.map(_rrEhCabecalhoComparativo_);
   // "CR Estacionamentos" é o rótulo mais longo e é ele que dimensiona esta
-  // coluna. Ela cede espaço para os 15 comparativos de duas linhas, mas tem
-  // um piso: as linhas usam fsMin = fs (fonte fixa, sem encolher), então
-  // rótulo que não couber QUEBRA em vez de diminuir. 0,150 é o menor valor
-  // que ainda deixa "CR Estacionamentos" numa linha só — conferido com a
-  // métrica real do Montserrat/Open Sans, não com a estimativa interna.
-  const labelW = larguraTotal * 0.150;
+  // coluna. Ela cede espaço para os comparativos de duas linhas, mas tem um
+  // piso: as linhas usam fsMin = fs (fonte fixa, sem encolher), então rótulo
+  // que não couber QUEBRA em vez de diminuir. Com as tabelas em Calibri
+  // (mais estreita) sobrava folga aqui, e ela foi para o respiro das colunas
+  // de RITMO — conferido com a métrica real da fonte, não com a estimativa
+  // interna.
+  // 0,135 deixava "CR Estacionamentos" com só 3,6pt de sobra. Como cada
+  // comparativa agora recebe a largura exata que precisa, devolver espaço
+  // aqui sai das colunas SIMPLES (que têm ~20pt sobrando cada) e não das de
+  // RITMO — o rótulo respira sem desfazer o ajuste pedido.
+  const labelW = larguraTotal * 0.148;
   const larguraValores = larguraTotal - labelW;
   const fsHeader = fsCabecalhoUniforme || W * DS.typography.scale.tableHeader;
   const valWs = _rrLargurasCabecalhoTemporal_(dados.headers, larguraValores, fsHeader);

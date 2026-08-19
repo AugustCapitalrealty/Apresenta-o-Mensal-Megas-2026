@@ -150,24 +150,30 @@ function _dcDesenharTabela_(c, matriz, op) {
   m.forEach((row, r) => {
     const header = tipos[r].header;
     const total = /^total\b/.test(_dcNorm_(row[0]));
+    // Mesma distinção da tabela comparativa: o fecho do quadro não é só mais
+    // um subtotal.
+    const totalGeral = /^total de\b/.test(_dcNorm_(row[0]));
     const hLinha = header ? hHeader : hCorpo;
     if (header) colunasComparativas = row.map(_rrEhCabecalhoComparativo_);
     let xx = x;
     row.forEach((valor, col) => {
       const cw = col === 0 ? primeiraW : demaisW;
-      const fundo = header ? c.DS.colors.tableHeader :
-        (total ? c.DS.colors.tableTotal : (r % 2 ? c.DS.colors.tableStripe : null));
+      const fundo = header ? c.DS.colors.tableHeader
+        : totalGeral ? c.DS.colors.tableFooter
+        : total ? c.DS.colors.tableTotal
+        : (r % 2 ? c.DS.colors.tableStripe : null);
       elementos.push(_rrCelula_(c.slide, xx, yy, cw, hLinha, fundo));
       const textoOriginal = String(valor == null ? '' : valor);
       const texto = header ? _rrFormatarCabecalhoTabela_(textoOriginal) : textoOriginal;
       // Tabela inteira em Calibri (cabeçalho e corpo) — ver typography.tables.
       const fonte = c.DS.typography.tables;
       const tamanho = header ? fsHeader : fsBody;
+      const corNeutra = (header || totalGeral) ? '#FFFFFF' : c.DS.colors.textMain;
       const estilo = { fs: tamanho, fsMin: tamanho,
-        bold: header || total || col === 0,
+        bold: header || total || totalGeral || col === 0,
         cor: header ? '#FFFFFF' : (colunasComparativas[col]
-          ? _rrCorValorComparativo_(textoOriginal, c.DS.colors.textMain, false, op.modoCor)
-          : c.DS.colors.textMain),
+          ? _rrCorValorComparativo_(textoOriginal, corNeutra, !!totalGeral, op.modoCor)
+          : corNeutra),
         fonte: fonte, align: col === 0 ? 'L' : 'C',
         folga: header ? _RR_RECUO_TEXTBOX / 2 : 0 };
       if (col === 0 || header) {
@@ -210,16 +216,23 @@ function _dcDesenharTabelaComparativa_(c, matriz, op) {
   const nCol = m[0].length;
   const primeiraW = nCol === 1 ? w : w * .42;
   const demaisW = nCol === 1 ? 0 : (w - primeiraW) / (nCol - 1);
+  // Três papéis, não dois. O "TOTAL DE RECEITAS/DESPESAS <mês>" é o fecho do
+  // quadro inteiro, enquanto os "TOTAL" soltos fecham só o bloco de Ofensores
+  // ou de Defensores. Com o mesmo cinza nos dois, a linha mais importante da
+  // tabela — o resultado do mês — se perdia no meio dos subtotais.
   const tipos = m.map((row, r) => {
     const norm = _dcNorm_(row.join(' '));
+    const primeira = _dcNorm_(row[0]);
     return {
       header: r === 0 || /^(ofensores|defensores)\b/.test(norm),
-      total: /^total\b/.test(_dcNorm_(row[0]))
+      total: /^total\b/.test(primeira),
+      totalGeral: /^total de\b/.test(primeira)
     };
   });
   const pesoHeader = dense ? 1.90 : 1.32;
   const pesoTotal = dense ? 1.10 : 1.06;
-  const pesos = tipos.map(t => t.header ? pesoHeader : (t.total ? pesoTotal : 1));
+  const pesos = tipos.map(t => t.header ? pesoHeader
+    : (t.totalGeral ? pesoTotal * 1.12 : (t.total ? pesoTotal : 1)));
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
   const alturaDisponivel = dense ? c.H * .968 - y : c.H * .62;
   const unidade = dense ? alturaDisponivel / Math.max(1, somaPesos)
@@ -233,16 +246,24 @@ function _dcDesenharTabelaComparativa_(c, matriz, op) {
       (dense ? 'densa' : 'regular') + '.');
   }
   let yy = y, colunasComparativas = [];
+  // Zebra: alterna o fundo das linhas de item e RECOMEÇA a cada bloco, para o
+  // Defensores não herdar a paridade de onde o Ofensores parou. Numa lista de
+  // 20+ despesas, é o que segura o olho na linha certa ao atravessar as seis
+  // colunas.
+  let itemNoBloco = 0;
 
   m.forEach((row, r) => {
     const tipo = tipos[r], h = unidade * pesos[r];
-    if (tipo.header) colunasComparativas = row.map(_rrEhCabecalhoComparativo_);
+    if (tipo.header) { colunasComparativas = row.map(_rrEhCabecalhoComparativo_); itemNoBloco = 0; }
+    const zebra = (!tipo.header && !tipo.total && !tipo.totalGeral && (itemNoBloco++ % 2 === 1));
     let xx = x;
     row.forEach((valor, col) => {
       const cw = col === 0 ? primeiraW : demaisW;
       const textoOriginal = String(valor == null ? '' : valor);
       if (tipo.header) _rrCelula_(c.slide, xx, yy, cw, h, c.DS.colors.tableHeader);
+      else if (tipo.totalGeral) _rrCelula_(c.slide, xx, yy, cw, h, c.DS.colors.tableFooter);
       else if (tipo.total) _rrCelula_(c.slide, xx, yy, cw, h, c.DS.colors.tableTotal);
+      else if (zebra) _rrCelula_(c.slide, xx, yy, cw, h, c.DS.colors.tableStripe);
 
       if (tipo.header) {
         const texto = _rrFormatarCabecalhoTabela_(textoOriginal);
@@ -256,12 +277,17 @@ function _dcDesenharTabelaComparativa_(c, matriz, op) {
               fonte: c.DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
         }
       } else {
-        const corNeutra = c.DS.colors.textMain;
+        // A linha de fecho ficou com fundo escuro, então o texto vira branco e
+        // o verde/vermelho passa a usar as variantes claras — as escuras
+        // sumiriam contra o azul.
+        const corNeutra = tipo.totalGeral ? '#FFFFFF' : c.DS.colors.textMain;
         const cor = colunasComparativas[col]
-          ? _rrCorValorComparativo_(textoOriginal, corNeutra, false, op.modoCor) : corNeutra;
+          ? _rrCorValorComparativo_(textoOriginal, corNeutra, !!tipo.totalGeral, op.modoCor)
+          : corNeutra;
         _rrUmaLinha_(c.slide, xx + (col === 0 ? 4 : 1), yy,
           cw - (col === 0 ? 8 : 2), h, textoOriginal,
-          { fs: fsBody, fsMin: fsBody, bold: tipo.total || colunasComparativas[col], cor: cor,
+          { fs: fsBody, fsMin: fsBody,
+            bold: tipo.total || tipo.totalGeral || colunasComparativas[col], cor: cor,
             fonte: c.DS.typography.tables, align: col === 0 ? 'L' : 'C', folga: 0 });
       }
       xx += cw;

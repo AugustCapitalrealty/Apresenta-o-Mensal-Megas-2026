@@ -30,8 +30,15 @@ const CR_DESIGN_SYSTEM = {
     darkLine  : '#334155',
     highlight : '#60A5FA',
     lines     : '#E2E8F0',
+    // Cabeçalho de tabela é UM azul só, o institucional escuro. Antes a faixa
+    // de grupo (JUNHO/ACUMULADO/RITMO) era escura e a linha de colunas logo
+    // abaixo era clara: os dois tons partiam o bloco de cabeçalho em duas
+    // peças que competiam entre si, em vez de lerem como um bloco único.
     tableGroup: '#151E49',
-    tableHeader: '#065CA9',
+    tableHeader: '#151E49',
+    // Fecho de tabela (TOTAL / TOTAL DE RECEITAS): azul médio, para o
+    // resultado se destacar do cabeçalho sem virar um terceiro tom no topo.
+    tableFooter: '#003D7B',
     tableTotal: '#BFC3C7',
     tableStripe: '#EEF2F7',
     watermark: '#E2E8F0',
