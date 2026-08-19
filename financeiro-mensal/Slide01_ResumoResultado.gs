@@ -89,7 +89,7 @@ function gerarSlideResumoResultado() {
     { fs: W * 0.0185, bold: true, cor: DS.colors.textMain,
       fonte: DS.typography.titles, folga: 0 });
 
-  _rrTabelaPremiacao_(slide, ppX, ppLargura, ppTabelaY, ppBase - ppTabelaY,
+  _rrTabelaPremiacao_(slide, W, ppX, ppLargura, ppTabelaY, ppBase - ppTabelaY,
     premiacao, fsCabecalhoTabelas);
 
   Logger.log('Slide "Resumo do Resultado" gerado → ' + dados.mes + '/' + dados.ano);
@@ -353,8 +353,11 @@ function _rrLinha_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo, co
 // ano ("Orçado 2026", "Ritmo 2026 x Orç 2026") e ficariam errados na virada do
 // exercício se estivessem no código.
 // Recebe x e largura já resolvidos pelo chamador (o bloco é centralizado e
-// mais estreito que a tabela principal — ver gerarSlideResumoResultado).
-function _rrTabelaPremiacao_(slide, x0, largura, topo, alturaDisp, dados, fsCabecalhoUniforme) {
+// mais estreito que a tabela principal — ver gerarSlideResumoResultado). `W`
+// continua vindo à parte porque a escala tipográfica é proporcional à LARGURA
+// DO SLIDE, não à largura deste bloco: a fonte tem que ser a mesma da tabela
+// de cima, e ela não encolhe só porque esta tabela é mais estreita.
+function _rrTabelaPremiacao_(slide, W, x0, largura, topo, alturaDisp, dados, fsCabecalhoUniforme) {
   const DS = CR_DESIGN_SYSTEM;
   const mX = x0;
   // A coluna de rótulo aqui é a mais larga das duas tabelas porque guarda
