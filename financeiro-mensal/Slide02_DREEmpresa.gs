@@ -30,8 +30,20 @@ const DRE_EMPRESAS = {
 };
 
 // Pontos de entrada por empresa — aparecem sozinhos no menu do editor
-// (a função genérica abaixo não aparece porque tem parâmetro).
-function gerarSlideDREDemercado() { gerarSlideDREEmpresa_('DEMERCADO'); }
+// (a função genérica abaixo não aparece porque tem parâmetro). O pipeline de
+// 00_Main.gs chama estas funções, nunca gerarSlideDREEmpresa_() direto: são
+// elas que ficam visíveis no menu para rodar uma empresa avulsa, sem gerar o
+// deck inteiro.
+//
+// DRE_EMPRESAS já declara 8 empresas (a busca por bloco funciona pra
+// qualquer uma), mas só as 3 com passo no pipeline de 00_Main.gs — Demercado,
+// Capital Realty, Hangar Vip — ganham função aqui por ora. As outras
+// (Garoto, Postos, BMFD, DCL) entram quando alguém confirmar o bloco delas
+// contra a planilha, não antes: função no menu sem conferência convida a
+// gerar slide com dado não verificado.
+function gerarSlideDREDemercado()     { gerarSlideDREEmpresa_('DEMERCADO'); }
+function gerarSlideDRECapitalRealty() { gerarSlideDREEmpresa_('CAPITAL REALTY'); }
+function gerarSlideDREHangarVip()     { gerarSlideDREEmpresa_('HANGAR VIP'); }
 
 function gerarSlideDREEmpresa_(chave) {
   const titulo = DRE_EMPRESAS[chave] || chave;
