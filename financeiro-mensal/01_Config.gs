@@ -26,16 +26,73 @@ const CR_DESIGN_SYSTEM = {
     cardBg    : '#FFFFFF',
     textMain  : '#151E49',
     textBody  : '#475569',
+    textMuted : '#94A3B8',
+    darkLine  : '#334155',
+    highlight : '#60A5FA',
     lines     : '#E2E8F0',
+    tableGroup: '#151E49',
+    tableHeader: '#065CA9',
+    tableTotal: '#BFC3C7',
+    tableStripe: '#EEF2F7',
+    watermark: '#E2E8F0',
+    warningText: '#C2410C',
+    comparisonPositive: '#15803D',
+    comparisonNegative: '#DC2626',
+    comparisonPositiveDark: '#86EFAC',
+    comparisonNegativeDark: '#FCA5A5',
     accentGreen : '#10B981',
     accentOrange: '#F97316',
     accentRed   : '#EF4444'
   },
-  typography: { titles: 'Montserrat', body: 'Open Sans' },
-  layout: { marginX: 30, headerH: 64 },
-  // Logo Capital Realty — mesmo arquivo usado nos outros decks.
+  typography: {
+    titles: 'Montserrat',
+    body: 'Open Sans',
+    // Escala proporcional à largura do deck. Os três tamanhos de corpo são
+    // modos de densidade da TABELA inteira — nunca ajustes célula a célula.
+    scale: {
+      entity: .027,
+      entityCompact: .019,
+      topic: .021,
+      topicCompact: .015,
+      metadata: .0082,
+      tableGroup: .0115,
+      tableHeader: .0098,
+      tableBodyRegular: .0114,
+      tableBodyCompact: .0097,
+      tableBodyDense: .0092
+    }
+  },
+  layout: {
+    marginX: 30,
+    headerH: 64,
+    light: {
+      marginX: .03,
+      entityY: .02,
+      entityH: .055,
+      topicY: .073,
+      topicH: .048,
+      metadataX: .58,
+      metadataY: .025,
+      metadataW: .39,
+      metadataH: .075,
+      contentTop: .16,
+      tableBottom: .875,
+      logoH: .068,
+      logoRight: .03,
+      logoBottom: .018
+    },
+    dark: {
+      logoX: .058,
+      logoY: .074,
+      logoH: .075
+    }
+  },
+  // Assets canônicos por contraste. logoId fica apenas como alias legado;
+  // nenhum renderizador financeiro ativo troca para ele como fallback.
   assets: {
     logoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4',
+    logoLightId: '1toRVfIgamy4CWBT2Gv2mGd6V_W0OGISS',
+    logoDarkId: '1Tx9cwk1-1_P1TSGoXLZ828JNQ-rY-w6p',
     logoW: 112,
     logoH: 32
   }

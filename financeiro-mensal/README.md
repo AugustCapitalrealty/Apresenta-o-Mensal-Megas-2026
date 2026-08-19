@@ -70,6 +70,23 @@ As tabelas complementares são renderizadas com células vetoriais (retângulos
 e caixas de texto). O código não usa `insertTable`, evitando a falha da API do
 Slides `object has no text`.
 
+## Design system do deck
+
+Os 43 slides claros compartilham o mesmo shell: fundo branco, marca d'água
+institucional, cabeçalho em duas linhas, metadados compactos e a versão
+`fullColor` da logo no canto inferior direito. A capa, as 10 divisórias e o
+encerramento usam o mesmo shell escuro e somente a versão `fullNegativo`.
+
+Montserrat é reservada a títulos e cabeçalhos; Open Sans é usada em textos,
+rótulos, valores, fontes e avisos. Cabeçalhos temporais têm composição fixa:
+períodos simples em duas linhas e comparativos em três. O tamanho é calculado
+por grupo/tabela e nunca reduzido em apenas uma célula.
+
+Receitas e Despesas usam o mesmo renderizador vertical, com Ofensores e
+Defensores empilhados. Despesas adota o modo denso e a semântica de
+favorabilidade: redução em verde, aumento em vermelho e zero neutro. Nos
+demais comparativos, positivo permanece verde e negativo vermelho.
+
 ## Estrutura
 
 ```text
@@ -77,7 +94,7 @@ Slides `object has no text`.
 01_Config.gs                 design system e IDs
 02_Dados.gs                  referência, EBITDA e DRE
 03_DadosDeckCompleto.gs      registro de fontes, agenda, comparativos e diagnóstico
-Slide_CapasComuns.gs         helpers visuais das capas
+Slide_CapasComuns.gs         shells claros/escuros e componentes de marca
 Slide00_Capa.gs              capa
 Slide01_ResumoResultado.gs   resumo EBITDA e pré-premiação
 Slide02_DREEmpresa.gs        DRE por empresa

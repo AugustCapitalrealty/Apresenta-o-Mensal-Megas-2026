@@ -45,43 +45,54 @@ function _fmUnidade_(dados, pista) {
 }
 
 function _fmNovoSlide_(titulo, subtitulo) {
-  const deck = getDeckMensal_(), slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const W = deck.getPageWidth(), H = deck.getPageHeight(), DS = CR_DESIGN_SYSTEM, m = W * .035;
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-  const e = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W * .72, -H * .35, W * .48, W * .48);
-  e.getFill().setSolidFill(DS.colors.brandLight, .045); e.getBorder().setTransparent();
-  _rrUmaLinha_(slide, m, H * .045, W * .68, H * .075, titulo, { fs: W * .029, bold: true, cor: DS.colors.brandDark, align: 'L', folga: 0 });
-  _rrUmaLinha_(slide, m, H * .12, W * .68, H * .045, subtitulo, { fs: W * .012, cor: DS.colors.textBody, fonte: DS.typography.body, align: 'L', folga: 0 });
-  return { deck: deck, slide: slide, W: W, H: H, DS: DS, m: m };
+  const ref = _dcReferencia_();
+  return _dsNovoSlideClaro_({
+    entidade: 'Resultados Financeiros',
+    topico: titulo + ' – ' + ref.texto,
+    fonte: subtitulo || '',
+    conteudoY: .16
+  });
 }
 
 function _fmRodape_(c) {
-  const y = c.H * .94;
-  const line = c.slide.insertShape(SlidesApp.ShapeType.RECTANGLE, c.m, y, c.W - c.m * 2, .8);
-  line.getFill().setSolidFill(c.DS.colors.lines); line.getBorder().setTransparent();
-  try { c.slide.insertImage(DriveApp.getFileById(c.DS.assets.logoId).getBlob(), c.W - c.m - c.DS.assets.logoW * .68, y + 4, c.DS.assets.logoW * .68, c.DS.assets.logoH * .68); }
-  catch (e) { Logger.log('Financeiro mensal: logo não carregado. ' + e.message); }
+  // Compatibilidade com os entrypoints antigos: o shell já desenha o rodapé
+  // e a logo oficial uma única vez.
+  return c.logo;
 }
 
 function _fmTabelaComparativa_(c, modelo, despesas) {
   const headers = ['Empreendimento', 'Real 2025', 'Orçado 2026', 'Real 2026', 'Var. ano ant.', 'Var. orçamento'];
   const colunasComparativas = headers.map(_rrEhCabecalhoComparativo_);
-  const rows = modelo.linhas, x = c.m, y0 = c.H * .205, totalW = c.W - c.m * 2;
+  const rows = modelo.linhas, x = c.m, y0 = c.H * .19, totalW = c.W - c.m * 2;
   const ws = [totalW * .28].concat(Array(5).fill(totalW * .144));
-  const hHead = c.H * .095, h = Math.min(c.H * .075, c.H * .66 / (rows.length + 1));
+  const hHead = c.H * .095;
+  const h = Math.min(c.H * .075,
+    ((c.tableBottom || c.H * .875) - y0 - hHead) / Math.max(1, rows.length));
+  const fsHeader = c.W * c.DS.typography.scale.tableHeader;
+  const fsBody = c.W * c.DS.typography.scale.tableBodyRegular;
+  if (h <= fsBody * 1.18) throw new Error('Comparativo manual sem altura para a fonte institucional.');
   let xx = x;
-  headers.forEach((v, i) => { _rrCelula_(c.slide, xx, y0, ws[i], hHead, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, y0, ws[i], hHead, _rrFormatarCabecalhoTabela_(v), { fs: c.W * .011, bold: true, cor: '#FFFFFF' }); xx += ws[i]; });
+  headers.forEach((v, i) => {
+    _rrCelula_(c.slide, xx, y0, ws[i], hHead, c.DS.colors.tableHeader);
+    _rrBloco_(c.slide, xx, y0, ws[i], hHead, _rrFormatarCabecalhoTabela_(v),
+      { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
+        fonte: c.DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 });
+    xx += ws[i];
+  });
   rows.forEach((r, ri) => {
     const vals = [r.nome, r.anterior, r.orcado, r.real, r.varAnterior.texto, r.varOrcado.texto]; xx = x;
     vals.forEach((v, i) => {
-      const bg = ri % 2 ? '#F1F5F9' : '#FFFFFF';
+      const bg = ri % 2 ? c.DS.colors.tableStripe : null;
       const valorComparativo = i === 4 ? r.varAnterior.valor : (i === 5 ? r.varOrcado.valor : null);
       const cor = colunasComparativas[i]
-        ? _rrCorValorComparativo_(valorComparativo, c.DS.colors.textMain, false)
+        ? _rrCorValorComparativo_(valorComparativo, c.DS.colors.textMain, false,
+          despesas ? 'despesa' : 'matematico')
         : c.DS.colors.textMain;
       _rrCelula_(c.slide, xx, y0 + hHead + ri * h, ws[i], h, bg);
       _rrUmaLinha_(c.slide, xx + (i === 0 ? 4 : 0), y0 + hHead + ri * h, ws[i] - (i === 0 ? 4 : 0), h, v,
-        { fs: c.W * .011, bold: i === 0 || i >= 4, cor: cor, align: i === 0 ? 'L' : 'C' }); xx += ws[i];
+        { fs: fsBody, fsMin: fsBody, bold: i === 0 || i >= 4, cor: cor,
+          fonte: c.DS.typography.body, align: i === 0 ? 'L' : 'C' });
+      xx += ws[i];
     });
   });
 }

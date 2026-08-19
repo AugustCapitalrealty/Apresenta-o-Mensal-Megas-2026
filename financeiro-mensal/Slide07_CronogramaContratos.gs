@@ -24,12 +24,19 @@ function _fmCronogramaDesenhar_(c, rows) {
   const top = c.H * .22, max = Math.max.apply(null, rows.map(r => r.q)), left = c.m, cw = c.W * .52, rh = Math.min(c.H * .07, c.H * .58 / rows.length);
   rows.forEach((r, i) => {
     const y = top + i * rh, label = r.categoria + (rows.filter(x => x.categoria === r.categoria).length > 1 ? ' · ' + r.nome : '');
-    _rrUmaLinha_(c.slide, left, y, cw * .36, rh, label, { fs: c.W * .010, bold: true, align: 'L' });
+    _rrUmaLinha_(c.slide, left, y, cw * .36, rh, label,
+      { fs: c.W * .010, fsMin: c.W * .010, bold: true,
+        fonte: c.DS.typography.body, align: 'L' });
     const b = c.slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left + cw * .37, y + rh * .22, Math.max(1, cw * .48 * r.q / Math.max(1, max)), rh * .56);
-    b.getFill().setSolidFill(/indeterminado/i.test(r.categoria) ? '#6D5BD0' : c.DS.colors.brandMed); b.getBorder().setTransparent();
-    _rrUmaLinha_(c.slide, left + cw * .86, y, cw * .14, rh, r.percentual, { fs: c.W * .0105, bold: true });
+    b.getFill().setSolidFill(/indeterminado/i.test(r.categoria)
+      ? c.DS.colors.brandLight : c.DS.colors.brandMed); b.getBorder().setTransparent();
+    _rrUmaLinha_(c.slide, left + cw * .86, y, cw * .14, rh, r.percentual,
+      { fs: c.W * .0105, fsMin: c.W * .0105, bold: true,
+        fonte: c.DS.typography.body });
   });
   const x = c.W * .64, w = c.W * .31, ws = [w * .50, w * .25, w * .25], heads = ['Vencimento', 'Contratos', '%']; let xx = x;
-  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .08, c.DS.colors.brandDark); _rrBloco_(c.slide, xx, top, ws[i], c.H * .08, _rrFormatarCabecalhoTabela_(h), { fs: c.W * .010, bold: true, cor: '#FFF' }); xx += ws[i]; });
-  rows.forEach((r, ri) => { xx = x; [r.categoria, r.quantidade, r.percentual].forEach((v, i) => { _rrCelula_(c.slide, xx, top + c.H * .08 + ri * rh, ws[i], rh, ri % 2 ? '#F1F5F9' : '#FFF'); _rrUmaLinha_(c.slide, xx + (i ? 0 : 3), top + c.H * .08 + ri * rh, ws[i] - (i ? 0 : 3), rh, v, { fs: c.W * .010, bold: i === 0, align: i ? 'C' : 'L' }); xx += ws[i]; }); });
+  const fsHeader = c.W * c.DS.typography.scale.tableHeader;
+  const fsBody = c.W * c.DS.typography.scale.tableBodyRegular;
+  heads.forEach((h, i) => { _rrCelula_(c.slide, xx, top, ws[i], c.H * .08, c.DS.colors.tableHeader); _rrBloco_(c.slide, xx, top, ws[i], c.H * .08, _rrFormatarCabecalhoTabela_(h), { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFF', fonte: c.DS.typography.titles, folga: _RR_RECUO_TEXTBOX / 2 }); xx += ws[i]; });
+  rows.forEach((r, ri) => { xx = x; [r.categoria, r.quantidade, r.percentual].forEach((v, i) => { _rrCelula_(c.slide, xx, top + c.H * .08 + ri * rh, ws[i], rh, ri % 2 ? c.DS.colors.tableStripe : null); _rrUmaLinha_(c.slide, xx + (i ? 0 : 3), top + c.H * .08 + ri * rh, ws[i] - (i ? 0 : 3), rh, v, { fs: fsBody, fsMin: fsBody, bold: i === 0, fonte: c.DS.typography.body, align: i ? 'C' : 'L' }); xx += ws[i]; }); });
 }

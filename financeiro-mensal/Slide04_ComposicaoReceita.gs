@@ -18,15 +18,21 @@ function gerarSlideComposicaoReceita() {
 }
 
 function _fmGraficoComposicao_(c, itens, soma) {
-  const palette = [c.DS.colors.brandMed, '#6D5BD0', c.DS.colors.brandLight, '#9B8AFB', '#60A5FA', '#A78BFA'];
+  const palette = [c.DS.colors.brandMed, c.DS.colors.brandLight,
+    c.DS.colors.brandSoft, c.DS.colors.accentGreen,
+    c.DS.colors.accentOrange, c.DS.colors.textBody];
   const top = c.H * .22, left = c.m, chartW = c.W * .58, barH = Math.min(c.H * .065, c.H * .58 / itens.length);
   if (itens.length > 6) {
     itens.forEach((it, i) => {
-      _rrUmaLinha_(c.slide, left, top + i * barH, chartW * .34, barH, it.nome, { fs: c.W * .011, bold: true, align: 'L' });
+      _rrUmaLinha_(c.slide, left, top + i * barH, chartW * .34, barH, it.nome,
+        { fs: c.W * .011, fsMin: c.W * .011, bold: true,
+          fonte: c.DS.typography.body, align: 'L' });
       const w = Math.max(1, chartW * .55 * it.p / Math.max.apply(null, itens.map(x => x.p)));
       const b = c.slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left + chartW * .35, top + i * barH + barH * .22, w, barH * .56);
-      b.getFill().setSolidFill(i % 2 ? '#6D5BD0' : c.DS.colors.brandMed); b.getBorder().setTransparent();
-      _rrUmaLinha_(c.slide, left + chartW * .91, top + i * barH, chartW * .09, barH, (it.p * 100).toFixed(1).replace('.', ',') + '%', { fs: c.W * .010, bold: true });
+      b.getFill().setSolidFill(i % 2 ? c.DS.colors.brandLight : c.DS.colors.brandMed); b.getBorder().setTransparent();
+      _rrUmaLinha_(c.slide, left + chartW * .91, top + i * barH, chartW * .09, barH, (it.p * 100).toFixed(1).replace('.', ',') + '%',
+        { fs: c.W * .010, fsMin: c.W * .010, bold: true,
+          fonte: c.DS.typography.body });
     });
   } else {
     let x = left;
@@ -38,7 +44,12 @@ function _fmGraficoComposicao_(c, itens, soma) {
   (itens.length > 6 ? [] : itens).forEach((it, i) => {
     const sw = c.W * .018, yy = ly + i * c.H * .068;
     const s = c.slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, yy + 5, sw, sw); s.getFill().setSolidFill(palette[i % palette.length]); s.getBorder().setTransparent();
-    _rrUmaLinha_(c.slide, lx + sw + 5, yy, c.W * .20, c.H * .035, it.nome, { fs: c.W * .0105, bold: true, align: 'L' });
-    _rrUmaLinha_(c.slide, lx + sw + 5, yy + c.H * .03, c.W * .20, c.H * .03, it.receita + ' · ' + (it.p * 100).toFixed(1).replace('.', ',') + '%', { fs: c.W * .0095, cor: c.DS.colors.textBody, align: 'L' });
+    _rrUmaLinha_(c.slide, lx + sw + 5, yy, c.W * .20, c.H * .035, it.nome,
+      { fs: c.W * .0105, fsMin: c.W * .0105, bold: true,
+        fonte: c.DS.typography.body, align: 'L' });
+    _rrUmaLinha_(c.slide, lx + sw + 5, yy + c.H * .03, c.W * .20, c.H * .03,
+      it.receita + ' · ' + (it.p * 100).toFixed(1).replace('.', ',') + '%',
+      { fs: c.W * .0095, fsMin: c.W * .0095, cor: c.DS.colors.textBody,
+        fonte: c.DS.typography.body, align: 'L' });
   });
 }
