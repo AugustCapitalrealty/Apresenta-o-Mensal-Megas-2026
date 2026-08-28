@@ -59,15 +59,32 @@ function gerarSlideIndicadoresGerais() {
       { label: 'SLA (%)',     lookup: 'SLA Preventivas',      sentido: 'maior', sla: true },
       { label: 'Em dia (%)',  lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
     ] },
-    { title: 'BACKLOG — CHAMADOS EM ABERTO', color: DS.colors.themeAtivos, rows: [
-      { label: 'Total em aberto (Qtd)', lookup: 'Backlog em aberto', sentido: 'menor', sla: false }
+    // MESMO quadrante do Dashboard dos Megas ('MANUTENÇÃO CORRETIVA:
+    // BACKLOG'), com o backlog e o fluxo do mês juntos: os três primeiros
+    // números se explicam — backlog(fim) = backlog(início) + abertos −
+    // fechados. Separá-los em painéis diferentes esconde a conta que fecha.
+    //
+    // "% Conclusão histórico" e "Tempo médio de aprovação" são os mesmos
+    // rótulos dos Megas, mas lá são células DIGITADAS na aba DADOS. Aqui são
+    // CALCULADOS na BD-CORRETIVAS — ver obterAprovacaoEConclusao_ em
+    // 02_Dados.gs para as duas definições, que estão escritas por extenso
+    // justamente porque o nome sozinho admite mais de uma leitura.
+    { title: 'MANUTENÇÃO CORRETIVA: CHAMADOS', color: DS.colors.themeCorr, rows: [
+      { label: 'Backlog em aberto (Qtd)',  lookup: 'Backlog em aberto',                sentido: 'menor', sla: false },
+      { label: 'Abertos no mês (Qtd)',     lookup: 'Chamados abertos',                 sentido: 'menor', sla: false },
+      { label: 'Fechados no mês (Qtd)',    lookup: 'Chamados fechados',                sentido: 'maior', sla: false },
+      { label: '% Conclusão histórico',    lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true  },
+      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',        sentido: 'menor', sla: false },
+      { label: 'Tempo médio atend. (h)',   lookup: 'Tempo médio de atendimento',       sentido: 'menor', sla: false }
     ] }
   ];
 
-  // Só 2 quadrantes agora — lado a lado, ocupando a altura toda abaixo do
-  // cabeçalho (em vez do grid 2×2 de quando eram 4).
+  // Painéis lado a lado, ocupando a altura toda abaixo do cabeçalho. A
+  // largura sai da QUANTIDADE de painéis, para acrescentar um não exigir
+  // mexer na conta.
   const marginX = 28, marginY = 74, gap = 16, footerMargin = 15;
-  const cardW = (W - (2 * marginX) - gap) / 2;
+  const nCards = structure.length;
+  const cardW = (W - (2 * marginX) - (gap * (nCards - 1))) / nCards;
   const cardH = H - marginY - footerMargin;
 
   structure.forEach((cat, i) => {

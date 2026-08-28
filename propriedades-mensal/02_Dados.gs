@@ -101,6 +101,17 @@ function _propEhMega_(cc) {
 // Estado, SLA e datas). O mapeamento é por CONTEÚDO do cabeçalho, não por
 // posição — coluna que muda de lugar não quebra a leitura, e coluna que muda
 // de nome aparece em inspecionarBase().
+// Número da planilha, ou null quando a célula está vazia / não é número.
+// Devolver 0 para célula vazia somaria zeros na média e puxaria o tempo médio
+// para baixo sem ninguém ver — "não medido" não é "demorou zero".
+function _propNumeroOuNull_(v) {
+  const txt = String(v == null ? '' : v).trim();
+  if (!txt) return null;
+  // Vem como texto de planilha: pode ter separador de milhar pt-BR.
+  const n = Number(txt.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
 const _propBaseCache = {};
 
 // Compara ignorando espaços e pontuação: "BD - PREVENTIVAS",
@@ -204,6 +215,18 @@ function _propLerBase_(nomeAba) {
     //   PREVENTIVAS: "Data agendamento"   / "Fechada em"
     const cIni = col('data de reporte', 'data agendamento', 'data de agendamento');
     const cFim = col('fechado em', 'fechada em');
+    // APROVAÇÃO — só existe em BD-CORRETIVAS. Duas colunas, com papéis
+    // diferentes:
+    //   P  "Aprovado em"                  → QUANDO aprovou (define o mês)
+    //   AG "Tempo para aprovar (segundos)" → QUANTO demorou (o valor medido)
+    //
+    // A espera sai da coluna AG, não de (P − B). A base já calcula esse
+    // número, e recalcular por subtração assumiria que a espera é corrida —
+    // se AG considerar horário útil ou calendário de SLA, a subtração daria
+    // outro resultado e ninguém saberia qual está certo. AG é a fonte; a
+    // subtração fica só de reserva, para a linha que tiver P e não tiver AG.
+    const cAprov  = col('aprovado em', 'aprovada em', 'data de aprovacao', 'data de aprovação');
+    const cTaprov = col('tempo para aprovar (segundos)', 'tempo para aprovar');
 
     if (cCC < 0) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode inspecionarBase("' +
@@ -227,9 +250,26 @@ function _propLerBase_(nomeAba) {
         motivoPausa: cMotivo >= 0 ? String(data[r][cMotivo] || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
-        dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
+        dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null,
+        dtAprovado: cAprov >= 0 ? _histParseDataHora_(data[r][cAprov]) : null,
+        tempoAprovarSeg: cTaprov >= 0 ? _propNumeroOuNull_(data[r][cTaprov]) : null
       });
     }
+    // Diz de que coluna saiu a aprovação. Sem isso, uma coluna renomeada
+    // faria "Tempo médio de aprovação" sumir do slide sem ninguém saber por quê.
+    if (nomeAba === BD_ABA_CORRETIVAS) {
+      if (cAprov >= 0 || cTaprov >= 0) {
+        Logger.log('BD-CORRETIVAS: aprovação — data de "' +
+                   (cAprov >= 0 ? data[0][cAprov] : '(não achada)') + '" (' +
+                   saida.filter(it => it.dtAprovado).length + ' linha(s)), espera de "' +
+                   (cTaprov >= 0 ? data[0][cTaprov] : '(não achada)') + '" (' +
+                   saida.filter(it => it.tempoAprovarSeg != null).length + ' linha(s)).');
+      } else {
+        Logger.log('BD-CORRETIVAS: nenhuma coluna de aprovação reconhecida. ' +
+                   'Cabeçalho real: ' + data[0].filter(String).join(' | '));
+      }
+    }
+
     // Só cacheia resultado bom: leitura vazia por falha transitória não pode
     // ficar grudada na rodada inteira.
     if (saida.length) _propBaseCache[nomeAba] = saida;
@@ -1227,6 +1267,99 @@ function obterIndicadoresAcumulado_() {
 // que isso aconteceu. Forçar uma coluna "mês anterior" aqui seria inventar
 // dado. Ele já aparece como card avulso (sem comparação histórica) no
 // primeiro slide de KPIs — ver obterIndicadoresPortfolio_ acima.
+/**
+ * TEMPO MÉDIO DE APROVAÇÃO (horas) e % CONCLUSÃO HISTÓRICO, no mês pedido.
+ *
+ * Nos Megas os dois são células DIGITADAS na aba DADOS — ninguém os calcula.
+ * Aqui saem da BD-CORRETIVAS, com estas definições:
+ *
+ * · TEMPO MÉDIO DE APROVAÇÃO = média da coluna "Tempo para aprovar
+ *   (segundos)" (AG), em horas, dos chamados APROVADOS dentro do mês — a
+ *   janela vem de "Aprovado em" (P).
+ *
+ *   O valor sai de AG, NÃO de (P − B). A base já calcula essa espera; refazer
+ *   por subtração assumiria que ela é corrida, e se AG considerar horário
+ *   útil ou calendário de SLA os dois números divergem sem que ninguém saiba
+ *   qual está certo. A subtração fica de RESERVA, só para a linha que tiver
+ *   data de aprovação e não tiver AG — e a divergência entre as duas é
+ *   registrada no Logger, que é como se descobre a regra de AG sem perguntar.
+ *
+ *   A janela é a da aprovação, não a da abertura — mesma escolha que já vale
+ *   para o tempo de atendimento, que usa a janela do fechamento: o indicador
+ *   fala do que ACONTECEU no mês, não do que foi aberto nele. Chamado sem
+ *   aprovação fica de fora (não é aprovação instantânea, é aprovação que não
+ *   houve).
+ *
+ * · % CONCLUSÃO HISTÓRICO = de tudo que foi aberto ATÉ o fim do mês, quanto
+ *   já estava fechado ali. É acumulado desde o começo da base, não do mês —
+ *   é o que "histórico" quer dizer, e é o que faz o número ser comparável
+ *   entre meses: um mês com poucos chamados não distorce a série.
+ *   Equivale a  fechados(até D) ÷ criados(até D).
+ *
+ * Devolve { tempoAprovacaoH, conclusaoHistoricoPct, aprovadosNoMes,
+ *           semDataAprovacao } — nulls quando não há base, nunca zero: "não
+ * houve o que medir" é diferente de "o resultado foi zero" (lição 3).
+ */
+function obterAprovacaoEConclusao_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+
+  const itens = _propLerCorretivas_()
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  const esperas = [];              // em SEGUNDOS
+  let semDataAprovacao = 0;        // aprovado no mês, mas sem espera utilizável
+  let porSubtracao = 0;            // caiu na reserva (P − B)
+  let divergentes = 0;             // AG e (P − B) discordam em mais de 1h
+  let criadosAte = 0, fechadosAte = 0;
+
+  itens.forEach(it => {
+    // --- Tempo de aprovação: aprovados DENTRO do mês ---
+    if (it.dtAprovado && it.dtAprovado >= refIni && it.dtAprovado < refFim) {
+      const porSub = (it.dtReporte && it.dtAprovado >= it.dtReporte)
+        ? (it.dtAprovado - it.dtReporte) / 1000
+        : null;
+
+      if (it.tempoAprovarSeg != null && it.tempoAprovarSeg >= 0) {
+        esperas.push(it.tempoAprovarSeg);
+        // Discordância grande entre a coluna e a subtração indica que AG não é
+        // tempo corrido. Vale saber, não vale corrigir por conta própria.
+        if (porSub != null && Math.abs(porSub - it.tempoAprovarSeg) > 3600) divergentes++;
+      } else if (porSub != null) {
+        esperas.push(porSub);
+        porSubtracao++;
+      } else {
+        // Sem AG e com data de aprovação anterior ao reporte: data trocada,
+        // não espera negativa. Uma média com número negativo é pior que uma
+        // média com um caso a menos.
+        semDataAprovacao++;
+      }
+    }
+
+    // --- Conclusão histórica: acumulado até o fim do mês ---
+    if (it.dtReporte && it.dtReporte < refFim) {
+      criadosAte++;
+      if (_bdChamadoFechado_(it.estado, it.dtFechado) && it.dtFechado && it.dtFechado < refFim) {
+        fechadosAte++;
+      }
+    }
+  });
+
+  return {
+    tempoAprovacaoH: esperas.length
+      ? esperas.reduce((soma, seg) => soma + seg, 0) / esperas.length / 3600
+      : null,
+    conclusaoHistoricoPct: criadosAte > 0 ? (fechadosAte / criadosAte) * 100 : null,
+    aprovadosNoMes: esperas.length,
+    semDataAprovacao: semDataAprovacao,
+    porSubtracao: porSubtracao,
+    divergentes: divergentes,
+    criadosAte: criadosAte,
+    fechadosAte: fechadosAte
+  };
+}
+
+
 function obterDashboardPropriedades_() {
   const ref    = obterMesReferencia_();
   const mesAnt = _propMesAnterior_(ref.ano, ref.index);
@@ -1246,11 +1379,52 @@ function obterDashboardPropriedades_() {
   const nomesCurto = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   const headers = pontos.map(p => nomesCurto[p.index] + "'" + String(p.ano).slice(-2));
 
+  // CHAMADOS (corretivas): entrada e saída do mês, nos mesmos 3 pontos.
+  // A identidade da lição 2 do CLAUDE.md vale aqui — backlog(fim) =
+  // backlog(início) + criados − fechados — e ela só fecha porque as três
+  // linhas saem da MESMA base (BD-CORRETIVAS) e do mesmo filtro de equipe.
+  const fluxo = pontos.map(p => obterFluxoCorretivasPropriedades_(p.ano, p.index));
+  const aprov = pontos.map(p => obterAprovacaoEConclusao_(p.ano, p.index));
+
   const linha3 = (a, b, c) => ({ atual: a, mesAnt: b, anoAnt: c });
   const map = new Map();
   map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
   map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
   map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
+  map.set('Chamados abertos',       linha3(fluxo[0].mensal.criados,  fluxo[1].mensal.criados,  fluxo[2].mensal.criados));
+  map.set('Chamados fechados',      linha3(fluxo[0].mensal.fechados, fluxo[1].mensal.fechados, fluxo[2].mensal.fechados));
+  map.set('Tempo médio de atendimento',
+    linha3(fluxo[0].mensal.tempoMedioH, fluxo[1].mensal.tempoMedioH, fluxo[2].mensal.tempoMedioH));
+  map.set('Tempo médio de aprovação',
+    linha3(aprov[0].tempoAprovacaoH, aprov[1].tempoAprovacaoH, aprov[2].tempoAprovacaoH));
+  map.set('Percentual de conclusão histórico',
+    linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
+
+  Logger.log('Dashboard: aprovação — ' + aprov[0].aprovadosNoMes + ' aprovado(s) no mês' +
+             (aprov[0].tempoAprovacaoH == null ? ' (sem base para o tempo médio)' :
+              ', média ' + aprov[0].tempoAprovacaoH.toFixed(1) + 'h') +
+             (aprov[0].porSubtracao ? ' · ' + aprov[0].porSubtracao +
+              ' sem "Tempo para aprovar", calculado por (Aprovado em − Data de reporte)' : '') +
+             (aprov[0].divergentes ? ' · ⚠ ' + aprov[0].divergentes +
+              ' com "Tempo para aprovar" divergindo da subtração em mais de 1h — ' +
+              'a coluna provavelmente não é tempo corrido (horário útil?)' : '') +
+             (aprov[0].semDataAprovacao ? ' · ' + aprov[0].semDataAprovacao +
+              ' sem espera utilizável, fora da conta' : ''));
+  Logger.log('Dashboard: conclusão histórica — ' + aprov[0].fechadosAte + ' fechados de ' +
+             aprov[0].criadosAte + ' abertos até o fim do mês' +
+             (aprov[0].conclusaoHistoricoPct == null ? '' :
+              ' = ' + aprov[0].conclusaoHistoricoPct.toFixed(1) + '%'));
+
+  // Conferência da identidade estoque × fluxo no mês de referência. Não
+  // corrige nada — só avisa, que é o que permite o erro aparecer antes da
+  // reunião em vez de durante.
+  const esperado = backlog[1] + fluxo[0].mensal.criados - fluxo[0].mensal.fechados;
+  if (esperado !== backlog[0]) {
+    Logger.log('Dashboard: backlog(mês ant)=' + backlog[1] + ' + criados=' + fluxo[0].mensal.criados +
+               ' − fechados=' + fluxo[0].mensal.fechados + ' = ' + esperado +
+               ', mas backlog(mês)=' + backlog[0] + ' — difere em ' + (backlog[0] - esperado) +
+               '. Esperado quando o mês ainda está correndo; se o mês estiver fechado, investigue.');
+  }
 
   return { headers: headers, map: map, parcial: prev[0].parcial };
 }
