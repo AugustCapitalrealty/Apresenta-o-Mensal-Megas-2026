@@ -112,6 +112,40 @@ function _propNumeroOuNull_(v) {
   return isNaN(n) ? null : n;
 }
 
+// ==========================================
+// NORMALIZADORES E CLASSIFICADORES DE CHAMADO
+// ==========================================
+// Ficam AQUI, na camada de dados, e não no arquivo do slide que os usa:
+// _propLerBase_ chama _idChamadoNormaliza_, e uma camada de dados que depende
+// de um arquivo de desenho não dá para testar sem carregar o desenho junto.
+// No Apps Script funcionaria (namespace único), mas o teste pegou.
+
+function _ehCondominio_(cliente) {
+  return _histNorm_(cliente).indexOf('condomini') >= 0;
+}
+
+// "Responsabilidade Locatario" aparece como um item A MAIS dentro da própria
+// lista de Responsáveis. Quando está lá, o chamado é do locatário, não da
+// operação — e não entra nesta lista, que é de pendências DA equipe Property.
+function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
+  return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0;
+}
+
+// O Id vem da planilha às vezes como número formatado ("11.607.652") e às
+// vezes como texto. Normaliza para dígitos, senão o mesmo chamado aparece
+// escrito de dois jeitos entre slides.
+function _idChamadoNormaliza_(v) {
+  const txt = String(v || '').trim();
+  if (!txt) return '';
+  const n = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? txt.replace(/\D/g, '') : String(Math.round(n));
+}
+
+function _histEmpChave_(s) {
+  return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
 const _propBaseCache = {};
 
 // Compara ignorando espaços e pontuação: "BD - PREVENTIVAS",
@@ -183,6 +217,7 @@ function _propLerBase_(nomeAba) {
       }
       return -1;
     };
+    const cId     = col('id chamado', 'id agendamento');
     const cCC     = col('centro de custo');
     const cEstado = col('estado');
     const cSla    = col('sla');
@@ -239,6 +274,7 @@ function _propLerBase_(nomeAba) {
       const cc = String(data[r][cCC] || '').trim();
       if (!cc) continue;
       saida.push({
+        id       : cId     >= 0 ? _idChamadoNormaliza_(data[r][cId]) : '',
         cc       : cc,
         estado   : cEstado >= 0 ? String(data[r][cEstado] || '').trim() : '',
         sla      : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',

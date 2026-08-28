@@ -43,8 +43,9 @@ function gerarApresentacaoPropriedades() {
   //   5. Backlog
   //   6. Backlog Emergencial — Detalhe
   //   7. Chamados Pendentes (Backlog) — por motivo
-  //   8. Recebimento de Obras (tabela)
-  //   9. Gestão de Contratações (tabela)
+  //   8. Backlog de Clientes — Properties (com empreendimento)
+  //   9. Recebimento de Obras (tabela)
+  //  10. Gestão de Contratações (tabela)
   //
   const passos = [
     { nome: 'Capa',                          fn: gerarSlideCapa },
@@ -54,6 +55,7 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Backlog',                       fn: gerarSlideBacklog },
     { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
+    { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
