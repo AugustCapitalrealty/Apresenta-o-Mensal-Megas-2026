@@ -60,22 +60,25 @@ function gerarSlideIndicadoresGerais() {
       { label: 'Em dia (%)',  lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
     ] },
     // MESMO quadrante do Dashboard dos Megas ('MANUTENÇÃO CORRETIVA:
-    // BACKLOG'), com o backlog e o fluxo do mês juntos: os três primeiros
-    // números se explicam — backlog(fim) = backlog(início) + abertos −
-    // fechados. Separá-los em painéis diferentes esconde a conta que fecha.
+    // BACKLOG'): estoque no topo, os dois indicadores de qualidade embaixo.
     //
     // "% Conclusão histórico" e "Tempo médio de aprovação" são os mesmos
     // rótulos dos Megas, mas lá são células DIGITADAS na aba DADOS. Aqui são
     // CALCULADOS na BD-CORRETIVAS — ver obterAprovacaoEConclusao_ em
-    // 02_Dados.gs para as duas definições, que estão escritas por extenso
-    // justamente porque o nome sozinho admite mais de uma leitura.
+    // 02_Dados.gs para as duas definições, escritas por extenso justamente
+    // porque o nome sozinho admite mais de uma leitura.
+    //
+    // FICARAM DE FORA, por pedido: "Abertos no mês", "Fechados no mês" e
+    // "Tempo médio de atendimento". Os dois primeiros já são o assunto do
+    // slide de Corretivas, e o terceiro mede o tempo até FECHAR — numa fila
+    // com chamado antigo ele passa de 5.000h, o que enche a coluna e não diz
+    // nada acionável ao lado de um backlog. Os três continuam calculados em
+    // obterDashboardPropriedades_ e disponíveis no mapa, é só voltar a linha
+    // aqui se um dia fizerem falta.
     { title: 'MANUTENÇÃO CORRETIVA: CHAMADOS', color: DS.colors.themeCorr, rows: [
-      { label: 'Backlog em aberto (Qtd)',  lookup: 'Backlog em aberto',                sentido: 'menor', sla: false },
-      { label: 'Abertos no mês (Qtd)',     lookup: 'Chamados abertos',                 sentido: 'menor', sla: false },
-      { label: 'Fechados no mês (Qtd)',    lookup: 'Chamados fechados',                sentido: 'maior', sla: false },
-      { label: '% Conclusão histórico',    lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true  },
-      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',        sentido: 'menor', sla: false },
-      { label: 'Tempo médio atend. (h)',   lookup: 'Tempo médio de atendimento',       sentido: 'menor', sla: false }
+      { label: 'Backlog em aberto (Qtd)',   lookup: 'Backlog em aberto',                 sentido: 'menor', sla: false },
+      { label: '% Conclusão histórico',     lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true  },
+      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',          sentido: 'menor', sla: false }
     ] }
   ];
 

@@ -1380,9 +1380,12 @@ function obterDashboardPropriedades_() {
   const headers = pontos.map(p => nomesCurto[p.index] + "'" + String(p.ano).slice(-2));
 
   // CHAMADOS (corretivas): entrada e saída do mês, nos mesmos 3 pontos.
-  // A identidade da lição 2 do CLAUDE.md vale aqui — backlog(fim) =
-  // backlog(início) + criados − fechados — e ela só fecha porque as três
-  // linhas saem da MESMA base (BD-CORRETIVAS) e do mesmo filtro de equipe.
+  //
+  // O slide NÃO desenha estas três linhas (pedido do usuário — ver
+  // Slide_IndicadoresGerais.gs), mas o cálculo fica: é ele que sustenta a
+  // conferência da identidade logo abaixo, que é o que faz um mês que não
+  // fecha aparecer no log em vez de na reunião. Ficam também no mapa, para
+  // voltar ao slide sem precisar reescrever nada.
   const fluxo = pontos.map(p => obterFluxoCorretivasPropriedades_(p.ano, p.index));
   const aprov = pontos.map(p => obterAprovacaoEConclusao_(p.ano, p.index));
 
