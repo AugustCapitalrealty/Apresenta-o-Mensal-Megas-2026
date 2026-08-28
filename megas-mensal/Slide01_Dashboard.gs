@@ -48,22 +48,33 @@ function gerarSlideDashboard() {
       { label: 'Tempo médio', lookup: 'Tempo médio', sentido: 'menor' }
     ] },
     //
-    // DESTAQUES — sem comparativo de propósito. A aba DOCUMENTOS INQUILINOS é
-    // uma lista VIVA: traz o estado de hoje de cada documento, e a categoria
-    // (vencido / a vencer / em dia) é recalculada a cada execução contra a
-    // data de referência. Não existe "quantos estavam vencidos em junho", e
-    // repetir o número nas três colunas fingiria uma série que não há.
+    // DESTAQUES — sem comparativo de propósito, e as duas fontes têm o mesmo
+    // tipo de limitação:
     //
+    //   · DOCUMENTOS INQUILINOS é uma lista VIVA — traz o estado de hoje de
+    //     cada documento, recalculado a cada execução. Não existe "quantos
+    //     estavam vencidos em junho";
+    //   · o financeiro lê a ABA do período de referência, não uma série mensal
+    //     em colunas. Mês anterior exigiria abrir a aba de outro período.
+    //
+    // Repetir o número nas três colunas fingiria uma série que não há.
     // `semComparativo` faz o painel desenhar o valor UMA vez, ocupando a
     // largura das três colunas, sem cabeçalho de mês e sem seta.
     //
-    // O % vencida usa `slaInverso`: aqui número ALTO é ruim, e a régua padrão
-    // (≥95 verde) pintaria "97% vencida" de verde.
-    { title: 'DESTAQUES — DOCUMENTAÇÃO', color: CORES.themeCorr, semComparativo: true, rows: [
-      { label: 'Documentação vencida (%)', lookup: 'Documentação vencida (%)', slaInverso: true },
-      { label: 'Documentos vencidos (Qtd)', lookup: 'Documentos vencidos' },
-      { label: 'A vencer em 30 dias (Qtd)', lookup: 'Documentos a vencer' },
-      { label: 'Documentação em dia (%)',  lookup: 'Documentação em dia (%)', sla: true }
+    // POR QUE UM PAINEL SÓ e não um de documentação e outro de financeiro:
+    // com cinco painéis a grade vira 2 colunas × 3 linhas, e cada um fica com
+    // ~90pt — a quatro linhas de dado, sobram 6pt por linha. Ilegível. Os
+    // destaques cabem juntos porque são exatamente isso: uma linha cada.
+    //
+    // As réguas de cor, uma por natureza de indicador:
+    //   sla         quanto MAIOR melhor (≥95 verde) — o padrão do deck
+    //   slaInverso  quanto MAIOR pior — "97% vencida" não pode sair verde
+    //   orcamento   ≤100% do orçado é bom, acima disso é estouro
+    { title: 'DESTAQUES', color: CORES.themeCorr, semComparativo: true, rows: [
+      { label: 'Orçado consumido (%)',     lookup: 'Orçado consumido (%)',     regua: 'orcamento' },
+      { label: 'Realizado no mês',         lookup: 'Realizado no mês' },
+      { label: 'Custo por m² (acum.)',     lookup: 'Custo por m²' },
+      { label: 'Documentação vencida (%)', lookup: 'Documentação vencida (%)', regua: 'inverso' }
     ] }
   ];
 
@@ -138,15 +149,7 @@ function gerarSlideDashboard() {
         selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       }
 
-      // Cor do valor do mês: régua de SLA quando o indicador é "quanto maior
-      // melhor"; régua INVERTIDA quando é "quanto maior pior" (% vencida).
-      const corDoValor = valStr => {
-        if (r.slaInverso) {
-          const n = parseFloat(String(valStr).replace('%', '').replace(',', '.'));
-          return isNaN(n) ? cat.color : corPorSLA(String(100 - n), cat.color);
-        }
-        return r.sla ? corPorSLA(valStr, cat.color) : cat.color;
-      };
+      const corDoValor = valStr => _dashCor_(valStr, r, cat.color);
 
       if (cat.semComparativo) {
         // Um valor só, ocupando a largura das três colunas — sem colunas
@@ -219,4 +222,37 @@ function _dashGrade_(n, x0, y0, areaW, areaH, gap) {
                             : caixa(x0 + (i % 2) * (w + gap), y, w, h));
   }
   return out;
+}
+
+
+/**
+ * Cor do valor de uma linha do dashboard, conforme a NATUREZA do indicador.
+ *
+ * A régua padrão do deck (corPorSLA: ≥95 verde, ≥90 âmbar, <90 vermelho) só
+ * serve para "quanto maior melhor". Aplicá-la sem pensar pintaria "97% de
+ * documentação vencida" de verde e "98% do orçado consumido" de verde também
+ * — o segundo é bom, mas por acaso: a 101% ela viraria verde do mesmo jeito.
+ *
+ *   r.sla            quanto MAIOR melhor  → régua padrão
+ *   r.regua inverso  quanto MAIOR pior    → régua padrão sobre (100 − valor)
+ *   r.regua orcamento  ≤100% do orçado bom, acima é estouro
+ *   nenhum           sem juízo de valor   → cor do tema do painel
+ */
+function _dashCor_(valStr, r, corTema) {
+  const n = parseFloat(String(valStr).replace('%', '').replace(/\./g, '').replace(',', '.'));
+
+  if (r.regua === 'inverso') {
+    return isNaN(n) ? corTema : corPorSLA(String(100 - n), corTema);
+  }
+  if (r.regua === 'orcamento') {
+    if (isNaN(n)) return corTema;
+    // Dentro do orçado é verde; até 10% acima, âmbar; daí para cima, vermelho.
+    // Os limiares são os mesmos do resto do deck (5 e 10 pontos), só que
+    // ancorados em 100 em vez de em 95.
+    if (n <= 100) return CORES.cardGreen;
+    if (n <= 110) return '#F59E0B';
+    return CORES.cardRed;
+  }
+  if (r.sla) return corPorSLA(valStr, corTema);
+  return corTema;
 }

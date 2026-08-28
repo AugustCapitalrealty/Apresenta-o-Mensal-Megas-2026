@@ -688,10 +688,10 @@ function obterDadosDashboard() {
       const pct = n => (n / r.total * 100).toFixed(1).replace('.', ',');
       const um = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
 
-      dataMap.set('Documentação vencida (%)', um(pct(r.vencido)));
+      dataMap.set('Documentação vencida (%)', um(pct(r.vencido) + '%'));
       dataMap.set('Documentos vencidos',      um(r.vencido));
       dataMap.set('Documentos a vencer',      um(r.critico));
-      dataMap.set('Documentação em dia (%)',  um(pct(r.emDia)));
+      dataMap.set('Documentação em dia (%)',  um(pct(r.emDia) + '%'));
       dataMap.set('Documentos no total',      um(r.total));
 
       Logger.log('Dashboard (documentação): ' + r.total + ' documento(s) — ' +
@@ -704,6 +704,48 @@ function obterDadosDashboard() {
     }
   } catch (e) {
     Logger.log('Erro Dashboard (documentação): ' + e.message);
+  }
+
+  // ── DESTAQUES: financeiro ───────────────────────────────────────────────
+  // TAMBÉM sem comparativo, e pelo mesmo tipo de motivo da documentação: as
+  // funções de financeiro leem a ABA do período de referência
+  // (_financeiroDaAba_), com colunas NATUREZA / ORÇADO / REALIZADO. Não é uma
+  // série mensal em colunas como o backlog — para ter mês anterior seria
+  // preciso abrir a aba de outro período, e o nome delas não segue um padrão
+  // que dê para derivar daqui.
+  //
+  // Os valores vão PRÉ-FORMATADOS (com R$ e %) de propósito: formatarNumeroBR
+  // devolve texto que já tem símbolo sem mexer, e assim a unidade fica ao lado
+  // do número em vez de só no rótulo — num painel de destaques o número é lido
+  // sozinho, longe do cabeçalho.
+  try {
+    const fin = obterDadosFinanceiro();
+    const um  = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
+
+    if (fin && fin.totalOrcado > 0) {
+      const consumo = fin.totalRealizado / fin.totalOrcado * 100;
+      dataMap.set('Orçado consumido (%)', um(consumo.toFixed(1).replace('.', ',') + '%'));
+      dataMap.set('Realizado no mês',     um(formatarMoedaCompacta(fin.totalRealizado)));
+      Logger.log('Dashboard (financeiro): realizado ' + formatarMoedaCompacta(fin.totalRealizado) +
+                 ' de ' + formatarMoedaCompacta(fin.totalOrcado) + ' orçado = ' +
+                 consumo.toFixed(1) + '% consumido.');
+    } else {
+      Logger.log('Dashboard (financeiro): sem orçado no período — os destaques ficam com "-".');
+    }
+
+    const cm2 = obterCustoM2Acumulado_();
+    if (cm2 && cm2.realizado != null) {
+      dataMap.set('Custo por m²', um(formatarRsM2_(cm2.realizado)));
+      // O orçado não vira linha (não há espaço no painel), mas fica no log:
+      // é ele que diz se o número da tela é bom ou ruim.
+      Logger.log('Dashboard (custo/m²): realizado ' + formatarRsM2_(cm2.realizado) +
+                 (cm2.orcado != null ? ' contra ' + formatarRsM2_(cm2.orcado) + ' orçado' : '') +
+                 ' (acumulado de ' + cm2.meses + ' mês(es)).');
+    } else {
+      Logger.log('Dashboard (custo/m²): sem valor acumulado — o destaque fica com "-".');
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (financeiro): ' + e.message);
   }
 
   return { map: dataMap, headers: headers, sobrescritos: sobrescritos };
