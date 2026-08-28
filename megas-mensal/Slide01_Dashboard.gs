@@ -21,24 +21,27 @@ function gerarSlideDashboard() {
   // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
   // (usado para colorir a seta de tendência vs mês anterior)
   // sla: aplica cor por limiar (≥95 verde, ≥90 âmbar, <90 vermelho) no valor atual
+  //
+  // GESTÃO DE ATIVOS junta o que eram dois quadrantes — "Gestão de Ativos
+  // Críticos" e "Manutenção Corretiva: Backlog". Eram a mesma pergunta
+  // partida em dois: a disponibilidade do ativo É consequência da fila de
+  // corretivas, e olhar as duas em painéis separados escondia essa relação.
+  // "BACKLOG" saiu do título porque o painel deixou de ser só de estoque.
+  //
+  // SAÍRAM daqui, por decisão do time (checklist do card DASHBOARD
+  // OPERACIONAL): "Tempo médio de reparo" e "Tempo médio de aprovação".
+  // Continuam sendo lidos por obterDadosDashboard() — voltar qualquer um é
+  // acrescentar a linha de novo, sem mexer em mais nada.
   const structure = [
-    {
-      title: 'GESTÃO DE ATIVOS CRÍTICOS',
-      color: CORES.themeAtivos,
-      rows: [
-        { label: 'Tempo médio de reparo (Dias)', lookup: 'Tempo médio de reparo', sentido: 'menor' },
-        { label: 'Disponibilidade (%)', lookup: 'Disponibilidade', sentido: 'maior', sla: true }
-      ]
-    },
+    { title: 'GESTÃO DE ATIVOS', color: CORES.themeAtivos, rows: [
+      { label: 'Disponibilidade (%)', lookup: 'Disponibilidade', sentido: 'maior', sla: true },
+      { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities', sentido: 'menor' },
+      { label: 'Chamados geral (Qtd)', lookup: 'Chamados geral', sentido: 'menor' },
+      { label: '% Conclusão histórico', lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
+    ] },
     { title: 'MANUTENÇÃO PREVENTIVA', color: CORES.themePrev, rows: [
       { label: 'Em dia (%)', lookup: 'Em dia', sentido: 'maior', sla: true },
       { label: 'SLA atendido (%)', lookup: 'SLA atendido', sentido: 'maior', sla: true }
-    ] },
-    { title: 'MANUTENÇÃO CORRETIVA: BACKLOG', color: CORES.themeCorr, rows: [
-      { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities', sentido: 'menor' },
-      { label: 'Chamados geral (Qtd)', lookup: 'Chamados geral', sentido: 'menor' },
-      { label: '% Conclusão histórico', lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
-      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio para aprovação', sentido: 'menor' }
     ] },
     { title: 'CONTROLE DE ACESSO', color: CORES.themeAcesso, rows: [
       { label: 'Fluxo de VISITANTES', lookup: 'Fluxo de VISITANTES', sentido: 'maior' },
@@ -54,11 +57,12 @@ function gerarSlideDashboard() {
   };
 
   const headerH = 60, marginX = 30, marginY = headerH + 20, gap = 20, footerMargin = 15;
-  const cardW = (PageWidth - (2 * marginX) - gap) / 2, cardH = (PageHeight - marginY - footerMargin - gap) / 2;
+  const areaW = PageWidth - (2 * marginX);
+  const areaH = PageHeight - marginY - footerMargin;
+  const caixas = _dashGrade_(structure.length, marginX, marginY, areaW, areaH, gap);
 
   structure.forEach((cat, i) => {
-    const row = Math.floor(i / 2), col = i % 2;
-    const x = marginX + (col * (cardW + gap)), y = marginY + (row * (cardH + gap));
+    const { x, y, w: cardW, h: cardH } = caixas[i];
 
     // Painel padrão do design system (01_Config.gs) — título na cor do tema
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
@@ -127,4 +131,47 @@ function gerarSlideDashboard() {
   });
   
   Logger.log("Slide 01 (Dashboard) gerado com sucesso.");
+}
+
+
+/**
+ * Onde cada painel fica, dado QUANTOS painéis existem. Antes a grade era 2×2
+ * escrita na mão (`row = i/2, col = i%2`), e tirar um quadrante deixava um
+ * buraco no canto — que é exatamente o que aconteceria agora que os dois
+ * primeiros viraram um.
+ *
+ *   1 painel   ocupa tudo
+ *   2 painéis  lado a lado, altura inteira
+ *   3 painéis  dois em cima, o terceiro atravessando embaixo
+ *   4 painéis  o 2×2 de sempre — os tamanhos batem com os de antes
+ *   5+         duas colunas, quantas linhas precisar
+ *
+ * O caso de 3 é o que está no ar hoje; o de 4 volta quando o quadrante de
+ * DESTAQUES entrar. Nenhum dos dois exige mexer aqui de novo.
+ */
+function _dashGrade_(n, x0, y0, areaW, areaH, gap) {
+  const caixa = (x, y, w, h) => ({ x: x, y: y, w: w, h: h });
+
+  if (n <= 1) return [caixa(x0, y0, areaW, areaH)];
+
+  if (n === 2) {
+    const w = (areaW - gap) / 2;
+    return [caixa(x0, y0, w, areaH), caixa(x0 + w + gap, y0, w, areaH)];
+  }
+
+  const linhas = Math.ceil(n / 2);
+  const h = (areaH - gap * (linhas - 1)) / linhas;
+  const w = (areaW - gap) / 2;
+
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const linha = Math.floor(i / 2);
+    const y = y0 + linha * (h + gap);
+    // Último painel de uma contagem ÍMPAR: em vez de deixar meia linha vazia,
+    // ele atravessa a largura toda. Fica lido como decisão, não como sobra.
+    const sozinhoNaLinha = (i === n - 1) && (n % 2 === 1);
+    out.push(sozinhoNaLinha ? caixa(x0, y, areaW, h)
+                            : caixa(x0 + (i % 2) * (w + gap), y, w, h));
+  }
+  return out;
 }
