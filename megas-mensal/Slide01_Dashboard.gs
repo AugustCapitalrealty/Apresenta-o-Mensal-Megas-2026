@@ -46,6 +46,24 @@ function gerarSlideDashboard() {
     { title: 'CONTROLE DE ACESSO', color: CORES.themeAcesso, rows: [
       { label: 'Fluxo de VISITANTES', lookup: 'Fluxo de VISITANTES', sentido: 'maior' },
       { label: 'Tempo médio', lookup: 'Tempo médio', sentido: 'menor' }
+    ] },
+    //
+    // DESTAQUES — sem comparativo de propósito. A aba DOCUMENTOS INQUILINOS é
+    // uma lista VIVA: traz o estado de hoje de cada documento, e a categoria
+    // (vencido / a vencer / em dia) é recalculada a cada execução contra a
+    // data de referência. Não existe "quantos estavam vencidos em junho", e
+    // repetir o número nas três colunas fingiria uma série que não há.
+    //
+    // `semComparativo` faz o painel desenhar o valor UMA vez, ocupando a
+    // largura das três colunas, sem cabeçalho de mês e sem seta.
+    //
+    // O % vencida usa `slaInverso`: aqui número ALTO é ruim, e a régua padrão
+    // (≥95 verde) pintaria "97% vencida" de verde.
+    { title: 'DESTAQUES — DOCUMENTAÇÃO', color: CORES.themeCorr, semComparativo: true, rows: [
+      { label: 'Documentação vencida (%)', lookup: 'Documentação vencida (%)', slaInverso: true },
+      { label: 'Documentos vencidos (Qtd)', lookup: 'Documentos vencidos' },
+      { label: 'A vencer em 30 dias (Qtd)', lookup: 'Documentos a vencer' },
+      { label: 'Documentação em dia (%)',  lookup: 'Documentação em dia (%)', sla: true }
     ] }
   ];
 
@@ -73,11 +91,19 @@ function gerarSlideDashboard() {
     const colNameW = cardW * 0.42, seloW = 14;
     const dataX0   = x + 10 + colNameW + seloW;
     const colDataW = (cardW - 20 - colNameW - seloW) / 3;
-    dynamicHeaders.forEach((h, idx) => {
-      let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW), tableY, colDataW, 20);
-      t.getText().setText(h).getTextStyle().setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
+    if (cat.semComparativo) {
+      // No lugar dos três meses, uma legenda dizendo por que não há série.
+      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, tableY, colDataW * 3, 20);
+      t.getText().setText('POSIÇÃO ATUAL').getTextStyle()
+        .setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
       t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    });
+    } else {
+      dynamicHeaders.forEach((h, idx) => {
+        let t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW), tableY, colDataW, 20);
+        t.getText().setText(h).getTextStyle().setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily('Montserrat');
+        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      });
+    }
 
     const startDataY = tableY + 20;
     const rowH = (y + cardH - startDataY - 10) / cat.rows.length;
@@ -100,7 +126,7 @@ function gerarSlideDashboard() {
       // de dados de propósito — sobreposição é aceitável aqui e aproxima
       // a seta do número, como pedido) — verde melhorou / vermelho piorou.
       const nAtual = paraNumero(vals.atual), nAnt = paraNumero(vals.mesAnt);
-      if (!isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
+      if (!cat.semComparativo && !isNaN(nAtual) && !isNaN(nAnt) && nAtual !== nAnt) {
         const subiu    = nAtual > nAnt;
         const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
         const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
@@ -112,18 +138,37 @@ function gerarSlideDashboard() {
         selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       }
 
+      // Cor do valor do mês: régua de SLA quando o indicador é "quanto maior
+      // melhor"; régua INVERTIDA quando é "quanto maior pior" (% vencida).
+      const corDoValor = valStr => {
+        if (r.slaInverso) {
+          const n = parseFloat(String(valStr).replace('%', '').replace(',', '.'));
+          return isNaN(n) ? cat.color : corPorSLA(String(100 - n), cat.color);
+        }
+        return r.sla ? corPorSLA(valStr, cat.color) : cat.color;
+      };
+
+      if (cat.semComparativo) {
+        // Um valor só, ocupando a largura das três colunas — sem colunas
+        // vazias e sem repetir o mesmo número três vezes.
+        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, ry, colDataW * 3, rowH);
+        const valStr = formatarNumeroBR(vals.atual);
+        const vText = vBox.getText();
+        vText.setText(valStr);
+        vText.getTextStyle().setFontSize(11).setBold(true)
+          .setForegroundColor(corDoValor(valStr)).setFontFamily('Montserrat');
+        vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        return;
+      }
+
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
         let vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW), ry, colDataW, rowH);
         const valStr = formatarNumeroBR(val);
         let vText = vBox.getText();
         vText.setText(valStr);
         let vStyle = vText.getTextStyle(); vStyle.setFontSize(9).setBold(true).setFontFamily('Montserrat');
-        if (vIdx === 0) {
-          const corAtual = r.sla ? corPorSLA(valStr, cat.color) : cat.color;
-          vStyle.setForegroundColor(corAtual);
-        } else {
-          vStyle.setForegroundColor(CORES.textGray);
-        }
+        vStyle.setForegroundColor(vIdx === 0 ? corDoValor(valStr) : CORES.textGray);
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       });

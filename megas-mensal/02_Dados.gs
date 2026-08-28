@@ -671,6 +671,41 @@ function obterDadosDashboard() {
     Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
   }
 
+  // ── DESTAQUES: documentação dos inquilinos ──────────────────────────────
+  // SEM comparativo, e isso não é omissão: a aba DOCUMENTOS INQUILINOS é uma
+  // LISTA VIVA, com o estado de hoje de cada documento. Não há registro de
+  // "quantos estavam vencidos em junho" — a categoria é recalculada contra a
+  // data de referência a cada execução. Inventar mês anterior aqui seria
+  // comparar o presente com ele mesmo.
+  //
+  // Por isso os três valores vão iguais e o painel que os consome é marcado
+  // com `semComparativo` (Slide01_Dashboard.gs): ele desenha o número uma vez,
+  // em vez de três colunas repetidas fingindo série histórica.
+  try {
+    const docs = obterDadosDocumentos();
+    if (docs && docs.resumo && docs.resumo.total > 0) {
+      const r = docs.resumo;
+      const pct = n => (n / r.total * 100).toFixed(1).replace('.', ',');
+      const um = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
+
+      dataMap.set('Documentação vencida (%)', um(pct(r.vencido)));
+      dataMap.set('Documentos vencidos',      um(r.vencido));
+      dataMap.set('Documentos a vencer',      um(r.critico));
+      dataMap.set('Documentação em dia (%)',  um(pct(r.emDia)));
+      dataMap.set('Documentos no total',      um(r.total));
+
+      Logger.log('Dashboard (documentação): ' + r.total + ' documento(s) — ' +
+                 r.vencido + ' vencido(s) (' + pct(r.vencido) + '%), ' +
+                 r.critico + ' a vencer, ' + r.emDia + ' em dia, ' +
+                 r.pendente + ' pendente(s).');
+    } else {
+      Logger.log('Dashboard (documentação): aba DOCUMENTOS INQUILINOS sem dados — ' +
+                 'o quadrante de destaques fica com "-".');
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (documentação): ' + e.message);
+  }
+
   return { map: dataMap, headers: headers, sobrescritos: sobrescritos };
 }
 
