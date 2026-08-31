@@ -6,7 +6,7 @@
  * 02_Dados.gs). Três recortes, cada um com 5 colunas — os VALORES juntos e
  * as VARIAÇÕES juntas, para não misturar as duas leituras:
  *
- *   2025 | Δ% 2025 | Real | Meta | Δ% Meta
+ *   2025 | Meta | Real | Δ% Meta | Δ% 2025
  *
  *   Bloco 1 — MÊS (mês de referência)
  *   Bloco 2 — ACUMULADO (Jan..mês ref)
@@ -117,11 +117,12 @@ function _gerarSlideDRE_(modo) {
   // onde chegamos). Cada VARIAÇÃO fica colada no valor que ela compara, em
   // vez de as duas irem juntas no fim do bloco:
   //
-  //     2025 | Δ% 2025 | Real | Meta | Δ% Meta
+  //     2025 | Meta | Real | Δ% Meta | Δ% 2025
   //
-  // Cada referência fica ao lado da sua variação — 2025 com o Δ% 2025 à
-  // direita, Meta com o Δ% Meta à direita — e o REALIZADO no meio, que é o
-  // número que as duas comparações têm em comum.
+  // Os VALORES juntos, na linha do tempo (de onde viemos, o que foi
+  // planejado, onde chegamos), e as VARIAÇÕES juntas depois deles — números
+  // de um lado, comparações do outro. As duas comparações partem do mesmo
+  // Real, então ficam lado a lado.
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
   const rubricaW = 158;
@@ -129,13 +130,12 @@ function _gerarSlideDRE_(modo) {
   // ("▲ 2.088%") e precisam de mais espaço que as de valor ("2.088"), senão
   // a seta encosta no número. Os pesos somam 5,00 por bloco, então a largura
   // total da tabela não muda.
-  // Ano anterior | Δ% ano anterior | Real | Meta | Δ% Meta.
-  // Cada valor de referência vem colado na sua comparação. Os pesos seguem a
-  // POSIÇÃO, não o conteúdo: as colunas de variação carregam seta + número
-  // ("▲ 2.088%") e precisam de mais espaço que as de valor ("2.088"), então
-  // 1,24 e 1,30 estão onde as variações estão. A soma segue 5,00 por bloco,
-  // e a largura total da tabela não muda.
-  const PESO_COL = [0.82, 1.24, 0.82, 0.82, 1.30];
+  // Ano anterior | Meta | Real | Δ% Meta | Δ% ano anterior.
+  // Os pesos seguem a POSIÇÃO, não o conteúdo: as colunas de variação
+  // carregam seta + número ("▲ 2.088%") e precisam de mais espaço que as de
+  // valor ("2.088"), então 1,30 e 1,24 ficam nas duas últimas. A soma é 5,00
+  // por bloco, e a largura total da tabela não muda.
+  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];
   const unidade  = (tableW - rubricaW) / (3 * NCOL);
   const colPos = [], colLarg = [];
   let _accX = x0 + rubricaW;
@@ -198,8 +198,8 @@ function _gerarSlideDRE_(modo) {
     // chegamos. Antes era Meta | Real | ano anterior (planejado primeiro).
     // A ordem das VARIAÇÕES não mudou: elas vêm depois dos três valores, e
     // cada uma diz contra o quê compara no próprio rótulo.
-    [String(d.ano - 1), 'Δ% ' + String(d.ano - 1),
-     'Real', 'Meta', 'Δ% Meta'].forEach((s, i) => {
+    [String(d.ano - 1), 'Meta', 'Real',
+     'Δ% Meta', 'Δ% ' + String(d.ano - 1)].forEach((s, i) => {
       const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, 14);
       // No bloco da projeção a régua também sai na cor do futuro (um pouco
@@ -418,8 +418,8 @@ function _gerarSlideDRE_(modo) {
         // contíguas (0, 2, 3) e não dá mais para usar a posição no array.
         const valores = [
           { col: 0, txt: valFmt(blk.aa),  cor: resumo ? '#CBD5E1' : '#64748B',      bold: false  },
-          { col: 2, txt: valFmt(bl.real), cor: corBase,                             bold: true   },
-          { col: 3, txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo }
+          { col: 1, txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
+          { col: 2, txt: valFmt(bl.real), cor: corBase,                             bold: true   }
         ];
         valores.forEach(cel => {
           const i = cel.col;
@@ -439,15 +439,14 @@ function _gerarSlideDRE_(modo) {
         // NÃO repetem: dividir os dois lados de uma razão pela mesma
         // constante (área, meses) não muda o resultado, então a % é
         // idêntica à da linha em R$ logo acima (pedido do usuário).
-        // Cada variação COLADA no valor que ela compara: Δ% 2025 na coluna 1,
-        // logo depois do resultado de 2025; Δ% Meta na 4, fechando o bloco.
+        // As duas variações fecham o bloco, na ordem Δ% Meta, Δ% ano anterior.
         //
         // Cabeçalho e desenho são duas listas posicionais — mexer numa sem
         // mexer na outra põe o número na coluna errada sem erro nenhum, e o
         // slide continua parecendo certo. Se mudar aqui, mude lá.
         if (!ehLinhaM2) {
-          desenharVar(vs25,   colX(c0 + 1), ry, colW(c0 + 1) - 1, resumo);
-          desenharVar(vsMeta, colX(c0 + 4), ry, colW(c0 + 4) - 1, resumo);
+          desenharVar(vsMeta, colX(c0 + 3), ry, colW(c0 + 3) - 1, resumo);
+          desenharVar(vs25,   colX(c0 + 4), ry, colW(c0 + 4) - 1, resumo);
         }
       });
   });
