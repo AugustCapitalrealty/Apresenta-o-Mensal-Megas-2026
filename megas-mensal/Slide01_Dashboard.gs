@@ -70,11 +70,16 @@ function gerarSlideDashboard() {
     //   sla         quanto MAIOR melhor (≥95 verde) — o padrão do deck
     //   slaInverso  quanto MAIOR pior — "97% vencida" não pode sair verde
     //   orcamento   ≤100% do orçado é bom, acima disso é estouro
-    { title: 'DESTAQUES', color: CORES.themeCorr, semComparativo: true, rows: [
-      { label: 'Orçado consumido (%)',     lookup: 'Orçado consumido (%)',     regua: 'orcamento' },
-      { label: 'Realizado no mês',         lookup: 'Realizado no mês' },
-      { label: 'Custo por m² (acum.)',     lookup: 'Custo por m²' },
-      { label: 'Documentação vencida (%)', lookup: 'Documentação vencida (%)', regua: 'inverso' }
+    //
+    // "Realizado no mês (R$)" saiu para caber o consumido do ANO: com os dois
+    // períodos lado a lado, o painel diz se o estouro é do mês ou de trás, que
+    // é a pergunta que o valor absoluto sozinho não responde. A magnitude em
+    // R$ continua no slide de Financeiro Mensal.
+    { title: 'ORÇAMENTO E DOCUMENTAÇÃO', color: CORES.themeCorr, semComparativo: true, rows: [
+      { label: 'Orçado consumido — mês (%)', lookup: 'Orçado consumido mês (%)', regua: 'orcamento' },
+      { label: 'Orçado consumido — ano (%)', lookup: 'Orçado consumido ano (%)', regua: 'orcamento' },
+      { label: 'Custo por m² (acum.)',       lookup: 'Custo por m²' },
+      { label: 'Documentação vencida (%)',   lookup: 'Documentação vencida (%)', regua: 'inverso' }
     ] }
   ];
 
@@ -116,8 +121,17 @@ function gerarSlideDashboard() {
       });
     }
 
-    const startDataY = tableY + 20;
-    const rowH = (y + cardH - startDataY - 10) / cat.rows.length;
+    // Altura da linha COM TETO, e o bloco centrado no que sobra.
+    //
+    // Dividir a altura pelo número de linhas dava ritmos diferentes por
+    // painel: com 4 linhas cada uma ficava com ~20pt, com 2 linhas ia a ~40pt.
+    // Lado a lado, o de 2 linhas parecia ter fonte maior — não tinha, tinha o
+    // dobro de respiro. Com o teto, todos os painéis usam a mesma altura de
+    // linha e o de 2 apenas centraliza o par.
+    const ROW_H_MAX = 26;
+    const areaDados = (y + cardH - (tableY + 20) - 10);
+    const rowH = Math.min(areaDados / cat.rows.length, ROW_H_MAX);
+    const startDataY = tableY + 20 + (areaDados - rowH * cat.rows.length) / 2;
 
     cat.rows.forEach((r, rIdx) => {
       let ry = startDataY + (rIdx * rowH);
@@ -158,7 +172,10 @@ function gerarSlideDashboard() {
         const valStr = formatarNumeroBR(vals.atual);
         const vText = vBox.getText();
         vText.setText(valStr);
-        vText.getTextStyle().setFontSize(11).setBold(true)
+        // MESMO corpo dos outros painéis (9pt). Chegou a ser 11 aqui, "já que
+        // sobra espaço" — e o slide inteiro ficou com dois tamanhos de número,
+        // que é o que se nota antes de ler qualquer valor.
+        vText.getTextStyle().setFontSize(9).setBold(true)
           .setForegroundColor(corDoValor(valStr)).setFontFamily('Montserrat');
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);

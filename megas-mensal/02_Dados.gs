@@ -719,19 +719,27 @@ function obterDadosDashboard() {
   // do número em vez de só no rótulo — num painel de destaques o número é lido
   // sozinho, longe do cabeçalho.
   try {
-    const fin = obterDadosFinanceiro();
     const um  = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
 
-    if (fin && fin.totalOrcado > 0) {
-      const consumo = fin.totalRealizado / fin.totalOrcado * 100;
-      dataMap.set('Orçado consumido (%)', um(consumo.toFixed(1).replace('.', ',') + '%'));
-      dataMap.set('Realizado no mês',     um(formatarMoedaCompacta(fin.totalRealizado)));
-      Logger.log('Dashboard (financeiro): realizado ' + formatarMoedaCompacta(fin.totalRealizado) +
-                 ' de ' + formatarMoedaCompacta(fin.totalOrcado) + ' orçado = ' +
-                 consumo.toFixed(1) + '% consumido.');
-    } else {
-      Logger.log('Dashboard (financeiro): sem orçado no período — os destaques ficam com "-".');
-    }
+    // MÊS e ACUMULADO DO ANO saem do MESMO lugar — o DRE separa os blocos
+    // `mes` e `acum` por rubrica, e _financeiroDoBridge_ só escolhe qual ler.
+    // Por virem da mesma fonte, os dois não podem divergir por recorte
+    // diferente: é a mesma soma, em duas janelas.
+    [{ bloco: 'mes',  chave: 'Orçado consumido mês (%)', rotulo: 'mês' },
+     { bloco: 'acum', chave: 'Orçado consumido ano (%)', rotulo: 'acumulado do ano' }
+    ].forEach(function (j) {
+      const f = _financeiroDoBridge_(j.bloco);
+      if (f && f.totalOrcado > 0) {
+        const consumo = f.totalRealizado / f.totalOrcado * 100;
+        dataMap.set(j.chave, um(consumo.toFixed(1).replace('.', ',') + '%'));
+        Logger.log('Dashboard (financeiro, ' + j.rotulo + '): realizado ' +
+                   formatarMoedaCompacta(f.totalRealizado) + ' de ' +
+                   formatarMoedaCompacta(f.totalOrcado) + ' orçado = ' +
+                   consumo.toFixed(1) + '% consumido.');
+      } else {
+        Logger.log('Dashboard (financeiro, ' + j.rotulo + '): sem orçado — fica com "-".');
+      }
+    });
 
     const cm2 = obterCustoM2Acumulado_();
     if (cm2 && cm2.realizado != null) {
