@@ -6,7 +6,7 @@
  * 02_Dados.gs). Três recortes, cada um com 5 colunas — os VALORES juntos e
  * as VARIAÇÕES juntas, para não misturar as duas leituras:
  *
- *   2025 | Δ% 2025 | Meta | Real | Δ% Meta
+ *   2025 | Δ% 2025 | Real | Meta | Δ% Meta
  *
  *   Bloco 1 — MÊS (mês de referência)
  *   Bloco 2 — ACUMULADO (Jan..mês ref)
@@ -117,7 +117,11 @@ function _gerarSlideDRE_(modo) {
   // onde chegamos). Cada VARIAÇÃO fica colada no valor que ela compara, em
   // vez de as duas irem juntas no fim do bloco:
   //
-  //     2025 | Δ% 2025 | Meta | Real | Δ% Meta
+  //     2025 | Δ% 2025 | Real | Meta | Δ% Meta
+  //
+  // Cada referência fica ao lado da sua variação — 2025 com o Δ% 2025 à
+  // direita, Meta com o Δ% Meta à direita — e o REALIZADO no meio, que é o
+  // número que as duas comparações têm em comum.
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
   const rubricaW = 158;
@@ -125,7 +129,7 @@ function _gerarSlideDRE_(modo) {
   // ("▲ 2.088%") e precisam de mais espaço que as de valor ("2.088"), senão
   // a seta encosta no número. Os pesos somam 5,00 por bloco, então a largura
   // total da tabela não muda.
-  // Ano anterior | Δ% ano anterior | Meta | Real | Δ% Meta.
+  // Ano anterior | Δ% ano anterior | Real | Meta | Δ% Meta.
   // Cada valor de referência vem colado na sua comparação. Os pesos seguem a
   // POSIÇÃO, não o conteúdo: as colunas de variação carregam seta + número
   // ("▲ 2.088%") e precisam de mais espaço que as de valor ("2.088"), então
@@ -195,7 +199,7 @@ function _gerarSlideDRE_(modo) {
     // A ordem das VARIAÇÕES não mudou: elas vêm depois dos três valores, e
     // cada uma diz contra o quê compara no próprio rótulo.
     [String(d.ano - 1), 'Δ% ' + String(d.ano - 1),
-     'Meta', 'Real', 'Δ% Meta'].forEach((s, i) => {
+     'Real', 'Meta', 'Δ% Meta'].forEach((s, i) => {
       const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
       const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, 14);
       // No bloco da projeção a régua também sai na cor do futuro (um pouco
@@ -414,8 +418,8 @@ function _gerarSlideDRE_(modo) {
         // contíguas (0, 2, 3) e não dá mais para usar a posição no array.
         const valores = [
           { col: 0, txt: valFmt(blk.aa),  cor: resumo ? '#CBD5E1' : '#64748B',      bold: false  },
-          { col: 2, txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo },
-          { col: 3, txt: valFmt(bl.real), cor: corBase,                             bold: true   }
+          { col: 2, txt: valFmt(bl.real), cor: corBase,                             bold: true   },
+          { col: 3, txt: valFmt(bl.orc),  cor: resumo ? '#CBD5E1' : CORES.textGray, bold: resumo }
         ];
         valores.forEach(cel => {
           const i = cel.col;
