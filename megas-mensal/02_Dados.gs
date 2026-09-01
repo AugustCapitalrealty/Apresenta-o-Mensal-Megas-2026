@@ -742,46 +742,189 @@ function obterDadosBacklogPendentes_() {
 function obterDadosDashboard() {
   const SHEET_NAME = 'DADOS';
   let dataMap = new Map();
-  let headers = ['DEZ', 'NOV', "DEZ'24"];
-  // Registro do que a aba DADOS trazia antes de ser sobrescrito por uma
-  // fonte autoritativa — o slide de CHECK usa isso pra continuar apontando
-  // a divergência de origem (senão, corrigido o valor, a checagem viraria
-  // sempre verdadeira e esconderia o problema na planilha).
+  const ref = obterMesReferencia_();
+  const mesAtualNome = MESES_3_REF[ref.index];
+  const mesAntNome   = MESES_3_REF[(ref.index + 11) % 12];
+  const anoAntNome   = mesAtualNome + "'" + String((ref.ano - 1) % 100).padStart(2, '0');
+  let headers = [mesAtualNome, mesAntNome, anoAntNome];
   const sobrescritos = [];
 
+  // 1. Leitura base da aba DADOS da planilha da cidade (como fallback/base)
   try {
     const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
-
-    const data = sheet.getDataRange().getValues();
-    if (data.length > 0) {
-      headers = [
-        String(data[0][1] || 'DEZ').toUpperCase(),
-        String(data[0][2] || 'NOV').toUpperCase(),
-        String(data[0][3] || 'ANO ANT').toUpperCase()
-      ];
+    if (sheet) {
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        let row = data[i];
+        if (row[0]) {
+          let key = String(row[0]).trim();
+          dataMap.set(key, {
+            atual  : row[1] !== '' && row[1] != null ? String(row[1]) : '-',
+            mesAnt : row[2] !== '' && row[2] != null ? String(row[2]) : '-',
+            anoAnt : row[3] !== '' && row[3] != null ? String(row[3]) : '-'
+          });
+        }
+      }
     }
+  } catch (e) {
+    Logger.log('Erro Dashboard (aba DADOS): ' + e.message);
+  }
 
-    for (let i = 1; i < data.length; i++) {
-      let row = data[i];
-      if (row[0]) {
-        let key = String(row[0]).trim();
-        dataMap.set(key, {
-          atual  : row[1] !== '' ? String(row[1]) : '-',
-          mesAnt : row[2] !== '' ? String(row[2]) : '-',
-          anoAnt : row[3] !== '' ? String(row[3]) : '-'
+  // 2. DISPONIBILIDADE: busca na aba CHAMADOS do Histórico Validado (mesma fonte de Metas)
+  try {
+    const sDisp = lerHistoricoValidado('Índice de disponibilidade', { aba: 'CHAMADOS' });
+    if (sDisp && sDisp.length) {
+      const ordAtual  = ref.ano * 100 + (ref.index + 1);
+      const ordAnt    = (ref.index === 0 ? (ref.ano - 1) * 100 + 12 : ref.ano * 100 + ref.index);
+      const ordAnoAnt = (ref.ano - 1) * 100 + (ref.index + 1);
+
+      const itAtual  = sDisp.find(s => s.ord === ordAtual) || sDisp[sDisp.length - 1];
+      const itAnt    = sDisp.find(s => s.ord === ordAnt) || (sDisp.length > 1 ? sDisp[sDisp.length - 2] : null);
+      const itAnoAnt = sDisp.find(s => s.ord === ordAnoAnt);
+
+      const fmt = it => it ? (it.bruto ? (String(it.bruto).includes('%') ? String(it.bruto) : String(it.bruto) + '%') : (formatarNumeroBR(it.valor) + '%')) : '-';
+      dataMap.set('Disponibilidade', {
+        atual:  fmt(itAtual),
+        mesAnt: fmt(itAnt),
+        anoAnt: fmt(itAnoAnt)
+      });
+      Logger.log('Dashboard (disponibilidade): ' + fmt(itAtual) + ' | ' + fmt(itAnt) + ' | ' + fmt(itAnoAnt));
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (disponibilidade): ' + e.message);
+  }
+
+  // 3. CHAMADOS FACILITIES / GERAL: contagem unificada da BD-CORRETIVAS / Backlog
+  try {
+    const serie = obterDadosBacklogHistorico_();
+    if (serie && serie.length) {
+      const ordAtual  = ref.ano * 100 + (ref.index + 1);
+      const ordAnt    = (ref.index === 0 ? (ref.ano - 1) * 100 + 12 : ref.ano * 100 + ref.index);
+      const ordAnoAnt = (ref.ano - 1) * 100 + (ref.index + 1);
+
+      const idxAtual  = serie.findIndex(p => p.ord === ordAtual);
+      const mesRef    = idxAtual >= 0 ? serie[idxAtual] : serie[serie.length - 1];
+      const mesAnt    = idxAtual > 0 ? serie[idxAtual - 1] : (serie.find(p => p.ord === ordAnt) || null);
+      const mesAnoAnt = serie.find(p => p.ord === ordAnoAnt);
+
+      const getVal = (m, campo) => (m && m[campo] != null) ? String(m[campo]) : '-';
+
+      dataMap.set('Chamados geral', {
+        atual:  getVal(mesRef, 'geral'),
+        mesAnt: getVal(mesAnt, 'geral'),
+        anoAnt: getVal(mesAnoAnt, 'geral')
+      });
+
+      dataMap.set('Chamados de facilities', {
+        atual:  getVal(mesRef, 'facilities'),
+        mesAnt: getVal(mesAnt, 'facilities'),
+        anoAnt: getVal(mesAnoAnt, 'facilities')
+      });
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
+  }
+
+  // 4. PERCENTUAL DE CONCLUSÃO HISTÓRICO: calculado da base bruta BD-CORRETIVAS
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const calcConc = (ano, mes1_12) => {
+        const dtLimite = new Date(Date.UTC(ano, mes1_12, 1)); // limite exclusivo
+        let criados = 0, fechados = 0;
+        rawCorr.forEach(r => {
+          if (r.dtReporte && r.dtReporte < dtLimite) {
+            criados++;
+            if (r.dtFechado && r.dtFechado < dtLimite) {
+              fechados++;
+            }
+          }
+        });
+        return criados > 0 ? (fechados / criados * 100).toFixed(1).replace('.', ',') + '%' : '-';
+      };
+
+      const mesAntIdx = (ref.index === 0 ? 11 : ref.index - 1);
+      const mesAntAno = (ref.index === 0 ? ref.ano - 1 : ref.ano);
+
+      dataMap.set('Percentual de conclusão histórico', {
+        atual:  calcConc(ref.ano, ref.index + 1),
+        mesAnt: calcConc(mesAntAno, mesAntIdx + 1),
+        anoAnt: calcConc(ref.ano - 1, ref.index + 1)
+      });
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (conclusao historico): ' + e.message);
+  }
+
+  // 5. MANUTENÇÃO PREVENTIVA (Em dia % e SLA %): calculado direto da BD-PREVENTIVAS
+  try {
+    const rawPrev = _lerBdPreventivasCru_();
+    if (rawPrev && rawPrev.length) {
+      const calcPrev = (ano, mes0_11) => {
+        const dtIni = new Date(Date.UTC(ano, mes0_11, 1));
+        const dtFim = new Date(Date.UTC(ano, mes0_11 + 1, 1));
+        let prev = 0, real = 0, cump = 0, naoCump = 0;
+        rawPrev.forEach(it => {
+          if (it.dtAgendado && it.dtAgendado >= dtIni && it.dtAgendado < dtFim) {
+            prev++;
+            const estNorm = _histNorm_(it.estado);
+            const fechada = _bdChamadoFechado_(it.estado, it.dtFechado) || estNorm === 'fechada' || estNorm === 'fechado' || estNorm === 'concluida' || estNorm === 'concluido';
+            if (fechada) real++;
+            const slaCls = _slaClasse_(it.sla);
+            if (slaCls === 'CUMPRIDO') cump++;
+            else if (slaCls === 'NAO') naoCump++;
+          }
+        });
+        const emDia = prev > 0 ? (real / prev * 100).toFixed(1).replace('.', ',') + '%' : '-';
+        const slaBase = cump + naoCump;
+        const sla = slaBase > 0 ? (cump / slaBase * 100).toFixed(1).replace('.', ',') + '%' : '-';
+        return { emDia, sla };
+      };
+
+      const mesAntIdx = (ref.index === 0 ? 11 : ref.index - 1);
+      const mesAntAno = (ref.index === 0 ? ref.ano - 1 : ref.ano);
+
+      const pAtual  = calcPrev(ref.ano, ref.index);
+      const pAnt    = calcPrev(mesAntAno, mesAntIdx);
+      const pAnoAnt = calcPrev(ref.ano - 1, ref.index);
+
+      dataMap.set('Em dia', {
+        atual:  pAtual.emDia,
+        mesAnt: pAnt.emDia,
+        anoAnt: pAnoAnt.emDia
+      });
+
+      dataMap.set('SLA atendido', {
+        atual:  pAtual.sla,
+        mesAnt: pAnt.sla,
+        anoAnt: pAnoAnt.sla
+      });
+    } else {
+      // Fallback: busca no histórico validado aba PREVENTIVAS
+      const sSla = lerHistoricoValidado('SLA MENSAL', { aba: 'PREVENTIVAS' });
+      if (sSla && sSla.length) {
+        const ordAtual  = ref.ano * 100 + (ref.index + 1);
+        const ordAnt    = (ref.index === 0 ? (ref.ano - 1) * 100 + 12 : ref.ano * 100 + ref.index);
+        const ordAnoAnt = (ref.ano - 1) * 100 + (ref.index + 1);
+
+        const itAtual  = sSla.find(s => s.ord === ordAtual) || sSla[sSla.length - 1];
+        const itAnt    = sSla.find(s => s.ord === ordAnt) || (sSla.length > 1 ? sSla[sSla.length - 2] : null);
+        const itAnoAnt = sSla.find(s => s.ord === ordAnoAnt);
+
+        const fmt = it => it ? (it.bruto ? (String(it.bruto).includes('%') ? String(it.bruto) : String(it.bruto) + '%') : (formatarNumeroBR(it.valor) + '%')) : '-';
+        dataMap.set('SLA atendido', {
+          atual:  fmt(itAtual),
+          mesAnt: fmt(itAnt),
+          anoAnt: fmt(itAnoAnt)
         });
       }
     }
   } catch (e) {
-    Logger.log('Erro Dashboard: ' + e.message);
+    Logger.log('Erro Dashboard (preventivas BD): ' + e.message);
   }
 
-  // Sobrescreve Fluxo de VISITANTES/Tempo médio com a planilha dedicada de
-  // Controle de Acessos (fonte autoritativa) — a aba DADOS da própria cidade
-  // raramente tem essas duas linhas preenchidas. Só troca a célula quando a
-  // planilha de acessos realmente tem aquele período; sem isso, mantém o que
-  // já veio da aba DADOS (evita apagar um valor bom por um '-').
+  // 6. CONTROLE DE ACESSO: planilha dedicada de acessos
   try {
     const acessos = obterAcessosDashboard_();
     if (acessos) {
@@ -797,41 +940,6 @@ function obterDadosDashboard() {
     }
   } catch (e) {
     Logger.log('Erro Dashboard (acessos): ' + e.message);
-  }
-
-  // FONTE ÚNICA dos contadores de backlog: "Chamados geral" e "Chamados de
-  // facilities" também são digitados na aba DADOS, mas a aba BACKLOG do
-  // Histórico Validado é a fonte AUTORITATIVA — é ela que alimenta o slide
-  // Backlog Facilities e é internamente consistente (geral = facilities +
-  // property + locatário, verificado em todos os meses da série). Quando as
-  // duas discordam, quem manda é o BACKLOG; assim o Dashboard e o slide de
-  // Backlog Facilities nunca mostram números diferentes pro mesmo mês.
-  // (Mesmo padrão do override de acessos acima.)
-  try {
-    const serie = obterDadosBacklogHistorico_();
-    if (serie && serie.length) {
-      const ref = obterMesReferencia_();
-      const ord = ref.ano * 100 + (ref.index + 1);
-      const idx = serie.findIndex(p => p.ord === ord);
-      if (idx >= 0) {
-        const mesRef = serie[idx];
-        const mesAnt = idx > 0 ? serie[idx - 1] : null;
-        [{ chave: 'Chamados geral', campo: 'geral' },
-         { chave: 'Chamados de facilities', campo: 'facilities' }].forEach(m => {
-          if (mesRef[m.campo] == null) return;
-          const atual = dataMap.get(m.chave) || { atual: '-', mesAnt: '-', anoAnt: '-' };
-          const antVal = (mesAnt && mesAnt[m.campo] != null) ? String(mesAnt[m.campo]) : atual.mesAnt;
-          if (atual.atual !== '-' && _histNum_(atual.atual) !== mesRef[m.campo]) {
-            Logger.log('Dashboard: "' + m.chave + '" da aba DADOS (' + atual.atual +
-                       ') diverge da aba BACKLOG (' + mesRef[m.campo] + ') — usando o BACKLOG.');
-            sobrescritos.push({ chave: m.chave, dados: _histNum_(atual.atual), backlog: mesRef[m.campo] });
-          }
-          dataMap.set(m.chave, { atual: String(mesRef[m.campo]), mesAnt: antVal, anoAnt: atual.anoAnt });
-        });
-      }
-    }
-  } catch (e) {
-    Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
   }
 
   // ── DESTAQUES: documentação dos inquilinos ──────────────────────────────
