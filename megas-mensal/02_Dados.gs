@@ -550,6 +550,90 @@ function obterAcessosDashboard_() {
 // ==========================================
 function obterDadosBacklogPendentes_() {
   try {
+    const ref = obterMesReferencia_();
+    const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
+    const anoRef = Math.floor(ordRef / 100);
+    const mesIdxRef = (ordRef % 100) - 1;
+
+    // ── 1. TENTA CALCULAR DIRETO DA BD-CORRETIVAS ────────────────────────────
+    // Regra oficial Capital Realty: =SE(Estado="Pausado"; Motivo_de_pausa; Estado)
+    try {
+      const itens = _lerBdCorretivasCru_();
+      if (itens && itens.length) {
+        // Datas do mês atual de referência (1º dia do mês até 1º dia do mês seguinte)
+        const refIni = new Date(Date.UTC(anoRef, mesIdxRef, 1));
+        const refFim = new Date(Date.UTC(anoRef, mesIdxRef + 1, 1));
+
+        // Datas do mês anterior
+        const refIniAnt = new Date(Date.UTC(mesIdxRef === 0 ? anoRef - 1 : anoRef, mesIdxRef === 0 ? 11 : mesIdxRef - 1, 1));
+        const refFimAnt = refIni;
+
+        const countsAtual = {};
+        let emResolucaoAtual = 0;
+        let totalAtual = 0;
+
+        itens.forEach(it => {
+          if (!_histAbertoNoMes_(it.estadoSistema, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+          totalAtual++;
+          const est = it.estado || 'Em resolução';
+          const estNorm = _histNorm_(est);
+          if (estNorm.includes('em resolucao') || estNorm.includes('resolv') || estNorm === 'novo' || estNorm === 'atribuido') {
+            emResolucaoAtual++;
+          } else {
+            countsAtual[est] = (countsAtual[est] || 0) + 1;
+          }
+        });
+
+        if (totalAtual > 0) {
+          const countsAnt = {};
+          let totalAnt = 0;
+          let emResolucaoAnt = 0;
+
+          itens.forEach(it => {
+            if (!_histAbertoNoMes_(it.estadoSistema, it.dtReporte, it.dtFechado, refIniAnt, refFimAnt)) return;
+            totalAnt++;
+            const est = it.estado || 'Em resolução';
+            const estNorm = _histNorm_(est);
+            if (estNorm.includes('em resolucao') || estNorm.includes('resolv') || estNorm === 'novo' || estNorm === 'atribuido') {
+              emResolucaoAnt++;
+            } else {
+              const k = _histNorm_(est);
+              countsAnt[k] = (countsAnt[k] || 0) + 1;
+            }
+          });
+
+          // Monta lista de direcionados ordenada de forma crescente por quantidade
+          const direcionados = [];
+          Object.keys(countsAtual).forEach(est => {
+            const qtd = countsAtual[est];
+            const k = _histNorm_(est);
+            const ant = countsAnt[k] !== undefined ? countsAnt[k] : null;
+            direcionados.push({ estado: est, qtd, anterior: ant });
+          });
+
+          direcionados.sort((a, b) => a.qtd - b.qtd);
+
+          Logger.log('Backlog pendentes: calculado diretamente da BD-CORRETIVAS para ' + ref.mesAno +
+                     ' (Total=' + totalAtual + ', Em resolução=' + emResolucaoAtual + ', ' +
+                     direcionados.length + ' estados direcionados).');
+
+          return {
+            mesLabel: ref.mesAno,
+            direcionados: direcionados,
+            emResolucao: emResolucaoAtual,
+            total: totalAtual,
+            totalAnterior: totalAnt > 0 ? totalAnt : null,
+            emResolucaoAnterior: emResolucaoAnt,
+            somaAba: totalAtual,
+            emResolucaoAba: emResolucaoAtual
+          };
+        }
+      }
+    } catch (errBd) {
+      Logger.log('Backlog pendentes: tentativa via BD-CORRETIVAS (' + errBd.message + ') — tentando aba manual.');
+    }
+
+    // ── 2. FALLBACK: ABA MANUAL 'CHAMADOS PENDENTES (BACKLOG)' ───────────────
     const ss = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     let sheet = ss.getSheetByName('CHAMADOS PENDENTES (BACKLOG)');
     if (!sheet) {
@@ -585,15 +669,8 @@ function obterDadosBacklogPendentes_() {
     const ords = Object.keys(porMes).map(Number).sort((a, b) => a - b);
     if (!ords.length) return null;
 
-    // Prioriza o mês de referência oficial (DADOS!B1). Se ainda não estiver preenchido
-    // nesta aba curada, usa o último mês disponível preenchido pela operação (com os 15 estados operacionais).
     let alvoOrd = null;
-    try {
-      const ref    = obterMesReferencia_();
-      const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
-      if (porMes[ordRef]) alvoOrd = ordRef;
-    } catch (e) {}
-
+    if (porMes[ordRef]) alvoOrd = ordRef;
     if (alvoOrd == null) alvoOrd = ords[ords.length - 1];
     const alvo = porMes[alvoOrd];
 
@@ -603,7 +680,7 @@ function obterDadosBacklogPendentes_() {
     const totalAnteriorAba = prevOrd != null
       ? porMes[prevOrd].itens.reduce((s, it) => s + it.qtd, 0) : null;
 
-    const prevMap = {};                 // estado normalizado → qtd do mês anterior
+    const prevMap = {};
     let prevEmResRaw = 0, prevSomaDir = 0;
     if (prevOrd != null) {
       porMes[prevOrd].itens.forEach(it => {
@@ -613,7 +690,6 @@ function obterDadosBacklogPendentes_() {
       });
     }
 
-    // Separa 'Em resolução' dos estados direcionados (com valor do mês anterior)
     const direcionados = [];
     let emResolucaoAba = 0;
     alvo.itens.forEach(it => {
@@ -622,14 +698,6 @@ function obterDadosBacklogPendentes_() {
     });
     const somaDir = direcionados.reduce((s, it) => s + it.qtd, 0);
 
-    // Total oficial: coluna "Geral" da aba BACKLOG do HISTÓRICO VALIDADO —
-    // a mesma fonte do slide Backlog Facilities. NÃO usa mais a aba DADOS
-    // da planilha da cidade (a pedido): o histórico é a fonte autoritativa
-    // do backlog, é internamente consistente (geral = facilities + property
-    // + locatário) e traz a série mensal inteira, então o mês anterior sai
-    // da mesma origem em vez de depender da coluna "mês anterior" da aba
-    // DADOS. Isso também desfaz a ida e volta que existia aqui
-    // (pendentes → Dashboard → histórico).
     let totalOficial = null, totalAnterior = null;
     try {
       const serie = obterDadosBacklogHistorico_();
@@ -644,32 +712,18 @@ function obterDadosBacklogPendentes_() {
       Logger.log('Backlog pendentes: aba BACKLOG indisponível — ' + e.message);
     }
 
-    // Sem o histórico, cai na soma do mês anterior da própria aba
     if (totalAnterior == null) totalAnterior = totalAnteriorAba;
-
-    // Soma crua da própria aba (antes da conciliação) — o slide de CHECK usa
-    // pra apontar quando a aba de estados não fecha com o total do histórico.
     const somaAba = somaDir + emResolucaoAba;
 
-    // Conciliação
     let emResolucao, total;
     if (totalOficial !== null && totalOficial >= somaDir) {
       emResolucao = totalOficial - somaDir;
       total       = totalOficial;
-      if (emResolucao !== emResolucaoAba) {
-        Logger.log('Backlog: "Em resolução" ajustado de ' + emResolucaoAba + ' para ' +
-                   emResolucao + ' (concilia com o Geral da aba BACKLOG = ' + totalOficial + ').');
-      }
     } else {
       emResolucao = emResolucaoAba;
       total       = somaAba;
-      if (totalOficial !== null) {
-        Logger.log('Backlog: Geral da aba BACKLOG (' + totalOficial + ') é MENOR que a soma dos ' +
-                   'direcionados (' + somaDir + ') — usando a soma da própria aba. Confira os dados.');
-      }
     }
 
-    // Em resolução do mês anterior (derivado igual ao atual, p/ variação coerente)
     const emResolucaoAnterior = prevOrd == null ? null
       : (totalAnterior != null ? Math.max(totalAnterior - prevSomaDir, 0) : prevEmResRaw);
 
@@ -3680,7 +3734,8 @@ function _lerBdCorretivasCru_() {
     const hdr      = data[0].map(_histNorm_);
     const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
     const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
-    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+    const cEstado  = hdr.findIndex(h => h === 'estado' || h.indexOf('estado') >= 0);
+    const cMotivo  = hdr.findIndex(h => h.indexOf('motivo de pausa') >= 0 || h.indexOf('motivo') >= 0);
     const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
     const cPri     = hdr.findIndex(h => h.indexOf('prioridade') >= 0);   // 1ª ocorrência = texto; a 2ª (numérica) é ignorada
     const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0);
@@ -3693,20 +3748,32 @@ function _lerBdCorretivasCru_() {
       const row = data[r];
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
 
+      const rawEstado = cEstado >= 0 ? String(row[cEstado] || '').trim() : '';
+      const rawMotivo = cMotivo >= 0 ? String(row[cMotivo] || '').trim() : '';
+      const rawResp   = cResp   >= 0 ? String(row[cResp] || '').trim() : '';
+
+      // Regra oficial Capital Realty: =SE(Estado="Pausado"; Motivo_de_pausa; Estado)
+      let estadoOp = rawEstado;
+      if (_histNorm_(rawEstado).indexOf('pausad') >= 0 && rawMotivo) {
+        estadoOp = rawMotivo;
+      }
+
       saida.push({
-        id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
-        descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
-        estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
-        prioridade: _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
+        id:            _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
+        descricao:     cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
+        estado:        estadoOp,
+        estadoSistema: rawEstado,
+        motivoPausa:   rawMotivo,
+        prioridade:    _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
         // Chamado sem responsável preenchido (ou com um nome que não está
         // no mapa) conta como FACILITIES, não "OUTROS": é a mesma regra do
         // slide irmão Backlog de Clientes — Facilities, que já recebe tudo
         // que não é PROPERTY, e bate com o que a aba curada antiga trazia
         // na coluna EQUIPE pra esses chamados. "OUTROS" dava a impressão
         // falsa de que ninguém da operação era responsável.
-        equipe:    _resolverEquipeResponsaveis_(cResp >= 0 ? row[cResp] : '') || 'FACILITIES',
-        dtReporte: cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
-        dtFechado: cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
+        equipe:        _resolverEquipeResponsaveis_(rawResp) || 'FACILITIES',
+        dtReporte:     cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
+        dtFechado:     cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
       });
     }
     // Só cacheia resultado bom: leitura vazia por falha transitória não pode
