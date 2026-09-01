@@ -96,7 +96,8 @@ function _chamadosClientesPeriodo_(rotulo, dadosPeriodo, corTema, coresMapa) {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(CORES.bgSlide);
 
-    const sub = 'Chamados ' + rotulo.toLowerCase() + ' no mês' +
+    const ref = obterMesReferencia_();
+    const sub = 'Chamados ' + rotulo.toLowerCase() + ' no mês (' + ref.siglaAno + ')' +
                 (paginas.length > 1 ? ' — página ' + (p + 1) + ' de ' + paginas.length : '');
     criarHeaderPadrao(slide, 'CHAMADOS DE CLIENTES — ' + rotulo, sub);
 

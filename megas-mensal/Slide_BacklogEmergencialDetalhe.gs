@@ -60,7 +60,8 @@ function gerarSlideBacklogEmergencialDetalhe() {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(CORES.bgSlide);
 
-    const subtitulo = 'Chamados emergenciais em aberto · Facilities x Property' +
+    const ref = obterMesReferencia_();
+    const subtitulo = 'Chamados emergenciais em aberto · Facilities x Property · Mês: ' + ref.siglaAno +
       (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');
     criarHeaderPadrao(slide, 'BACKLOG EMERGENCIAL — DETALHE', subtitulo);
 

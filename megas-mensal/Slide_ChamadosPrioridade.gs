@@ -32,9 +32,8 @@ function gerarSlideChamadosPrioridade() {
   const W     = deck.getPageWidth();
   const H     = deck.getPageHeight();
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(CORES.bgSlide);
-
-  criarHeaderPadrao(slide, 'CHAMADOS POR PRIORIDADE', 'Abertos x Fechados');
+  const ref = obterMesReferencia_();
+  criarHeaderPadrao(slide, 'CHAMADOS POR PRIORIDADE', 'Abertos x Fechados · Mês de referência: ' + ref.siglaAno);
 
   // Mesma grade 2×2 do espaço reservado que este slide substitui: pizzas
   // em cima, listas de Emergenciais embaixo.

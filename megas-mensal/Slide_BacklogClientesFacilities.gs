@@ -55,7 +55,8 @@ function gerarSlideBacklogClientesFacilities() {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(CORES.bgSlide);
 
-    const subtitulo = 'Chamados de clientes pendentes de responsabilidade da equipe Facilities' +
+    const ref = obterMesReferencia_();
+    const subtitulo = 'Chamados de clientes pendentes de responsabilidade da equipe Facilities · Mês: ' + ref.siglaAno +
       (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');
     criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — FACILITIES', subtitulo);
 

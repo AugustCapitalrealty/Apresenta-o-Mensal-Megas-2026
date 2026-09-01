@@ -107,9 +107,8 @@ function _gerarSlideDRE_(modo) {
   // saturado (#DC2626/#166534) pesava demais na leitura. Estes mantêm o
   // significado com contraste suficiente (~5:1) sem gritar na tela.
   const VERM = '#A85450', VERDE = '#4E7B5F';               // sobre fundo claro
-  const VERM_CLARO = '#E0A9A6', VERDE_CLARO = '#9FC4AF';   // sobre fundo escuro
-
-  criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', subHeader + d.cidade);
+  const ref = obterMesReferencia_();
+  criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', subHeader + d.cidade + ' · Mês: ' + ref.siglaAno);
 
   // ── Grade — 3 blocos × 5 colunas ────────────────────────────────────────
   // Ordem pedida pela diretoria: ano anterior, orçamento, ano atual — os

@@ -16,9 +16,8 @@ function gerarSlideCustoM2() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   const pageW = deck.getPageWidth();
-  const pageH = deck.getPageHeight();
-
-  criarHeaderPadrao(slide, 'CUSTO DO M²', 'Monitoramento de Custo');
+  const ref = obterMesReferencia_();
+  criarHeaderPadrao(slide, 'CUSTO DO M²', 'Monitoramento de Custo · Mês: ' + ref.siglaAno);
 
   const marginX = 30;
   const topY    = 85;

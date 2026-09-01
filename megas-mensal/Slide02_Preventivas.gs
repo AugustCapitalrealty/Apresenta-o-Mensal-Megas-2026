@@ -12,7 +12,8 @@ function gerarSlidePreventivas() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
   const PageWidth = deck.getPageWidth(), PageHeight = deck.getPageHeight();
 
-  criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA', 'Aderência ao Cronograma e Desvios — ' + obterMesReferencia_().ano + ' · ▲/▼ vs mês anterior');
+  const ref = obterMesReferencia_();
+  criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA', 'Aderência ao Cronograma e Desvios — ' + ref.ano + ' (' + ref.sigla + ') · ▲/▼ vs mês anterior');
 
   const marginX = 50;
   // AJUSTE: Alterado para 80px (antes era 90) para alinhar com os outros slides

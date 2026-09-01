@@ -53,7 +53,10 @@ function gerarSlideBacklogFacilities() {
     return;
   }
 
-  const meses = historico.slice(-12);   // últimos 12 meses, mais recente por último
+  const ref = obterMesReferencia_();
+  const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
+  const historicoAteRef = historico.filter(m => m.ord <= ordRef);
+  const meses = (historicoAteRef.length ? historicoAteRef : historico).slice(-12);
   const n = meses.length;
   const atual    = meses[n - 1];
   const anterior = n >= 2 ? meses[n - 2] : null;
@@ -65,7 +68,7 @@ function gerarSlideBacklogFacilities() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   criarHeaderPadrao(slide, 'BACKLOG FACILITIES',
-    'Evolução mensal de chamados · Mês de referência: ' + atual.rotulo);
+    'Evolução mensal de chamados · Mês de referência: ' + (atual ? atual.rotulo : ref.siglaAno));
 
   const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
   _backlogCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, atual, anterior);

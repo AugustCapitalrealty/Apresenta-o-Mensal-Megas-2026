@@ -17,11 +17,8 @@ function gerarSlideTempo() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   const PageWidth = deck.getPageWidth();
-  const PageHeight = deck.getPageHeight();
-  const anoAtual = new Date().getFullYear();
-
-  // 1. Cabeçalho
-  criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', `Fluxo, Segurança e Turnover - ${anoAtual}`);
+  const ref = obterMesReferencia_();
+  criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', 'Fluxo, Segurança e Turnover · Mês: ' + ref.siglaAno);
 
   const marginX = 40;
   const topY = 80;

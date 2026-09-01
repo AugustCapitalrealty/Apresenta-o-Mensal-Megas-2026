@@ -23,31 +23,83 @@ function obterMesReferencia_() {
 
   const hoje = new Date();
   let idx = -1;
+  let ano = hoje.getFullYear();
+
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('DADOS') || ss.getSheets()[0];
-    const cab   = String(sheet.getRange(1, 2).getDisplayValue() || '').toUpperCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '');
-    idx = MESES_3_REF.findIndex(m => cab.indexOf(m) === 0);
-  } catch (e) {
-    Logger.log('Mês de referência: usando fallback de calendário. ' + e.message);
-  }
-  if (idx < 0) {
-    const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior
-    idx = ant.getMonth();
-  }
-  // Se o mês de referência for "maior" que o mês atual, é do ano passado
-  const ano  = idx > hoje.getMonth() ? hoje.getFullYear() - 1 : hoje.getFullYear();
-  const nome = MESES_NOME_REF[idx];
+    const rawVal = sheet.getRange(1, 2).getValue();
+    const rawDisplay = String(sheet.getRange(1, 2).getDisplayValue() || '').trim();
 
+    // 1) Se a célula B1 for um objeto Date do Google Sheets:
+    if (rawVal instanceof Date && !isNaN(rawVal.getTime())) {
+      idx = rawVal.getMonth();
+      ano = rawVal.getFullYear();
+    } else {
+      // 2) Parse de texto do cabeçalho da célula B1
+      const cab = rawDisplay.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+      // Procura por nome de mês por extenso ou 3 letras
+      for (let m = 0; m < MESES_3_REF.length; m++) {
+        const reg = new RegExp('\\b' + MESES_3_REF[m] + '|' + MESES_NOME_REF[m].normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '\\b', 'i');
+        if (reg.test(cab) || cab.indexOf(MESES_3_REF[m]) >= 0) {
+          idx = m;
+          break;
+        }
+      }
+
+      // Se não achou por nome, tenta formatos numéricos como "07/2026", "7/2026", "07/26", "2026-07"
+      if (idx < 0) {
+        const mNum = cab.match(/(?:^|\D)(0?[1-9]|1[0-2])[\/\-\.](20\d\d|\d\d)(?:\D|$)/);
+        if (mNum) {
+          idx = parseInt(mNum[1], 10) - 1;
+          ano = mNum[2].length === 2 ? 2000 + parseInt(mNum[2], 10) : parseInt(mNum[2], 10);
+        } else {
+          const mIso = cab.match(/(20\d\d)[\/\-\.](0?[1-9]|1[0-2])/);
+          if (mIso) {
+            ano = parseInt(mIso[1], 10);
+            idx = parseInt(mIso[2], 10) - 1;
+          }
+        }
+      }
+
+      // Procura ano explícito no texto se ainda não achou
+      const mAno = cab.match(/\b(20\d\d)\b/);
+      if (mAno) {
+        ano = parseInt(mAno[1], 10);
+      } else {
+        const mAno2 = cab.match(/[\/\-](\d{2})\b/);
+        if (mAno2 && parseInt(mAno2[1], 10) >= 20) {
+          ano = 2000 + parseInt(mAno2[1], 10);
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Mês de referência: erro ao ler célula B1 da aba DADOS (' + e.message + ')');
+  }
+
+  // Fallback seguro se B1 não puder ser lida: usa o mês anterior ao calendário
+  if (idx < 0) {
+    const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+    idx = ant.getMonth();
+    ano = idx > hoje.getMonth() ? hoje.getFullYear() - 1 : hoje.getFullYear();
+  }
+
+  const nome = MESES_NOME_REF[idx];
   const ref = {
-    index : idx,
-    nome  : nome,                                              // MAIO
-    curto : nome.charAt(0) + nome.slice(1).toLowerCase(),      // Maio
-    ano   : ano,
-    label : nome + ' / ' + ano,                                // MAIO / 2026
-    rodape: nome.charAt(0) + nome.slice(1, 3).toLowerCase() + '/' + ano  // Mai/2026
+    index    : idx,
+    nome     : nome,                                              // JULHO
+    curto    : nome.charAt(0) + nome.slice(1).toLowerCase(),      // Julho
+    sigla    : MESES_3_REF[idx],                                  // JUL
+    mes      : String(idx + 1).padStart(2, '0'),                  // 07
+    ano      : ano,                                               // 2026
+    ord      : ano * 100 + (idx + 1),                             // 202607
+    label    : nome + ' / ' + ano,                                // JULHO / 2026
+    mesAno   : String(idx + 1).padStart(2, '0') + '/' + ano,      // 07/2026
+    siglaAno : MESES_3_REF[idx] + '/' + String(ano).slice(-2),    // JUL/26
+    rodape   : nome.charAt(0) + nome.slice(1, 3).toLowerCase() + '/' + ano // Jul/2026
   };
+
   _mesRefCache[chave] = ref;
   return ref;
 }
@@ -124,11 +176,38 @@ function _histEmpChave_(s) {
 }
 
 function _histParseMes_(txt) {
-  const m = String(txt || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
-  if (!m) return null;
-  const mes = parseInt(m[1], 10), ano = parseInt(m[2], 10);
-  if (mes < 1 || mes > 12) return null;
-  return { label: String(mes).padStart(2, '0') + '/' + ano, ord: ano * 100 + mes };
+  if (!txt) return null;
+  if (txt instanceof Date && !isNaN(txt.getTime())) {
+    const m = txt.getMonth() + 1, a = txt.getFullYear();
+    return { label: String(m).padStart(2, '0') + '/' + a, ord: a * 100 + m };
+  }
+  const s = String(txt).trim();
+  // Formato "07/2026", "7/2026", "07-2026"
+  let m = s.match(/^(\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const mes = parseInt(m[1], 10), ano = parseInt(m[2], 10);
+    if (mes >= 1 && mes <= 12) return { label: String(mes).padStart(2, '0') + '/' + ano, ord: ano * 100 + mes };
+  }
+  // Formato "07/26", "7/26"
+  m = s.match(/^(\d{1,2})[\/\-](\d{2})$/);
+  if (m) {
+    const mes = parseInt(m[1], 10), ano = 2000 + parseInt(m[2], 10);
+    if (mes >= 1 && mes <= 12) return { label: String(mes).padStart(2, '0') + '/' + ano, ord: ano * 100 + mes };
+  }
+  // Formato "JUL/26", "JUL/2026", "JULHO/2026"
+  const sNorm = s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (let i = 0; i < MESES_3_REF.length; i++) {
+    if (sNorm.indexOf(MESES_3_REF[i]) >= 0) {
+      const mes = i + 1;
+      const mAno = sNorm.match(/\b(20\d\d)\b/) || sNorm.match(/[\/\-](\d{2})\b/);
+      let ano = new Date().getFullYear();
+      if (mAno) {
+        ano = mAno[1].length === 2 ? 2000 + parseInt(mAno[1], 10) : parseInt(mAno[1], 10);
+      }
+      return { label: String(mes).padStart(2, '0') + '/' + ano, ord: ano * 100 + mes };
+    }
+  }
+  return null;
 }
 
 // Converte "66.408" → 66408, "27,91" → 27.91, "100" → 100, "5m45s" → NaN
