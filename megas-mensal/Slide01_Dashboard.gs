@@ -16,7 +16,11 @@ function gerarSlideDashboard() {
   const PageWidth = deck.getPageWidth();
   const PageHeight = deck.getPageHeight();
 
-  criarHeaderPadrao(slide, 'DASHBOARD OPERACIONAL', 'Comparativo de Performance: ' + dynamicHeaders[0]);
+  criarHeaderPadrao(
+    slide,
+    'DASHBOARD OPERACIONAL',
+    'Indicadores Financeiros, Econômicos e Operacionais · Comparativo de Performance: ' + dynamicHeaders[0]
+  );
 
   // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
   // (usado para colorir a seta de tendência vs mês anterior)
