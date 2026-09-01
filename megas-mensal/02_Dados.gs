@@ -3413,18 +3413,9 @@ function _monSerieDireta_(porAnoRaw) {
 // DADOS BACKLOG (Geral, Facilities, Property, Locatário, Emergencial) — aba
 // "BACKLOG" da planilha de HISTÓRICO VALIDADO
 // ==========================================
-// Layout diferente do padrão "Mês | Empreendimento | Indicador | Dado" usado
-// por lerHistoricoValidado — essa aba é em blocos lado a lado, um por Mega
-// (célula mesclada com o nome na linha 1; GERAL/FACILITIES/PROPERTY/
-// LOCATÁRIO/EMERGENCIAL na linha 2, nessa ordem), com uma coluna "ANO MES"
-// compartilhada:
-//   ANO MES | MEGA ESTEIO (GERAL|FACILITIES|PROPERTY|LOCATÁRIO|EMERGENCIAL) | MEGA CURITIBA (...) | MEGA ITAJAÍ (...)
-// Facilities/Geral já batem com as linhas "Chamados de facilities"/"Chamados
-// geral" da aba DADOS de cada Mega — aqui é só o histórico consolidado das
-// três, com Property, Locatário (Clientes) e Emergencial inclusos também.
-// Retorna a série cronológica da cidade ativa, ordenada, mais recente por
-// último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94,
-//            geral:108, property:13, locatario:11, emergencial:4 }]
+// DADOS BACKLOG HISTÓRICO (Geral, Facilities, Property, Locatário, Emergencial)
+// Fonte Oficial 100% Automática: BD-CORRETIVAS (série cronológica dos últimos 14 meses)
+// ==========================================
 let _backlogHistoricoCache = {};
 
 function obterDadosBacklogHistorico_() {
@@ -3433,132 +3424,9 @@ function obterDadosBacklogHistorico_() {
     return _backlogHistoricoCache[chave];
   }
 
-  try {
-    const data = _obterDadosAbaHistorico_('BACKLOG');
-    if (!data || data.length < 3) {
-      Logger.log('Backlog: aba BACKLOG vazia ou insuficiente — gerando série a partir da BD-CORRETIVAS.');
-      const sBD = _gerarSerieBacklogDiretoBD_();
-      if (sBD.length) {
-        _backlogHistoricoCache[chave] = sBD;
-        return sBD;
-      }
-      return [];
-    }
-
-    // Acha a linha de cabeçalho de coluna ("ano mes" ou "mes").
-    let linhaHdr = -1;
-    for (let r = 0; r < Math.min(data.length, 5); r++) {
-      if (data[r].some(c => _histNorm_(c).indexOf('mes') >= 0)) { linhaHdr = r; break; }
-    }
-
-    // Helper local: fallback para BD-CORRETIVAS
-    const _fallbackBD = () => {
-      Logger.log('Backlog: aba BACKLOG sem estrutura esperada — gerando série a partir da BD-CORRETIVAS.');
-      const sBD = _gerarSerieBacklogDiretoBD_();
-      if (sBD.length) { _backlogHistoricoCache[chave] = sBD; }
-      return sBD;
-    };
-
-    if (linhaHdr < 0) return _fallbackBD();
-
-    const linhaMega = data[Math.max(0, linhaHdr - 1)];
-    const linhaCol  = data[linhaHdr];
-    const cMes = linhaCol.findIndex(c => _histNorm_(c).indexOf('mes') >= 0);
-    if (cMes < 0) return _fallbackBD();
-
-    // Cada Mega abre um bloco de colunas, marcado pela célula mesclada com o
-    // nome (linha acima do cabeçalho) — só a coluna inicial do bloco tem
-    // texto ali (o resto da mesclagem vem em branco). Dentro do bloco, as 4
-    // colunas podem estar em qualquer ordem; localizamos cada uma pelo
-    // próprio texto do cabeçalho, não pela posição.
-    const blocos = [];
-    linhaMega.forEach((v, c) => {
-      if (c === cMes) return;
-      const nome = String(v || '').trim();
-      if (nome) blocos.push({ col: c, nome: nome });
-    });
-    if (blocos.length === 0) return _fallbackBD();
-
-    const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
-    let cFac = -1, cGer = -1, cProp = -1, cLoc = -1, cEmerg = -1;
-    for (let i = 0; i < blocos.length; i++) {
-      if (_histEmpChave_(blocos[i].nome) !== alvoMega) continue;
-      const cIni = blocos[i].col;
-      const cFim = i + 1 < blocos.length ? blocos[i + 1].col : linhaCol.length;
-      for (let c = cIni; c < cFim; c++) {
-        const h = _histNorm_(linhaCol[c]);
-        if (h.indexOf('geral') >= 0) cGer = c;
-        else if (h.indexOf('facilit') >= 0) cFac = c;
-        else if (h.indexOf('propert') >= 0) cProp = c;
-        else if (h.indexOf('locatari') >= 0) cLoc = c;
-        else if (h.indexOf('emergenc') >= 0) cEmerg = c;
-      }
-      break;
-    }
-    if (cFac < 0 || cGer < 0) {
-      Logger.log('Backlog: colunas do empreendimento não encontradas na aba BACKLOG — gerando série a partir da BD-CORRETIVAS.');
-      const sBD = _gerarSerieBacklogDiretoBD_();
-      if (sBD.length) {
-        _backlogHistoricoCache[chave] = sBD;
-        return sBD;
-      }
-      return [];
-    }
-
-    const saida = [];
-    for (let r = linhaHdr + 1; r < data.length; r++) {
-      const mes = _histParseMes_(data[r][cMes]);
-      if (!mes) continue;
-      const facilities  = _histNum_(data[r][cFac]);
-      const geral       = _histNum_(data[r][cGer]);
-      const property    = cProp   >= 0 ? _histNum_(data[r][cProp])   : NaN;
-      const locatario   = cLoc    >= 0 ? _histNum_(data[r][cLoc])    : NaN;
-      const emergencial = cEmerg  >= 0 ? _histNum_(data[r][cEmerg])  : NaN;
-      saida.push({
-        mes: mes.label,
-        ord: mes.ord,
-        rotulo: MESES_3_REF[parseInt(mes.label.slice(0, 2), 10) - 1] + '/' + mes.label.slice(-2),
-        facilities: isNaN(facilities) ? null : facilities,
-        geral: isNaN(geral) ? null : geral,
-        property: isNaN(property) ? null : property,
-        locatario: isNaN(locatario) ? null : locatario,
-        emergencial: isNaN(emergencial) ? null : emergencial
-      });
-    }
-    // Garante que o mês de referência oficial da Capa (DADOS!B1 / obterMesReferencia_)
-    // esteja presente na série histórica. Se a linha ainda não foi digitada na aba
-    // BACKLOG, o recálculo da BD-CORRETIVAS abaixo preencherá os números automaticamente.
-    try {
-      const ref = obterMesReferencia_();
-      const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
-      if (!saida.some(m => m.ord === ordRef)) {
-        saida.push({
-          mes: ref.mesAno,
-          ord: ordRef,
-          rotulo: ref.siglaAno,
-          facilities: null,
-          geral: null,
-          property: null,
-          locatario: null,
-          emergencial: null
-        });
-      }
-    } catch (e) {}
-
-    saida.sort((a, b) => a.ord - b.ord);
-    _backlogAplicarRecalculoBD_(saida);
-    _backlogHistoricoCache[chave] = saida;
-    return saida;
-
-  } catch (e) {
-    Logger.log('Erro Backlog Histórico: ' + e.message);
-    const sBD = _gerarSerieBacklogDiretoBD_();
-    if (sBD.length) {
-      _backlogHistoricoCache[chave] = sBD;
-      return sBD;
-    }
-    return [];
-  }
+  const sBD = _gerarSerieBacklogDiretoBD_();
+  _backlogHistoricoCache[chave] = sBD;
+  return sBD;
 }
 
 // Gera a série histórica mensal dos últimos 14 meses diretamente da base bruta BD-CORRETIVAS

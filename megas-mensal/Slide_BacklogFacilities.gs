@@ -45,12 +45,9 @@ function gerarSlideBacklogFacilities() {
   // da aba BACKLOG recebam os mesmos números — este slide, o Dashboard, o
   // Chamados Pendentes e os checks. Fazer aqui corrigiria só este slide e o
   // deck mostraria dois valores diferentes pro mesmo mês.
-  const historico = obterDadosBacklogHistorico_();
-  if (!historico || historico.length === 0) {
-    gerarSlideReservaGraficos('BACKLOG FACILITIES',
-      'Evolução mensal do backlog — preencha a aba BACKLOG da planilha de Histórico Validado',
-      [{ titulo: '' }]);
-    return;
+  const historico = obterDadosBacklogHistorico_() || [];
+  if (!historico.length) {
+    Logger.log('Backlog Facilities: sem chamados encontrados na BD-CORRETIVAS.');
   }
 
   const ref = obterMesReferencia_();
