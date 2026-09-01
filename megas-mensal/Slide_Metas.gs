@@ -342,11 +342,9 @@ function gerarSlideMetas(papel) {
     const ry = y + i * rowH;
     const fundo = (i % 2 === 0) ? DS.colors.cardBg : '#F8FAFC';
 
-    // Identifica se é indicador composto (ex.: Custo M² + % Manutenções Planejadas)
-    const ehComposta = String(linha[0] || '').includes('/') ||
-                       _histNorm_(linha[0]).includes('custo') && (_histNorm_(linha[0]).includes('m2') || _histNorm_(linha[0]).includes('m²')) ||
-                       String(linha[3] || '').includes('/') ||
-                       String(linha[5] || '').includes('/');
+    // Identifica se é estritamente a linha composta de Custo M² + Manutenções Planejadas
+    const d0 = _histNorm_(linha[0]);
+    const ehComposta = d0.includes('custo') && (d0.includes('m2') || d0.includes('m²')) && String(linha[5] || '').includes('/');
 
     const subH = Math.floor(rowH / 2);
     const y1 = ry;
@@ -378,7 +376,7 @@ function gerarSlideMetas(papel) {
           let val1 = '', val2 = '';
           if (c === 0) {
             val1 = 'CUSTO M² MEGAS';
-            val2 = '↳ % MANUT. PLANEJADAS';
+            val2 = '80% DAS MANUT PLANEJADAS';
           } else if (c === 3) {
             val1 = 'R$';
             val2 = '%';
@@ -392,7 +390,7 @@ function gerarSlideMetas(papel) {
           }
 
           if (c === 0) {
-            // Sublinha 1 (Descrição)
+            // Sublinha 1 (Descrição: CUSTO M² MEGAS)
             const t1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 4, y1, larg[c] - 6, h1);
             t1.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
             const tr1 = t1.getText();
@@ -400,12 +398,12 @@ function gerarSlideMetas(papel) {
             tr1.getTextStyle().setFontSize(7).setBold(true).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
             tr1.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
 
-            // Sublinha 2 (Descrição)
+            // Sublinha 2 (Descrição: 80% DAS MANUT PLANEJADAS - mesmo estilo e negrito)
             const t2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 4, y2, larg[c] - 6, h2);
             t2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
             const tr2 = t2.getText();
             tr2.setText(val2);
-            tr2.getTextStyle().setFontSize(6.5).setBold(false).setFontFamily(DS.typography.body).setForegroundColor('#64748B');
+            tr2.getTextStyle().setFontSize(7).setBold(true).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
             tr2.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
           } else if (c === 6 || c === 9) {
             // Sublinhas de Real (com comparativos ▲/▼ independentes)
