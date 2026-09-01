@@ -128,14 +128,34 @@ function _corretivasGraficoEmergencial_(slide, x, y, w, h, meses) {
         bar.getFill().setSolidFill(CORES.lightBlue);
         bar.getBorder().setTransparent();
       }
-      _sTxt(slide, slotX, plotY + plotH - bh - 18, slotW, 13,
+      _corretivasSTxt_(slide, slotX, plotY + plotH - bh - 18, slotW, 13,
         formatarNumeroBR(v), 8.5, true, CORES.textDark, 'center');
     }
 
     const mesNum = parseInt(m.mes.slice(0, 2), 10);
     const rotuloEixo = (MESES_MIN[mesNum - 1] || '') + '.' + m.mes.slice(-4);
-    _sTxt(slide, slotX, plotY + plotH + 6, slotW, 12, rotuloEixo, 6.5, false, CORES.textGray, 'center');
+    _corretivasSTxt_(slide, slotX, plotY + plotH + 6, slotW, 12, rotuloEixo, 6.5, false, CORES.textGray, 'center');
   });
+}
+
+function _corretivasSTxt_(slide, x, y, w, h, txt, size, bold, cor, align) {
+  const t = String(txt == null ? '' : txt).trim();
+  if (!t) return null;
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
+  const tr = box.getText();
+  tr.setText(t);
+  tr.getTextStyle().setFontSize(size || 8).setBold(!!bold)
+    .setForegroundColor(cor || '#1E293B').setFontFamily('Montserrat');
+  const alignMap = {
+    center: SlidesApp.ParagraphAlignment.CENTER,
+    right:  SlidesApp.ParagraphAlignment.END,
+    left:   SlidesApp.ParagraphAlignment.START
+  };
+  if (align && alignMap[align]) {
+    tr.getParagraphStyle().setParagraphAlignment(alignMap[align]);
+  }
+  box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  return box;
 }
 
 // Função Auxiliar Local
@@ -147,25 +167,34 @@ function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
   const usableH = h - (startContentY - y) - 8;
   const rowH = usableH / 4;
 
-  dados.kpis.forEach((kpi, i) => {
+  (dados.kpis || []).forEach((kpi, i) => {
     const ry = startContentY + (i * rowH);
 
+    const lbl = String(kpi.l || 'Indicador').trim();
     const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 15, ry, w * 0.50, rowH);
-    lblBox.getText().setText(kpi.l)
-      .getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
+    const lt = lblBox.getText();
+    lt.setText(lbl);
+    lt.getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(CORES.textDark).setFontFamily(DS.typography.body);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
     // Valor + tendência vs mês anterior (histórico validado)
+    let valStr = String(kpi.v == null ? '' : kpi.v).trim();
+    if (!valStr || valStr === 'undefined' || valStr === 'null' || valStr === '-') valStr = '—';
+
+    const trend = tendenciaTexto_(kpi.delta, kpi.menor);
+    const temTrend = trend && trend.txt;
+    const txt = temTrend ? valStr + '   ' + trend.txt : valStr;
+
     const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w * 0.52, ry, w * 0.43, rowH);
-    const valStr = String(kpi.v);
-    const trend  = tendenciaTexto_(kpi.delta, kpi.menor);
-    const txt    = trend.txt ? valStr + '   ' + trend.txt : valStr;
+    valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
     const vr = valBox.getText();
-    vr.setText(txt).getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
-    if (trend.txt) {
+    vr.setText(txt);
+    vr.getTextStyle().setFontSize(10).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
+
+    if (temTrend && txt.length > valStr.length) {
       vr.getRange(valStr.length, txt.length).getTextStyle().setFontSize(9.5).setBold(true).setForegroundColor(trend.cor);
     }
-    valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });
 }
