@@ -174,9 +174,9 @@ function _histNorm_(s) {
 function _histEmpChave_(s) {
   const norm = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
   if (!norm) return '';
-  if (norm.includes('CURITIBA') || norm.includes('CTBA') || norm.includes('CWB')) return 'MEGA CURITIBA';
-  if (norm.includes('ITAJAI') || norm.includes('ITJ') || norm.includes('ITAJA')) return 'MEGA ITAJAI';
-  if (norm.includes('ESTEIO') || norm.includes('EST')) return 'MEGA ESTEIO';
+  if (norm.includes('CURITIBA') || /\bCTBA\b/.test(norm) || /\bCWB\b/.test(norm)) return 'MEGA CURITIBA';
+  if (norm.includes('ITAJAI') || /\bITJ\b/.test(norm) || norm.includes('ITAJA')) return 'MEGA ITAJAI';
+  if (norm.includes('ESTEIO') || /\bEST\b/.test(norm)) return 'MEGA ESTEIO';
   return norm;
 }
 
