@@ -671,6 +671,48 @@ function obterDadosDashboard() {
     Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
   }
 
+  // Indicadores Financeiros & Econômicos para o Dashboard (Slide 01):
+  // Se a aba DADOS não contiver as linhas, alimenta com os dados da BRIDGE e METRO QUADRADO.
+  try {
+    const fin = _financeiroDoBridge_('mes');
+    if (fin && fin.totalOrcado != null && fin.totalRealizado != null) {
+      const orcMil  = fin.totalOrcado !== 0 ? Math.round(fin.totalOrcado / 1000) : '-';
+      const realMil = fin.totalRealizado !== 0 ? Math.round(fin.totalRealizado / 1000) : '-';
+      const varPct  = (fin.totalOrcado !== 0 && fin.totalRealizado !== 0)
+        ? (((fin.totalRealizado - fin.totalOrcado) / fin.totalOrcado) * 100).toFixed(1) + '%'
+        : '-';
+
+      if (!dataMap.has('Total Realizado')) {
+        dataMap.set('Total Realizado', { atual: realMil !== '-' ? String(realMil) : '-', mesAnt: '-', anoAnt: '-' });
+      }
+      if (!dataMap.has('Total Orçado')) {
+        dataMap.set('Total Orçado', { atual: orcMil !== '-' ? String(orcMil) : '-', mesAnt: '-', anoAnt: '-' });
+      }
+      if (!dataMap.has('Variação Orçamentária')) {
+        dataMap.set('Variação Orçamentária', { atual: varPct, mesAnt: '-', anoAnt: '-' });
+      }
+    }
+
+    const cM2 = obterDadosCustoM2();
+    if (cM2 && cM2.tabela && cM2.tabela['Real 2026'] && cM2.meses && cM2.meses.length) {
+      const ref = obterMesReferencia_();
+      const idxMes = cM2.meses.indexOf(ref.index + 1);
+      if (idxMes >= 0) {
+        const valM2 = cM2.tabela['Real 2026'][idxMes];
+        const valM2Ant = idxMes > 0 ? cM2.tabela['Real 2026'][idxMes - 1] : '-';
+        if (!dataMap.has('Custo do M²')) {
+          dataMap.set('Custo do M²', {
+            atual:  (valM2 != null && valM2 !== '-') ? String(valM2) : '-',
+            mesAnt: (valM2Ant != null && valM2Ant !== '-') ? String(valM2Ant) : '-',
+            anoAnt: '-'
+          });
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (financeiro/m²): ' + e.message);
+  }
+
   return { map: dataMap, headers: headers, sobrescritos: sobrescritos };
 }
 

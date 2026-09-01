@@ -16,39 +16,60 @@ function gerarSlideDashboard() {
   const PageWidth = deck.getPageWidth();
   const PageHeight = deck.getPageHeight();
 
-  criarHeaderPadrao(slide, 'DASHBOARD OPERACIONAL', 'Comparativo de Performance: ' + dynamicHeaders[0]);
+  criarHeaderPadrao(
+    slide,
+    'DASHBOARD OPERACIONAL',
+    'Indicadores Financeiros, Econômicos e Operacionais · Comparativo de Performance: ' + dynamicHeaders[0]
+  );
 
   // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
   // (usado para colorir a seta de tendência vs mês anterior)
   // sla: aplica cor por limiar (≥95 verde, ≥90 âmbar, <90 vermelho) no valor atual
   const structure = [
     {
-      title: 'GESTÃO DE ATIVOS CRÍTICOS',
+      title: 'GESTÃO DE ATIVOS',
       color: CORES.themeAtivos,
       rows: [
-        { label: 'Tempo médio de reparo (Dias)', lookup: 'Tempo médio de reparo', sentido: 'menor' },
-        { label: 'Disponibilidade (%)', lookup: 'Disponibilidade', sentido: 'maior', sla: true }
+        { label: 'Disponibilidade (%)', lookup: 'Disponibilidade', sentido: 'maior', sla: true },
+        { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities', sentido: 'menor' },
+        { label: 'Chamados geral (Qtd)', lookup: 'Chamados geral', sentido: 'menor' },
+        { label: '% Conclusão histórico', lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
       ]
     },
-    { title: 'MANUTENÇÃO PREVENTIVA', color: CORES.themePrev, rows: [
-      { label: 'Em dia (%)', lookup: 'Em dia', sentido: 'maior', sla: true },
-      { label: 'SLA atendido (%)', lookup: 'SLA atendido', sentido: 'maior', sla: true }
-    ] },
-    { title: 'MANUTENÇÃO CORRETIVA: BACKLOG', color: CORES.themeCorr, rows: [
-      { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities', sentido: 'menor' },
-      { label: 'Chamados geral (Qtd)', lookup: 'Chamados geral', sentido: 'menor' },
-      { label: '% Conclusão histórico', lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
-      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio para aprovação', sentido: 'menor' }
-    ] },
-    { title: 'CONTROLE DE ACESSO', color: CORES.themeAcesso, rows: [
-      { label: 'Fluxo de VISITANTES', lookup: 'Fluxo de VISITANTES', sentido: 'maior' },
-      { label: 'Tempo médio', lookup: 'Tempo médio', sentido: 'menor' }
-    ] }
+    {
+      title: 'MANUTENÇÃO PREVENTIVA',
+      color: CORES.themePrev,
+      rows: [
+        { label: 'Em dia (%)', lookup: 'Em dia', sentido: 'maior', sla: true },
+        { label: 'SLA atendido (%)', lookup: 'SLA atendido', sentido: 'maior', sla: true }
+      ]
+    },
+    {
+      title: 'CONTROLE DE ACESSO',
+      color: CORES.themeAcesso,
+      rows: [
+        { label: 'Fluxo de VISITANTES', lookup: 'Fluxo de VISITANTES', sentido: 'maior' },
+        { label: 'Tempo médio', lookup: 'Tempo médio', sentido: 'menor' }
+      ]
+    },
+    {
+      title: 'INDICADORES FINANCEIROS & ECONÔMICOS',
+      color: CORES.lightBlue || '#065CA9',
+      rows: [
+        { label: 'Total Realizado (R$ mil)', lookup: 'Total Realizado', sentido: 'menor' },
+        { label: 'Total Orçado (R$ mil)', lookup: 'Total Orçado', sentido: 'menor' },
+        { label: 'Variação Orçamentária (%)', lookup: 'Variação Orçamentária', sentido: 'menor' },
+        { label: 'Custo do M² (R$/m²)', lookup: 'Custo do M²', sentido: 'menor' }
+      ]
+    }
   ];
 
-  // Converte texto da planilha em número (aceita "27.91", "27,91", "66336")
+  // Normalização para busca flexível no Map
+  const normKey = s => String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+  // Converte texto da planilha em número (aceita "27.91", "27,91", "66336", "89.5%")
   const paraNumero = s => {
-    const t = String(s == null ? '' : s).trim();
+    const t = String(s == null ? '' : s).replace(/%/g, '').replace(/R\$/g, '').trim();
     if (!/^-?\d+([.,]\d+)?$/.test(t)) return NaN;
     return Number(t.replace(',', '.'));
   };
@@ -89,7 +110,17 @@ function gerarSlideDashboard() {
       nBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
       let vals = { atual: '-', mesAnt: '-', anoAnt: '-' };
-      if (valoresMap.has(r.lookup)) vals = valoresMap.get(r.lookup);
+      if (valoresMap.has(r.lookup)) {
+        vals = valoresMap.get(r.lookup);
+      } else {
+        const target = normKey(r.lookup);
+        for (let [k, v] of valoresMap.entries()) {
+          if (normKey(k) === target || normKey(k).indexOf(target) >= 0) {
+            vals = v;
+            break;
+          }
+        }
+      }
 
       // Comparativo vs mês anterior: SÓ a seta ▲/▼ (subiu/desceu), grande,
       // colada bem perto do valor atual (a caixa invade um pouco a coluna
