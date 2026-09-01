@@ -582,22 +582,47 @@ function obterDadosBacklogPendentes_() {
       if (!porMes[mes.ord]) porMes[mes.ord] = { label: mes.label, itens: [] };
       porMes[mes.ord].itens.push({ estado, qtd });
     }
-    const ords = Object.keys(porMes).map(Number).sort((a, b) => a - b);
-    if (!ords.length) return null;
-
-    // Mês de referência se existir na aba; senão o mais recente
+    // Mês de referência oficial da Capa (DADOS!B1)
     let alvoOrd = null;
+    let ordRef = null;
     try {
-      const ref    = obterMesReferencia_();
-      const ordRef = ref.ano * 100 + (ref.index + 1);
+      const ref = obterMesReferencia_();
+      ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
       if (porMes[ordRef]) alvoOrd = ordRef;
     } catch (e) {}
-    if (alvoOrd == null) alvoOrd = ords[ords.length - 1];
+
+    // Se o mês oficial da Capa (ordRef) ainda não foi digitado na aba da cidade,
+    // calcula os chamados por estado direto da BD-CORRETIVAS para aquele mês
+    if (alvoOrd == null && ordRef != null) {
+      try {
+        const ref = obterMesReferencia_();
+        const ano = Math.floor(ordRef / 100), mesIdx = (ordRef % 100) - 1;
+        const refIni = new Date(Date.UTC(ano, mesIdx, 1));
+        const refFim = new Date(Date.UTC(ano, mesIdx + 1, 1));
+        const itens = _lerBdCorretivasCru_();
+        const counts = {};
+        itens.forEach(it => {
+          if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+          const est = String(it.estado || 'Em resolução').trim();
+          counts[est] = (counts[est] || 0) + 1;
+        });
+        const itensBD = Object.keys(counts).map(estado => ({ estado, qtd: counts[estado] }));
+        if (itensBD.length) {
+          porMes[ordRef] = { label: ref.mesAno, itens: itensBD };
+          alvoOrd = ordRef;
+        }
+      } catch (e) {
+        Logger.log('Backlog pendentes: recálculo BD-CORRETIVAS para ' + ordRef + ' (' + e.message + ')');
+      }
+    }
+
+    const ordsAtualizados = Object.keys(porMes).map(Number).sort((a, b) => a - b);
+    if (alvoOrd == null) alvoOrd = ordsAtualizados[ordsAtualizados.length - 1];
     const alvo = porMes[alvoOrd];
 
     // Mês anterior na PRÓPRIA aba: total, valor por estado e Em resolução
-    const idxAlvo  = ords.indexOf(alvoOrd);
-    const prevOrd  = idxAlvo > 0 ? ords[idxAlvo - 1] : null;
+    const idxAlvo  = ordsAtualizados.indexOf(alvoOrd);
+    const prevOrd  = idxAlvo > 0 ? ordsAtualizados[idxAlvo - 1] : null;
     const totalAnteriorAba = prevOrd != null
       ? porMes[prevOrd].itens.reduce((s, it) => s + it.qtd, 0) : null;
 
