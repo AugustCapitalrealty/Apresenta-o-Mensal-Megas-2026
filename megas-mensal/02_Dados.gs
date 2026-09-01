@@ -3435,19 +3435,36 @@ function obterDadosBacklogHistorico_() {
 
   try {
     const data = _obterDadosAbaHistorico_('BACKLOG');
-    if (!data || data.length < 3) return [];
+    if (!data || data.length < 3) {
+      Logger.log('Backlog: aba BACKLOG vazia ou insuficiente — gerando série a partir da BD-CORRETIVAS.');
+      const sBD = _gerarSerieBacklogDiretoBD_();
+      if (sBD.length) {
+        _backlogHistoricoCache[chave] = sBD;
+        return sBD;
+      }
+      return [];
+    }
 
     // Acha a linha de cabeçalho de coluna ("ano mes" ou "mes").
     let linhaHdr = -1;
     for (let r = 0; r < Math.min(data.length, 5); r++) {
       if (data[r].some(c => _histNorm_(c).indexOf('mes') >= 0)) { linhaHdr = r; break; }
     }
-    if (linhaHdr < 0) return [];
+
+    // Helper local: fallback para BD-CORRETIVAS
+    const _fallbackBD = () => {
+      Logger.log('Backlog: aba BACKLOG sem estrutura esperada — gerando série a partir da BD-CORRETIVAS.');
+      const sBD = _gerarSerieBacklogDiretoBD_();
+      if (sBD.length) { _backlogHistoricoCache[chave] = sBD; }
+      return sBD;
+    };
+
+    if (linhaHdr < 0) return _fallbackBD();
 
     const linhaMega = data[Math.max(0, linhaHdr - 1)];
     const linhaCol  = data[linhaHdr];
     const cMes = linhaCol.findIndex(c => _histNorm_(c).indexOf('mes') >= 0);
-    if (cMes < 0) return [];
+    if (cMes < 0) return _fallbackBD();
 
     // Cada Mega abre um bloco de colunas, marcado pela célula mesclada com o
     // nome (linha acima do cabeçalho) — só a coluna inicial do bloco tem
@@ -3460,7 +3477,7 @@ function obterDadosBacklogHistorico_() {
       const nome = String(v || '').trim();
       if (nome) blocos.push({ col: c, nome: nome });
     });
-    if (blocos.length === 0) return [];
+    if (blocos.length === 0) return _fallbackBD();
 
     const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
     let cFac = -1, cGer = -1, cProp = -1, cLoc = -1, cEmerg = -1;
@@ -3557,13 +3574,14 @@ function _gerarSerieBacklogDiretoBD_() {
       const ord = a * 100 + (m + 1);
       const refIni = new Date(Date.UTC(a, m, 1));
       const refFim = new Date(Date.UTC(a, m + 1, 1));
-      let geral = 0, facilities = 0, property = 0, locatario = 0;
+      let geral = 0, facilities = 0, property = 0, locatario = 0, emergencial = 0;
       rawCorr.forEach(it => {
         if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
         geral++;
         if (it.equipe === 'LOCATARIO') locatario++;
         else if (it.equipe === 'PROPERTY') property++;
         else facilities++;
+        if (it.prioridade === 'Emergencial') emergencial++;
       });
       const mesLabel = String(m + 1).padStart(2, '0') + '/' + a;
       saidaBD.push({
@@ -3574,7 +3592,7 @@ function _gerarSerieBacklogDiretoBD_() {
         geral,
         property,
         locatario,
-        emergencial: null
+        emergencial
       });
     }
     return saidaBD;
