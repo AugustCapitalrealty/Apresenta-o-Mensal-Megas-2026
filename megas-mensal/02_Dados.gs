@@ -779,16 +779,65 @@ function _slaClasse_(valor) {
   return 'SEM';
 }
 
-function _equipePreventiva_(quemFechou) {
+// Limpa o nome do serviço preventivo para exibição no slide:
+// Remove prefixos de metadados como "CHECKLIST - FACILITIES |",
+// "CHECKLIST - TERCEIROS |", IDs de formulário e sufixos de empreendimento
+// ("| MEGA Curitiba - BELEZA.COM"), deixando apenas o nome real do serviço
+// (ex.: "Leitura Clientes", "Inspeção Diária Trator", "Carro Locado", "Casa de Bombas").
+function _limparDescricaoPreventiva_(desc) {
+  if (!desc) return '';
+  let txt = String(desc).trim();
+
+  // 1) Remove código de formulário se houver (ex.: "PMP.904036.68674893 ")
+  txt = txt.replace(/^[A-Z]{2,5}\.\d+(?:\.\d+)?\s+/i, '');
+
+  // 2) Se tiver pipes (|), divide nos pedaços e extrai a parte útil (nome do serviço)
+  if (txt.indexOf('|') >= 0) {
+    const partes = txt.split('|').map(p => p.trim()).filter(Boolean);
+    const uteis = partes.filter(p => {
+      const pn = _histNorm_(p);
+      if (pn.indexOf('checklist') >= 0) return false;
+      if (pn.indexOf('mega') >= 0) return false;
+      if (pn.indexOf('condominio') >= 0) return false;
+      return true;
+    });
+
+    if (uteis.length > 0) {
+      txt = uteis[0];
+    } else if (partes.length > 1) {
+      txt = partes[1];
+    }
+  }
+
+  // 3) Limpezas residuais
+  txt = txt.replace(/^CHECKLIST\s*-\s*(?:FACILITIES|TERCEIROS|PROPERTY|OUTROS)\s*[-|:]?\s*/i, '');
+  txt = txt.replace(/\s*[-|:]?\s*MEGA\s+(?:Curitiba|Itajaí|Itajai|Esteio).*$/i, '');
+  txt = txt.replace(/:\s*(?:Não\s+)?Conforme\b.*$/i, '');
+  txt = txt.trim();
+
+  return txt || String(desc).trim();
+}
+
+// Resolve se a preventiva é de FACILITIES (azul) ou TERCEIROS (laranja).
+// Considera tanto a descrição do checklist (que frequentemente diz
+// "CHECKLIST - TERCEIROS" ou "CHECKLIST - FACILITIES") quanto o responsável/executor.
+function _equipePreventiva_(quemFechou, descricao) {
+  const descNorm = _histNorm_(descricao);
+  if (descNorm.indexOf('terceiro') >= 0) return 'TERCEIROS';
+  if (descNorm.indexOf('facilit') >= 0)  return 'FACILITIES';
+
   const norm = _histNorm_(quemFechou);
-  if (!norm) return 'FACILITIES';
-  if (typeof _RESPONSAVEL_EQUIPE_ !== 'undefined' && _RESPONSAVEL_EQUIPE_[norm]) {
-    return _RESPONSAVEL_EQUIPE_[norm] === 'PROPERTY' ? 'FACILITIES' : _RESPONSAVEL_EQUIPE_[norm];
+  if (norm) {
+    if (norm.indexOf('terceiro') >= 0) return 'TERCEIROS';
+    if (typeof _RESPONSAVEL_EQUIPE_ !== 'undefined' && _RESPONSAVEL_EQUIPE_[norm]) {
+      return _RESPONSAVEL_EQUIPE_[norm] === 'PROPERTY' ? 'FACILITIES' : _RESPONSAVEL_EQUIPE_[norm];
+    }
+    if (norm.indexOf('facilities') >= 0 || norm.indexOf('mega') >= 0 || norm.indexOf('capital') >= 0) {
+      return 'FACILITIES';
+    }
+    return 'TERCEIROS';
   }
-  if (norm.indexOf('facilities') >= 0 || norm.indexOf('mega') >= 0 || norm.indexOf('capital') >= 0) {
-    return 'FACILITIES';
-  }
-  return 'TERCEIROS';
+  return 'FACILITIES';
 }
 
 let _bdPreventivasCache = {};
@@ -837,9 +886,12 @@ function _lerBdPreventivasCru_() {
       const row = data[r];
       if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
 
+      const rawDescricao = cDesc >= 0 ? String(row[cDesc] || '').trim() : '';
+
       saida.push({
         id:          _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
-        descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
+        rawDesc:     rawDescricao,
+        descricao:   _limparDescricaoPreventiva_(rawDescricao),
         estado:      cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
         sla:         cSla    >= 0 ? String(row[cSla]    || '').trim() : '',
         fechadoPor:  cQuem   >= 0 ? String(row[cQuem]   || '').trim() : '',
@@ -891,11 +943,11 @@ function obterDadosPreventivasBD_() {
       if (slaCls === 'CUMPRIDO') mCumpridos++;
       else if (slaCls === 'NAO') {
         mNaoCumpridos++;
-        const tipo = _equipePreventiva_(it.fechadoPor);
+        const tipo = _equipePreventiva_(it.fechadoPor, it.rawDesc);
         if (tipo === 'FACILITIES') counts.facilities++;
         else counts.terceiros++;
 
-        const desc = it.descricao || 'Serviço preventivo';
+        const desc = _limparDescricaoPreventiva_(it.rawDesc || it.descricao) || 'Serviço preventivo';
         rawServices.push({ name: desc, type: tipo });
       }
     }
@@ -1011,12 +1063,13 @@ function obterDadosPreventivas() {
       }
 
       if (i > 0) {
-        const servico = String(row[6] || '').trim();
-        const equipe  = norm(row[5]);
+        const servicoBruto = String(row[6] || '').trim();
+        const equipeBruta  = norm(row[5]);
+        const servico      = _limparDescricaoPreventiva_(servicoBruto);
         if (servico && servico !== '-' && norm(servico) !== 'servico') {
-          let type = 'OUTROS';
-          if      (equipe.includes('facilities')) { res.counts.facilities++; type = 'FACILITIES'; }
-          else if (equipe.includes('terceiros'))  { res.counts.terceiros++;  type = 'TERCEIROS';  }
+          let type = _equipePreventiva_(equipeBruta, servicoBruto);
+          if (type === 'FACILITIES') res.counts.facilities++;
+          else res.counts.terceiros++;
           rawServices.push({ name: servico, type: type });
         }
       }
