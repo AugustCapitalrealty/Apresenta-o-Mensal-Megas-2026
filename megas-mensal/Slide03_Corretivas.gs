@@ -60,15 +60,13 @@ function gerarSlideCorretivas() {
   const historicoBacklog = obterDadosBacklogHistorico_();
   const recalculado = obterDadosBacklogEmergencialHistoricoPorMes_(historicoBacklog);
   historicoBacklog.forEach(m => {
-    if (!recalculado.has(m.ord)) return;   // aba de detalhe não cobre esse mês — mantém o valor manual
-    const calc = recalculado.get(m.ord);
-    if (m.emergencial != null && m.emergencial !== calc) {
-      Logger.log('Backlog Emergencial (' + m.mes + '): aba BACKLOG tinha ' + m.emergencial +
-                 ' digitado à mão, recalculado da aba de detalhe deu ' + calc + '. Usando o recalculado.');
+    if (recalculado.has(m.ord)) {
+      m.emergencial = recalculado.get(m.ord);
+    } else if (m.emergencial == null) {
+      m.emergencial = 0;
     }
-    m.emergencial = calc;
   });
-  const temEmergencial = historicoBacklog.some(m => m.emergencial != null);
+  const temEmergencial = historicoBacklog.length > 0;
 
   if (temEmergencial) {
     _corretivasGraficoEmergencial_(slide, marginX, chartY, chartW, footerH, historicoBacklog.slice(-13));

@@ -4163,24 +4163,9 @@ function obterDadosBacklogEmergencialDetalhe_() {
 function obterDadosBacklogEmergencialHistoricoPorMes_(meses) {
   const itens = _lerBdCorretivasEmergenciaisCru_();
   const porOrd = new Map();
-  if (!itens.length) return porOrd;
-
-  // BD-CORRETIVAS tem histórico bruto desde 2021, mas mantém a mesma
-  // checagem defensiva de quando a fonte era a aba curada à mão: só computa
-  // (mesmo que dê 0) a partir do mês do chamado mais antigo encontrado pro
-  // empreendimento ativo — meses anteriores a isso ficam fora do Map, e
-  // quem chama mantém o valor manual pra eles em vez de zerar sem dado
-  // nenhum (protege contra empreendimento novo/sem histórico emergencial).
-  let primeiroOrd = null;
-  itens.forEach(it => {
-    if (!it.dtReporte) return;
-    const ord = it.dtReporte.getUTCFullYear() * 100 + (it.dtReporte.getUTCMonth() + 1);
-    if (primeiroOrd === null || ord < primeiroOrd) primeiroOrd = ord;
-  });
-  if (primeiroOrd === null) return porOrd;
+  if (!meses || !meses.length) return porOrd;
 
   meses.forEach(m => {
-    if (m.ord < primeiroOrd) return; // fora da cobertura da aba — mantém o valor manual
     const ano = Math.floor(m.ord / 100), mesIdx = (m.ord % 100) - 1;
     const refIni = new Date(Date.UTC(ano, mesIdx, 1));
     const refFim = new Date(Date.UTC(ano, mesIdx + 1, 1));
