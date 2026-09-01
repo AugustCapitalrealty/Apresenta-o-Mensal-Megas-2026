@@ -68,7 +68,7 @@ function gerarSlideBacklogFacilities() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   criarHeaderPadrao(slide, 'BACKLOG FACILITIES',
-    'Evolução mensal de chamados · Mês de referência: ' + (atual ? atual.rotulo : ref.siglaAno));
+    'Evolução mensal de chamados · Mês de referência: ' + ref.siglaAno);
 
   const marginX = 28, topY = 74, cardH = 72, cardGap = 10;
   _backlogCardsKPI_(slide, marginX, topY, W - marginX * 2, cardH, atual, anterior);
