@@ -800,35 +800,46 @@ function obterDadosDashboard() {
     Logger.log('Erro Dashboard (disponibilidade): ' + e.message);
   }
 
-  // 3. CHAMADOS FACILITIES / GERAL: contagem unificada da BD-CORRETIVAS / Backlog
+  // 3. CHAMADOS FACILITIES / GERAL: contagem direta da base bruta BD-CORRETIVAS
   try {
-    const serie = obterDadosBacklogHistorico_();
-    if (serie && serie.length) {
-      const ordAtual  = ref.ano * 100 + (ref.index + 1);
-      const ordAnt    = (ref.index === 0 ? (ref.ano - 1) * 100 + 12 : ref.ano * 100 + ref.index);
-      const ordAnoAnt = (ref.ano - 1) * 100 + (ref.index + 1);
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const calcBacklog = (ano, mes0_11) => {
+        const refIni = new Date(Date.UTC(ano, mes0_11, 1));
+        const refFim = new Date(Date.UTC(ano, mes0_11 + 1, 1));
+        let geral = 0, facilities = 0;
+        rawCorr.forEach(it => {
+          if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+          geral++;
+          if (it.equipe !== 'PROPERTY' && it.equipe !== 'LOCATARIO') {
+            facilities++;
+          }
+        });
+        return { geral, facilities };
+      };
 
-      const idxAtual  = serie.findIndex(p => p.ord === ordAtual);
-      const mesRef    = idxAtual >= 0 ? serie[idxAtual] : serie[serie.length - 1];
-      const mesAnt    = idxAtual > 0 ? serie[idxAtual - 1] : (serie.find(p => p.ord === ordAnt) || null);
-      const mesAnoAnt = serie.find(p => p.ord === ordAnoAnt);
+      const mesAntIdx = (ref.index === 0 ? 11 : ref.index - 1);
+      const mesAntAno = (ref.index === 0 ? ref.ano - 1 : ref.ano);
 
-      const getVal = (m, campo) => (m && m[campo] != null) ? String(m[campo]) : '-';
+      const bAtual  = calcBacklog(ref.ano, ref.index);
+      const bAnt    = calcBacklog(mesAntAno, mesAntIdx);
+      const bAnoAnt = calcBacklog(ref.ano - 1, ref.index);
 
       dataMap.set('Chamados geral', {
-        atual:  getVal(mesRef, 'geral'),
-        mesAnt: getVal(mesAnt, 'geral'),
-        anoAnt: getVal(mesAnoAnt, 'geral')
+        atual:  String(bAtual.geral),
+        mesAnt: String(bAnt.geral),
+        anoAnt: bAnoAnt.geral > 0 ? String(bAnoAnt.geral) : '-'
       });
 
       dataMap.set('Chamados de facilities', {
-        atual:  getVal(mesRef, 'facilities'),
-        mesAnt: getVal(mesAnt, 'facilities'),
-        anoAnt: getVal(mesAnoAnt, 'facilities')
+        atual:  String(bAtual.facilities),
+        mesAnt: String(bAnt.facilities),
+        anoAnt: bAnoAnt.facilities > 0 ? String(bAnoAnt.facilities) : '-'
       });
+      Logger.log('Dashboard (chamados corretivas): Geral ' + bAtual.geral + ' | Facilities ' + bAtual.facilities);
     }
   } catch (e) {
-    Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
+    Logger.log('Erro Dashboard (chamados corretivas): ' + e.message);
   }
 
   // 4. PERCENTUAL DE CONCLUSÃO HISTÓRICO: calculado da base bruta BD-CORRETIVAS
