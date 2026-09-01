@@ -3287,6 +3287,26 @@ function obterDadosBacklogHistorico_() {
         emergencial: isNaN(emergencial) ? null : emergencial
       });
     }
+    // Garante que o mês de referência oficial da Capa (DADOS!B1 / obterMesReferencia_)
+    // esteja presente na série histórica. Se a linha ainda não foi digitada na aba
+    // BACKLOG, o recálculo da BD-CORRETIVAS abaixo preencherá os números automaticamente.
+    try {
+      const ref = obterMesReferencia_();
+      const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
+      if (!saida.some(m => m.ord === ordRef)) {
+        saida.push({
+          mes: ref.mesAno,
+          ord: ordRef,
+          rotulo: ref.siglaAno,
+          facilities: null,
+          geral: null,
+          property: null,
+          locatario: null,
+          emergencial: null
+        });
+      }
+    } catch (e) {}
+
     saida.sort((a, b) => a.ord - b.ord);
     _backlogAplicarRecalculoBD_(saida);
     _backlogHistoricoCache[chave] = saida;
