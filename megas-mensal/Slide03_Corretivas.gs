@@ -169,3 +169,21 @@ function desenharCardListaKPIs(slide, x, y, w, h, CORES, dados, corTema) {
     vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA AVULSOS (POR EMPREENDIMENTO)
+// ==========================================
+// Permite gerar apenas o slide de Indicadores de Corretivas no deck do
+// empreendimento selecionado diretamente pelo menu de funções do editor:
+function gerarSoCorretivasCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideCorretivas(); }
+function gerarSoCorretivasItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCorretivas(); }
+function gerarSoCorretivasEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCorretivas(); }
+
+function gerarSoCorretivasTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideCorretivas();
+  });
+}
+

@@ -146,3 +146,21 @@ function _colunaTexto(slide, x, y, w, h, items) {
   box.getText().getParagraphStyle().setLineSpacing(130);
   box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA AVULSOS (POR EMPREENDIMENTO)
+// ==========================================
+// Permite gerar apenas o slide de Manutenção Preventiva no deck do
+// empreendimento selecionado diretamente pelo menu de funções do editor:
+function gerarSoPreventivasCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidePreventivas(); }
+function gerarSoPreventivasItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidePreventivas(); }
+function gerarSoPreventivasEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidePreventivas(); }
+
+function gerarSoPreventivasTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlidePreventivas();
+  });
+}
+

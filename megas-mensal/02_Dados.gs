@@ -761,24 +761,231 @@ function obterDadosDashboard() {
 
 
 // ==========================================
-// DADOS PREVENTIVAS (Slide 02)
+// DADOS PREVENTIVAS (Slide 02) — BD-PREVENTIVAS
 // ==========================================
+// Calcula automaticamente Previstas, Realizadas, SLA mensal e acumulado, e
+// a lista de desvios de SLA diretamente da base bruta BD-PREVENTIVAS
+// (planilha BASE DE DADOS — QUADRO REM).
+//
+// Se a BD-PREVENTIVAS estiver indisponível, cai na aba PREVENTIVAS da
+// planilha da cidade como reserva (fallback).
+
+function _slaClasse_(valor) {
+  const n = _histNorm_(valor);
+  if (!n) return 'SEM';
+  if (n === 'nao cumprido' || n === 'sla nao cumprido' || n.indexOf('nao cumprido') >= 0 || n.indexOf('fora') >= 0) return 'NAO';
+  if (n === 'cumprido'     || n === 'sla cumprido'     || n.indexOf('cumprido') >= 0 || n.indexOf('dentro') >= 0)  return 'CUMPRIDO';
+  if (n === 'sem sla')                                  return 'SEM';
+  return 'SEM';
+}
+
+function _equipePreventiva_(quemFechou) {
+  const norm = _histNorm_(quemFechou);
+  if (!norm) return 'FACILITIES';
+  if (typeof _RESPONSAVEL_EQUIPE_ !== 'undefined' && _RESPONSAVEL_EQUIPE_[norm]) {
+    return _RESPONSAVEL_EQUIPE_[norm] === 'PROPERTY' ? 'FACILITIES' : _RESPONSAVEL_EQUIPE_[norm];
+  }
+  if (norm.indexOf('facilities') >= 0 || norm.indexOf('mega') >= 0 || norm.indexOf('capital') >= 0) {
+    return 'FACILITIES';
+  }
+  return 'TERCEIROS';
+}
+
+let _bdPreventivasCache = {};
+
+function _abaBdPreventivas_(ss) {
+  let sheet = ss.getSheetByName('BD-PREVENTIVAS') || ss.getSheetByName('BD - PREVENTIVAS') || ss.getSheetByName('BD_PREVENTIVAS');
+  if (!sheet) {
+    sheet = ss.getSheets().find(s => _histNorm_(s.getName()).replace(/[\s_]+/g, '-').indexOf('bd-preventivas') >= 0);
+  }
+  return sheet || null;
+}
+
+function _lerBdPreventivasCru_() {
+  const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  if (_bdPreventivasCache[alvoEmp]) return _bdPreventivasCache[alvoEmp];
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _abaBdPreventivas_(ss);
+    if (!sheet) return [];
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) return [];
+
+    const hdr = data[0].map(_histNorm_);
+    const col = (...trechos) => {
+      for (let i = 0; i < trechos.length; i++) {
+        const c = hdr.findIndex(h => h.indexOf(trechos[i]) >= 0);
+        if (c >= 0) return c;
+      }
+      return -1;
+    };
+
+    const cId      = col('id agendamento', 'id chamado', 'id');
+    const cDesc    = col('descricao', 'descrição', 'servico', 'serviço', 'atividade', 'rotina');
+    const cEstado  = col('estado');
+    const cSla     = col('sla');
+    const cCC      = col('centro de custo');
+    const cQuem    = col('fechado por', 'responsavel', 'responsáveis', 'responsaveis');
+    const cAgend   = col('data de agendamento', 'data agendamento', 'data de reporte', 'agendamento');
+    const cFechado = col('fechada em', 'fechado em');
+
+    if (cCC < 0) return [];
+
+    const saida = [];
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+
+      saida.push({
+        id:          _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
+        descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
+        estado:      cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
+        sla:         cSla    >= 0 ? String(row[cSla]    || '').trim() : '',
+        fechadoPor:  cQuem   >= 0 ? String(row[cQuem]   || '').trim() : '',
+        dtAgendado:  cAgend  >= 0 ? _histParseDataHora_(row[cAgend]) : null,
+        dtFechado:   cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
+      });
+    }
+
+    if (saida.length) _bdPreventivasCache[alvoEmp] = saida;
+    return saida;
+  } catch (e) {
+    Logger.log('_lerBdPreventivasCru_: ' + e.message);
+    return [];
+  }
+}
+
+function obterDadosPreventivasBD_() {
+  const itens = _lerBdPreventivasCru_();
+  if (!itens.length) return null;
+
+  if (!itens.some(it => it.dtAgendado)) {
+    Logger.log('BD-PREVENTIVAS: ' + itens.length + ' linhas do empreendimento, mas nenhuma com data de agendamento legível.');
+    return null;
+  }
+
+  const ref    = obterMesReferencia_();
+  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
+  const anoIni = new Date(Date.UTC(ref.ano, 0, 1));
+
+  const dentro = (d, ini, fim) => !!d && d >= ini && d < fim;
+
+  let mPrevistas = 0, mRealizadas = 0, mCumpridos = 0, mNaoCumpridos = 0;
+  let aPrevistas = 0, aRealizadas = 0, aCumpridos = 0, aNaoCumpridos = 0;
+
+  let rawServices = [];
+  let counts = { facilities: 0, terceiros: 0 };
+
+  itens.forEach(it => {
+    const noMes   = dentro(it.dtAgendado, refIni, refFim);
+    const noAno   = dentro(it.dtAgendado, anoIni, refFim);
+    const estNorm = _histNorm_(it.estado);
+    const fechada = _bdChamadoFechado_(it.estado, it.dtFechado) || estNorm === 'fechada' || estNorm === 'fechado' || estNorm === 'concluida' || estNorm === 'concluido';
+    const slaCls  = _slaClasse_(it.sla);
+
+    if (noMes) {
+      mPrevistas++;
+      if (fechada) mRealizadas++;
+      if (slaCls === 'CUMPRIDO') mCumpridos++;
+      else if (slaCls === 'NAO') {
+        mNaoCumpridos++;
+        const tipo = _equipePreventiva_(it.fechadoPor);
+        if (tipo === 'FACILITIES') counts.facilities++;
+        else counts.terceiros++;
+
+        const desc = it.descricao || 'Serviço preventivo';
+        rawServices.push({ name: desc, type: tipo });
+      }
+    }
+
+    if (noAno) {
+      aPrevistas++;
+      if (fechada) aRealizadas++;
+      if (slaCls === 'CUMPRIDO') aCumpridos++;
+      else if (slaCls === 'NAO') aNaoCumpridos++;
+    }
+  });
+
+  const grouped = {};
+  rawServices.forEach(s => {
+    const key = s.name + '||' + s.type;
+    if (!grouped[key]) grouped[key] = { name: s.name, type: s.type, count: 0 };
+    grouped[key].count++;
+  });
+
+  const servicosForaSla = Object.values(grouped).map(g => {
+    let txt = g.name;
+    if (g.count > 1) txt += ' (' + g.count + 'x)';
+    return { text: txt, type: g.type };
+  });
+
+  const mBase = mCumpridos + mNaoCumpridos;
+  const aBase = aCumpridos + aNaoCumpridos;
+
+  const mSla = mBase > 0 ? (Math.round((mCumpridos / mBase) * 10000) / 100).toFixed(2).replace('.', ',') + '%' : '-';
+  const aSla = aBase > 0 ? (Math.round((aCumpridos / aBase) * 10000) / 100).toFixed(2).replace('.', ',') + '%' : '-';
+
+  return {
+    mensal: {
+      titulo: 'VISÃO MENSAL (' + MESES_3_REF[ref.index] + ')',
+      previstas: String(mPrevistas),
+      realizadas: String(mRealizadas),
+      sla: mSla
+    },
+    anual: {
+      titulo: 'VISÃO ACUMULADA (' + ref.ano + ')',
+      previstas: String(aPrevistas),
+      realizadas: String(aRealizadas),
+      sla: aSla
+    },
+    servicosForaSla: servicosForaSla,
+    counts: counts
+  };
+}
+
 function obterDadosPreventivas() {
   try {
+    // 1º Tenta calcular automaticamente da base bruta BD-PREVENTIVAS (fonte oficial)
+    let res = null;
+    try {
+      res = obterDadosPreventivasBD_();
+    } catch (eBd) {
+      Logger.log('BD-PREVENTIVAS indisponível (' + eBd.message + ') — caindo na aba PREVENTIVAS da cidade.');
+    }
+
+    // Se a BD-PREVENTIVAS calculou com sucesso, enriquece com tendências e retorna
+    if (res && res.mensal && res.mensal.previstas !== '-') {
+      Logger.log('Preventivas ' + getProjetoAtivo().nome + ': calculado da BD-PREVENTIVAS (Previstas: ' +
+                 res.mensal.previstas + ', Realizadas: ' + res.mensal.realizadas + ', SLA: ' + res.mensal.sla + ')');
+
+      const _dp = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'PREVENTIVAS'); return r ? r.delta : null; };
+      res.mensal.previstasDelta  = _dp(res.mensal.previstas,  'PREVISTAS');
+      res.mensal.realizadasDelta = _dp(res.mensal.realizadas, 'REALIZADAS');
+      res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
+      res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
+
+      const _n = v => { const n = _numLenient_(v); return isNaN(n) ? null : n; };
+      res.anual.previstasDelta  = _n(res.mensal.previstas);
+      res.anual.realizadasDelta = _n(res.mensal.realizadas);
+
+      return res;
+    }
+
+    // 2º Fallback: Aba PREVENTIVAS digitada da planilha local
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
     const sheet = ss.getSheetByName('PREVENTIVAS');
     if (!sheet) throw new Error('Aba PREVENTIVAS não encontrada.');
 
     const data = sheet.getDataRange().getValues();
-    let res = {
+    res = {
       mensal          : { titulo: 'VISÃO MENSAL',    previstas: '-', realizadas: '-', sla: '-' },
       anual           : { titulo: 'VISÃO ACUMULADA', previstas: '-', realizadas: '-', sla: '-' },
       servicosForaSla : [],
       counts          : { facilities: 0, terceiros: 0 }
     };
 
-    // Só acrescenta o mês entre parênteses se o cabeçalho for de fato um mês
-    // (planilhas com cabeçalho "MENSAL" geravam "VISÃO MENSAL (MENSAL)")
     const mesAtual = (data.length > 0 && data[0][1]) ? String(data[0][1]).toUpperCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '') : '';
     const ehMes = MESES_3_REF.some(m => mesAtual.indexOf(m) === 0);
@@ -828,17 +1035,12 @@ function obterDadosPreventivas() {
       return { text: txt, type: g.type };
     });
 
-    // Tendências: valor atual (do slide) vs mês anterior no histórico validado.
-    // Aba PREVENTIVAS tem PREVISTAS/REALIZADAS/SLA MENSAL (mensal) e SLA ACUMULADO.
-    // Acumulado de previstas/realizadas não existe no histórico → sem tendência.
     const _dp = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'PREVENTIVAS'); return r ? r.delta : null; };
     res.mensal.previstasDelta  = _dp(res.mensal.previstas,  'PREVISTAS');
     res.mensal.realizadasDelta = _dp(res.mensal.realizadas, 'REALIZADAS');
     res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
     res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
 
-    // Acumulado de previstas/realizadas: o acumulado cresce exatamente o valor
-    // do mês atual (acum. anterior = acum. atual − mensal atual) → delta = mensal.
     const _n = v => { const n = _numLenient_(v); return isNaN(n) ? null : n; };
     res.anual.previstasDelta  = _n(res.mensal.previstas);
     res.anual.realizadasDelta = _n(res.mensal.realizadas);
