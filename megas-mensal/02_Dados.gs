@@ -1352,6 +1352,20 @@ function obterDadosCorretivasV6() {
       kpiData.aFechados = String(fluxo.aFechados);
     }
 
+    // FONTE DA DISPONIBILIDADE: busca na aba CHAMADOS do Histórico Validado pelo mês de referência
+    try {
+      const ref = obterMesReferencia_();
+      const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
+      const sDispM = lerHistoricoValidado('Índice de disponibilidade', { aba: 'CHAMADOS' });
+      const sDispA = lerHistoricoValidado('Índice de disponibilidade - ACUMULADO', { aba: 'CHAMADOS' });
+      const itM = sDispM.find(s => s.ord === ordRef) || (sDispM.length ? sDispM[sDispM.length - 1] : null);
+      const itA = sDispA.find(s => s.ord === ordRef) || (sDispA.length ? sDispA[sDispA.length - 1] : null);
+      if (itM) kpiData.mDisp = String(itM.bruto || itM.valor);
+      if (itA) kpiData.aDisp = String(itA.bruto || itA.valor);
+    } catch (e) {
+      Logger.log('obterDadosCorretivasV6 disponibilidade: ' + e.message);
+    }
+
     // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
     // menor = quanto MENOR melhor. Acumulado só tem disponibilidade no histórico
     // (contadores acumulados só crescem — comparação não é útil).
@@ -1990,8 +2004,30 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       return { valor: String(val), delta: dv ? dv.delta : null, menorMelhor: false };
     }
 
-    // ÍNDICE DE DISPONIBILIDADE (Corretivas)
+    // ÍNDICE DE DISPONIBILIDADE (Histórico Validado — aba CHAMADOS)
     if (d.includes('disponibilidade')) {
+      const nomeInd = ehMensal ? 'Índice de disponibilidade' : 'Índice de disponibilidade - ACUMULADO';
+      const serie = lerHistoricoValidado(nomeInd, { aba: 'CHAMADOS' });
+      if (serie && serie.length) {
+        let ordRef = Infinity;
+        try {
+          const r = obterMesReferencia_();
+          ordRef = r.ord || (r.ano * 100 + (r.index + 1));
+        } catch (e) {}
+
+        const iAlvo = serie.findIndex(s => s.ord === ordRef);
+        const atual = iAlvo >= 0 ? serie[iAlvo] : serie[serie.length - 1];
+        const idxAtual = serie.indexOf(atual);
+        const prev = idxAtual > 0 ? serie[idxAtual - 1] : null;
+        const delta = prev ? Math.round((atual.valor - prev.valor) * 100) / 100 : null;
+
+        let valorStr = String(atual.bruto || atual.valor);
+        if (!valorStr.includes('%') && !isNaN(Number(valorStr.replace(',', '.')))) {
+          valorStr += '%';
+        }
+        return { valor: valorStr, delta: delta, menorMelhor: false };
+      }
+
       const c = obterDadosCorretivasV6();
       if (!c) return null;
       const kpis = ehMensal ? c.mensal.kpis : c.anual.kpis;
