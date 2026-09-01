@@ -4135,6 +4135,24 @@ function _abaBdCorretivas_(ss) {
   return sheet || null;
 }
 
+/**
+ * Função utilitária para listar no Logger todas as colunas existentes na aba BD-CORRETIVAS.
+ */
+function listarColunasBdCorretivas() {
+  try {
+    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _abaBdCorretivas_(ss);
+    if (!sheet) { Logger.log('Aba BD-CORRETIVAS não encontrada na planilha ' + BD_CORRETIVAS_ID); return; }
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    Logger.log('====================================================');
+    Logger.log('COLUNAS ENCONTRADAS NA BD-CORRETIVAS (' + headers.length + ' colunas):');
+    headers.forEach((h, i) => Logger.log(`Coluna ${i + 1} (${String.fromCharCode(65 + (i % 26))}): "${h}"`));
+    Logger.log('====================================================');
+  } catch (e) {
+    Logger.log('Erro ao listar colunas da BD-CORRETIVAS: ' + e.message);
+  }
+}
+
 // Lê a aba BD-CORRETIVAS filtrando por Centro de Custos do empreendimento
 // ativo, chamados de CLIENTE de verdade (exclui "CONDOMÍNIO MEGA
 // <CIDADE>" — mesma regra de _ehCondominio_), em aberto no mês de
