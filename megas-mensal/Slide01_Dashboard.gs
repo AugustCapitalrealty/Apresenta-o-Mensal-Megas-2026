@@ -277,3 +277,21 @@ function _dashCor_(valStr, r, corTema) {
   if (r.sla) return corPorSLA(valStr, corTema);
   return corTema;
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA AVULSOS (POR EMPREENDIMENTO)
+// ==========================================
+// Permite gerar apenas o slide do Dashboard no deck do empreendimento
+// selecionado diretamente pelo menu de funções do editor do Apps Script:
+function gerarSoDashboardCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDashboard(); }
+function gerarSoDashboardItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDashboard(); }
+function gerarSoDashboardEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDashboard(); }
+
+function gerarSoDashboardTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideDashboard();
+  });
+}
+
