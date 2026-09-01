@@ -342,6 +342,18 @@ function gerarSlideMetas(papel) {
     const ry = y + i * rowH;
     const fundo = (i % 2 === 0) ? DS.colors.cardBg : '#F8FAFC';
 
+    // Identifica se é indicador composto (ex.: Custo M² + % Manutenções Planejadas)
+    const ehComposta = String(linha[0] || '').includes('/') ||
+                       _histNorm_(linha[0]).includes('custo') && (_histNorm_(linha[0]).includes('m2') || _histNorm_(linha[0]).includes('m²')) ||
+                       String(linha[3] || '').includes('/') ||
+                       String(linha[5] || '').includes('/');
+
+    const subH = Math.floor(rowH / 2);
+    const y1 = ry;
+    const y2 = ry + subH;
+    const h1 = subH;
+    const h2 = rowH - subH;
+
     METAS_COLS.forEach((_, c) => {
       const ehStatus = (c === 7 || c === 10);
       const cell = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], ry, larg[c], rowH);
@@ -354,60 +366,137 @@ function gerarSlideMetas(papel) {
       cell.getBorder().setWeight(1).getLineFill().setSolidFill(DS.colors.lines);
 
       if (!ehStatus) {
-        // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
-        // quebrar linha nas colunas de Meta/Real.
         let valStr = String(linha[c] == null ? '' : linha[c]).trim();
-        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
-        if (!valStr || valStr === 'undefined' || valStr === 'null') valStr = (c === 0 ? '—' : '-');
-
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '-' && valStr !== '—');
 
-        // Valor na caixa padrão da célula (célula inteira, centralizado) —
-        // o comparativo NÃO entra junto para nunca quebrar o valor.
-        // Nas colunas centralizadas a caixa de texto é alargada além da
-        // célula (folga simétrica, sem alterar o retângulo visível nem a
-        // largura da coluna) só para vencer o recuo interno padrão do
-        // Slides, que faz valores como "R$ 6,46/100%" quebrarem linha
-        // mesmo cabendo de sobra no espaço visual da célula.
-        const folga = c === 0 ? 0 : 10;
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
-        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        const tr = t.getText();
-        tr.setText(valStr);
-        tr.getTextStyle().setFontSize(c === 0 ? 8 : 7.5).setBold(c === 0).setFontFamily(DS.typography.body)
-          .setForegroundColor(DS.colors.textMain);
-        tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+        if (ehComposta && (c === 0 || c === 3 || c === 4 || c === 5 || c === 6 || c === 8 || c === 9)) {
+          // Divisória horizontal sutil entre as 2 sublinhas
+          const linhaDiv = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], ry + subH, larg[c], 1);
+          linhaDiv.getFill().setSolidFill('#E2E8F0');
+          linhaDiv.getBorder().setTransparent();
 
-        // Comparativo ▲/▼ vs mês anterior: caixa própria sobreposta,
-        // CENTRALIZADA no topo da célula — um em cima do outro com o
-        // valor (Real Mês [6] / Real Acum. [9]). Indicador composto (dois
-        // segmentos, ex.: Custo M²) pode ter uma parte boa e outra ruim ao
-        // mesmo tempo — cada segmento é colorido na sua PRÓPRIA cor via
-        // range de texto, em vez de uma cor só pro texto inteiro (isso
-        // escondia a parte vermelha atrás da cor da parte verde).
-        if (temTrend) {
-          const textoCompleto = trend.segmentos.map(s => (s && s.txt) || '').filter(Boolean).join(' / ');
-          if (textoCompleto) {
-            const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-              xs[c], ry + 2, larg[c], 11);
-            const tsr = selo.getText();
-            tsr.setText(textoCompleto);
-            tsr.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(DS.typography.titles);
+          let val1 = '', val2 = '';
+          if (c === 0) {
+            val1 = 'CUSTO M² MEGAS';
+            val2 = '↳ % MANUT. PLANEJADAS';
+          } else if (c === 3) {
+            val1 = 'R$';
+            val2 = '%';
+          } else if (c === 4) {
+            val1 = '<=';
+            val2 = '>=';
+          } else {
+            const partes = valStr.split('/').map(s => s.trim());
+            val1 = partes[0] || '-';
+            val2 = partes[1] || (c === 5 || c === 8 ? '80%' : '0%');
+          }
 
-            let offset = 0;
-            trend.segmentos.forEach((seg, si) => {
-              if (seg.txt && offset + seg.txt.length <= textoCompleto.length) {
-                tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
-                offset += seg.txt.length;
-              }
-              if (si < trend.segmentos.length - 1 && offset + 3 <= textoCompleto.length) {
-                tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(CORES.textGray);   // " / "
-                offset += 3;
-              }
-            });
+          if (c === 0) {
+            // Sublinha 1 (Descrição)
+            const t1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 4, y1, larg[c] - 6, h1);
+            t1.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const tr1 = t1.getText();
+            tr1.setText(val1);
+            tr1.getTextStyle().setFontSize(7).setBold(true).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
+            tr1.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
 
-            tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            // Sublinha 2 (Descrição)
+            const t2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 4, y2, larg[c] - 6, h2);
+            t2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const tr2 = t2.getText();
+            tr2.setText(val2);
+            tr2.getTextStyle().setFontSize(6.5).setBold(false).setFontFamily(DS.typography.body).setForegroundColor('#64748B');
+            tr2.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
+          } else if (c === 6 || c === 9) {
+            // Sublinhas de Real (com comparativos ▲/▼ independentes)
+            const seg1 = trend && trend.segmentos ? trend.segmentos[0] : null;
+            const seg2 = trend && trend.segmentos ? trend.segmentos[1] : null;
+
+            // Sublinha 1 Real
+            if (seg1 && seg1.txt) {
+              const selo1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], y1 + 1, larg[c], 9);
+              selo1.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+              const ts1 = selo1.getText();
+              ts1.setText(seg1.txt);
+              ts1.getTextStyle().setFontSize(5.5).setBold(true).setForegroundColor(seg1.cor).setFontFamily(DS.typography.titles);
+              ts1.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            }
+            const tb1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y1 + (seg1 && seg1.txt ? 6 : 0), larg[c] - 2, h1 - (seg1 && seg1.txt ? 6 : 0));
+            tb1.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const trb1 = tb1.getText();
+            trb1.setText(val1);
+            trb1.getTextStyle().setFontSize(7).setBold(false).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
+            trb1.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+            // Sublinha 2 Real
+            if (seg2 && seg2.txt) {
+              const selo2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], y2 + 1, larg[c], 9);
+              selo2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+              const ts2 = selo2.getText();
+              ts2.setText(seg2.txt);
+              ts2.getTextStyle().setFontSize(5.5).setBold(true).setForegroundColor(seg2.cor).setFontFamily(DS.typography.titles);
+              ts2.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            }
+            const tb2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y2 + (seg2 && seg2.txt ? 6 : 0), larg[c] - 2, h2 - (seg2 && seg2.txt ? 6 : 0));
+            tb2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const trb2 = tb2.getText();
+            trb2.setText(val2);
+            trb2.getTextStyle().setFontSize(7).setBold(false).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
+            trb2.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+          } else {
+            // Sublinha 1 (Unidade, Sentido, Meta)
+            const t1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y1, larg[c] - 2, h1);
+            t1.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const tr1 = t1.getText();
+            tr1.setText(val1);
+            tr1.getTextStyle().setFontSize(7).setBold(false).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
+            tr1.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+            // Sublinha 2 (Unidade, Sentido, Meta)
+            const t2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 1, y2, larg[c] - 2, h2);
+            t2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+            const tr2 = t2.getText();
+            tr2.setText(val2);
+            tr2.getTextStyle().setFontSize(7).setBold(false).setFontFamily(DS.typography.body).setForegroundColor(DS.colors.textMain);
+            tr2.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+          }
+        } else {
+          // Indicador Simples (linha normal)
+          if (!valStr || valStr === 'undefined' || valStr === 'null') valStr = (c === 0 ? '—' : '-');
+          const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '-' && valStr !== '—');
+
+          const folga = c === 0 ? 0 : 10;
+          const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
+          t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+          const tr = t.getText();
+          tr.setText(valStr);
+          tr.getTextStyle().setFontSize(c === 0 ? 8 : 7.5).setBold(c === 0).setFontFamily(DS.typography.body)
+            .setForegroundColor(DS.colors.textMain);
+          tr.getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+
+          if (temTrend) {
+            const textoCompleto = trend.segmentos.map(s => (s && s.txt) || '').filter(Boolean).join(' / ');
+            if (textoCompleto) {
+              const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+                xs[c], ry + 2, larg[c], 11);
+              const tsr = selo.getText();
+              tsr.setText(textoCompleto);
+              tsr.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(DS.typography.titles);
+
+              let offset = 0;
+              trend.segmentos.forEach((seg, si) => {
+                if (seg.txt && offset + seg.txt.length <= textoCompleto.length) {
+                  tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
+                  offset += seg.txt.length;
+                }
+                if (si < trend.segmentos.length - 1 && offset + 3 <= textoCompleto.length) {
+                  tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(CORES.textGray);
+                  offset += 3;
+                }
+              });
+
+              tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            }
           }
         }
       }
