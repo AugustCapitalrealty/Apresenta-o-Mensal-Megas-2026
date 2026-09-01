@@ -21,15 +21,129 @@
 
 
 // ==========================================
+// FUNÇÃO INTERATIVA PARA ESCOLHER O EMPREENDIMENTO
+// ==========================================
+/**
+ * Abre um diálogo na planilha ou slide para escolher qual empreendimento gerar.
+ * Se executada diretamente pelo editor de scripts, exibe as opções no log e executa a escolha.
+ */
+function escolherEmpreendimentoEGerar() {
+  let ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+  if (!ui) {
+    try { ui = SlidesApp.getUi(); } catch (e) {}
+  }
+
+  if (ui) {
+    const resposta = ui.prompt(
+      '📊 Capital Realty — Gerador de Apresentação',
+      'Escolha o empreendimento que deseja gerar:\n\n' +
+      '1 - Mega Curitiba\n' +
+      '2 - Mega Itajaí\n' +
+      '3 - Mega Esteio\n' +
+      '4 - Todos os Megas (Curitiba, Itajaí e Esteio)\n\n' +
+      'Digite o número (1, 2, 3 ou 4):',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (resposta.getSelectedButton() !== ui.Button.OK) {
+      ui.alert('Operação cancelada.');
+      return;
+    }
+
+    const escolha = resposta.getResponseText().trim();
+    if (escolha === '1') {
+      gerarCuritiba();
+      ui.alert('✓ Apresentação de Mega Curitiba gerada com sucesso!');
+    } else if (escolha === '2') {
+      gerarItajai();
+      ui.alert('✓ Apresentação de Mega Itajaí gerada com sucesso!');
+    } else if (escolha === '3') {
+      gerarEsteio();
+      ui.alert('✓ Apresentação de Mega Esteio gerada com sucesso!');
+    } else if (escolha === '4') {
+      gerarTodas();
+      ui.alert('✓ Apresentações de todos os Megas geradas com sucesso!');
+    } else {
+      ui.alert('Opção inválida: "' + escolha + '". Digite 1, 2, 3 ou 4.');
+    }
+  } else {
+    Logger.log('====================================================');
+    Logger.log('SELEÇÃO DE EMPREENDIMENTO:');
+    Logger.log('Para escolher diretamente pelo editor de código, execute:');
+    Logger.log('▸ gerarCuritiba()   ou regerarCuritiba()');
+    Logger.log('▸ gerarItajai()     ou regerarItajai()');
+    Logger.log('▸ gerarEsteio()     ou regerarEsteio()');
+    Logger.log('▸ gerarTodas()      ou regerarTodas()');
+    Logger.log('====================================================');
+    gerarCuritiba();
+  }
+}
+
+// Menu nativo na barra superior do Google Sheets / Google Slides
+function onOpen() {
+  let ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+  if (!ui) {
+    try { ui = SlidesApp.getUi(); } catch (e) {}
+  }
+  if (!ui) return;
+
+  ui.createMenu('📊 Capital Realty')
+    .addItem('🎯 Escolher Empreendimento e Gerar...', 'escolherEmpreendimentoEGerar')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('▶ Gerar Apresentação Completa')
+      .addItem('Mega Curitiba', 'gerarCuritiba')
+      .addItem('Mega Itajaí', 'gerarItajai')
+      .addItem('Mega Esteio', 'gerarEsteio')
+      .addItem('Todos os Megas', 'gerarTodas'))
+    .addSubMenu(ui.createMenu('🔄 Regerar (Limpar e Recriar)')
+      .addItem('Mega Curitiba', 'regerarCuritiba')
+      .addItem('Mega Itajaí', 'regerarItajai')
+      .addItem('Mega Esteio', 'regerarEsteio')
+      .addItem('Todos os Megas', 'regerarTodas'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Curitiba')
+      .addItem('Dashboard', 'gerarSoDashboardCuritiba')
+      .addItem('Preventivas', 'gerarSoPreventivasCuritiba')
+      .addItem('Corretivas', 'gerarSoCorretivasCuritiba')
+      .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesCuritiba')
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesCuritiba'))
+    .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Itajaí')
+      .addItem('Dashboard', 'gerarSoDashboardItajai')
+      .addItem('Preventivas', 'gerarSoPreventivasItajai')
+      .addItem('Corretivas', 'gerarSoCorretivasItajai')
+      .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesItajai')
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesItajai'))
+    .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Esteio')
+      .addItem('Dashboard', 'gerarSoDashboardEsteio')
+      .addItem('Preventivas', 'gerarSoPreventivasEsteio')
+      .addItem('Corretivas', 'gerarSoCorretivasEsteio')
+      .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesEsteio')
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesEsteio'))
+    .addToUi();
+}
+
+
+// ==========================================
 // PONTOS DE ENTRADA — POR CIDADE
 // ==========================================
-function gerarCuritiba()   { setProjetoAtivo('CURITIBA'); gerarApresentacaoCompleta_();   }
-function gerarItajai()     { setProjetoAtivo('ITAJAI');   gerarApresentacaoCompleta_();   }
-function gerarEsteio()     { setProjetoAtivo('ESTEIO');   gerarApresentacaoCompleta_();   }
+function gerarCuritiba()     { setProjetoAtivo('CURITIBA'); gerarApresentacaoCompleta_();   }
+function gerarItajai()       { setProjetoAtivo('ITAJAI');   gerarApresentacaoCompleta_();   }
+function gerarEsteio()       { setProjetoAtivo('ESTEIO');   gerarApresentacaoCompleta_();   }
 
-function regerarCuritiba() { setProjetoAtivo('CURITIBA'); regerarApresentacaoCompleta_(); }
-function regerarItajai()   { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); }
-function regerarEsteio()   { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); }
+// Nomes alternativos amigáveis:
+function gerarMegaCuritiba() { gerarCuritiba(); }
+function gerarMegaItajai()   { gerarItajai(); }
+function gerarMegaEsteio()   { gerarEsteio(); }
+
+function regerarCuritiba()     { setProjetoAtivo('CURITIBA'); regerarApresentacaoCompleta_(); }
+function regerarItajai()       { setProjetoAtivo('ITAJAI');   regerarApresentacaoCompleta_(); }
+function regerarEsteio()       { setProjetoAtivo('ESTEIO');   regerarApresentacaoCompleta_(); }
+
+function regerarMegaCuritiba() { regerarCuritiba(); }
+function regerarMegaItajai()   { regerarItajai(); }
+function regerarMegaEsteio()   { regerarEsteio(); }
 
 // Mesma apresentação + o slide de CHECK DE CONSISTÊNCIA no final (confere
 // se os números que aparecem em mais de um slide batem entre si). O check
@@ -51,12 +165,21 @@ function gerarTodas() {
   });
 }
 
+function gerarTodosOsMegas() {
+  gerarTodas();
+}
+
 function regerarTodas() {
   ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => {
     setProjetoAtivo(c);
     regerarApresentacaoCompleta_();
   });
 }
+
+function regerarTodosOsMegas() {
+  regerarTodas();
+}
+
 
 
 // ==========================================
