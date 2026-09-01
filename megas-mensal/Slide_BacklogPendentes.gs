@@ -123,10 +123,70 @@ function gerarSlideBacklogPendentes() {
 // ==========================================
 // PONTOS DE ENTRADA — SLIDE AVULSO
 // ==========================================
-// Chamados Pendentes (Backlog) por estado, busca automática na aba CHAMADOS
-// PENDENTES (BACKLOG) da planilha da cidade (obterDadosBacklogPendentes_ em
-// 02_Dados.gs). Sem a aba preenchida, cai no slide manual de espaço
-// reservado.
+/**
+ * Abre diálogo interativo para escolher qual empreendimento gerar o slide de Chamados Pendentes.
+ */
+function escolherEmpreendimentoEGerarBacklogPendentes() {
+  let ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+  if (!ui) {
+    try { ui = SlidesApp.getUi(); } catch (e) {}
+  }
+
+  if (ui) {
+    const resposta = ui.prompt(
+      '📊 Gerar Slide — Chamados Pendentes (Backlog)',
+      'Escolha o empreendimento que deseja gerar:\n\n' +
+      '1 - Mega Curitiba\n' +
+      '2 - Mega Itajaí\n' +
+      '3 - Mega Esteio\n' +
+      '4 - Todos os Megas\n\n' +
+      'Digite o número (1, 2, 3 ou 4):',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (resposta.getSelectedButton() !== ui.Button.OK) {
+      ui.alert('Operação cancelada.');
+      return;
+    }
+
+    const escolha = resposta.getResponseText().trim();
+    if (escolha === '1') {
+      gerarSoBacklogPendentesCuritiba();
+      ui.alert('✓ Slide de Chamados Pendentes (Mega Curitiba) gerado com sucesso!');
+    } else if (escolha === '2') {
+      gerarSoBacklogPendentesItajai();
+      ui.alert('✓ Slide de Chamados Pendentes (Mega Itajaí) gerado com sucesso!');
+    } else if (escolha === '3') {
+      gerarSoBacklogPendentesEsteio();
+      ui.alert('✓ Slide de Chamados Pendentes (Mega Esteio) gerado com sucesso!');
+    } else if (escolha === '4') {
+      gerarSoBacklogPendentesTodosOsMegas();
+      ui.alert('✓ Slides de Chamados Pendentes de todos os Megas gerados com sucesso!');
+    } else {
+      ui.alert('Opção inválida: "' + escolha + '". Digite 1, 2, 3 ou 4.');
+    }
+  } else {
+    Logger.log('Escolha uma das funções: gerarSoBacklogPendentesCuritiba(), gerarSoBacklogPendentesItajai(), gerarSoBacklogPendentesEsteio() ou gerarSoBacklogPendentesTodosOsMegas().');
+    gerarSoBacklogPendentesCuritiba();
+  }
+}
+
 function gerarSoBacklogPendentesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogPendentes(); }
 function gerarSoBacklogPendentesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogPendentes(); }
 function gerarSoBacklogPendentesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogPendentes(); }
+
+function gerarSoChamadosPendentesCuritiba() { gerarSoBacklogPendentesCuritiba(); }
+function gerarSoChamadosPendentesItajai()   { gerarSoBacklogPendentesItajai(); }
+function gerarSoChamadosPendentesEsteio()   { gerarSoBacklogPendentesEsteio(); }
+
+function gerarSoBacklogPendentesTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideBacklogPendentes();
+  });
+}
+
+function gerarSoChamadosPendentesTodosOsMegas() {
+  gerarSoBacklogPendentesTodosOsMegas();
+}

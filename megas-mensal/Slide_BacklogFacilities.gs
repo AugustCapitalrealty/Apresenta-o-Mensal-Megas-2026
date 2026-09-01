@@ -239,9 +239,62 @@ function _backlogGrafico_(slide, x, y, w, h, meses) {
 // ==========================================
 // PONTOS DE ENTRADA — SLIDE AVULSO
 // ==========================================
-// Backlog Facilities — evolução mensal de chamados, busca automática na aba
-// BACKLOG da planilha de Histórico Validado. Sem linha para a cidade, cai
-// no slide manual de espaço reservado.
+/**
+ * Abre diálogo interativo para escolher qual empreendimento gerar o slide de Backlog Facilities.
+ */
+function escolherEmpreendimentoEGerarBacklogFacilities() {
+  let ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+  if (!ui) {
+    try { ui = SlidesApp.getUi(); } catch (e) {}
+  }
+
+  if (ui) {
+    const resposta = ui.prompt(
+      '📊 Gerar Slide — Backlog Facilities',
+      'Escolha o empreendimento que deseja gerar:\n\n' +
+      '1 - Mega Curitiba\n' +
+      '2 - Mega Itajaí\n' +
+      '3 - Mega Esteio\n' +
+      '4 - Todos os Megas\n\n' +
+      'Digite o número (1, 2, 3 ou 4):',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (resposta.getSelectedButton() !== ui.Button.OK) {
+      ui.alert('Operação cancelada.');
+      return;
+    }
+
+    const escolha = resposta.getResponseText().trim();
+    if (escolha === '1') {
+      gerarSoBacklogFacilitiesCuritiba();
+      ui.alert('✓ Slide de Backlog Facilities (Mega Curitiba) gerado com sucesso!');
+    } else if (escolha === '2') {
+      gerarSoBacklogFacilitiesItajai();
+      ui.alert('✓ Slide de Backlog Facilities (Mega Itajaí) gerado com sucesso!');
+    } else if (escolha === '3') {
+      gerarSoBacklogFacilitiesEsteio();
+      ui.alert('✓ Slide de Backlog Facilities (Mega Esteio) gerado com sucesso!');
+    } else if (escolha === '4') {
+      gerarSoBacklogFacilitiesTodosOsMegas();
+      ui.alert('✓ Slides de Backlog Facilities de todos os Megas gerados com sucesso!');
+    } else {
+      ui.alert('Opção inválida: "' + escolha + '". Digite 1, 2, 3 ou 4.');
+    }
+  } else {
+    Logger.log('Escolha uma das funções: gerarSoBacklogFacilitiesCuritiba(), gerarSoBacklogFacilitiesItajai(), gerarSoBacklogFacilitiesEsteio() ou gerarSoBacklogFacilitiesTodosOsMegas().');
+    gerarSoBacklogFacilitiesCuritiba();
+  }
+}
+
 function gerarSoBacklogFacilitiesCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideBacklogFacilities(); }
 function gerarSoBacklogFacilitiesItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideBacklogFacilities(); }
 function gerarSoBacklogFacilitiesEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideBacklogFacilities(); }
+
+function gerarSoBacklogFacilitiesTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideBacklogFacilities();
+  });
+}
