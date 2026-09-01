@@ -1407,130 +1407,101 @@ function _avisarDivergenciaChamados_(qual, digitado, contado) {
 }
 
 function obterDadosCorretivasV6() {
+  let kpiData = {
+    mCriados: '-', mFechados: '-', mTempo: '-', mDisp: '-',
+    aCriados: '-', aFechados: '-', aTempo: '-', aDisp: '-'
+  };
+
   try {
     const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    // Os indicadores de corretivas ficam na aba CHAMADOS (INDICADOR | MÊS | ANO).
-    // 'INDICADORES' é mantido como fallback para cidades com o nome antigo.
     const sheet = ss.getSheetByName('CHAMADOS') || ss.getSheetByName('INDICADORES');
-    if (!sheet) throw new Error('Aba CHAMADOS (indicadores de corretivas) não encontrada.');
-
-    const data = sheet.getDataRange().getDisplayValues();
-
-    let kpiData = {
-      mCriados: '-', mFechados: '-', mTempo: '-', mDisp: '-',
-      aCriados: '-', aFechados: '-', aTempo: '-', aDisp: '-'
-    };
-
-    const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-    data.forEach(row => {
-      const ind = norm(row[0]);
-      if      (ind.includes('criado')  && !ind.includes('tempo')) { kpiData.mCriados  = row[1]; kpiData.aCriados  = row[2]; }
-      else if (ind.includes('fechado') && !ind.includes('tempo')) { kpiData.mFechados = row[1]; kpiData.aFechados = row[2]; }
-      else if (ind.includes('tempo')   &&  ind.includes('medio')) { kpiData.mTempo = formatarTempo(row[1]); kpiData.aTempo = formatarTempo(row[2]); }
-      else if (ind.includes('disponibilidade'))                    { kpiData.mDisp    = row[1]; kpiData.aDisp     = row[2]; }
-    });
-
-    // FONTE DOS CRIADOS/FECHADOS: contagem na BD-CORRETIVAS (planilha BASE
-    // DE DADOS — QUADRO REM), em vez dos valores digitados na aba CHAMADOS
-    // da planilha da cidade.
-    //
-    // Por que a BD-CORRETIVAS e não as abas "CHAMADOS ABERTOS/FECHADOS MES":
-    // aquelas são um recorte do mês, substituído a cada rodada, e por isso
-    // não dão o acumulado. A BD-CORRETIVAS é a base bruta — uma linha por
-    // chamado, histórico desde 2021, com "Data de reporte" e "Fechado em" —
-    // e é DE ONDE JÁ SAEM OS BACKLOGS (_histAbertoNoMes_). Estoque e fluxo
-    // passam a ser contados nas mesmas linhas, que era a raiz do problema:
-    // JUL/26 saiu com 29 criados e 29 fechados (variação zero) enquanto o
-    // backlog subia de 206 para 220, porque os dois números vinham de
-    // planilhas digitadas em separado.
-    //
-    // Os valores digitados viram RESERVA: se a BD não trouxer linha do
-    // empreendimento (ou a leitura falhar), o slide continua saindo com o
-    // que havia. A divergência fica no Logger e é checada em
-    // Slide_CheckConsistencia.gs.
-    const fluxo = _ckSafeCorretivas_(() => obterFluxoCorretivasBD_());
-    kpiData.digitado = {
-      criados:   kpiData.mCriados,  fechados:   kpiData.mFechados,
-      aCriados:  kpiData.aCriados,  aFechados:  kpiData.aFechados
-    };
-    if (fluxo) {
-      _avisarDivergenciaChamados_('criados (mês)',  kpiData.mCriados,  fluxo.mCriados);
-      _avisarDivergenciaChamados_('fechados (mês)', kpiData.mFechados, fluxo.mFechados);
-      _avisarDivergenciaChamados_('criados (acum.)',  kpiData.aCriados,  fluxo.aCriados);
-      _avisarDivergenciaChamados_('fechados (acum.)', kpiData.aFechados, fluxo.aFechados);
-      kpiData.mCriados  = String(fluxo.mCriados);
-      kpiData.mFechados = String(fluxo.mFechados);
-      kpiData.aCriados  = String(fluxo.aCriados);
-      kpiData.aFechados = String(fluxo.aFechados);
+    if (sheet) {
+      const data = sheet.getDataRange().getDisplayValues();
+      const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      data.forEach(row => {
+        const ind = norm(row[0]);
+        if      (ind.includes('criado')  && !ind.includes('tempo')) { kpiData.mCriados  = row[1]; kpiData.aCriados  = row[2]; }
+        else if (ind.includes('fechado') && !ind.includes('tempo')) { kpiData.mFechados = row[1]; kpiData.aFechados = row[2]; }
+        else if (ind.includes('tempo')   &&  ind.includes('medio')) { kpiData.mTempo = formatarTempo(row[1]); kpiData.aTempo = formatarTempo(row[2]); }
+        else if (ind.includes('disponibilidade'))                    { kpiData.mDisp    = row[1]; kpiData.aDisp     = row[2]; }
+      });
     }
+  } catch (e) {
+    Logger.log('Corretivas (leitura local da cidade): ' + e.message);
+  }
 
-    // FONTE DA DISPONIBILIDADE: busca na aba CHAMADOS do Histórico Validado pelo mês de referência
-    try {
-      const ref = obterMesReferencia_();
-      const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
-      const sDispM = lerHistoricoValidado('Índice de disponibilidade', { aba: 'CHAMADOS' });
-      const sDispA = lerHistoricoValidado('Índice de disponibilidade - ACUMULADO', { aba: 'CHAMADOS' });
-      const itM = sDispM.find(s => s.ord === ordRef) || (sDispM.length ? sDispM[sDispM.length - 1] : null);
-      const itA = sDispA.find(s => s.ord === ordRef) || (sDispA.length ? sDispA[sDispA.length - 1] : null);
-      if (itM) kpiData.mDisp = String(itM.bruto || itM.valor);
-      if (itA) kpiData.aDisp = String(itA.bruto || itA.valor);
+  // 1. FONTE DOS CRIADOS/FECHADOS: contagem na BD-CORRETIVAS
+  const fluxo = _ckSafeCorretivas_(() => obterFluxoCorretivasBD_());
+  kpiData.digitado = {
+    criados:   kpiData.mCriados,  fechados:   kpiData.mFechados,
+    aCriados:  kpiData.aCriados,  aFechados:  kpiData.aFechados
+  };
+  if (fluxo) {
+    _avisarDivergenciaChamados_('criados (mês)',  kpiData.mCriados,  fluxo.mCriados);
+    _avisarDivergenciaChamados_('fechados (mês)', kpiData.mFechados, fluxo.mFechados);
+    _avisarDivergenciaChamados_('criados (acum.)',  kpiData.aCriados,  fluxo.aCriados);
+    _avisarDivergenciaChamados_('fechados (acum.)', kpiData.aFechados, fluxo.aFechados);
+    kpiData.mCriados  = String(fluxo.mCriados);
+    kpiData.mFechados = String(fluxo.mFechados);
+    kpiData.aCriados  = String(fluxo.aCriados);
+    kpiData.aFechados = String(fluxo.aFechados);
+  }
 
-      // FONTE DO TEMPO MÉDIO: busca no Histórico Validado se estiver vazio
-      if (kpiData.mTempo === '-' || kpiData.aTempo === '-') {
-        const sTmp = lerHistoricoValidado('Tempo médio entre criado e fechado', { aba: 'CHAMADOS' });
-        if (sTmp && sTmp.length) {
-          const itTmp = sTmp.find(s => s.ord === ordRef) || sTmp[sTmp.length - 1];
-          if (itTmp && itTmp.bruto) {
-            if (kpiData.mTempo === '-') kpiData.mTempo = formatarTempo(itTmp.bruto);
-            if (kpiData.aTempo === '-') kpiData.aTempo = formatarTempo(itTmp.bruto);
-          }
+  // 2. FONTE DA DISPONIBILIDADE E TEMPO MÉDIO: busca na aba CHAMADOS do Histórico Validado
+  try {
+    const ref = obterMesReferencia_();
+    const ordRef = ref.ord || (ref.ano * 100 + (ref.index + 1));
+    const sDispM = lerHistoricoValidado('Índice de disponibilidade', { aba: 'CHAMADOS' });
+    const sDispA = lerHistoricoValidado('Índice de disponibilidade - ACUMULADO', { aba: 'CHAMADOS' });
+    const itM = sDispM.find(s => s.ord === ordRef) || (sDispM.length ? sDispM[sDispM.length - 1] : null);
+    const itA = sDispA.find(s => s.ord === ordRef) || (sDispA.length ? sDispA[sDispA.length - 1] : null);
+    if (itM) kpiData.mDisp = String(itM.bruto || itM.valor);
+    if (itA) kpiData.aDisp = String(itA.bruto || itA.valor);
+
+    // Se tempo médio estiver vazio, busca no Histórico Validado
+    if (kpiData.mTempo === '-' || kpiData.aTempo === '-') {
+      const sTmp = lerHistoricoValidado('Tempo médio entre criado e fechado', { aba: 'CHAMADOS' });
+      if (sTmp && sTmp.length) {
+        const itTmp = sTmp.find(s => s.ord === ordRef) || sTmp[sTmp.length - 1];
+        if (itTmp && itTmp.bruto) {
+          if (kpiData.mTempo === '-') kpiData.mTempo = formatarTempo(itTmp.bruto);
+          if (kpiData.aTempo === '-') kpiData.aTempo = formatarTempo(itTmp.bruto);
         }
       }
-    } catch (e) {
-      Logger.log('obterDadosCorretivasV6 disponibilidade/tempo: ' + e.message);
     }
-
-    // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
-    // menor = quanto MENOR melhor. Acumulado só tem disponibilidade no histórico
-    // (contadores acumulados só crescem — comparação não é útil).
-    const _d = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'CHAMADOS'); return r ? r.delta : null; };
-    const dCri = _d(kpiData.mCriados, 'Chamados criados');
-    const dFec = _d(kpiData.mFechados, 'Chamados fechados');
-    const dTmp = _d(kpiData.mTempo, 'Tempo médio entre criado e fechado');
-    const dDisp = _d(kpiData.mDisp, 'Índice de disponibilidade');
-    const dDispAc = _d(kpiData.aDisp, 'Índice de disponibilidade - ACUMULADO');
-
-    return {
-      // O que a aba CHAMADOS da cidade trazia ANTES de ser substituída pela
-      // contagem do export. É com isso que o check de consistência avisa que
-      // a planilha da cidade ficou para trás — comparar o valor EXIBIDO com
-      // o export seria sempre verdadeiro, já que agora vêm da mesma fonte.
-      digitado: kpiData.digitado,
-      mensal: {
-        titulo: 'VISÃO MENSAL',
-        kpis: [
-          { l: 'Chamados criados',                   v: kpiData.mCriados,  delta: dCri,  menor: true  },
-          { l: 'Chamados fechados',                  v: kpiData.mFechados, delta: dFec,  menor: false },
-          { l: 'Tempo médio entre criado e fechado', v: kpiData.mTempo,    delta: dTmp,  menor: true  },
-          { l: 'Índice de disponibilidade',          v: kpiData.mDisp,     delta: dDisp, menor: false }
-        ]
-      },
-      anual: {
-        titulo: 'VISÃO ACUMULADA',
-        kpis: [
-          { l: 'Chamados criados',                   v: kpiData.aCriados  },
-          { l: 'Chamados fechados',                  v: kpiData.aFechados },
-          { l: 'Tempo médio entre criado e fechado', v: kpiData.aTempo    },
-          { l: 'Índice de disponibilidade',          v: kpiData.aDisp,  delta: dDispAc, menor: false }
-        ]
-      }
-    };
-
   } catch (e) {
-    Logger.log('Erro planilha Slide 03 (Corretivas): ' + e.message);
-    return null;
+    Logger.log('obterDadosCorretivasV6 disponibilidade/tempo: ' + e.message);
   }
+
+  // 3. Tendências vs mês anterior (histórico validado, aba CHAMADOS)
+  const _d = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'CHAMADOS'); return r ? r.delta : null; };
+  const dCri = _d(kpiData.mCriados, 'Chamados criados');
+  const dFec = _d(kpiData.mFechados, 'Chamados fechados');
+  const dTmp = _d(kpiData.mTempo, 'Tempo médio entre criado e fechado');
+  const dDisp = _d(kpiData.mDisp, 'Índice de disponibilidade');
+  const dDispAc = _d(kpiData.aDisp, 'Índice de disponibilidade - ACUMULADO');
+
+  return {
+    digitado: kpiData.digitado,
+    mensal: {
+      titulo: 'VISÃO MENSAL',
+      kpis: [
+        { l: 'Chamados criados',                   v: kpiData.mCriados,  delta: dCri,  menor: true  },
+        { l: 'Chamados fechados',                  v: kpiData.mFechados, delta: dFec,  menor: false },
+        { l: 'Tempo médio entre criado e fechado', v: kpiData.mTempo,    delta: dTmp,  menor: true  },
+        { l: 'Índice de disponibilidade',          v: kpiData.mDisp,     delta: dDisp, menor: false }
+      ]
+    },
+    anual: {
+      titulo: 'VISÃO ACUMULADA',
+      kpis: [
+        { l: 'Chamados criados',                   v: kpiData.aCriados  },
+        { l: 'Chamados fechados',                  v: kpiData.aFechados },
+        { l: 'Tempo médio entre criado e fechado', v: kpiData.aTempo    },
+        { l: 'Índice de disponibilidade',          v: kpiData.aDisp,  delta: dDispAc, menor: false }
+      ]
+    }
+  };
 }
 
 
@@ -3646,35 +3617,75 @@ function _lerChamadosMes_(nomeAba) {
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
     const sheet = ss.getSheetByName(nomeAba);
-    if (!sheet) return [];
-
-    const data = sheet.getDataRange().getDisplayValues();
-    if (data.length < 2) return [];
-
-    const hdr   = data[0].map(_histNorm_);
-    const cId   = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
-    const cCli  = hdr.findIndex(h => h.indexOf('cliente') >= 0);
-    const cPri  = hdr.findIndex(h => h.indexOf('prioridade') >= 0);
-    const cDesc = hdr.findIndex(h => h.indexOf('descricao') >= 0);
-    const cCC   = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    if (cId < 0 || cCC < 0) return [];
-
-    const saida = [];
-    for (let r = 1; r < data.length; r++) {
-      const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoMega) continue;
-      saida.push({
-        id:         String(row[cId]   || '').trim(),
-        cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
-        prioridade: cPri  >= 0 ? String(row[cPri]  || '').trim() : '',
-        descricao:  cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : ''
-      });
+    if (sheet) {
+      const data = sheet.getDataRange().getDisplayValues();
+      if (data.length >= 2) {
+        const hdr   = data[0].map(_histNorm_);
+        const cId   = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+        const cCli  = hdr.findIndex(h => h.indexOf('cliente') >= 0);
+        const cPri  = hdr.findIndex(h => h.indexOf('prioridade') >= 0);
+        const cDesc = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+        const cCC   = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+        if (cId >= 0 && cCC >= 0) {
+          const saida = [];
+          for (let r = 1; r < data.length; r++) {
+            const row = data[r];
+            if (_histEmpChave_(row[cCC]) !== alvoMega) continue;
+            saida.push({
+              id:         String(row[cId]   || '').trim(),
+              cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
+              prioridade: cPri  >= 0 ? String(row[cPri]  || '').trim() : '',
+              descricao:  cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : ''
+            });
+          }
+          if (saida.length) return saida;
+        }
+      }
     }
-    return saida;
   } catch (e) {
     Logger.log('_lerChamadosMes_(' + nomeAba + '): ' + e.message);
-    return [];
   }
+
+  // Fallback: busca direto na BD-CORRETIVAS para o mês de referência
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const ref    = obterMesReferencia_();
+      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+      const ehFechados = _histNorm_(nomeAba).indexOf('fechado') >= 0;
+
+      const saidaBD = [];
+      rawCorr.forEach(it => {
+        if (ehFechados) {
+          const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
+          if (fechado && it.dtFechado && it.dtFechado >= refIni && it.dtFechado < refFim) {
+            saidaBD.push({
+              id:         it.id,
+              cliente:    it.cliente || '',
+              prioridade: it.prioridade || '',
+              descricao:  it.descricao || ''
+            });
+          }
+        } else {
+          // Abertos no mês
+          if (it.dtReporte && it.dtReporte >= refIni && it.dtReporte < refFim) {
+            saidaBD.push({
+              id:         it.id,
+              cliente:    it.cliente || '',
+              prioridade: it.prioridade || '',
+              descricao:  it.descricao || ''
+            });
+          }
+        }
+      });
+      if (saidaBD.length) return saidaBD;
+    }
+  } catch (eBD) {
+    Logger.log('_lerChamadosMes_ BD fallback: ' + eBD.message);
+  }
+
+  return [];
 }
 
 function _normalizarPrioridade_(v) {
@@ -3947,6 +3958,7 @@ function _lerBdCorretivasCru_() {
 
     const hdr      = data[0].map(_histNorm_);
     const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
     const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
     const cEstado  = hdr.findIndex(h => h === 'estado' || h.indexOf('estado') >= 0);
     const cMotivo  = hdr.findIndex(h => h.indexOf('motivo de pausa') >= 0 || h.indexOf('motivo') >= 0);
@@ -3974,10 +3986,12 @@ function _lerBdCorretivasCru_() {
 
       saida.push({
         id:            _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
+        cliente:       cCliente >= 0 ? String(row[cCliente] || '').trim() : '',
         descricao:     cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:        estadoOp,
         estadoSistema: rawEstado,
         motivoPausa:   rawMotivo,
+        responsaveis:  rawResp,
         prioridade:    _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
         // Chamado sem responsável preenchido (ou com um nome que não está
         // no mapa) conta como FACILITIES, não "OUTROS": é a mesma regra do
@@ -4239,51 +4253,82 @@ function _lerBacklogClientesDetalhes_() {
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
     const sheet = _abaBacklogClientesDetalhes_(ss);
-    if (!sheet) return [];
+    if (sheet) {
+      const data = sheet.getDataRange().getDisplayValues();
+      if (data.length >= 2) {
+        const hdr      = data[0].map(_histNorm_);
+        const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+        const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
+        const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
+        const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
+        const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+        const cEquipe  = hdr.findIndex(h => h.indexOf('equipe') >= 0);
+        const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
+        const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
+        if (cId >= 0 && cCC >= 0 && cCliente >= 0) {
+          const ref    = obterMesReferencia_();
+          const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+          const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
 
-    const data = sheet.getDataRange().getDisplayValues();
-    if (data.length < 2) return [];
+          const saida = [];
+          for (let r = 1; r < data.length; r++) {
+            const row = data[r];
+            if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
 
-    const hdr      = data[0].map(_histNorm_);
-    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
-    const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
-    const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
-    const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
-    const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    const cEquipe  = hdr.findIndex(h => h.indexOf('equipe') >= 0);
-    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
-    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
-    if (cId < 0 || cCC < 0 || cCliente < 0) return [];
+            const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
+            const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
+            const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
+            if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
 
-    const ref    = obterMesReferencia_();
-    const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
-    const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
-
-    const saida = [];
-    for (let r = 1; r < data.length; r++) {
-      const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
-
-      const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
-      const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
-      const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
-      if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
-
-      saida.push({
-        id:          String(row[cId] || '').trim(),
-        cliente:     String(row[cCliente] || '').trim(),
-        descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
-        estado:      estado,
-        equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
-        dataReporte: _histFormatarDataCurta_(dtReporte),
-        diasAberto:  _histDiasAberto_(dtReporte, refFim)
-      });
+            saida.push({
+              id:          String(row[cId] || '').trim(),
+              cliente:     String(row[cCliente] || '').trim(),
+              descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
+              estado:      estado,
+              equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
+              dataReporte: _histFormatarDataCurta_(dtReporte),
+              diasAberto:  _histDiasAberto_(dtReporte, refFim)
+            });
+          }
+          if (saida.length) return saida;
+        }
+      }
     }
-    return saida;
   } catch (e) {
     Logger.log('_lerBacklogClientesDetalhes_: ' + e.message);
-    return [];
   }
+
+  // Fallback: lê direto da BD-CORRETIVAS filtrando por LOCATÁRIO
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const ref    = obterMesReferencia_();
+      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+      const saidaBD = [];
+      rawCorr.forEach(it => {
+        const ehLocatario = it.equipe === 'LOCATARIO' ||
+                            _chamadoResponsabilidadeLocatario_(it.responsaveis || '') ||
+                            _histNorm_(it.estado).indexOf('locatario') >= 0;
+        if (!ehLocatario) return;
+        if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+        saidaBD.push({
+          id:          it.id,
+          cliente:     it.cliente || 'Cliente',
+          descricao:   it.descricao || '',
+          estado:      it.estado,
+          equipe:      'LOCATARIO',
+          dataReporte: _histFormatarDataCurta_(it.dtReporte),
+          diasAberto:  _histDiasAberto_(it.dtReporte, refFim)
+        });
+      });
+      if (saidaBD.length) return saidaBD;
+    }
+  } catch (eBD) {
+    Logger.log('_lerBacklogClientesDetalhes_ BD fallback: ' + eBD.message);
+  }
+
+  return [];
 }
 
 // Retorna { total, fatias:[{label,qtd}], lista:[{id,cliente,descricao,dataReporte,diasAberto}] }
