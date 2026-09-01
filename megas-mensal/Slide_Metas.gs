@@ -355,11 +355,12 @@ function gerarSlideMetas(papel) {
       if (!ehStatus) {
         // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
         // quebrar linha nas colunas de Meta/Real.
-        let valStr = String(linha[c] || '');
+        let valStr = String(linha[c] == null ? '' : linha[c]).trim();
         if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
+        if (!valStr || valStr === 'undefined' || valStr === 'null') valStr = (c === 0 ? '—' : '-');
 
         const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '');
+        const temTrend = !!(trend && trend.segmentos && trend.segmentos.length && valStr !== '-' && valStr !== '—');
 
         // Valor na caixa padrão da célula (célula inteira, centralizado) —
         // o comparativo NÃO entra junto para nunca quebrar o valor.
@@ -385,24 +386,28 @@ function gerarSlideMetas(papel) {
         // range de texto, em vez de uma cor só pro texto inteiro (isso
         // escondia a parte vermelha atrás da cor da parte verde).
         if (temTrend) {
-          const textoCompleto = trend.segmentos.map(s => s.txt).join(' / ');
-          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
-            xs[c], ry + 2, larg[c], 11);
-          const tsr = selo.getText();
-          tsr.setText(textoCompleto);
-          tsr.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(DS.typography.titles);
+          const textoCompleto = trend.segmentos.map(s => (s && s.txt) || '').filter(Boolean).join(' / ');
+          if (textoCompleto) {
+            const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+              xs[c], ry + 2, larg[c], 11);
+            const tsr = selo.getText();
+            tsr.setText(textoCompleto);
+            tsr.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(DS.typography.titles);
 
-          let offset = 0;
-          trend.segmentos.forEach((seg, si) => {
-            tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
-            offset += seg.txt.length;
-            if (si < trend.segmentos.length - 1) {
-              tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(CORES.textGray);   // " / "
-              offset += 3;
-            }
-          });
+            let offset = 0;
+            trend.segmentos.forEach((seg, si) => {
+              if (seg.txt && offset + seg.txt.length <= textoCompleto.length) {
+                tsr.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
+                offset += seg.txt.length;
+              }
+              if (si < trend.segmentos.length - 1 && offset + 3 <= textoCompleto.length) {
+                tsr.getRange(offset, offset + 3).getTextStyle().setForegroundColor(CORES.textGray);   // " / "
+                offset += 3;
+              }
+            });
 
-          tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            tsr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+          }
         }
       }
     });

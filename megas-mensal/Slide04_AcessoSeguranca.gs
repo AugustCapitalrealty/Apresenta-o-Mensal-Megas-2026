@@ -17,6 +17,7 @@ function gerarSlideTempo() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   const PageWidth = deck.getPageWidth();
+  const PageHeight = deck.getPageHeight();
   const ref = obterMesReferencia_();
   criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', 'Fluxo, Segurança e Turnover · Mês: ' + ref.siglaAno);
 

@@ -221,6 +221,37 @@ function _histNum_(v) {
   return isNaN(n) ? NaN : n;
 }
 
+let _histPlanilhaCache_ = {};
+
+function _obterDadosAbaHistorico_(abaNome) {
+  if (_histPlanilhaCache_[abaNome]) return _histPlanilhaCache_[abaNome];
+  try {
+    const ss = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+    if (abaNome === '__all__') {
+      const abas = ss.getSheets();
+      const res = [];
+      abas.forEach(s => {
+        if (s) {
+          const nome = s.getName();
+          const d = s.getDataRange().getDisplayValues();
+          _histPlanilhaCache_[nome] = d;
+          res.push(d);
+        }
+      });
+      _histPlanilhaCache_['__all__'] = res;
+      return res;
+    } else {
+      const sheet = ss.getSheetByName(abaNome);
+      const d = sheet ? sheet.getDataRange().getDisplayValues() : [];
+      _histPlanilhaCache_[abaNome] = d;
+      return d;
+    }
+  } catch (e) {
+    Logger.log('_obterDadosAbaHistorico_("' + abaNome + '"): ' + e.message);
+    return abaNome === '__all__' ? [] : [];
+  }
+}
+
 function lerHistoricoValidado(indicador, opts) {
   opts = opts || {};
   const alvoEmp = _histEmpChave_(opts.empreendimento || getProjetoAtivo().nome);
@@ -228,13 +259,10 @@ function lerHistoricoValidado(indicador, opts) {
   const saida   = [];
 
   try {
-    const ss   = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
-    const abas = opts.aba ? [ss.getSheetByName(opts.aba)] : ss.getSheets();
+    const abasData = opts.aba ? [_obterDadosAbaHistorico_(opts.aba)] : _obterDadosAbaHistorico_('__all__');
 
-    abas.forEach(sheet => {
-      if (!sheet) return;
-      const data = sheet.getDataRange().getDisplayValues();
-      if (data.length < 2) return;
+    abasData.forEach(data => {
+      if (!data || data.length < 2) return;
 
       const hdr  = data[0].map(_histNorm_);
       const cMes = hdr.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
@@ -3184,14 +3212,17 @@ function _monSerieDireta_(porAnoRaw) {
 // Retorna a série cronológica da cidade ativa, ordenada, mais recente por
 // último: [{ mes:'07/2025', ord:202507, rotulo:'JUL/25', facilities:94,
 //            geral:108, property:13, locatario:11, emergencial:4 }]
-function obterDadosBacklogHistorico_() {
-  try {
-    const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
-    const sheet = ss.getSheetByName('BACKLOG');
-    if (!sheet) return [];
+let _backlogHistoricoCache = {};
 
-    const data = sheet.getDataRange().getDisplayValues();
-    if (data.length < 3) return [];
+function obterDadosBacklogHistorico_() {
+  const chave = getProjetoAtivo().nome;
+  if (_backlogHistoricoCache[chave]) {
+    return _backlogHistoricoCache[chave];
+  }
+
+  try {
+    const data = _obterDadosAbaHistorico_('BACKLOG');
+    if (!data || data.length < 3) return [];
 
     // Acha a linha de cabeçalho de coluna ("ano mes" ou "mes").
     let linhaHdr = -1;
@@ -3258,6 +3289,7 @@ function obterDadosBacklogHistorico_() {
     }
     saida.sort((a, b) => a.ord - b.ord);
     _backlogAplicarRecalculoBD_(saida);
+    _backlogHistoricoCache[chave] = saida;
     return saida;
 
   } catch (e) {

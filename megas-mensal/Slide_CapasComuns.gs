@@ -32,7 +32,7 @@ function _capaHexLerp_(a, b, t) {
 // último permite véus que "desaparecem" (scrim de legibilidade sobre foto).
 function _capaGradiente_(slide, x, y, w, h, c1, c2, opts) {
   opts = opts || {};
-  const steps = opts.steps || 26;
+  const steps = Math.min(opts.steps || 10, 12);
   const vertical = !!opts.vertical;
   const aF = opts.alphaFrom != null ? opts.alphaFrom : (opts.alpha != null ? opts.alpha : 1);
   const aT = opts.alphaTo   != null ? opts.alphaTo   : (opts.alpha != null ? opts.alpha : 1);
