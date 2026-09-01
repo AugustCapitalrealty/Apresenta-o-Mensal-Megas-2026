@@ -270,8 +270,8 @@ function lerHistoricoValidado(indicador, opts) {
       if (!data || data.length < 2) return;
 
       const hdr  = data[0].map(_histNorm_);
-      const cMes = hdr.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano');
-      const cEmp = hdr.findIndex(h => h.indexOf('empreend') >= 0);
+      const cMes = hdr.findIndex(h => h.indexOf('mes') === 0 || h === 'mes/ano' || h === 'data');
+      const cEmp = hdr.findIndex(h => h.indexOf('empreend') >= 0 || h === 'mega' || h.indexOf('cidade') >= 0 || h.indexOf('centro de custo') >= 0 || h.indexOf('edificio') >= 0);
       const cInd = hdr.findIndex(h => h.indexOf('indicador') >= 0);
       const cVal = hdr.findIndex(h => h.indexOf('dado') >= 0 || h.indexOf('valor') >= 0);
       if (cMes < 0 || cInd < 0 || cVal < 0) return;
@@ -1126,6 +1126,16 @@ function _abaBdPreventivas_(ss) {
   return sheet || null;
 }
 
+function _rowPertenceAoMega_(row, colsToCheck, alvoEmp) {
+  for (let i = 0; i < colsToCheck.length; i++) {
+    const c = colsToCheck[i];
+    if (c >= 0 && row[c]) {
+      if (_histEmpChave_(row[c]) === alvoEmp) return true;
+    }
+  }
+  return false;
+}
+
 function _lerBdPreventivasCru_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
   if (_bdPreventivasCache[alvoEmp]) return _bdPreventivasCache[alvoEmp];
@@ -1151,16 +1161,20 @@ function _lerBdPreventivasCru_() {
     const cEstado  = col('estado');
     const cSla     = col('sla');
     const cCC      = col('centro de custo');
+    const cEdif    = col('edificio', 'edifício');
+    const cEmpresa = col('empresa', 'empreendimento', 'unidade');
+    const cLocal   = col('local');
     const cQuem    = col('fechado por', 'responsavel', 'responsáveis', 'responsaveis');
     const cAgend   = col('data de agendamento', 'data agendamento', 'data de reporte', 'agendamento');
     const cFechado = col('fechada em', 'fechado em');
 
-    if (cCC < 0) return [];
+    const colsMega = [cCC, cEdif, cEmpresa, cLocal].filter(c => c >= 0);
+    if (colsMega.length === 0) return [];
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
 
       const rawDescricao = cDesc >= 0 ? String(row[cDesc] || '').trim() : '';
 
@@ -3957,22 +3971,27 @@ function _lerBdCorretivasCru_() {
     if (data.length < 2) return [];
 
     const hdr      = data[0].map(_histNorm_);
-    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0 || h === 'id');
     const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
     const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
     const cEstado  = hdr.findIndex(h => h === 'estado' || h.indexOf('estado') >= 0);
     const cMotivo  = hdr.findIndex(h => h.indexOf('motivo de pausa') >= 0 || h.indexOf('motivo') >= 0);
     const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
+    const cEdif    = hdr.findIndex(h => h.indexOf('edificio') >= 0 || h.indexOf('edifício') >= 0);
+    const cEmpresa = hdr.findIndex(h => h.indexOf('empresa') >= 0 || h.indexOf('empreendimento') >= 0);
+    const cLocal   = hdr.findIndex(h => h.indexOf('local') >= 0);
     const cPri     = hdr.findIndex(h => h.indexOf('prioridade') >= 0);   // 1ª ocorrência = texto; a 2ª (numérica) é ignorada
-    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0);
-    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
-    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
-    if (cId < 0 || cCC < 0) return [];
+    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0 || h.indexOf('responsavel') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0 || h.indexOf('data reporte') >= 0 || h.indexOf('data agendada') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0 || h.indexOf('fechada em') >= 0);
+
+    const colsMega = [cCC, cEdif, cEmpresa, cLocal].filter(c => c >= 0);
+    if (cId < 0 || colsMega.length === 0) return [];
 
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
 
       const rawEstado = cEstado >= 0 ? String(row[cEstado] || '').trim() : '';
       const rawMotivo = cMotivo >= 0 ? String(row[cMotivo] || '').trim() : '';
@@ -4496,15 +4515,20 @@ function _lerBdCorretivasChamadosClientes_() {
     if (data.length < 2) return [];
 
     const hdr      = data[0].map(_histNorm_);
-    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+    const cId      = hdr.findIndex(h => h.indexOf('id chamado') >= 0 || h === 'id');
     const cCliente = hdr.findIndex(h => h.indexOf('cliente') >= 0);
     const cDesc    = hdr.findIndex(h => h.indexOf('descricao') >= 0);
     const cEstado  = hdr.findIndex(h => h.indexOf('estado') >= 0);
     const cCC      = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0);
-    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0);
-    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0);
-    if (cId < 0 || cCC < 0 || cCliente < 0) return [];
+    const cEdif    = hdr.findIndex(h => h.indexOf('edificio') >= 0 || h.indexOf('edifício') >= 0);
+    const cEmpresa = hdr.findIndex(h => h.indexOf('empresa') >= 0 || h.indexOf('empreendimento') >= 0);
+    const cLocal   = hdr.findIndex(h => h.indexOf('local') >= 0);
+    const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0 || h.indexOf('data reporte') >= 0);
+    const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0 || h.indexOf('fechada em') >= 0);
+    const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0 || h.indexOf('responsavel') >= 0);
+
+    const colsMega = [cCC, cEdif, cEmpresa, cLocal].filter(c => c >= 0);
+    if (cId < 0 || colsMega.length === 0 || cCliente < 0) return [];
 
     const ref    = obterMesReferencia_();
     const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
@@ -4513,7 +4537,7 @@ function _lerBdCorretivasChamadosClientes_() {
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
 
       const cliente = String(row[cCliente] || '').trim();
       if (!cliente || _ehCondominio_(cliente)) continue;

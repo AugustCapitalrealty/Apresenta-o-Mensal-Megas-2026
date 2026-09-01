@@ -51,7 +51,7 @@ const METAS_COLS = METAS_COLS_FULL.slice(3);
 // ==========================================
 // LEITURA / FILTRO (planilha da Gestão à Vista TV)
 // ==========================================
-function _metasNormMega_(s)  { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^MEGA\s+/, '').trim(); }
+function _metasNormMega_(s)  { return _histEmpChave_(s); }
 function _metasNormPapel_(s) { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
 
 // Distintos "Papel" com linhas preenchidas para a cidade ativa.
@@ -62,12 +62,12 @@ function obterPapeisMetas_() {
   const ultima = aba.getLastRow();
   if (ultima < 2) return [];
 
-  const alvoMega = _metasNormMega_(getProjetoAtivo().nome);
+  const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
   const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
   const papeis = [];
   dados.forEach(l => {
     const papel = _metasNormPapel_(l[1]);
-    if (_metasNormMega_(l[0]) === alvoMega && papel && String(l[3] || '').trim() !== '' && papeis.indexOf(papel) < 0) {
+    if (_histEmpChave_(l[0]) === alvoMega && papel && String(l[3] || '').trim() !== '' && papeis.indexOf(papel) < 0) {
       papeis.push(papel);
     }
   });
@@ -103,12 +103,12 @@ function obterDadosMetas_(papel) {
   const ultima = aba.getLastRow();
   if (ultima < 2) return null;
 
-  const alvoMega  = _metasNormMega_(getProjetoAtivo().nome);
+  const alvoMega  = _histEmpChave_(getProjetoAtivo().nome);
   const alvoPapel = _metasNormPapel_(papel);
   const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
 
   const filtradas = dados.filter(l =>
-    _metasNormMega_(l[0]) === alvoMega &&
+    _histEmpChave_(l[0]) === alvoMega &&
     _metasNormPapel_(l[1]) === alvoPapel &&
     String(l[3] || '').trim() !== ''
   );
