@@ -3482,7 +3482,15 @@ function obterDadosBacklogHistorico_() {
       }
       break;
     }
-    if (cFac < 0 || cGer < 0) return [];
+    if (cFac < 0 || cGer < 0) {
+      Logger.log('Backlog: colunas do empreendimento não encontradas na aba BACKLOG — gerando série a partir da BD-CORRETIVAS.');
+      const sBD = _gerarSerieBacklogDiretoBD_();
+      if (sBD.length) {
+        _backlogHistoricoCache[chave] = sBD;
+        return sBD;
+      }
+      return [];
+    }
 
     const saida = [];
     for (let r = linhaHdr + 1; r < data.length; r++) {
@@ -3531,6 +3539,51 @@ function obterDadosBacklogHistorico_() {
 
   } catch (e) {
     Logger.log('Erro Backlog Histórico: ' + e.message);
+    const sBD = _gerarSerieBacklogDiretoBD_();
+    if (sBD.length) {
+      _backlogHistoricoCache[chave] = sBD;
+      return sBD;
+    }
+    return [];
+  }
+}
+
+// Gera a série histórica mensal dos últimos 14 meses diretamente da base bruta BD-CORRETIVAS
+function _gerarSerieBacklogDiretoBD_() {
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (!rawCorr || !rawCorr.length) return [];
+    const ref = obterMesReferencia_();
+    const saidaBD = [];
+    for (let offset = 13; offset >= 0; offset--) {
+      let a = ref.ano, m = ref.index - offset;
+      while (m < 0) { m += 12; a -= 1; }
+      const ord = a * 100 + (m + 1);
+      const refIni = new Date(Date.UTC(a, m, 1));
+      const refFim = new Date(Date.UTC(a, m + 1, 1));
+      let geral = 0, facilities = 0, property = 0, locatario = 0;
+      rawCorr.forEach(it => {
+        if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+        geral++;
+        if (it.equipe === 'LOCATARIO') locatario++;
+        else if (it.equipe === 'PROPERTY') property++;
+        else facilities++;
+      });
+      const mesLabel = String(m + 1).padStart(2, '0') + '/' + a;
+      saidaBD.push({
+        mes: mesLabel,
+        ord: ord,
+        rotulo: MESES_3_REF[m] + '/' + String(a).slice(-2),
+        facilities,
+        geral,
+        property,
+        locatario,
+        emergencial: null
+      });
+    }
+    return saidaBD;
+  } catch (e) {
+    Logger.log('_gerarSerieBacklogDiretoBD_: ' + e.message);
     return [];
   }
 }
