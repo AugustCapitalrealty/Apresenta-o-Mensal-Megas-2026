@@ -3,125 +3,37 @@
  * DESCRIÇÃO: Foco de Ação (Preventivas em Aberto/Atrasadas).
  */
 
-function gerarSlidePreventivasDetalhe(slide, planilha, dataGlobal, unit) { // Recebe slide direto
-  const aba = planilha.getSheetByName(unit.sheetPreventivasDetalhe);
-  if (!aba) return;
+function gerarSlidePreventivasDetalhe(slide, dataGlobal, unit) {
+  const d = obterBacklogPreventivoTV_(unit);
+  if (!d) { Logger.log('⚠️ Backlog Preventivo (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  const ultimaLinha = aba.getLastRow();
-  if (ultimaLinha < 14) return;
+  // O comparativo é CALCULADO na base (fila de N dias atrás), não lembrado
+  // entre execuções. Ver TV_BACKLOG_DIAS_COMPARACAO em Dados.gs.
+  const diff  = d.countEmAberto - d.emAbertoAntes;
+  const trend = diff < 0 ? 'DOWN' : (diff > 0 ? 'UP' : 'FLAT');
 
-  const dados = aba.getRange(14, 3, ultimaLinha - 13, 36).getValues();
-  let mesGlobal = new Date().getMonth() + 1;
-  let anoGlobal = new Date().getFullYear();
-  if (dataGlobal && dataGlobal.includes('/')) {
-    const p = dataGlobal.split('/');
-    if (p.length === 3) { mesGlobal = parseInt(p[1], 10); anoGlobal = parseInt(p[2], 10); }
-  }
-
-  const gruposMap = {};
-  let countEmAberto = 0; let countEmCurso = 0;
-  let facilCount = 0; let propCount = 0;
-  const hoje = new Date().getTime();
-
-  dados.forEach(linha => {
-    const dataBruta = linha[6];
-    const descOriginal = linha[26] ? linha[26].toString() : "";
-    const estado = linha[28] ? linha[28].toString().trim() : "";
-    const equipe = linha[35] ? linha[35].toString().trim().toUpperCase() : "";
-
-    if (!estado) return;
-    const estadoLow = estado.toLowerCase();
-    const isEmAberto = estadoLow === "atrasada" || estadoLow === "em aberto";
-    const isEmCurso = estadoLow === "em curso";
-
-    if (!isEmAberto && !isEmCurso) return;
-
-    if (isEmAberto) countEmAberto++;
-    if (isEmCurso) countEmCurso++;
-    if (equipe.includes("FACILITIES")) facilCount++;
-    if (equipe.includes("PROPERTY") || equipe.includes("PROPRIEDADES")) propCount++;
-
-    let descLimpa = descOriginal.split('|').length >= 2 ? descOriginal.split('|')[1].trim() : descOriginal.trim();
-    let descAgrupada = descLimpa.replace(/[\s-]+\d+$/, '').trim();
-    if (descAgrupada.length < 3) descAgrupada = descLimpa;
-    if (descAgrupada.length > 40) descAgrupada = descAgrupada.substring(0, 37) + "...";
-
-    const chave = `${descAgrupada}|${equipe}|${isEmAberto}`;
-    let dataTimestamp = Infinity;
-    if (dataBruta instanceof Date) dataTimestamp = dataBruta.getTime();
-    else if (typeof dataBruta === 'string' && dataBruta.includes('/')) {
-      const p = dataBruta.split('/');
-      if (p.length === 3) dataTimestamp = new Date(p[2], p[1]-1, p[0]).getTime();
-    }
-
-    if (!gruposMap[chave]) {
-      gruposMap[chave] = {
-        desc: descAgrupada,
-        equipe: equipe.includes("PROPERTY") || equipe.includes("PROPRIEDADES") ? "PROPERTY" : "FACILITIES",
-        isEmAberto: isEmAberto, qtd: 0, dataAntigaTs: Infinity, dataLabel: "-"
-      };
-    }
-
-    gruposMap[chave].qtd++;
-
-    if (dataTimestamp < gruposMap[chave].dataAntigaTs) {
-      gruposMap[chave].dataAntigaTs = dataTimestamp;
-      if (dataTimestamp !== Infinity) {
-        let diasAberto = Math.floor((hoje - dataTimestamp) / (1000 * 3600 * 24));
-        if (diasAberto < 0) diasAberto = 0;
-        gruposMap[chave].dataLabel = diasAberto === 0 ? "Hoje" : `${diasAberto} dias`;
-      }
-    }
-  });
-
-  const listaAgrupada = Object.values(gruposMap);
-  listaAgrupada.sort((a, b) => {
-    if (a.isEmAberto && !b.isEmAberto) return -1;
-    if (!a.isEmAberto && b.isEmAberto) return 1;
-    if (b.qtd !== a.qtd) return b.qtd - a.qtd;
-    return a.dataAntigaTs - b.dataAntigaTs;
-  });
-
-  const listaTop = listaAgrupada.slice(0, 6);
-  const equipeLider = facilCount >= propCount ? "FACILITIES" : "PROPERTY";
-
-  const scriptProps = PropertiesService.getScriptProperties();
-  const histStr = scriptProps.getProperty(unit.keys.prev);
-  let histFila = histStr ? JSON.parse(histStr) : [];
-
-  if (histFila.length === 0 || histFila[histFila.length - 1].count !== countEmAberto) {
-    histFila.push({ date: dataGlobal, count: countEmAberto });
-  }
-  if (histFila.length > 10) histFila = histFila.slice(histFila.length - 10);
-  scriptProps.setProperty(unit.keys.prev, JSON.stringify(histFila));
-
-  let prevEmAberto = countEmAberto;
-  if (histFila.length >= 2) prevEmAberto = histFila[histFila.length - 2].count;
-
-  let trend = 'FLAT';
-  let diff = countEmAberto - prevEmAberto;
-  if (diff < 0) trend = 'DOWN';
-  else if (diff > 0) trend = 'UP';
-
-  criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, listaTop, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardDetalhePreventivas(slide, d.countEmAberto, d.countEmCurso, d.lista,
+    d.equipeLider, dataGlobal, d.emAbertoAntes, trend, diff, unit, d.diasComparacao);
 }
 
-function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, lista, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit) {
+function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, lista, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit, diasComp) {
   const ds = CR_DESIGN_SYSTEM;
 
   applyBrandHeaderAndBackground(slide, "Backlog Preventivo", "Rotinas atrasadas ou em execução", dataGlobal, unit);
 
   if (countEmAberto > 0 || prevEmAberto > 0) {
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${countEmAberto})`;
+    const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
+    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${countEmAberto})${vs}`;
     let badgeBgColor = ds.colors.bgSlide;
     let badgeBorderColor = ds.colors.lines;
     let badgeTxtColor = ds.colors.textBody;
 
     if (trend === 'DOWN') {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})`;
+      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
       badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
     } else if (trend === 'UP') {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})`;
+      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
       badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
     }
 
@@ -228,6 +140,6 @@ function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, li
   }
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak")
+  txtFooter.getText().setText("Fonte: BD-PREVENTIVAS (Infraspeak) • Fila em aberto na data da atualização.")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }

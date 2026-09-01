@@ -3,35 +3,19 @@
  * DESCRIÇÃO: Volume Histórico Corretivas.
  */
 
-function gerarSlideCorretivas(slide, aba, dataGlobal, colAlvo, unit) {
-  // 1. HISTÓRICO VARIÁVEL (Para o Gráfico de Barras)
-  const historico = [];
-  const colInicial = Math.max(3, colAlvo - 4);
-  for (let c = colInicial; c <= colAlvo; c++) {
-    historico.push({
-      dataCurta: aba.getRange(39, c).getDisplayValue(),
-      facilities: Number(aba.getRange(unit.rows.chamados.fac, c).getValue()) || 0,
-      propriedades: Number(aba.getRange(unit.rows.chamados.prop, c).getValue()) || 0,
-      total: Number(aba.getRange(unit.rows.chamados.tot, c).getValue()) || 0
-    });
-  }
+function gerarSlideCorretivas(slide, dataGlobal, unit) {
+  const d = obterCorretivasTV_(unit);
+  // Sem dado, NÃO limpa o slide: a TV continua mostrando a última versão boa
+  // em vez de ficar em branco na parede.
+  if (!d) { Logger.log('⚠️ Corretivas (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  // 2. DADOS FIXOS DIÁRIOS (Para os Cartões Principais - Lendo a Coluna D = 4)
-  const atual = {
-    facilities: Number(aba.getRange(unit.rows.chamadosDiario.fac, 4).getValue()) || 0,
-    propriedades: Number(aba.getRange(unit.rows.chamadosDiario.prop, 4).getValue()) || 0,
-    total: Number(aba.getRange(unit.rows.chamadosDiario.tot, 4).getValue()) || 0
-  };
-
-  // O "anterior" para comparação agora é a última semana fechada do histórico
-  const anterior = historico.length > 0 ? historico[historico.length - 1] : { facilities: 0, propriedades: 0, total: 0 };
-
-  criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardCorretivas(slide, d.atual, d.anterior, d.historico, dataGlobal, unit, d.diasComparacao);
 }
 
-function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal, unit) {
+function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal, unit, diasComp) {
   const ds = CR_DESIGN_SYSTEM;
-  applyBrandHeaderAndBackground(slide, "Visão Geral Corretiva", "Volume de chamados gerados", dataGlobal, unit);
+  applyBrandHeaderAndBackground(slide, "Visão Geral Corretiva", "Chamados em aberto por equipe", dataGlobal, unit);
   const startY = ds.layout.contentY;
 
   const renderDelta = (x, y, w, valAt, valAn) => {
@@ -55,7 +39,7 @@ function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal,
   accTot.getFill().setSolidFill(ds.colors.brandDark); accTot.getBorder().setTransparent();
 
   const lblTot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+15, startY+10, cW-20, 25);
-  lblTot.getText().setText("VOLUME TOTAL DE ABERTURAS").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
+  lblTot.getText().setText("CHAMADOS EM ABERTO").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
 
   const valTot = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+15, startY+30, cW-20, 60);
   valTot.getText().setText(atual.total.toString()).getTextStyle().setFontSize(48).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.brandDark).setBold(true);
@@ -101,7 +85,7 @@ function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal,
 
   const histY = startY + 85;
   const lblHist = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, histY, rW, 25);
-  lblHist.getText().setText("EVOLUÇÃO (ÚLTIMOS 5)").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
+  lblHist.getText().setText("EVOLUÇÃO DA FILA (A CADA 7 DIAS)").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
 
   const maxVal = Math.max(...historico.map(h => h.total), 1);
   const hW = 35; const hGap = (rW - (historico.length*hW)) / Math.max(1, historico.length-1);
@@ -123,6 +107,6 @@ function criarDashboardCorretivas(slide, atual, anterior, historico, dataGlobal,
   });
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak • * Comparações referem-se à semana anterior.")
+  txtFooter.getText().setText(`Fonte: BD-CORRETIVAS (Infraspeak) • Fila em aberto hoje${diasComp ? `, comparada com ${diasComp} dias atrás` : ''}.`)
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }

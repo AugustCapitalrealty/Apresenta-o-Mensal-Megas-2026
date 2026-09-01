@@ -101,6 +101,51 @@ function _propEhMega_(cc) {
 // Estado, SLA e datas). O mapeamento é por CONTEÚDO do cabeçalho, não por
 // posição — coluna que muda de lugar não quebra a leitura, e coluna que muda
 // de nome aparece em inspecionarBase().
+// Número da planilha, ou null quando a célula está vazia / não é número.
+// Devolver 0 para célula vazia somaria zeros na média e puxaria o tempo médio
+// para baixo sem ninguém ver — "não medido" não é "demorou zero".
+function _propNumeroOuNull_(v) {
+  const txt = String(v == null ? '' : v).trim();
+  if (!txt) return null;
+  // Vem como texto de planilha: pode ter separador de milhar pt-BR.
+  const n = Number(txt.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+// ==========================================
+// NORMALIZADORES E CLASSIFICADORES DE CHAMADO
+// ==========================================
+// Ficam AQUI, na camada de dados, e não no arquivo do slide que os usa:
+// _propLerBase_ chama _idChamadoNormaliza_, e uma camada de dados que depende
+// de um arquivo de desenho não dá para testar sem carregar o desenho junto.
+// No Apps Script funcionaria (namespace único), mas o teste pegou.
+
+function _ehCondominio_(cliente) {
+  return _histNorm_(cliente).indexOf('condomini') >= 0;
+}
+
+// "Responsabilidade Locatario" aparece como um item A MAIS dentro da própria
+// lista de Responsáveis. Quando está lá, o chamado é do locatário, não da
+// operação — e não entra nesta lista, que é de pendências DA equipe Property.
+function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
+  return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0;
+}
+
+// O Id vem da planilha às vezes como número formatado ("11.607.652") e às
+// vezes como texto. Normaliza para dígitos, senão o mesmo chamado aparece
+// escrito de dois jeitos entre slides.
+function _idChamadoNormaliza_(v) {
+  const txt = String(v || '').trim();
+  if (!txt) return '';
+  const n = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? txt.replace(/\D/g, '') : String(Math.round(n));
+}
+
+function _histEmpChave_(s) {
+  return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
 const _propBaseCache = {};
 
 // Compara ignorando espaços e pontuação: "BD - PREVENTIVAS",
@@ -115,6 +160,39 @@ function _propAba_(ss, nome) {
          ss.getSheets().find(s => _propChaveAba_(s.getName()) === alvo) ||
          ss.getSheets().find(s => _propChaveAba_(s.getName()).indexOf(alvo) >= 0) ||
          null;
+}
+
+// A coluna Descrição vem com um prefixo de metadado de checklist na frente
+// do texto livre — ex.: "PMP.904036.68674893 CHECKLIST - FACILITIES |
+// Bombas de Drenagem | Posto SIM: C02. Em funcionamento os instrumentos do
+// painel: Não Conforme - Bomba não está no local". O prefixo (ID do
+// formulário + "CHECKLIST - <equipe>" + categorias separadas por "|",
+// terminando em "<local>: <código>.") não interessa pra quem lê o slide —
+// só a descrição real do problema, que vem depois. Remove só quando a
+// descrição REALMENTE começa com esse padrão; texto livre sem prefixo
+// (ex.: "Água voltando pelos tubos das bombas inundando o piso.") fica
+// intacto. Cópia deste mesmo comportamento em megas-mensal/02_Dados.gs —
+// pedido do usuário pra valer nos dois projetos.
+function _limparDescricaoChecklist_(desc) {
+  if (!desc) return desc;
+  let limpo = desc;
+
+  // 1) Prefixo do formulário: "<ID> CHECKLIST - <equipe> | ... : <código>."
+  const reMeta = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
+  limpo = limpo.replace(reMeta, '');
+
+  // 2) Rótulo do item avaliado + resultado do checklist: "<campo
+  // avaliado>: [Não] Conforme -" — ex.: "Estado de conservação e aspecto
+  // geral da carcaça: Não Conforme -", "Em funcionamento os instrumentos
+  // do painel: Não Conforme -". Só age quando o texto REALMENTE começa
+  // com "<até 80 caracteres>: [Não] Conforme" — descrição livre sem
+  // esse padrão (ex.: "Água voltando pelos tubos das bombas inundando o
+  // piso.") não tem colon logo no início e fica intacta.
+  const reCampo = /^[^:\n]{1,80}:\s*(?:Não\s+)?Conforme\b[\s\-–]*/i;
+  limpo = limpo.replace(reCampo, '');
+
+  limpo = limpo.trim();
+  return limpo || desc;
 }
 
 function _propLerBase_(nomeAba) {
@@ -139,18 +217,51 @@ function _propLerBase_(nomeAba) {
       }
       return -1;
     };
+    const cId     = col('id chamado', 'id agendamento');
     const cCC     = col('centro de custo');
     const cEstado = col('estado');
     const cSla    = col('sla');
     const cCli    = col('cliente');
     // "Fechado por" define a equipe nas PREVENTIVAS (ver _propEquipePreventiva_).
     const cQuem   = col('fechado por');
+    // "Responsáveis" define a equipe nas CORRETIVAS (ver _propEquipeCorretiva_)
+    // — lista separada por vírgula, diferente de "Fechado por" que é um nome só.
+    const cResp   = col('responsaveis', 'responsável');
+    // Nome do serviço/atividade — usada na relação de preventivas fora do
+    // SLA (Slide_Preventivas.gs). Mesma coluna que megas-mensal/02_Dados.gs
+    // já lê da mesma base.
+    const cDesc   = col('descricao', 'descrição');
+    // Prioridade do chamado (Emergencial/Alta/Normal/Baixa) — usada no
+    // gráfico de Backlog Emergencial (Slide_Corretivas.gs). A aba tem duas
+    // colunas "Prioridade" (uma de texto, outra numérica); col() pega a
+    // primeira ocorrência, que é a de texto — mesmo comportamento de
+    // megas-mensal/02_Dados.gs na mesma base.
+    const cPri    = col('prioridade');
+    // Só existe em BD-CORRETIVAS (BD-PREVENTIVAS não tem essa coluna) — o
+    // motivo de um chamado ABERTO estar pausado (ex.: "Orçamento 2026",
+    // "Alinhamento Operação", "Pendências de Obra"). Confirmado com
+    // diagnosticarMotivoPausa: quando preenchido, É o motivo de verdade;
+    // quando vazio, o chamado está "Em resolução" (sem pausa formal). Usada
+    // por obterBacklogPorMotivo_ (Slide_ChamadosPendentes.gs).
+    const cMotivo = col('motivo de pausa', 'motivo da pausa');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
     //   CORRETIVAS:  "Data de reporte"    / "Fechado em"
     //   PREVENTIVAS: "Data agendamento"   / "Fechada em"
     const cIni = col('data de reporte', 'data agendamento', 'data de agendamento');
     const cFim = col('fechado em', 'fechada em');
+    // APROVAÇÃO — só existe em BD-CORRETIVAS. Duas colunas, com papéis
+    // diferentes:
+    //   P  "Aprovado em"                  → QUANDO aprovou (define o mês)
+    //   AG "Tempo para aprovar (segundos)" → QUANTO demorou (o valor medido)
+    //
+    // A espera sai da coluna AG, não de (P − B). A base já calcula esse
+    // número, e recalcular por subtração assumiria que a espera é corrida —
+    // se AG considerar horário útil ou calendário de SLA, a subtração daria
+    // outro resultado e ninguém saberia qual está certo. AG é a fonte; a
+    // subtração fica só de reserva, para a linha que tiver P e não tiver AG.
+    const cAprov  = col('aprovado em', 'aprovada em', 'data de aprovacao', 'data de aprovação');
+    const cTaprov = col('tempo para aprovar (segundos)', 'tempo para aprovar');
 
     if (cCC < 0) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode inspecionarBase("' +
@@ -163,16 +274,38 @@ function _propLerBase_(nomeAba) {
       const cc = String(data[r][cCC] || '').trim();
       if (!cc) continue;
       saida.push({
+        id       : cId     >= 0 ? _idChamadoNormaliza_(data[r][cId]) : '',
         cc       : cc,
         estado   : cEstado >= 0 ? String(data[r][cEstado] || '').trim() : '',
         sla      : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
         cliente  : cCli    >= 0 ? String(data[r][cCli]    || '').trim() : '',
         fechadoPor: cQuem  >= 0 ? String(data[r][cQuem]   || '').trim() : '',
+        responsaveis: cResp >= 0 ? String(data[r][cResp]  || '').trim() : '',
+        descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(data[r][cDesc] || '').trim()) : '',
+        prioridade: _normalizarPrioridade_(cPri >= 0 ? data[r][cPri] : ''),
+        motivoPausa: cMotivo >= 0 ? String(data[r][cMotivo] || '').trim() : '',
         cancelado: _histNorm_(cEstado >= 0 ? data[r][cEstado] : '') === 'cancelada',
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
-        dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null
+        dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null,
+        dtAprovado: cAprov >= 0 ? _histParseDataHora_(data[r][cAprov]) : null,
+        tempoAprovarSeg: cTaprov >= 0 ? _propNumeroOuNull_(data[r][cTaprov]) : null
       });
     }
+    // Diz de que coluna saiu a aprovação. Sem isso, uma coluna renomeada
+    // faria "Tempo médio de aprovação" sumir do slide sem ninguém saber por quê.
+    if (nomeAba === BD_ABA_CORRETIVAS) {
+      if (cAprov >= 0 || cTaprov >= 0) {
+        Logger.log('BD-CORRETIVAS: aprovação — data de "' +
+                   (cAprov >= 0 ? data[0][cAprov] : '(não achada)') + '" (' +
+                   saida.filter(it => it.dtAprovado).length + ' linha(s)), espera de "' +
+                   (cTaprov >= 0 ? data[0][cTaprov] : '(não achada)') + '" (' +
+                   saida.filter(it => it.tempoAprovarSeg != null).length + ' linha(s)).');
+      } else {
+        Logger.log('BD-CORRETIVAS: nenhuma coluna de aprovação reconhecida. ' +
+                   'Cabeçalho real: ' + data[0].filter(String).join(' | '));
+      }
+    }
+
     // Só cacheia resultado bom: leitura vazia por falha transitória não pode
     // ficar grudada na rodada inteira.
     if (saida.length) _propBaseCache[nomeAba] = saida;
@@ -345,6 +478,142 @@ function inspecionarBase(nomeAba) {
       const ex = String(data[1][i] || '').substring(0, 40);
       if (h || ex) Logger.log('  [' + String(i).padStart(2) + '] ' + String(h).padEnd(32) + ' ex.: ' + ex);
     });
+  } catch (e) {
+    Logger.log('Erro: ' + e.message);
+  }
+}
+
+// Procura coluna de "motivo da pausa" (ou parecido) na BD-CORRETIVAS, pra
+// avaliar se dá pra montar um slide de "Chamados Pendentes por Motivo",
+// equivalente honesto ao "Chamados Pendentes (Backlog) por Estado" dos
+// Megas (que lá vem de aba digitada à mão, sem fonte bruta — não existe
+// pro portfólio de Propriedades). Mostra TODAS as colunas do cabeçalho e,
+// pra qualquer uma cujo nome pareça ser de status/motivo/pausa, o
+// vocabulário completo (valor + quantas linhas têm esse valor) — mesmo
+// espírito de conferirSLA(): responder "que coluna é essa e o que tem
+// dentro" sem abrir a planilha.
+function diagnosticarMotivoPausa(nomeAba) {
+  const aba = nomeAba || BD_ABA_CORRETIVAS;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO — MOTIVO DA PAUSA — ' + aba);
+  Logger.log('======================================================');
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _propAba_(ss, aba);
+    if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) { Logger.log('Aba vazia.'); return; }
+
+    const hdrOriginal = data[0];
+    const hdrNorm      = hdrOriginal.map(_histNorm_);
+
+    Logger.log('\nTodas as colunas (' + hdrOriginal.length + '):');
+    hdrOriginal.forEach((h, i) => {
+      if (String(h).trim()) Logger.log('  [' + String(i).padStart(2) + '] ' + h);
+    });
+
+    // Candidatas: qualquer cabeçalho que contenha uma dessas palavras.
+    const CHAVES = ['motivo', 'pausa', 'status', 'situacao', 'fase', 'etapa', 'estagio'];
+    const candidatas = [];
+    hdrNorm.forEach((h, i) => {
+      if (CHAVES.some(k => h.indexOf(k) >= 0)) candidatas.push(i);
+    });
+
+    if (!candidatas.length) {
+      Logger.log('\n⚠ Nenhuma coluna com nome parecido com motivo/pausa/status/situação/fase/etapa.');
+      Logger.log('Se a coluna existir com outro nome, veja a lista completa acima e me diga qual é.');
+      return;
+    }
+
+    candidatas.forEach(ci => {
+      Logger.log('\n--- Coluna [' + ci + '] "' + hdrOriginal[ci] + '" ---');
+      const vocab = {};
+      for (let r = 1; r < data.length; r++) {
+        const v = String(data[r][ci] || '').trim() || '(vazio)';
+        vocab[v] = (vocab[v] || 0) + 1;
+      }
+      Object.keys(vocab).sort((a, b) => vocab[b] - vocab[a]).forEach(v => {
+        Logger.log('  ' + String(vocab[v]).padStart(6) + '  ' + v);
+      });
+    });
+  } catch (e) {
+    Logger.log('Erro: ' + e.message);
+  }
+}
+
+// Confere a lógica que o usuário descreveu pro backlog "por motivo": não
+// existe coluna "Motivo" separada — inspecionarBase mostrou "Pausado por"
+// [8], "Pausado em" [9] e "Estado" [28]. A hipótese é: pra um chamado
+// ABERTO (Estado ≠ Fechada/Cancelada), se "Pausado por"/"Pausado em"
+// estiver preenchido, o valor de ESTADO nesse momento já É o motivo da
+// pausa (ex.: "Aguardando Aprovação Superior"); se não tiver pausa
+// registrada, é "Em resolução" — não importa o que Estado diga.
+//
+// Mostra, separadamente, o vocabulário de Estado dos abertos COM pausa e
+// dos abertos SEM pausa — se a hipótese estiver certa, o primeiro grupo
+// tem vários valores diferentes e ricos (os "motivos"), e o segundo tem
+// um valor só (ou poucos, genéricos) repetido em todas as linhas.
+function diagnosticarEstadosPausa(nomeAba) {
+  const aba = nomeAba || BD_ABA_CORRETIVAS;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO — ESTADO x PAUSA — ' + aba);
+  Logger.log('======================================================');
+  try {
+    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const sheet = _propAba_(ss, aba);
+    if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
+
+    const data = sheet.getDataRange().getDisplayValues();
+    if (data.length < 2) { Logger.log('Aba vazia.'); return; }
+
+    const hdr = data[0].map(_histNorm_);
+    const col = nome => hdr.findIndex(h => h.indexOf(nome) >= 0);
+    const cEstado     = col('estado');
+    const cPausadoPor = col('pausado por');
+    const cPausadoEm  = col('pausado em');
+    if (cEstado < 0) { Logger.log('⚠ Coluna Estado não encontrada.'); return; }
+
+    Logger.log('Colunas: Estado=[' + cEstado + ']  Pausado por=[' + cPausadoPor +
+               ']  Pausado em=[' + cPausadoEm + ']');
+
+    let abertos = 0, pausados = 0, semPausa = 0;
+    const vocabPausado  = {};
+    const vocabSemPausa = {};
+
+    for (let r = 1; r < data.length; r++) {
+      const estado = String(data[r][cEstado] || '').trim();
+      const n = _histNorm_(estado);
+      if (n === 'fechada' || n === 'fechado' || n === 'cancelada') continue;
+      abertos++;
+
+      const temPausa = (cPausadoPor >= 0 && String(data[r][cPausadoPor] || '').trim()) ||
+                        (cPausadoEm  >= 0 && String(data[r][cPausadoEm]  || '').trim());
+
+      if (temPausa) {
+        pausados++;
+        vocabPausado[estado] = (vocabPausado[estado] || 0) + 1;
+      } else {
+        semPausa++;
+        vocabSemPausa[estado] = (vocabSemPausa[estado] || 0) + 1;
+      }
+    }
+
+    Logger.log('\nTotal de linhas: ' + (data.length - 1));
+    Logger.log('Abertos (Estado ≠ Fechada/Cancelada): ' + abertos);
+    Logger.log('  · com Pausado por/em preenchido: ' + pausados);
+    Logger.log('  · sem pausa registrada: ' + semPausa);
+
+    const imprimeVocab = (titulo, vocab) => {
+      Logger.log('\n--- ' + titulo + ' ---');
+      const chaves = Object.keys(vocab);
+      if (!chaves.length) { Logger.log('  (nenhum registro)'); return; }
+      chaves.sort((a, b) => vocab[b] - vocab[a]).forEach(v => {
+        Logger.log('  ' + String(vocab[v]).padStart(6) + '  ' + (v || '(vazio)'));
+      });
+    };
+    imprimeVocab('ESTADO dos ABERTOS **COM** pausa (candidatos a "motivo")', vocabPausado);
+    imprimeVocab('ESTADO dos ABERTOS **SEM** pausa (deveria virar "Em resolução")', vocabSemPausa);
   } catch (e) {
     Logger.log('Erro: ' + e.message);
   }
@@ -563,6 +832,47 @@ function indicadoresAcumulado_(nomeAba, ano, mesIndexAte, janela) {
            parcial: !_mesEncerrado_(ano, mesIndexAte) };
 }
 
+// Mesma ideia de indicadoresAcumulado_ (ano inteiro até o mês, inclusive),
+// mas filtrado pra equipe PROPRIEDADES — usada pelo card "ACUMULADO" de
+// Slide_Preventivas.gs, mesmo corte do resto do deck (nada de
+// Facilities/Terceiros).
+function obterAcumuladoPropriedades_(nomeAba, ano, mesIndexAte, janela) {
+  const resolver = nomeAba === BD_ABA_CORRETIVAS
+    ? (it => _propEquipeCorretiva_(it.responsaveis))
+    : (it => _propEquipePreventiva_(it.fechadoPor));
+  const ini   = new Date(Date.UTC(ano, 0, 1));
+  const fim   = new Date(Date.UTC(ano, mesIndexAte + 1, 1));
+  const campo = (janela || SLA_JANELA_PADRAO) === 'fim' ? 'dtFechado' : 'dtReporte';
+  const lista = _propLerBase_(nomeAba).filter(it => {
+    const d = it[campo];
+    return d && d >= ini && d < fim && resolver(it) === 'PROPERTY';
+  });
+  return { sla: calcularSLA_(lista), execucao: calcularExecucao_(lista),
+           parcial: !_mesEncerrado_(ano, mesIndexAte) };
+}
+
+// Relação de preventivas da equipe PROPRIEDADES que NÃO cumpriram o SLA no
+// mês de referência, agrupadas por descrição do serviço (mesma lógica do
+// slide equivalente dos Megas — megas-mensal/Slide02_Preventivas.gs — só
+// que sem chips de equipe: aqui só existe uma equipe pra mostrar). Serviço
+// sem descrição na base cai fora da lista (não dá pra citar "o quê" sem
+// nome), mas ainda conta pro SLA normalmente — só não aparece nesta relação.
+function obterPreventivasForaSla_(ano, mesIndex, janela) {
+  const lista = preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela)
+    .filter(it => _propEquipePreventiva_(it.fechadoPor) === 'PROPERTY')
+    .filter(it => _slaClasse_(it.sla) === 'NAO')
+    .filter(it => it.descricao);
+
+  const porDescricao = {};
+  lista.forEach(it => {
+    porDescricao[it.descricao] = (porDescricao[it.descricao] || 0) + 1;
+  });
+
+  return Object.keys(porDescricao)
+    .sort((a, b) => porDescricao[b] - porDescricao[a])
+    .map(nome => ({ nome: nome, qtd: porDescricao[nome] }));
+}
+
 // Painel do mês: execução e SLA lado a lado, por imóvel, com Megas x demais
 // e o acumulado do ano.
 function conferirPreventivas(ano, mes, nomeAba) {
@@ -680,6 +990,17 @@ function _propEhTerceiro_(quemFechou) {
   return n.indexOf('ronda') >= 0 || n.indexOf('portaria') >= 0;
 }
 
+// Cópia de megas-mensal/02_Dados.gs (mesmo nome, mesma base BD-CORRETIVAS —
+// ver CLAUDE.md sobre copiar por valor entre projetos separados).
+function _normalizarPrioridade_(v) {
+  const n = _histNorm_(v);
+  if (n.indexOf('emergenc') >= 0) return 'Emergencial';
+  if (n.indexOf('alta') >= 0)     return 'Alta';
+  if (n.indexOf('normal') >= 0)   return 'Normal';
+  if (n.indexOf('baixa') >= 0)    return 'Baixa';
+  return '';
+}
+
 // Resolve a equipe de uma PREVENTIVA pela coluna "Fechado por".
 // Diferente das corretivas, aqui é um nome só, não uma lista — quem fechou
 // é quem executou.
@@ -690,21 +1011,64 @@ function _propEquipePreventiva_(quemFechou) {
   return '';   // sem quem fechou (ainda aberta) ou nome novo
 }
 
-// Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
-// apresentação pede, mais TERCEIROS (ronda e portaria de cada
-// empreendimento), que é execução contratada e não da equipe interna.
-function indicadoresPorEquipe_(ano, mesIndex, janela) {
+// Resolve a equipe de uma CORRETIVA pela coluna "Responsáveis" — lista
+// separada por vírgula, pode ter mais de um nome no mesmo chamado. Mesma
+// regra de prioridade dos Megas (_resolverEquipeResponsaveis_ em
+// megas-mensal/02_Dados.gs): PROPERTY vence se estiver na lista, senão
+// FACILITIES, senão OPERACAO.
+function _propEquipeCorretiva_(responsaveisTxt) {
+  if (_propEhTerceiro_(responsaveisTxt)) return 'TERCEIROS';
+  const equipes = String(responsaveisTxt || '').split(',')
+    .map(n => _PROP_EQUIPE_[_histNorm_(n.trim())])
+    .filter(Boolean);
+  if (equipes.indexOf('PROPERTY') >= 0) return 'PROPERTY';
+  if (equipes.indexOf('FACILITIES') >= 0) return 'FACILITIES';
+  if (equipes.indexOf('OPERACAO') >= 0) return 'OPERACAO';
+  return '';   // ninguém reconhecido na lista, ou lista vazia
+}
+
+// Agrupa itens JÁ FILTRADOS (mês, e opcionalmente Megas x demais) por
+// equipe e calcula SLA + execução de cada grupo. Compartilhado entre
+// preventivas (_propEquipePreventiva_) e corretivas (_propEquipeCorretiva_)
+// — só muda a função que resolve a equipe de cada item.
+function _propAgruparPorEquipe_(itens, resolverEquipeFn) {
   const porEq = {};
-  preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela).forEach(it => {
-    const eq = _propEquipePreventiva_(it.fechadoPor) || 'NÃO IDENTIFICADA';
+  itens.forEach(it => {
+    const eq = resolverEquipeFn(it) || 'NÃO IDENTIFICADA';
     (porEq[eq] = porEq[eq] || []).push(it);
   });
   const saida = {};
   Object.keys(porEq).forEach(eq => {
     saida[eq] = { sla: calcularSLA_(porEq[eq]), execucao: calcularExecucao_(porEq[eq]) };
   });
+  return saida;
+}
+
+// Indicadores por EQUIPE no mês — o corte "Propriedades x Facilities" que a
+// apresentação pede, mais TERCEIROS (ronda e portaria de cada
+// empreendimento), que é execução contratada e não da equipe interna.
+// Sem corte Megas x demais — usada por conferirEquipes(); para o slide,
+// ver indicadoresPorEquipeSegmento_.
+function indicadoresPorEquipe_(ano, mesIndex, janela) {
+  const itens = preventivasDoMes_(BD_ABA_PREVENTIVAS, ano, mesIndex, janela);
+  const saida = _propAgruparPorEquipe_(itens, it => _propEquipePreventiva_(it.fechadoPor));
   saida.parcial = !_mesEncerrado_(ano, mesIndex);
   return saida;
+}
+
+// Mesma ideia de indicadoresPorEquipe_, mas com o corte Megas x demais que
+// os slides de Preventivas/Corretivas precisam — genérica na base (aba +
+// resolvedor de equipe) para servir às duas, sem duplicar a lógica de
+// filtro por mês/mega.
+function indicadoresPorEquipeSegmento_(nomeAba, resolverEquipeFn, ano, mesIndex, janela) {
+  const itens  = preventivasDoMes_(nomeAba, ano, mesIndex, janela);
+  const megas  = itens.filter(it => _propEhMega_(it.cc));
+  const demais = itens.filter(it => !_propEhMega_(it.cc));
+  return {
+    megas  : _propAgruparPorEquipe_(megas, resolverEquipeFn),
+    demais : _propAgruparPorEquipe_(demais, resolverEquipeFn),
+    parcial: !_mesEncerrado_(ano, mesIndex)
+  };
 }
 
 // Mostra a divisão por equipe com o volume de cada uma — inclusive a ronda,
@@ -744,4 +1108,585 @@ function conferirEquipes(ano, mes) {
                '(sem "Fechado por") ou nome novo — acrescente em _PROP_EQUIPE_.');
   }
   if (d.parcial) Logger.log('\n  ⚠ mês ainda aberto — números provisórios.');
+}
+
+
+// ==========================================
+// HELPERS PARA SLIDES
+// ==========================================
+// Mês de referência — usa a última célula da aba DADOS ou fallback de calendário.
+// Propriedades tem uma única apresentação, sem o esquema de projeto ativo dos Megas.
+function obterMesReferencia_() {
+  const hoje = new Date();
+  let idx = -1;
+  try {
+    const ss    = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
+    const sheets = ss.getSheets();
+    const sheet = sheets[0]; // primeira aba
+    const cab   = String(sheet.getRange(1, 2).getDisplayValue() || '').toUpperCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    // Procura por padrão de mês em português: JAN, FEV, MAR, etc.
+    const nomesMeses = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
+                        'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+    idx = nomesMeses.findIndex(m => cab.indexOf(m) === 0);
+  } catch (e) {
+    Logger.log('Mês de referência: usando fallback de calendário. ' + e.message);
+  }
+  if (idx < 0) {
+    const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+    idx = ant.getMonth();
+  }
+  const ano = idx > hoje.getMonth() ? hoje.getFullYear() - 1 : hoje.getFullYear();
+  const nomesMesesCompleto = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
+                               'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+  const nomesCurto = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const nome = nomesMesesCompleto[idx];
+  return {
+    index: idx,
+    nome: nome,
+    curto: nomesCurto[idx],
+    ano: ano,
+    label: nome + ' / ' + ano
+  };
+}
+
+// % de itens concluídos nos relatórios de Recebimento de Obras (Esteio +
+// Curitiba — "Análise de Projetos" é um relatório à parte, com o próprio
+// critério de conclusão, e não entra nesta média). Lê a mesma REL_RECEBIMENTO
+// e o mesmo _tabLerAba_ que Slide_RecebimentoObras.gs usa para desenhar as
+// tabelas — um número só de fonte, em vez de recalcular por conta própria e
+// arriscar divergir do que a tabela mostra.
+function obterRecebimentoObrasResumo_() {
+  let total = 0, concluidos = 0;
+  try {
+    ['esteio', 'ctba'].forEach(k => {
+      const rel = REL_RECEBIMENTO[k];
+      const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+      total += linhas.length;
+      concluidos += linhas.filter(rel.testeConcluido).length;
+    });
+  } catch (e) {
+    Logger.log('obterRecebimentoObrasResumo_: ' + e.message);
+    return { total: 0, concluidos: 0, pct: null };
+  }
+  return { total: total, concluidos: concluidos, pct: total ? (concluidos / total) * 100 : null };
+}
+
+// Backlog aberto do mês anterior (mesmo índice de mês, um a menos) — só
+// para o delta do card de KPI.
+function _propMesAnterior_(ano, mesIndex) {
+  return mesIndex === 0 ? { ano: ano - 1, index: 11 } : { ano: ano, index: mesIndex - 1 };
+}
+
+// Indicadores do portfólio para o mês de referência
+function obterIndicadoresPortfolio_() {
+  const ref = obterMesReferencia_();
+  const dadosPrev = indicadoresPortfolio_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+  const dadosCorr = indicadoresPortfolio_(BD_ABA_CORRETIVAS, ref.ano, ref.index);
+  const recebimento = obterRecebimentoObrasResumo_();
+
+  const backlogAtual = obterBacklogPorCC_(ref.ano, ref.index).reduce((s, b) => s + b.total, 0);
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+  const backlogAnterior = obterBacklogPorCC_(mesAnt.ano, mesAnt.index).reduce((s, b) => s + b.total, 0);
+
+  return {
+    pctRecebimentoObras: recebimento.pct || 0,
+    recebimentoConcluidos: recebimento.concluidos,
+    recebimentoTotal: recebimento.total,
+    slaPreventivas: dadosPrev.total.sla.pct || 0,
+    previntivasRealizado: dadosPrev.total.execucao.realizadas || 0,
+    previntivasTotal: dadosPrev.total.execucao.previstas || 0,
+    execucaoCorretivas: dadosCorr.total.execucao.pct || 0,
+    corretvasRealizado: dadosCorr.total.execucao.realizadas || 0,
+    corretvasTotal: dadosCorr.total.execucao.previstas || 0,
+    backlogTotal: backlogAtual,
+    backlogVariacao: backlogAtual - backlogAnterior
+  };
+}
+
+// Indicadores acumulados por equipe, com o corte Megas x demais — usa
+// indicadoresPorEquipeSegmento_ nas duas bases (preventivas por "Fechado
+// por", corretivas por "Responsáveis"). As chaves de equipe são as que
+// _PROP_EQUIPE_ produz de fato (PROPERTY/FACILITIES/OPERACAO/TERCEIROS) —
+// não "PROPRIEDADES", que não existe no mapa e sempre lia 0.
+// Soma dois blocos SLA (mesmo formato de calcularSLA_) — usado para juntar
+// Megas + Demais num total só. Soma CONTAGEM, nunca percentual (a média de
+// duas taxas com bases diferentes não é a taxa do total).
+function _propMergeSLA_(a, b) {
+  const cumpridos    = (a ? a.cumpridos    : 0) + (b ? b.cumpridos    : 0);
+  const naoCumpridos = (a ? a.naoCumpridos : 0) + (b ? b.naoCumpridos : 0);
+  const base = cumpridos + naoCumpridos;
+  return { cumpridos: cumpridos, naoCumpridos: naoCumpridos, base: base,
+           pct: base ? (cumpridos / base) * 100 : null };
+}
+
+// Idem para execução (mesmo formato de calcularExecucao_).
+function _propMergeExecucao_(a, b) {
+  const previstas  = (a ? a.previstas  : 0) + (b ? b.previstas  : 0);
+  const realizadas = (a ? a.realizadas : 0) + (b ? b.realizadas : 0);
+  return { previstas: previstas, realizadas: realizadas,
+           pct: previstas ? (realizadas / previstas) * 100 : null };
+}
+
+// Recorta indicadoresPorEquipeSegmento_ pra UMA equipe só (Megas, Demais e
+// as duas somadas) — base de obterIndicadoresPropriedades_ logo abaixo.
+function _propIndicadoresEquipeUnica_(seg, equipe) {
+  const bloco = grupo => {
+    const g = grupo && grupo[equipe];
+    return { sla: g ? g.sla : calcularSLA_([]), execucao: g ? g.execucao : calcularExecucao_([]) };
+  };
+  const megas = bloco(seg.megas), demais = bloco(seg.demais);
+  return {
+    megas: megas,
+    demais: demais,
+    total: { sla: _propMergeSLA_(megas.sla, demais.sla), execucao: _propMergeExecucao_(megas.execucao, demais.execucao) },
+    parcial: seg.parcial
+  };
+}
+
+// SLA + execução filtrados pra equipe PROPRIEDADES (equipe 'PROPERTY' no
+// mapa _PROP_EQUIPE_), com o corte Megas x Demais e o total das duas
+// somado. Usada por TODOS os slides de indicador deste deck — a
+// apresentação de Propriedades não mostra número de Facilities nem de
+// Terceiros (pedido do usuário: "não é para aparecer nada de facilities,
+// apenas de propriedades").
+function obterIndicadoresPropriedades_(nomeAba, ano, mesIndex, janela) {
+  const resolver = nomeAba === BD_ABA_CORRETIVAS
+    ? (it => _propEquipeCorretiva_(it.responsaveis))
+    : (it => _propEquipePreventiva_(it.fechadoPor));
+  const seg = indicadoresPorEquipeSegmento_(nomeAba, resolver, ano, mesIndex, janela);
+  return _propIndicadoresEquipeUnica_(seg, 'PROPERTY');
+}
+
+// Cumpridos/não cumpridos do SLA de Propriedades no mês de referência, com
+// o corte Megas x Demais — é só o que Slide_Preventivas.gs/Slide_
+// Corretivas.gs desenham (uma linha "Propriedades" por bloco; nada de
+// Facilities/Terceiros).
+function obterIndicadoresAcumulado_() {
+  const ref = obterMesReferencia_();
+  const prev = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+  const corr = obterIndicadoresPropriedades_(BD_ABA_CORRETIVAS,  ref.ano, ref.index);
+
+  const bloco = b => ({
+    properties_cumpridos:     b.sla.cumpridos,
+    properties_nao_cumpridos: b.sla.naoCumpridos
+  });
+
+  return {
+    preventivas:       bloco(prev.megas),
+    preventivasDemais: bloco(prev.demais),
+    corretivas:        bloco(corr.megas),
+    corretvasDemais:   bloco(corr.demais)
+  };
+}
+
+// ==========================================
+// DASHBOARD OPERACIONAL — 2 quadrantes comparativos
+// ==========================================
+// Monta os 3 pontos no tempo (mês atual / mês anterior / mesmo mês ano
+// anterior) que o grid comparativo do Dashboard Operacional
+// (Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
+// Dashboard.gs) precisa — chamando obterIndicadoresPropriedades_/
+// obterBacklogPorCC_ com (ano, mesIndex) diferentes. Nenhum dado novo: são
+// as MESMAS funções que Preventivas/Backlog já usam pro mês corrente, já
+// filtradas pra equipe Propriedades.
+//
+// Só Preventivas e Backlog entram — Corretivas e o corte Megas x Demais
+// saíram do Dashboard por pedido do usuário (trabalhando por partes). O
+// mapa fica só com as chaves que Slide_IndicadoresGerais.gs lê hoje; se
+// Corretivas voltar ao grid, é só recalcular corr[] igual a prev[] abaixo.
+//
+// Recebimento de Obras fica FORA deste grid, de propósito: a planilha
+// (REL_RECEBIMENTO) é uma LISTA VIVA de pendências, não um registro
+// histórico por mês — não existe "quantos estavam concluídos em maio" pra
+// reconstruir, a linha de uma pendência já concluída não guarda a data em
+// que isso aconteceu. Forçar uma coluna "mês anterior" aqui seria inventar
+// dado. Ele já aparece como card avulso (sem comparação histórica) no
+// primeiro slide de KPIs — ver obterIndicadoresPortfolio_ acima.
+/**
+ * TEMPO MÉDIO DE APROVAÇÃO (horas) e % CONCLUSÃO HISTÓRICO, no mês pedido.
+ *
+ * Nos Megas os dois são células DIGITADAS na aba DADOS — ninguém os calcula.
+ * Aqui saem da BD-CORRETIVAS, com estas definições:
+ *
+ * · TEMPO MÉDIO DE APROVAÇÃO = média da coluna "Tempo para aprovar
+ *   (segundos)" (AG), em horas, dos chamados APROVADOS dentro do mês — a
+ *   janela vem de "Aprovado em" (P).
+ *
+ *   O valor sai de AG, NÃO de (P − B). A base já calcula essa espera; refazer
+ *   por subtração assumiria que ela é corrida, e se AG considerar horário
+ *   útil ou calendário de SLA os dois números divergem sem que ninguém saiba
+ *   qual está certo. A subtração fica de RESERVA, só para a linha que tiver
+ *   data de aprovação e não tiver AG — e a divergência entre as duas é
+ *   registrada no Logger, que é como se descobre a regra de AG sem perguntar.
+ *
+ *   A janela é a da aprovação, não a da abertura — mesma escolha que já vale
+ *   para o tempo de atendimento, que usa a janela do fechamento: o indicador
+ *   fala do que ACONTECEU no mês, não do que foi aberto nele. Chamado sem
+ *   aprovação fica de fora (não é aprovação instantânea, é aprovação que não
+ *   houve).
+ *
+ * · % CONCLUSÃO HISTÓRICO = de tudo que foi aberto ATÉ o fim do mês, quanto
+ *   já estava fechado ali. É acumulado desde o começo da base, não do mês —
+ *   é o que "histórico" quer dizer, e é o que faz o número ser comparável
+ *   entre meses: um mês com poucos chamados não distorce a série.
+ *   Equivale a  fechados(até D) ÷ criados(até D).
+ *
+ * Devolve { tempoAprovacaoH, conclusaoHistoricoPct, aprovadosNoMes,
+ *           semDataAprovacao } — nulls quando não há base, nunca zero: "não
+ * houve o que medir" é diferente de "o resultado foi zero" (lição 3).
+ */
+function obterAprovacaoEConclusao_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+
+  const itens = _propLerCorretivas_()
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  const esperas = [];              // em SEGUNDOS
+  let semDataAprovacao = 0;        // aprovado no mês, mas sem espera utilizável
+  let porSubtracao = 0;            // caiu na reserva (P − B)
+  let divergentes = 0;             // AG e (P − B) discordam em mais de 1h
+  let criadosAte = 0, fechadosAte = 0;
+
+  itens.forEach(it => {
+    // --- Tempo de aprovação: aprovados DENTRO do mês ---
+    if (it.dtAprovado && it.dtAprovado >= refIni && it.dtAprovado < refFim) {
+      const porSub = (it.dtReporte && it.dtAprovado >= it.dtReporte)
+        ? (it.dtAprovado - it.dtReporte) / 1000
+        : null;
+
+      if (it.tempoAprovarSeg != null && it.tempoAprovarSeg >= 0) {
+        esperas.push(it.tempoAprovarSeg);
+        // Discordância grande entre a coluna e a subtração indica que AG não é
+        // tempo corrido. Vale saber, não vale corrigir por conta própria.
+        if (porSub != null && Math.abs(porSub - it.tempoAprovarSeg) > 3600) divergentes++;
+      } else if (porSub != null) {
+        esperas.push(porSub);
+        porSubtracao++;
+      } else {
+        // Sem AG e com data de aprovação anterior ao reporte: data trocada,
+        // não espera negativa. Uma média com número negativo é pior que uma
+        // média com um caso a menos.
+        semDataAprovacao++;
+      }
+    }
+
+    // --- Conclusão histórica: acumulado até o fim do mês ---
+    if (it.dtReporte && it.dtReporte < refFim) {
+      criadosAte++;
+      if (_bdChamadoFechado_(it.estado, it.dtFechado) && it.dtFechado && it.dtFechado < refFim) {
+        fechadosAte++;
+      }
+    }
+  });
+
+  return {
+    tempoAprovacaoH: esperas.length
+      ? esperas.reduce((soma, seg) => soma + seg, 0) / esperas.length / 3600
+      : null,
+    conclusaoHistoricoPct: criadosAte > 0 ? (fechadosAte / criadosAte) * 100 : null,
+    aprovadosNoMes: esperas.length,
+    semDataAprovacao: semDataAprovacao,
+    porSubtracao: porSubtracao,
+    divergentes: divergentes,
+    criadosAte: criadosAte,
+    fechadosAte: fechadosAte
+  };
+}
+
+
+function obterDashboardPropriedades_() {
+  const ref    = obterMesReferencia_();
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+  const anoAnt = { ano: ref.ano - 1, index: ref.index };
+  const pontos = [
+    { ano: ref.ano,    index: ref.index },
+    { ano: mesAnt.ano, index: mesAnt.index },
+    { ano: anoAnt.ano, index: anoAnt.index }
+  ];
+
+  // Só a equipe PROPRIEDADES — Facilities e Terceiros não aparecem nesta
+  // apresentação (pedido do usuário).
+  const prev = pontos.map(p => obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, p.ano, p.index));
+  const backlog = pontos.map(p =>
+    obterBacklogPorCC_(p.ano, p.index).reduce((s, b) => s + b.total, 0));
+
+  const nomesCurto = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const headers = pontos.map(p => nomesCurto[p.index] + "'" + String(p.ano).slice(-2));
+
+  // CHAMADOS (corretivas): entrada e saída do mês, nos mesmos 3 pontos.
+  //
+  // O slide NÃO desenha estas três linhas (pedido do usuário — ver
+  // Slide_IndicadoresGerais.gs), mas o cálculo fica: é ele que sustenta a
+  // conferência da identidade logo abaixo, que é o que faz um mês que não
+  // fecha aparecer no log em vez de na reunião. Ficam também no mapa, para
+  // voltar ao slide sem precisar reescrever nada.
+  const fluxo = pontos.map(p => obterFluxoCorretivasPropriedades_(p.ano, p.index));
+  const aprov = pontos.map(p => obterAprovacaoEConclusao_(p.ano, p.index));
+
+  const linha3 = (a, b, c) => ({ atual: a, mesAnt: b, anoAnt: c });
+  const map = new Map();
+  map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
+  map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
+  map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
+  map.set('Chamados abertos',       linha3(fluxo[0].mensal.criados,  fluxo[1].mensal.criados,  fluxo[2].mensal.criados));
+  map.set('Chamados fechados',      linha3(fluxo[0].mensal.fechados, fluxo[1].mensal.fechados, fluxo[2].mensal.fechados));
+  map.set('Tempo médio de atendimento',
+    linha3(fluxo[0].mensal.tempoMedioH, fluxo[1].mensal.tempoMedioH, fluxo[2].mensal.tempoMedioH));
+  map.set('Tempo médio de aprovação',
+    linha3(aprov[0].tempoAprovacaoH, aprov[1].tempoAprovacaoH, aprov[2].tempoAprovacaoH));
+  map.set('Percentual de conclusão histórico',
+    linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
+
+  Logger.log('Dashboard: aprovação — ' + aprov[0].aprovadosNoMes + ' aprovado(s) no mês' +
+             (aprov[0].tempoAprovacaoH == null ? ' (sem base para o tempo médio)' :
+              ', média ' + aprov[0].tempoAprovacaoH.toFixed(1) + 'h') +
+             (aprov[0].porSubtracao ? ' · ' + aprov[0].porSubtracao +
+              ' sem "Tempo para aprovar", calculado por (Aprovado em − Data de reporte)' : '') +
+             (aprov[0].divergentes ? ' · ⚠ ' + aprov[0].divergentes +
+              ' com "Tempo para aprovar" divergindo da subtração em mais de 1h — ' +
+              'a coluna provavelmente não é tempo corrido (horário útil?)' : '') +
+             (aprov[0].semDataAprovacao ? ' · ' + aprov[0].semDataAprovacao +
+              ' sem espera utilizável, fora da conta' : ''));
+  Logger.log('Dashboard: conclusão histórica — ' + aprov[0].fechadosAte + ' fechados de ' +
+             aprov[0].criadosAte + ' abertos até o fim do mês' +
+             (aprov[0].conclusaoHistoricoPct == null ? '' :
+              ' = ' + aprov[0].conclusaoHistoricoPct.toFixed(1) + '%'));
+
+  // Conferência da identidade estoque × fluxo no mês de referência. Não
+  // corrige nada — só avisa, que é o que permite o erro aparecer antes da
+  // reunião em vez de durante.
+  const esperado = backlog[1] + fluxo[0].mensal.criados - fluxo[0].mensal.fechados;
+  if (esperado !== backlog[0]) {
+    Logger.log('Dashboard: backlog(mês ant)=' + backlog[1] + ' + criados=' + fluxo[0].mensal.criados +
+               ' − fechados=' + fluxo[0].mensal.fechados + ' = ' + esperado +
+               ', mas backlog(mês)=' + backlog[0] + ' — difere em ' + (backlog[0] - esperado) +
+               '. Esperado quando o mês ainda está correndo; se o mês estiver fechado, investigue.');
+  }
+
+  return { headers: headers, map: map, parcial: prev[0].parcial };
+}
+
+// Backlog por Centro de Custos, em aberto NO FIM do mês (ano/mesIndex —
+// default o mês de referência). Usa _histAbertoNoMes_, a MESMA definição de
+// "aberto no mês" do resto do deck — não "aberto agora" — para que esta
+// tabela e o KPI de Indicadores Gerais (que soma este mesmo resultado)
+// nunca divirjam. Lição do backlog dos Megas (CLAUDE.md): estoque e KPI têm
+// que sair da mesma fonte, senão o mês não fecha.
+//
+// Filtrado pra equipe PROPRIEDADES via "Responsáveis" (_propEquipeCorretiva_)
+// — mesmo corte do resto do deck, e mesmo padrão que
+// megas-mensal/Slide_BacklogClientesProperties.gs já usa pra separar
+// backlog aberto por equipe responsável a partir da mesma coluna.
+function obterBacklogPorCC_(ano, mesIndex) {
+  const ref     = obterMesReferencia_();
+  const anoRef  = ano != null ? ano : ref.ano;
+  const mesRef  = mesIndex != null ? mesIndex : ref.index;
+  const refIni  = new Date(Date.UTC(anoRef, mesRef, 1));
+  const refFim  = new Date(Date.UTC(anoRef, mesRef + 1, 1));
+
+  const abertos = _propLerCorretivas_()
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+  const porCC = {};
+  abertos.forEach(it => {
+    const cc = it.cc || 'Sem Centro de Custos';
+    porCC[cc] = (porCC[cc] || 0) + 1;
+  });
+  return Object.keys(porCC).map(cc => ({ cc, total: porCC[cc] })).sort((a, b) => b.total - a.total);
+}
+
+
+// ==========================================
+// INDICADORES DE CORRETIVAS — Slide_Corretivas.gs
+// ==========================================
+// Chamados criados/fechados e tempo médio entre criado e fechado, mensal e
+// acumulado do ano — os três direto da BD-CORRETIVAS (mesma base e mesma
+// regra de "fechado" — _bdChamadoFechado_ — do resto do deck), filtrados
+// pra equipe PROPRIEDADES via "Responsáveis". "Índice de disponibilidade"
+// (que o slide equivalente dos Megas mostra) NÃO entra: lá vem de uma aba
+// digitada à mão por Mega, sem fórmula na base bruta — não existe fonte
+// equivalente pro portfólio de Propriedades, e inventar a conta violaria a
+// mesma regra que já tirou Recebimento de Obras do Dashboard (nada de dado
+// reconstruído/inventado). Ver decisão do usuário no histórico do projeto.
+function obterFluxoCorretivasPropriedades_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+  const anoIni = new Date(Date.UTC(ano, 0, 1));
+
+  const itens = _propLerCorretivas_().filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  let mCriados = 0, mFechados = 0, aCriados = 0, aFechados = 0;
+  const temposMes = [], temposAno = [];
+
+  itens.forEach(it => {
+    if (it.dtReporte && it.dtReporte >= refIni && it.dtReporte < refFim) mCriados++;
+    if (it.dtReporte && it.dtReporte >= anoIni && it.dtReporte < refFim) aCriados++;
+
+    const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
+    if (fechado && it.dtReporte && it.dtFechado >= refIni && it.dtFechado < refFim) {
+      mFechados++;
+      temposMes.push(it.dtFechado - it.dtReporte);
+    }
+    if (fechado && it.dtReporte && it.dtFechado >= anoIni && it.dtFechado < refFim) {
+      aFechados++;
+      temposAno.push(it.dtFechado - it.dtReporte);
+    }
+  });
+
+  // Média em horas, só de quem fechou DENTRO da janela e tem as duas datas —
+  // não dá pra medir "tempo até fechar" de quem ainda está aberto.
+  const mediaHoras = arr => arr.length
+    ? arr.reduce((soma, ms) => soma + ms, 0) / arr.length / 3600000
+    : null;
+
+  return {
+    mensal:    { criados: mCriados, fechados: mFechados, tempoMedioH: mediaHoras(temposMes) },
+    acumulado: { criados: aCriados, fechados: aFechados, tempoMedioH: mediaHoras(temposAno) }
+  };
+}
+
+// Últimos `n` meses até o mês de referência (inclusive), mais antigo
+// primeiro — janela do gráfico de Backlog Emergencial.
+function _propUltimosMeses_(ref, n) {
+  const lista = [];
+  for (let i = n - 1; i >= 0; i--) {
+    let idx = ref.index - i, ano = ref.ano;
+    while (idx < 0) { idx += 12; ano--; }
+    lista.push({ ano: ano, index: idx });
+  }
+  return lista;
+}
+
+// Backlog de chamados EMERGENCIAIS (coluna "Prioridade"), mês a mês, dos
+// últimos `n` meses — mesma regra de "aberto no mês" (_histAbertoNoMes_) e
+// mesmo filtro de equipe (PROPERTY) do resto do deck. Diferente do
+// equivalente dos Megas (que conta emergencial de QUALQUER equipe, decisão
+// explícita de lá): aqui entra só Propriedades, pelo mesmo motivo que tirou
+// Facilities/Terceiros do resto da apresentação.
+function obterBacklogEmergencialPorMes_(n) {
+  const ref   = obterMesReferencia_();
+  const meses = _propUltimosMeses_(ref, n || 13);
+  const base  = _propLerCorretivas_();
+
+  return meses.map(m => {
+    const refIni = new Date(Date.UTC(m.ano, m.index, 1));
+    const refFim = new Date(Date.UTC(m.ano, m.index + 1, 1));
+    const qtd = base.filter(it =>
+      it.prioridade === 'Emergencial' &&
+      _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY' &&
+      _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)
+    ).length;
+    return { ano: m.ano, index: m.index, qtd: qtd };
+  });
+}
+
+// Data curta dd/mm/aa — cópia de megas-mensal/02_Dados.gs.
+function _histFormatarDataCurta_(d) {
+  if (!d) return '';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const yy = String(d.getUTCFullYear()).slice(-2);
+  return dd + '/' + mm + '/' + yy;
+}
+
+// Dias em aberto NÃO é "até hoje" — é até o ÚLTIMO DIA do mês de referência
+// (refFim): a apresentação é gerada dias depois do mês já ter fechado, e o
+// número tem que refletir o estado NO FIM do mês, não no dia em que o
+// slide foi gerado. Cópia de megas-mensal/02_Dados.gs.
+function _histDiasAberto_(dtReporte, refFim) {
+  if (!dtReporte) return null;
+  return Math.max(0, Math.floor((refFim - dtReporte) / 86400000));
+}
+
+// Detalhe dos chamados EMERGENCIAIS (equipe Propriedades) em aberto no mês
+// de referência — um item por chamado, com Empreendimento (Centro de
+// Custos), descrição, data de abertura e dias em aberto (até o fim do mês
+// de referência).
+// Ordenado do mais antigo pro mais novo (dias desc) — os que mais
+// precisam de atenção aparecem primeiro. Usado por
+// Slide_BacklogEmergencialDetalhe.gs.
+function obterBacklogEmergencialDetalhe_() {
+  const ref    = obterMesReferencia_();
+  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+
+  const itens = _propLerCorretivas_()
+    .filter(it => it.prioridade === 'Emergencial')
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY')
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .map(it => ({
+      cc          : it.cc,
+      descricao   : it.descricao || '(sem descrição)',
+      dataAbertura: _histFormatarDataCurta_(it.dtReporte),
+      dias        : _histDiasAberto_(it.dtReporte, refFim)
+    }));
+
+  return itens.sort((a, b) => (b.dias || 0) - (a.dias || 0));
+}
+
+
+// ==========================================
+// CHAMADOS PENDENTES (BACKLOG) POR MOTIVO — Slide_ChamadosPendentes.gs
+// ==========================================
+// Equivalente honesto do slide "Chamados Pendentes (Backlog)" dos Megas —
+// lá vem de uma aba digitada à mão (MÊS/ESTADO/QUANTIDADE); aqui é 100%
+// derivado da BD-CORRETIVAS, coluna "Motivo de pausa" (só existe nessa
+// base — confirmado com diagnosticarMotivoPausa). Regra confirmada com o
+// usuário: chamado aberto com "Motivo de pausa" preenchido → essa é a
+// categoria ("direcionado"); vazio → "Em resolução", não importa o que a
+// coluna Estado diga especificamente. Só equipe PROPRIEDADES, mesmo corte
+// do resto do deck.
+function obterBacklogPorMotivo_(ano, mesIndex) {
+  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
+  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
+
+  const abertos = _propLerCorretivas_()
+    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  let emResolucao = 0;
+  const porMotivo = {};
+  abertos.forEach(it => {
+    const motivo = String(it.motivoPausa || '').trim();
+    if (motivo) porMotivo[motivo] = (porMotivo[motivo] || 0) + 1;
+    else emResolucao++;
+  });
+
+  return {
+    total: abertos.length,
+    emResolucao: emResolucao,
+    direcionados: Object.keys(porMotivo)
+      .sort((a, b) => porMotivo[b] - porMotivo[a])
+      .map(m => ({ estado: m, qtd: porMotivo[m] }))
+  };
+}
+
+// Mês de referência + mês anterior, prontos pro gráfico de barras (▲/▼ vs
+// mês anterior em cada categoria, igual ao slide dos Megas).
+function obterDadosChamadosPendentes_() {
+  const ref    = obterMesReferencia_();
+  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
+
+  const atual    = obterBacklogPorMotivo_(ref.ano, ref.index);
+  const anterior = obterBacklogPorMotivo_(mesAnt.ano, mesAnt.index);
+
+  const mapaAnterior = {};
+  anterior.direcionados.forEach(d => { mapaAnterior[d.estado] = d.qtd; });
+
+  const direcionados = atual.direcionados.map(d => ({
+    estado: d.estado,
+    qtd: d.qtd,
+    anterior: mapaAnterior[d.estado] != null ? mapaAnterior[d.estado] : null
+  }));
+
+  return {
+    mesLabel: (ref.curto || ref.nome) + '/' + ref.ano,
+    total: atual.total,
+    totalAnterior: anterior.total,
+    emResolucao: atual.emResolucao,
+    emResolucaoAnterior: anterior.emResolucao,
+    direcionados: direcionados
+  };
 }

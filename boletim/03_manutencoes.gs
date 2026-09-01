@@ -13,11 +13,13 @@ function gerarSlide04_Manutencoes(apenasMegas = false) {
   const pageHeight = presentation.getPageHeight();
 
   // --- LER DADOS DA PLANILHA ---
+  // "OUTROS IMÓVEIS ESTEIO" removido: nunca teve dado na planilha (sempre N/D),
+  // entao nao e mais buscado nem exibido - o espaco do card e redistribuido
+  // entre os 3 restantes (cards ficam mais altos).
   const unidades = {
-    "CURITIBA": { nome: "MEGA CURITIBA",         tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" },
-    "ITAJAÍ":   { nome: "MEGA ITAJAÍ",           tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" },
-    "ESTEIO":   { nome: "MEGA ESTEIO",           tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" },
-    "OUTROS":   { nome: "OUTROS IMÓVEIS ESTEIO", tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" }
+    "CURITIBA": { nome: "MEGA CURITIBA", tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" },
+    "ITAJAÍ":   { nome: "MEGA ITAJAÍ",   tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" },
+    "ESTEIO":   { nome: "MEGA ESTEIO",   tFalhas: "N/D", tReparo: "N/D", disp30: "N/D", dispAno: "N/D", conf: "N/D" }
   };
 
   try {
@@ -35,7 +37,6 @@ function gerarSlide04_Manutencoes(apenasMegas = false) {
       if (nomeLinha.includes("MEGA CURITIBA"))   chaveEncontrada = "CURITIBA";
       else if (nomeLinha.includes("MEGA ITAJAI")) chaveEncontrada = "ITAJAÍ";
       else if (nomeLinha.includes("MEGA ESTEIO")) chaveEncontrada = "ESTEIO";
-      else if (nomeLinha.includes("OUTROS IMOVEIS")) chaveEncontrada = "OUTROS";
 
       if (chaveEncontrada && unidades[chaveEncontrada].tFalhas === "N/D") {
         const val = (v) => (v && v.toString().trim() !== "" ? v : "N/D");
@@ -71,21 +72,23 @@ function gerarSlide04_Manutencoes(apenasMegas = false) {
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
 
   // --- LAYOUT DOS CARTÕES ---
+  // 3 cards sempre (Curitiba/Itajaí/Esteio) — o parâmetro apenasMegas não muda
+  // mais a lista, já que "Outros Imóveis Esteio" foi removido. cardH é calculado
+  // a partir da quantidade real de cards, então o espaço vertical é sempre
+  // totalmente aproveitado (cards mais altos, sem sobra em branco).
   const cardW = pageWidth - (marginX * 2);
   const startY = 95; 
   const footerNoteSpace = 95; 
   const gap = 12; 
   const availableHeight = pageHeight - startY - footerNoteSpace;
-  const cardH = (availableHeight - (gap * 3)) / 4; 
 
   const contentStartX = marginX + 160; 
   const contentEndX = pageWidth - marginX - 20;
   const contentW = contentEndX - contentStartX;
   const colW = contentW / 5;
 
-  const ordemUnidades = apenasMegas
-    ? [unidades["CURITIBA"], unidades["ITAJAÍ"], unidades["ESTEIO"]]
-    : [unidades["CURITIBA"], unidades["ITAJAÍ"], unidades["ESTEIO"], unidades["OUTROS"]];
+  const ordemUnidades = [unidades["CURITIBA"], unidades["ITAJAÍ"], unidades["ESTEIO"]];
+  const cardH = (availableHeight - (gap * (ordemUnidades.length - 1))) / ordemUnidades.length;
 
   // =========================================================
   // Helpers
@@ -206,3 +209,12 @@ function gerarSlide04_Manutencoes(apenasMegas = false) {
 
   Logger.log("✅ Slide 03 concluído! Badge ⚠ em indicadores abaixo da meta e sombra nos cards.");
 }
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só a Estratificação de Manutenções, no escopo pedido. Serve para
+// conferir um ajuste sem reprocessar o boletim inteiro. Sem parâmetro, para
+// aparecer no menu "Selecionar função" do editor.
+function verEstratificacao()            { return _bolVerSlide_('COMPLETO',   'Estratificação'); }
+function verEstratificacaoFacilities()  { return _bolVerSlide_('FACILITIES', 'Estratificação'); }

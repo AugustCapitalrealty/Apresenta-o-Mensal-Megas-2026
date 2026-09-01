@@ -671,6 +671,91 @@ function obterDadosDashboard() {
     Logger.log('Erro Dashboard (backlog histórico): ' + e.message);
   }
 
+  // ── DESTAQUES: documentação dos inquilinos ──────────────────────────────
+  // SEM comparativo, e isso não é omissão: a aba DOCUMENTOS INQUILINOS é uma
+  // LISTA VIVA, com o estado de hoje de cada documento. Não há registro de
+  // "quantos estavam vencidos em junho" — a categoria é recalculada contra a
+  // data de referência a cada execução. Inventar mês anterior aqui seria
+  // comparar o presente com ele mesmo.
+  //
+  // Por isso os três valores vão iguais e o painel que os consome é marcado
+  // com `semComparativo` (Slide01_Dashboard.gs): ele desenha o número uma vez,
+  // em vez de três colunas repetidas fingindo série histórica.
+  try {
+    const docs = obterDadosDocumentos();
+    if (docs && docs.resumo && docs.resumo.total > 0) {
+      const r = docs.resumo;
+      const pct = n => (n / r.total * 100).toFixed(1).replace('.', ',');
+      const um = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
+
+      dataMap.set('Documentação vencida (%)', um(pct(r.vencido) + '%'));
+      dataMap.set('Documentos vencidos',      um(r.vencido));
+      dataMap.set('Documentos a vencer',      um(r.critico));
+      dataMap.set('Documentação em dia (%)',  um(pct(r.emDia) + '%'));
+      dataMap.set('Documentos no total',      um(r.total));
+
+      Logger.log('Dashboard (documentação): ' + r.total + ' documento(s) — ' +
+                 r.vencido + ' vencido(s) (' + pct(r.vencido) + '%), ' +
+                 r.critico + ' a vencer, ' + r.emDia + ' em dia, ' +
+                 r.pendente + ' pendente(s).');
+    } else {
+      Logger.log('Dashboard (documentação): aba DOCUMENTOS INQUILINOS sem dados — ' +
+                 'o quadrante de destaques fica com "-".');
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (documentação): ' + e.message);
+  }
+
+  // ── DESTAQUES: financeiro ───────────────────────────────────────────────
+  // TAMBÉM sem comparativo, e pelo mesmo tipo de motivo da documentação: as
+  // funções de financeiro leem a ABA do período de referência
+  // (_financeiroDaAba_), com colunas NATUREZA / ORÇADO / REALIZADO. Não é uma
+  // série mensal em colunas como o backlog — para ter mês anterior seria
+  // preciso abrir a aba de outro período, e o nome delas não segue um padrão
+  // que dê para derivar daqui.
+  //
+  // Os valores vão PRÉ-FORMATADOS (com R$ e %) de propósito: formatarNumeroBR
+  // devolve texto que já tem símbolo sem mexer, e assim a unidade fica ao lado
+  // do número em vez de só no rótulo — num painel de destaques o número é lido
+  // sozinho, longe do cabeçalho.
+  try {
+    const um  = v => ({ atual: String(v), mesAnt: '-', anoAnt: '-' });
+
+    // MÊS e ACUMULADO DO ANO saem do MESMO lugar — o DRE separa os blocos
+    // `mes` e `acum` por rubrica, e _financeiroDoBridge_ só escolhe qual ler.
+    // Por virem da mesma fonte, os dois não podem divergir por recorte
+    // diferente: é a mesma soma, em duas janelas.
+    [{ bloco: 'mes',  chave: 'Orçado consumido mês (%)', rotulo: 'mês' },
+     { bloco: 'acum', chave: 'Orçado consumido ano (%)', rotulo: 'acumulado do ano' }
+    ].forEach(function (j) {
+      const f = _financeiroDoBridge_(j.bloco);
+      if (f && f.totalOrcado > 0) {
+        const consumo = f.totalRealizado / f.totalOrcado * 100;
+        dataMap.set(j.chave, um(consumo.toFixed(1).replace('.', ',') + '%'));
+        Logger.log('Dashboard (financeiro, ' + j.rotulo + '): realizado ' +
+                   formatarMoedaCompacta(f.totalRealizado) + ' de ' +
+                   formatarMoedaCompacta(f.totalOrcado) + ' orçado = ' +
+                   consumo.toFixed(1) + '% consumido.');
+      } else {
+        Logger.log('Dashboard (financeiro, ' + j.rotulo + '): sem orçado — fica com "-".');
+      }
+    });
+
+    const cm2 = obterCustoM2Acumulado_();
+    if (cm2 && cm2.realizado != null) {
+      dataMap.set('Custo por m²', um(formatarRsM2_(cm2.realizado)));
+      // O orçado não vira linha (não há espaço no painel), mas fica no log:
+      // é ele que diz se o número da tela é bom ou ruim.
+      Logger.log('Dashboard (custo/m²): realizado ' + formatarRsM2_(cm2.realizado) +
+                 (cm2.orcado != null ? ' contra ' + formatarRsM2_(cm2.orcado) + ' orçado' : '') +
+                 ' (acumulado de ' + cm2.meses + ' mês(es)).');
+    } else {
+      Logger.log('Dashboard (custo/m²): sem valor acumulado — o destaque fica com "-".');
+    }
+  } catch (e) {
+    Logger.log('Erro Dashboard (financeiro): ' + e.message);
+  }
+
   return { map: dataMap, headers: headers, sobrescritos: sobrescritos };
 }
 
@@ -2926,7 +3011,7 @@ function _lerChamadosMes_(nomeAba) {
         id:         String(row[cId]   || '').trim(),
         cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
         prioridade: cPri  >= 0 ? String(row[cPri]  || '').trim() : '',
-        descricao:  cDesc >= 0 ? String(row[cDesc] || '').trim() : ''
+        descricao:  cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : ''
       });
     }
     return saida;
@@ -2943,6 +3028,39 @@ function _normalizarPrioridade_(v) {
   if (n.indexOf('normal') >= 0)   return 'Normal';
   if (n.indexOf('baixa') >= 0)    return 'Baixa';
   return '';
+}
+
+// A coluna Descrição vem com um prefixo de metadado de checklist na frente
+// do texto livre — ex.: "PMP.904036.68674893 CHECKLIST - FACILITIES |
+// Bombas de Drenagem | Posto SIM: C02. Em funcionamento os instrumentos do
+// painel: Não Conforme - Bomba não está no local". O prefixo (ID do
+// formulário + "CHECKLIST - <equipe>" + categorias separadas por "|",
+// terminando em "<local>: <código>.") não interessa pra quem lê o slide —
+// só a descrição real do problema, que vem depois. Remove só quando a
+// descrição REALMENTE começa com esse padrão; texto livre sem prefixo
+// (ex.: "Água voltando pelos tubos das bombas inundando o piso.") fica
+// intacto. Cópia deste mesmo comportamento em propriedades-mensal/
+// 02_Dados.gs — pedido do usuário pra valer nos dois projetos.
+function _limparDescricaoChecklist_(desc) {
+  if (!desc) return desc;
+  let limpo = desc;
+
+  // 1) Prefixo do formulário: "<ID> CHECKLIST - <equipe> | ... : <código>."
+  const reMeta = /^\S+\s+CHECKLIST\s*-\s*\S+(?:\s*\|[^|]*)+?:\s*\S+?\.\s*/i;
+  limpo = limpo.replace(reMeta, '');
+
+  // 2) Rótulo do item avaliado + resultado do checklist: "<campo
+  // avaliado>: [Não] Conforme -" — ex.: "Estado de conservação e aspecto
+  // geral da carcaça: Não Conforme -", "Em funcionamento os instrumentos
+  // do painel: Não Conforme -". Só age quando o texto REALMENTE começa
+  // com "<até 80 caracteres>: [Não] Conforme" — descrição livre sem
+  // esse padrão (ex.: "Água voltando pelos tubos das bombas inundando o
+  // piso.") não tem colon logo no início e fica intacta.
+  const reCampo = /^[^:\n]{1,80}:\s*(?:Não\s+)?Conforme\b[\s\-–]*/i;
+  limpo = limpo.replace(reCampo, '');
+
+  limpo = limpo.trim();
+  return limpo || desc;
 }
 
 // Retorna { abertos: {total, fatias:[{label,qtd}], emergencial:[{id,descricao}]},
@@ -3189,7 +3307,7 @@ function _lerBdCorretivasCru_() {
 
       saida.push({
         id:        _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
-        descricao: cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        descricao: cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:    cEstado >= 0 ? String(row[cEstado] || '').trim() : '',
         prioridade: _normalizarPrioridade_(cPri >= 0 ? row[cPri] : ''),
         // Chamado sem responsável preenchido (ou com um nome que não está
@@ -3485,7 +3603,7 @@ function _lerBacklogClientesDetalhes_() {
       saida.push({
         id:          String(row[cId] || '').trim(),
         cliente:     String(row[cCliente] || '').trim(),
-        descricao:   cDesc   >= 0 ? String(row[cDesc]   || '').trim() : '',
+        descricao:   cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:      estado,
         equipe:      cEquipe >= 0 ? String(row[cEquipe] || '').trim().toUpperCase() : '',
         dataReporte: _histFormatarDataCurta_(dtReporte),
@@ -3679,7 +3797,7 @@ function _lerBdCorretivasChamadosClientes_() {
       saida.push({
         id:          _idChamadoNormaliza_(row[cId]),
         cliente:     cliente,
-        descricao:   cDesc >= 0 ? String(row[cDesc] || '').trim() : '',
+        descricao:   cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         dataReporte: _histFormatarDataCurta_(dtReporte),
         diasAberto:  _histDiasAberto_(dtReporte, refFim),
         equipe:      _resolverEquipeResponsaveis_(responsaveis)

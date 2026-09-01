@@ -322,14 +322,16 @@ function _desenharGraficoLinha(slide, x, y, w, h, titulo, subtitulo, semanas, me
   frame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
   frame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
 
-  // ✅ Título bold + subtítulo em caixas separadas na mesma linha
-  const titleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 7, 200, 14);
-  titleBox.getText().setText(titulo).getTextStyle()
+  // ✅ Título bold + subtítulo no MESMO textbox, com estilos por range.
+  //    Evita o cálculo frágil de largura por nº de caracteres, que fazia o
+  //    subtítulo colar no título (ex.: "FLUXO DE ACESSOSVISITANTES...").
+  const headerTxt = titulo + '   ' + subtitulo;
+  const titleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 7, w - 20, 14);
+  titleBox.getText().setText(headerTxt);
+  titleBox.getText().getRange(0, titulo.length).getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(9).setBold(true)
     .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
-
-  const subBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 14 + titulo.length * 5.8, y + 7, 200, 14);
-  subBox.getText().setText(subtitulo).getTextStyle()
+  titleBox.getText().getRange(titulo.length, headerTxt.length).getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(9)
     .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
 

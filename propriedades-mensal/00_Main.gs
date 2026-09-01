@@ -36,24 +36,28 @@ function gerarApresentacaoPropriedades() {
 
   // Ordem oficial, conforme definido com o time:
   //
-  //   1. Indicadores gerais         (a implementar)
-  //   2. Preventivas                (dados prontos, desenho a fazer)
-  //   3. Corretivas                 (dados prontos, desenho a fazer)
-  //   4. Backlog                    (dados prontos, desenho a fazer)
-  //   5. Fotos de serviços          (a implementar)
+  //   1. Capa
+  //   2. Indicadores gerais
+  //   3. Preventivas
+  //   4. Corretivas
+  //   5. Backlog
+  //   6. Backlog Emergencial — Detalhe
+  //   7. Chamados Pendentes (Backlog) — por motivo
+  //   8. Backlog de Clientes — Properties (com empreendimento)
+  //   9. Recebimento de Obras (tabela)
+  //  10. Gestão de Contratações (tabela)
   //
-  // As tabelas abaixo já estão implementadas e rodam hoje. As demais entram
-  // aqui conforme forem desenhadas — os dados de 2, 3 e 4 já existem em
-  // 02_Dados.gs (indicadoresPortfolio_, indicadoresAcumulado_,
-  // indicadoresPorEquipe_, backlogPorCC_).
   const passos = [
-    // { nome: 'Capa',                    fn: gerarSlideCapa },
-    // { nome: 'Indicadores Gerais',      fn: gerarSlideIndicadoresGerais },
-    // { nome: 'Preventivas',             fn: gerarSlidePreventivas },
-    // { nome: 'Corretivas',              fn: gerarSlideCorretivas },
-    // { nome: 'Backlog',                 fn: gerarSlideBacklog },
-    { nome: 'Recebimento de Obras',    fn: gerarSlideRecebimentoObras },
-    { nome: 'Gestão de Contratações',  fn: gerarSlideContratacoes }
+    { nome: 'Capa',                          fn: gerarSlideCapa },
+    { nome: 'Indicadores Gerais',            fn: gerarSlideIndicadoresGerais },
+    { nome: 'Preventivas',                   fn: gerarSlidePreventivas },
+    { nome: 'Corretivas',                    fn: gerarSlideCorretivas },
+    { nome: 'Backlog',                       fn: gerarSlideBacklog },
+    { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
+    { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
+    { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
+    { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
+    { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];

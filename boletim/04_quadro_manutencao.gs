@@ -1,118 +1,403 @@
 /**
  * ARQUIVO: 04_quadro_manutencao.gs
- * Cria o slide "Manutenção Corretiva".
- * CORREÇÕES v2:
- *   - Locatários adicionado como KPI card superior (5 cards redistribuídos)
- *   - Legenda do gráfico refeita com shapes independentes (sem indexação frágil de caracteres)
+ * Slide "Manutenção Corretiva" — os três escopos num arquivo só.
+ *
+ * Junta gerarSlide05_QuadroManutencao, _Facilities (que viviam aqui) e
+ * _Hangar (que era 05_quadro_manutencao_hangar.gs).
+ *
+ * O QUE É IGUAL NOS TRÊS: o desenho inteiro — cartões de KPI, gráfico da fila,
+ * legenda, painel de composição, rodapé. É por isso que dá para ser uma função
+ * só, e é por isso que valia juntar: os últimos ajustes (folga do rótulo,
+ * legenda do tamanho da palavra) foram feitos em duas variantes e esquecidos
+ * na terceira.
+ *
+ * O QUE É DIFERENTE: só a AQUISIÇÃO dos dados, e não em detalhe — em
+ * estratégia. Por isso há duas leitoras nomeadas, escolhidas pelo descritor:
+ *
+ *   · _bolLerUltimasColunas_ — pega as últimas N colunas preenchidas de uma
+ *     linha (completo e Hangar). Uma linha por equipe.
+ *   · _bolLerSomaLinhas_ — soma um bloco de linhas por coluna (Facilities:
+ *     cada mês é a soma dos 3 Megas, e o número de pontos varia).
+ *
+ * A mesma separação vale para a seta dos cartões: 'PERIODO' compara com o
+ * ponto anterior do próprio histórico; 'SEMANAL' lê a seção semanal da aba dos
+ * Megas. Uma tentativa anterior de unificar tratou isso como "célula
+ * diferente" e teria quebrado o boletim Facilities.
  */
 
-function gerarSlide05_QuadroManutencao() {
-  const presentation = SlidesApp.openById(CR_DESIGN_SYSTEM.assets.presentationId);
-  const slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const pageWidth = presentation.getPageWidth(); 
-  const pageHeight = presentation.getPageHeight();
+// ==========================================================================
+// OS TRÊS ESCOPOS
+// ==========================================================================
+// As cores vão como NOME, não como valor: este `const` pode ser avaliado antes
+// do Config.gs, e ler `CR_DESIGN_SYSTEM.colors.x` aqui em cima estouraria
+// ReferenceError. Mesmo motivo pelo qual o `tema` em 00_Main.gs é texto.
+//
+// `barW`/`offset`/`lblCaixa` ficam escritos e não calculados: são os valores
+// que cada variante já usava, medidos no deck real. Derivá-los mudaria a
+// posição das barras sem ninguém ter pedido. 'auto' só onde o número de
+// pontos varia (Facilities), que é onde não dá para fixar.
+const BOL_CORRETIVAS = {
+  COMPLETO: {
+    aba: null,                       // null = a aba padrão do design system
+    subtitulo: 'Visão Executiva',
+    escopoCC: null,                  // carteira inteira
+    leitura: 'ULTIMAS_COLUNAS',
+    seta: 'PERIODO',
+    grafico: {
+      linhaRotulos: 180,
+      rotuloEhData: false,           // linha 180 traz nome de mês, não data
+      pontos: 4,
+      linhas: { FACILITIES: 182, PROPERTY: 183, OPERACAO: 185 }
+    },
+    // Tabela EQUIPE. Estes endereços JÁ mudaram uma vez: a linha "Resp.
+    // Locatário" entrou e empurrou o TOTAL de C40 para C41.
+    kpis: { FACILITIES: 'C37', PROPERTY: 'C38', OPERACAO: 'C39', LOCATARIO: 'C40', TOTAL: 'C41' },
+    cards: [
+      { titulo: 'Backlog Total',   fonte: 'TOTAL',      cor: 'brandDark',    principal: true },
+      { titulo: 'Facilities',      fonte: 'FACILITIES', cor: 'brandSoft'    },
+      { titulo: 'Property',        fonte: 'PROPERTY',   cor: 'brandMed'     },
+      { titulo: 'Locatários',      fonte: 'LOCATARIO',  cor: 'accentOrange' },
+      { titulo: 'Operação Hangar', fonte: 'OPERACAO',   cor: 'brandLight'   }
+    ],
+    series: [
+      { equipe: 'FACILITIES', label: 'FACILITIES',      cor: 'brandSoft',  offset: -24 },
+      { equipe: 'PROPERTY',   label: 'PROPERTY',        cor: 'brandDark',  offset:  -6 },
+      { equipe: 'OPERACAO',   label: 'OPERAÇÃO HANGAR', cor: 'brandLight', offset:  12 }
+    ],
+    barW: 12,
+    lblCaixa: 26,
+    // Tabela ACUMULADO, linha TOTAL (41). D41 é Melhorias e E41 é Projetos —
+    // as duas fórmulas CONT.SES da planilha ("*Melhoria*" e "*Consulta*").
+    composicao: [
+      { label: 'CORRETIVAS', celula: 'G41' },
+      { label: 'MELHORIAS',  celula: 'D41' },
+      { label: 'PROJETOS',   celula: 'E41' },
+      { label: 'LOCATÁRIOS', celula: 'F41' }
+    ]
+  },
 
-  // =========================================================
-  // --- 0. EXTRAÇÃO E TRATAMENTO DE DADOS ---
-  // =========================================================
-  Logger.log("Extraindo dados para o Quadro de Manutenção...");
+  FACILITIES: {
+    aba: 'megas QUADRO COMPARATIVO',
+    subtitulo: 'Visão Executiva',
+    escopoCC: ['MEGA CURITIBA', 'MEGA ITAJAI', 'MEGA ESTEIO'],
+    leitura: 'SOMA_LINHAS',
+    seta: 'SEMANAL',
+    grafico: {
+      linhaRotulos: 111,
+      rotuloAbreviado: true,         // "ABRIL" vira "ABR"
+      // Cada mês é a soma dos 3 Megas. IGNORA a linha 124 (Mega Canoas).
+      blocos: { FACILITIES: [117, 3], PROPERTY: [121, 3] },
+      colInicio: 2                   // primeira coluna de dado (0-based)
+    },
+    // Seção POR MEGA SEMANAL: 3 linhas por categoria, uma por Mega.
+    semanal: { FACILITIES: [66, 3], PROPERTY: [70, 3], LOCATARIO: [62, 3] },
+    kpis: { FACILITIES: 'C26', PROPERTY: 'C27', LOCATARIO: 'C28', TOTAL: 'C29' },
+    cards: [
+      { titulo: 'Backlog Total', fonte: 'TOTAL',      cor: 'brandDark',    principal: true },
+      { titulo: 'Facilities',    fonte: 'FACILITIES', cor: 'brandSoft'    },
+      { titulo: 'Property',      fonte: 'PROPERTY',   cor: 'brandMed'     },
+      { titulo: 'Locatários',    fonte: 'LOCATARIO',  cor: 'accentOrange' }
+    ],
+    series: [
+      { equipe: 'FACILITIES', label: 'FACILITIES', cor: 'brandSoft' },
+      { equipe: 'PROPERTY',   label: 'PROPERTY',   cor: 'brandDark' }
+    ],
+    barW: 'auto',                    // o nº de meses varia; a barra acompanha
+    lblCaixa: 'auto',
+    composicao: [
+      { label: 'CORRETIVAS', celula: 'F29' },
+      { label: 'MELHORIAS',  celula: 'D29' },
+      { label: 'PROJETOS',   celula: 'E29' }
+    ]
+  },
 
-  let histFac = [0, 0, 0, 0], histProp = [0, 0, 0, 0], histOper = [0, 0, 0, 0];
-  let timeline = ['-', '-', '-', '-'];
-  let kpiFac = 0, kpiProp = 0, kpiOper = 0, kpiTot = 0;
-  let valCorretivas = 0, valMelhorias = 0, valProjetos = 0, valLocatariosComp = 0;
+  HANGAR: {
+    aba: 'hangar QUADRO COMPARATIVO',
+    subtitulo: 'Visão Executiva — Hangar VIP',
+    escopoCC: ['HANGAR VIP'],
+    leitura: 'ULTIMAS_COLUNAS',
+    seta: 'PERIODO',
+    grafico: {
+      linhaRotulos: 40,
+      rotuloEhData: true,            // linha 40 traz data; vira DD/MM
+      pontos: 4,
+      linhas: { PROPERTY: 42, OPERACAO: 43 }
+    },
+    kpis: { PROPERTY: 'C11', OPERACAO: 'C12', TOTAL: 'C13' },
+    cards: [
+      { titulo: 'Backlog Total',   fonte: 'TOTAL',    cor: 'brandDark',  principal: true },
+      { titulo: 'Property',        fonte: 'PROPERTY', cor: 'brandMed'   },
+      { titulo: 'Operação Hangar', fonte: 'OPERACAO', cor: 'brandLight' }
+    ],
+    series: [
+      { equipe: 'PROPERTY', label: 'PROPERTY',   cor: 'brandDark',  offset: -10 },
+      { equipe: 'OPERACAO', label: 'OP. HANGAR', cor: 'brandLight', offset:   4 }
+    ],
+    barW: 14,
+    lblCaixa: 34,
+    composicao: [
+      { label: 'CORRETIVAS', celula: 'F13' },
+      { label: 'MELHORIAS',  celula: 'D13' },
+      { label: 'PROJETOS',   celula: 'E13' }
+    ]
+  }
+};
 
-  try {
-    const ss1 = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
-    const sheet1 = ss1.getSheetByName(CR_DESIGN_SYSTEM.assets.sheetName);
+// Cor por RÓTULO e não por posição: a fatia Melhorias sai laranja esteja ela
+// em que linha estiver. Por posição, a mesma cor mudaria de significado entre
+// um escopo de 3 fatias e outro de 4.
+const BOL_COR_COMPOSICAO = {
+  'CORRETIVAS': 'brandDark', 'MELHORIAS': 'accentOrange',
+  'PROJETOS':   'brandMed',  'LOCATÁRIOS': 'brandLight'
+};
 
-    if (sheet1) {
-      const lastCol = sheet1.getLastColumn();
-      const headerRow = sheet1.getRange(180, 1, 1, lastCol).getValues()[0];
-      let targetCols = [];
-      let tempTimeline = [];
-      
-      for (let i = headerRow.length - 1; i >= 1 && targetCols.length < 4; i--) {
-        if (headerRow[i] && headerRow[i].toString().trim() !== "") {
-          targetCols.unshift(i + 1);
-          tempTimeline.unshift(headerRow[i].toString().trim().toUpperCase());
-        }
-      }
-      
-      while (tempTimeline.length < 4) tempTimeline.unshift("-");
-      timeline = tempTimeline;
 
-      const getValsFromCols = (rowNum) => {
-        let vals = [];
-        for (let col of targetCols) {
-          let v = sheet1.getRange(rowNum, col).getValue();
-          vals.push(Number(v) || 0);
-        }
-        while (vals.length < 4) vals.unshift(0);
-        return vals;
-      };
+// ==========================================================================
+// PONTOS DE ENTRADA
+// ==========================================================================
+// Sem parâmetro: o menu "Selecionar função" do editor não lista função que
+// declara argumento. São estes nomes que o BOLETINS de 00_Main.gs chama.
+function gerarSlide05_QuadroManutencao()            { return _bolCorretivas_('COMPLETO');   }
+function gerarSlide05_QuadroManutencao_Facilities() { return _bolCorretivas_('FACILITIES'); }
+function gerarSlide05_QuadroManutencao_Hangar()     { return _bolCorretivas_('HANGAR');     }
 
-      // Histórico para o gráfico de barras (recortes mensais)
-      histFac  = getValsFromCols(182);
-      histProp = getValsFromCols(183);
-      histOper = getValsFromCols(185);
 
-      // Backlog atual — lido da tabela resumo (linha 37-40), não do histórico
-      kpiFac  = Number(sheet1.getRange('C37').getValue()) || 0;
-      kpiProp = Number(sheet1.getRange('C38').getValue()) || 0;
-      kpiOper = Number(sheet1.getRange('C39').getValue()) || 0;
-      kpiTot  = Number(sheet1.getRange('C40').getValue()) || 0;
+// ==========================================================================
+// LEITORAS — a única coisa que diverge entre os escopos
+// ==========================================================================
 
-      valCorretivas     = Number(sheet1.getRange('G40').getValue()) || 0;
-      valMelhorias      = Number(sheet1.getRange('D40').getValue()) || 0;
-      valProjetos       = Number(sheet1.getRange('E40').getValue()) || 0;
-      valLocatariosComp = Number(sheet1.getRange('F40').getValue()) || 0;
+/**
+ * Últimas N colunas preenchidas, uma linha por equipe (completo e Hangar).
+ * Devolve { hist: {equipe: [n]}, timeline: [n] }.
+ */
+function _bolLerUltimasColunas_(sheet, cfg, equipes) {
+  const g = cfg.grafico;
+  const n = g.pontos;
+  const lastCol = sheet.getLastColumn();
+  const rotulos = sheet.getRange(g.linhaRotulos, 1, 1, lastCol).getValues()[0];
 
-    } else {
-      Logger.log("Aviso: Aba QUADRO COMPARATIVO não encontrada.");
+  const cols = [], timeline = [];
+  for (let i = rotulos.length - 1; i >= 1 && cols.length < n; i--) {
+    if (rotulos[i] && rotulos[i].toString().trim() !== '') {
+      cols.unshift(i + 1);
+      timeline.unshift(_bolRotuloPeriodo_(rotulos[i], g.rotuloEhData));
     }
-  } catch (e) {
-    Logger.log("Erro ao extrair dados para Manutenção: " + e.message);
+  }
+  while (timeline.length < n) timeline.unshift('-');
+
+  const hist = {};
+  equipes.forEach(function (eq) {
+    const vals = [];
+    cols.forEach(function (c) {
+      vals.push(Number(sheet.getRange(g.linhas[eq], c).getValue()) || 0);
+    });
+    while (vals.length < n) vals.unshift(0);
+    hist[eq] = vals;
+  });
+  return { hist: hist, timeline: timeline };
+}
+
+/**
+ * Um bloco de linhas somado por coluna (Facilities: cada mês é a soma dos 3
+ * Megas). O número de pontos NÃO é fixo — sai de quantas colunas têm dado.
+ */
+function _bolLerSomaLinhas_(sheet, cfg, equipes) {
+  const g = cfg.grafico;
+  const lastCol = sheet.getLastColumn();
+  const rotulos = sheet.getRange(g.linhaRotulos, 1, 1, lastCol).getValues()[0];
+
+  const blocos = {};
+  equipes.forEach(function (eq) {
+    const b = g.blocos[eq];
+    blocos[eq] = sheet.getRange(b[0], 1, b[1], lastCol).getValues();
+  });
+
+  const hist = {}, timeline = [];
+  equipes.forEach(function (eq) { hist[eq] = []; });
+  const ref = blocos[equipes[0]];
+
+  for (let i = g.colInicio; i < lastCol; i++) {
+    const temDado = ref.some(function (r) {
+      return r[i] !== '' && r[i] !== null && !isNaN(Number(r[i])) && Number(r[i]) !== 0;
+    });
+    if (!temDado) continue;
+    equipes.forEach(function (eq) { hist[eq].push(_bolSomaColuna_(blocos[eq], i)); });
+    const raw = rotulos[i];
+    timeline.push(raw
+      ? (g.rotuloAbreviado ? raw.toString().trim().substring(0, 3).toUpperCase()
+                           : raw.toString().trim().toUpperCase())
+      : '');
   }
 
-  // --- MATEMÁTICA DOS KPIs SUPERIORES — fonte: tabela C37-C40/F40 (backlog atual) ---
-  const facCur  = kpiFac;
-  const propCur = kpiProp;
-  const operCur = kpiOper;
-  const locCur  = valLocatariosComp; // F40 — Responsabilidade Locatário
-  const totCur  = kpiTot;            // C40 — total real da planilha
+  // Gráfico vazio quebraria a escala; uma barra de zero é honesta e não quebra.
+  if (!timeline.length) {
+    equipes.forEach(function (eq) { hist[eq] = [0]; });
+    timeline.push('-');
+  }
+  return { hist: hist, timeline: timeline };
+}
 
-  // Variação vs período anterior: último vs penúltimo valor do histórico
-  const facPrev  = histFac[2];
-  const propPrev = histProp[2];
-  const operPrev = histOper[2];
-  const totPrev  = facPrev + propPrev + operPrev;
-  const diffTot  = totCur - totPrev;
+function _bolSomaColuna_(linhas, i) {
+  return linhas.reduce(function (s, r) { return s + (Number(r[i]) || 0); }, 0);
+}
 
-  const formatTrend = (diff) => {
-    if (diff > 0) return '↑ +' + diff;
-    if (diff < 0) return '↓ ' + diff;
-    return '= 0';
+/**
+ * Rótulo do eixo X a partir da célula de cabeçalho.
+ *
+ * `ehData` NÃO é decoração: a aba do Hangar traz data de verdade na linha 40
+ * (vira DD/MM), enquanto a linha 180 da aba geral traz nome de mês. Tentar
+ * `new Date()` no nome do mês pode dar uma data válida e trocar o rótulo por
+ * algo que ninguém escreveu — por isso quem manda é o escopo, não a adivinhação.
+ */
+function _bolRotuloPeriodo_(bruto, ehData) {
+  if (ehData) {
+    let d = null;
+    if (bruto instanceof Date) {
+      d = bruto;
+    } else {
+      const p = new Date(bruto.toString());
+      if (!isNaN(p.getTime())) d = p;
+    }
+    if (d) {
+      return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+  }
+  return bruto.toString().trim().toUpperCase();
+}
+
+
+// ==========================================================================
+// DESENHO — um só, para os três
+// ==========================================================================
+function _bolCorretivas_(chave) {
+  const cfg = BOL_CORRETIVAS[chave];
+  if (!cfg) {
+    throw new Error('Escopo "' + chave + '" não existe em BOL_CORRETIVAS. Tem: ' +
+                    Object.keys(BOL_CORRETIVAS).join(', ') + '.');
+  }
+  const cor = function (nome) { return CR_DESIGN_SYSTEM.colors[nome]; };
+
+  const presentation = SlidesApp.openById(CR_DESIGN_SYSTEM.assets.presentationId);
+  const slide        = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  const pageWidth    = presentation.getPageWidth();
+  const pageHeight   = presentation.getPageHeight();
+
+  const equipes = cfg.series.map(function (s) { return s.equipe; });
+
+  // =========================================================
+  // --- 0. DADOS: primeiro a planilha (reserva), depois a base bruta ---
+  // =========================================================
+  const nomeAba = cfg.aba || CR_DESIGN_SYSTEM.assets.sheetName;
+  Logger.log('Extraindo Corretivas (' + chave + ') da aba "' + nomeAba + '"...');
+
+  const kpi = { FACILITIES: 0, PROPERTY: 0, OPERACAO: 0, LOCATARIO: 0, TOTAL: 0 };
+  const compVals = cfg.composicao.map(function () { return 0; });
+  let hist = {}, timeline = ['-'];
+  let deltaSemanal = null;   // só no escopo com seta SEMANAL
+  equipes.forEach(function (eq) { hist[eq] = [0]; });
+
+  try {
+    const ss    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
+    const sheet = ss.getSheetByName(nomeAba);
+    if (!sheet) throw new Error('Aba "' + nomeAba + '" não encontrada.');
+
+    const lido = (cfg.leitura === 'SOMA_LINHAS')
+      ? _bolLerSomaLinhas_(sheet, cfg, equipes)
+      : _bolLerUltimasColunas_(sheet, cfg, equipes);
+    hist     = lido.hist;
+    timeline = lido.timeline;
+
+    const lerCel = function (cel) {
+      return cel ? (Number(sheet.getRange(cel).getValue()) || 0) : 0;
+    };
+    Object.keys(cfg.kpis).forEach(function (k) { kpi[k] = lerCel(cfg.kpis[k]); });
+    cfg.composicao.forEach(function (c, i) { compVals[i] = lerCel(c.celula); });
+
+    if (cfg.seta === 'SEMANAL') deltaSemanal = _bolDeltasSemanais_(sheet, cfg);
+
+  } catch (e) {
+    Logger.log('Erro Corretivas ' + chave + ': ' + e.message);
+  }
+
+  // --- FONTE PREFERENCIAL: BASE BRUTA (Dados.gs) ---------------------------
+  // Os cartões, o gráfico e a composição saem da BD-CORRETIVAS, contados com a
+  // mesma regra de "aberto" e recortados pelo Centro de Custos do escopo. Com
+  // isso a soma FECHA por construção — cada chamado cai em exatamente uma
+  // equipe e em exatamente uma fatia — em vez de depender de células digitadas
+  // em lugares diferentes concordarem entre si.
+  const q = (typeof obterQuadroCorretivasBoletim_ === 'function')
+    ? obterQuadroCorretivasBoletim_(4, cfg.escopoCC) : null;
+  if (q) {
+    kpi.FACILITIES = q.kpis.facilities;
+    kpi.PROPERTY   = q.kpis.property;
+    kpi.OPERACAO   = q.kpis.operacao;
+    kpi.LOCATARIO  = q.kpis.locatarios;
+    kpi.TOTAL      = q.kpis.total;
+
+    equipes.forEach(function (eq) {
+      hist[eq] = q.historico.map(function (h) { return h[eq]; });
+    });
+    timeline = q.meses;
+
+    Logger.log('Slide 05 (' + chave + '): fonte = BD-CORRETIVAS. Fila hoje ' + kpi.TOTAL +
+               ' (Fac ' + kpi.FACILITIES + ' / Prop ' + kpi.PROPERTY +
+               ' / Loc ' + kpi.LOCATARIO + ' / Oper ' + kpi.OPERACAO + ').');
+
+    const somaComp = (q.composicao || []).reduce(function (a, c) { return a + c.val; }, 0);
+    if (somaComp && somaComp !== kpi.TOTAL) {
+      Logger.log('⚠️ Slide 05: composição soma ' + somaComp + ' mas o backlog é ' + kpi.TOTAL + '.');
+    }
+  } else {
+    Logger.log('Slide 05 (' + chave + '): base bruta indisponível — usando os valores digitados na planilha.');
+  }
+
+  // --- SETA DE CADA CARTÃO ---
+  // Vindo da base, a seta usa o ponto anterior do MESMO histórico: os dois
+  // lados da comparação saem da mesma contagem. A seção semanal da planilha só
+  // entra quando a base não respondeu — misturar as duas faria o cartão dizer
+  // um número e a seta comparar outro.
+  const anterior = q ? {
+    TOTAL: q.anterior.total, FACILITIES: q.anterior.facilities,
+    PROPERTY: q.anterior.property, LOCATARIO: q.anterior.locatarios,
+    OPERACAO: q.anterior.operacao
+  } : null;
+  const usaSemanal = !q && cfg.seta === 'SEMANAL' && deltaSemanal;
+  const sufixo = usaSemanal ? ' vs sem. ant.' : ' vs per. ant.';
+
+  const delta = function (fonte) {
+    if (anterior) return kpi[fonte] - (anterior[fonte] || 0);
+    if (usaSemanal) {
+      if (fonte === 'TOTAL') {
+        return Object.keys(deltaSemanal).reduce(function (a, k) { return a + deltaSemanal[k]; }, 0);
+      }
+      return deltaSemanal[fonte] || 0;
+    }
+    // Sem base e sem seção semanal: compara com o ponto anterior do histórico
+    // da própria planilha.
+    const somaPonto = function (i) {
+      return equipes.reduce(function (a, eq) {
+        const v = hist[eq]; return a + (v[i] === undefined ? 0 : v[i]);
+      }, 0);
+    };
+    if (fonte !== 'TOTAL') return null;   // sem comparativo por equipe: mostra %
+    const n = timeline.length;
+    return kpi.TOTAL - (n >= 2 ? somaPonto(n - 2) : kpi.TOTAL);
   };
 
-  const getPct = (val) => totCur > 0 ? Math.round((val / totCur) * 100) + '% do total' : '0% do total';
-
-  // ✅ CORREÇÃO 1: 5 cards agora — inclui Locatários
-  const metricsTop = [
-    { title: 'Backlog Total', val: totCur,  sub: formatTrend(diffTot) + ' vs per. ant.', col: CR_DESIGN_SYSTEM.colors.brandDark,  main: true  },
-    { title: 'Facilities',   val: facCur,  sub: getPct(facCur),                          col: CR_DESIGN_SYSTEM.colors.brandSoft,                          main: false },
-    { title: 'Property',     val: propCur, sub: getPct(propCur),                         col: CR_DESIGN_SYSTEM.colors.brandMed,   main: false },
-    { title: 'Locatários',   val: locCur,  sub: getPct(locCur),                          col: CR_DESIGN_SYSTEM.colors.accentOrange, main: false },
-    { title: 'Operação Hangar', val: operCur, sub: getPct(operCur),                         col: CR_DESIGN_SYSTEM.colors.brandLight, main: false }
-  ];
+  const setaTexto = function (d) {
+    return (d > 0 ? '▲ +' + d : d < 0 ? '▼ ' + d : '=') + sufixo;
+  };
+  const getPct = function (v) {
+    return kpi.TOTAL > 0 ? Math.round((v / kpi.TOTAL) * 100) + '% do total' : '0% do total';
+  };
 
   // =========================================================
-  // --- 1. SETUP VISUAL E CABEÇALHO PADRONIZADO ---
+  // --- 1. SETUP VISUAL E CABEÇALHO ---
   // =========================================================
-  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
-  
+  slide.getBackground().setSolidFill(cor('bgSlide'));
+
   const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, pageWidth - 400, -100, 500, 500);
-  ellipse.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandLight, 0.03); 
+  ellipse.getFill().setSolidFill(cor('brandLight'), 0.03);
   ellipse.getBorder().setTransparent();
 
   const marginX = CR_DESIGN_SYSTEM.layout.marginX;
@@ -120,202 +405,246 @@ function gerarSlide05_QuadroManutencao() {
 
   try {
     const logoBlob = DriveApp.getFileById(CR_DESIGN_SYSTEM.assets.logoId).getBlob();
-    slide.insertImage(logoBlob, pageWidth - marginX - CR_DESIGN_SYSTEM.assets.logoW, marginY, CR_DESIGN_SYSTEM.assets.logoW, CR_DESIGN_SYSTEM.assets.logoH);
-  } catch(e) {}
+    slide.insertImage(logoBlob, pageWidth - marginX - CR_DESIGN_SYSTEM.assets.logoW, marginY,
+                      CR_DESIGN_SYSTEM.assets.logoW, CR_DESIGN_SYSTEM.assets.logoH);
+  } catch (e) {}
 
-  const titleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY, pageWidth - 300, 40);
-  titleBox.getText().setText('Manutenção Corretiva').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(24).setForegroundColor(CR_DESIGN_SYSTEM.colors.textMain).setBold(true);
+  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY, pageWidth - 300, 40)
+    .getText().setText('Manutenção Corretiva').getTextStyle()
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(24)
+    .setForegroundColor(cor('textMain')).setBold(true);
 
-  const subtitleBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY + 35, pageWidth - 300, 30);
-  subtitleBox.getText().setText('Visão Executiva').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY + 35, pageWidth - 300, 30)
+    .getText().setText(cfg.subtitulo).getTextStyle()
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11)
+    .setForegroundColor(cor('textBody'));
 
-  // --- LINHA DE KPI CARDS SUPERIORES (5 cards) ---
-  const kpiY = marginY + 75;
-  const kpiH = 65;
-  const kpiGap = 10;
-  // ✅ Redistribui largura para 5 cards
-  const kpiWidth = (pageWidth - (marginX * 2) - (kpiGap * 4)) / 5;
+  // =========================================================
+  // --- 2. CARTÕES DE KPI ---
+  // =========================================================
+  // A largura sai da QUANTIDADE de cartões do escopo: 5 no completo, 4 no
+  // Facilities, 3 no Hangar. Antes cada cópia tinha o divisor escrito na mão.
+  const nCards   = cfg.cards.length;
+  const kpiY     = marginY + 75;
+  const kpiH     = 65;
+  const kpiGap   = 10;
+  const kpiWidth = (pageWidth - (marginX * 2) - (kpiGap * (nCards - 1))) / nCards;
 
-  function drawKpiCard(x, title, value, subText, color, isMain = false) {
+  cfg.cards.forEach(function (m, i) {
+    const x     = marginX + (i * (kpiWidth + kpiGap));
+    const value = kpi[m.fonte];
+    const d     = delta(m.fonte);
+    const sub   = (d === null) ? getPct(value) : setaTexto(d);
+    const c     = cor(m.cor);
+
     const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, kpiWidth, kpiH);
-    card.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-    card.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-    
+    card.getFill().setSolidFill(cor('cardBg'));
+    card.getBorder().getLineFill().setSolidFill(cor('lines'));
+
     const sideBorder = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, 4, kpiH);
-    sideBorder.getFill().setSolidFill(color);
+    sideBorder.getFill().setSolidFill(c);
     sideBorder.getBorder().setTransparent();
 
     const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, kpiY + 8, kpiWidth - 15, kpiH - 10);
-    box.getText().setText(title.toUpperCase() + '\n' + value + '\n' + subText);
+    box.getText().setText(m.titulo.toUpperCase() + '\n' + value + '\n' + sub);
     const txt = box.getText();
     txt.getParagraphStyle().setLineSpacing(105);
-    
-    txt.getRange(0, title.length).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-    txt.getRange(title.length + 1, title.length + 1 + value.toString().length).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(18).setBold(true).setForegroundColor(isMain ? color : CR_DESIGN_SYSTEM.colors.textMain);
-    txt.getRange(title.length + 1 + value.toString().length + 1, txt.getLength()).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
-      .setForegroundColor(subText.includes('↑') ? CR_DESIGN_SYSTEM.colors.accentRed : CR_DESIGN_SYSTEM.colors.textBody);
-  }
 
-  metricsTop.forEach((m, i) => {
-    drawKpiCard(marginX + (i * (kpiWidth + kpiGap)), m.title, m.val, m.sub, m.col, m.main);
+    txt.getRange(0, m.titulo.length).getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
+      .setForegroundColor(cor('textBody'));
+    txt.getRange(m.titulo.length + 1, m.titulo.length + 1 + value.toString().length).getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(18).setBold(true)
+      .setForegroundColor(m.principal ? c : cor('textMain'));
+    // Backlog subindo é ruim (vermelho), caindo é bom (verde). Antes o ▼ ficava
+    // cinza no escopo completo e verde no Facilities — mesma seta, duas
+    // leituras, no mesmo slide.
+    txt.getRange(m.titulo.length + 1 + value.toString().length + 1, txt.getLength()).getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
+      .setForegroundColor(sub.indexOf('▲') >= 0 ? cor('accentRed')
+                        : sub.indexOf('▼') >= 0 ? cor('accentGreen') : cor('textBody'));
   });
 
   // =========================================================
-  // --- 2. ÁREA CENTRAL (GRÁFICO DE BARRAS + RANKING) ---
+  // --- 3. GRÁFICO DA FILA ACUMULADA ---
   // =========================================================
-  const mainAreaY = kpiY + kpiH + 15;
-  const mainAreaH = pageHeight - mainAreaY - marginY - 20; 
-  
-  const sideWidth = 290; 
+  const mainAreaY  = kpiY + kpiH + 15;
+  const mainAreaH  = pageHeight - mainAreaY - marginY - 20;
+  const sideWidth  = 290;
   const chartWidth = (pageWidth - (marginX * 2)) - sideWidth - 15;
 
-  // 2.1. MARCO DO GRÁFICO
   const chartFrame = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX, mainAreaY, chartWidth, mainAreaH);
-  chartFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-  chartFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+  chartFrame.getFill().setSolidFill(cor('cardBg'));
+  chartFrame.getBorder().getLineFill().setSolidFill(cor('lines'));
 
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 20, mainAreaY + 12, 300, 25).getText()
     .setText('COMPORTAMENTO DA FILA ACUMULADA').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
+    .setForegroundColor(cor('brandMed'));
 
-  // ✅ LEGENDA CORRIGIDA — shapes independentes com espaçamento proporcional
-  const legendItems = [
-    { label: 'FACILITIES', color: CR_DESIGN_SYSTEM.colors.brandSoft },
-    { label: 'PROPERTY',   color: CR_DESIGN_SYSTEM.colors.brandDark },
-    { label: 'OPERAÇÃO HANGAR',   color: CR_DESIGN_SYSTEM.colors.brandLight }
-  ];
+  // Legenda: shapes independentes (quadrado + texto), não indexação de
+  // caracteres numa string só. A caixa tem o tamanho da PALAVRA — com largura
+  // fixa, "OPERAÇÃO HANGAR" quebrava no Montserrat do tema Mega.
   const legendY = mainAreaY + 40;
   let legendCursorX = marginX + 20;
-
-  legendItems.forEach((item) => {
-    const itemH = 10;
-
-    // Quadradinho colorido — mesma linha Y do texto
-    const sq = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, legendCursorX, legendY, itemH, itemH);
-    sq.getFill().setSolidFill(item.color);
+  cfg.series.forEach(function (s) {
+    const sq = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, legendCursorX, legendY, 10, 10);
+    sq.getFill().setSolidFill(cor(s.cor));
     sq.getBorder().setTransparent();
-
-    // Texto imediatamente ao lado, alinhado verticalmente ao centro
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, legendCursorX + itemH + 4, legendY - 2, 62, 14);
-    lbl.getText().setText(item.label).getTextStyle()
+    const textW = s.label.length * 6.2 + 8;
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, legendCursorX + 14, legendY - 2, textW, 14);
+    lbl.getText().setText(s.label).getTextStyle()
       .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(8).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+      .setForegroundColor(cor('textBody'));
     lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-    // Avança: quadrado(10) + gap(4) + texto(62) + espaço entre itens(14)
-    legendCursorX += 90;
+    legendCursorX += 14 + textW + 18;
   });
 
-  // --- DESENHO DO GRÁFICO DE BARRAS AGRUPADAS ---
   const pMarginX = 50, pMarginY = 55;
   const plotX = marginX + pMarginX;
   const plotY = mainAreaY + pMarginY;
   const plotW = chartWidth - (pMarginX * 2);
   const plotH = mainAreaH - (pMarginY + 35);
-  
+
   slide.insertLine(SlidesApp.LineCategory.STRAIGHT, plotX, plotY + plotH, plotX + plotW, plotY + plotH)
-    .getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-  
-  const stepX = plotW / (timeline.length - 1);
-  
-  timeline.forEach((m, i) => {
-    const x = plotX + (i * stepX);
-    const vLine = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x, plotY, x, plotY + plotH);
-    vLine.getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-    vLine.setDashStyle(SlidesApp.DashStyle.DASH);
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - 50, plotY + plotH + 5, 100, 20);
+    .getLineFill().setSolidFill(cor('lines'));
+
+  // Eixo adaptativo: o Facilities pode ter 8 meses onde os outros têm 4.
+  const nPts  = Math.max(timeline.length, 1);
+  const stepX = plotW / (nPts > 1 ? nPts - 1 : 1);
+  const xFont = nPts > 5 ? 6 : 8;
+  const xLblW = nPts > 5 ? 56 : 100;
+
+  timeline.forEach(function (m, i) {
+    const x  = plotX + (i * stepX);
+    const vl = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x, plotY, x, plotY + plotH);
+    vl.getLineFill().setSolidFill(cor('lines'));
+    vl.setDashStyle(SlidesApp.DashStyle.DASH);
+    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - xLblW / 2, plotY + plotH + 5, xLblW, 20);
     lbl.getText().setText(m).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(8).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(xFont).setBold(true)
+      .setForegroundColor(cor('textBody'));
     lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   });
 
-  const barW = 12; 
-  const barSeries = [
-    { color: CR_DESIGN_SYSTEM.colors.brandSoft,                          values: histFac,  xOffset: -20 }, 
-    { color: CR_DESIGN_SYSTEM.colors.brandDark,  values: histProp, xOffset: -6  }, 
-    { color: CR_DESIGN_SYSTEM.colors.brandLight, values: histOper, xOffset:  8  } 
-  ];
+  // Barras: largura fixa onde o nº de pontos é fixo; proporcional ao vão onde
+  // ele varia (Facilities). Os deslocamentos seguem a mesma regra.
+  const nSer = cfg.series.length;
+  const barW = (cfg.barW === 'auto')
+    ? Math.max(5, Math.min(14, Math.floor(stepX * 0.30)))
+    : cfg.barW;
+  const offsets = cfg.series.map(function (s, i) {
+    return (s.offset !== undefined) ? s.offset : (i - nSer / 2) * (barW + 1) + 1;
+  });
 
-  const maxChartVal = Math.max(...histFac, ...histProp, ...histOper, 10);
-  const scaleYLine = plotH / (maxChartVal * 1.4); 
+  let todos = [10];
+  equipes.forEach(function (eq) { todos = todos.concat(hist[eq]); });
+  const scaleYLine = plotH / (Math.max.apply(null, todos) * 1.62);
 
-  barSeries.forEach(series => {
-    for (let i = 0; i < series.values.length; i++) {
-      const val = series.values[i];
-      const actualHeight = Math.max(val * scaleYLine, 1); 
-      const xCenterGroup = plotX + (i * stepX);
-      const bX = xCenterGroup + series.xOffset;
-      const bY = (plotY + plotH) - actualHeight;
-      
-      const rect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bX, bY, barW, actualHeight);
-      rect.getFill().setSolidFill(series.color);
+  // Caixa do rótulo, centrada na barra. Nunca abaixo de 26pt: a TEXT_BOX tem
+  // ~7pt de recuo interno de CADA lado que a API não deixa desligar, e abaixo
+  // disso um valor de 3 dígitos é cortado — foi o bug em que 331 aparecia 33.
+  const lblCaixa = (cfg.lblCaixa === 'auto') ? Math.max(26, barW + 12) : cfg.lblCaixa;
+  const lblFont  = nPts > 5 ? 5.5 : 6.5;
+
+  cfg.series.forEach(function (s, si) {
+    const valores = hist[s.equipe] || [];
+    const c = cor(s.cor);
+    for (let i = 0; i < valores.length; i++) {
+      const val = valores[i];
+      const h   = Math.max(val * scaleYLine, 1);
+      const bX  = plotX + (i * stepX) + offsets[si];
+      const bY  = (plotY + plotH) - h;
+
+      const rect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bX, bY, barW, h);
+      rect.getFill().setSolidFill(c);
       rect.getBorder().setTransparent();
-      
-      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bX - 10, bY - 14, barW + 20, 15);
+
+      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+        bX + (barW / 2) - (lblCaixa / 2), bY - 16, lblCaixa, 14);
       txtBox.getText().setText(val.toString()).getTextStyle()
-        .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true).setForegroundColor(series.color);
-      txtBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(lblFont).setBold(true)
+        .setForegroundColor(c);
+      // setLineSpacing(100) impede que uma quebra residual empurre o número
+      // para longe da barra. Abaixo de 100 a API lança "Invalid argument".
+      txtBox.getText().getParagraphStyle()
+        .setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
     }
   });
 
-  // 2.2. RANKING DE COMPOSIÇÃO POR TIPO
+  // =========================================================
+  // --- 4. PAINEL DE COMPOSIÇÃO (direita) ---
+  // =========================================================
   const rankCardX = marginX + chartWidth + 15;
   const rankFrame = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rankCardX, mainAreaY, sideWidth, mainAreaH);
-  rankFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-  rankFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
+  rankFrame.getFill().setSolidFill(cor('cardBg'));
+  rankFrame.getBorder().getLineFill().setSolidFill(cor('lines'));
 
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rankCardX + 15, mainAreaY + 12, sideWidth - 30, 25).getText()
     .setText('COMPOSIÇÃO POR TIPO').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
+    .setForegroundColor(cor('brandMed'));
 
-  // Base = D40+E40+F40+G40 = 471 = C40 — fecha exato com a planilha
-  const rankTot = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
-  const getRankPct    = (val) => rankTot > 0 ? Math.round((val / rankTot) * 100) : 0;
-  const getRankFactor = (val) => rankTot > 0 ? (val / rankTot) : 0;
+  // Da base quando ela responde, senão as células. Os dois caminhos mostram a
+  // mesma coisa; a diferença é que pela base as fatias FECHAM com o backlog,
+  // porque cada chamado em aberto cai em exatamente uma.
+  let rankData;
+  if (q && q.composicao && q.composicao.length) {
+    const totalComp = q.composicao.reduce(function (a, c) { return a + c.val; }, 0);
+    rankData = q.composicao.map(function (c) {
+      const lbl = c.label.toUpperCase();
+      return {
+        label : lbl,
+        val   : c.val,
+        pct   : c.pct + '%',
+        color : cor(BOL_COR_COMPOSICAO[lbl] || 'brandSoft'),
+        // A barra é a fatia do backlog — o mesmo número do "%" ao lado.
+        factor: totalComp > 0 ? c.val / totalComp : 0
+      };
+    });
+  } else {
+    const rankTot = compVals.reduce(function (a, v) { return a + v; }, 0);
+    rankData = cfg.composicao.map(function (c, i) {
+      return {
+        label : c.label,
+        val   : compVals[i],
+        pct   : (rankTot > 0 ? Math.round((compVals[i] / rankTot) * 100) : 0) + '%',
+        color : cor(BOL_COR_COMPOSICAO[c.label] || 'brandSoft'),
+        factor: rankTot > 0 ? compVals[i] / rankTot : 0
+      };
+    });
+  }
 
-  const rankData = [
-    { label: 'CORRETIVAS',            val: valCorretivas,     pct: getRankPct(valCorretivas)     + '%', color: CR_DESIGN_SYSTEM.colors.brandDark,    factor: getRankFactor(valCorretivas)     },
-    { label: 'MELHORIAS /\nPROJETOS', val: valMelhorias,      pct: getRankPct(valMelhorias)      + '%', color: CR_DESIGN_SYSTEM.colors.accentOrange, factor: getRankFactor(valMelhorias)      },
-    { label: 'PROJETOS',              val: valProjetos,        pct: getRankPct(valProjetos)        + '%', color: CR_DESIGN_SYSTEM.colors.brandMed,     factor: getRankFactor(valProjetos)        },
-    { label: 'LOCATÁRIOS',            val: valLocatariosComp, pct: getRankPct(valLocatariosComp) + '%', color: CR_DESIGN_SYSTEM.colors.brandLight,   factor: getRankFactor(valLocatariosComp) }
-  ];
-
-  // Calcula rowH dinamicamente para caber todos os itens dentro do painel
-  const rankHeaderH = 45;
-  const rankGap     = 6;
+  // rowH calculado para caber todos os itens: a lista muda de tamanho conforme
+  // o escopo (3 ou 4 fatias) e conforme a fonte.
+  const rankHeaderH = 45, rankGap = 6;
   const rowH = Math.floor((mainAreaH - rankHeaderH - (rankGap * (rankData.length - 1))) / rankData.length);
-  let currentRankY = mainAreaY + rankHeaderH;
-  
-  const labelX   = rankCardX + 10;
-  const dataX    = rankCardX + 95; 
-  const barX     = rankCardX + 155;  
-  const maxBarWidth = sideWidth - (barX - rankCardX) - 15; 
+  let currentRankY  = mainAreaY + rankHeaderH;
+  const labelX = rankCardX + 10, dataX = rankCardX + 95, barX = rankCardX + 155;
+  const maxBarWidth = sideWidth - (barX - rankCardX) - 15;
 
-  rankData.forEach((d) => {
+  rankData.forEach(function (d) {
     const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, labelX, currentRankY, 80, rowH);
     lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
     lblBox.getText().setText(d.label).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(6.5).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.textMain);
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(6.5).setBold(true)
+      .setForegroundColor(cor('textMain'));
 
     const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX, currentRankY, 55, rowH);
     valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    valBox.getText().setText(d.val + " (" + d.pct + ")").getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(7.5).setBold(true).setForegroundColor(d.color);
+    valBox.getText().setText(d.val + ' (' + d.pct + ')').getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(7.5).setBold(true)
+      .setForegroundColor(d.color);
 
-    const barHeight = (d.label === 'CORRETIVAS') ? 12 : 8;
+    const barHeight  = (d.label === 'CORRETIVAS') ? 12 : 8;
     const barYOffset = (rowH / 2) - (barHeight / 2);
-    
+
     const bgBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, currentRankY + barYOffset, maxBarWidth, barHeight);
-    bgBar.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines, 0.4);
+    bgBar.getFill().setSolidFill(cor('lines'), 0.4);
     bgBar.getBorder().setTransparent();
-    
+
     const progressW = maxBarWidth * d.factor;
-    if (progressW > 0.5) { 
+    if (progressW > 0.5) {
       const progressBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, currentRankY + barYOffset, progressW, barHeight);
       progressBar.getFill().setSolidFill(d.color);
       progressBar.getBorder().setTransparent();
@@ -325,284 +654,65 @@ function gerarSlide05_QuadroManutencao() {
   });
 
   // =========================================================
-  // --- RODAPÉ E PAGINAÇÃO PADRONIZADOS ---
+  // --- 5. RODAPÉ ---
   // =========================================================
-  const footerY = pageHeight - 25;
-  const footerLeft = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, footerY, 400, 20);
-  footerLeft.getText().setText('Capital Realty • Gestão de Facilities & Property').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-
-  const footerRight = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, pageWidth - marginX - 100, footerY, 100, 20);
-  footerRight.getText().setText('Página 05').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-  footerRight.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-
-  Logger.log("✅ Slide 04 concluído! 5 KPI cards, legenda robusta com shapes independentes.");
-}
-
-// =========================================================
-// VARIANTE FACILITIES — sem Operação Hangar
-// =========================================================
-function gerarSlide05_QuadroManutencao_Facilities() {
-  const presentation = SlidesApp.openById(CR_DESIGN_SYSTEM.assets.presentationId);
-  const slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const pageWidth  = presentation.getPageWidth();
-  const pageHeight = presentation.getPageHeight();
-
-  let histFac = [0,0,0,0], histProp = [0,0,0,0];
-  let timeline = ['-','-','-','-'];
-  let kpiFac = 0, kpiProp = 0, kpiTot = 0;
-  let valCorretivas = 0, valMelhorias = 0, valProjetos = 0, valLocatariosComp = 0;
-
-  try {
-    const ss1    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
-    const sheet1 = ss1.getSheetByName(CR_DESIGN_SYSTEM.assets.sheetName);
-
-    if (sheet1) {
-      const lastCol   = sheet1.getLastColumn();
-      const headerRow = sheet1.getRange(180, 1, 1, lastCol).getValues()[0];
-      let targetCols = [], tempTimeline = [];
-      for (let i = headerRow.length - 1; i >= 1 && targetCols.length < 4; i--) {
-        if (headerRow[i] && headerRow[i].toString().trim() !== "") {
-          targetCols.unshift(i + 1);
-          tempTimeline.unshift(headerRow[i].toString().trim().toUpperCase());
-        }
-      }
-      while (tempTimeline.length < 4) tempTimeline.unshift("-");
-      timeline = tempTimeline;
-
-      const getValsFromCols = (rowNum) => {
-        let vals = [];
-        for (let col of targetCols) {
-          vals.push(Number(sheet1.getRange(rowNum, col).getValue()) || 0);
-        }
-        while (vals.length < 4) vals.unshift(0);
-        return vals;
-      };
-
-      histFac  = getValsFromCols(182);
-      histProp = getValsFromCols(183);
-
-      kpiFac  = Number(sheet1.getRange('C37').getValue()) || 0;
-      kpiProp = Number(sheet1.getRange('C38').getValue()) || 0;
-      // Facilities: total sem Hangar
-      kpiTot  = kpiFac + kpiProp;
-
-      valCorretivas     = Number(sheet1.getRange('G40').getValue()) || 0;
-      valMelhorias      = Number(sheet1.getRange('D40').getValue()) || 0;
-      valProjetos       = Number(sheet1.getRange('E40').getValue()) || 0;
-      valLocatariosComp = Number(sheet1.getRange('F40').getValue()) || 0;
-    }
-  } catch(e) {
-    Logger.log("Erro Facilities Corretiva: " + e.message);
-  }
-
-  const facCur  = kpiFac;
-  const propCur = kpiProp;
-  const totCur  = kpiTot;
-  const totPrev = histFac[2] + histProp[2];
-  const diffTot = totCur - totPrev;
-
-  const formatTrend = (diff) => diff > 0 ? '↑ +' + diff : diff < 0 ? '↓ ' + diff : '= 0';
-  const getPct      = (val)  => totCur > 0 ? Math.round((val / totCur) * 100) + '% do total' : '0%';
-
-  // 4 cards — sem Hangar
-  const metricsTop = [
-    { title: 'Backlog Total', val: totCur,  sub: formatTrend(diffTot) + ' vs per. ant.', col: CR_DESIGN_SYSTEM.colors.brandDark, main: true  },
-    { title: 'Facilities',   val: facCur,  sub: getPct(facCur),                          col: CR_DESIGN_SYSTEM.colors.brandSoft,                         main: false },
-    { title: 'Property',     val: propCur, sub: getPct(propCur),                         col: CR_DESIGN_SYSTEM.colors.brandMed,  main: false },
-    { title: 'Locatários',   val: valLocatariosComp, sub: Math.round((valLocatariosComp/totCur||0)*100)+'% do total', col: CR_DESIGN_SYSTEM.colors.accentOrange, main: false },
-  ];
-
-  // Setup visual — idêntico ao original
-  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
-  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, pageWidth - 400, -100, 500, 500);
-  ellipse.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandLight, 0.03);
-  ellipse.getBorder().setTransparent();
-
-  const marginX = CR_DESIGN_SYSTEM.layout.marginX;
-  const marginY = CR_DESIGN_SYSTEM.layout.marginY;
-
-  try {
-    const logoBlob = DriveApp.getFileById(CR_DESIGN_SYSTEM.assets.logoId).getBlob();
-    slide.insertImage(logoBlob, pageWidth - marginX - CR_DESIGN_SYSTEM.assets.logoW, marginY, CR_DESIGN_SYSTEM.assets.logoW, CR_DESIGN_SYSTEM.assets.logoH);
-  } catch(e) {}
-
-  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY, pageWidth - 300, 40)
-    .getText().setText('Manutenção Corretiva').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(24)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textMain).setBold(true);
-  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, marginY + 35, pageWidth - 300, 30)
-    .getText().setText('Visão Executiva').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(11)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-
-  // KPI cards (4)
-  const kpiY = marginY + 75, kpiH = 65, kpiGap = 10;
-  const kpiWidth = (pageWidth - (marginX * 2) - (kpiGap * 3)) / 4;
-
-  function drawKpiCard(x, title, value, subText, color, isMain) {
-    const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, kpiWidth, kpiH);
-    card.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-    card.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-    const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, kpiY, 4, kpiH);
-    side.getFill().setSolidFill(color);
-    side.getBorder().setTransparent();
-    const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, kpiY + 8, kpiWidth - 15, kpiH - 10);
-    box.getText().setText(title.toUpperCase() + '\n' + value + '\n' + subText);
-    const txt = box.getText();
-    txt.getParagraphStyle().setLineSpacing(105);
-    txt.getRange(0, title.length).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-    txt.getRange(title.length + 1, title.length + 1 + value.toString().length).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(18).setBold(true)
-      .setForegroundColor(isMain ? color : CR_DESIGN_SYSTEM.colors.textMain);
-    txt.getRange(title.length + 1 + value.toString().length + 1, txt.getLength()).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7).setBold(true)
-      .setForegroundColor(subText.includes('↑') ? CR_DESIGN_SYSTEM.colors.accentRed : CR_DESIGN_SYSTEM.colors.textBody);
-  }
-
-  metricsTop.forEach((m, i) => drawKpiCard(marginX + (i * (kpiWidth + kpiGap)), m.title, m.val, m.sub, m.col, m.main));
-
-  // Gráfico de barras — só Facilities e Property
-  const mainAreaY = kpiY + kpiH + 15;
-  const mainAreaH = pageHeight - mainAreaY - marginY - 20;
-  const sideWidth = 290;
-  const chartWidth = (pageWidth - (marginX * 2)) - sideWidth - 15;
-
-  const chartFrame = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, marginX, mainAreaY, chartWidth, mainAreaH);
-  chartFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-  chartFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-
-  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX + 20, mainAreaY + 12, 300, 25).getText()
-    .setText('COMPORTAMENTO DA FILA ACUMULADA').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
-
-  // Legenda — só 2 séries
-  const legendItems = [
-    { label: 'FACILITIES', color: CR_DESIGN_SYSTEM.colors.brandSoft },
-    { label: 'PROPERTY',   color: CR_DESIGN_SYSTEM.colors.brandDark },
-  ];
-  const legendY = mainAreaY + 40;
-  let legendCursorX = marginX + 20;
-  legendItems.forEach(item => {
-    const sq = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, legendCursorX, legendY, 10, 10);
-    sq.getFill().setSolidFill(item.color); sq.getBorder().setTransparent();
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, legendCursorX + 14, legendY - 2, 70, 14);
-    lbl.getText().setText(item.label).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(8).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-    lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    legendCursorX += 90;
-  });
-
-  const pMarginX = 50, pMarginY = 55;
-  const plotX = marginX + pMarginX, plotY = mainAreaY + pMarginY;
-  const plotW = chartWidth - (pMarginX * 2), plotH = mainAreaH - pMarginY - 35;
-
-  slide.insertLine(SlidesApp.LineCategory.STRAIGHT, plotX, plotY + plotH, plotX + plotW, plotY + plotH)
-    .getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-
-  const stepX = plotW / (timeline.length - 1);
-  timeline.forEach((m, i) => {
-    const x = plotX + (i * stepX);
-    const vl = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x, plotY, x, plotY + plotH);
-    vl.getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-    vl.setDashStyle(SlidesApp.DashStyle.DASH);
-    const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - 50, plotY + plotH + 5, 100, 20);
-    lbl.getText().setText(m).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(8).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
-    lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  });
-
-  const barW = 14;
-  const barSeries = [
-    { color: CR_DESIGN_SYSTEM.colors.brandSoft,                         values: histFac,  xOffset: -10 },
-    { color: CR_DESIGN_SYSTEM.colors.brandDark, values: histProp, xOffset:  4  },
-  ];
-  const maxChartVal = Math.max(...histFac, ...histProp, 10);
-  const scaleYLine  = plotH / (maxChartVal * 1.4);
-
-  barSeries.forEach(series => {
-    for (let i = 0; i < series.values.length; i++) {
-      const val = series.values[i];
-      const h   = Math.max(val * scaleYLine, 1);
-      const bX  = plotX + (i * stepX) + series.xOffset;
-      const bY  = (plotY + plotH) - h;
-      const rect = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bX, bY, barW, h);
-      rect.getFill().setSolidFill(series.color); rect.getBorder().setTransparent();
-      const txtBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bX - 5, bY - 14, barW + 10, 14);
-      txtBox.getText().setText(val.toString()).getTextStyle()
-        .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(6.5).setBold(true)
-        .setForegroundColor(series.color);
-      txtBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    }
-  });
-
-  // Composição por Tipo (igual ao original)
-  const rankCardX   = marginX + chartWidth + 15;
-  const rankFrame   = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rankCardX, mainAreaY, sideWidth, mainAreaH);
-  rankFrame.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.cardBg);
-  rankFrame.getBorder().getLineFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines);
-
-  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rankCardX + 15, mainAreaY + 12, sideWidth - 30, 25).getText()
-    .setText('COMPOSIÇÃO POR TIPO').getTextStyle()
-    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(10).setBold(true)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
-
-  const rankTot       = valCorretivas + valMelhorias + valProjetos + valLocatariosComp;
-  const getRankPct    = (val) => rankTot > 0 ? Math.round((val / rankTot) * 100) : 0;
-  const getRankFactor = (val) => rankTot > 0 ? val / rankTot : 0;
-
-  const rankData = [
-    { label: 'CORRETIVAS',            val: valCorretivas,     pct: getRankPct(valCorretivas)     + '%', color: CR_DESIGN_SYSTEM.colors.brandDark,    factor: getRankFactor(valCorretivas)     },
-    { label: 'MELHORIAS /\nPROJETOS', val: valMelhorias,      pct: getRankPct(valMelhorias)      + '%', color: CR_DESIGN_SYSTEM.colors.accentOrange, factor: getRankFactor(valMelhorias)      },
-    { label: 'PROJETOS',              val: valProjetos,        pct: getRankPct(valProjetos)        + '%', color: CR_DESIGN_SYSTEM.colors.brandMed,     factor: getRankFactor(valProjetos)        },
-    { label: 'LOCATÁRIOS',            val: valLocatariosComp, pct: getRankPct(valLocatariosComp) + '%', color: CR_DESIGN_SYSTEM.colors.brandLight,   factor: getRankFactor(valLocatariosComp) },
-  ];
-
-  const rankHeaderH = 45, rankGap = 6;
-  const rowH = Math.floor((mainAreaH - rankHeaderH - (rankGap * (rankData.length - 1))) / rankData.length);
-  let currentRankY  = mainAreaY + rankHeaderH;
-  const labelX = rankCardX + 10, dataX = rankCardX + 95, barX = rankCardX + 155;
-  const maxBarWidth = sideWidth - (barX - rankCardX) - 15;
-
-  rankData.forEach(d => {
-    const lblBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, labelX, currentRankY, 80, rowH);
-    lblBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    lblBox.getText().setText(d.label).getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(6.5).setBold(true)
-      .setForegroundColor(CR_DESIGN_SYSTEM.colors.textMain);
-    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX, currentRankY, 55, rowH);
-    valBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    valBox.getText().setText(d.val + " (" + d.pct + ")").getTextStyle()
-      .setFontFamily(CR_DESIGN_SYSTEM.typography.titles).setFontSize(7.5).setBold(true)
-      .setForegroundColor(d.color);
-    const barH2 = (d.label === 'CORRETIVAS') ? 12 : 8;
-    const barYOff = (rowH / 2) - (barH2 / 2);
-    const bgBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, currentRankY + barYOff, maxBarWidth, barH2);
-    bgBar.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.lines, 0.4); bgBar.getBorder().setTransparent();
-    const pw = maxBarWidth * d.factor;
-    if (pw > 0.5) {
-      const pb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barX, currentRankY + barYOff, pw, barH2);
-      pb.getFill().setSolidFill(d.color); pb.getBorder().setTransparent();
-    }
-    currentRankY += rowH + rankGap;
-  });
-
   const footerY = pageHeight - 25;
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, marginX, footerY, 400, 20)
     .getText().setText('Capital Realty • Gestão de Facilities & Property').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+    .setForegroundColor(cor('textBody'));
+
   const footerRight = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, pageWidth - marginX - 100, footerY, 100, 20);
   footerRight.getText().setText('Página 05').getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(7)
-    .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
+    .setForegroundColor(cor('textBody'));
   footerRight.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 
-  Logger.log("✅ Slide 05 Facilities (sem Hangar) concluído!");
+  Logger.log('✅ Slide 05 (Corretivas — ' + chave + ') concluído!');
 }
+
+
+/**
+ * Variação da última semana vs a penúltima, por categoria, lida da seção
+ * POR MEGA SEMANAL da aba dos Megas. Cada categoria são 3 linhas (uma por
+ * Mega) que se somam.
+ *
+ * Só serve de RESERVA: quando a base bruta responde, a seta sai dela, porque
+ * cartão e seta precisam vir da mesma contagem.
+ */
+function _bolDeltasSemanais_(sheet, cfg) {
+  if (!cfg.semanal) return null;
+  const lastCol = sheet.getLastColumn();
+  const blocos = {};
+  Object.keys(cfg.semanal).forEach(function (k) {
+    const b = cfg.semanal[k];
+    blocos[k] = sheet.getRange(b[0], 1, b[1], lastCol).getValues();
+  });
+
+  const ref = blocos[Object.keys(cfg.semanal)[0]];
+  const cols = [];
+  for (let i = 2; i < lastCol; i++) {
+    if (ref.some(function (r) {
+      return r[i] !== '' && r[i] !== null && !isNaN(Number(r[i])) && Number(r[i]) !== 0;
+    })) cols.push(i);
+  }
+  if (cols.length < 2) return null;
+
+  const u = cols[cols.length - 1], p = cols[cols.length - 2];
+  const out = {};
+  Object.keys(blocos).forEach(function (k) {
+    out[k] = _bolSomaColuna_(blocos[k], u) - _bolSomaColuna_(blocos[k], p);
+  });
+  return out;
+}
+
+
+// ==========================================================================
+// ATALHOS — VER SÓ ESTE SLIDE
+// ==========================================================================
+// Limpa a apresentação e desenha só a Manutenção Corretiva, no escopo pedido.
+// Passam pelo motor do 00_Main.gs, que aplica e restaura o tema. Sem
+// parâmetro, para aparecer no menu "Selecionar função" do editor.
+function verManutencaoCorretiva()            { return _bolVerSlide_('COMPLETO',   'Manutenção Corretiva'); }
+function verManutencaoCorretivaFacilities()  { return _bolVerSlide_('FACILITIES', 'Manutenção Corretiva'); }
+function verManutencaoCorretivaHangar()      { return _bolVerSlide_('HANGAR',     'Manutenção Corretiva'); }

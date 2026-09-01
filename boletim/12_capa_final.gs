@@ -53,10 +53,34 @@ function gerarCapaFinal() {
     .setForegroundColor(CR_DESIGN_SYSTEM.colors.brandDark);
   msgBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-  // Período
+  // Período — detector de semana (QUADRO COMPARATIVO, linha 33, regra -1 dia)
+  // Mesmo formato da capa de abertura (00_capa.gs) para as datas condizerem.
+  let textoPeriodo = 'Semana ' + getISOWeek(new Date()); // fallback: semana ISO de hoje
+  try {
+    const ssCapaF    = SpreadsheetApp.openById(CR_DESIGN_SYSTEM.assets.spreadsheetId);
+    const sheetCapaF = ssCapaF.getSheetByName(CR_DESIGN_SYSTEM.assets.sheetName);
+    if (sheetCapaF) {
+      const lastColCapaF = sheetCapaF.getLastColumn();
+      const rowSemanaF   = sheetCapaF.getRange(33, 1, 1, lastColCapaF).getValues()[0];
+      let dataSemanaRefF = null;
+      for (let i = rowSemanaF.length - 1; i >= 0; i--) {
+        const raw = rowSemanaF[i];
+        if (raw === "" || raw === null) continue;
+        const d = (raw instanceof Date) ? new Date(raw.getTime()) : new Date(raw.toString());
+        if (!isNaN(d.getTime())) { d.setDate(d.getDate() - 1); dataSemanaRefF = d; break; }
+      }
+      const semInfoF = getSemanaBoletim(dataSemanaRefF);
+      if (semInfoF) {
+        textoPeriodo = 'Semana ' + semInfoF.numero + ' • ' + semInfoF.intervalo + ' de ' + semInfoF.fim.getFullYear();
+      }
+    }
+  } catch(e) {
+    Logger.log("Aviso (Capa Final): não foi possível detectar a semana. " + e.message);
+  }
+
   const periodoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
     (pageWidth / 2) - 200, lineY + 44, 400, 18);
-  periodoBox.getText().setText('Semana 25/05 a 31/05 de 2026').getTextStyle()
+  periodoBox.getText().setText(textoPeriodo).getTextStyle()
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(10)
     .setForegroundColor(CR_DESIGN_SYSTEM.colors.textBody);
   periodoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);

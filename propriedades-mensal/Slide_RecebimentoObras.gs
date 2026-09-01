@@ -152,11 +152,16 @@ function _recPaginas_(deck, SW, SH, rel, linhas, tag, kpis, pctStr, hoje, legend
     slide.getBackground().setSolidFill(TAB_C.bgSlide);
     _tabMarcarSlide_(slide, tag);
 
-    const bannerH = _tabDesenharBanner_(slide, SW, SH, rel.titulo, rel.subtitulo);
+    // criarHeaderPadrao (01_Config.gs), não _tabDesenharBanner_ — os dois
+    // desenhavam cabeçalhos diferentes no mesmo deck (um claro, um faixa
+    // escura), e a apresentação "trocava de layout" no meio da geração.
+    // topo fixo em 74 = mesma linha usada por Preventivas/Corretivas/Backlog
+    // (linha separadora do header em y=62 + ~12pt de folga).
+    criarHeaderPadrao(slide, rel.titulo, rel.subtitulo);
 
     const rodapeH = SH * 0.095;
     const rodapeY = SH - SH * 0.025 - rodapeH;
-    let topo      = bannerH + SH * 0.015;
+    let topo      = 74;
 
     if (legenda) {
       const h = SH * 0.045;

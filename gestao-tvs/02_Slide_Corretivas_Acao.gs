@@ -3,74 +3,41 @@
  * DESCRIÇÃO: Foco de Ação (Matriz de Corretivas).
  */
 
-function gerarSlideCorretivasDetalhe(slide, planilha, dataGlobal, unit) { // Recebe slide direto
-  const aba = planilha.getSheetByName(unit.sheetChamadosDetalhe);
-  if (!aba) return;
+function gerarSlideCorretivasDetalhe(slide, dataGlobal, unit) {
+  const d = obterBacklogCorretivoTV_(unit);
+  if (!d) { Logger.log('⚠️ Backlog Corretivo (' + unit.name + '): sem dados na BD — slide preservado.'); return; }
 
-  const ultimaLinha = aba.getLastRow();
-  if (ultimaLinha < 9) return;
-
-  const dados = aba.getRange(9, 1, ultimaLinha - 8, 10).getValues();
-
-  let pEmergencial = 0, pAlta = 0, pNormal = 0, pBaixa = 0;
-  const areasMap = {};
-
-  dados.forEach(linha => {
-    const area = linha[4] ? linha[4].toString().trim() : "";
-    const prioridade = linha[9] ? linha[9].toString().trim().toUpperCase() : "";
-
-    if (!area && !prioridade) return;
-
-    if (prioridade === "EMERGENCIAL") pEmergencial++;
-    else if (prioridade === "ALTA") pAlta++;
-    else if (prioridade === "NORMAL") pNormal++;
-    else if (prioridade === "BAIXA") pBaixa++;
-
-    if (area) {
-      if (!areasMap[area]) areasMap[area] = 0;
-      areasMap[area]++;
-    }
-  });
-
-  const topAreas = Object.keys(areasMap).map(k => ({ area: k, count: areasMap[k] }))
-    .sort((a, b) => b.count - a.count).slice(0, 6);
-
-  criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit);
+  slide.getPageElements().forEach(el => el.remove());
+  criarDashboardCorretivasDetalhe(slide, d.pEmergencial, d.pAlta, d.pNormal, d.pBaixa,
+    d.topAreas, dataGlobal, unit, d.totalAnterior, d.diasComparacao);
 }
 
-function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit) {
+function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit, prevBacklog, diasComp) {
   const ds = CR_DESIGN_SYSTEM;
   const totalBacklog = pEmergencial + pAlta + pNormal + pBaixa;
   let topAreaName = topAreas.length > 0 ? topAreas[0].area.toUpperCase() : "N/D";
 
   if (topAreaName.includes("PREVENTIVO DE INCÊNDIO")) topAreaName = "SISTEMA DE INCÊNDIO";
 
-  const scriptProps = PropertiesService.getScriptProperties();
-  const histStr = scriptProps.getProperty(unit.keys.corr);
-  let histFila = histStr ? JSON.parse(histStr) : [];
-  if (histFila.length === 0 || histFila[histFila.length - 1].count !== totalBacklog) {
-    histFila.push({ date: dataGlobal, count: totalBacklog });
-  }
-  if (histFila.length > 10) histFila = histFila.slice(histFila.length - 10);
-  scriptProps.setProperty(unit.keys.corr, JSON.stringify(histFila));
-
-  let prevBacklog = totalBacklog;
-  if (histFila.length >= 2) prevBacklog = histFila[histFila.length - 2].count;
-  let diff = totalBacklog - prevBacklog;
+  // prevBacklog vem CALCULADO da base (fila de N dias atrás), não de um
+  // retrato guardado no ScriptProperties entre execuções.
+  if (prevBacklog == null) prevBacklog = totalBacklog;
+  const diff = totalBacklog - prevBacklog;
+  const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
 
   applyBrandHeaderAndBackground(slide, "Backlog Corretivo", "Matriz de Prioridade e Disciplinas", dataGlobal, unit);
 
   if (totalBacklog > 0 || prevBacklog > 0) {
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${totalBacklog})`;
+    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${totalBacklog})${vs}`;
     let badgeBgColor = ds.colors.bgSlide;
     let badgeBorderColor = ds.colors.lines;
     let badgeTxtColor = ds.colors.textBody;
 
     if (diff > 0) {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})`;
+      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
       badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
     } else if (diff < 0) {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})`;
+      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
       badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
     }
 
@@ -132,9 +99,8 @@ function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pB
       if (index === 0) { barColor = ds.colors.accentRed; textColor = ds.colors.accentRed; isTop = true; }
       else if (index === 1) { barColor = ds.colors.accentOrange; textColor = ds.colors.accentOrange; isTop = true; }
 
-      const prefix = index === 0 ? "🔥 " : "";
       const tArea = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, currY, rW - 60, 20);
-      tArea.getText().setText(prefix + displayArea).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(textColor).setBold(true);
+      tArea.getText().setText(displayArea).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(textColor).setBold(true);
 
       const tVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX + rW - 60, currY, 60, 20);
       tVal.getText().setText(`${item.count} | ${perc}%`).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(textColor).setBold(true);
@@ -152,6 +118,6 @@ function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pB
   }
 
   const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: Infraspeak • * Comparações referem-se à semana anterior.")
+  txtFooter.getText().setText("Fonte: BD-CORRETIVAS (Infraspeak) • Fila em aberto na data da atualização.")
     .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
 }
