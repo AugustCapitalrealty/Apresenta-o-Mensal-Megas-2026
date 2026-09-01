@@ -27,12 +27,7 @@
  */
 
 function gerarSlideBacklogClientesFacilities() {
-  const dados = obterDadosBacklogClientesFacilities_();
-  if (!dados) {
-    gerarSlideReservaGraficos('BACKLOG DE CLIENTES — FACILITIES', 'Chamados de clientes pendentes de responsabilidade da equipe Facilities',
-      [{ titulo: 'PENDÊNCIAS EM ABERTO' }]);
-    return;
-  }
+  const dados = obterDadosBacklogClientesFacilities_() || { total: 0, fatias: [], lista: [] };
 
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();

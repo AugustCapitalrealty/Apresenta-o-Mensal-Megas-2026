@@ -3664,16 +3664,20 @@ function _lerChamadosMes_(nomeAba) {
       const data = sheet.getDataRange().getDisplayValues();
       if (data.length >= 2) {
         const hdr   = data[0].map(_histNorm_);
-        const cId   = hdr.findIndex(h => h.indexOf('id chamado') >= 0);
+        const cId   = hdr.findIndex(h => h.indexOf('id chamado') >= 0 || h === 'id');
         const cCli  = hdr.findIndex(h => h.indexOf('cliente') >= 0);
         const cPri  = hdr.findIndex(h => h.indexOf('prioridade') >= 0);
         const cDesc = hdr.findIndex(h => h.indexOf('descricao') >= 0);
         const cCC   = hdr.findIndex(h => h.indexOf('centro de custo') >= 0);
-        if (cId >= 0 && cCC >= 0) {
+        const cEdif = hdr.findIndex(h => h.indexOf('edificio') >= 0 || h.indexOf('edifício') >= 0);
+        const cEmp  = hdr.findIndex(h => h.indexOf('empresa') >= 0 || h.indexOf('empreendimento') >= 0);
+        const cLoc  = hdr.findIndex(h => h.indexOf('local') >= 0);
+        const colsMega = [cCC, cEdif, cEmp, cLoc].filter(c => c >= 0);
+        if (cId >= 0 && colsMega.length > 0) {
           const saida = [];
           for (let r = 1; r < data.length; r++) {
             const row = data[r];
-            if (_histEmpChave_(row[cCC]) !== alvoMega) continue;
+            if (!_rowPertenceAoMega_(row, colsMega, alvoMega)) continue;
             saida.push({
               id:         String(row[cId]   || '').trim(),
               cliente:    cCli  >= 0 ? String(row[cCli]  || '').trim() : '',
@@ -3937,11 +3941,14 @@ function _histParseDataHora_(v) {
 // descasamento que fez JUL/26 sair com 29 criados, 29 fechados e o backlog
 // subindo 14.
 function _bdChamadoFechado_(estado, dtFechado) {
-  return _histNorm_(estado) === 'fechado' && !!dtFechado;
+  const norm = _histNorm_(estado);
+  const ehFechado = norm === 'fechado' || norm === 'fechada' || norm === 'concluido' || norm === 'concluida' || norm === 'finalizado' || norm === 'finalizada';
+  return ehFechado && !!dtFechado;
 }
 
 function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
-  const fechado = _histNorm_(estado) === 'fechado';
+  const norm = _histNorm_(estado);
+  const fechado = norm === 'fechado' || norm === 'fechada' || norm === 'concluido' || norm === 'concluida' || norm === 'finalizado' || norm === 'finalizada';
   if (dtReporte) {
     if (dtReporte >= refFim) return false;                     // ainda não existia no mês de referência
     if (fechado && dtFechado && dtFechado < refFim) return false; // já tinha fechado até o fim do mês — não é mais backlog

@@ -21,12 +21,10 @@
  */
 
 function gerarSlideChamadosPrioridade() {
-  const dados = obterDadosChamadosPrioridade_();
-  if (!dados) {
-    gerarSlideReservaGraficos('CHAMADOS POR PRIORIDADE', 'Abertos x Fechados',
-      [{ titulo: 'ABERTOS' }, { titulo: 'FECHADOS' }]);
-    return;
-  }
+  const dados = obterDadosChamadosPrioridade_() || {
+    abertos: { total: 0, fatias: [], emergencial: [] },
+    fechados: { total: 0, fatias: [], emergencial: [] }
+  };
 
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();

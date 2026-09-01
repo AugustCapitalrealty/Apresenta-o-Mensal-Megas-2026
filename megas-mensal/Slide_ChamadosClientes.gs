@@ -36,12 +36,10 @@
  */
 
 function gerarSlideChamadosClientes() {
-  const dados = obterDadosChamadosClientes_();
-  if (!dados) {
-    gerarSlideReservaGraficos('CHAMADOS DE CLIENTES', 'Abertos x Fechados',
-      [{ titulo: 'ABERTOS' }, { titulo: 'FECHADOS' }]);
-    return;
-  }
+  const dados = obterDadosChamadosClientes_() || {
+    abertos: { total: 0, fatias: [], lista: [] },
+    fechados: { total: 0, fatias: [], lista: [] }
+  };
 
   // Um período por SLIDE (não mais os dois lado a lado em meia página cada):
   // a pedido do usuário, "2 slides, 1 das aberturas e 1 dos fechados, assim

@@ -32,12 +32,7 @@
  */
 
 function gerarSlideBacklogClientesDetalhes() {
-  const dados = obterDadosBacklogClientesDetalhes_();
-  if (!dados) {
-    gerarSlideReservaGraficos('BACKLOG DE CLIENTES — DETALHE', 'Chamados pendentes de responsabilidade do locatário',
-      [{ titulo: 'PENDÊNCIAS EM ABERTO' }]);
-    return;
-  }
+  const dados = obterDadosBacklogClientesDetalhes_() || { total: 0, fatias: [], lista: [] };
 
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();

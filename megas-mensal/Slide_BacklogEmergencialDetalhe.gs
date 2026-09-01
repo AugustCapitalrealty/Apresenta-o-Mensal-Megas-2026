@@ -33,12 +33,7 @@
  */
 
 function gerarSlideBacklogEmergencialDetalhe() {
-  const dados = obterDadosBacklogEmergencialDetalhe_();
-  if (!dados) {
-    gerarSlideReservaGraficos('BACKLOG EMERGENCIAL — DETALHE', 'Chamados emergenciais em aberto · Facilities x Property',
-      [{ titulo: 'EM ABERTO' }]);
-    return;
-  }
+  const dados = obterDadosBacklogEmergencialDetalhe_() || { total: 0, fatias: [], lista: [] };
 
   const deck  = getDeckAtivo();
   const W     = deck.getPageWidth();
