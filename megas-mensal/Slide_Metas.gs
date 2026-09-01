@@ -51,8 +51,15 @@ const METAS_COLS = METAS_COLS_FULL.slice(3);
 // ==========================================
 // LEITURA / FILTRO (planilha da Gestão à Vista TV)
 // ==========================================
-function _metasNormMega_(s)  { return String(s || '').toUpperCase().replace(/^MEGA\s+/, '').trim(); }
-function _metasNormPapel_(s) { return String(s || '').toUpperCase().trim(); }
+function _metasNormMega_(s)  { return _histEmpChave_(s); }
+function _metasNormPapel_(s) {
+  const p = _histNorm_(s).toUpperCase().trim();
+  if (p.includes('SUPERVISOR')) return 'SUPERVISOR';
+  if (p.includes('ANALISTA')) return 'ANALISTA';
+  if (p.includes('COORDENADOR')) return 'COORDENADOR';
+  if (p.includes('GERENTE')) return 'GERENTE';
+  return p;
+}
 
 // Distintos "Papel" com linhas preenchidas para a cidade ativa.
 function obterPapeisMetas_() {
@@ -62,15 +69,17 @@ function obterPapeisMetas_() {
   const ultima = aba.getLastRow();
   if (ultima < 2) return [];
 
-  const alvoMega = _metasNormMega_(getProjetoAtivo().nome);
+  const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
   const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
   const papeis = [];
   dados.forEach(l => {
     const papel = _metasNormPapel_(l[1]);
-    if (_metasNormMega_(l[0]) === alvoMega && papel && String(l[3] || '').trim() !== '' && papeis.indexOf(papel) < 0) {
+    const temDesc = String(l[3] || l[2] || '').trim() !== '';
+    if (_histEmpChave_(l[0]) === alvoMega && papel && temDesc && papeis.indexOf(papel) < 0) {
       papeis.push(papel);
     }
   });
+  Logger.log('Metas (' + getProjetoAtivo().nome + '): papéis identificados na TV → ' + JSON.stringify(papeis));
   return papeis;
 }
 
@@ -102,14 +111,14 @@ function obterDadosMetas_(papel) {
   const ultima = aba.getLastRow();
   if (ultima < 2) return null;
 
-  const alvoMega  = _metasNormMega_(getProjetoAtivo().nome);
+  const alvoMega  = _histEmpChave_(getProjetoAtivo().nome);
   const alvoPapel = _metasNormPapel_(papel);
   const dados = aba.getRange(2, 1, ultima - 1, METAS_COLS_FULL.length).getDisplayValues();
 
   const filtradas = dados.filter(l =>
-    _metasNormMega_(l[0]) === alvoMega &&
+    _histEmpChave_(l[0]) === alvoMega &&
     _metasNormPapel_(l[1]) === alvoPapel &&
-    String(l[3] || '').trim() !== ''
+    String(l[3] || l[2] || '').trim() !== ''
   );
   if (!filtradas.length) return null;
 
@@ -446,3 +455,41 @@ function gerarSlideMetas(papel) {
   Logger.log('Slide Metas gerado: ' + metas.titulo + ' (' + n + ' indicador(es), ' +
              Math.round(pontosAcum) + '/' + totalPontos + ' pontos).');
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+function gerarSoMetasCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesMetas(); }
+function gerarSoMetasItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesMetas(); }
+function gerarSoMetasEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesMetas(); }
+
+function gerarSoMetasSupervisorCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideMetas('SUPERVISOR'); }
+function gerarSoMetasAnalistaCuritiba()   { setProjetoAtivo('CURITIBA'); gerarSlideMetas('ANALISTA'); }
+
+function gerarSoMetasSupervisorItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideMetas('SUPERVISOR'); }
+function gerarSoMetasAnalistaItajai()     { setProjetoAtivo('ITAJAI');   gerarSlideMetas('ANALISTA'); }
+
+function gerarSoMetasSupervisorEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideMetas('SUPERVISOR'); }
+function gerarSoMetasAnalistaEsteio()     { setProjetoAtivo('ESTEIO');   gerarSlideMetas('ANALISTA'); }
+
+/**
+ * Utilitário para listar no log todas as linhas da aba METAS da TV
+ */
+function listarLinhasMetasTV() {
+  try {
+    const ss  = SpreadsheetApp.openById(GESTAO_TV_METAS_SPREADSHEET_ID);
+    const aba = ss.getSheetByName('METAS');
+    if (!aba) { Logger.log('Aba METAS não encontrada na planilha da TV'); return; }
+    const dados = aba.getDataRange().getDisplayValues();
+    Logger.log('====================================================');
+    Logger.log('LINHAS DA ABA METAS NA GESTÃO À VISTA TV (' + (dados.length - 1) + ' linhas):');
+    dados.slice(1).forEach((l, i) => {
+      Logger.log(`Linha ${i + 2}: Mega="${l[0]}", Papel="${l[1]}", Título="${l[2]}", Descrição="${l[3]}"`);
+    });
+    Logger.log('====================================================');
+  } catch (e) {
+    Logger.log('Erro ao listar metas TV: ' + e.message);
+  }
+}
+
