@@ -172,7 +172,12 @@ function _histNorm_(s) {
 }
 
 function _histEmpChave_(s) {
-  return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const norm = String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  if (!norm) return '';
+  if (norm.includes('CURITIBA') || norm.includes('CTBA') || norm.includes('CWB')) return 'MEGA CURITIBA';
+  if (norm.includes('ITAJAI') || norm.includes('ITJ') || norm.includes('ITAJA')) return 'MEGA ITAJAI';
+  if (norm.includes('ESTEIO') || norm.includes('EST')) return 'MEGA ESTEIO';
+  return norm;
 }
 
 function _histParseMes_(txt) {
@@ -1470,8 +1475,20 @@ function obterDadosCorretivasV6() {
       const itA = sDispA.find(s => s.ord === ordRef) || (sDispA.length ? sDispA[sDispA.length - 1] : null);
       if (itM) kpiData.mDisp = String(itM.bruto || itM.valor);
       if (itA) kpiData.aDisp = String(itA.bruto || itA.valor);
+
+      // FONTE DO TEMPO MÉDIO: busca no Histórico Validado se estiver vazio
+      if (kpiData.mTempo === '-' || kpiData.aTempo === '-') {
+        const sTmp = lerHistoricoValidado('Tempo médio entre criado e fechado', { aba: 'CHAMADOS' });
+        if (sTmp && sTmp.length) {
+          const itTmp = sTmp.find(s => s.ord === ordRef) || sTmp[sTmp.length - 1];
+          if (itTmp && itTmp.bruto) {
+            if (kpiData.mTempo === '-') kpiData.mTempo = formatarTempo(itTmp.bruto);
+            if (kpiData.aTempo === '-') kpiData.aTempo = formatarTempo(itTmp.bruto);
+          }
+        }
+      }
     } catch (e) {
-      Logger.log('obterDadosCorretivasV6 disponibilidade: ' + e.message);
+      Logger.log('obterDadosCorretivasV6 disponibilidade/tempo: ' + e.message);
     }
 
     // Tendências vs mês anterior (histórico validado, aba CHAMADOS).
