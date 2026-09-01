@@ -30,43 +30,37 @@ const DRE_EMPRESAS = {
 };
 
 // Pontos de entrada por empresa — aparecem sozinhos no menu do editor
-// (a função genérica abaixo não aparece porque tem parâmetro).
-function gerarSlideDREDemercado() { gerarSlideDREEmpresa_('DEMERCADO'); }
+// (a função genérica abaixo não aparece porque tem parâmetro). O pipeline de
+// 00_Main.gs chama estas funções, nunca gerarSlideDREEmpresa_() direto: são
+// elas que ficam visíveis no menu para rodar uma empresa avulsa, sem gerar o
+// deck inteiro.
+//
+// DRE_EMPRESAS já declara 8 empresas (a busca por bloco funciona pra
+// qualquer uma), mas só as 3 com passo no pipeline de 00_Main.gs — Demercado,
+// Capital Realty, Hangar Vip — ganham função aqui por ora. As outras
+// (Garoto, Postos, BMFD, DCL) entram quando alguém confirmar o bloco delas
+// contra a planilha, não antes: função no menu sem conferência convida a
+// gerar slide com dado não verificado.
+function gerarSlideDREDemercado()     { gerarSlideDREEmpresa_('DEMERCADO'); }
+function gerarSlideDRECapitalRealty() { gerarSlideDREEmpresa_('CAPITAL REALTY'); }
+function gerarSlideDREHangarVip()     { gerarSlideDREEmpresa_('HANGAR VIP'); }
 
 function gerarSlideDREEmpresa_(chave) {
   const titulo = DRE_EMPRESAS[chave] || chave;
   const dre = obterDREEmpresa_(chave);
-
-  const deck  = getDeckMensal_();
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const DS = CR_DESIGN_SYSTEM;
+  const c = _dsNovoSlideClaro_({
+    entidade: titulo,
+    topico: 'Painel Executivo – ' + _rrMesAno_(dre.mes, dre.ano),
+    aviso: _rrAvisoMesFonteTexto_(dre.mes, dre.ano),
+    conteudoY: .16
+  });
+  const slide = c.slide, W = c.W, H = c.H;
   const mX = W * 0.022;
 
-  slide.getBackground().setSolidFill('#FFFFFF');
-
-  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W * 0.62, -H * 0.32, W * 0.55, W * 0.55);
-  ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.045);
-  ellipse.getBorder().setTransparent();
-
-  // ── Título (nome da empresa) + subtítulo ──
-  _rrUmaLinha_(slide, mX, H * 0.045, W * 0.55, H * 0.080, titulo,
-    { fs: W * 0.029, bold: true, cor: DS.colors.textMain, align: 'L', folga: 0 });
-
-  _rrUmaLinha_(slide, mX, H * 0.128, W * 0.55, H * 0.052,
-    'Painel Executivo — ' + _rrMesAno_(dre.mes, dre.ano),
-    { fs: W * 0.018, cor: DS.colors.brandMed, fonte: DS.typography.body, align: 'L', folga: 0 });
-
-  // ── Logo Capital Realty, no topo (mesmo lugar do Resumo do Resultado) ──
-  try {
-    const blob = DriveApp.getFileById(DS.assets.logoId).getBlob();
-    slide.insertImage(blob, W - mX - DS.assets.logoW, H * 0.055, DS.assets.logoW, DS.assets.logoH);
-  } catch (e) {
-    Logger.log('DRE ' + titulo + ': logo não carregado. ' + e.message);
-  }
-
   // ── Tabela do DRE ──
-  _rrTabelaDRE_(slide, W, mX, H * 0.205, H * 0.945 - H * 0.205, dre);
+  const topoTabela = H * CR_DESIGN_SYSTEM.layout.light.contentTop;
+  _rrTabelaDRE_(slide, W, mX, topoTabela,
+    H * CR_DESIGN_SYSTEM.layout.light.tableBottom - topoTabela, dre);
 
   Logger.log('Slide DRE — ' + titulo + ' gerado → ' + dre.mes + '/' + dre.ano +
     (dre.nota ? ' (' + dre.nota + ')' : ''));
@@ -86,12 +80,15 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
   const DS = CR_DESIGN_SYSTEM;
   const larguraTotal = W - mX * 2;
   const nCols = dre.headers.length || 15;
+  const colunasComparativas = dre.headers.map(_rrEhCabecalhoComparativo_);
   // A coluna de rótulo aqui precisa ser mais larga que a do Resumo do
   // Resultado: "10 - OUTRAS RECEITAS E DESPESAS" e os sub-itens indentados
   // ("10.1 - RECEITAS FINANCEIRAS") são mais longos que o maior nome de
   // empresa daquele slide.
-  const labelW = larguraTotal * 0.265;
-  const valW   = (larguraTotal - labelW) / nCols;
+  const labelW = larguraTotal * 0.245;
+  const fsHeader = W * DS.typography.scale.tableHeader;
+  const valWs = _rrLargurasCabecalhoTemporal_(
+    dre.headers, larguraTotal - labelW, fsHeader);
 
   const hBanda = altura * 0.052;
   const hSub   = altura * 0.135;
@@ -103,36 +100,46 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
   const somaPesos = dre.linhas.reduce((s, l) => s + pesoDe(l), 0);
   const unidade = restante / Math.max(1, somaPesos);
 
-  const fsBanda  = W * 0.0115;
-  const fsHeader = W * 0.0098;
-  const fsValor  = W * 0.0102;
-  const fsSub    = W * 0.0098;
+  const fsBanda  = W * DS.typography.scale.tableGroup;
+  const fsValor  = W * DS.typography.scale.tableBodyCompact;
+  const fsSub    = fsValor;
+  if (unidade * pesoSub <= fsSub * 1.18) {
+    throw new Error('DRE sem altura para aplicar uma única fonte ao corpo.');
+  }
 
   let y = topo;
 
   // ── Faixa 1: rótulo (mescla as duas faixas) + 3 grupos ──
-  _rrCelula_(slide, mX, y, labelW, hBanda + hSub, DS.colors.brandDark);
+  _rrCelula_(slide, mX, y, labelW, hBanda + hSub, DS.colors.tableGroup);
   _rrBloco_(slide, mX, y, labelW, hBanda + hSub, 'DRE\n(Em R$/Mil)',
-    { fs: fsBanda, bold: true, cor: '#FFFFFF' });
+    { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
+      fonte: DS.typography.tables });
 
   const grupos = [dre.mes, dre.acumuladoLabel, dre.ritmoLabel];
   const colsPorGrupo = Math.round(nCols / grupos.length);
-  let x = mX + labelW;
+  let x = mX + labelW, primeiraColunaGrupo = 0;
   grupos.forEach((titulo, i) => {
     const cols = (i === grupos.length - 1) ? (nCols - colsPorGrupo * (grupos.length - 1)) : colsPorGrupo;
-    const gw = valW * cols;
-    _rrCelula_(slide, x, y, gw, hBanda, DS.colors.brandDark);
-    _rrUmaLinha_(slide, x, y, gw, hBanda, titulo, { fs: fsBanda, bold: true, cor: '#FFFFFF' });
+    const gw = valWs.slice(primeiraColunaGrupo, primeiraColunaGrupo + cols)
+      .reduce((s, largura) => s + largura, 0);
+    _rrCelula_(slide, x, y, gw, hBanda, DS.colors.tableGroup);
+    _rrUmaLinha_(slide, x, y, gw, hBanda, titulo,
+      { fs: fsBanda, fsMin: fsBanda, bold: true, cor: '#FFFFFF',
+        fonte: DS.typography.tables });
     x += gw;
+    primeiraColunaGrupo += cols;
   });
   y += hBanda;
 
   // ── Faixa 2: os rótulos de coluna ──
   x = mX + labelW;
-  dre.headers.forEach(h => {
-    _rrCelula_(slide, x, y, valW, hSub, DS.colors.brandDark);
-    _rrBloco_(slide, x, y, valW, hSub, h, { fs: fsHeader, bold: true, cor: '#FFFFFF' });
-    x += valW;
+  dre.headers.forEach((h, i) => {
+    const cw = valWs[i];
+    _rrCelula_(slide, x, y, cw, hSub, DS.colors.tableHeader);
+    _rrBloco_(slide, x, y, cw, hSub, _rrFormatarCabecalhoTabela_(h),
+      { fs: fsHeader, fsMin: fsHeader, bold: true, cor: '#FFFFFF',
+        fonte: DS.typography.tables, folga: _RR_RECUO_TEXTBOX / 2 });
+    x += cw;
   });
   y += hSub;
 
@@ -141,17 +148,17 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
     const h = unidade * pesoDe(linha);
 
     if (linha.margem) {
-      _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        DS.colors.brandMed, '#FFFFFF', fsValor, true, false);
+      _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, linha.rotulo, linha.valores,
+        DS.colors.brandMed, '#FFFFFF', fsValor, true, false, colunasComparativas);
     } else if (linha.ebitda) {
-      _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#EEF2F7', DS.colors.brandDark, fsValor, true, false);
+      _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, linha.rotulo, linha.valores,
+        DS.colors.tableStripe, DS.colors.brandDark, fsValor, true, false, colunasComparativas);
     } else if (linha.indentado) {
-      _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#FFFFFF', DS.colors.textBody, fsSub, false, true);
+      _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, linha.rotulo, linha.valores,
+        null, DS.colors.textBody, fsSub, false, true, colunasComparativas);
     } else {
-      _rrLinhaDRE_(slide, mX, y, labelW, valW, h, linha.rotulo, linha.valores,
-        '#FFFFFF', DS.colors.textMain, fsValor, true, false);
+      _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, linha.rotulo, linha.valores,
+        null, DS.colors.textMain, fsValor, true, false, colunasComparativas);
     }
     y += h;
   });
@@ -159,16 +166,23 @@ function _rrTabelaDRE_(slide, W, mX, topo, altura, dre) {
 
 // Uma linha do DRE: rótulo à esquerda (indentado quando é sub-item, ex.:
 // "10.1 - Receitas Financeiras") + os valores centralizados.
-function _rrLinhaDRE_(slide, mX, y, labelW, valW, h, rotulo, valores, corFundo, corTexto, fs, negrito, indentado) {
+function _rrLinhaDRE_(slide, mX, y, labelW, valWs, h, rotulo, valores, corFundo, corTexto, fs, negrito, indentado, colunasComparativas) {
   const padL = labelW * (indentado ? 0.11 : 0.055);
   _rrCelula_(slide, mX, y, labelW, h, corFundo);
   _rrUmaLinha_(slide, mX + padL, y, labelW - padL, h, rotulo,
-    { fs: fs, bold: negrito, cor: corTexto, align: 'L' });
+    { fs: fs, fsMin: fs, bold: negrito, cor: corTexto,
+      fonte: CR_DESIGN_SYSTEM.typography.tables, align: 'L' });
 
   let x = mX + labelW;
-  valores.forEach(v => {
-    _rrCelula_(slide, x, y, valW, h, corFundo);
-    _rrUmaLinha_(slide, x, y, valW, h, v, { fs: fs, bold: negrito, cor: corTexto });
-    x += valW;
+  valores.forEach((v, i) => {
+    const cw = valWs[i];
+    const corValor = colunasComparativas && colunasComparativas[i]
+      ? _rrCorValorComparativo_(v, corTexto, corTexto === '#FFFFFF') : corTexto;
+    _rrCelula_(slide, x, y, cw, h, corFundo);
+    _rrUmaLinha_(slide, x, y, cw, h, v,
+      { fs: fs, fsMin: fs, bold: negrito, cor: corValor,
+        fonte: CR_DESIGN_SYSTEM.typography.tables,
+        folga: _RR_RECUO_TEXTBOX / 2 });
+    x += cw;
   });
 }

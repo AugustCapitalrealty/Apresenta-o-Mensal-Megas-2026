@@ -26,16 +26,94 @@ const CR_DESIGN_SYSTEM = {
     cardBg    : '#FFFFFF',
     textMain  : '#151E49',
     textBody  : '#475569',
+    textMuted : '#94A3B8',
+    darkLine  : '#334155',
+    highlight : '#60A5FA',
     lines     : '#E2E8F0',
+    // Cabeçalho de tabela é UM azul só, o institucional escuro. Antes a faixa
+    // de grupo (JUNHO/ACUMULADO/RITMO) era escura e a linha de colunas logo
+    // abaixo era clara: os dois tons partiam o bloco de cabeçalho em duas
+    // peças que competiam entre si, em vez de lerem como um bloco único.
+    tableGroup: '#151E49',
+    tableHeader: '#151E49',
+    // Fecho de tabela (TOTAL / TOTAL DE RECEITAS): azul médio, para o
+    // resultado se destacar do cabeçalho sem virar um terceiro tom no topo.
+    tableFooter: '#003D7B',
+    tableTotal: '#BFC3C7',
+    tableStripe: '#EEF2F7',
+    watermark: '#E2E8F0',
+    warningText: '#C2410C',
+    comparisonPositive: '#15803D',
+    comparisonNegative: '#DC2626',
+    comparisonPositiveDark: '#86EFAC',
+    comparisonNegativeDark: '#FCA5A5',
     accentGreen : '#10B981',
     accentOrange: '#F97316',
     accentRed   : '#EF4444'
   },
-  typography: { titles: 'Montserrat', body: 'Open Sans' },
-  layout: { marginX: 30, headerH: 64 },
-  // Logo Capital Realty — mesmo arquivo usado nos outros decks.
+  typography: {
+    titles: 'Montserrat',
+    body: 'Open Sans',
+    // Calibri é EXCLUSIVA das tabelas. Ela é bem mais estreita que Montserrat
+    // no mesmo corpo, e é isso que faz as 16 colunas caberem sem apertar: o
+    // ganho de largura vem da fonte, não de reduzir o tamanho do texto.
+    // Fora das tabelas (títulos, subtítulos, capas, rodapés) o design system
+    // continua sendo Montserrat/Open Sans — nada mais muda.
+    tables: 'Calibri',
+    // Escala proporcional à largura do deck. Os três tamanhos de corpo são
+    // modos de densidade da TABELA inteira — nunca ajustes célula a célula.
+    scale: {
+      entity: .027,
+      entityCompact: .019,
+      topic: .021,
+      topicCompact: .015,
+      metadata: .0082,
+      tableGroup: .0115,
+      tableHeader: .0098,
+      tableBodyRegular: .0114,
+      tableBodyCompact: .0097,
+      tableBodyDense: .0092
+    }
+  },
+  layout: {
+    marginX: 30,
+    headerH: 64,
+    light: {
+      marginX: .03,
+      // Cabeçalho no padrão da apresentação dos Megas (criarHeaderPadrao em
+      // megas-mensal/01_Config.gs): barra de destaque + título + subtítulo à
+      // esquerda, logo à direita e linha separadora de largura total. Lá os
+      // valores são pt fixos num deck 720x405; aqui viram frações para o
+      // layout valer em qualquer tamanho de deck.
+      barX: .007,        // largura da barra de destaque (5pt em 720)
+      barY: .032,        // topo da barra (13pt em 405)
+      barH: .089,        // altura da barra (36pt em 405)
+      entityX: .019,     // recuo do texto após a barra (14pt em 720)
+      entityY: .015,
+      entityH: .074,
+      topicY: .084,
+      topicH: .044,
+      sepY: .153,        // linha separadora (62pt em 405)
+      sepAccentW: .153,  // trecho destacado da separadora (110pt em 720)
+      contentTop: .19,
+      tableBottom: .875,
+      logoH: .079,       // 32pt em 405, como no header dos Megas
+      logoTop: .035,
+      logoRight: .03,
+      logoBottom: .018
+    },
+    dark: {
+      logoX: .058,
+      logoY: .074,
+      logoH: .075
+    }
+  },
+  // Assets canônicos por contraste. logoId fica apenas como alias legado;
+  // nenhum renderizador financeiro ativo troca para ele como fallback.
   assets: {
     logoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4',
+    logoLightId: '1toRVfIgamy4CWBT2Gv2mGd6V_W0OGISS',
+    logoDarkId: '1Tx9cwk1-1_P1TSGoXLZ828JNQ-rY-w6p',
     logoW: 112,
     logoH: 32
   }

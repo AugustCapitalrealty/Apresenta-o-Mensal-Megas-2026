@@ -43,28 +43,19 @@ const BLOCOS_FINANCEIROS = {
 
 const MESES_NOME_REF = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+const FIN_REFERENCIA_DECK = { index: 6, nome: 'JULHO', curto: 'Julho', ano: 2026,
+  label: 'JULHO / 2026' };
+var FIN_MES_REFERENCIA_CACHE_ = null;
 
-/**
- * Mês de referência da apresentação. PROVISÓRIO: usa só o calendário (mês
- * fechado anterior a hoje) — mês corrente ainda não fechou, então o relatório
- * fala do mês anterior. Quando soubermos qual aba/célula da planilha registra
- * o mês de fato coberto pelos números (padrão usado em megas-mensal/02_Dados.gs,
- * obterMesReferencia_), troque este fallback pela leitura real — a capa nunca
- * deve divergir do conteúdo dos outros slides.
- */
+/** Referência institucional desta edição do deck. */
 function obterMesReferencia_() {
-  const hoje = new Date();
-  const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0); // último dia do mês anterior
-  const idx = ant.getMonth();
-  const ano = ant.getFullYear();
-  const nome = MESES_NOME_REF[idx];
-  return {
-    index: idx,
-    nome: nome,
-    curto: nome.charAt(0) + nome.slice(1).toLowerCase(),
-    ano: ano,
-    label: nome + ' / ' + ano
-  };
+  if (!FIN_MES_REFERENCIA_CACHE_) {
+    // A referência institucional desta edição é deliberadamente fixa. Alguns
+    // quadros confirmados ainda estão em Junho/2026; esses rótulos permanecem
+    // intactos no conteúdo e recebem um aviso de divergência no slide.
+    FIN_MES_REFERENCIA_CACHE_ = Object.assign({}, FIN_REFERENCIA_DECK);
+  }
+  return FIN_MES_REFERENCIA_CACHE_;
 }
 
 
@@ -315,10 +306,21 @@ function _exigirCabecalhosResumo_(headers, bloco, aba) {
   if (headers.length !== 15 || headers.some(h => !String(h || '').trim())) {
     throw new Error('Bloco "' + bloco + '" na aba "' + aba + '" deve ter 15 cabeçalhos preenchidos (Mês, Acumulado e Ritmo).');
   }
-  const texto = _finNorm_(headers.join(' | '));
-  ['real', 'orc', 'variacao'].forEach(nome => {
+  const normalizados = headers.map(_finNorm_);
+  const texto = normalizados.join(' | ');
+  ['real', 'orc'].forEach(nome => {
     if (texto.indexOf(nome) < 0) throw new Error('Cabeçalho "' + nome + '" não encontrado no bloco "' + bloco + '" da aba "' + aba + '".');
   });
+  // Cada grupo tem Real, Orç, Real/Ritmo e dois comparativos. A planilha real
+  // nomeia estes últimos como "Real x Orç" e "Real x Real"; arquivos antigos
+  // podem usar "Variação". Aceitamos os dois contratos sem afrouxar as 15
+  // colunas preenchidas.
+  for (let inicio = 0; inicio < 15; inicio += 5) {
+    const comparativos = normalizados.slice(inicio + 3, inicio + 5);
+    if (comparativos.some(h => h.indexOf(' x ') < 0 && h.indexOf('variacao') < 0)) {
+      throw new Error('Comparativos Real x Orç/Real x Real ausentes no bloco "' + bloco + '" da aba "' + aba + '".');
+    }
+  }
 }
 
 
