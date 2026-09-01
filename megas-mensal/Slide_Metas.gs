@@ -342,9 +342,12 @@ function gerarSlideMetas(papel) {
     const ry = y + i * rowH;
     const fundo = (i % 2 === 0) ? DS.colors.cardBg : '#F8FAFC';
 
-    // Identifica se é estritamente a linha composta de Custo M² + Manutenções Planejadas
+    // Identifica se é estritamente a linha composta de Custo M² + Manutenções Planejadas do SUPERVISOR
     const d0 = _histNorm_(linha[0]);
-    const ehComposta = d0.includes('custo') && (d0.includes('m2') || d0.includes('m²')) && String(linha[5] || '').includes('/');
+    const ehComposta = (metas.papel === 'SUPERVISOR') &&
+                       d0.includes('custo') &&
+                       (d0.includes('m2') || d0.includes('m²')) &&
+                       String(linha[5] || '').includes('/');
 
     const subH = Math.floor(rowH / 2);
     const y1 = ry;
