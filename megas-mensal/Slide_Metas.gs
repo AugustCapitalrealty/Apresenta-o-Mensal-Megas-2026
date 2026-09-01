@@ -51,8 +51,8 @@ const METAS_COLS = METAS_COLS_FULL.slice(3);
 // ==========================================
 // LEITURA / FILTRO (planilha da Gestão à Vista TV)
 // ==========================================
-function _metasNormMega_(s)  { return String(s || '').toUpperCase().replace(/^MEGA\s+/, '').trim(); }
-function _metasNormPapel_(s) { return String(s || '').toUpperCase().trim(); }
+function _metasNormMega_(s)  { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^MEGA\s+/, '').trim(); }
+function _metasNormPapel_(s) { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
 
 // Distintos "Papel" com linhas preenchidas para a cidade ativa.
 function obterPapeisMetas_() {
