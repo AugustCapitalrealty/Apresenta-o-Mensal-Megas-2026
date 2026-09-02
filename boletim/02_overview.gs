@@ -52,20 +52,37 @@ function gerarSlide03_OverviewExecutivo() {
       }
       
       const formatKwh = (val) => {
-        if (val === "N/D") return val;
+        if (val === "" || val === null || val === undefined || val === "N/D") return "N/D";
         let s = val.toString().trim();
+        if (/^(N[\/\.]?D|ND|#N[\/\.]?D|NA|N\/A|-|—)$/i.test(s)) return "N/D";
         let num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
-        if (!isNaN(num)) return num.toLocaleString('pt-BR') + " kWh";
-        return s + " kWh";
+        if (isNaN(num)) return "N/D";
+        return num.toLocaleString('pt-BR') + " kWh";
       };
 
       vGeracao  = formatKwh(getVal('E100'));
       vConsumo  = formatKwh(getVal('E101'));
 
+      // Validação da Geração Solar com a série diária (K154:K160)
+      // Se os dias estiverem como "N/D", a fórmula SOMA em K162/E100 na planilha vira 0 numérico,
+      // mas na realidade a telemetria estava indisponível. Corrigimos aqui para N/D:
+      try {
+        const blocoK = sheet1.getRange(154, 11, 7, 1).getDisplayValues(); // Coluna K (Geração)
+        const temNDK = blocoK.some(r => /^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test((r[0] || '').toString().trim()));
+        const todosNDK = blocoK.every(r => {
+          const t = (r[0] || '').toString().trim();
+          return t === '' || /^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test(t);
+        });
+        if (todosNDK || (vGeracao === "0 kWh" && temNDK)) {
+          vGeracao = "N/D";
+          vEconomia = "N/D";
+        }
+      } catch(e) {}
+
       // F103 = Árvores Plantadas | F104 = CO² Evitado (kg)
       // Árvores sem decimal (arredonda para baixo)
       const arvoresRaw = getVal('F103');
-      if (arvoresRaw !== "N/D") {
+      if (arvoresRaw !== "N/D" && !/^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test(arvoresRaw)) {
         const arvoresNum = parseFloat(arvoresRaw.replace(',', '.'));
         vArvores = !isNaN(arvoresNum) ? Math.floor(arvoresNum).toString() : arvoresRaw;
       } else {
@@ -74,15 +91,17 @@ function gerarSlide03_OverviewExecutivo() {
 
       // CO² com unidade "kg"
       const co2Raw = getVal('F104');
-      vCo2 = co2Raw !== "N/D" ? co2Raw + " kg" : "N/D";
+      vCo2 = (co2Raw !== "N/D" && !/^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test(co2Raw)) ? co2Raw + " kg" : "N/D";
 
       // Carvão Poupado (F106) com unidade "t"
       const carvaoRaw = getVal('F106');
-      vCarvao = carvaoRaw !== "N/D" ? carvaoRaw + " t" : "N/D";
+      vCarvao = (carvaoRaw !== "N/D" && !/^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test(carvaoRaw)) ? carvaoRaw + " t" : "N/D";
       
-      vEconomia = getVal('F105');
-      if (vEconomia !== "N/D" && !vEconomia.includes("R$")) {
-        vEconomia = "R$ " + vEconomia.trim();
+      const econRaw = getVal('F105');
+      if (vEconomia !== "N/D" && econRaw !== "N/D" && !/^(N[\/\.]?D|ND|#N[\/\.]?D|-|—)$/i.test(econRaw)) {
+        vEconomia = econRaw.includes("R$") ? econRaw : "R$ " + econRaw.trim();
+      } else {
+        vEconomia = "N/D";
       }
 
       // Detector de semana: última data nos cabeçalhos semanais (linha 33), regra -1 dia
@@ -254,10 +273,21 @@ function gerarSlide03_OverviewExecutivo() {
   const quarterFullCol = halfFullCol / 2;
 
   // Esquerda (Resumo Semanal)
-  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, X1 + pad, bottomY + 30, halfFullCol, 20).getText().setText('RESUMO SEMANAL').getTextStyle().setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(8).setBold(true).setForegroundColor(CR_DESIGN_SYSTEM.colors.brandMed);
+  const indispSust = (vGeracao === "N/D");
+  slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, X1 + pad, bottomY + 30, halfFullCol, 20)
+    .getText().setText('RESUMO SEMANAL' + (indispSust ? ' • SISTEMA INDISPONÍVEL' : '')).getTextStyle()
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(8).setBold(true)
+    .setForegroundColor(indispSust ? CR_DESIGN_SYSTEM.colors.accentRed : CR_DESIGN_SYSTEM.colors.brandMed);
   addMetric(X1 + pad, bottomY + 50, quarterFullCol, 35, 'Geração', vGeracao, CR_DESIGN_SYSTEM.colors.accentGreen, 14);
   addMetric(X1 + pad + quarterFullCol, bottomY + 50, quarterFullCol, 35, 'Consumo', vConsumo, CR_DESIGN_SYSTEM.colors.accentRed, 14);
   addMetric(X1 + pad, bottomY + 85, halfFullCol, 40, 'Economia Direta', vEconomia, CR_DESIGN_SYSTEM.colors.brandDark, 18);
+  if (indispSust) {
+    const notaSust = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, X1 + pad, bottomY + cardH2 - 16, halfFullCol, 14);
+    notaSust.getText().setText('* Dados indisponíveis: contate Facilities Mega Curitiba').getTextStyle()
+      .setFontFamily(CR_DESIGN_SYSTEM.typography.body).setFontSize(6.5).setItalic(true)
+      .setForegroundColor(CR_DESIGN_SYSTEM.colors.accentRed);
+    notaSust.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  }
   
   // Direita (Impacto Ambiental)
   slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, midCard3X + pad, bottomY + 5, halfFullCol, 14)
