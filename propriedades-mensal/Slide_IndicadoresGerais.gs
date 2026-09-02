@@ -50,17 +50,19 @@ function gerarSlideIndicadoresGerais() {
 
   // Configuração dos quadrantes
   const structure = [
-    { title: 'MANUTENÇÃO PREVENTIVA', color: DS.colors.themePrev, rows: [
-      { label: 'SLA (%)',             lookup: 'SLA Preventivas',        sentido: 'maior', sla: true },
-      { label: 'Em dia (%)',          lookup: 'Execução Preventivas',   sentido: 'maior', sla: true },
-      { label: 'Rotinas agendadas',   lookup: 'Preventivas previstas',  sentido: 'menor' },
-      { label: 'Rotinas executadas',  lookup: 'Preventivas realizadas', sentido: 'maior' }
+    { title: 'MANUTENÇÃO', color: DS.colors.themePrev, rows: [
+      { label: 'SLA Preventivas (%)',         lookup: 'SLA Preventivas',                   sentido: 'maior', sla: true },
+      { label: 'Preventivas em dia (%)',      lookup: 'Execução Preventivas',              sentido: 'maior', sla: true },
+      { label: 'Backlog em aberto (Qtd)',     lookup: 'Backlog em aberto',                 sentido: 'menor' },
+      { label: '% Conclusão histórico',       lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
+      { label: 'Chamados criados no mês',     lookup: 'Chamados abertos',                  sentido: 'menor' }
     ] },
-    { title: 'MANUTENÇÃO CORRETIVA: CHAMADOS', color: DS.colors.themeCorr, rows: [
-      { label: 'Backlog em aberto (Qtd)',   lookup: 'Backlog em aberto',                 sentido: 'menor' },
-      { label: '% Conclusão histórico',     lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
-      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',          sentido: 'menor' },
-      { label: 'Chamados criados no mês',   lookup: 'Chamados abertos',                  sentido: 'menor' }
+    { title: 'GESTÃO FINANCEIRA · ORÇAMENTO', color: DS.colors.themeCorr, semComparativo: true, headerTexto: 'ORÇAMENTO 2026', rows: [
+      { label: 'Orçamento Total 2026',        lookup: 'Orçamento 2026 (Total)' },
+      { label: 'Ritmo 2025 (Base)',           lookup: 'Ritmo 2025 (Base)' },
+      { label: 'Capital Realty (CR)',         lookup: 'Orçamento Capital Realty' },
+      { label: 'Demercado',                   lookup: 'Orçamento Demercado' },
+      { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' }
     ] },
     { title: 'RECEBIMENTO DE OBRAS & PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, rows: [
       { label: 'Obras concluídas (%)',      lookup: 'Obras concluídas (%)',      regua: 'sla' },
@@ -97,7 +99,7 @@ function gerarSlideIndicadoresGerais() {
 
     if (cat.semComparativo) {
       const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, tableY, colDataW * 3 + 20, 18);
-      t.getText().setText('POSIÇÃO ATUAL').getTextStyle()
+      t.getText().setText(cat.headerTexto || 'POSIÇÃO ATUAL').getTextStyle()
         .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
       t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
@@ -214,6 +216,13 @@ function _dashCor_(valStr, rowDef, corPadrao) {
   const DS = CR_DESIGN_SYSTEM;
   if (!valStr || valStr === '-' || valStr === '—') return DS.colors.textMuted;
   
+  if (rowDef.regua === 'economia') {
+    const s = String(valStr);
+    if (s.includes('+')) return DS.colors.accentGreen;
+    if (s.includes('−') || s.includes('-')) return DS.colors.accentRed;
+    return DS.colors.textMain;
+  }
+
   const num = parseFloat(String(valStr).replace('%', '').replace(',', '.'));
   if (isNaN(num)) return corPadrao || DS.colors.textMain;
 

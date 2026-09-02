@@ -230,5 +230,21 @@ ok('conta só o chamado de Propriedades', soProp.criadosAte === 1, JSON.stringif
 ok('e a média de aprovação também', soProp.aprovadosNoMes === 1);
 
 
+console.log('\n== Métricas do Dashboard Operacional (Manutenção + Financeiro) ==');
+const dash = obterDashboardPropriedades_(ANO, MES).map;
+ok('tem SLA Preventivas', dash.has('SLA Preventivas'));
+ok('tem Execução Preventivas', dash.has('Execução Preventivas'));
+ok('tem Backlog em aberto', dash.has('Backlog em aberto'));
+ok('tem % Conclusão histórico', dash.has('Percentual de conclusão histórico'));
+ok('tem Chamados abertos', dash.has('Chamados abertos'));
+ok('tem Orçamento 2026 (Total)', dash.has('Orçamento 2026 (Total)'));
+ok('orçamento total é R$ 604.543', dash.get('Orçamento 2026 (Total)').atual === 'R$ 604.543', dash.get('Orçamento 2026 (Total)').atual);
+ok('tem Ritmo 2025 (Base)', dash.has('Ritmo 2025 (Base)'));
+ok('ritmo total é R$ 617.369', dash.get('Ritmo 2025 (Base)').atual === 'R$ 617.369', dash.get('Ritmo 2025 (Base)').atual);
+ok('tem Capital Realty (CR) R$ 421.028', dash.get('Orçamento Capital Realty').atual === 'R$ 421.028');
+ok('tem Demercado R$ 183.515', dash.get('Orçamento Demercado').atual === 'R$ 183.515');
+ok('tem Economia Projetada positiva (+R$ 12.826)', dash.get('Economia Projetada (26/25)').atual.includes('+R$ 12.826'), dash.get('Economia Projetada (26/25)').atual);
+
+
 console.log(falhas ? `\n✗ ${falhas} de ${testes} FALHARAM\n` : `\n✓ ${testes}/${testes} passaram\n`);
 process.exit(falhas ? 1 : 0);

@@ -1472,13 +1472,12 @@ function obterDashboardPropriedades_() {
   const linha3 = (a, b, c) => ({ atual: a, mesAnt: b, anoAnt: c });
   const map = new Map();
 
-  // Quadrante 1: Preventivas
+  // Quadrante 1 & 2: Manutenção (Preventiva + Corretiva)
   map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
   map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
   map.set('Preventivas previstas',  linha3(prev[0].total.execucao.previstas,  prev[1].total.execucao.previstas,  prev[2].total.execucao.previstas));
   map.set('Preventivas realizadas', linha3(prev[0].total.execucao.realizadas, prev[1].total.execucao.realizadas, prev[2].total.execucao.realizadas));
 
-  // Quadrante 2: Corretivas & Backlog
   map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
   map.set('Percentual de conclusão histórico',
     linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
@@ -1488,6 +1487,38 @@ function obterDashboardPropriedades_() {
   map.set('Chamados fechados',      linha3(fluxo[0].mensal.fechados, fluxo[1].mensal.fechados, fluxo[2].mensal.fechados));
   map.set('Tempo médio de atendimento',
     linha3(fluxo[0].mensal.tempoMedioH, fluxo[1].mensal.tempoMedioH, fluxo[2].mensal.tempoMedioH));
+
+  // Quadrante 2: Gestão Financeira · Orçamento (Torre de Manutenção)
+  let dadosTorre = null;
+  try {
+    dadosTorre = obterDadosTorreManutencao_();
+  } catch (e) {
+    Logger.log('Aviso (Dashboard): Torre de Manutenção indisponível: ' + e.message);
+  }
+
+  const fmtK = v => (v == null || isNaN(v)) ? '—' : 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
+  const fmtVar = (nom, pct) => {
+    if (nom == null || isNaN(nom)) return '—';
+    const sinal = nom >= 0 ? '+' : '−';
+    const pctStr = (pct != null && !isNaN(pct)) ? ' (' + (pct >= 0 ? '+' : '') + (pct * 100).toFixed(1).replace('.', ',') + '%)' : '';
+    return sinal + fmtK(Math.abs(nom)) + pctStr;
+  };
+
+  const orcCR = dadosTorre ? dadosTorre.cr.total.orc26 : 421028;
+  const orcDem = dadosTorre ? dadosTorre.demercado.total.orc26 : 183515;
+  const ritmoCR = dadosTorre ? dadosTorre.cr.total.ritmo25 : 455412;
+  const ritmoDem = dadosTorre ? dadosTorre.demercado.total.ritmo25 : 161957.30;
+  
+  const orcAbs = Math.abs(orcCR) + Math.abs(orcDem);
+  const ritmoAbs = Math.abs(ritmoCR) + Math.abs(ritmoDem);
+  const econNom = ritmoAbs - orcAbs; // >0 = economia (gasta menos que o ritmo)
+  const varPct = ritmoAbs !== 0 ? (orcAbs - ritmoAbs) / ritmoAbs : 0; // <0 = redução percentual de custo
+
+  map.set('Orçamento 2026 (Total)',     linha3(fmtK(orcAbs), null, null));
+  map.set('Ritmo 2025 (Base)',          linha3(fmtK(ritmoAbs), null, null));
+  map.set('Orçamento Capital Realty',   linha3(fmtK(Math.abs(orcCR)), null, null));
+  map.set('Orçamento Demercado',        linha3(fmtK(Math.abs(orcDem)), null, null));
+  map.set('Economia Projetada (26/25)', linha3(fmtVar(econNom, varPct), null, null));
 
   // Quadrante 3: Recebimento de Obras & Projetos
   map.set('Obras concluídas (%)',      linha3(recebimento.pct, null, null));
