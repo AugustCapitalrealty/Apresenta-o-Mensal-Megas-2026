@@ -49,6 +49,7 @@ function onOpen() {
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
+    .addItem('🔍 Diagnosticar Backlog de Clientes', 'diagnosticarBacklogClientes')
     .addToUi();
 }
 

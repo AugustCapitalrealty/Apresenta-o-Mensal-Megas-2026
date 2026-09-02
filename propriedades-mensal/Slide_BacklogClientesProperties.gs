@@ -78,10 +78,23 @@ function gerarSlideBacklogClientesProperties() {
       (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');
     criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — PROPERTIES', subtitulo);
 
-    _backlogClientesTabela_(slide, marginX, topY, W - 2 * marginX, listaH,
-      'PENDÊNCIAS EM ABERTO', dados.total, grupoDaPagina, DS.colors.themeCorr, coresMapa);
-    _backlogClientesBadge_(slide, marginX, topY, W - 2 * marginX,
-      'RESPONSABILIDADE PROPERTIES', DS.colors.themeCorr);
+    // POR QUE O try/catch: uma exceção aqui — tipicamente uma helper de outro
+    // arquivo que não foi colada no editor (lição 6 do CLAUDE.md) — estoura
+    // DEPOIS de criarCardPainel e ANTES da primeira célula. O resultado é um
+    // card com o título e a contagem certos e nada dentro: um slide que parece
+    // "sem dados" quando na verdade quebrou. Já aconteceu, e o erro só apareceu
+    // ao abrir o deck. Escrever a falha NO slide troca um vazio silencioso por
+    // um aviso que ninguém leva para a reunião sem ver.
+    try {
+      _backlogClientesTabela_(slide, marginX, topY, W - 2 * marginX, listaH,
+        'PENDÊNCIAS EM ABERTO', dados.total, grupoDaPagina, DS.colors.themeCorr, coresMapa);
+      _backlogClientesBadge_(slide, marginX, topY, W - 2 * marginX,
+        'RESPONSABILIDADE PROPERTIES', DS.colors.themeCorr);
+    } catch (e) {
+      _backlogClientesFalha_(slide, marginX, topY, W - 2 * marginX, listaH, e);
+      Logger.log('Backlog de Clientes — Properties: página ' + (i + 1) +
+                 ' FALHOU ao desenhar: ' + e.message);
+    }
   });
 
   Logger.log('Slide Backlog de Clientes — Properties: ' + dados.total +
@@ -367,6 +380,39 @@ function _backlogClientesBadge_(slide, x, y, w, texto, cor) {
     .setFontSize(7).setBold(true).setForegroundColor(cor)
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body);
   txt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+}
+
+
+/**
+ * Escreve a falha no próprio slide.
+ *
+ * Usa SÓ insertShape e CR_DESIGN_SYSTEM — nada de _sTxt nem das helpers de
+ * logo. A causa mais provável de cair aqui é justamente uma dessas faltando
+ * no editor; se o aviso dependesse delas, ele quebraria junto e o slide
+ * voltaria a ficar vazio.
+ */
+function _backlogClientesFalha_(slide, x, y, w, h, erro) {
+  const DS = CR_DESIGN_SYSTEM;
+  const boxY = y + 40, boxH = Math.min(96, h - 48);
+
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, boxY, w - 30, boxH);
+  bg.getFill().setSolidFill(DS.colors.accentRed, 0.08);
+  bg.getBorder().setTransparent();
+
+  const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, boxY + 8, w - 50, boxH - 16);
+  txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const tr = txt.getText();
+  tr.setText('');
+  const t1 = tr.appendText('ESTE SLIDE NÃO FOI GERADO\n');
+  t1.getTextStyle().setFontSize(11).setBold(true)
+    .setForegroundColor(DS.colors.accentRed).setFontFamily(DS.typography.body);
+  const t2 = tr.appendText(String((erro && erro.message) || erro) + '\n');
+  t2.getTextStyle().setFontSize(8.5).setBold(false)
+    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
+  const t3 = tr.appendText('Rode diagnosticarBacklogClientes() no editor: ele diz qual arquivo recopiar.');
+  t3.getTextStyle().setFontSize(8).setBold(false).setItalic(true)
+    .setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.body);
+  tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 
 
