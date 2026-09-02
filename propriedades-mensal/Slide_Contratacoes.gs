@@ -42,15 +42,17 @@ function gerarSlideContratacoes() {
 
   const SW = deck.getPageWidth();
   const SH = deck.getPageHeight();
-  const hoje = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy');
+  // Deck mensal: o rodapé diz o mês de referência, não o dia da geração.
+  // Ver _tabRotuloReferencia_ em 03_Tabelas.gs.
+  const referencia = _tabRotuloReferencia_();
 
-  let n = _contSecao_(deck, SW, SH, hoje, dados.rows, {
+  let n = _contSecao_(deck, SW, SH, referencia, dados.rows, {
     tag: TAG_CONTRATACOES, historico: false,
     kpis: { total: dados.rows.length, emEdital: dados.emEdital, emAtraso: dados.emAtraso }
   });
 
   if (dados.historico.length) {
-    n += _contSecao_(deck, SW, SH, hoje, dados.historico, {
+    n += _contSecao_(deck, SW, SH, referencia, dados.historico, {
       tag: TAG_CONTRATACOES_HIST, historico: true,
       legenda: 'HISTÓRICO · CONTRATAÇÕES FECHADAS',
       kpis: { total: dados.historico.length }
@@ -155,7 +157,7 @@ function _contSituacao_(prazoStr) {
 // ==========================================
 // GERAÇÃO
 // ==========================================
-function _contSecao_(deck, SW, SH, hoje, linhas, opts) {
+function _contSecao_(deck, SW, SH, referencia, linhas, opts) {
   if (!linhas || !linhas.length) return 0;
 
   // Paginação balanceada: 25 linhas viram 13+12, não 12+12+1. Uma página final
@@ -189,9 +191,9 @@ function _contSecao_(deck, SW, SH, hoje, linhas, opts) {
     _contDesenharTabela_(slide, SW, pagina, topo, rodapeY - SH * 0.020, porPagina, opts.historico);
 
     if (opts.historico) {
-      _contRodapeHistorico_(slide, SW, opts.kpis.total, rodapeY, rodapeH, hoje, idx + 1, pgs.length);
+      _contRodapeHistorico_(slide, SW, opts.kpis.total, rodapeY, rodapeH, referencia, idx + 1, pgs.length);
     } else {
-      _contRodape_(slide, SW, opts.kpis, rodapeY, rodapeH, hoje, idx + 1, pgs.length);
+      _contRodape_(slide, SW, opts.kpis, rodapeY, rodapeH, referencia, idx + 1, pgs.length);
     }
   });
 
@@ -333,8 +335,8 @@ function _contEtapaCor_(etapa) {
   return TAB_C.brandMed.slice(1);
 }
 
-function _contRodape_(slide, SW, kpis, y, h, hoje, pagina, totalPaginas) {
-  _contInfo_(slide, SW, y, h, hoje, pagina, totalPaginas, 0.34);
+function _contRodape_(slide, SW, kpis, y, h, referencia, pagina, totalPaginas) {
+  _contInfo_(slide, SW, y, h, referencia, pagina, totalPaginas, 0.34);
 
   const M = SW * 0.020;
   const cardW = SW * 0.150;
@@ -346,8 +348,8 @@ function _contRodape_(slide, SW, kpis, y, h, hoje, pagina, totalPaginas) {
   _tabKpiCard_(slide, x1 + (cardW + gap) * 2,  y, cardW, h, 'EM ATRASO', String(kpis.emAtraso), TAB_C.accentRed.slice(1),   0.32);
 }
 
-function _contRodapeHistorico_(slide, SW, total, y, h, hoje, pagina, totalPaginas) {
-  _contInfo_(slide, SW, y, h, hoje, pagina, totalPaginas, 0.50);
+function _contRodapeHistorico_(slide, SW, total, y, h, referencia, pagina, totalPaginas) {
+  _contInfo_(slide, SW, y, h, referencia, pagina, totalPaginas, 0.50);
 
   const M = SW * 0.020;
   const cardW = SW * 0.190;
@@ -355,9 +357,9 @@ function _contRodapeHistorico_(slide, SW, total, y, h, hoje, pagina, totalPagina
                TAB_C.accentGreen.slice(1), 0.32);
 }
 
-function _contInfo_(slide, SW, y, h, hoje, pagina, totalPaginas, larg) {
+function _contInfo_(slide, SW, y, h, referencia, pagina, totalPaginas, larg) {
   const M = SW * 0.020;
-  let txt = 'Atualizado em ' + hoje;
+  let txt = referencia;
   if (totalPaginas > 1) txt += '   ·   Pág. ' + pagina + '/' + totalPaginas;
 
   const cx = slide.insertTextBox(txt, M, y, SW * larg, h);

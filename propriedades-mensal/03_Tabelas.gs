@@ -271,10 +271,32 @@ function _tabDesenharCelula_(slide, x, y, w, h, texto, col, cfg) {
 // ==========================================
 // DESENHO — RODAPÉ E KPIs
 // ==========================================
-function _tabDesenharRodape_(slide, SW, kpis, pctStr, y, h, dataAtualizacao, pagina, totalPaginas) {
+/**
+ * O rótulo do rodapé das tabelas.
+ *
+ * POR QUE NÃO É A DATA DE HOJE: estas duas tabelas — Recebimento de Obras e
+ * Gestão de Contratações — foram portadas dos geradores SEMANAIS em
+ * `tabelas/propriedades-semanal/`. No semanal, "Atualizado em 02/09" é a
+ * informação principal do rodapé: o deck é uma foto do dia e o leitor precisa
+ * saber de quando é a foto.
+ *
+ * Num deck MENSAL a leitura é outra. Entende-se que tudo ali é o reflexo do
+ * mês de referência, e carimbar o dia da geração sugere o contrário — que o
+ * recorte é "agora" e não "julho fechado". Pior quando o deck é gerado ou
+ * regerado semanas depois: o rodapé diz setembro e os números são de julho.
+ *
+ * Então o rodapé diz o MÊS, e o mês vem da mesma fonte que a capa
+ * (`obterMesReferencia_`), para os dois nunca divergirem.
+ */
+function _tabRotuloReferencia_() {
+  const ref = obterMesReferencia_();
+  return 'Referência: ' + ref.nome + ' ' + ref.ano;
+}
+
+function _tabDesenharRodape_(slide, SW, kpis, pctStr, y, h, referencia, pagina, totalPaginas) {
   const M = SW * 0.020;
 
-  let info = 'Atualizado em ' + dataAtualizacao;
+  let info = referencia;
   if (totalPaginas > 1) info += '   ·   Pág. ' + pagina + '/' + totalPaginas;
   const cx = slide.insertTextBox(info, M, y, SW * 0.40, h);
   const tsi = cx.getText().getTextStyle();

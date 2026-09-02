@@ -120,7 +120,9 @@ function _recGerar_(deck, rel) {
 
   const SW = deck.getPageWidth();
   const SH = deck.getPageHeight();
-  const hoje = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy');
+  // Deck mensal: o rodapé diz o mês de referência, não o dia da geração.
+  // Ver _tabRotuloReferencia_ em 03_Tabelas.gs.
+  const referencia = _tabRotuloReferencia_();
 
   const abertos    = linhas.filter(r => !rel.testeConcluido(r));
   const concluidos = linhas.filter(r =>  rel.testeConcluido(r));
@@ -129,7 +131,7 @@ function _recGerar_(deck, rel) {
 
   // Bloco principal: só o que está em aberto, e só a contagem em aberto.
   let n = _recPaginas_(deck, SW, SH, rel, abertos, TAG_RECEBIMENTO,
-    [{ label: kAberto.label, cor: kAberto.cor, valor: abertos.length }], '', hoje, null);
+    [{ label: kAberto.label, cor: kAberto.cor, valor: abertos.length }], '', referencia, null);
 
   // Bloco histórico: o total geral e o % concluído, que só fazem sentido aqui.
   if (concluidos.length) {
@@ -138,12 +140,12 @@ function _recGerar_(deck, rel) {
       TAG_RECEBIMENTO.replace('_AUTO】', '_HIST_AUTO】'),
       [{ label: kTotal.label, cor: kTotal.cor, valor: linhas.length },
        { label: kConcl.label, cor: kConcl.cor, valor: concluidos.length }],
-      pct + '% ' + rel.pctTexto, hoje, 'HISTÓRICO · CONCLUÍDOS');
+      pct + '% ' + rel.pctTexto, referencia, 'HISTÓRICO · CONCLUÍDOS');
   }
   return n;
 }
 
-function _recPaginas_(deck, SW, SH, rel, linhas, tag, kpis, pctStr, hoje, legenda) {
+function _recPaginas_(deck, SW, SH, rel, linhas, tag, kpis, pctStr, referencia, legenda) {
   const maxL   = rel.maxLinhas || TAB_MAX_LINHAS;
   const pgs    = _tabPaginar_(linhas, maxL);
 
@@ -170,7 +172,7 @@ function _recPaginas_(deck, SW, SH, rel, linhas, tag, kpis, pctStr, hoje, legend
     }
 
     _tabDesenharTabela_(slide, SW, SH, pagina, topo, rodapeY - SH * 0.025, rel);
-    _tabDesenharRodape_(slide, SW, kpis, pctStr, rodapeY, rodapeH, hoje, idx + 1, pgs.length);
+    _tabDesenharRodape_(slide, SW, kpis, pctStr, rodapeY, rodapeH, referencia, idx + 1, pgs.length);
   });
 
   return pgs.length;
