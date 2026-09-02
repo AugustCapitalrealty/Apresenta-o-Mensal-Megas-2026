@@ -1758,31 +1758,38 @@ function obterDadosChamadosPendentes_() {
 // ==========================================
 /**
  * Retorna os dados consolidados da Torre de Manutenção (Capital Realty e Demercado).
- * Lê da planilha online indicada por TORRE_MANUTENCAO_SPREADSHEET_ID se preenchida;
- * caso contrário, recorre aos dados de referência dos arquivos XLSX locais.
+ * Lê das planilhas online indicadas por TORRE_MANUTENCAO_CR_ID e TORRE_MANUTENCAO_DEMERCADO_ID;
+ * caso contrário ou se inacessíveis, recorre aos dados de referência dos arquivos XLSX locais.
  */
 function obterDadosTorreManutencao_() {
   let crLinhas = null;
   let demLinhas = null;
 
-  if (typeof TORRE_MANUTENCAO_SPREADSHEET_ID !== 'undefined' && TORRE_MANUTENCAO_SPREADSHEET_ID) {
+  // 1. Leitura online da Torre Capital Realty
+  if (typeof TORRE_MANUTENCAO_CR_ID !== 'undefined' && TORRE_MANUTENCAO_CR_ID) {
     try {
-      const ss = SpreadsheetApp.openById(TORRE_MANUTENCAO_SPREADSHEET_ID);
-      const abas = ss.getSheets();
-      
-      const abaCR = abas.find(s => /CR|CAPITAL/i.test(s.getName()));
-      const abaDem = abas.find(s => /DEMERCADO/i.test(s.getName()));
-
+      const ssCR = SpreadsheetApp.openById(TORRE_MANUTENCAO_CR_ID);
+      const abaCR = ssCR.getSheets()[0];
       if (abaCR) {
-        const dadosBrutos = abaCR.getDataRange().getValues();
-        if (dadosBrutos.length > 1) crLinhas = _parseTorreRows_(dadosBrutos);
-      }
-      if (abaDem) {
-        const dadosBrutos = abaDem.getDataRange().getValues();
-        if (dadosBrutos.length > 1) demLinhas = _parseTorreRows_(dadosBrutos);
+        const dadosCR = abaCR.getDataRange().getValues();
+        if (dadosCR.length > 1) crLinhas = _parseTorreRows_(dadosCR);
       }
     } catch (e) {
-      Logger.log('Aviso Torre de Manutenção: falha ao ler planilha online (' + e.message + '). Usando base de referência.');
+      Logger.log('Aviso Torre CR: falha ao ler planilha online (' + e.message + '). Usando base de referência.');
+    }
+  }
+
+  // 2. Leitura online da Torre Demercado
+  if (typeof TORRE_MANUTENCAO_DEMERCADO_ID !== 'undefined' && TORRE_MANUTENCAO_DEMERCADO_ID) {
+    try {
+      const ssDem = SpreadsheetApp.openById(TORRE_MANUTENCAO_DEMERCADO_ID);
+      const abaDem = ssDem.getSheets()[0];
+      if (abaDem) {
+        const dadosDem = abaDem.getDataRange().getValues();
+        if (dadosDem.length > 1) demLinhas = _parseTorreRows_(dadosDem);
+      }
+    } catch (e) {
+      Logger.log('Aviso Torre Demercado: falha ao ler planilha online (' + e.message + '). Usando base de referência.');
     }
   }
 

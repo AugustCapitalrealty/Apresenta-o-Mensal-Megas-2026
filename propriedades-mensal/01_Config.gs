@@ -121,10 +121,12 @@ const TAG_TORRE_MANUTENCAO          = '【PROP_TORRE_MANUTENCAO_AUTO】';
 // ==========================================
 // TORRE DE MANUTENÇÃO — CONFIGURAÇÃO E DADOS BASE
 // ==========================================
-// ID da planilha online quando disponibilizada pelo time.
-// Em branco (''), a automação utiliza os dados de referência aprendidos dos
-// arquivos locais TORRE-MANUTENCAO-CR.xlsx e TORRE-DE-MANUTENCAO-DEMERCADO-.xlsx.
-const TORRE_MANUTENCAO_SPREADSHEET_ID = '';
+// IDs das planilhas online do Google Sheets:
+// Torre CR: https://docs.google.com/spreadsheets/d/1BKvWWjFDarUzSa2aop2EJMrlsw3kGgaydHXC_yfsRO8/edit
+const TORRE_MANUTENCAO_CR_ID        = '1BKvWWjFDarUzSa2aop2EJMrlsw3kGgaydHXC_yfsRO8';
+
+// Torre Demercado: https://docs.google.com/spreadsheets/d/1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxzLqM/edit
+const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxzLqM';
 
 const TORRE_MANUTENCAO_COLUNAS_PADRAO = [
   'Imóvel', 'Real 2024', 'Orçamento 2025', 'Ritmo 2025', 'Orçamento 2026', 'Orç 26/Ritmo 25 (%)', 'Orç 26/ Ritmo 25 (R$)'

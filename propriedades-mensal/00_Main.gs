@@ -169,7 +169,9 @@ function diagnosticarPropriedades() {
   Logger.log('\nFontes de dados:');
   [['BD-CORRETIVAS', BD_CORRETIVAS_ID],
    ['Histórico Validado', HISTORICO_VALIDADO_ID],
-   ['Planilha de Propriedades', PROPRIEDADES_SPREADSHEET_ID]
+   ['Planilha de Propriedades', PROPRIEDADES_SPREADSHEET_ID],
+   ['Torre Manutenção (CR)', typeof TORRE_MANUTENCAO_CR_ID !== 'undefined' ? TORRE_MANUTENCAO_CR_ID : ''],
+   ['Torre Manutenção (Demercado)', typeof TORRE_MANUTENCAO_DEMERCADO_ID !== 'undefined' ? TORRE_MANUTENCAO_DEMERCADO_ID : '']
   ].forEach(([nome, id]) => {
     if (!id) { Logger.log('  · ' + nome + ' — sem ID configurado'); pend.push(nome + ' sem ID'); return; }
     try {
