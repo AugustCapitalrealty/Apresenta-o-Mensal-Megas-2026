@@ -19,6 +19,7 @@ ou execute uma das funções de `00_Main.gs`:
 | `gerarSoPreventivas()` / `gerarSoCorretivas()` | Gera apenas o slide correspondente |
 | `gerarSoBacklog()` / `gerarSoBacklogEmergencial()` | Gera o gráfico de backlog ou a tabela detalhada |
 | `gerarSoChamadosPendentes()` / `gerarSoBacklogClientes()` | Gera os slides de motivos de pausa ou chamados de clientes |
+| `gerarSoTorreManutencao()` | Gera os slides da **Torre de Manutenção** (Capital Realty & Demercado) |
 | `diagnosticarPropriedades()` | Valida acesso a planilhas, bases brutas e deck de destino |
 
 ## Gerenciamento por Tags

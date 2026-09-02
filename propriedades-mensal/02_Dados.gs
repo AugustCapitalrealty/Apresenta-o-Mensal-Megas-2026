@@ -1752,3 +1752,120 @@ function obterDadosChamadosPendentes_() {
     direcionados: direcionados
   };
 }
+
+// ==========================================
+// TORRE DE MANUTENÇÃO (CAPITAL REALTY & DEMERCADO)
+// ==========================================
+/**
+ * Retorna os dados consolidados da Torre de Manutenção (Capital Realty e Demercado).
+ * Lê da planilha online indicada por TORRE_MANUTENCAO_SPREADSHEET_ID se preenchida;
+ * caso contrário, recorre aos dados de referência dos arquivos XLSX locais.
+ */
+function obterDadosTorreManutencao_() {
+  let crLinhas = null;
+  let demLinhas = null;
+
+  if (typeof TORRE_MANUTENCAO_SPREADSHEET_ID !== 'undefined' && TORRE_MANUTENCAO_SPREADSHEET_ID) {
+    try {
+      const ss = SpreadsheetApp.openById(TORRE_MANUTENCAO_SPREADSHEET_ID);
+      const abas = ss.getSheets();
+      
+      const abaCR = abas.find(s => /CR|CAPITAL/i.test(s.getName()));
+      const abaDem = abas.find(s => /DEMERCADO/i.test(s.getName()));
+
+      if (abaCR) {
+        const dadosBrutos = abaCR.getDataRange().getValues();
+        if (dadosBrutos.length > 1) crLinhas = _parseTorreRows_(dadosBrutos);
+      }
+      if (abaDem) {
+        const dadosBrutos = abaDem.getDataRange().getValues();
+        if (dadosBrutos.length > 1) demLinhas = _parseTorreRows_(dadosBrutos);
+      }
+    } catch (e) {
+      Logger.log('Aviso Torre de Manutenção: falha ao ler planilha online (' + e.message + '). Usando base de referência.');
+    }
+  }
+
+  // Fallback para dados de referência aprendidos das planilhas locais
+  if (!crLinhas) {
+    crLinhas = _parseTorreRows_(TORRE_MANUTENCAO_CR_REF);
+  }
+  if (!demLinhas) {
+    demLinhas = _parseTorreRows_(TORRE_MANUTENCAO_DEMERCADO_REF);
+  }
+
+  return {
+    cr: crLinhas,
+    demercado: demLinhas
+  };
+}
+
+function _parseTorreRows_(matriz) {
+  let startIdx = 0;
+  if (matriz.length > 0 && typeof matriz[0][1] === 'string' && /Real|Orçamento/i.test(matriz[0][1])) {
+    startIdx = 1;
+  }
+
+  const rows = [];
+  let totalRow = null;
+
+  for (let i = startIdx; i < matriz.length; i++) {
+    const r = matriz[i];
+    const nome = String(r[0] || '').replace(/\u00A0/g, ' ').trim();
+    if (!nome) continue;
+
+    const real24   = _toNum_(r[1]);
+    const orc25    = _toNum_(r[2]);
+    const ritmo25  = _toNum_(r[3]);
+    const orc26    = _toNum_(r[4]);
+    const varPct   = r[5] != null ? _toNum_(r[5]) : (ritmo25 !== 0 ? (orc26 - ritmo25) / Math.abs(ritmo25) : 0);
+    const varNom   = r[6] != null ? _toNum_(r[6]) : (ritmo25 - orc26);
+
+    const item = {
+      imovel: nome,
+      real24: real24,
+      orc25: orc25,
+      ritmo25: ritmo25,
+      orc26: orc26,
+      varPct: varPct,
+      varNom: varNom,
+      isTotal: /TOTAL/i.test(nome)
+    };
+
+    if (item.isTotal) {
+      totalRow = item;
+    } else {
+      rows.push(item);
+    }
+  }
+
+  return {
+    rows: rows,
+    total: totalRow || _calcularTotalTorre_(rows)
+  };
+}
+
+function _toNum_(v) {
+  if (v == null || v === '') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  const s = String(v).replace(/\u00A0/g, '').replace('R$', '').replace('%', '').trim().replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function _calcularTotalTorre_(rows) {
+  const tot = {
+    imovel: 'TOTAL MANUTENÇÃO',
+    real24: 0, orc25: 0, ritmo25: 0, orc26: 0, varPct: 0, varNom: 0, isTotal: true
+  };
+  rows.forEach(r => {
+    tot.real24 += r.real24;
+    tot.orc25 += r.orc25;
+    tot.ritmo25 += r.ritmo25;
+    tot.orc26 += r.orc26;
+    tot.varNom += r.varNom;
+  });
+  tot.varPct = tot.ritmo25 !== 0 ? (tot.orc26 - tot.ritmo25) / Math.abs(tot.ritmo25) : 0;
+  return tot;
+}
+

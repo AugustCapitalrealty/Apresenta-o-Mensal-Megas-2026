@@ -45,7 +45,8 @@ function onOpen() {
       .addItem('Chamados Pendentes (Motivos)', 'gerarSoChamadosPendentes')
       .addItem('Backlog de Clientes (Properties)', 'gerarSoBacklogClientes')
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
-      .addItem('Gestão de Contratações', 'gerarSoContratacoes'))
+      .addItem('Gestão de Contratações', 'gerarSoContratacoes')
+      .addItem('Torre de Manutenção', 'gerarSoTorreManutencao'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
     .addToUi();
@@ -69,6 +70,7 @@ function gerarApresentacaoPropriedades() {
   //   8. Backlog de Clientes — Properties (com empreendimento)
   //   9. Recebimento de Obras (tabela)
   //  10. Gestão de Contratações (tabela)
+  //  11. Torre de Manutenção (Capital Realty e Demercado)
   //
   const passos = [
     { nome: 'Capa',                          fn: gerarSlideCapa },
@@ -80,7 +82,8 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
     { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
-    { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }
+    { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
+    { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];
@@ -112,6 +115,7 @@ function gerarSoChamadosPendentes()   { return _rodarPassos_([{ nome: 'Chamados 
 function gerarSoBacklogClientes()     { return _rodarPassos_([{ nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties }]); }
 function gerarSoRecebimentoObras()    { return _rodarPassos_([{ nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras }]); }
 function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }]); }
+function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
 
 
 // Roda cada passo isolado: slide que falha registra o erro e não derruba os
