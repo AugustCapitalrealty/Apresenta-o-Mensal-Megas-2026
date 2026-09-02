@@ -17,10 +17,19 @@
 
 function gerarSlidePreventivas() {
   const deck  = getDeckMensal_();
+  
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_PREVENTIVAS !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_PREVENTIVAS);
+  }
+
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_PREVENTIVAS !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_PREVENTIVAS);
+  }
 
   const ref = obterMesReferencia_();
   criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA',
@@ -91,12 +100,14 @@ function _prevCardMetrica_(slide, x, y, w, h, dados, corTema) {
 
 function _prevItemSimples_(slide, x, y, w, label, valor, colorLabel, colorVal) {
   const DS = CR_DESIGN_SYSTEM;
-  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, 20);
+  const folga = 10;
+  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - folga, y, w + folga * 2, 20);
   lbl.getText().setText(label).getTextStyle()
     .setFontSize(7.5).setBold(true).setForegroundColor(colorLabel).setFontFamily(DS.typography.body);
   lbl.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
-  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y + 20, w, 40);
+  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - folga, y + 20, w + folga * 2, 40);
   val.getText().setText(String(valor)).getTextStyle()
     .setFontSize(22).setBold(true).setForegroundColor(colorVal).setFontFamily(DS.typography.titles);
   val.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);

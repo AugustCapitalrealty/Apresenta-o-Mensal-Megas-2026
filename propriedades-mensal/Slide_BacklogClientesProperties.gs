@@ -23,6 +23,11 @@
 function gerarSlideBacklogClientesProperties() {
   const dados = obterDadosBacklogClientesProperties_();
   const deck  = getDeckMensal_();
+
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_BACKLOG_CLIENTES);
+  }
+
   const DS    = CR_DESIGN_SYSTEM;
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const marginX = 30, topY = 76;
@@ -34,6 +39,11 @@ function gerarSlideBacklogClientesProperties() {
   if (!dados) {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
+      _tabMarcarSlide_(slide, TAG_BACKLOG_CLIENTES);
+    }
+
     criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — PROPERTIES',
       'Chamados de clientes pendentes de responsabilidade da equipe Property');
     const contentY = criarCardPainel(slide, marginX, topY, W - 2 * marginX, listaH,
@@ -59,6 +69,10 @@ function gerarSlideBacklogClientesProperties() {
   paginas.forEach((grupoDaPagina, i) => {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
+      _tabMarcarSlide_(slide, TAG_BACKLOG_CLIENTES);
+    }
 
     const subtitulo = 'Chamados de clientes pendentes de responsabilidade da equipe Property' +
       (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');

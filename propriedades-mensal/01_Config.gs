@@ -103,6 +103,19 @@ function getDeckMensal_() {
   return SlidesApp.openById(DECK_PROPRIEDADES_ID);
 }
 
+// ==========================================
+// TAGS DE IDENTIFICAÇÃO DOS SLIDES
+// ==========================================
+// Permitem regerar ou atualizar seções individuais sem duplicar slides nem
+// apagar alterações manuais do apresentador.
+const TAG_CAPA                      = '【PROP_CAPA_AUTO】';
+const TAG_DASHBOARD                 = '【PROP_DASHBOARD_AUTO】';
+const TAG_PREVENTIVAS               = '【PROP_PREVENTIVAS_AUTO】';
+const TAG_CORRETIVAS                = '【PROP_CORRETIVAS_AUTO】';
+const TAG_BACKLOG                   = '【PROP_BACKLOG_AUTO】';
+const TAG_BACKLOG_EMERG_DETALHE     = '【PROP_BACKLOG_EMERG_DETALHE_AUTO】';
+const TAG_CHAMADOS_PENDENTES        = '【PROP_CHAMADOS_PENDENTES_AUTO】';
+const TAG_BACKLOG_CLIENTES          = '【PROP_BACKLOG_CLIENTES_AUTO】';
 
 // ==========================================
 // PORTFÓLIO — O CORTE "MEGAS x DEMAIS"

@@ -1,55 +1,32 @@
 # Apresentação Mensal — Propriedades
 
-Projeto **em construção**. A pasta existe para montarmos a apresentação
-mensal da área de Propriedades, no mesmo padrão da dos Megas.
+Automação em **Google Apps Script** que gera a apresentação mensal da área de
+**Propriedades** (August Capital Realty) para todo o portfólio (Megas e Demais
+Imóveis). Os dados são lidos das bases brutas (`BD-CORRETIVAS`, `BD - PREVENTIVAS`)
+e da planilha de Propriedades, e os slides são gerados diretamente na
+apresentação Google Slides correspondente.
 
-Hoje aqui há apenas o esqueleto: configuração, design system e o pipeline
-vazio. Nenhum slide foi implementado ainda.
+## Como usar
 
-## Por que uma pasta nova e não um slide dentro de `megas-mensal/`
+No Google Slides ou no editor do Apps Script, use o menu **🏢 Propriedades 2026**
+ou execute uma das funções de `00_Main.gs`:
 
-A apresentação dos Megas é por **empreendimento** (Curitiba, Itajaí, Esteio) e
-gira em torno de manutenção — preventivas, corretivas, backlog, custo por m².
-Propriedades é outra área, com outro recorte e outro público.
-
-Além disso vale a regra do repositório: Apps Script compila todos os arquivos
-de um projeto num namespace global único. Misturar as duas apresentações no
-mesmo projeto significaria disputar nomes com os 541 símbolos globais que
-`megas-mensal/` já tem. Como projeto separado, não há disputa nenhuma.
-
-Ver o [`CLAUDE.md`](../CLAUDE.md) da raiz.
-
-## O que já existe no repositório sobre Propriedades
-
-A equipe PROPERTY já aparece na apresentação dos Megas, e a lógica pode ser
-aproveitada:
-
-| Onde | O que faz |
+| Função | O que faz |
 |---|---|
-| `../megas-mensal/Slide_BacklogClientesProperties.gs` | Backlog de chamados de cliente cuja equipe resolvida é PROPERTY |
-| `../megas-mensal/02_Dados.gs` → `_resolverEquipeResponsaveis_` | Classifica o chamado em PROPERTY / FACILITIES / LOCATARIO pela coluna "Responsáveis" |
-| `../megas-mensal/02_Dados.gs` → `obterDadosBacklogPorMesBD_` | Já devolve a série mensal de `property` por empreendimento |
-| Aba `BD-CORRETIVAS` (planilha BASE DE DADOS — QUADRO REM) | Base bruta, uma linha por chamado, histórico desde 2021 |
+| `gerarApresentacaoPropriedades()` | Gera a apresentação completa (10 passos oficiais) |
+| `gerarSoDashboard()` | Gera/atualiza apenas o **Dashboard Operacional** (4 quadrantes) |
+| `gerarTabelasPropriedades()` | Gera/atualiza apenas as tabelas (**Recebimento de Obras** e **Gestão de Contratações**) |
+| `gerarSoPreventivas()` / `gerarSoCorretivas()` | Gera apenas o slide correspondente |
+| `gerarSoBacklog()` / `gerarSoBacklogEmergencial()` | Gera o gráfico de backlog ou a tabela detalhada |
+| `gerarSoChamadosPendentes()` / `gerarSoBacklogClientes()` | Gera os slides de motivos de pausa ou chamados de clientes |
+| `diagnosticarPropriedades()` | Valida acesso a planilhas, bases brutas e deck de destino |
 
-Ou seja: a parte de **chamados de Propriedades** tem fonte pronta e já
-conciliada. É o caminho mais curto para o primeiro slide com dado real.
+## Gerenciamento por Tags
 
-## Decidido
-
-- **Escopo: o portfólio inteiro.** Megas e demais imóveis.
-- **Recorte:** a apresentação fala do desempenho nos Megas e nos demais, o
-  que pede um corte "Megas x demais" em cada indicador. `_propEhMega_`
-  (02_Dados.gs) faz essa separação pelo prefixo do Centro de Custos.
-- **Ponto de partida:** o que a base já tem. A BD-CORRETIVAS é
-  multi-empreendimento e a coluna "Centro de Custos" já lista todo o
-  portfólio — não há lista para digitar, há lista para descobrir.
-
-## Comece por aqui
-
-Rode **`gerarApresentacaoPropriedades()`** — é o ponto de entrada único, e
-hoje ele gera as duas tabelas. Se algo não abrir,
-**`diagnosticarPropriedades()`** diz o que está faltando antes de qualquer
-conta.
+Todos os slides automáticos possuem tags na nota do apresentador (ex:
+`【PROP_DASHBOARD_AUTO】`, `【PROP_PREV_AUTO】`, `【RECEBIMENTO_AUTO】`). Ao regerar
+um slide individual ou o deck completo, apenas os slides daquela tag são
+substituídos, preservando os demais slides e anotações manuais.
 
 **`descobrirPortfolio()`** (02_Dados.gs) varre a base e lista, separando Megas
 dos demais: cada Centro de Custos, o volume de chamados, quantos seguem

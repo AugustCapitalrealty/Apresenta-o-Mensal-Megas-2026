@@ -1151,25 +1151,66 @@ function obterMesReferencia_() {
 }
 
 // % de itens concluídos nos relatórios de Recebimento de Obras (Esteio +
-// Curitiba — "Análise de Projetos" é um relatório à parte, com o próprio
-// critério de conclusão, e não entra nesta média). Lê a mesma REL_RECEBIMENTO
+// Curitiba + Análise de Projetos). Lê a mesma REL_RECEBIMENTO
 // e o mesmo _tabLerAba_ que Slide_RecebimentoObras.gs usa para desenhar as
 // tabelas — um número só de fonte, em vez de recalcular por conta própria e
 // arriscar divergir do que a tabela mostra.
 function obterRecebimentoObrasResumo_() {
-  let total = 0, concluidos = 0;
+  let total = 0, concluidos = 0, emAnalise = 0;
   try {
     ['esteio', 'ctba'].forEach(k => {
-      const rel = REL_RECEBIMENTO[k];
-      const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
-      total += linhas.length;
-      concluidos += linhas.filter(rel.testeConcluido).length;
+      if (typeof REL_RECEBIMENTO !== 'undefined' && REL_RECEBIMENTO[k]) {
+        const rel = REL_RECEBIMENTO[k];
+        const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+        total += linhas.length;
+        concluidos += linhas.filter(rel.testeConcluido).length;
+      }
     });
   } catch (e) {
-    Logger.log('obterRecebimentoObrasResumo_: ' + e.message);
-    return { total: 0, concluidos: 0, pct: null };
+    Logger.log('obterRecebimentoObrasResumo_ (obras): ' + e.message);
   }
-  return { total: total, concluidos: concluidos, pct: total ? (concluidos / total) * 100 : null };
+
+  try {
+    if (typeof REL_RECEBIMENTO !== 'undefined' && REL_RECEBIMENTO['analise']) {
+      const relAnalise = REL_RECEBIMENTO['analise'];
+      const linhasAnalise = _tabLerAba_(relAnalise.aba, relAnalise.cabecalhoContem).rows;
+      emAnalise = linhasAnalise.filter(r => /andamento|analise/i.test(_tabV_(r, 8))).length;
+    }
+  } catch (e) {
+    Logger.log('obterRecebimentoObrasResumo_ (analise): ' + e.message);
+  }
+
+  const pendentes = total - concluidos;
+  return {
+    total: total,
+    concluidos: concluidos,
+    pendentes: pendentes,
+    pct: total ? (concluidos / total) * 100 : null,
+    emAnalise: emAnalise
+  };
+}
+
+// Resumo da Gestão de Contratações (em andamento, em edital, em atraso, fechadas)
+function obterContratacoesResumo_() {
+  try {
+    if (typeof _contLer_ === 'function') {
+      const dados = _contLer_();
+      return {
+        emAndamento: dados.rows.length,
+        emEdital: dados.emEdital || 0,
+        emAtraso: dados.emAtraso || 0,
+        fechadas: dados.historico.length
+      };
+    }
+  } catch (e) {
+    Logger.log('obterContratacoesResumo_: ' + e.message);
+  }
+  return {
+    emAndamento: null,
+    emEdital: null,
+    emAtraso: null,
+    fechadas: null
+  };
 }
 
 // Backlog aberto do mês anterior (mesmo índice de mês, um a menos) — só
@@ -1425,19 +1466,40 @@ function obterDashboardPropriedades_() {
   const fluxo = pontos.map(p => obterFluxoCorretivasPropriedades_(p.ano, p.index));
   const aprov = pontos.map(p => obterAprovacaoEConclusao_(p.ano, p.index));
 
+  const recebimento = obterRecebimentoObrasResumo_();
+  const contratacoes = obterContratacoesResumo_();
+
   const linha3 = (a, b, c) => ({ atual: a, mesAnt: b, anoAnt: c });
   const map = new Map();
+
+  // Quadrante 1: Preventivas
   map.set('SLA Preventivas',        linha3(prev[0].total.sla.pct,      prev[1].total.sla.pct,      prev[2].total.sla.pct));
   map.set('Execução Preventivas',   linha3(prev[0].total.execucao.pct, prev[1].total.execucao.pct, prev[2].total.execucao.pct));
+  map.set('Preventivas previstas',  linha3(prev[0].total.execucao.previstas,  prev[1].total.execucao.previstas,  prev[2].total.execucao.previstas));
+  map.set('Preventivas realizadas', linha3(prev[0].total.execucao.realizadas, prev[1].total.execucao.realizadas, prev[2].total.execucao.realizadas));
+
+  // Quadrante 2: Corretivas & Backlog
   map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
+  map.set('Percentual de conclusão histórico',
+    linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
+  map.set('Tempo médio de aprovação',
+    linha3(aprov[0].tempoAprovacaoH, aprov[1].tempoAprovacaoH, aprov[2].tempoAprovacaoH));
   map.set('Chamados abertos',       linha3(fluxo[0].mensal.criados,  fluxo[1].mensal.criados,  fluxo[2].mensal.criados));
   map.set('Chamados fechados',      linha3(fluxo[0].mensal.fechados, fluxo[1].mensal.fechados, fluxo[2].mensal.fechados));
   map.set('Tempo médio de atendimento',
     linha3(fluxo[0].mensal.tempoMedioH, fluxo[1].mensal.tempoMedioH, fluxo[2].mensal.tempoMedioH));
-  map.set('Tempo médio de aprovação',
-    linha3(aprov[0].tempoAprovacaoH, aprov[1].tempoAprovacaoH, aprov[2].tempoAprovacaoH));
-  map.set('Percentual de conclusão histórico',
-    linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
+
+  // Quadrante 3: Recebimento de Obras & Projetos
+  map.set('Obras concluídas (%)',      linha3(recebimento.pct, null, null));
+  map.set('Obras pendentes (Qtd)',     linha3(recebimento.pendentes, null, null));
+  map.set('Obras cadastradas (Qtd)',   linha3(recebimento.total, null, null));
+  map.set('Projetos em análise (Qtd)', linha3(recebimento.emAnalise, null, null));
+
+  // Quadrante 4: Gestão de Contratações
+  map.set('Contratações em andamento', linha3(contratacoes.emAndamento, null, null));
+  map.set('Em fase de edital',         linha3(contratacoes.emEdital, null, null));
+  map.set('Contratações em atraso',    linha3(contratacoes.emAtraso, null, null));
+  map.set('Contratações concluídas',   linha3(contratacoes.fechadas, null, null));
 
   Logger.log('Dashboard: aprovação — ' + aprov[0].aprovadosNoMes + ' aprovado(s) no mês' +
              (aprov[0].tempoAprovacaoH == null ? ' (sem base para o tempo médio)' :

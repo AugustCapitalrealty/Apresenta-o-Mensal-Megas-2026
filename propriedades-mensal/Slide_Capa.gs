@@ -17,7 +17,17 @@
 
 function gerarSlideCapa() {
   const deck  = getDeckMensal_();
+
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_CAPA !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_CAPA);
+  }
+
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_CAPA !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_CAPA);
+  }
+
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const ref = obterMesReferencia_();

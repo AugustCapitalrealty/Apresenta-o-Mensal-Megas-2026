@@ -19,10 +19,19 @@
 function gerarSlideChamadosPendentes() {
   const d = obterDadosChamadosPendentes_();
   const deck = getDeckMensal_();
+
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_CHAMADOS_PENDENTES !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_CHAMADOS_PENDENTES);
+  }
+
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_CHAMADOS_PENDENTES !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_CHAMADOS_PENDENTES);
+  }
 
   criarHeaderPadrao(slide, 'CHAMADOS PENDENTES (BACKLOG)',
     'Chamados por motivo — ' + d.mesLabel + ' · ▲/▼ vs mês anterior · Equipe Propriedades');
@@ -111,9 +120,9 @@ function gerarSlideChamadosPendentes() {
     }
     vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - slotW * 0.075, baseY + 3, slotW * 1.15, labelH);
+    const el = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + i * slotW - 6, baseY + 3, slotW + 12, labelH);
     el.getText().setText(b.estado).getTextStyle()
-      .setFontSize(4.5).setBold(true)
+      .setFontSize(6.5).setBold(true)
       .setForegroundColor(b.destaque ? DS.colors.brandDark : DS.colors.textMain).setFontFamily(DS.typography.body);
     el.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(100);
     el.setContentAlignment(SlidesApp.ContentAlignment.TOP);

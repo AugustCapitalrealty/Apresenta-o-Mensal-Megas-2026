@@ -31,6 +31,11 @@ const BACKLOG_EMERG_COLUNAS = [
 
 function gerarSlideBacklogEmergencialDetalhe() {
   const deck = getDeckMensal_();
+
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_BACKLOG_EMERG_DETALHE !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_BACKLOG_EMERG_DETALHE);
+  }
+
   const SW = deck.getPageWidth(), SH = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
 
@@ -39,6 +44,11 @@ function gerarSlideBacklogEmergencialDetalhe() {
   if (!itens.length) {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_EMERG_DETALHE !== 'undefined') {
+      _tabMarcarSlide_(slide, TAG_BACKLOG_EMERG_DETALHE);
+    }
+
     criarHeaderPadrao(slide, 'BACKLOG EMERGENCIAL — DETALHE',
       'Chamados emergenciais em aberto no mês de referência · Equipe Propriedades');
 
@@ -59,6 +69,10 @@ function gerarSlideBacklogEmergencialDetalhe() {
   pgs.forEach((pagina, idx) => {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
     slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_EMERG_DETALHE !== 'undefined') {
+      _tabMarcarSlide_(slide, TAG_BACKLOG_EMERG_DETALHE);
+    }
 
     const subtitulo = 'Chamados emergenciais em aberto · Equipe Propriedades' +
       (pgs.length > 1 ? ' — página ' + (idx + 1) + ' de ' + pgs.length : '');

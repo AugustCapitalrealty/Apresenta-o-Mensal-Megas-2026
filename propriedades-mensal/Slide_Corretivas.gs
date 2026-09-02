@@ -24,10 +24,19 @@
 
 function gerarSlideCorretivas() {
   const deck = getDeckMensal_();
+  
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_CORRETIVAS !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_CORRETIVAS);
+  }
+
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_CORRETIVAS !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_CORRETIVAS);
+  }
 
   criarHeaderPadrao(slide, 'INDICADORES DE CORRETIVAS',
     'Backlog e Performance · ▲/▼ vs mês anterior');

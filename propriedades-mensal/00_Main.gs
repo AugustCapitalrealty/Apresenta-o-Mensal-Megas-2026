@@ -21,16 +21,39 @@
 
 
 // ==========================================
-// PONTO DE ENTRADA
+// MENU NA BARRA DO SLIDES / SHEETS
 // ==========================================
-// UM só, sem argumento — é ele que aparece no menu do editor e é ele que
-// gera a apresentação inteira.
-//
-// Por que não há entrada "por imóvel", como em megas-mensal: lá são três
-// decks, um por cidade, então o menu tem gerarCuritiba/gerarItajai/gerarEsteio.
-// Aqui é UM deck do portfólio inteiro, e o recorte Megas x demais acontece
-// dentro de cada slide. Uma entrada por imóvel geraria o mesmo deck N vezes,
-// cada passagem apagando os slides da anterior pela tag.
+function onOpen() {
+  let ui = null;
+  try { ui = SlidesApp.getUi(); } catch (e) {}
+  if (!ui) {
+    try { ui = SpreadsheetApp.getUi(); } catch (e) {}
+  }
+  if (!ui) return;
+
+  ui.createMenu('🏢 Propriedades 2026')
+    .addItem('▶ Gerar Apresentação Completa', 'gerarApresentacaoPropriedades')
+    .addItem('📊 Gerar / Atualizar Dashboard', 'gerarSoDashboard')
+    .addItem('📋 Gerar Só Tabelas (Obras + Contratações)', 'gerarTabelasPropriedades')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('⚡ Slide Avulso')
+      .addItem('Dashboard Operacional', 'gerarSoDashboard')
+      .addItem('Preventivas', 'gerarSoPreventivas')
+      .addItem('Corretivas', 'gerarSoCorretivas')
+      .addItem('Backlog Geral', 'gerarSoBacklog')
+      .addItem('Backlog Emergencial (Detalhe)', 'gerarSoBacklogEmergencial')
+      .addItem('Chamados Pendentes (Motivos)', 'gerarSoChamadosPendentes')
+      .addItem('Backlog de Clientes (Properties)', 'gerarSoBacklogClientes')
+      .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
+      .addItem('Gestão de Contratações', 'gerarSoContratacoes'))
+    .addSeparator()
+    .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
+    .addToUi();
+}
+
+// ==========================================
+// PONTOS DE ENTRADA
+// ==========================================
 function gerarApresentacaoPropriedades() {
   Logger.log('▶ Apresentação Mensal de Propriedades — portfólio');
 
@@ -76,6 +99,19 @@ function gerarTabelasPropriedades() {
     { nome: 'Gestão de Contratações', fn: gerarSlideContratacoes }
   ]);
 }
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDES AVULSOS
+// ==========================================
+function gerarSoDashboard()           { return _rodarPassos_([{ nome: 'Dashboard Operacional',          fn: gerarSlideIndicadoresGerais }]); }
+function gerarSoPreventivas()         { return _rodarPassos_([{ nome: 'Preventivas',                   fn: gerarSlidePreventivas }]); }
+function gerarSoCorretivas()          { return _rodarPassos_([{ nome: 'Corretivas',                    fn: gerarSlideCorretivas }]); }
+function gerarSoBacklog()             { return _rodarPassos_([{ nome: 'Backlog',                       fn: gerarSlideBacklog }]); }
+function gerarSoBacklogEmergencial()  { return _rodarPassos_([{ nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe }]); }
+function gerarSoChamadosPendentes()   { return _rodarPassos_([{ nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes }]); }
+function gerarSoBacklogClientes()     { return _rodarPassos_([{ nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties }]); }
+function gerarSoRecebimentoObras()    { return _rodarPassos_([{ nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras }]); }
+function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }]); }
 
 
 // Roda cada passo isolado: slide que falha registra o erro e não derruba os

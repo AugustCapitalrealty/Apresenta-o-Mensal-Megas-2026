@@ -2,172 +2,239 @@
  * ARQUIVO: Slide_IndicadoresGerais.gs
  * SLIDE — DASHBOARD OPERACIONAL
  *
- * Grid 2×2 de painéis (criarCardPainel) com tabela comparativa de 3 meses
- * (mês atual / mês anterior / mesmo mês ano anterior) dentro de cada um —
- * MESMO desenho de megas-mensal/Slide01_Dashboard.gs (o "Dashboard" que o
- * usuário já conhece e pediu pra replicar), com dado 100% de
- * obterDashboardPropriedades_() (02_Dados.gs): nada aqui é inventado, é
- * obterIndicadoresPropriedades_/obterBacklogPorCC_ chamados 3× com (ano,
- * mesIndex) diferentes — já filtrados pra equipe PROPRIEDADES (nada de
- * Facilities nem Terceiros aparece nesta apresentação).
+ * Grid flexível de painéis (criarCardPainel) com suporte a 2, 3 ou 4 quadrantes
+ * via motor _dashGrade_ (mesmo padrão refinado de megas-mensal/Slide01_Dashboard.gs).
  *
- * Por que não é mais criarCardKPI (o desenho anterior deste slide): aquilo
- * era um card de KPI avulso, sem comparação no tempo — o layout "de verdade"
- * que o usuário mandou de exemplo (print "DASHBOARD OPERACIONAL") é este
- * grid com tabela ▲/▼ dentro de cada painel, e é isso que este arquivo
- * desenha agora.
+ * QUADRANTES DO PORTFÓLIO DE PROPRIEDADES:
+ *   1. MANUTENÇÃO PREVENTIVA (Série mensal: SLA, Em dia, Rotinas Agendadas, Realizadas)
+ *   2. MANUTENÇÃO CORRETIVA: CHAMADOS (Série mensal: Backlog, % Conclusão histórico, Tempo de aprovação, Criados)
+ *   3. RECEBIMENTO DE OBRAS & PROJETOS (Posição atual: Concluídas %, Pendências, Total de obras, Projetos em análise)
+ *   4. GESTÃO DE CONTRATAÇÕES (Posição atual: Em andamento, Em edital, Em atraso, Concluídas histórico)
  *
- * OS 2 QUADRANTES (por pedido do usuário — trabalhando por partes: tirou
- * Manutenção Corretiva e SLA Megas x Demais Imóveis daqui, ficam só)
- *   1. Manutenção Preventiva — SLA e "Em dia" (execução), série mensal real.
- *   2. Backlog em aberto     — contagem no fim do mês, série mensal real.
- *   Recebimento de Obras NÃO entra: a planilha é uma lista viva de
- *   pendências, sem registro histórico por mês — não dá pra saber "quanto
- *   estava concluído em maio" sem inventar estado passado. Ver o comentário
- *   em obterDashboardPropriedades_ (02_Dados.gs). O número dele já aparece
- *   noutro lugar do deck (KPIs TOTAL/CONCLUÍDO/PENDENTE no rodapé de cada
- *   página de Slide_RecebimentoObras.gs) — não precisa de um card aqui só
- *   pra repetir o mesmo dado sem comparação. obterIndicadoresPortfolio_ e
- *   obterRecebimentoObrasResumo_ (02_Dados.gs) ficam disponíveis, sem uso
- *   no momento, caso um card avulso volte a fazer sentido neste slide.
+ * RECURSOS IMPLEMENTADOS:
+ *   - Gerenciamento por Tag (TAG_DASHBOARD): substituição limpa sem duplicar slides.
+ *   - Layout _dashGrade_: ajusta proporções e centralização vertical automaticamente.
+ *   - Anti-Text-Break (Skill slides-caixa-texto-sem-quebra): folga simétrica para evitar quebra indevida da API do Slides.
+ *   - Comparativo temporal ▲/▼ com coloração semântica (verde melhorou / vermelho piorou).
+ *   - Régua de coloração por natureza do indicador (SLA, Inverso, Orçamento, Padrão).
  */
 
 function gerarSlideIndicadoresGerais() {
   const dados = obterDashboardPropriedades_();
   const valoresMap = dados.map;
-  const headers = dados.headers;
+  const dynamicHeaders = dados.headers;
 
   const deck = getDeckMensal_();
+  
+  // Limpeza de slide anterior com a mesma tag
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_DASHBOARD !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_DASHBOARD);
+  }
+
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
 
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
 
-  criarHeaderPadrao(slide, 'DASHBOARD OPERACIONAL',
-    'Comparativo de Performance: ' + headers[0] + (dados.parcial ? ' (mês em andamento)' : ''));
+  // Marcação do slide para substituição segura
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_DASHBOARD !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_DASHBOARD);
+  }
 
-  // sentido: 'maior' = quanto maior melhor / 'menor' = quanto menor melhor
-  // (colore a seta de tendência vs mês anterior). sla: aplica corPorSLA
-  // (≥95 verde, ≥90 âmbar, <90 vermelho) no valor do mês atual.
-  //
-  // "Em dia (%)" é o mesmo rótulo que o Dashboard dos Megas usa pra
-  // execução (megas-mensal/Slide01_Dashboard.gs, linha 34) — pedido do
-  // usuário pra manter o vocabulário igual entre os dois decks.
+  criarHeaderPadrao(
+    slide,
+    'DASHBOARD OPERACIONAL',
+    'Indicadores do Portfólio de Propriedades · Performance: ' + dynamicHeaders[0] + (dados.parcial ? ' (mês em andamento)' : '')
+  );
+
+  // Configuração dos quadrantes
   const structure = [
     { title: 'MANUTENÇÃO PREVENTIVA', color: DS.colors.themePrev, rows: [
-      { label: 'SLA (%)',     lookup: 'SLA Preventivas',      sentido: 'maior', sla: true },
-      { label: 'Em dia (%)',  lookup: 'Execução Preventivas', sentido: 'maior', sla: true }
+      { label: 'SLA (%)',             lookup: 'SLA Preventivas',        sentido: 'maior', sla: true },
+      { label: 'Em dia (%)',          lookup: 'Execução Preventivas',   sentido: 'maior', sla: true },
+      { label: 'Rotinas agendadas',   lookup: 'Preventivas previstas',  sentido: 'menor' },
+      { label: 'Rotinas executadas',  lookup: 'Preventivas realizadas', sentido: 'maior' }
     ] },
-    // MESMO quadrante do Dashboard dos Megas ('MANUTENÇÃO CORRETIVA:
-    // BACKLOG'): estoque no topo, os dois indicadores de qualidade embaixo.
-    //
-    // "% Conclusão histórico" e "Tempo médio de aprovação" são os mesmos
-    // rótulos dos Megas, mas lá são células DIGITADAS na aba DADOS. Aqui são
-    // CALCULADOS na BD-CORRETIVAS — ver obterAprovacaoEConclusao_ em
-    // 02_Dados.gs para as duas definições, escritas por extenso justamente
-    // porque o nome sozinho admite mais de uma leitura.
-    //
-    // FICARAM DE FORA, por pedido: "Abertos no mês", "Fechados no mês" e
-    // "Tempo médio de atendimento". Os dois primeiros já são o assunto do
-    // slide de Corretivas, e o terceiro mede o tempo até FECHAR — numa fila
-    // com chamado antigo ele passa de 5.000h, o que enche a coluna e não diz
-    // nada acionável ao lado de um backlog. Os três continuam calculados em
-    // obterDashboardPropriedades_ e disponíveis no mapa, é só voltar a linha
-    // aqui se um dia fizerem falta.
     { title: 'MANUTENÇÃO CORRETIVA: CHAMADOS', color: DS.colors.themeCorr, rows: [
-      { label: 'Backlog em aberto (Qtd)',   lookup: 'Backlog em aberto',                 sentido: 'menor', sla: false },
-      { label: '% Conclusão histórico',     lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true  },
-      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',          sentido: 'menor', sla: false }
+      { label: 'Backlog em aberto (Qtd)',   lookup: 'Backlog em aberto',                 sentido: 'menor' },
+      { label: '% Conclusão histórico',     lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
+      { label: 'Tempo médio aprovação (h)', lookup: 'Tempo médio de aprovação',          sentido: 'menor' },
+      { label: 'Chamados criados no mês',   lookup: 'Chamados abertos',                  sentido: 'menor' }
+    ] },
+    { title: 'RECEBIMENTO DE OBRAS & PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, rows: [
+      { label: 'Obras concluídas (%)',      lookup: 'Obras concluídas (%)',      regua: 'sla' },
+      { label: 'Pendências de obras (Qtd)', lookup: 'Obras pendentes (Qtd)',     regua: 'inverso' },
+      { label: 'Total de obras (Qtd)',      lookup: 'Obras cadastradas (Qtd)' },
+      { label: 'Projetos em análise (Qtd)', lookup: 'Projetos em análise (Qtd)' }
+    ] },
+    { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, rows: [
+      { label: 'Processos em andamento', lookup: 'Contratações em andamento' },
+      { label: 'Em fase de edital',      lookup: 'Em fase de edital' },
+      { label: 'Processos em atraso',    lookup: 'Contratações em atraso',    regua: 'inverso' },
+      { label: 'Histórico concluídas',   lookup: 'Contratações concluídas' }
     ] }
   ];
 
-  // Painéis lado a lado, ocupando a altura toda abaixo do cabeçalho. A
-  // largura sai da QUANTIDADE de painéis, para acrescentar um não exigir
-  // mexer na conta.
-  const marginX = 28, marginY = 74, gap = 16, footerMargin = 15;
-  const nCards = structure.length;
-  const cardW = (W - (2 * marginX) - (gap * (nCards - 1))) / nCards;
-  const cardH = H - marginY - footerMargin;
+  const headerH = DS.layout.headerH || 64;
+  const marginX = DS.layout.marginX || 30;
+  const marginY = headerH + 14;
+  const gap = 16;
+  const footerMargin = 15;
+  const areaW = W - (2 * marginX);
+  const areaH = H - marginY - footerMargin;
+  const caixas = _dashGrade_(structure.length, marginX, marginY, areaW, areaH, gap);
 
   structure.forEach((cat, i) => {
-    const x = marginX + (i * (cardW + gap));
-    const y = marginY;
+    const { x, y, w: cardW, h: cardH } = caixas[i];
 
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
 
-    // Faixa do comparativo entre o rótulo e a coluna do mês atual (sem
-    // cabeçalho de tabela): só a seta ▲/▼, grande, colada ao valor atual —
-    // o quanto variou já está detalhado nos slides de cada assunto.
-    const colNameW = cardW * 0.42, seloW = 14;
+    const colNameW = cardW * 0.46;
+    const seloW = 14;
     const dataX0 = x + 10 + colNameW + seloW;
     const colDataW = (cardW - 20 - colNameW - seloW) / 3;
-    headers.forEach((h, idx) => {
-      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW), tableY, colDataW, 20);
-      t.getText().setText(h).getTextStyle()
-        .setFontSize(8).setBold(true).setForegroundColor('#94A3B8').setFontFamily(DS.typography.titles);
-      t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    });
 
-    const startDataY = tableY + 20;
-    const rowH = (y + cardH - startDataY - 10) / cat.rows.length;
+    if (cat.semComparativo) {
+      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, tableY, colDataW * 3 + 20, 18);
+      t.getText().setText('POSIÇÃO ATUAL').getTextStyle()
+        .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
+      t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } else {
+      dynamicHeaders.forEach((h, idx) => {
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW) - 6, tableY, colDataW + 12, 18);
+        t.getText().setText(h).getTextStyle()
+          .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
+        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      });
+    }
+
+    const ROW_H_MAX = 24;
+    const areaDados = (y + cardH - (tableY + 20) - 8);
+    const rowH = Math.min(areaDados / cat.rows.length, ROW_H_MAX);
+    const startDataY = tableY + 20 + (areaDados - rowH * cat.rows.length) / 2;
 
     cat.rows.forEach((r, rIdx) => {
       const ry = startDataY + (rIdx * rowH);
       if (rIdx < cat.rows.length - 1) {
-        const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, ry + rowH, cardW - 20, 1);
+        const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, ry + rowH - 1, cardW - 20, 1);
         line.getFill().setSolidFill('#F1F5F9');
         line.getBorder().setTransparent();
       }
 
+      // Rótulo com folga simétrica para não quebrar texto
       const nBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry, colNameW, rowH);
       nBox.getText().setText(r.label).getTextStyle()
-        .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
+        .setFontSize(7.5).setBold(true).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
       nBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
       const vals = valoresMap.get(r.lookup) || { atual: null, mesAnt: null, anoAnt: null };
-      const nAtual = _dashNum_(vals.atual), nAnt = _dashNum_(vals.mesAnt);
+      const nAtual = _dashNum_(vals.atual);
+      const nAnt = _dashNum_(vals.mesAnt);
 
-      // Comparativo vs mês anterior: só a seta ▲/▼, grande, colada bem
-      // perto do valor atual — verde melhorou / vermelho piorou, conforme o
-      // sentido da métrica (backlog menor é melhor; SLA/execução maior é
-      // melhor).
-      if (nAtual != null && nAnt != null && nAtual !== nAnt) {
+      // Comparativo vs mês anterior: seta ▲/▼
+      if (!cat.semComparativo && nAtual != null && nAnt != null && nAtual !== nAnt) {
         const subiu = nAtual > nAnt;
         const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
         const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW, ry, seloW + 8, rowH);
         selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
         selo.getText().setText(subiu ? '▲' : '▼').getTextStyle()
-          .setFontSize(12).setBold(true)
+          .setFontSize(11).setBold(true)
           .setForegroundColor(melhorou ? DS.colors.accentGreen : DS.colors.accentRed)
           .setFontFamily(DS.typography.titles);
         selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
       }
 
+      const corDoValor = (valStr, isAtual) => isAtual ? _dashCor_(valStr, r, cat.color) : DS.colors.textBody;
+
+      if (cat.semComparativo) {
+        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, ry, colDataW * 3 + 20, rowH);
+        const valStr = formatarNumeroBR(vals.atual);
+        const vText = vBox.getText();
+        vText.setText(valStr);
+        vText.getTextStyle()
+          .setFontSize(8.5).setBold(true).setFontFamily(DS.typography.titles)
+          .setForegroundColor(corDoValor(valStr, true));
+        vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        return;
+      }
+
       [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
-        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW), ry, colDataW, rowH);
+        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW) - 8, ry, colDataW + 16, rowH);
         const valStr = formatarNumeroBR(val);
         const vText = vBox.getText();
         vText.setText(valStr);
-        const vStyle = vText.getTextStyle();
-        vStyle.setFontSize(9).setBold(true).setFontFamily(DS.typography.titles);
-        vStyle.setForegroundColor(vIdx === 0
-          ? (r.sla ? corPorSLA(valStr, cat.color) : cat.color)
-          : DS.colors.textBody);
+        vText.getTextStyle()
+          .setFontSize(8.5).setBold(true).setFontFamily(DS.typography.titles)
+          .setForegroundColor(corDoValor(valStr, vIdx === 0));
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       });
     });
   });
 
-  Logger.log('✓ Dashboard Operacional gerado');
+  Logger.log('✓ Dashboard Operacional gerado com sucesso (' + structure.length + ' quadrantes)');
 }
 
-// null/NaN-safe: os valores do mapa já chegam como number|null (pct pode ser
-// null quando o denominador é zero — "sem base para informar", ver
-// calcularSLA_/calcularExecucao_ em 02_Dados.gs), nunca como texto da
-// planilha, então não precisa da conversão de string que o Dashboard dos
-// Megas faz.
+/**
+ * Grade flexível para 1, 2, 3, 4 ou N painéis.
+ */
+function _dashGrade_(n, x0, y0, areaW, areaH, gap) {
+  const caixa = (x, y, w, h) => ({ x: x, y: y, w: w, h: h });
+
+  if (n <= 1) return [caixa(x0, y0, areaW, areaH)];
+
+  if (n === 2) {
+    const w = (areaW - gap) / 2;
+    return [caixa(x0, y0, w, areaH), caixa(x0 + w + gap, y0, w, areaH)];
+  }
+
+  const linhas = Math.ceil(n / 2);
+  const h = (areaH - gap * (linhas - 1)) / linhas;
+  const w = (areaW - gap) / 2;
+
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const linha = Math.floor(i / 2);
+    const y = y0 + linha * (h + gap);
+    const sozinhoNaLinha = (i === n - 1) && (n % 2 === 1);
+    out.push(sozinhoNaLinha ? caixa(x0, y, areaW, h)
+                            : caixa(x0 + (i % 2) * (w + gap), y, w, h));
+  }
+  return out;
+}
+
+/**
+ * Cor semântica por natureza do indicador.
+ */
+function _dashCor_(valStr, rowDef, corPadrao) {
+  const DS = CR_DESIGN_SYSTEM;
+  if (!valStr || valStr === '-' || valStr === '—') return DS.colors.textMuted;
+  
+  const num = parseFloat(String(valStr).replace('%', '').replace(',', '.'));
+  if (isNaN(num)) return corPadrao || DS.colors.textMain;
+
+  if (rowDef.sla) {
+    return corPorSLA(num, corPadrao);
+  }
+
+  if (rowDef.regua === 'inverso') {
+    // Menor é melhor (ex: pendências, atrasos)
+    if (num === 0) return DS.colors.accentGreen;
+    if (num <= 2) return DS.colors.accentOrange;
+    return DS.colors.accentRed;
+  }
+
+  if (rowDef.regua === 'orcamento') {
+    return num <= 100 ? DS.colors.accentGreen : DS.colors.accentRed;
+  }
+
+  return corPadrao || DS.colors.textMain;
+}
+
 function _dashNum_(v) {
   return (v == null || isNaN(v)) ? null : v;
 }

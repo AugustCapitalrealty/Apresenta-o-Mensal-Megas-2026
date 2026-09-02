@@ -15,10 +15,19 @@ const PROP_BACKLOG_MAX_BARRAS = 14;
 
 function gerarSlideBacklog() {
   const deck = getDeckMensal_();
+
+  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_BACKLOG !== 'undefined') {
+    _tabRemoverPorTag_(deck, TAG_BACKLOG);
+  }
+
   const SW = deck.getPageWidth(), SH = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
+
+  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG !== 'undefined') {
+    _tabMarcarSlide_(slide, TAG_BACKLOG);
+  }
 
   criarHeaderPadrao(slide, 'BACKLOG — DEMANDAS EM ABERTO',
     'Chamados aguardando atendimento, agrupados por Centro de Custos');
