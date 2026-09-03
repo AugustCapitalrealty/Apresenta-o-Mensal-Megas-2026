@@ -1401,6 +1401,12 @@ function obterConclusaoHistoricaPropriedades_(pontos) {
   });
 }
 
+// DESATIVADA (não tem chamador). Saiu do dashboard no commit de performance:
+// custava ~2min de leitura da BD-CORRETIVAS e as linhas que ela alimentava
+// ("Tempo médio de aprovação", fluxo) não são desenhadas no slide. Fica aqui
+// porque é a única implementação da conta de tempo de aprovação — se a linha
+// voltar ao slide, é esta função que volta junto. A conferência estoque ×
+// fluxo que dependia dela agora vive em Diagnostico_Identidade.gs.
 function obterAprovacaoEConclusao_(ano, mesIndex) {
   const refIni = new Date(Date.UTC(ano, mesIndex, 1));
   const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
@@ -1483,6 +1489,11 @@ function obterDashboardPropriedades_() {
   // Conclusão histórica das corretivas (PROPERTY) nos 3 pontos.
   // Tempo de aprovação e fluxo de chamados foram removidos do dashboard
   // para acelerar a geração (economiza ~2 minutos em BD-CORRETIVAS).
+  //
+  // Sair daqui levou junto a conferência da identidade estoque × fluxo, e o
+  // slide continua mostrando "Backlog em aberto". Ela não sumiu: roda sob
+  // demanda em conferirIdentidadeBacklog() (Diagnostico_Identidade.gs). Se um
+  // backlog parecer estranho, é lá que se confere.
   const conclusoes = obterConclusaoHistoricaPropriedades_(pontos);
 
   const recebimento = obterRecebimentoObrasResumo_();

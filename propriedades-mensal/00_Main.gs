@@ -50,6 +50,7 @@ function onOpen() {
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
     .addItem('🔍 Diagnosticar Backlog de Clientes', 'diagnosticarBacklogClientes')
+    .addItem('🧮 Conferir Backlog (estoque × fluxo)', 'conferirIdentidadeBacklog')
     .addToUi();
 }
 
@@ -187,4 +188,10 @@ function diagnosticarPropriedades() {
   Logger.log('\n' + (pend.length
     ? 'PENDÊNCIAS (' + pend.length + '):\n    ' + pend.join('\n    ')
     : 'Configuração completa. Rode gerarApresentacaoPropriedades().'));
+
+  // Esta função só confere se a configuração está de pé — é rápida de
+  // propósito. A conferência dos NÚMEROS (identidade estoque × fluxo) lê a
+  // BD-CORRETIVAS inteira e mora à parte, para não pesar aqui nem na geração.
+  Logger.log('\nPara conferir se o backlog do mês fecha com o fluxo, rode' +
+             ' conferirIdentidadeBacklog().');
 }
