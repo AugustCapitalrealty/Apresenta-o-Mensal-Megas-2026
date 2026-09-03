@@ -63,19 +63,12 @@ function gerarSlideIndicadoresGerais() {
       { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' },
       { label: 'CAPEX',                       lookup: 'CAPEX' }
     ] },
-    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, tipoTexto: true,
-      linhas: [
-        { texto: 'VISTORIAS', header: true },
-        { texto: 'entrada/saida de clientes', nivel: 1 },
-        { texto: 'recebimento de obras',      nivel: 1 },
-        { texto: 'monitoramento',             nivel: 1 },
-        { texto: 'Documentação',              nivel: 1 },
-        { texto: 'Adequações clientes', header: true },
-        { texto: 'Quantidade',                          nivel: 1 },
-        { texto: 'Prazo medio de atendimento (dias)',  nivel: 1 },
-        { texto: 'Percentual de conclusão',             nivel: 1 }
-      ]
-    },
+    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', rows: [
+      { label: 'Obras concluídas (%)',      lookup: 'Obras concluídas (%)',      regua: 'sla' },
+      { label: 'Pendências de obras (Qtd)', lookup: 'Obras pendentes (Qtd)',     regua: 'inverso' },
+      { label: 'Total de obras (Qtd)',      lookup: 'Obras cadastradas (Qtd)' },
+      { label: 'Projetos em análise (Qtd)', lookup: 'Projetos em análise (Qtd)' }
+    ] },
     { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, headerTexto: 'TOTAL', rows: [
       { label: 'Processos em andamento',     lookup: 'Contratações em andamento' },
       { label: 'Percentual de conclusão',    lookup: 'Contratações conclusão (%)' },
@@ -118,36 +111,6 @@ function gerarSlideIndicadoresGerais() {
         t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       });
-    }
-
-    if (cat.tipoTexto) {
-      const boxW = cardW - 24;
-      const boxH = cardH - (tableY - y) - 8;
-      const tBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, tableY + 2, boxW, boxH);
-      const fullText = cat.linhas.map(l => (l.nivel ? '    ' : '') + l.texto).join('\n');
-      const tObj = tBox.getText();
-      tObj.setText(fullText);
-
-      const paragraphs = tObj.getParagraphs();
-      cat.linhas.forEach((l, idx) => {
-        if (idx < paragraphs.length) {
-          const pStyle = paragraphs[idx].getRange().getTextStyle();
-          if (l.header) {
-            pStyle
-              .setFontSize(7.5)
-              .setBold(true)
-              .setForegroundColor(DS.colors.textMain)
-              .setFontFamily(DS.typography.titles);
-          } else {
-            pStyle
-              .setFontSize(6.8)
-              .setBold(false)
-              .setForegroundColor(DS.colors.textBody)
-              .setFontFamily(DS.typography.titles);
-          }
-        }
-      });
-      return;
     }
 
     const ROW_H_MAX = 24;
