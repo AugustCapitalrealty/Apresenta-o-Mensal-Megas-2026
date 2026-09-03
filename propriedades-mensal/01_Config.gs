@@ -194,6 +194,8 @@ const TORRE_MANUTENCAO_DEMERCADO_REF = [
  * claro com barra de destaque, subtítulo, logo à direita e linha separadora.
  * Mesmo componente usado em TODO slide de dado dos Megas (criarHeaderPadrao).
  */
+var _propDriveAppDisponivel = true;
+
 function criarHeaderPadrao(slide, titulo, subtitulo) {
   const deck = getDeckMensal_();
   const W  = deck.getPageWidth();
@@ -225,11 +227,14 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
   }
 
   // Logo no canto superior direito (não quebra a geração se indisponível)
-  try {
-    const logoBlob = DriveApp.getFileById(DS.logoId).getBlob();
-    slide.insertImage(logoBlob, W - mX - DS.logoW, 14, DS.logoW, DS.logoH);
-  } catch (e) {
-    Logger.log('Aviso (Header): logo não carregado. ' + e.message);
+  if (typeof _propDriveAppDisponivel === 'undefined' || _propDriveAppDisponivel) {
+    try {
+      const logoBlob = DriveApp.getFileById(DS.logoId).getBlob();
+      slide.insertImage(logoBlob, W - mX - DS.logoW, 14, DS.logoW, DS.logoH);
+    } catch (e) {
+      _propDriveAppDisponivel = false;
+      Logger.log('Aviso (Header): logo não carregado via DriveApp (' + e.message + ').');
+    }
   }
 
   // Linha separadora de largura total + segmento de destaque

@@ -54,9 +54,11 @@ function _histNorm_(s) {
     .replace(/\s+/g, ' ').trim();
 }
 
-// As bases trazem data em ISO "AAAA-MM-DD HH:MM:SS".
+// As bases trazem data em ISO "AAAA-MM-DD HH:MM:SS" ou objetos Date nativos do Sheets.
 function _histParseDataHora_(v) {
-  const txt = String(v == null ? '' : v).trim();
+  if (v == null || v === '') return null;
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  const txt = String(v).trim();
   if (!txt) return null;
   const m = txt.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if (!m) return null;
@@ -294,15 +296,11 @@ function _propLerBase_(nomeAba) {
     // Diz de que coluna saiu a aprovação. Sem isso, uma coluna renomeada
     // faria "Tempo médio de aprovação" sumir do slide sem ninguém saber por quê.
     if (nomeAba === BD_ABA_CORRETIVAS) {
-      if (cAprov >= 0 || cTaprov >= 0) {
-        Logger.log('BD-CORRETIVAS: aprovação — data de "' +
-                   (cAprov >= 0 ? data[0][cAprov] : '(não achada)') + '" (' +
-                   saida.filter(it => it.dtAprovado).length + ' linha(s)), espera de "' +
-                   (cTaprov >= 0 ? data[0][cTaprov] : '(não achada)') + '" (' +
-                   saida.filter(it => it.tempoAprovarSeg != null).length + ' linha(s)).');
-      } else {
+      if (cAprov < 0 && cTaprov < 0) {
         Logger.log('BD-CORRETIVAS: nenhuma coluna de aprovação reconhecida. ' +
                    'Cabeçalho real: ' + data[0].filter(String).join(' | '));
+      } else {
+        Logger.log('BD-CORRETIVAS: ' + saida.length + ' linha(s) carregada(s).');
       }
     }
 
@@ -1377,6 +1375,32 @@ function obterIndicadoresAcumulado_() {
  *           semDataAprovacao } — nulls quando não há base, nunca zero: "não
  * houve o que medir" é diferente de "o resultado foi zero" (lição 3).
  */
+// Conclusão histórica acumulada das corretivas de PROPERTY nos pontos solicitados.
+// Execução rápida e direta sem cálculos pesados de tempo de aprovação.
+function obterConclusaoHistoricaPropriedades_(pontos) {
+  const itens = _propLerCorretivas_()
+    .filter(it => _propEquipeCorretiva_(it.responsaveis) === 'PROPERTY');
+
+  return pontos.map(p => {
+    const refFim = new Date(Date.UTC(p.ano, p.index + 1, 1));
+    let criadosAte = 0, fechadosAte = 0;
+    for (let i = 0; i < itens.length; i++) {
+      const it = itens[i];
+      if (it.dtReporte && it.dtReporte < refFim) {
+        criadosAte++;
+        if (_bdChamadoFechado_(it.estado, it.dtFechado) && it.dtFechado && it.dtFechado < refFim) {
+          fechadosAte++;
+        }
+      }
+    }
+    return {
+      conclusaoHistoricoPct: criadosAte > 0 ? (fechadosAte / criadosAte) * 100 : null,
+      criadosAte: criadosAte,
+      fechadosAte: fechadosAte
+    };
+  });
+}
+
 function obterAprovacaoEConclusao_(ano, mesIndex) {
   const refIni = new Date(Date.UTC(ano, mesIndex, 1));
   const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
@@ -1456,15 +1480,10 @@ function obterDashboardPropriedades_() {
   const nomesCurto = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   const headers = pontos.map(p => nomesCurto[p.index] + "'" + String(p.ano).slice(-2));
 
-  // CHAMADOS (corretivas): entrada e saída do mês, nos mesmos 3 pontos.
-  //
-  // O slide NÃO desenha estas três linhas (pedido do usuário — ver
-  // Slide_IndicadoresGerais.gs), mas o cálculo fica: é ele que sustenta a
-  // conferência da identidade logo abaixo, que é o que faz um mês que não
-  // fecha aparecer no log em vez de na reunião. Ficam também no mapa, para
-  // voltar ao slide sem precisar reescrever nada.
-  const fluxo = pontos.map(p => obterFluxoCorretivasPropriedades_(p.ano, p.index));
-  const aprov = pontos.map(p => obterAprovacaoEConclusao_(p.ano, p.index));
+  // Conclusão histórica das corretivas (PROPERTY) nos 3 pontos.
+  // Tempo de aprovação e fluxo de chamados foram removidos do dashboard
+  // para acelerar a geração (economiza ~2 minutos em BD-CORRETIVAS).
+  const conclusoes = obterConclusaoHistoricaPropriedades_(pontos);
 
   const recebimento = obterRecebimentoObrasResumo_();
   const contratacoes = obterContratacoesResumo_();
@@ -1480,13 +1499,11 @@ function obterDashboardPropriedades_() {
 
   map.set('Backlog em aberto',      linha3(backlog[0], backlog[1], backlog[2]));
   map.set('Percentual de conclusão histórico',
-    linha3(aprov[0].conclusaoHistoricoPct, aprov[1].conclusaoHistoricoPct, aprov[2].conclusaoHistoricoPct));
-  map.set('Tempo médio de aprovação',
-    linha3(aprov[0].tempoAprovacaoH, aprov[1].tempoAprovacaoH, aprov[2].tempoAprovacaoH));
-  map.set('Chamados abertos',       linha3(fluxo[0].mensal.criados,  fluxo[1].mensal.criados,  fluxo[2].mensal.criados));
-  map.set('Chamados fechados',      linha3(fluxo[0].mensal.fechados, fluxo[1].mensal.fechados, fluxo[2].mensal.fechados));
-  map.set('Tempo médio de atendimento',
-    linha3(fluxo[0].mensal.tempoMedioH, fluxo[1].mensal.tempoMedioH, fluxo[2].mensal.tempoMedioH));
+    linha3(conclusoes[0].conclusaoHistoricoPct, conclusoes[1].conclusaoHistoricoPct, conclusoes[2].conclusaoHistoricoPct));
+  map.set('Tempo médio de aprovação',   linha3(null, null, null));
+  map.set('Chamados abertos',            linha3(null, null, null));
+  map.set('Chamados fechados',           linha3(null, null, null));
+  map.set('Tempo médio de atendimento',  linha3(null, null, null));
 
   // Quadrante 2: Gestão Financeira · Orçamento (Torre de Manutenção)
   let dadosTorre = null;
@@ -1543,31 +1560,10 @@ function obterDashboardPropriedades_() {
   map.set('Contratações conclusão (%)', linha3('4', null, null));
   map.set('Contratações prazo médio',   linha3('15', null, null));
 
-  Logger.log('Dashboard: aprovação — ' + aprov[0].aprovadosNoMes + ' aprovado(s) no mês' +
-             (aprov[0].tempoAprovacaoH == null ? ' (sem base para o tempo médio)' :
-              ', média ' + aprov[0].tempoAprovacaoH.toFixed(1) + 'h') +
-             (aprov[0].porSubtracao ? ' · ' + aprov[0].porSubtracao +
-              ' sem "Tempo para aprovar", calculado por (Aprovado em − Data de reporte)' : '') +
-             (aprov[0].divergentes ? ' · ⚠ ' + aprov[0].divergentes +
-              ' com "Tempo para aprovar" divergindo da subtração em mais de 1h — ' +
-              'a coluna provavelmente não é tempo corrido (horário útil?)' : '') +
-             (aprov[0].semDataAprovacao ? ' · ' + aprov[0].semDataAprovacao +
-              ' sem espera utilizável, fora da conta' : ''));
-  Logger.log('Dashboard: conclusão histórica — ' + aprov[0].fechadosAte + ' fechados de ' +
-             aprov[0].criadosAte + ' abertos até o fim do mês' +
-             (aprov[0].conclusaoHistoricoPct == null ? '' :
-              ' = ' + aprov[0].conclusaoHistoricoPct.toFixed(1) + '%'));
-
-  // Conferência da identidade estoque × fluxo no mês de referência. Não
-  // corrige nada — só avisa, que é o que permite o erro aparecer antes da
-  // reunião em vez de durante.
-  const esperado = backlog[1] + fluxo[0].mensal.criados - fluxo[0].mensal.fechados;
-  if (esperado !== backlog[0]) {
-    Logger.log('Dashboard: backlog(mês ant)=' + backlog[1] + ' + criados=' + fluxo[0].mensal.criados +
-               ' − fechados=' + fluxo[0].mensal.fechados + ' = ' + esperado +
-               ', mas backlog(mês)=' + backlog[0] + ' — difere em ' + (backlog[0] - esperado) +
-               '. Esperado quando o mês ainda está correndo; se o mês estiver fechado, investigue.');
-  }
+  Logger.log('Dashboard: conclusão histórica — ' + conclusoes[0].fechadosAte + ' fechados de ' +
+             conclusoes[0].criadosAte + ' abertos até o fim do mês' +
+             (conclusoes[0].conclusaoHistoricoPct == null ? '' :
+              ' = ' + conclusoes[0].conclusaoHistoricoPct.toFixed(1) + '%'));
 
   return { headers: headers, map: map, parcial: prev[0].parcial };
 }
