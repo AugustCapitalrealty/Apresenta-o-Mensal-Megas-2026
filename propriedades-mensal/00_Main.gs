@@ -46,7 +46,9 @@ function onOpen() {
       .addItem('Backlog de Clientes (Properties)', 'gerarSoBacklogClientes')
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
-      .addItem('Torre de Manutenção', 'gerarSoTorreManutencao'))
+      .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
+      .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
+      .addItem('Bridge — Manutenção', 'gerarSoBridgeManutencao'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
     .addItem('🔍 Diagnosticar Backlog de Clientes', 'diagnosticarBacklogClientes')
@@ -85,7 +87,9 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
-    { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }
+    { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
+    { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
+    { nome: 'Bridge de Manutenção',          fn: gerarSlideBridgeManutencao }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];
@@ -118,6 +122,8 @@ function gerarSoBacklogClientes()     { return _rodarPassos_([{ nome: 'Backlog d
 function gerarSoRecebimentoObras()    { return _rodarPassos_([{ nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras }]); }
 function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }]); }
 function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
+function gerarSoDREManutencao()       { return _rodarPassos_([{ nome: 'DRE de Manutenção',              fn: gerarSlideDREManutencao }]); }
+function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção',           fn: gerarSlideBridgeManutencao }]); }
 
 
 // Roda cada passo isolado: slide que falha registra o erro e não derruba os

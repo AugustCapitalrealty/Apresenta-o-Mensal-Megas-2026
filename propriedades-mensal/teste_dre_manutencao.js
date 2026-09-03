@@ -43,7 +43,7 @@ function aba(nome) {
 global.SlidesApp = { openById: () => { throw new Error('sem Slides no teste'); } };
 global.DriveApp  = { getFileById: () => { throw new Error('sem Drive no teste'); } };
 
-let fonte = ['01_Config.gs', 'Dados_DREManutencao.gs']
+let fonte = ['01_Config.gs', 'Dados_DREManutencao.gs', 'Slide_BridgeManutencao.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 fonte = fonte.replace(/^(const|let) /gm, 'var ');
 (0, eval)(fonte);
@@ -125,6 +125,28 @@ const jun = obterDREManutencao_();
 ok('avisa que o último realizado é AGO, não JUN',
    jun.avisos.some(a => /último mês com realizado/.test(a)), jun.avisos.join(' | '));
 ok('e o acumulado encolhe para Jan..Jun', jun.total.acum.real < d.total.acum.real);
+
+console.log('\n== Bridge: as barras reconciliam plano → realizado ==');
+global.obterMesReferencia_ = () => ({ index: 7, nome: 'AGOSTO', curto: 'Ago', ano: 2026 });
+const dd = obterDREManutencao_();
+const br = _bridgeBarras_(dd);
+ok('monta barras', !!br);
+ok('início = plano acumulado', perto(br.inicio, dd.total.acum.plan, 1));
+ok('fim = realizado acumulado', perto(br.fim, dd.total.acum.real, 1));
+ok('início + deltas = fim (resíduo zero)', Math.abs(br.residuo) < 1,
+   'resíduo ' + br.residuo);
+ok('primeira barra é o início', br.barras[0].tipo === 'inicio');
+ok('última barra é o fim', br.barras[br.barras.length - 1].tipo === 'fim');
+ok('desvios ordenados do maior para o menor',
+   br.desvios.every((d, i) => i === 0 || Math.abs(br.desvios[i - 1].valor) >= Math.abs(d.valor)));
+ok('gastou menos que o plano no acumulado', br.fim < br.inicio);
+
+console.log('\n== Bridge: centro sem plano não vira variação ==');
+// Terreno Guaratuba não tem plano — não há de quê variar. Tem que cair na
+// barra SEM PLANO, senão o gasto dele seria lido como estouro de orçamento.
+ok('nenhum desvio é do Terreno Guaratuba',
+   !br.desvios.some(d => /Guaratuba/.test(d.nome)));
+ok('existe barra SEM PLANO', br.barras.some(b => /SEM PLANO/.test(b.nome)));
 
 console.log('\n' + (falhas ? '✗ ' + falhas + ' de ' + testes + ' falharam' : '✓ ' + testes + '/' + testes + ' passaram') + '\n');
 process.exit(falhas ? 1 : 0);
