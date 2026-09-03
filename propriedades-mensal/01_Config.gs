@@ -128,6 +128,99 @@ const TORRE_MANUTENCAO_CR_ID        = '1BKvWWjFDarUzSa2aop2EJMrlsw3kGgaydHXC_yfs
 // Torre Demercado: https://docs.google.com/spreadsheets/d/1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxzLqM/edit
 const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxzLqM';
 
+// ==========================================
+// DRE / BRIDGE DE MANUTENÇÃO — PLANILHA PROPRIEDADES
+// ==========================================
+// Planilha "PLANILHA PROPRIEDADES" — DRE gerencial no plano de contas da
+// controladoria. NÃO é a mesma coisa que PROPRIEDADES_SPREADSHEET_ID (que é
+// a "ANÁLISE DE PROJETOS"): são planilhas diferentes, com donos diferentes.
+// https://docs.google.com/spreadsheets/d/1SVlPPyPuvGtCM4pzoA5kpc4VaszzP91NaMyTWRzkKSo/edit
+const DRE_MANUTENCAO_ID = '1SVlPPyPuvGtCM4pzoA5kpc4VaszzP91NaMyTWRzkKSo';
+
+// DUAS ABAS, cada uma com um papel — e a segunda mente no rótulo.
+//
+//   PLANEJAMENTO 2026 - MANUTENÇÕES → colunas [Realizado AA | Planejado].
+//     O PLANEJADO sai daqui, e é FIXO o ano inteiro. ("Realizado AA" é o
+//     ritmo de 2025; confirmado batendo com a Torre no Demercado.)
+//
+//   RITMO 2026 - MANUTENÇÕES → colunas [Planejado | Realizado].
+//     ⚠ A primeira coluna está rotulada "Planejado" na planilha mas é o
+//     RITMO (projeção run-rate). Não é erro de leitura nossa: é o rótulo da
+//     planilha que engana. Em TODO lugar que ela aparece no slide, é
+//     mostrada como "Ritmo". Nunca use esta coluna como plano — o plano é o
+//     da outra aba, e os dois divergem muito (ano: −592.450 × −1.083.499).
+const DRE_ABA_PLANEJAMENTO = 'PLANEJAMENTO 2026 - MANUTENÇÕES';
+const DRE_ABA_RITMO        = 'RITMO 2026 - MANUTENÇÕES';
+
+// Em cada aba, por mês, duas colunas na ordem acima; depois duas de Total.
+// Par = 1ª coluna do mês, ímpar = 2ª. Mês m (0-based) → colunas 2m e 2m+1.
+const DRE_COL_TOTAL_A = 24;   // PLANEJAMENTO: Realizado AA · RITMO: Ritmo
+const DRE_COL_TOTAL_B = 25;   // PLANEJAMENTO: Planejado    · RITMO: Realizado
+
+// A subárvore que interessa. Só manutenção: o resto do DRE (faturamento,
+// pessoal, fiscais) não entra nesta apresentação.
+const DRE_CONTA_RAIZ = '06.04.15.01';   // manutenção imóveis
+
+// A LISTA É A UNIÃO DAS DUAS ABAS, não a de uma delas.
+//
+// POR QUE ISSO IMPORTA: as abas não têm os mesmos centros de custo. Três
+// existem só no PLANEJAMENTO (ESTACIONAMENTO GAROTO, LJ 01 RESTAURANTE,
+// AR 3000) e três só no RITMO (LOJAS GAROTO, LJ 04 HANGAR do CR, Terreno
+// Guaratuba). Os do PLANEJAMENTO têm plano ZERO — sair deles não muda conta
+// nenhuma. Os do RITMO têm valor: −11.400, −6.067 e −2.000 de ritmo. Montar
+// a lista só pela aba do plano faria essas três sumirem em silêncio, e as
+// linhas deixariam de somar o total do grupo (que confere: as 8 linhas do CR
+// somam os −908.428 de ritmo do 010).
+//
+// A ordem é a da planilha e as linhas são FIXAS, para dois meses ficarem
+// comparáveis lado a lado sem procurar o centro de custo (mesmo princípio do
+// DRE dos Megas). `so` marca quem aparece em uma aba só — o slide mostra "—"
+// na coluna que não existe, em vez de zero, porque não medir é diferente de
+// medir zero (lição 3).
+const DRE_EMPRESAS = [
+  { codigo: '010', nome: 'Capital Realty', centros: [
+    { codigo: '14.01.01.002', nome: 'ARMAZÉM MONOUSUÁRIO ITAJAÍ' },
+    { codigo: '14.01.01.003', nome: 'ARMAZÉM MONOUSUÁRIO CUBATÃO' },
+    { codigo: '14.01.01.004', nome: 'ARMAZÉM MONOUSUÁRIO ESTEIO I' },
+    { codigo: '14.01.01.005', nome: 'ARMAZÉM MONOUSUÁRIO ESTEIO II' },
+    { codigo: '14.02.01.999', nome: 'MEGA ESTEIO DESPESAS' },
+    { codigo: '14.02.02.999', nome: 'MEGA ITAJAI DESPESAS' },
+    { codigo: '14.03.01.007', nome: 'ESTACIONAMENTO GAROTO',        so: 'plano' },
+    { codigo: '14.03.01.999', nome: 'LOJAS GAROTO DESPESAS',        so: 'ritmo' },
+    { codigo: '14.03.03.004', nome: 'LJ 04 HANGAR VIP-OUTDOOR',     so: 'ritmo' },
+    { codigo: '14.03.08.001', nome: 'LJ 01 MEGA ITAJAÍ-RESTAURANTE', so: 'plano' },
+    { codigo: '14.04.02.001', nome: 'AR 3000',                      so: 'plano' }
+  ]},
+  { codigo: '070', nome: 'Demercado', centros: [
+    { codigo: '64.02.03.999', nome: 'MEGA CURITIBA DESPESAS' },
+    { codigo: '64.02.04.999', nome: 'MEGA CANOAS DESPESA' },
+    { codigo: '64.03.03.004', nome: 'LJ 04 HANGAR VIP-OUTDOOR' },
+    { codigo: '64.03.05.003', nome: 'PRAÇA CARLOS GOMES DESPESA' },
+    { codigo: '64.03.10.001', nome: 'Terreno Guaratuba',            so: 'ritmo' }
+  ]}
+];
+
+// DIVERGÊNCIA CONHECIDA contra a Torre de Manutenção (TORRE_MANUTENCAO_*_REF
+// acima), que alimenta o quadrante Financeiro do Dashboard. Reconciliado
+// linha a linha em 03/09/2026:
+//
+//   Demercado  bate exato: ritmo −161.957, orçado −183.515.
+//   Capital Realty NÃO bate: aqui −440.621 / −408.935, na Torre −455.412 /
+//   −421.028. A diferença é inteiramente destas duas linhas:
+//     · AR 3000 — aqui −1.926 / 0; na Torre −16.368 / −12.093.
+//     · GERÊNCIA DE PROPRIEDADES −349,61 — existe na Torre, não existe aqui.
+//       (14.442 + 349,61 = 14.791, a diferença exata do ritmo.)
+//   MEGA ITAJAI difere em 4.000 só por desmembramento (a linha LJ 01 MEGA
+//   ITAJAÍ-RESTAURANTE foi separada); o total fecha.
+//
+// Por que isso está registrado aqui e não corrigido: escolher uma das duas
+// em silêncio é o erro que a lição 2 do CLAUDE.md descreve. O slide mostra a
+// divergência; a decisão de qual fonte vale é de quem conhece o número.
+const DRE_TORRE_DIVERGENCIA = {
+  'Capital Realty': { ritmoTorre: -455412.14, orcTorre: -421028.0 },
+  'Demercado':      { ritmoTorre: -161957.30, orcTorre: -183515.0 }
+};
+
 const TORRE_MANUTENCAO_COLUNAS_PADRAO = [
   'Imóvel', 'Real 2024', 'Orçamento 2025', 'Ritmo 2025', 'Orçamento 2026', 'Orç 26/Ritmo 25 (%)', 'Orç 26/ Ritmo 25 (R$)'
 ];
