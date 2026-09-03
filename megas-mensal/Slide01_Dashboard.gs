@@ -26,11 +26,10 @@ function gerarSlideDashboard() {
   // (usado para colorir a seta de tendência vs mês anterior)
   // sla: aplica cor por limiar (≥95 verde, ≥90 âmbar, <90 vermelho) no valor atual
   //
-  // GESTÃO DE ATIVOS junta o que eram dois quadrantes — "Gestão de Ativos
-  // Críticos" e "Manutenção Corretiva: Backlog". Eram a mesma pergunta
-  // partida em dois: a disponibilidade do ativo É consequência da fila de
-  // corretivas, e olhar as duas em painéis separados escondia essa relação.
-  // "BACKLOG" saiu do título porque o painel deixou de ser só de estoque.
+  // GESTÃO DE ATIVOS reúne os principais indicadores de manutenção dos ativos:
+  // Disponibilidade, SLA de preventivas, chamados e conclusão histórica.
+  // Preventivas foi unificada aqui (com o indicador "Em dia" removido e o SLA
+  // migrado), consolidando toda a manutenção em um painel único.
   //
   // SAÍRAM daqui, por decisão do time (checklist do card DASHBOARD
   // OPERACIONAL): "Tempo médio de reparo" e "Tempo médio de aprovação".
@@ -38,18 +37,16 @@ function gerarSlideDashboard() {
   // acrescentar a linha de novo, sem mexer em mais nada.
   const structure = [
     { title: 'GESTÃO DE ATIVOS', color: CORES.themeAtivos, rows: [
-      { label: 'Disponibilidade (%)', lookup: 'Disponibilidade', sentido: 'maior', sla: true },
-      { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities', sentido: 'menor' },
-      { label: 'Chamados geral (Qtd)', lookup: 'Chamados geral', sentido: 'menor' },
-      { label: '% Conclusão histórico', lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
+      { label: 'Disponibilidade (%)',       lookup: 'Disponibilidade',                   sentido: 'maior', sla: true },
+      { label: 'SLA preventivas (%)',       lookup: 'SLA preventivas',                   sentido: 'maior', sla: true },
+      { label: 'Chamados facilities (Qtd)', lookup: 'Chamados de facilities',            sentido: 'menor' },
+      { label: 'Chamados geral (Qtd)',      lookup: 'Chamados geral',                    sentido: 'menor' },
+      { label: '% Conclusão histórico',     lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
     ] },
-    { title: 'MANUTENÇÃO PREVENTIVA', color: CORES.themePrev, rows: [
-      { label: 'Em dia (%)', lookup: 'Em dia', sentido: 'maior', sla: true },
-      { label: 'SLA atendido (%)', lookup: 'SLA atendido', sentido: 'maior', sla: true }
-    ] },
-    { title: 'CONTROLE DE ACESSO', color: CORES.themeAcesso, rows: [
+    { title: 'SEGURANÇA PATRIMONIAL', color: CORES.themeAcesso, rows: [
       { label: 'Fluxo de VISITANTES', lookup: 'Fluxo de VISITANTES', sentido: 'maior' },
-      { label: 'Tempo médio', lookup: 'Tempo médio', sentido: 'menor' }
+      { label: 'Tempo médio',         lookup: 'Tempo médio',         sentido: 'menor' },
+      { label: 'Turnover',            lookup: 'Turnover',            sentido: 'menor' }
     ] },
     //
     // DESTAQUES — sem comparativo de propósito, e as duas fontes têm o mesmo

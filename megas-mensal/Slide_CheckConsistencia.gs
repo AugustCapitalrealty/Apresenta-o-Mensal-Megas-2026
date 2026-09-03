@@ -595,7 +595,7 @@ function _rodarChecagensConsistencia_() {
   const G_IND = 'Indicadores (Dashboard x slide de detalhe)';
   _ckAdd_(L, G_IND, 'SLA de preventivas do mês: Dashboard x Preventivas', () => {
     if (!dash || !prev) return null;
-    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla atendido', true);
+    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla preventivas', true) || _ckDash_(dash, 'sla atendido', true);
     if (a == null || b == null) return null;
     const r = _ckPctIguais_(a, b);
     return { ok: r.ok, esperado: _ckM2_(r.a) + '%', obtido: _ckM2_(r.b) + '%' };

@@ -905,17 +905,19 @@ function obterDadosDashboard() {
       const pAnt    = calcPrev(mesAntAno, mesAntIdx);
       const pAnoAnt = calcPrev(ref.ano - 1, ref.index);
 
+      const slaObj = {
+        atual:  pAtual.sla,
+        mesAnt: pAnt.sla,
+        anoAnt: pAnoAnt.sla
+      };
       dataMap.set('Em dia', {
         atual:  pAtual.emDia,
         mesAnt: pAnt.emDia,
         anoAnt: pAnoAnt.emDia
       });
-
-      dataMap.set('SLA atendido', {
-        atual:  pAtual.sla,
-        mesAnt: pAnt.sla,
-        anoAnt: pAnoAnt.sla
-      });
+      dataMap.set('SLA atendido', slaObj);
+      dataMap.set('SLA preventivas', slaObj);
+      dataMap.set('SLA Preventivas', slaObj);
     } else {
       // Fallback: busca no histórico validado aba PREVENTIVAS
       const sSla = lerHistoricoValidado('SLA MENSAL', { aba: 'PREVENTIVAS' });
@@ -929,11 +931,14 @@ function obterDadosDashboard() {
         const itAnoAnt = sSla.find(s => s.ord === ordAnoAnt);
 
         const fmt = it => it ? (it.bruto ? (String(it.bruto).includes('%') ? String(it.bruto) : String(it.bruto) + '%') : (formatarNumeroBR(it.valor) + '%')) : '-';
-        dataMap.set('SLA atendido', {
+        const slaFallbackObj = {
           atual:  fmt(itAtual),
           mesAnt: fmt(itAnt),
           anoAnt: fmt(itAnoAnt)
-        });
+        };
+        dataMap.set('SLA atendido', slaFallbackObj);
+        dataMap.set('SLA preventivas', slaFallbackObj);
+        dataMap.set('SLA Preventivas', slaFallbackObj);
       }
     }
   } catch (e) {
@@ -953,6 +958,9 @@ function obterDadosDashboard() {
           anoAnt: nova.anoAnt !== '-' ? nova.anoAnt : atual.anoAnt
         });
       });
+    }
+    if (!dataMap.has('Turnover')) {
+      dataMap.set('Turnover', { atual: '-', mesAnt: '-', anoAnt: '-' });
     }
   } catch (e) {
     Logger.log('Erro Dashboard (acessos): ' + e.message);
