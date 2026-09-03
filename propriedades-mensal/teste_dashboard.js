@@ -247,6 +247,13 @@ ok('tem Economia Projetada positiva (+R$ 12.826)', dash.get('Economia Projetada 
 ok('tem CAPEX', dash.has('CAPEX'));
 ok('tem Contratações conclusão (%)', dash.has('Contratações conclusão (%)'));
 ok('tem Contratações prazo médio', dash.has('Contratações prazo médio'));
+ok('tem Vistorias - Entrada/saída', dash.has('Vistorias - Entrada/saída'));
+ok('tem Vistorias - Recebimento obras', dash.has('Vistorias - Recebimento obras'));
+ok('tem Vistorias - Monitoramento', dash.has('Vistorias - Monitoramento'));
+ok('tem Vistorias - Documentação', dash.has('Vistorias - Documentação'));
+ok('tem Adequações - Quantidade', dash.has('Adequações - Quantidade'));
+ok('tem Adequações - Prazo médio', dash.has('Adequações - Prazo médio'));
+ok('tem Adequações - Conclusão (%)', dash.has('Adequações - Conclusão (%)'));
 
 
 console.log(falhas ? `\n✗ ${falhas} de ${testes} FALHARAM\n` : `\n✓ ${testes}/${testes} passaram\n`);

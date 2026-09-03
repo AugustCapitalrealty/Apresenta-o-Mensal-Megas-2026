@@ -1521,11 +1521,19 @@ function obterDashboardPropriedades_() {
   map.set('Economia Projetada (26/25)', linha3(fmtVar(econNom, varPct), null, null));
   map.set('CAPEX',                      linha3('—', null, null));
 
-  // Quadrante 3: Recebimento de Obras & Projetos
-  map.set('Obras concluídas (%)',      linha3(recebimento.pct, null, null));
-  map.set('Pendências de obras (Qtd)', linha3(recebimento.pendentes, null, null));
-  map.set('Total de obras (Qtd)',      linha3(recebimento.total, null, null));
-  map.set('Projetos em análise (Qtd)', linha3(recebimento.emAnalise, null, null));
+  // Quadrante 3: Vistorias & Análises de Projetos (subgrupos)
+  map.set('Vistorias - Entrada/saída',     linha3('—', null, null));
+  map.set('Vistorias - Recebimento obras', linha3('—', null, null));
+  map.set('Vistorias - Monitoramento',     linha3('—', null, null));
+  map.set('Vistorias - Documentação',      linha3('—', null, null));
+  map.set('Adequações - Quantidade',       linha3('—', null, null));
+  map.set('Adequações - Prazo médio',      linha3('—', null, null));
+  map.set('Adequações - Conclusão (%)',    linha3('—', null, null));
+  // Mantidos para retrocompatibilidade
+  map.set('Obras concluídas (%)',          linha3(recebimento.pct, null, null));
+  map.set('Pendências de obras (Qtd)',     linha3(recebimento.pendentes, null, null));
+  map.set('Total de obras (Qtd)',          linha3(recebimento.total, null, null));
+  map.set('Projetos em análise (Qtd)',     linha3(recebimento.emAnalise, null, null));
 
   // Quadrante 4: Gestão de Contratações
   map.set('Contratações em andamento',  linha3(contratacoes.emAndamento, null, null));

@@ -63,11 +63,16 @@ function gerarSlideIndicadoresGerais() {
       { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' },
       { label: 'CAPEX',                       lookup: 'CAPEX' }
     ] },
-    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', rows: [
-      { label: 'Obras concluídas (%)',      lookup: 'Obras concluídas (%)',      regua: 'sla' },
-      { label: 'Pendências de obras (Qtd)', lookup: 'Obras pendentes (Qtd)',     regua: 'inverso' },
-      { label: 'Total de obras (Qtd)',      lookup: 'Obras cadastradas (Qtd)' },
-      { label: 'Projetos em análise (Qtd)', lookup: 'Projetos em análise (Qtd)' }
+    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', colNameW: 0.72, rows: [
+      { label: 'VISTORIAS', isGrupo: true },
+      { label: 'entrada/saida de clientes',        lookup: 'Vistorias - Entrada/saída' },
+      { label: 'recebimento de obras',             lookup: 'Vistorias - Recebimento obras' },
+      { label: 'monitoramento',                    lookup: 'Vistorias - Monitoramento' },
+      { label: 'Documentação',                     lookup: 'Vistorias - Documentação' },
+      { label: 'ADEQUAÇÕES CLIENTES', isGrupo: true },
+      { label: 'Quantidade',                       lookup: 'Adequações - Quantidade' },
+      { label: 'Prazo medio de atendimento (dias)',lookup: 'Adequações - Prazo médio' },
+      { label: 'Percentual de conclusão',          lookup: 'Adequações - Conclusão (%)' }
     ] },
     { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, headerTexto: 'TOTAL', rows: [
       { label: 'Processos em andamento',     lookup: 'Contratações em andamento' },
@@ -90,14 +95,14 @@ function gerarSlideIndicadoresGerais() {
 
     const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
 
-    const colNameW = cardW * 0.46;
-    const seloW = 14;
+    const colNameW = cat.colNameW ? (cardW * cat.colNameW) : (cardW * 0.46);
+    const seloW = cat.semComparativo ? 0 : 14;
     const dataX0 = x + 10 + colNameW + seloW;
-    const colDataW = (cardW - 20 - colNameW - seloW) / 3;
+    const colDataW = cat.semComparativo ? (cardW - 20 - colNameW) : ((cardW - 20 - colNameW - seloW) / 3);
 
     if (cat.semComparativo) {
       if (cat.headerTexto) {
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, tableY, colDataW * 3 + 20, 18);
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, tableY, colDataW, 18);
         t.getText().setText(cat.headerTexto).getTextStyle()
           .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
         t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
@@ -114,22 +119,44 @@ function gerarSlideIndicadoresGerais() {
     }
 
     const ROW_H_MAX = 24;
-    const areaDados = (y + cardH - (tableY + 20) - 8);
+    const headerOffset = cat.headerTexto || !cat.semComparativo ? 18 : 6;
+    const areaDados = (y + cardH - (tableY + headerOffset) - 6);
     const rowH = Math.min(areaDados / cat.rows.length, ROW_H_MAX);
-    const startDataY = tableY + 20 + (areaDados - rowH * cat.rows.length) / 2;
+    const startDataY = tableY + headerOffset + (areaDados - rowH * cat.rows.length) / 2;
 
     cat.rows.forEach((r, rIdx) => {
       const ry = startDataY + (rIdx * rowH);
-      if (rIdx < cat.rows.length - 1) {
+
+      // Tratamento especial para subgrupos (faixa/divisor de seção)
+      if (r.isGrupo) {
+        const bgGrupo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 6, ry + 1, cardW - 12, rowH - 1);
+        bgGrupo.getFill().setSolidFill('#F1F5F9');
+        bgGrupo.getBorder().setTransparent();
+
+        const gBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry - 1, cardW - 20, rowH + 2);
+        gBox.getText().setText(r.label).getTextStyle()
+          .setFontSize(6.8).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily(DS.typography.titles);
+        gBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        return;
+      }
+
+      if (rIdx < cat.rows.length - 1 && !cat.rows[rIdx + 1].isGrupo) {
         const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, ry + rowH - 1, cardW - 20, 1);
         line.getFill().setSolidFill('#F1F5F9');
         line.getBorder().setTransparent();
       }
 
+      const temGrupos = cat.rows.some(row => row.isGrupo);
+      const labelX = temGrupos ? (x + 18) : (x + 10);
+      const labelW = temGrupos ? (colNameW - 8) : colNameW;
+
       // Rótulo com folga simétrica para não quebrar texto
-      const nBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry, colNameW, rowH);
-      nBox.getText().setText(r.label).getTextStyle()
-        .setFontSize(7.5).setBold(true).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
+      const nBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, labelX, ry - 1, labelW, rowH + 2);
+      nBox.getText().setText((temGrupos ? '• ' : '') + r.label).getTextStyle()
+        .setFontSize(temGrupos ? 6.5 : 7.5)
+        .setBold(!temGrupos)
+        .setForegroundColor(temGrupos ? DS.colors.textBody : DS.colors.textMain)
+        .setFontFamily(DS.typography.titles);
       nBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 
       const vals = valoresMap.get(r.lookup) || { atual: null, mesAnt: null, anoAnt: null };
@@ -152,12 +179,12 @@ function gerarSlideIndicadoresGerais() {
       const corDoValor = (valStr, isAtual) => isAtual ? _dashCor_(valStr, r, cat.color) : DS.colors.textBody;
 
       if (cat.semComparativo) {
-        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, ry, colDataW * 3 + 20, rowH);
+        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, ry - 1, colDataW, rowH + 2);
         const valStr = formatarNumeroBR(vals.atual);
         const vText = vBox.getText();
         vText.setText(valStr);
         vText.getTextStyle()
-          .setFontSize(8.5).setBold(true).setFontFamily(DS.typography.titles)
+          .setFontSize(temGrupos ? 7.5 : 8.5).setBold(true).setFontFamily(DS.typography.titles)
           .setForegroundColor(corDoValor(valStr, true));
         vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
