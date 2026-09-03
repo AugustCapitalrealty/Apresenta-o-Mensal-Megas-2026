@@ -52,29 +52,34 @@ function gerarSlideIndicadoresGerais() {
   const structure = [
     { title: 'MANUTENÇÃO', color: DS.colors.themePrev, rows: [
       { label: 'SLA Preventivas (%)',         lookup: 'SLA Preventivas',                   sentido: 'maior', sla: true },
-      { label: 'Preventivas em dia (%)',      lookup: 'Execução Preventivas',              sentido: 'maior', sla: true },
       { label: 'Backlog em aberto (Qtd)',     lookup: 'Backlog em aberto',                 sentido: 'menor' },
-      { label: '% Conclusão histórico',       lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true },
-      { label: 'Chamados criados no mês',     lookup: 'Chamados abertos',                  sentido: 'menor' }
+      { label: '% Conclusão histórico',       lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
     ] },
     { title: 'GESTÃO FINANCEIRA · ORÇAMENTO', color: DS.colors.themeCorr, semComparativo: true, headerTexto: 'ORÇAMENTO 2026', rows: [
       { label: 'Orçamento Total 2026',        lookup: 'Orçamento 2026 (Total)' },
       { label: 'Ritmo 2025 (Base)',           lookup: 'Ritmo 2025 (Base)' },
       { label: 'Capital Realty (CR)',         lookup: 'Orçamento Capital Realty' },
       { label: 'Demercado',                   lookup: 'Orçamento Demercado' },
-      { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' }
+      { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' },
+      { label: 'CAPEX',                       lookup: 'CAPEX' }
     ] },
-    { title: 'RECEBIMENTO DE OBRAS & PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, rows: [
-      { label: 'Obras concluídas (%)',      lookup: 'Obras concluídas (%)',      regua: 'sla' },
-      { label: 'Pendências de obras (Qtd)', lookup: 'Obras pendentes (Qtd)',     regua: 'inverso' },
-      { label: 'Total de obras (Qtd)',      lookup: 'Obras cadastradas (Qtd)' },
-      { label: 'Projetos em análise (Qtd)', lookup: 'Projetos em análise (Qtd)' }
-    ] },
-    { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, rows: [
-      { label: 'Processos em andamento', lookup: 'Contratações em andamento' },
-      { label: 'Em fase de edital',      lookup: 'Em fase de edital' },
-      { label: 'Processos em atraso',    lookup: 'Contratações em atraso',    regua: 'inverso' },
-      { label: 'Histórico concluídas',   lookup: 'Contratações concluídas' }
+    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, tipoTexto: true,
+      linhas: [
+        { texto: 'VISTORIAS', header: true },
+        { texto: 'entrada/saida de clientes', nivel: 1 },
+        { texto: 'recebimento de obras',      nivel: 1 },
+        { texto: 'monitoramento',             nivel: 1 },
+        { texto: 'Documentação',              nivel: 1 },
+        { texto: 'Adequações clientes', header: true },
+        { texto: 'Quantidade',                          nivel: 1 },
+        { texto: 'Prazo medio de atendimento (dias)',  nivel: 1 },
+        { texto: 'Percentual de conclusão',             nivel: 1 }
+      ]
+    },
+    { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, headerTexto: 'TOTAL', rows: [
+      { label: 'Processos em andamento',     lookup: 'Contratações em andamento' },
+      { label: 'Percentual de conclusão',    lookup: 'Contratações conclusão (%)' },
+      { label: 'Prazo médio de contratação', lookup: 'Contratações prazo médio' }
     ] }
   ];
 
@@ -98,11 +103,13 @@ function gerarSlideIndicadoresGerais() {
     const colDataW = (cardW - 20 - colNameW - seloW) / 3;
 
     if (cat.semComparativo) {
-      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, tableY, colDataW * 3 + 20, 18);
-      t.getText().setText(cat.headerTexto || 'POSIÇÃO ATUAL').getTextStyle()
-        .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
-      t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-      t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      if (cat.headerTexto) {
+        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 - 10, tableY, colDataW * 3 + 20, 18);
+        t.getText().setText(cat.headerTexto).getTextStyle()
+          .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
+        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      }
     } else {
       dynamicHeaders.forEach((h, idx) => {
         const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW) - 6, tableY, colDataW + 12, 18);
@@ -111,6 +118,36 @@ function gerarSlideIndicadoresGerais() {
         t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
         t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
       });
+    }
+
+    if (cat.tipoTexto) {
+      const boxW = cardW - 24;
+      const boxH = cardH - (tableY - y) - 8;
+      const tBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, tableY + 2, boxW, boxH);
+      const fullText = cat.linhas.map(l => (l.nivel ? '    ' : '') + l.texto).join('\n');
+      const tObj = tBox.getText();
+      tObj.setText(fullText);
+
+      const paragraphs = tObj.getParagraphs();
+      cat.linhas.forEach((l, idx) => {
+        if (idx < paragraphs.length) {
+          const pStyle = paragraphs[idx].getRange().getTextStyle();
+          if (l.header) {
+            pStyle
+              .setFontSize(7.5)
+              .setBold(true)
+              .setForegroundColor(DS.colors.textMain)
+              .setFontFamily(DS.typography.titles);
+          } else {
+            pStyle
+              .setFontSize(6.8)
+              .setBold(false)
+              .setForegroundColor(DS.colors.textBody)
+              .setFontFamily(DS.typography.titles);
+          }
+        }
+      });
+      return;
     }
 
     const ROW_H_MAX = 24;

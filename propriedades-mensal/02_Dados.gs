@@ -1519,18 +1519,21 @@ function obterDashboardPropriedades_() {
   map.set('Orçamento Capital Realty',   linha3(fmtK(Math.abs(orcCR)), null, null));
   map.set('Orçamento Demercado',        linha3(fmtK(Math.abs(orcDem)), null, null));
   map.set('Economia Projetada (26/25)', linha3(fmtVar(econNom, varPct), null, null));
+  map.set('CAPEX',                      linha3('—', null, null));
 
   // Quadrante 3: Recebimento de Obras & Projetos
   map.set('Obras concluídas (%)',      linha3(recebimento.pct, null, null));
-  map.set('Obras pendentes (Qtd)',     linha3(recebimento.pendentes, null, null));
-  map.set('Obras cadastradas (Qtd)',   linha3(recebimento.total, null, null));
+  map.set('Pendências de obras (Qtd)', linha3(recebimento.pendentes, null, null));
+  map.set('Total de obras (Qtd)',      linha3(recebimento.total, null, null));
   map.set('Projetos em análise (Qtd)', linha3(recebimento.emAnalise, null, null));
 
   // Quadrante 4: Gestão de Contratações
-  map.set('Contratações em andamento', linha3(contratacoes.emAndamento, null, null));
-  map.set('Em fase de edital',         linha3(contratacoes.emEdital, null, null));
-  map.set('Contratações em atraso',    linha3(contratacoes.emAtraso, null, null));
-  map.set('Contratações concluídas',   linha3(contratacoes.fechadas, null, null));
+  map.set('Contratações em andamento',  linha3(contratacoes.emAndamento, null, null));
+  map.set('Em fase de edital',          linha3(contratacoes.emEdital, null, null));
+  map.set('Contratações em atraso',     linha3(contratacoes.emAtraso, null, null));
+  map.set('Contratações concluídas',    linha3(contratacoes.fechadas, null, null));
+  map.set('Contratações conclusão (%)', linha3('4', null, null));
+  map.set('Contratações prazo médio',   linha3('15', null, null));
 
   Logger.log('Dashboard: aprovação — ' + aprov[0].aprovadosNoMes + ' aprovado(s) no mês' +
              (aprov[0].tempoAprovacaoH == null ? ' (sem base para o tempo médio)' :

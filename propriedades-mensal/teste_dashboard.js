@@ -244,6 +244,9 @@ ok('ritmo total é R$ 617.369', dash.get('Ritmo 2025 (Base)').atual === 'R$ 617.
 ok('tem Capital Realty (CR) R$ 421.028', dash.get('Orçamento Capital Realty').atual === 'R$ 421.028');
 ok('tem Demercado R$ 183.515', dash.get('Orçamento Demercado').atual === 'R$ 183.515');
 ok('tem Economia Projetada positiva (+R$ 12.826)', dash.get('Economia Projetada (26/25)').atual.includes('+R$ 12.826'), dash.get('Economia Projetada (26/25)').atual);
+ok('tem CAPEX', dash.has('CAPEX'));
+ok('tem Contratações conclusão (%)', dash.has('Contratações conclusão (%)'));
+ok('tem Contratações prazo médio', dash.has('Contratações prazo médio'));
 
 
 console.log(falhas ? `\n✗ ${falhas} de ${testes} FALHARAM\n` : `\n✓ ${testes}/${testes} passaram\n`);
