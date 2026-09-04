@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Dados_Metas.gs
+ * ARQUIVO: 08_DadosMetas.gs
  * DADOS — FAROL DE METAS (Property)
  *
  * Preenche o `real` das linhas que trazem `calc` em METAS_PROPRIEDADES. As

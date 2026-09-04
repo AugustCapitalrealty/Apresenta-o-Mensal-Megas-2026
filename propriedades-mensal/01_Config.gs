@@ -140,7 +140,7 @@ const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxz
 //
 // POR QUE AQUI E NÃO NUMA PLANILHA: as linhas de SIM/NÃO são atualizadas pelo
 // usuário direto no código (decisão dele). Só as NUMÉRICAS são calculadas —
-// e essas trazem `calc`, que diz de onde o real vem. Dados_Metas.gs preenche
+// e essas trazem `calc`, que diz de onde o real vem. 08_DadosMetas.gs preenche
 // realMes/realAno de quem tem `calc`; quem não tem fica como está escrito.
 //
 // `calc` disponível:
@@ -238,8 +238,6 @@ const DRE_ABA_RITMO        = 'RITMO 2026 - MANUTENÇÕES';
 
 // Em cada aba, por mês, duas colunas na ordem acima; depois duas de Total.
 // Par = 1ª coluna do mês, ímpar = 2ª. Mês m (0-based) → colunas 2m e 2m+1.
-const DRE_COL_TOTAL_A = 24;   // PLANEJAMENTO: Realizado AA · RITMO: Ritmo
-const DRE_COL_TOTAL_B = 25;   // PLANEJAMENTO: Planejado    · RITMO: Realizado
 
 // A subárvore que interessa. Só manutenção: o resto do DRE (faturamento,
 // pessoal, fiscais) não entra nesta apresentação.
@@ -322,9 +320,6 @@ const DRE_TORRE_DIVERGENCIA = {
   'Demercado':      { ritmoTorre: -161957.30, orcTorre: -183515.0 }
 };
 
-const TORRE_MANUTENCAO_COLUNAS_PADRAO = [
-  'Imóvel', 'Real 2024', 'Orçamento 2025', 'Ritmo 2025', 'Orçamento 2026', 'Orç 26/Ritmo 25 (%)', 'Orç 26/ Ritmo 25 (R$)'
-];
 
 const TORRE_MANUTENCAO_CR_REF = [
   ['ARMAZÉM MONOUSUÁRIO COLOMBO', 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],

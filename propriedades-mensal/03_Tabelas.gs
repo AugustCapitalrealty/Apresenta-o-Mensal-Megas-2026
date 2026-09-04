@@ -86,41 +86,11 @@ function _tabLerAba_(aba, cabecalhoContem) {
 }
 
 
-// ==========================================
-// DESENHO — BANNER
-// ==========================================
-function _tabDesenharBanner_(slide, SW, SH, titulo, subtitulo) {
-  const M  = SW * 0.020;
-  const Hh = SH * 0.135;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, SW, Hh);
-  bg.getFill().setSolidFill(TAB_C.brandDark);
-  bg.getBorder().setTransparent();
-
-  const tit = slide.insertTextBox(titulo, M, Hh * 0.10, SW * 0.70, Hh * 0.50);
-  const ts1 = tit.getText().getTextStyle();
-  ts1.setFontFamily(TAB_TY.titles); ts1.setFontSize(Math.round(SW * 0.026));
-  ts1.setBold(true); ts1.setForegroundColor('#FFFFFF');
-  tit.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
-  _tabNoFill_(tit);
-
-  const sub = slide.insertTextBox(subtitulo, M, Hh * 0.60, SW * 0.70, Hh * 0.36);
-  const ts2 = sub.getText().getTextStyle();
-  ts2.setFontFamily(TAB_TY.titles); ts2.setFontSize(Math.round(SW * 0.015));
-  ts2.setForegroundColor(TAB_C.brandSoft);
-  sub.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
-  _tabNoFill_(sub);
-
-  return Hh;
-}
 
 // Faixa fina de legenda (ex.: "HISTÓRICO · CONCLUÍDOS"), abaixo do banner.
 function _tabDesenharLegenda_(slide, SW, y, h, texto) {
   const M = SW * 0.020;
-  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, M, y, SW - M * 2, h);
-  bar.getFill().setSolidFill(TAB_C.brandDark);
-  bar.getBorder().setTransparent();
-
+  _sRet_(slide, M, y, SW - M * 2, h, TAB_C.brandDark);
   const folga = 10;
   const tb = slide.insertTextBox(texto, M - folga, y, SW - M * 2 + folga * 2, h);
   const ts = tb.getText().getTextStyle();
@@ -157,10 +127,7 @@ function _tabDesenharTabela_(slide, SW, SH, linhas, topo, base, cfg) {
   let x = M;
   colunas.forEach((col, ci) => {
     const cw = largCols[ci];
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, topo, cw, hdrH);
-    bg.getFill().setSolidFill(TAB_C.brandMed);
-    bg.getBorder().setTransparent();
-
+    _sRet_(slide, x, topo, cw, hdrH, TAB_C.brandMed);
     // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra): o recuo interno
     // da TEXT_BOX (~7pt/lado, que a API não desliga) faz cabeçalho curto de
     // coluna estreita quebrar em 2 linhas. Alarga só a TEXT_BOX (invisível);

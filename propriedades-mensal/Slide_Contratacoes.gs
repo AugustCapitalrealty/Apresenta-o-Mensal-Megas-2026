@@ -215,9 +215,7 @@ function _contDesenharTabela_(slide, SW, linhas, topo, base, nLinhas, historico)
   for (let k = 0; k < qtdIni; k++) qtdX += largCols[k];
   const qtdW = largCols[7] + largCols[8] + largCols[9];
 
-  const grpBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, qtdX, topo, qtdW, hdrGrpH);
-  grpBg.getFill().setSolidFill(TAB_C.brandMed);
-  grpBg.getBorder().setTransparent();
+  _sRet_(slide, qtdX, topo, qtdW, hdrGrpH, TAB_C.brandMed);
   const grpTb = slide.insertTextBox('QUANTIDADES', qtdX, topo, qtdW, hdrGrpH);
   const tsG = grpTb.getText().getTextStyle();
   tsG.setFontFamily(TAB_TY.titles); tsG.setFontSize(CONTRAT_FONTE.grupo);
@@ -234,10 +232,7 @@ function _contDesenharTabela_(slide, SW, linhas, topo, base, nLinhas, historico)
     const y    = ehQtd ? (topo + hdrGrpH) : topo;
     const h    = ehQtd ? hdrSubH : hdrTotalH;
 
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, cw, h);
-    bg.getFill().setSolidFill(TAB_C.brandMed);
-    bg.getBorder().setTransparent();
-
+    _sRet_(slide, x, y, cw, h, TAB_C.brandMed);
     // Folga "sem quebra" (skill slides-caixa-texto-sem-quebra): sem ela o
     // recuo interno da TEXT_BOX quebra "Propostas" nas colunas estreitas.
     const folga = 10;

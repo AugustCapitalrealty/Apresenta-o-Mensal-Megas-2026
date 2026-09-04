@@ -36,10 +36,7 @@ function gerarSlideCapa() {
   slide.getBackground().setSolidFill(DS.colors.brandDark);
 
   // Espinha lateral (assinatura visual)
-  const espinha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 6, H);
-  espinha.getFill().setSolidFill(DS.colors.brandLight);
-  espinha.getBorder().setTransparent();
-
+  _sRet_(slide, 0, 0, 6, H, DS.colors.brandLight);
   // Wordmark Capital Realty (topo esquerdo)
   const wordmark = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, 30, 300, 32);
   wordmark.getText().setText('CAPITAL REALTY').getTextStyle()
@@ -52,10 +49,7 @@ function gerarSlideCapa() {
     .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
 
   // Barra de destaque acima do título
-  const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 46, H * 0.30 + 26, 66, 4);
-  barra.getFill().setSolidFill(DS.colors.brandLight);
-  barra.getBorder().setTransparent();
-
+  _sRet_(slide, 46, H * 0.30 + 26, 66, 4, DS.colors.brandLight);
   // Título principal — "Propriedades" é o herói, sem "Portfólio".
   const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
   titulo.getText().setText('GESTÃO DE\nPROPRIEDADES').getTextStyle()

@@ -65,9 +65,7 @@ function _metaTabela_(slide, x, y, w, h, pessoa, calc) {
 
   // Faixa de título com o nome, no azul da marca.
   const TIT_H = 20;
-  const tit = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, TIT_H);
-  tit.getFill().setSolidFill(DS.colors.brandMed);
-  tit.getBorder().setTransparent();
+  _sRet_(slide, x, y, w, TIT_H, DS.colors.brandMed);
   _sTxt(slide, x, y, w, TIT_H, 'METAS ' + pessoa.nome + ' - PROPERTY ' + new Date().getFullYear(),
         8, true, '#FFFFFF', 'center');
 
@@ -132,9 +130,7 @@ function _metaTabela_(slide, x, y, w, h, pessoa, calc) {
       .forEach(([c0, meta, real, status]) => {
         _sTxt(slide, cx[c0].x, ry, celW, rowH - 1, meta, fs, false, DS.colors.textBody, 'center');
         _sTxt(slide, cx[c0 + 1].x, ry, celW, rowH - 1, real, fs, true, DS.colors.textMain, 'center');
-        const st = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx[c0 + 2].x, ry, celW - 1, rowH - 1);
-        st.getFill().setSolidFill(_metaCorStatus_(status));
-        st.getBorder().setTransparent();
+        _sRet_(slide, cx[c0 + 2].x, ry, celW - 1, rowH - 1, _metaCorStatus_(status));
       });
   });
 }
@@ -219,9 +215,7 @@ function _metaCorStatus_(txt) {
 // Aviso de falha só com insertShape e CR_DESIGN_SYSTEM (lição 6).
 function _metaFalha_(slide, x, y, w, h, erro) {
   const DS = CR_DESIGN_SYSTEM;
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y + 40, w, 70);
-  bg.getFill().setSolidFill(DS.colors.accentRed, 0.08);
-  bg.getBorder().setTransparent();
+  _sRet_(slide, x, y + 40, w, 70, DS.colors.accentRed, 0.08);
   const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 48, w - 20, 54);
   tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   const tr = tb.getText(); tr.setText('');

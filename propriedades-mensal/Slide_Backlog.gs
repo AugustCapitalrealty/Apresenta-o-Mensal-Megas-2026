@@ -83,9 +83,7 @@ function _propGraficoBacklogCC_(slide, SW, SH, y, h, dados) {
     const hBar = b.total > 0 && escMax > 0 ? Math.max((b.total / escMax) * plotH, 3) : 0;
 
     if (hBar > 0) {
-      const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, plotY + plotH - hBar, barW, hBar);
-      bar.getFill().setSolidFill(DS.colors.brandLight);
-      bar.getBorder().setTransparent();
+      _sRet_(slide, cx, plotY + plotH - hBar, barW, hBar, DS.colors.brandLight);
     }
 
     _sTxt(slide, plotX + i * slotW, plotY + plotH - hBar - 16, slotW, 14,

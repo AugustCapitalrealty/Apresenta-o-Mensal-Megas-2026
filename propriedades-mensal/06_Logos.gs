@@ -133,18 +133,3 @@ function _insertLogoPadrao_(slide, blob, x, y, boxW, boxH, altura) {
   return img;
 }
 
-// Insere uma imagem centralizada dentro de uma caixa x,y,boxW,boxH, ocupando
-// o máximo de área possível sem distorcer a proporção original ("contain").
-// Usada onde a caixa É o tamanho desejado (ícones quadrados das capas de
-// seção); pros logos de cliente use _insertLogoPadrao_, que fixa a altura e
-// mantém todas as marcas do mesmo tamanho.
-function _insertLogoFit_(slide, blob, x, y, boxW, boxH) {
-  const img = slide.insertImage(blob);
-  const ratio = img.getWidth() / img.getHeight();
-  const wByH = boxH * ratio;
-  const fit = wByH <= boxW ? { w: wByH, h: boxH } : { w: boxW, h: boxW / ratio };
-  img.setWidth(Math.round(fit.w)).setHeight(Math.round(fit.h))
-     .setLeft(x + (boxW - fit.w) / 2)
-     .setTop(y + (boxH - fit.h) / 2);
-  return img;
-}

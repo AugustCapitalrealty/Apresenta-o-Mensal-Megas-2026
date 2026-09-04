@@ -135,9 +135,7 @@ function _corrGraficoEmergencial_(slide, x, y, w, h, meses) {
     const bh = (m.qtd > 0 && escMax > 0) ? Math.max((m.qtd / escMax) * plotH, 3) : 0;
 
     if (bh > 0) {
-      const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, plotY + plotH - bh, barW, bh);
-      bar.getFill().setSolidFill(DS.colors.brandLight);
-      bar.getBorder().setTransparent();
+      _sRet_(slide, cx, plotY + plotH - bh, barW, bh, DS.colors.brandLight);
     }
     _sTxt(slide, slotX, plotY + plotH - bh - 18, slotW, 13,
       String(m.qtd), 8.5, true, DS.colors.textMain, 'center');

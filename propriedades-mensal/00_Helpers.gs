@@ -60,11 +60,6 @@ function _mil_(v) {
   return (Math.abs(m) < 0.5 && m !== 0) ? '~0' : _milhar_(Math.round(m));
 }
 
-// Percentual com duas casas, vírgula decimal. null → "—".
-function _pct_(v, casas) {
-  if (v == null || isNaN(v)) return '—';
-  return v.toFixed(casas == null ? 2 : casas).replace('.', ',') + '%';
-}
 
 
 // ==========================================
@@ -230,15 +225,6 @@ function _abrirAba_(id, nomeAba, apelido) {
   return null;
 }
 
-// Matriz de texto de uma aba inteira. null quando a aba não existe ou está
-// vazia — nunca [] , que passaria batido por um forEach e zeraria o slide.
-function _lerAba_(id, nomeAba, apelido) {
-  const aba = _abrirAba_(id, nomeAba, apelido);
-  if (!aba) return null;
-  const nl = aba.getLastRow(), nc = aba.getLastColumn();
-  if (!nl || !nc) { Logger.log('Planilha ' + (apelido || '') + ': aba "' + nomeAba + '" está vazia.'); return null; }
-  return aba.getRange(1, 1, nl, nc).getDisplayValues();
-}
 
 
 // ==========================================
@@ -299,69 +285,6 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
   acc.setWeight(3);
 }
 
-/**
- * Card de KPI padrão (padrão do boletim/Megas): card branco com borda fina,
- * barra lateral colorida, label pequeno em cima e valor grande embaixo.
- *
- * opts = {
- *   label    : rótulo pequeno superior (obrigatório)
- *   valor    : valor em destaque (obrigatório)
- *   cor      : cor da barra lateral (default brandLight)
- *   corValor : cor do valor (default = cor da barra)
- *   tamValor : tamanho da fonte do valor (default 22)
- *   sub      : linha auxiliar sob o valor, ex.: '▲ 1,2 (+4%)' (opcional)
- *   corSub   : cor da linha auxiliar (default textBody)
- *   nota     : nota menor sob a linha auxiliar, ex.: 'vs mês anterior' (opcional)
- * }
- */
-function criarCardKPI(slide, x, y, w, h, opts) {
-  const DS = CR_DESIGN_SYSTEM;
-  const corBarra = opts.cor || DS.colors.brandLight;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(DS.colors.cardBg);
-  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
-  bg.getBorder().setWeight(1);
-
-  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
-  side.getFill().setSolidFill(corBarra);
-  side.getBorder().setTransparent();
-
-  // +10pt de folga à direita: vence o recuo interno do TEXT_BOX pra rótulos
-  // mais longos (ex.: "SLA RECEBIMENTO DE OBRAS") não quebrarem em duas
-  // linhas à toa — a caixa não tem borda própria, então a folga é invisível.
-  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20 + 10, 13);
-  lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  lbl.getText().setText(String(opts.label)).getTextStyle()
-    .setFontSize(7.5).setBold(true)
-    .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-
-  // Área do valor ocupa o meio; sub/nota reservam o rodapé do card
-  const footH = (opts.sub ? 13 : 0) + (opts.nota ? 11 : 0);
-  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 18, w - 20, h - 22 - footH);
-  val.getText().setText(String(opts.valor)).getTextStyle()
-    .setFontSize(opts.tamValor || 22).setBold(true)
-    .setForegroundColor(opts.corValor || corBarra)
-    .setFontFamily(DS.typography.titles);
-  val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-  let fy = y + h - footH - 4;
-  if (opts.sub) {
-    const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 13);
-    sub.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    sub.getText().setText(String(opts.sub)).getTextStyle()
-      .setFontSize(8).setBold(true)
-      .setForegroundColor(opts.corSub || DS.colors.textBody).setFontFamily(DS.typography.titles);
-    fy += 13;
-  }
-  if (opts.nota) {
-    const nota = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 11);
-    nota.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    nota.getText().setText(String(opts.nota)).getTextStyle()
-      .setFontSize(6.5).setBold(false)
-      .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-  }
-}
 
 /**
  * Painel padrão (contêiner de conteúdo): card branco com borda fina, barra

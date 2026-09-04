@@ -1,5 +1,5 @@
 /**
- * Teste do FAROL DE METAS (Slide_Metas.gs + Dados_Metas.gs).
+ * Teste do FAROL DE METAS (Slide_Metas.gs + 08_DadosMetas.gs).
  *
  * POR QUE EXISTE: o farol feito à mão errava duas coisas que agora são
  * calculadas — os PONTOS (dizia 15 onde a soma das verdes dá 35) e a COR do

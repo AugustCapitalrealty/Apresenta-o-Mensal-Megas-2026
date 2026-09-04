@@ -129,10 +129,7 @@ function gerarSlideIndicadoresGerais() {
 
       // Tratamento especial para subgrupos (faixa/divisor de seção)
       if (r.isGrupo) {
-        const bgGrupo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 6, ry + 1, cardW - 12, rowH - 1);
-        bgGrupo.getFill().setSolidFill('#F1F5F9');
-        bgGrupo.getBorder().setTransparent();
-
+        _sRet_(slide, x + 6, ry + 1, cardW - 12, rowH - 1, '#F1F5F9');
         const gBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry - 1, cardW - 20, rowH + 2);
         gBox.getText().setText(r.label).getTextStyle()
           .setFontSize(6.8).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily(DS.typography.titles);
@@ -141,9 +138,7 @@ function gerarSlideIndicadoresGerais() {
       }
 
       if (rIdx < cat.rows.length - 1 && !cat.rows[rIdx + 1].isGrupo) {
-        const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, ry + rowH - 1, cardW - 20, 1);
-        line.getFill().setSolidFill('#F1F5F9');
-        line.getBorder().setTransparent();
+        _sRet_(slide, x + 10, ry + rowH - 1, cardW - 20, 1, '#F1F5F9');
       }
 
       const temGrupos = cat.rows.some(row => row.isGrupo);

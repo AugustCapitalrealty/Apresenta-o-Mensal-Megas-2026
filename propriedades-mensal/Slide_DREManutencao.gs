@@ -108,9 +108,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
     { txt: 'REALIZADO + RITMO — ANO',        c0: 10, cor: COR_FUTURO, futuro: true }
   ];
 
-  const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + subH);
-  cabRub.getFill().setSolidFill(DS.colors.brandDark);
-  cabRub.getBorder().setTransparent();
+  _sRet_(slide, x0, blocoY, rubricaW - 1, blocoH + subH, DS.colors.brandDark);
   _sTxt(slide, x0 + 4, blocoY, rubricaW - 8, blocoH + subH, 'R$ MIL', 7, true, '#FFFFFF', 'left');
 
   blocos.forEach(b => {
@@ -121,9 +119,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
 
     [String(anoAnt), 'Meta', 'Real', 'Δ% Meta', 'Δ% ' + anoAnt].forEach((t, i) => {
       const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
-      const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, subH);
-      sb.getFill().setSolidFill(b.futuro ? '#0A4C86' : DS.colors.brandDark);
-      sb.getBorder().setTransparent();
+      _sRet_(slide, sx, blocoY + blocoH, sw, subH, b.futuro ? '#0A4C86' : DS.colors.brandDark);
       // A caixa de texto passa da célula (folga simétrica, sem fundo próprio)
       // só para vencer o recuo interno do Slides, que quebrava "Realizado"
       // em "Realizad/o" (lição 1).
@@ -172,9 +168,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
     const ry = tY + i * rowH;
     const destaque = l.tipo !== 'item';
     if (destaque) {
-      const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH - 0.5);
-      bg.getFill().setSolidFill(l.tipo === 'total' ? DS.colors.brandDark : CINZA_EMPRESA);
-      bg.getBorder().setTransparent();
+      _sRet_(slide, x0, ry, tableW, rowH - 0.5, l.tipo === 'total' ? DS.colors.brandDark : CINZA_EMPRESA);
     }
     const corTxt = destaque ? '#FFFFFF' : DS.colors.textMain;
     const indent = l.tipo === 'item' ? 12 : 4;
@@ -230,9 +224,7 @@ function _dreNomeCurto_(nome) {
 // que pode ser exatamente a helper que faltou (ver lição 6 do CLAUDE.md).
 function _dreFalha_(slide, x, y, w, h, erro) {
   const DS = CR_DESIGN_SYSTEM;
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, y + 40, w - 30, 80);
-  bg.getFill().setSolidFill(DS.colors.accentRed, 0.08);
-  bg.getBorder().setTransparent();
+  _sRet_(slide, x + 15, y + 40, w - 30, 80, DS.colors.accentRed, 0.08);
   const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, y + 48, w - 50, 64);
   tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   const tr = tb.getText();

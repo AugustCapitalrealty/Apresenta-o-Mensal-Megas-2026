@@ -291,8 +291,6 @@ function _propLerBase_(nomeAba) {
 }
 
 function _propLerCorretivas_()  { return _propLerBase_(BD_ABA_CORRETIVAS); }
-function _propLerPreventivas_() { return _propLerBase_(BD_ABA_PREVENTIVAS); }
-
 
 // ==========================================
 // SLA — CUMPRIDO x NÃO CUMPRIDO
@@ -415,14 +413,6 @@ function listarPortfolioBD_(nomeAba) {
   return Object.keys(porCC).map(k => porCC[k]).sort((a, b) => b.total - a.total);
 }
 
-function backlogPorCC_(cc, ano, mesIndex) {
-  const refIni = new Date(Date.UTC(ano, mesIndex, 1));
-  const refFim = new Date(Date.UTC(ano, mesIndex + 1, 1));
-  return _propLerCorretivas_()
-    .filter(it => it.cc === cc)
-    .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
-    .length;
-}
 
 
 // ==========================================
@@ -948,31 +938,6 @@ function _propMesAnterior_(ano, mesIndex) {
   return mesIndex === 0 ? { ano: ano - 1, index: 11 } : { ano: ano, index: mesIndex - 1 };
 }
 
-// Indicadores do portfólio para o mês de referência
-function obterIndicadoresPortfolio_() {
-  const ref = obterMesReferencia_();
-  const dadosPrev = indicadoresPortfolio_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
-  const dadosCorr = indicadoresPortfolio_(BD_ABA_CORRETIVAS, ref.ano, ref.index);
-  const recebimento = obterRecebimentoObrasResumo_();
-
-  const backlogAtual = obterBacklogPorCC_(ref.ano, ref.index).reduce((s, b) => s + b.total, 0);
-  const mesAnt = _propMesAnterior_(ref.ano, ref.index);
-  const backlogAnterior = obterBacklogPorCC_(mesAnt.ano, mesAnt.index).reduce((s, b) => s + b.total, 0);
-
-  return {
-    pctRecebimentoObras: recebimento.pct || 0,
-    recebimentoConcluidos: recebimento.concluidos,
-    recebimentoTotal: recebimento.total,
-    slaPreventivas: dadosPrev.total.sla.pct || 0,
-    previntivasRealizado: dadosPrev.total.execucao.realizadas || 0,
-    previntivasTotal: dadosPrev.total.execucao.previstas || 0,
-    execucaoCorretivas: dadosCorr.total.execucao.pct || 0,
-    corretvasRealizado: dadosCorr.total.execucao.realizadas || 0,
-    corretvasTotal: dadosCorr.total.execucao.previstas || 0,
-    backlogTotal: backlogAtual,
-    backlogVariacao: backlogAtual - backlogAnterior
-  };
-}
 
 // Indicadores acumulados por equipe, com o corte Megas x demais — usa
 // indicadoresPorEquipeSegmento_ nas duas bases (preventivas por "Fechado
@@ -1028,24 +993,3 @@ function obterIndicadoresPropriedades_(nomeAba, ano, mesIndex, janela) {
   return _propIndicadoresEquipeUnica_(seg, 'PROPERTY');
 }
 
-// Cumpridos/não cumpridos do SLA de Propriedades no mês de referência, com
-// o corte Megas x Demais — é só o que Slide_Preventivas.gs/Slide_
-// Corretivas.gs desenham (uma linha "Propriedades" por bloco; nada de
-// Facilities/Terceiros).
-function obterIndicadoresAcumulado_() {
-  const ref = obterMesReferencia_();
-  const prev = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
-  const corr = obterIndicadoresPropriedades_(BD_ABA_CORRETIVAS,  ref.ano, ref.index);
-
-  const bloco = b => ({
-    properties_cumpridos:     b.sla.cumpridos,
-    properties_nao_cumpridos: b.sla.naoCumpridos
-  });
-
-  return {
-    preventivas:       bloco(prev.megas),
-    preventivasDemais: bloco(prev.demais),
-    corretivas:        bloco(corr.megas),
-    corretvasDemais:   bloco(corr.demais)
-  };
-}

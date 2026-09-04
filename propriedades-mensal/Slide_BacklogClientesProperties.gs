@@ -233,9 +233,7 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   const dataX = empX + EMP_W + COL_GAP;
   const diasX = dataX + DATA_W + COL_GAP;
 
-  const headerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, listY, w - 30, HEADER_H);
-  headerBg.getFill().setSolidFill(corTema, 0.10);
-  headerBg.getBorder().setTransparent();
+  _sRet_(slide, x + 15, listY, w - 30, HEADER_H, corTema, 0.10);
   _sTxt(slide, x + 15, listY, LOGO_COL_W, HEADER_H, 'CLIENTE',        7, true, corTema, 'center');
   _sTxt(slide, descX,   listY, descW,      HEADER_H, 'DESCRIÇÃO',     7, true, corTema, 'left');
   _sTxt(slide, empX,    listY, EMP_W,      HEADER_H, 'EMPREENDIMENTO', 6, true, corTema, 'center');
@@ -311,9 +309,7 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   const alturaTabela = cursorY - ROW_GAP - listY;
   [x + 15 + LOGO_COL_W + LOGO_GAP / 2, empX - COL_GAP / 2, dataX - COL_GAP / 2, diasX - COL_GAP / 2]
     .forEach(lx => {
-      const divisor = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, listY, 0.75, alturaTabela);
-      divisor.getFill().setSolidFill(_TABELA_LINHA_COR_);
-      divisor.getBorder().setTransparent();
+      _sRet_(slide, lx, listY, 0.75, alturaTabela, _TABELA_LINHA_COR_);
     });
 }
 
@@ -395,10 +391,7 @@ function _backlogClientesFalha_(slide, x, y, w, h, erro) {
   const DS = CR_DESIGN_SYSTEM;
   const boxY = y + 40, boxH = Math.min(96, h - 48);
 
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 15, boxY, w - 30, boxH);
-  bg.getFill().setSolidFill(DS.colors.accentRed, 0.08);
-  bg.getBorder().setTransparent();
-
+  _sRet_(slide, x + 15, boxY, w - 30, boxH, DS.colors.accentRed, 0.08);
   const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, boxY + 8, w - 50, boxH - 16);
   txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   const tr = txt.getText();
@@ -446,9 +439,7 @@ function _linhasPorChamadoQueCabem_(paginaColunas, budget, lineH, minRowH, capti
 
 
 function _linhaTabela_(slide, x, y, w, cor, altura) {
-  const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, altura);
-  linha.getFill().setSolidFill(cor);
-  linha.getBorder().setTransparent();
+  _sRet_(slide, x, y, w, altura, cor);
 }
 
 function _prioridadeSemDado_(slide, x, y, w, h, texto, cor) {

@@ -87,9 +87,7 @@ function _brgResumo_(slide, x, y, w, h, d) {
   let cy = y + 12;
   linhas.forEach(l => {
     const cardH = l.sub ? 46 : 38;
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 8, cy, w - 16, cardH - 5);
-    bg.getFill().setSolidFill(l.cor, 0.08);
-    bg.getBorder().setTransparent();
+    _sRet_(slide, x + 8, cy, w - 16, cardH - 5, l.cor, 0.08);
     _sTxt(slide, x + 14, cy + 3, w - 28, 10, l.rot, 6, true, DS.colors.textMuted, 'left');
     _sTxt(slide, x + 14, cy + 12, w - 28, 17,
           l.val == null ? '—' : 'R$ ' + _brgMilhar_(Math.round(l.val / 1000)) + ' mil',
@@ -119,9 +117,7 @@ function _brgTabela_(slide, x, y, w, h, d) {
                 col('REAL/RITMO', 0.21), col('VARIAÇÃO', 0.20), col('VAR %', 0.13)];
 
   const headH = 22;
-  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, y, w - 8, headH);
-  bar.getFill().setSolidFill(DS.colors.brandDark);
-  bar.getBorder().setTransparent();
+  _sRet_(slide, x + 4, y, w - 8, headH, DS.colors.brandDark);
   cols.forEach(c => _sTxt(slide, c.x - 5, y + 2, c.w + 10, headH - 4, c.t, 7, true, '#FFFFFF', 'center'));
 
   const startY = y + headH + 3;
@@ -131,10 +127,7 @@ function _brgTabela_(slide, x, y, w, h, d) {
 
   d.meses.forEach((m, i) => {
     const ry = startY + i * rowH;
-    const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, ry, w - 8, rowH);
-    zebra.getFill().setSolidFill(i % 2 ? '#F8FAFC' : '#FFFFFF');
-    zebra.getBorder().setTransparent();
-
+    _sRet_(slide, x + 4, ry, w - 8, rowH, i % 2 ? '#F8FAFC' : '#FFFFFF');
     const ritmo = m.tipo === 'RITMO';
     const abaixo = m.variacao != null && m.variacao >= 0;
     // Âmbar para RITMO: não é bom nem ruim, ainda não aconteceu.
@@ -231,10 +224,7 @@ function _brgGrafico_(slide, x, y, w, h, d) {
 
   const n = meses.length, slotW = plotW / (n + 2), barW = Math.min(slotW * 0.5, 30);
 
-  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.2);
-  eixo.getFill().setSolidFill('#94A3B8');
-  eixo.getBorder().setTransparent();
-
+  _sRet_(slide, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.2, '#94A3B8');
   const fmt = v => 'R$ ' + _brgMilhar_(Math.round(v / 1000)) + ' mil';
 
   // Ponta esquerda: ORÇADO ANUAL — é o ponto zero, sem barra.
@@ -249,10 +239,7 @@ function _brgGrafico_(slide, x, y, w, h, d) {
     const ritmo = m.tipo === 'RITMO';
     const cor = ritmo ? '#D97706' : (acima ? '#166534' : '#DC2626');
 
-    const r = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, by, barW, alt);
-    r.getFill().setSolidFill(cor, ritmo ? 0.55 : 1);
-    r.getBorder().setTransparent();
-
+    _sRet_(slide, bx, by, barW, alt, cor, ritmo ? 0.55 : 1);
     const rot = (acima ? '+' : '−') + _brgMilhar_(Math.abs(Math.round(m.variacao / 1000)));
     _sTxt(slide, bx - 8, acima ? by - 11 : by + alt + 1, barW + 16, 10, rot, 5.6, true, cor, 'center');
     _sTxt(slide, bx - 8, zeroY + (acima ? 3 : -12), barW + 16, 10, m.label, 5.8, true,

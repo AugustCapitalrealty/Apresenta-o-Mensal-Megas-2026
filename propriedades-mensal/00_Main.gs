@@ -78,17 +78,17 @@ function onOpen() {
  * Só `typeof` — nada aqui pode depender do que está faltando.
  */
 const _PROP_DEPENDENCIAS_ = [
-  ['00_Helpers.gs',             ['_num_', '_milhar_', '_norm_', '_sTxt', 'criarHeaderPadrao', 'criarCardPainel', '_abrirPlanilha_']],
-  ['01_Config.gs',              ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'DRE_MANUTENCAO_ID', 'METAS_PROPRIEDADES', 'LOGO_LARG_PADRAO', 'LOGOS_CLIENTES']],
+  ['00_Helpers.gs',             ['_num_', '_milhar_', '_norm_', '_sTxt', '_sRet_', 'criarHeaderPadrao', 'criarCardPainel', '_abrirPlanilha_']],
+  ['01_Config.gs',              ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'DRE_EMPRESAS', 'METAS_PROPRIEDADES', 'LOGOS_CLIENTES']],
   ['02_Dados.gs',               ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
   ['03_Tabelas.gs',             ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
   ['04_Diagnosticos.gs',        ['diagnosticarPropriedades', 'conferirIdentidadeBacklog', 'diagnosticarBacklogClientes']],
   ['05_DadosSlides.gs',         ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterBacklogEmergencialDetalhe_', 'obterDadosChamadosPendentes_', 'obterDadosTorreManutencao_']],
   ['06_Logos.gs',               ['_getClienteLogoBlob_', '_insertLogoFitLegenda_']],
-  ['Dados_DREManutencao.gs',    ['obterDREManutencao_']],
+  ['07_DadosDRE.gs',            ['obterDREManutencao_']],
+  ['08_DadosMetas.gs',          ['obterMetasCalculadas_']],
   ['Slide_DREManutencao.gs',    ['gerarSlideDREManutencao', '_dreFalha_', '_drePosicionarNaSecao_']],
   ['Slide_BridgeManutencao.gs', ['gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico']],
-  ['Dados_Metas.gs',            ['obterMetasCalculadas_']],
   ['Slide_Metas.gs',            ['gerarSlidesMetas', '_metaResolver_']],
   ['Slide_Corretivas.gs',       ['gerarSlideCorretivas']],
 ];

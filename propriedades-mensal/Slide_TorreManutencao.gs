@@ -126,10 +126,7 @@ function _desenharSlideTorreUnidade_(deck, unidadeNome, dadosTorre) {
   let curX = marginX;
   colunas.forEach(col => {
     const colW = areaW * col.largura;
-    const bgHdr = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, curX, tabY, colW, hdrH);
-    bgHdr.getFill().setSolidFill(DS.colors.brandLight);
-    bgHdr.getBorder().setTransparent();
-
+    _sRet_(slide, curX, tabY, colW, hdrH, DS.colors.brandLight);
     const folga = 6;
     const tbHdr = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, curX - folga, tabY, colW + folga * 2, hdrH);
     const ts = tbHdr.getText();
