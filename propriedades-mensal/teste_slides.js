@@ -45,6 +45,7 @@ function texto() {
     setText(t) { o._t = String(t); return o; },
     appendText(t) { o._t += String(t); return { getTextStyle: estilo }; },
     getTextStyle: estilo,
+    getRange: () => ({ getTextStyle: estilo }),
     asString: () => o._t,
     getParagraphStyle: () => ({ setLineSpacing: () => ({}), setParagraphAlignment: () => ({}) })
   };

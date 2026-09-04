@@ -333,51 +333,98 @@ function gerarSlideBridgeManutencao() {
 
 
 // ==========================================
-// PAINEL DE RESUMO (esquerda)
+// PAINEL DE RESUMO (esquerda) — padrão Facilities
 // ==========================================
 
 function _brgResumo_(slide, x, y, w, h, d) {
   const DS = CR_DESIGN_SYSTEM;
   criarCardPainel(slide, x, y, w, h, null, DS.colors.brandDark);
 
-  const orc = d.total.ano.plan, proj = d.total.ano.proj;
-  const desvio = (orc == null || proj == null) ? null : orc - proj;
-  const pct = (orc && desvio != null) ? (Math.abs(desvio / orc) * 100) : null;
-  const abaixo = desvio != null && desvio >= 0;
+  const _txt = (texto, fx, fy, fw, fh, size, bold, cor, align) => {
+    const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, fh);
+    const t = b.getText();
+    t.setText(texto).getTextStyle()
+      .setFontSize(size).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
+    if (align === 'C') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    if (align === 'R') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+    b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    return b;
+  };
 
-  const linhas = [
-    { rot: 'ORÇADO — ANO',        val: orc,  cor: DS.colors.brandLight },
-    { rot: 'PROJETADO — ANO',     val: proj, cor: DS.colors.brandDark },
-    { rot: abaixo ? 'ECONOMIA PROJETADA' : 'ESTOURO PROJETADO',
-      val: desvio == null ? null : Math.abs(desvio),
-      cor: abaixo ? '#166534' : '#DC2626',
-      sub: pct == null ? '' : (abaixo ? '▼ ' : '▲ ') + pct.toFixed(1) + '% vs orçado' },
-    { rot: 'REALIZADO ATÉ ' + d.ref.curto.toUpperCase(), val: d.total.acum.real,
-      cor: DS.colors.textBody,
-      sub: 'orçado ' + _dreMil_(d.total.acum.plan) + ' mil' }
-  ];
+  const _val = (valorStr, fx, fy, fw, size, cor) => {
+    const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, size + 11);
+    const t = b.getText();
+    t.setText(valorStr).getTextStyle()
+      .setFontSize(size).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+    t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+    b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  };
 
-  let cy = y + 12;
-  linhas.forEach(l => {
-    const cardH = l.sub ? 46 : 38;
-    _sRet_(slide, x + 8, cy, w - 16, cardH - 5, l.cor, 0.08);
-    _sTxt(slide, x + 14, cy + 3, w - 28, 10, l.rot, 6, true, DS.colors.textMuted, 'left');
-    _sTxt(slide, x + 14, cy + 12, w - 28, 17,
-          l.val == null ? '—' : 'R$ ' + _brgMilhar_(Math.round(l.val / 1000)) + ' mil',
-          12, true, l.cor, 'left');
-    if (l.sub) _sTxt(slide, x + 14, cy + 29, w - 28, 10, l.sub, 5.6, false, l.cor, 'left');
-    cy += cardH;
-  });
+  const totalOrc     = d.total.acum.plan || 0;
+  const totalReal    = d.total.acum.real || 0;
+  const totalVar     = totalOrc - totalReal; // >= 0: abaixo do orçado (economia)
+  const abaixo       = totalVar >= 0;
+  const corVar       = abaixo ? '#166534' : '#DC2626';
+  const bgVar        = abaixo ? '#F0FDF4' : '#FEF2F2';
+  const varLabel     = abaixo ? '▼ ABAIXO DO ORÇADO' : '▲ ACIMA DO ORÇADO';
+  const varPctStr    = totalOrc > 0 ? (Math.abs(totalVar / totalOrc) * 100).toFixed(1).replace('.', ',') + '%' : '0%';
 
-  if (d.avisos && d.avisos.length) {
-    _sTxt(slide, x + 8, y + h - 22, w - 16, 18, '⚠ ' + d.avisos[0], 5, false,
-          DS.colors.accentOrange, 'left');
-  }
+  const totalOrcAnual  = d.total.ano.plan || 0;
+  const totalProjetado = d.total.ano.proj || 0;
+  const varAnual       = totalOrcAnual - totalProjetado;
+  const abaixoAnual    = varAnual >= 0;
+  const corAnual       = abaixoAnual ? '#166534' : '#DC2626';
+  const sinalAnual     = abaixoAnual ? '▼ ' : '▲ ';
+
+  let cy = y + 10;
+  _txt('RESUMO DO PERÍODO', x + 12, cy, w - 20, 16, 7.5, true, '#64748B');
+  cy += 20;
+
+  // ORÇADO
+  _txt('ORÇADO', x + 12, cy, w - 20, 13, 6, true, '#94A3B8');
+  cy += 13;
+  _val(_brgMoeda_(totalOrc), x + 12, cy, w - 24, 11, DS.colors.textMain);
+  cy += 24;
+
+  // REALIZADO
+  _txt('REALIZADO', x + 12, cy, w - 20, 13, 6, true, '#94A3B8');
+  cy += 13;
+  _val(_brgMoeda_(totalReal), x + 12, cy, w - 24, 11, DS.colors.textMain);
+  cy += 24;
+
+  // Pill variação do período
+  cy += 4;
+  const pillBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 10, cy, w - 20, 52);
+  pillBox.getFill().setSolidFill(bgVar); pillBox.getBorder().setTransparent();
+
+  _txt(varLabel, x + 10, cy + 4, w - 20, 16, 7, true, corVar, 'C');
+  _txt(_brgMoeda_(Math.abs(totalVar)), x + 10, cy + 20, w - 20, 18, 11, true, corVar, 'C');
+  _txt(varPctStr + ' do orçado do período', x + 10, cy + 38, w - 20, 13, 7, false, corVar, 'C');
+  cy += 62;
+
+  // Divisor
+  const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 10, cy, w - 20, 1);
+  div.getFill().setSolidFill(DS.colors.lines || '#E2E8F0'); div.getBorder().setTransparent();
+  cy += 10;
+
+  // Projeção Anual
+  _txt('PROJEÇÃO ANUAL (REAL + RITMO)', x + 12, cy, w - 20, 13, 6, true, '#94A3B8');
+  cy += 14;
+
+  _txt('ORÇADO', x + 12, cy, 60, 13, 6, true, '#94A3B8');
+  _val(_brgMoeda_(totalOrcAnual), x + 12, cy, w - 24, 9, DS.colors.textMain);
+  cy += 20;
+
+  _txt('PROJETADO', x + 12, cy, 60, 13, 6, true, '#94A3B8');
+  _val(_brgMoeda_(totalProjetado), x + 12, cy, w - 24, 9, DS.colors.textMain);
+  cy += 20;
+
+  _val(sinalAnual + _brgMoeda_(Math.abs(varAnual)), x + 12, cy, w - 24, 9, corAnual);
 }
 
 
 // ==========================================
-// TABELA DE VARIAÇÃO (direita) — um mês por linha
+// TABELA DE VARIAÇÃO (direita) — padrão Facilities
 // ==========================================
 
 function _brgTabela_(slide, x, y, w, h, d) {
@@ -386,64 +433,142 @@ function _brgTabela_(slide, x, y, w, h, d) {
 
   let acc = 0;
   const col = (t, f, a) => { const o = { t: t, x: x0 + acc * useW, w: useW * f, a: a || 'C' }; acc += f; return o; };
-  const cols = [col('MÊS', 0.13), col('TIPO', 0.13), col('ORÇADO', 0.20),
-                col('REAL/RITMO', 0.21), col('VARIAÇÃO', 0.20), col('VAR %', 0.13)];
+  const cols = [
+    col('MÊS', 0.13),
+    col('TIPO', 0.11),
+    col('ORÇADO', 0.21),
+    col('REAL/RITMO', 0.21),
+    col('VARIAÇÃO', 0.21),
+    col('VAR %', 0.13)
+  ];
 
   const headH = 22;
   _sRet_(slide, x + 4, y, w - 8, headH, DS.colors.brandDark);
-  cols.forEach(c => _sTxt(slide, c.x - 5, y + 2, c.w + 10, headH - 4, c.t, 7, true, '#FFFFFF', 'center'));
+  cols.forEach(c => {
+    const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, c.x, y + 3, c.w, headH - 6);
+    const t = b.getText();
+    t.setText(c.t).getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
+    t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  });
 
-  const startY = y + headH + 3;
-  const rowH = Math.max(13, Math.min(21, (h - headH - 8) / d.meses.length));
-  const fs = rowH >= 18 ? 7.2 : (rowH >= 15 ? 6.6 : 6);
-  const mil = v => (v == null) ? '-' : _brgMilhar_(Math.round(v / 1000));
+  const startY = y + headH + 4;
+  const availH = h - headH - 34;
+  const rowH   = Math.max(14, Math.min(21, availH / d.meses.length));
 
   d.meses.forEach((m, i) => {
     const ry = startY + i * rowH;
-    _sRet_(slide, x + 4, ry, w - 8, rowH, i % 2 ? '#F8FAFC' : '#FFFFFF');
-    const ritmo = m.tipo === 'RITMO';
     const abaixo = m.variacao != null && m.variacao >= 0;
-    // Âmbar para RITMO: não é bom nem ruim, ainda não aconteceu.
-    const corVar = ritmo ? '#D97706' : (abaixo ? '#166534' : '#DC2626');
-    const seta = m.variacao == null ? '' : (abaixo ? '▼ ' : '▲ ');
+    const corVar = m.tipo === 'RITMO' ? '#D97706' : (abaixo ? '#166534' : '#DC2626');
+    const bgVarPill = m.tipo === 'RITMO' ? '#FFF7ED' : (abaixo ? '#F0FDF4' : '#FEF2F2');
+    const bgRow  = i % 2 === 0 ? '#F8FAFC' : '#FFFFFF';
     const varPct = (m.plan && m.variacao != null)
-      ? (Math.abs(m.variacao / m.plan) * 100).toFixed(0) + '%' : '-';
+      ? (Math.abs(m.variacao / m.plan) * 100).toFixed(1).replace('.', ',') + '%' : '-';
+    const seta   = abaixo ? '▼ ' : '▲ ';
 
-    _sTxt(slide, cols[0].x, ry, cols[0].w, rowH, m.label, fs, true, DS.colors.textMain, 'center');
+    // Fundo zebrado
+    const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, ry, w - 8, rowH);
+    zebra.getFill().setSolidFill(bgRow); zebra.getBorder().setTransparent();
 
-    // TIPO em pill, para o olho separar realizado de projeção de relance.
-    const pw = Math.min(cols[1].w - 8, 34), px = cols[1].x + (cols[1].w - pw) / 2;
-    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, px, ry + rowH * 0.22, pw, rowH * 0.56);
-    pill.getFill().setSolidFill(ritmo ? '#D97706' : DS.colors.brandMed, 0.15);
-    pill.getBorder().setTransparent();
-    _sTxt(slide, px - 6, ry, pw + 12, rowH, m.tipo, fs - 1.4, true,
-          ritmo ? '#D97706' : DS.colors.brandMed, 'center');
+    const _cel = (texto, col, cor, bold) => {
+      const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, ry, col.w, rowH);
+      const t = b.getText();
+      t.setText(String(texto)).getTextStyle()
+        .setFontSize(7.5).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
+      t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    };
 
-    _sTxt(slide, cols[2].x, ry, cols[2].w, rowH, mil(m.plan), fs, false, DS.colors.textBody, 'center');
-    _sTxt(slide, cols[3].x, ry, cols[3].w, rowH, mil(m.real), fs, true, DS.colors.textMain, 'center');
-    _sTxt(slide, cols[4].x, ry, cols[4].w, rowH,
-          m.variacao == null ? '-' : seta + _brgMilhar_(Math.abs(Math.round(m.variacao / 1000))),
-          fs, true, corVar, 'center');
-    _sTxt(slide, cols[5].x, ry, cols[5].w, rowH, varPct, fs, false, corVar, 'center');
+    _cel(m.label, cols[0], DS.colors.brandDark, true);
+
+    // Pill TIPO (REAL / RITMO)
+    const pillH = Math.min(rowH - 4, 14);
+    const pillW = cols[1].w - 4;
+    const pillX = cols[1].x + 2;
+    const pillY = ry + (rowH - pillH) / 2;
+    const corPill = m.tipo === 'RITMO' ? '#D97706' : (abaixo ? '#10B981' : '#EF4444');
+    const pillBg  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
+    pillBg.getFill().setSolidFill(corPill); pillBg.getBorder().setTransparent();
+    const pt = pillBg.getText();
+    pt.setText(m.tipo === 'RITMO' ? 'RITMO' : 'REAL')
+      .getTextStyle().setFontSize(5.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
+    pt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    pillBg.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+
+    _cel(_brgMoeda_(m.plan), cols[2], DS.colors.textBody, false);
+    _cel(_brgMoeda_(m.real), cols[3], DS.colors.textMain, true);
+    _cel(m.variacao == null ? '-' : seta + _brgMoeda_(Math.abs(m.variacao)), cols[4], corVar, true);
+
+    // Pill VAR%
+    const vPillH = Math.min(rowH - 4, 14);
+    const vPillW = cols[5].w - 4;
+    const vPillX = cols[5].x + 2;
+    const vPillY = ry + (rowH - vPillH) / 2;
+    const vBg    = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, vPillX, vPillY, vPillW, vPillH);
+    vBg.getFill().setSolidFill(bgVarPill); vBg.getBorder().setTransparent();
+    const vt = vBg.getText();
+    vt.setText(varPct)
+      .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(corVar).setFontFamily('Montserrat');
+    vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    vBg.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   });
+
+  // Linha de Totais (PERÍODO)
+  const totY = startY + d.meses.length * rowH + 4;
+  if (totY + 24 <= y + h) {
+    const sep = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, totY, w - 8, 1);
+    sep.getFill().setSolidFill(DS.colors.lines || '#E2E8F0'); sep.getBorder().setTransparent();
+
+    const totBar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 4, totY + 3, w - 8, 22);
+    totBar.getFill().setSolidFill('#EEF2F7'); totBar.getBorder().setTransparent();
+
+    const _totCel = (txt, col, cor) => {
+      const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, totY + 3, col.w, 22);
+      const t = b.getText();
+      t.setText(txt).getTextStyle()
+        .setFontSize(7.5).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+      t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    };
+
+    const totalOrc = d.total.acum.plan || 0;
+    const totalReal = d.total.acum.real || 0;
+    const totalVar = totalOrc - totalReal;
+    const abTot = totalVar >= 0;
+    const corTot = abTot ? '#166534' : '#DC2626';
+    const pct = totalOrc > 0 ? (Math.abs(totalVar / totalOrc) * 100).toFixed(1).replace('.', ',') + '%' : '-';
+
+    _totCel('PERÍODO', cols[0], DS.colors.brandDark);
+    _totCel('', cols[1], DS.colors.brandDark);
+    _totCel(_brgMoeda_(totalOrc), cols[2], DS.colors.brandDark);
+    _totCel(_brgMoeda_(totalReal), cols[3], DS.colors.brandDark);
+    _totCel((abTot ? '▼ ' : '▲ ') + _brgMoeda_(Math.abs(totalVar)), cols[4], corTot);
+    _totCel(pct, cols[5], corTot);
+  }
 }
 
 
 // ==========================================
-// SLIDE 2 — GRÁFICO WATERFALL
+// SLIDE 2 — GRÁFICO WATERFALL (BRIDGE)
 // ==========================================
 
 /**
- * Do ORÇADO ANUAL ao PROJETADO, com a variação de cada mês no meio.
+ * Gráfico Bridge no padrão oficial Facilities (Slide06_FinanceiroBridge.gs).
  *
- * O orçado é o ponto ZERO: as barras sobem quando o mês gastou MENOS (bom) e
- * descem quando estourou. A ponta direita é onde o ano fecha se o ritmo se
- * confirmar.
+ * Parte do Orçado anual e aplica a variação de cada mês, terminando no
+ * Realizado/Projetado.
+ *
+ * Convenção Facilities:
+ * - Acima do orçado (real > orç) = barra para CIMA em vermelho (#EF4444);
+ * - Abaixo do orçado (economia, real < orç) = barra para BAIXO em verde (#10B981);
+ * - Meses de RITMO = âmbar (#F59E0B);
+ * - Ponta direita: barra do PROJETADO com desvio vs orçamento anual.
+ * - Dois chips de resumo no topo: REALIZADO ATÉ AGORA e PROJEÇÃO ANUAL.
  */
 function gerarSlideBridgeManutencaoGrafico() {
   const dados = obterDREManutencao_();
   const deck  = getDeckMensal_();
-  const DS    = CR_DESIGN_SYSTEM;
 
   _slideLimpar_(deck, TAG_BRIDGE_GRAFICO);
 
@@ -472,67 +597,191 @@ function gerarSlideBridgeManutencaoGrafico() {
 function _brgGrafico_(slide, x, y, w, h, d) {
   const DS = CR_DESIGN_SYSTEM;
   const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  card.getFill().setSolidFill(DS.colors.cardBg);
-  card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  card.getFill().setSolidFill(DS.colors.cardBg || '#FFFFFF');
+  card.getBorder().getLineFill().setSolidFill(DS.colors.lines || '#E2E8F0');
   card.getBorder().setWeight(1);
 
-  const orc = d.total.ano.plan, proj = d.total.ano.proj;
-  const meses = d.meses.filter(m => m.variacao != null);
+  const totalOrcReal   = d.total.acum.plan || 0;
+  const totalReal      = d.total.acum.real || 0;
+  const totalVar       = totalOrcReal - totalReal; // >0 = gastou menos = abaixo do orçado (bom)
+  const pctReal        = totalOrcReal > 0 ? (Math.abs(totalVar / totalOrcReal) * 100).toFixed(1).replace('.', ',') : '0';
 
-  const plotX = x + 46, plotW = w - 92;
-  const plotY = y + 34, plotH = h - 34 - 44;
+  const totalOrcAnual  = d.total.ano.plan || 0;
+  const totalProjetado = d.total.ano.proj || 0;
+  const varAnual       = totalOrcAnual - totalProjetado; // >0 = gastou menos no ano = abaixo do orçado (bom)
+  const pctAnual       = totalOrcAnual > 0 ? (Math.abs(varAnual / totalOrcAnual) * 100).toFixed(1).replace('.', ',') : '0';
 
-  // Divide o plot entre o lado positivo e o negativo na proporção dos dados,
-  // com trava: sem ela um único mês extremo (setembro, −743k) achata todo o
-  // resto até virar uma linha reta.
-  const maxUp   = Math.max(0, ...meses.map(m => m.variacao > 0 ? m.variacao : 0));
-  const maxDown = Math.max(0, ...meses.map(m => m.variacao < 0 ? -m.variacao : 0));
-  let fracUp = (maxUp + maxDown) > 0 ? maxUp / (maxUp + maxDown) : 0.5;
-  fracUp = Math.max(0.25, Math.min(0.75, fracUp));
-  const upH = (plotH - 30) * fracUp, downH = (plotH - 30) * (1 - fracUp);
-  const zeroY = plotY + 15 + upH;
-  const escala = Math.max(maxUp / (upH || 1), maxDown / (downH || 1)) || 1;
+  // ── Chips de resumo no topo (padrão Facilities) ─────────────────────────
+  const chip = (cx, cw, titulo, valor, positivo) => {
+    const bgC  = positivo ? '#F0FDF4' : '#FEF2F2';
+    const txtC = positivo ? '#166534' : '#DC2626';
+    const box = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y + 9, cw, 30);
+    box.getFill().setSolidFill(bgC); box.getBorder().setTransparent();
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 10, y + 9, cw - 20, 30);
+    const tr = t.getText();
+    tr.setText(titulo + '  ' + valor);
+    tr.getTextStyle().setFontSize(8.5).setBold(true).setForegroundColor(txtC).setFontFamily('Montserrat');
+    if (typeof tr.getRange === 'function') {
+      tr.getRange(0, titulo.length).getTextStyle().setFontSize(7).setForegroundColor(positivo ? '#15803D' : '#B91C1C');
+    }
+    t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  };
 
-  const n = meses.length, slotW = plotW / (n + 2), barW = Math.min(slotW * 0.5, 30);
+  chip(x + 16, 300, 'REALIZADO ATÉ AGORA',
+       (totalVar >= 0 ? '▼ ' : '▲ ') + _brgMoedaCompacta_(Math.abs(totalVar)) + ' ' +
+       (totalVar >= 0 ? 'abaixo' : 'acima') + ' do orçado (' + pctReal + '%)', totalVar >= 0);
+  chip(x + 16 + 312, 280, 'PROJEÇÃO ANUAL',
+       (varAnual >= 0 ? '▼ ' : '▲ ') + _brgMoedaCompacta_(Math.abs(varAnual)) + ' ' +
+       (varAnual >= 0 ? 'abaixo' : 'acima') + ' (' + pctAnual + '%)', varAnual >= 0);
 
-  _sRet_(slide, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.2, '#94A3B8');
-  const fmt = v => 'R$ ' + _brgMilhar_(Math.round(v / 1000)) + ' mil';
+  // ── Barras divergentes: variação mensal vs orçado ────────────────────────
+  // delta = real - plan (>0 = acima do orçado = barra p/ CIMA em vermelho/âmbar;
+  // <0 = abaixo do orçado = economia = barra p/ BAIXO em verde/âmbar).
+  const deltaProj = totalProjetado - totalOrcAnual;
 
-  // Ponta esquerda: ORÇADO ANUAL — é o ponto zero, sem barra.
-  _sTxt(slide, plotX - slotW * 0.35, zeroY - 32, slotW * 1.6, 14, fmt(orc), 7.5, true, '#475569', 'center');
-  _sTxt(slide, plotX - slotW * 0.35, zeroY - 20, slotW * 1.6, 10, 'ORÇADO', 6, true, DS.colors.textMuted, 'center');
-
-  meses.forEach((m, i) => {
-    const bx = plotX + slotW * (i + 1) + (slotW - barW) / 2;
-    const alt = Math.max(2, Math.abs(m.variacao) / escala);
-    const acima = m.variacao >= 0;                    // gastou menos = barra para cima
-    const by = acima ? zeroY - alt : zeroY;
-    const ritmo = m.tipo === 'RITMO';
-    const cor = ritmo ? '#D97706' : (acima ? '#166534' : '#DC2626');
-
-    _sRet_(slide, bx, by, barW, alt, cor, ritmo ? 0.55 : 1);
-    const rot = (acima ? '+' : '−') + _brgMilhar_(Math.abs(Math.round(m.variacao / 1000)));
-    _sTxt(slide, bx - 8, acima ? by - 11 : by + alt + 1, barW + 16, 10, rot, 5.6, true, cor, 'center');
-    _sTxt(slide, bx - 8, zeroY + (acima ? 3 : -12), barW + 16, 10, m.label, 5.8, true,
-          ritmo ? '#D97706' : DS.colors.textBody, 'center');
+  const meses = d.meses.map(m => {
+    const delta = (m.real != null && m.plan != null) ? m.real - m.plan : 0;
+    return {
+      label: m.label,
+      delta: delta,
+      cor: m.tipo === 'RITMO' ? '#F59E0B' : (delta > 0 ? '#EF4444' : '#10B981'),
+      ritmo: m.tipo === 'RITMO'
+    };
   });
 
-  // Ponta direita: PROJETADO.
-  const px = plotX + slotW * (n + 1);
-  _sTxt(slide, px - slotW * 0.3, zeroY - 32, slotW * 1.6, 14, fmt(proj), 7.5, true, DS.colors.brandDark, 'center');
-  _sTxt(slide, px - slotW * 0.3, zeroY - 20, slotW * 1.6, 10, 'PROJETADO', 6, true, DS.colors.textMuted, 'center');
+  const maxUp   = Math.max(1, deltaProj > 0 ? deltaProj : 0, ...meses.filter(m => m.delta > 0).map(m => m.delta));
+  const maxDown = Math.max(1, deltaProj < 0 ? -deltaProj : 0, ...meses.filter(m => m.delta < 0).map(m => -m.delta));
 
-  _brgLegenda_(slide, x + 14, y + h - 22);
+  const plotX = x + 24;
+  const plotY = y + 56;
+  const plotW = w - 48;
+  const plotH = h - 56 - 44; // reserva topo (chips) e rodapé (legenda)
+
+  let fracUp = maxUp / (maxUp + maxDown);
+  fracUp = Math.max(0.25, Math.min(0.75, fracUp));
+  const upH   = (plotH - 30) * fracUp;
+  const downH = (plotH - 30) * (1 - fracUp);
+  const zeroY = plotY + 15 + upH;
+
+  const n     = meses.length;
+  const slotW = plotW / (n + 2);
+  const barW  = Math.min(slotW * 0.5, 34);
+
+  // Linha do zero (eixo)
+  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.4);
+  eixo.getFill().setSolidFill('#94A3B8'); eixo.getBorder().setTransparent();
+
+  // ── Ponta esquerda: ORÇADO ANUAL = ponto zero (sem barra, só o valor) ────
+  {
+    const valBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      plotX - slotW * 0.25, zeroY - 30, slotW * 1.5, 24);
+    const vr = valBox.getText();
+    vr.setText(_brgMoedaCompacta_(totalOrcAnual)).getTextStyle()
+      .setFontSize(7.5).setBold(true).setForegroundColor('#475569').setFontFamily('Montserrat');
+    vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const cap = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX,
+      plotX - slotW * 0.25, zeroY + 4, slotW * 1.5, 22);
+    cap.getText().setText('ORÇADO\nANUAL').getTextStyle()
+      .setFontSize(6).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily('Montserrat');
+    cap.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
+
+  // ── Ponta direita: PROJETADO como DESVIO do zero ─────────────────────────
+  {
+    const slotIdx = n + 1;
+    const mag  = Math.abs(deltaProj);
+    const hBar = Math.max(deltaProj > 0 ? (mag / maxUp) * upH : (mag / maxDown) * downH, 3);
+    const yBar = deltaProj > 0 ? zeroY - hBar : zeroY + 1.4;
+    const cor  = deltaProj > 0 ? '#EF4444' : '#10B981';
+    const cx   = plotX + slotIdx * slotW + (slotW - barW) / 2;
+
+    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
+    bar.getFill().setSolidFill(cor); bar.getBorder().setTransparent();
+
+    const bloco  = (deltaProj > 0 ? '+' : '−') + _brgMoedaCompacta_(mag);
+    const blocoH = 14;
+    const lblY   = deltaProj > 0 ? yBar - blocoH - 6 : yBar + hBar + 6;
+    const lbl    = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
+    const lr     = lbl.getText();
+    lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
+    lr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const capH = 22;
+    const capY = deltaProj > 0 ? zeroY + 4 : zeroY - capH - 3;
+    const capProj = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, capY, slotW * 1.5, capH);
+    const capTxt = 'PROJETADO\n' + _brgMoedaCompacta_(totalProjetado);
+    const cr = capProj.getText();
+    cr.setText(capTxt).getTextStyle()
+      .setFontSize(6).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily('Montserrat');
+    if (typeof cr.getRange === 'function') {
+      cr.getRange(capTxt.indexOf('\n') + 1, capTxt.length)
+        .getTextStyle().setBold(false).setForegroundColor('#64748B');
+    }
+    cr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  }
+
+  // ── Barras de variação mensal (slots 1..n) ──────────────────────────────
+  meses.forEach((m, i) => {
+    const slotIdx = i + 1;
+    const cx   = plotX + slotIdx * slotW + (slotW - barW) / 2;
+    const mag  = Math.abs(m.delta);
+    const hBar = Math.max(m.delta > 0 ? (mag / maxUp) * upH : (mag / maxDown) * downH, 3);
+    const yBar = m.delta > 0 ? zeroY - hBar : zeroY + 1.4;
+
+    const bar = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, yBar, barW, hBar);
+    bar.getFill().setSolidFill(m.cor); bar.getBorder().setTransparent();
+
+    const bloco  = (m.delta > 0 ? '+' : '−') + _brgMoedaCompacta_(mag);
+    const blocoH = 14;
+    const lblY   = m.delta > 0 ? yBar - blocoH - 6 : yBar + hBar + 6;
+    const lbl    = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, lblY, slotW * 1.5, blocoH);
+    const lr     = lbl.getText();
+    lr.setText(bloco).getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor(m.cor).setFontFamily('Montserrat');
+    lr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // Mês junto ao eixo, do lado oposto ao da barra
+    const mesY = m.delta > 0 ? zeroY + 4 : zeroY - 15;
+    const mes  = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, plotX + slotIdx * slotW - slotW * 0.25, mesY, slotW * 1.5, 12);
+    mes.getText().setText(m.label).getTextStyle()
+      .setFontSize(6).setBold(m.ritmo).setForegroundColor(m.ritmo ? '#B45309' : '#64748B').setFontFamily('Montserrat');
+    mes.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  });
+
+  // ── Legenda centralizada no rodapé do card (padrão Facilities) ───────────
+  _bridgeLegenda(slide, x + (w - 240) / 2, y + h - 26);
+}
+
+function _bridgeLegenda(slide, x, y) {
+  const itens = [
+    { cor: '#10B981', txt: 'Abaixo' },
+    { cor: '#EF4444', txt: 'Acima' },
+    { cor: '#F59E0B', txt: 'Projetado' }
+  ];
+  let cx = x;
+  itens.forEach(it => {
+    const box = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx, y + 2, 9, 9);
+    box.getFill().setSolidFill(it.cor); box.getBorder().setTransparent();
+    const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + 12, y - 2, 60, 14);
+    tb.getText().setText(it.txt).getTextStyle()
+      .setFontSize(7).setForegroundColor('#64748B').setFontFamily('Montserrat');
+    cx += 80;
+  });
 }
 
 function _brgLegenda_(slide, x, y) {
-  const DS = CR_DESIGN_SYSTEM;
-  [['#166534', 'ABAIXO DO ORÇADO'], ['#DC2626', 'ACIMA DO ORÇADO'], ['#D97706', 'PROJEÇÃO (RITMO)']]
-    .forEach((par, i) => {
-      const cx = x + i * 128;
-      const q = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, y + 4, 8, 8);
-      q.getFill().setSolidFill(par[0]); q.getBorder().setTransparent();
-      _sTxt(slide, cx + 11, y, 112, 16, par[1], 5.8, true, DS.colors.textBody, 'left');
-    });
+  return _bridgeLegenda(slide, x, y);
+}
+
+function _brgMoeda_(valor) {
+  if (valor == null || isNaN(valor)) return '—';
+  return 'R$ ' + _milhar_(Math.round(valor));
+}
+
+function _brgMoedaCompacta_(valor) {
+  if (valor == null || isNaN(valor)) return '—';
+  valor = Number(valor);
+  if (Math.abs(valor) >= 1000) return 'R$ ' + _milhar_(Math.round(valor / 1000)) + ' mil';
+  return 'R$ ' + _milhar_(Math.round(valor));
 }
 
