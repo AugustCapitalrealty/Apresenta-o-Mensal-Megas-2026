@@ -908,16 +908,41 @@ function obterDREPropriedades_() {
   const est = DRE_PROP_ESTRUTURA;
   const linhas = [];
 
-  // Grupos 06.01, 06.02, 06.03, 06.04
+  // 1. Processa todos os subitens de 06.04 (DESPESAS GERAIS)
+  const itens0604 = [];
+  est.contasGerais.forEach(sub => {
+    let recSub;
+    if (sub.cod === '06.04.15') {
+      // 06.04.15 · MANUTENÇÃO IMÓVEIS: recebe os valores do DRE de Manutenção (pai da estratificação)
+      recSub = recManut || recorte(sub.cod);
+    } else {
+      recSub = recorte(sub.cod);
+    }
+    if (temValor(recSub)) {
+      itens0604.push({
+        tipo: 'item',
+        codigo: sub.cod,
+        nome: sub.cod + ' · ' + sub.nome.toUpperCase(),
+        b: recSub
+      });
+    }
+  });
+
+  // 2. Soma todos os subitens de 06.04 para formar o total do grupo DESPESAS GERAIS
+  const somaItens0604 = {
+    mes:  { aa: _dreSoma_(itens0604.map(i => i.b.mes.aa)),   plan: _dreSoma_(itens0604.map(i => i.b.mes.plan)),  real: _dreSoma_(itens0604.map(i => i.b.mes.real)) },
+    acum: { aa: _dreSoma_(itens0604.map(i => i.b.acum.aa)),  plan: _dreSoma_(itens0604.map(i => i.b.acum.plan)), real: _dreSoma_(itens0604.map(i => i.b.acum.real)) },
+    ano:  { aa: _dreSoma_(itens0604.map(i => i.b.ano.aa)),   plan: _dreSoma_(itens0604.map(i => i.b.ano.plan)),  proj: _dreSoma_(itens0604.map(i => i.b.ano.proj)) }
+  };
+
+  // 3. Grupos 06.01, 06.02, 06.03, 06.04
   const gruposRec = est.grupos.map(g => {
-    let bGrp = recorte(g.cod);
-    if (g.cod === '06.04' && recManut) {
-      // Se a conta 06.04.15 na planilha de propriedades estava sem valor ou vazia,
-      // adiciona os valores de manutenção ao grupo 06.04 (DESPESAS GERAIS)
-      const rec060415Prop = recorte('06.04.15');
-      if (!temValor(rec060415Prop)) {
-        bGrp = somarBlocos(bGrp, recManut);
-      }
+    let bGrp;
+    if (g.cod === '06.04') {
+      // O grupo 06.04 é exatamente a soma dos seus subitens exibidos (incluindo 06.04.15 Manutenção)
+      bGrp = somaItens0604;
+    } else {
+      bGrp = recorte(g.cod);
     }
     return {
       tipo: 'grupo',
@@ -927,7 +952,7 @@ function obterDREPropriedades_() {
     };
   });
 
-  // Raiz 06: soma os 4 grupos para garantir consistência perfeita entre o total e os grupos
+  // 4. Raiz 06 · DESPESAS OPERACIONAIS: soma os 4 grupos (06.01 + 06.02 + 06.03 + 06.04)
   let recRaiz = {
     mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
     acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
@@ -944,22 +969,7 @@ function obterDREPropriedades_() {
   gruposRec.forEach(grp => {
     linhas.push(grp);
     if (grp.codigo === '06.04') {
-      // Subitens de 06.04: somente os que têm valor
-      est.contasGerais.forEach(sub => {
-        let recSub = recorte(sub.cod);
-        if (sub.cod === '06.04.15' && recManut) {
-          // Linha 06.04.15 · MANUTENÇÃO IMÓVEIS: recebe os valores do DRE Manutenção (pai da estratificação)
-          recSub = somarBlocos(recSub, recManut);
-        }
-        if (temValor(recSub)) {
-          linhas.push({
-            tipo: 'item',
-            codigo: sub.cod,
-            nome: sub.cod + ' · ' + sub.nome.toUpperCase(),
-            b: recSub
-          });
-        }
-      });
+      itens0604.forEach(item => linhas.push(item));
     }
   });
 

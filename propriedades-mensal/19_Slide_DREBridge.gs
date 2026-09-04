@@ -212,15 +212,16 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
               fs, destaque || k === 2, corTxt, 'center');
       });
 
-      // Seta em caixa própria, colada à esquerda do número — junto no mesmo
-      // texto o Slides quebrava "▲ 2.088%" em duas linhas na célula estreita.
+      // Seta em caixa própria, colada à esquerda do número
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
         const cor = destaque ? '#E2E8F0' : corVar(va);
+        const pp = va ? Math.round(va.pct) : 0;
+        const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
-          _sTxt(slide, cxx + 1, ry, 8, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
+          _sTxt(slide, cxx, ry, 6, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
         }
-        _sTxt(slide, cxx + 7, ry, cww - 9, rowH, numeroVar(va), fs, false, cor, 'right');
+        _sTxt(slide, cxx + 4, ry, cww - 4, rowH, numeroVar(va), fsNum, false, cor, 'right', 3);
       });
     });
   });
@@ -337,13 +338,16 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
               fs, destaque || k === 2, corTxt, 'center');
       });
 
+      // Seta e variação percentual
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
         const cor = destaque ? '#E2E8F0' : corVar(va);
+        const pp = va ? Math.round(va.pct) : 0;
+        const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
-          _sTxt(slide, cxx + 1, ry, 8, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
+          _sTxt(slide, cxx, ry, 6, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
         }
-        _sTxt(slide, cxx + 7, ry, cww - 9, rowH, numeroVar(va), fs, false, cor, 'right');
+        _sTxt(slide, cxx + 4, ry, cww - 4, rowH, numeroVar(va), fsNum, false, cor, 'right', 3);
       });
     });
   });
