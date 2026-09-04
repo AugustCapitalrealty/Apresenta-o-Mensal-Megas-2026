@@ -51,6 +51,9 @@ function gerarSlideBridgeManutencao() {
     'Do planejado ao realizado por centro de custo — acumulado JAN..' +
     nomes[dados.refIndex] + '/' + String(dados.ref.ano).slice(-2) + ' · R$ mil');
 
+  // Vaga 2 da seção FINANCEIRO, logo depois do DRE.
+  _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 2);
+
   try {
     _bridgeDesenhar_(slide, marginX, topY, W - 2 * marginX, cardH, dados);
   } catch (e) {

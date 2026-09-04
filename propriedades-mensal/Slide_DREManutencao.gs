@@ -53,6 +53,9 @@ function gerarSlideDREManutencao() {
     'Planejado × Realizado por centro de custo — ' + ref.nome + ' ' + ref.ano +
     ' · valores em R$ mil');
 
+  // Vaga 1 da seção FINANCEIRO (a capa é a 0).
+  _drePosicionarNaSecao_(deck, slide, 'DRE', 1);
+
   try {
     _dreTabela_(slide, marginX, topY, W - 2 * marginX, cardH, dados);
   } catch (e) {
@@ -240,4 +243,83 @@ function _dreFalha_(slide, x, y, w, h, erro) {
   tr.appendText(String((erro && erro.message) || erro)).getTextStyle()
     .setFontSize(8.5).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
   tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+}
+
+
+// ==========================================
+// POSIÇÃO NO DECK
+// ==========================================
+
+/**
+ * Põe o slide gerado no lugar certo da seção FINANCEIRO.
+ *
+ * POR QUE ISSO EXISTE: appendSlide joga no FIM do deck, e o rascunho tem uma
+ * ordem montada à mão — capa da seção, DRE, BRIDGE, Torre CR, Torre
+ * Demercado, CAPEX. Sem reposicionar, os dois slides sairiam depois do CAPEX,
+ * fora da seção.
+ *
+ * DUAS CORRIDAS, DOIS CENÁRIOS:
+ *   1ª vez — existe o slide reservado que o usuário criou (só o título "DRE"
+ *      ou "BRIDGE"). Ele é apagado e o gerado assume a vaga.
+ *   2ª em diante — o reservado já não existe, e o slide gerado da rodada
+ *      anterior foi removido pela tag. Aí a posição vem da ÂNCORA: logo
+ *      depois da capa da seção FINANCEIRO, no deslocamento pedido.
+ *
+ * A âncora é a capa de seção, não o slide vizinho, porque capa de seção é
+ * feita à mão e não se move; slide gerado some e volta a cada rodada.
+ *
+ * Nunca lança: posição errada é chato, mas perder o slide inteiro por causa
+ * dela seria pior. Falhou, fica no fim e o Logger conta.
+ */
+function _drePosicionarNaSecao_(deck, slide, tituloReservado, offsetNaSecao) {
+  try {
+    // Apaga o slide reservado — mas nunca o que acabamos de desenhar.
+    deck.getSlides().forEach(s => {
+      if (s.getObjectId() === slide.getObjectId()) return;
+      if (_dreTituloDoSlide_(s) === tituloReservado) {
+        s.remove();
+        Logger.log('DRE/Bridge: slide reservado "' + tituloReservado + '" substituído pelo gerado.');
+      }
+    });
+
+    const slides = deck.getSlides();
+    let capa = -1;
+    for (let i = 0; i < slides.length; i++) {
+      const t = _dreTextoDoSlide_(slides[i]);
+      // Capa de SEÇÃO, não o quadrante "GESTÃO FINANCEIRA · ORÇAMENTO" do
+      // Dashboard: só a capa traz "APRESENTAÇÃO MENSAL" junto.
+      if (t.indexOf('FINANCEIRO') !== -1 && t.indexOf('APRESENTAÇÃO MENSAL') !== -1) { capa = i; break; }
+    }
+    if (capa < 0) {
+      Logger.log('DRE/Bridge: capa da seção FINANCEIRO não encontrada; slide fica no fim do deck.');
+      return;
+    }
+
+    const destino = Math.min(capa + offsetNaSecao, slides.length - 1);
+    slide.move(destino);
+  } catch (e) {
+    Logger.log('DRE/Bridge: não consegui posicionar na seção (' + e.message + '); fica no fim.');
+  }
+}
+
+// Todo o texto de um slide, para casar âncora e título.
+function _dreTextoDoSlide_(slide) {
+  let txt = '';
+  try {
+    slide.getPageElements().forEach(el => {
+      try {
+        const t = el.asShape().getText().asString();
+        if (t) txt += t + '\n';
+      } catch (e) {}
+    });
+  } catch (e) {}
+  return txt.toUpperCase();
+}
+
+// A primeira linha com texto — é o título do slide reservado ("DRE"/"BRIDGE").
+// Compara a linha INTEIRA, não "contém": o slide gerado começa com
+// "DRE — MANUTENÇÃO" e não pode casar com o reservado "DRE".
+function _dreTituloDoSlide_(slide) {
+  const linhas = _dreTextoDoSlide_(slide).split('\n').map(l => l.trim()).filter(String);
+  return linhas.length ? linhas[0] : '';
 }
