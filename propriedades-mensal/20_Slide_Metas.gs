@@ -162,18 +162,12 @@ function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
       const ppc = typeof _metaPPC_ === 'function' ? _metaPPC_(ref) : null;
       if (!ppc) return null;
       const valNum = ehMensal ? ppc.mes : ppc.ano;
+      const valAnt = ehMensal ? ppc.mesAnt : ppc.anoAnt;
       if (valNum == null) return null;
       const valStr = valNum.toFixed(2).replace('.', ',');
       let delta = null;
-      if (ref.index > 0 && typeof _metaPainelPPC_ === 'function') {
-        try {
-          const painel = _metaPainelPPC_();
-          if (painel) {
-            const serie = ehMensal ? painel.aderencia : painel.acumulado;
-            const ant = serie && serie[ref.index - 1] != null ? serie[ref.index - 1] : null;
-            if (ant != null) delta = Math.round((valNum - ant) * 100) / 100;
-          }
-        } catch (e) {}
+      if (valAnt != null) {
+        delta = Math.round((valNum - valAnt) * 100) / 100;
       }
       return { valor: valStr, delta: delta, menorMelhor: false };
     }
@@ -183,9 +177,14 @@ function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
       const piso = typeof _metaPiso_ === 'function' ? _metaPiso_(ref) : null;
       if (!piso) return null;
       const valNum = ehMensal ? piso.mes : piso.ano;
+      const valAnt = ehMensal ? piso.mesAnt : piso.anoAnt;
       if (valNum == null) return null;
       const valStr = valNum.toFixed(2).replace('.', ',') + 'm';
-      return { valor: valStr, delta: null, menorMelhor: false };
+      let delta = null;
+      if (valAnt != null) {
+        delta = Math.round((valNum - valAnt) * 100) / 100;
+      }
+      return { valor: valStr, delta: delta, menorMelhor: false };
     }
 
     // 5. REABERTURA (menor = melhor)
@@ -193,9 +192,14 @@ function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
       const reab = typeof _metaReabertura_ === 'function' ? _metaReabertura_(ref) : null;
       if (!reab) return null;
       const valNum = ehMensal ? reab.mes : reab.ano;
+      const valAnt = ehMensal ? reab.mesAnt : reab.anoAnt;
       if (valNum == null) return { valor: '—', delta: null, menorMelhor: true };
       const valStr = valNum.toFixed(2).replace('.', ',');
-      return { valor: valStr, delta: null, menorMelhor: true };
+      let delta = null;
+      if (valAnt != null) {
+        delta = Math.round((valNum - valAnt) * 100) / 100;
+      }
+      return { valor: valStr, delta: delta, menorMelhor: true };
     }
   } catch (e) {
     Logger.log('obterMetaAutoPropriedades_("' + descricao + '"): ' + e.message);

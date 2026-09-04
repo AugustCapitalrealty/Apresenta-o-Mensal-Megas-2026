@@ -866,10 +866,12 @@ function _metaSlaPreventivas_(ref) {
  */
 function _metaPPC_(ref) {
   const painel = _metaPainelPPC_();
-  if (!painel) return { mes: null, ano: null };
+  if (!painel) return { mes: null, ano: null, mesAnt: null, anoAnt: null };
 
   const mes = painel.aderencia[ref.index];
   const ano = painel.acumulado[ref.index];
+  const mesAnt = (ref && ref.index > 0 && painel.aderencia[ref.index - 1] != null) ? painel.aderencia[ref.index - 1] : null;
+  const anoAnt = (ref && ref.index > 0 && painel.acumulado[ref.index - 1] != null) ? painel.acumulado[ref.index - 1] : null;
 
   // Conferência: recontar os SIM tem que dar o mesmo que a célula diz.
   const prev = _metaContarSim_(METAS_PPC_ABA_PREVISTAS);
@@ -891,7 +893,7 @@ function _metaPPC_(ref) {
                ' · acumulado ' + (ano == null ? '—' : ano.toFixed(2) + '%') +
                ' · meta da planilha ' + painel.meta[ref.index].toFixed(2) + '%');
   }
-  return { mes: mes, ano: ano };
+  return { mes: mes, ano: ano, mesAnt: mesAnt, anoAnt: anoAnt };
 }
 
 /**
@@ -995,7 +997,10 @@ function _metaPiso_(ref) {
     for (let r = 0; r < v.length; r++) {
       if (v[r].some(c => _histNorm_(c) === 'janeiro')) { cabIdx = r; break; }
     }
-    if (linha < 0 || cabIdx < 0) { Logger.log('Metas piso: TOTAL REALIZADO ou cabeçalho de meses não encontrado.'); return { mes: null, ano: null }; }
+    if (linha < 0 || cabIdx < 0) {
+      Logger.log('Metas piso: TOTAL REALIZADO ou cabeçalho de meses não encontrado.');
+      return { mes: null, ano: null, mesAnt: null, anoAnt: null };
+    }
 
     const c0 = v[cabIdx].findIndex(c => _histNorm_(c) === 'janeiro');
     const num = s => {
@@ -1004,13 +1009,24 @@ function _metaPiso_(ref) {
       return isNaN(n) ? 0 : n;
     };
     let acum = 0;
-    for (let m = 0; m <= ref.index; m++) acum += num(v[linha][c0 + m]);
+    let acumAnt = 0;
+    for (let m = 0; m <= ref.index; m++) {
+      const vMes = num(v[linha][c0 + m]);
+      acum += vMes;
+      if (m < ref.index) acumAnt += vMes;
+    }
     const mes = num(v[linha][c0 + ref.index]);
+    const mesAnt = (ref && ref.index > 0) ? num(v[linha][c0 + ref.index - 1]) : null;
     Logger.log('Metas piso: mês ' + mes.toFixed(2) + 'm · acumulado ' + acum.toFixed(2) + 'm');
-    return { mes: mes, ano: acum };
+    return {
+      mes: mes,
+      ano: acum,
+      mesAnt: mesAnt,
+      anoAnt: (ref && ref.index > 0) ? acumAnt : null
+    };
   } catch (e) {
     Logger.log('Metas piso: falha — ' + e.message);
-    return { mes: null, ano: null };
+    return { mes: null, ano: null, mesAnt: null, anoAnt: null };
   }
 }
 
@@ -1037,10 +1053,11 @@ function _metaReabertura_(ref) {
     if (cFech < 0 || cReab < 0) {
       Logger.log('Metas reabertura: colunas "Fechado em"/"REABERTURA" não encontradas. Cabeçalho: ' +
                  v[0].filter(String).join(' | '));
-      return { mes: null, ano: null };
+      return { mes: null, ano: null, mesAnt: null, anoAnt: null };
     }
 
     let fMes = 0, rMes = 0, fAno = 0, rAno = 0, semData = 0;
+    let fMesAnt = 0, rMesAnt = 0, fAnoAnt = 0, rAnoAnt = 0;
     for (let r = 1; r < v.length; r++) {
       const d = _histParseDataHora_(v[r][cFech]);
       if (!d) { if (String(v[r][0] || '').trim()) semData++; continue; }
@@ -1050,19 +1067,29 @@ function _metaReabertura_(ref) {
       const reaberto = _histNorm_(v[r][cReab]) === 'sim';
       fAno++; if (reaberto) rAno++;
       if (m === ref.index) { fMes++; if (reaberto) rMes++; }
+      if (m < ref.index) {
+        fAnoAnt++; if (reaberto) rAnoAnt++;
+        if (m === ref.index - 1) { fMesAnt++; if (reaberto) rMesAnt++; }
+      }
     }
     // Zero falso: linhas existem mas nenhuma data legível → null, não 0%.
     if (!fAno && semData) {
       Logger.log('Metas reabertura: ' + semData + ' linha(s) sem data de fechamento legível.');
-      return { mes: null, ano: null };
+      return { mes: null, ano: null, mesAnt: null, anoAnt: null };
     }
     Logger.log('Metas reabertura: mês ' + rMes + '/' + fMes + ' · ano ' + rAno + '/' + fAno);
+    const mes = fMes > 0 ? (rMes / fMes) * 100 : null;
+    const ano = fAno > 0 ? (rAno / fAno) * 100 : null;
+    const mesAnt = fMesAnt > 0 ? (rMesAnt / fMesAnt) * 100 : null;
+    const anoAnt = fAnoAnt > 0 ? (rAnoAnt / fAnoAnt) * 100 : null;
     return {
-      mes: fMes > 0 ? (rMes / fMes) * 100 : null,
-      ano: fAno > 0 ? (rAno / fAno) * 100 : null
+      mes: mes,
+      ano: ano,
+      mesAnt: mesAnt,
+      anoAnt: anoAnt
     };
   } catch (e) {
     Logger.log('Metas reabertura: falha — ' + e.message);
-    return { mes: null, ano: null };
+    return { mes: null, ano: null, mesAnt: null, anoAnt: null };
   }
 }
