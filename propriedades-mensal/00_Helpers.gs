@@ -164,3 +164,78 @@ function _metaNum_(s) { const n = _num_(s); return n == null ? NaN : n; }
 // porque somatórios antigos contam com esse comportamento. NÃO use em código
 // novo — use _num_ e trate o null.
 function _toNum_(v) { return _numOuZero_(v); }
+
+
+// ==========================================
+// PLANILHA — abrir e ler, com cache
+// ==========================================
+/**
+ * O projeto abria SpreadsheetApp.openById em 16 lugares de 7 arquivos, sem
+ * cache: BD_CORRETIVAS_ID sozinha era aberta quatro vezes na mesma geração.
+ * Cada abertura é uma chamada de rede, e o Apps Script tem cota de tempo.
+ *
+ * Aqui a abertura passa por um cache de execução. O cache vive só enquanto a
+ * geração roda — o Apps Script recria o escopo global a cada execução, então
+ * não há risco de servir dado velho entre duas gerações.
+ *
+ * Erro de abertura vira null com aviso no Logger, nunca exceção: uma planilha
+ * fora do ar tem que derrubar UM slide, não a apresentação inteira.
+ */
+let _ssCache_ = {};
+
+/**
+ * LANÇA quando não abre, igual ao SpreadsheetApp.openById que ela substitui.
+ * Devolver null aqui pareceria mais gentil, mas mudaria o contrato de 16
+ * chamadas existentes: o `catch` de cada uma deixaria de pegar a falha e ela
+ * reapareceria depois como "Cannot read properties of null", longe da causa.
+ * O ganho desta função é o CACHE, não um tratamento de erro novo.
+ */
+function _abrirPlanilha_(id, apelido) {
+  if (id in _ssCache_) {
+    const c = _ssCache_[id];
+    if (c.erro) throw c.erro;
+    return c.ss;
+  }
+  try {
+    const ss = SpreadsheetApp.openById(id);
+    _ssCache_[id] = { ss: ss };
+    return ss;
+  } catch (e) {
+    Logger.log('Planilha ' + (apelido || id) + ': não abriu — ' + e.message);
+    _ssCache_[id] = { erro: e };
+    throw e;
+  }
+}
+
+// Só para os testes: sem isso, trocar o dublê entre cenários não tem efeito e
+// o teste falha por motivo errado (a lição está em gestao-tvs/teste_bases.js).
+function _ssCacheLimpar_() { _ssCache_ = {}; }
+
+/**
+ * Aba pelo nome, tolerante a acento, caixa e espaço. Não achou, LISTA as que
+ * existem — é a diferença entre "não funcionou" e "a aba foi renomeada de
+ * `Cópia de PAINEL INDICADORES` para `BOLETIM`", que é o caso registrado no
+ * CLAUDE.md e levou um slide inteiro a sair vazio sem dar erro.
+ */
+function _abrirAba_(id, nomeAba, apelido) {
+  const ss = _abrirPlanilha_(id, apelido);
+  if (!ss) return null;
+  const alvo = _norm_(nomeAba);
+  const abas = ss.getSheets();
+  for (let i = 0; i < abas.length; i++) {
+    if (_norm_(abas[i].getName()) === alvo) return abas[i];
+  }
+  Logger.log('Planilha ' + (apelido || ss.getName()) + ': aba "' + nomeAba +
+             '" não existe. Abas: ' + abas.map(a => a.getName()).join(' | '));
+  return null;
+}
+
+// Matriz de texto de uma aba inteira. null quando a aba não existe ou está
+// vazia — nunca [] , que passaria batido por um forEach e zeraria o slide.
+function _lerAba_(id, nomeAba, apelido) {
+  const aba = _abrirAba_(id, nomeAba, apelido);
+  if (!aba) return null;
+  const nl = aba.getLastRow(), nc = aba.getLastColumn();
+  if (!nl || !nc) { Logger.log('Planilha ' + (apelido || '') + ': aba "' + nomeAba + '" está vazia.'); return null; }
+  return aba.getRange(1, 1, nl, nc).getDisplayValues();
+}

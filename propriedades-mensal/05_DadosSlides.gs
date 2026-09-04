@@ -521,7 +521,7 @@ function obterDadosTorreManutencao_() {
   // 1. Leitura online da Torre Capital Realty
   if (typeof TORRE_MANUTENCAO_CR_ID !== 'undefined' && TORRE_MANUTENCAO_CR_ID) {
     try {
-      const ssCR = SpreadsheetApp.openById(TORRE_MANUTENCAO_CR_ID);
+      const ssCR = _abrirPlanilha_(TORRE_MANUTENCAO_CR_ID, 'TORRE_MANUTENCAO_CR_ID');
       const abaCR = ssCR.getSheets()[0];
       if (abaCR) {
         const dadosCR = abaCR.getDataRange().getValues();
@@ -535,7 +535,7 @@ function obterDadosTorreManutencao_() {
   // 2. Leitura online da Torre Demercado
   if (typeof TORRE_MANUTENCAO_DEMERCADO_ID !== 'undefined' && TORRE_MANUTENCAO_DEMERCADO_ID) {
     try {
-      const ssDem = SpreadsheetApp.openById(TORRE_MANUTENCAO_DEMERCADO_ID);
+      const ssDem = _abrirPlanilha_(TORRE_MANUTENCAO_DEMERCADO_ID, 'TORRE_MANUTENCAO_DEMERCADO_ID');
       const abaDem = ssDem.getSheets()[0];
       if (abaDem) {
         const dadosDem = abaDem.getDataRange().getValues();

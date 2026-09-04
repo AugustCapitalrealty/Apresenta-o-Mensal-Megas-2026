@@ -176,7 +176,7 @@ function _limparDescricaoChecklist_(desc) {
 function _propLerBase_(nomeAba) {
   if (_propBaseCache[nomeAba]) return _propBaseCache[nomeAba];
   try {
-    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const ss = _abrirPlanilha_(BD_CORRETIVAS_ID, 'BD_CORRETIVAS_ID');
     const sheet = _propAba_(ss, nomeAba);
     if (!sheet) {
       Logger.log(nomeAba + ': aba não encontrada na planilha. Abas disponíveis: ' +
@@ -855,7 +855,7 @@ function obterMesReferencia_() {
 // posição: aba nova entra na frente e a primeira deixa de ser a que se pensa.
 function _mesRefDoConfig_() {
   try {
-    const ss  = SpreadsheetApp.openById(DRE_MANUTENCAO_ID);
+    const ss  = _abrirPlanilha_(DRE_MANUTENCAO_ID, 'DRE_MANUTENCAO_ID');
     const aba = ss.getSheetByName('CONFIG');
     if (!aba) {
       Logger.log('Mês de referência: aba CONFIG não existe em "' + ss.getName() +
@@ -872,7 +872,7 @@ function _mesRefDoConfig_() {
 // A fonte antiga: B1 da primeira aba da ANÁLISE DE PROJETOS.
 function _mesRefDaReserva_() {
   try {
-    const ss = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
+    const ss = _abrirPlanilha_(PROPRIEDADES_SPREADSHEET_ID, 'PROPRIEDADES_SPREADSHEET_ID');
     return _mesIndiceDoTexto_(ss.getSheets()[0].getRange(1, 2).getDisplayValue());
   } catch (e) {
     return -1;

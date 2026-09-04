@@ -46,7 +46,7 @@ const TAB_TY = CR_DESIGN_SYSTEM.typography;
 // palavra-chave (`cabecalhoContem`) em vez de posição fixa — assim inserir uma
 // linha de título na planilha não quebra a leitura.
 function _tabLerAba_(aba, cabecalhoContem) {
-  const ss    = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
+  const ss    = _abrirPlanilha_(PROPRIEDADES_SPREADSHEET_ID, 'PROPRIEDADES_SPREADSHEET_ID');
   const sheet = ss.getSheetByName(aba);
   if (!sheet) throw new Error('Aba "' + aba + '" não encontrada na planilha de Propriedades.');
 

@@ -134,6 +134,10 @@ console.log('\n== Mês de referência vem de CONFIG!B1 ==');
 // A partir daqui usa a obterMesReferencia_ DE VERDADE (02_Dados.gs), não o dublê.
 global.obterMesReferencia_ = obterMesReferenciaReal_;
 let CONFIG_B1 = 'AGOSTO', RESERVA_B1 = 'AGOSTO';
+// Trocar o dublê de SpreadsheetApp sem limpar o cache de planilhas não tem
+// efeito — _abrirPlanilha_ devolveria o objeto do dublê antigo. Mesma lição
+// de gestao-tvs/teste_bases.js.
+const _lerRef = () => { _ssCacheLimpar_(); return obterMesReferencia_(); };
 global.SpreadsheetApp = {
   openById: id => ({
     getName: () => 'planilha',
@@ -146,26 +150,26 @@ global.SpreadsheetApp = {
 function abaB1(v) { return { getName: () => 'x', getRange: () => ({ getDisplayValue: () => v }) }; }
 function abaConfig() { return { getName: () => 'CONFIG', getRange: () => ({ getDisplayValue: () => CONFIG_B1 }) }; }
 
-let r = obterMesReferencia_();
+let r = _lerRef();
 ok('lê AGOSTO do CONFIG!B1', r.index === 7 && r.nome === 'AGOSTO', JSON.stringify(r));
 ok('e diz de onde veio', r.fonte === 'CONFIG!B1');
 
 CONFIG_B1 = 'Março';
-r = obterMesReferencia_();
+r = _lerRef();
 ok('MARÇO com cedilha e acento vira índice 2', r.index === 2, JSON.stringify(r));
 
 CONFIG_B1 = 'setembro/2026';
-r = obterMesReferencia_();
+r = _lerRef();
 ok('aceita "setembro/2026" minúsculo com sufixo', r.index === 8);
 
 CONFIG_B1 = '';
 RESERVA_B1 = 'JUNHO';
-r = obterMesReferencia_();
+r = _lerRef();
 ok('CONFIG vazio → cai na reserva', r.index === 5 && /reserva/.test(r.fonte), JSON.stringify(r));
 
 CONFIG_B1 = 'AGOSTO'; RESERVA_B1 = 'JUNHO';
 logs.length = 0;
-r = obterMesReferencia_();
+r = _lerRef();
 ok('CONFIG ganha da reserva', r.index === 7);
 ok('e a divergência é registrada', logs.some(l => /confira se a outra ficou para trás/.test(l)),
    logs.join(' | '));

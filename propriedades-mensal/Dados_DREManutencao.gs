@@ -39,7 +39,7 @@ function _dreMesOcorrido_(mesIndex, refIndex) {
 // é recalculado, porque o Total da aba de ritmo soma os 12 meses da coluna e
 // não é a projeção (ver o cabeçalho).
 function _dreLerAba_(nomeAba) {
-  const ss    = SpreadsheetApp.openById(DRE_MANUTENCAO_ID);
+  const ss    = _abrirPlanilha_(DRE_MANUTENCAO_ID, 'DRE_MANUTENCAO_ID');
   const sheet = ss.getSheetByName(nomeAba);
   if (!sheet) {
     Logger.log('DRE Manutenção: aba "' + nomeAba + '" não existe. Abas: ' +

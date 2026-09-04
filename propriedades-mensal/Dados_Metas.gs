@@ -110,7 +110,7 @@ function _metaPainelPPC_() {
   const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
                  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   try {
-    const ss = SpreadsheetApp.openById(METAS_PPC_ID);
+    const ss = _abrirPlanilha_(METAS_PPC_ID, 'METAS_PPC_ID');
     const abas = ss.getSheets();
     for (let i = 0; i < abas.length; i++) {
       const data = abas[i].getDataRange().getDisplayValues();
@@ -154,7 +154,7 @@ function _metaPainelPPC_() {
 // Empresa|Empreendimento|Categoria|Manutenção|Responsavel|META.
 function _metaContarSim_(nomeAba) {
   try {
-    const ss  = SpreadsheetApp.openById(METAS_PPC_ID);
+    const ss  = _abrirPlanilha_(METAS_PPC_ID, 'METAS_PPC_ID');
     const aba = ss.getSheetByName(nomeAba);
     if (!aba) return null;
     const v = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
@@ -188,7 +188,7 @@ function _metaContarSim_(nomeAba) {
  */
 function _metaPiso_(ref) {
   try {
-    const ss  = SpreadsheetApp.openById(METAS_PISO_ID);
+    const ss  = _abrirPlanilha_(METAS_PISO_ID, 'METAS_PISO_ID');
     const aba = ss.getSheets()[0];
     const v   = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
 
@@ -232,7 +232,7 @@ function _metaPiso_(ref) {
  */
 function _metaReabertura_(ref) {
   try {
-    const ss = SpreadsheetApp.openById(METAS_REABERTURA_ID);
+    const ss = _abrirPlanilha_(METAS_REABERTURA_ID, 'METAS_REABERTURA_ID');
     const aba = ss.getSheetByName('CHAMADOS FECHADOS') || ss.getSheets()[0];
     const v = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
 

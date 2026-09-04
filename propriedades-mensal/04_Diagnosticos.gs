@@ -38,7 +38,7 @@ function inspecionarBase(nomeAba) {
   Logger.log('CABEÇALHO DE ' + aba);
   Logger.log('======================================================');
   try {
-    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const ss = _abrirPlanilha_(BD_CORRETIVAS_ID, 'BD_CORRETIVAS_ID');
     Logger.log('Planilha: "' + ss.getName() + '"');
     Logger.log('Abas: ' + ss.getSheets().map(s => s.getName()).join(', '));
 
@@ -72,7 +72,7 @@ function diagnosticarMotivoPausa(nomeAba) {
   Logger.log('DIAGNÓSTICO — MOTIVO DA PAUSA — ' + aba);
   Logger.log('======================================================');
   try {
-    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const ss    = _abrirPlanilha_(BD_CORRETIVAS_ID, 'BD_CORRETIVAS_ID');
     const sheet = _propAba_(ss, aba);
     if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
 
@@ -134,7 +134,7 @@ function diagnosticarEstadosPausa(nomeAba) {
   Logger.log('DIAGNÓSTICO — ESTADO x PAUSA — ' + aba);
   Logger.log('======================================================');
   try {
-    const ss    = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+    const ss    = _abrirPlanilha_(BD_CORRETIVAS_ID, 'BD_CORRETIVAS_ID');
     const sheet = _propAba_(ss, aba);
     if (!sheet) { Logger.log('⚠ Aba "' + aba + '" não encontrada.'); return; }
 
@@ -389,7 +389,7 @@ function diagnosticarPropriedades() {
   ].forEach(([nome, id]) => {
     if (!id) { Logger.log('  · ' + nome + ' — sem ID configurado'); pend.push(nome + ' sem ID'); return; }
     try {
-      const ss = SpreadsheetApp.openById(id);
+      const ss = _abrirPlanilha_(id, 'id');
       Logger.log('  ✓ ' + nome + ' — "' + ss.getName() + '" (' + ss.getSheets().length + ' abas)');
     } catch (e) {
       Logger.log('  ✗ ' + nome + ' — não abriu: ' + e.message);

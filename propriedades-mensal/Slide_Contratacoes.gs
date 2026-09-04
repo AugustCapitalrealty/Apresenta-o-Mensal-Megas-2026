@@ -59,7 +59,7 @@ function gerarSlideContratacoes() {
 // LEITURA
 // ==========================================
 function _contLer_() {
-  const ss    = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
+  const ss    = _abrirPlanilha_(PROPRIEDADES_SPREADSHEET_ID, 'PROPRIEDADES_SPREADSHEET_ID');
   const sheet = ss.getSheetByName(ABA_CONTRATACOES);
   if (!sheet) throw new Error('Aba "' + ABA_CONTRATACOES + '" não encontrada.');
 
