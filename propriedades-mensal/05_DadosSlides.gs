@@ -623,3 +623,446 @@ function _calcularTotalTorre_(rows) {
 }
 
 
+// ==========================================
+// DRE / BRIDGE DE MANUTENÇÃO  (era 07_DadosDRE.gs)
+// ==========================================
+
+// Onde o mês vira "já aconteceu". Único lugar que decide isso — se a regra
+// mudar, muda aqui e os três recortes acompanham juntos (mesmo motivo de
+// _bdChamadoFechado_ existir: definição duplicada é definição que diverge).
+function _dreMesOcorrido_(mesIndex, refIndex) {
+  return mesIndex <= refIndex;
+}
+
+// Uma aba inteira → { codigo: [v0, v1, ...] } com as 24 colunas mensais.
+// Ignora as duas colunas de Total da planilha de propósito: todo total daqui
+// é recalculado, porque o Total da aba de ritmo soma os 12 meses da coluna e
+// não é a projeção (ver o cabeçalho).
+function _dreLerAba_(nomeAba) {
+  const ss    = _abrirPlanilha_(DRE_MANUTENCAO_ID, 'DRE_MANUTENCAO_ID');
+  const sheet = ss.getSheetByName(nomeAba);
+  if (!sheet) {
+    Logger.log('DRE Manutenção: aba "' + nomeAba + '" não existe. Abas: ' +
+               ss.getSheets().map(s => s.getName()).join(' | '));
+    return null;
+  }
+
+  const valores = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getDisplayValues();
+  const mapa = {};
+  let achou = 0;
+
+  valores.forEach(linha => {
+    const rot = String(linha[0] || '').trim();
+    if (!rot) return;
+    const cod = rot.split(' - ')[0].trim();
+    if (!cod) return;
+    mapa[cod] = linha.slice(1).map(_dreNum_);
+    achou++;
+  });
+
+  if (!achou) {
+    Logger.log('DRE Manutenção: aba "' + nomeAba + '" não devolveu nenhuma linha com código.');
+    return null;
+  }
+  return mapa;
+}
+
+
+// Soma tratando null como "não tem": se NENHUMA parcela existir devolve null,
+// e não zero. Sem isso um centro de custo ausente zeraria o subtotal do grupo.
+function _dreSoma_(valores) {
+  let s = null;
+  valores.forEach(v => { if (v != null) s = (s == null ? 0 : s) + v; });
+  return s;
+}
+
+/**
+ * O dado dos slides. Devolve:
+ *
+ *   { ref, refIndex, meses, empresas: [ { nome, centros: [ {codigo, nome,
+ *     mes:{plan,real}, acum:{plan,real}, ano:{plan,proj}} ], total } ],
+ *     total, avisos }
+ *
+ * Todos os valores em MÓDULO (positivos): a planilha traz despesa negativa, e
+ * o slide fala em "gasto", onde maior é pior. O sinal fica na variação.
+ */
+function obterDREManutencao_() {
+  const planMapa  = _dreLerAba_(DRE_ABA_PLANEJAMENTO);
+  const ritmoMapa = _dreLerAba_(DRE_ABA_RITMO);
+  if (!planMapa && !ritmoMapa) return null;
+
+  const ref      = obterMesReferencia_();
+  const refIndex = ref.index;
+  const avisos   = [];
+
+  // O último mês com realizado deveria casar com o mês de referência. Quando
+  // não casa, o slide sairia com um acumulado que não é o do mês anunciado —
+  // registrar a divergência é o que faz isso aparecer antes da reunião.
+  if (ritmoMapa && ritmoMapa[DRE_CONTA_RAIZ]) {
+    const raiz = ritmoMapa[DRE_CONTA_RAIZ];
+    let ultimo = -1;
+    for (let m = 0; m < 12; m++) { const r = raiz[2 * m + 1]; if (r != null && r !== 0) ultimo = m; }
+    if (ultimo >= 0 && ultimo !== refIndex) {
+      const nomes = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+      avisos.push('Mês de referência é ' + nomes[refIndex] + ', mas o último mês com ' +
+                  'realizado na aba de ritmo é ' + nomes[ultimo] + '.');
+    }
+  }
+
+  const abs = v => (v == null ? null : Math.abs(v));
+
+  const recorte = cod => {
+    const p = planMapa ? planMapa[cod] : null;
+    const r = ritmoMapa ? ritmoMapa[cod] : null;
+
+    // Na aba PLANEJAMENTO a coluna PAR é "Realizado AA" — o ano ANTERIOR
+    // (ritmo 2025), confirmado batendo com a Torre no Demercado. É a primeira
+    // das cinco colunas do DRE dos Megas, e sem ela o slide não tem contra o
+    // que comparar além do plano.
+    const planMes = p ? abs(p[2 * refIndex + 1]) : null;   // ímpar = Planejado
+    const aaMes   = p ? abs(p[2 * refIndex])     : null;   // par   = Realizado AA
+    const realMes = r ? abs(r[2 * refIndex + 1]) : null;   // ímpar = Realizado
+
+    const planAcum = [], aaAcum = [], realAcum = [], projAno = [];
+    for (let m = 0; m < 12; m++) {
+      if (p && m <= refIndex) { planAcum.push(abs(p[2 * m + 1])); aaAcum.push(abs(p[2 * m])); }
+      if (r && m <= refIndex) realAcum.push(abs(r[2 * m + 1]));
+      // O splice: realizado no que já aconteceu, ritmo no que falta.
+      if (r) projAno.push(_dreMesOcorrido_(m, refIndex) ? abs(r[2 * m + 1]) : abs(r[2 * m]));
+    }
+    const planAno = [], aaAno = [];
+    if (p) for (let m = 0; m < 12; m++) { planAno.push(abs(p[2 * m + 1])); aaAno.push(abs(p[2 * m])); }
+
+    return {
+      mes:  { aa: aaMes,               plan: planMes,             real: realMes },
+      acum: { aa: _dreSoma_(aaAcum),   plan: _dreSoma_(planAcum), real: _dreSoma_(realAcum) },
+      ano:  { aa: _dreSoma_(aaAno),    plan: _dreSoma_(planAno),  proj: _dreSoma_(projAno) }
+    };
+  };
+
+  const somarLista = lista => ({
+    mes:  { aa: _dreSoma_(lista.map(c => c.mes.aa)),   plan: _dreSoma_(lista.map(c => c.mes.plan)),  real: _dreSoma_(lista.map(c => c.mes.real)) },
+    acum: { aa: _dreSoma_(lista.map(c => c.acum.aa)),  plan: _dreSoma_(lista.map(c => c.acum.plan)), real: _dreSoma_(lista.map(c => c.acum.real)) },
+    ano:  { aa: _dreSoma_(lista.map(c => c.ano.aa)),   plan: _dreSoma_(lista.map(c => c.ano.plan)),  proj: _dreSoma_(lista.map(c => c.ano.proj)) }
+  });
+
+  const empresas = DRE_EMPRESAS.map(emp => {
+    const centros = emp.centros.map(c => {
+      const rec = recorte(c.codigo);
+      return { codigo: c.codigo, nome: c.nome, so: c.so || null,
+               mes: rec.mes, acum: rec.acum, ano: rec.ano };
+    });
+    return { codigo: emp.codigo, nome: emp.nome, centros: centros, total: somarLista(centros) };
+  });
+
+  const total = somarLista(empresas.map(e => e.total));
+
+  // A soma das linhas tem que bater com a linha-raiz da planilha. É a mesma
+  // ideia do check estoque × fluxo: número que aparece em dois lugares merece
+  // conferência, e aqui ela é de graça.
+  if (ritmoMapa && ritmoMapa[DRE_CONTA_RAIZ]) {
+    const raizReal = _dreSoma_((function () {
+      const a = []; for (let m = 0; m <= refIndex; m++) a.push(abs(ritmoMapa[DRE_CONTA_RAIZ][2 * m + 1])); return a;
+    })());
+    if (raizReal != null && total.acum.real != null && Math.abs(raizReal - total.acum.real) > 1) {
+      avisos.push('Realizado acumulado: as linhas somam ' + total.acum.real.toFixed(0) +
+                  ', a linha ' + DRE_CONTA_RAIZ + ' diz ' + raizReal.toFixed(0) +
+                  ' — falta centro de custo em DRE_EMPRESAS.');
+    }
+  }
+
+  // Série MENSAL do total — é o eixo do Bridge, que nos Megas é por MÊS e não
+  // por rubrica. Mês até a referência é REAL; depois é RITMO (projeção), e o
+  // slide marca a diferença: comparar plano com ritmo não é o mesmo que
+  // comparar plano com o que aconteceu.
+  const NOMES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const meses = [];
+  for (let m = 0; m < 12; m++) {
+    const somaMes = chave => _dreSoma_(empresas.map(e =>
+      _dreSoma_(e.centros.map(c => {
+        const pp = planMapa ? planMapa[c.codigo] : null;
+        const rr = ritmoMapa ? ritmoMapa[c.codigo] : null;
+        if (chave === 'plan') return pp ? abs(pp[2 * m + 1]) : null;
+        return rr ? abs(_dreMesOcorrido_(m, refIndex) ? rr[2 * m + 1] : rr[2 * m]) : null;
+      }))));
+    const plan = somaMes('plan'), real = somaMes('real');
+    meses.push({
+      index: m, label: NOMES[m],
+      tipo: _dreMesOcorrido_(m, refIndex) ? 'REAL' : 'RITMO',
+      plan: plan, real: real,
+      // Positivo = gastou MENOS que o plano (bom). Mesmo sinal do Bridge dos Megas.
+      variacao: (plan == null || real == null) ? null : plan - real
+    });
+  }
+
+  avisos.forEach(a => Logger.log('DRE Manutenção: ⚠ ' + a));
+  Logger.log('DRE Manutenção: ref ' + ref.nome + '/' + ref.ano +
+             ' · plano ano ' + (total.ano.plan == null ? '—' : total.ano.plan.toFixed(0)) +
+             ' · projeção ano ' + (total.ano.proj == null ? '—' : total.ano.proj.toFixed(0)) +
+             ' · realizado acum ' + (total.acum.real == null ? '—' : total.acum.real.toFixed(0)));
+
+  return { ref: ref, refIndex: refIndex, empresas: empresas, total: total, meses: meses, avisos: avisos };
+}
+
+
+// ==========================================
+// FAROL DE METAS  (era 08_DadosMetas.gs)
+// ==========================================
+
+// Real de cada linha calculada → { mes, ano } já como texto no formato do farol.
+function obterMetasCalculadas_() {
+  const ref = obterMesReferencia_();
+  return {
+    slaPreventivas: _metaSlaPreventivas_(ref),
+    ppc:            _metaPPC_(ref),
+    piso:           _metaPiso_(ref),
+    reabertura:     _metaReabertura_(ref)
+  };
+}
+
+/**
+ * SLA das preventivas de PROPRIEDADES — todas, não só as do analista.
+ *
+ * POR QUE TODAS: o farol do Wilson contava só as preventivas dele e chegou a
+ * 84,55% no ano; o deck conta todas e dá 81,9%. Números diferentes porque a
+ * população é diferente, não porque um esteja errado. O deck manda, e é o
+ * mesmo `obterIndicadoresPropriedades_` que o slide de Preventivas usa — um
+ * número só de fonte.
+ */
+function _metaSlaPreventivas_(ref) {
+  try {
+    const mes  = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
+    const acum = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index, 'acumulado');
+    return {
+      mes: mes  && mes.total.sla.pct  != null ? mes.total.sla.pct  : null,
+      ano: acum && acum.total.sla.pct != null ? acum.total.sla.pct : null
+    };
+  } catch (e) {
+    Logger.log('Metas: SLA de preventivas falhou — ' + e.message);
+    return { mes: null, ano: null };
+  }
+}
+
+/**
+ * PPC — lido DAS CÉLULAS do painel, igual ao Facilities.
+ *
+ * O Facilities (gestao-tvs/Dados.gs, obterDadosPPC) abre a planilha de PPC e
+ * pega o que já está calculado nas linhas ADERENCIA % / META / ACUMULADO. Aqui
+ * é o mesmo: a planilha é dona do número, o código só lê. Decisão do usuário
+ * — "siga o que está aparecendo na célula".
+ *
+ *   mês → ADERENCIA % na coluna do mês de referência
+ *   ano → ACUMULADO   na mesma coluna (é a série acumulada, não o ano inteiro)
+ *
+ * UMA DIFERENÇA DELIBERADA para o Facilities: lá as linhas são pegas por
+ * POSIÇÃO (data[6], data[7], data[8]). Aqui são achadas pelo RÓTULO da coluna
+ * A. É o caso do boletim no CLAUDE.md — uma linha a mais na aba moveu o TOTAL
+ * de C40 para C41 e o slide passou a mostrar outro número, sem erro nenhum.
+ * Rótulo sobrevive a linha inserida; posição não.
+ *
+ * A contagem de SIM continua sendo feita, mas só como CONFERÊNCIA: se a
+ * célula e a contagem divergirem, o Logger avisa. Foi assim que apareceu que
+ * o painel tinha ficado defasado depois de o usuário editar as abas.
+ */
+function _metaPPC_(ref) {
+  const painel = _metaPainelPPC_();
+  if (!painel) return { mes: null, ano: null };
+
+  const mes = painel.aderencia[ref.index];
+  const ano = painel.acumulado[ref.index];
+
+  // Conferência: recontar os SIM tem que dar o mesmo que a célula diz.
+  const prev = _metaContarSim_(METAS_PPC_ABA_PREVISTAS);
+  const real = _metaContarSim_(METAS_PPC_ABA_REALIZADAS);
+  if (prev && real) {
+    let p = 0, r = 0;
+    for (let m = 0; m <= ref.index; m++) { p += prev[m]; r += real[m]; }
+    const contado = p > 0 ? (r / p) * 100 : null;
+    if (contado != null && ano != null && Math.abs(contado - ano) > 0.5) {
+      Logger.log('Metas PPC: ⚠ o painel diz ' + ano.toFixed(2) + '% acumulado, mas contar os ' +
+                 'SIM das abas dá ' + contado.toFixed(2) + '% (' + r + '/' + p + '). ' +
+                 'As linhas ESPERADO/REALIZADO do painel podem estar como número fixo ' +
+                 'em vez de fórmula — o slide mostra o que a célula diz.');
+    }
+  }
+
+  if (painel.meta[ref.index] != null) {
+    Logger.log('Metas PPC: mês ' + (mes == null ? '—' : mes.toFixed(2) + '%') +
+               ' · acumulado ' + (ano == null ? '—' : ano.toFixed(2) + '%') +
+               ' · meta da planilha ' + painel.meta[ref.index].toFixed(2) + '%');
+  }
+  return { mes: mes, ano: ano };
+}
+
+/**
+ * Acha o painel do PPC e devolve as três séries por mês.
+ *
+ * Não pede o nome da aba: procura em todas a que tem uma linha começando por
+ * ADERENCIA. O usuário montou esse painel à mão e o nome pode mudar; o rótulo
+ * da linha é o que identifica.
+ */
+function _metaPainelPPC_() {
+  const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
+                 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  try {
+    const ss = _abrirPlanilha_(METAS_PPC_ID, 'METAS_PPC_ID');
+    const abas = ss.getSheets();
+    for (let i = 0; i < abas.length; i++) {
+      const data = abas[i].getDataRange().getDisplayValues();
+      const acha = pref => {
+        for (let r = 0; r < data.length; r++) {
+          if (_histNorm_(data[r][0]).indexOf(pref) === 0) return data[r];
+        }
+        return null;
+      };
+      const lAder = acha('aderencia');
+      if (!lAder) continue;
+      const lMeta = acha('meta'), lAcum = acha('acumulado'), lMes = acha('mes');
+      if (!lMes) continue;
+
+      // Coluna de cada mês, pelo nome no cabeçalho. A aba tem colunas extras
+      // (ANO, ACUMULADO) depois dos 12 meses — casar pelo nome as ignora.
+      const aderencia = [], meta = [], acumulado = [];
+      lMes.forEach((cel, c) => {
+        const idx = MESES.indexOf(_histNorm_(cel));
+        if (idx < 0) return;
+        aderencia[idx] = _metaPct_(lAder[c]);
+        meta[idx]      = lMeta ? _metaPct_(lMeta[c]) : null;
+        acumulado[idx] = lAcum ? _metaPct_(lAcum[c]) : null;
+      });
+      if (aderencia.length) {
+        Logger.log('Metas PPC: painel lido da aba "' + abas[i].getName() + '".');
+        return { aderencia: aderencia, meta: meta, acumulado: acumulado };
+      }
+    }
+    Logger.log('Metas PPC: nenhuma aba com linha ADERENCIA. Abas: ' +
+               abas.map(a => a.getName()).join(' | '));
+    return null;
+  } catch (e) {
+    Logger.log('Metas PPC: falha lendo o painel — ' + e.message);
+    return null;
+  }
+}
+
+// Conta "SIM" por mês numa das abas do PPC — usado só como CONFERÊNCIA
+// contra o que a célula do painel diz. As 12 colunas de mês vêm depois de
+// Empresa|Empreendimento|Categoria|Manutenção|Responsavel|META.
+function _metaContarSim_(nomeAba) {
+  try {
+    const ss  = _abrirPlanilha_(METAS_PPC_ID, 'METAS_PPC_ID');
+    const aba = ss.getSheetByName(nomeAba);
+    if (!aba) return null;
+    const v = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
+    const cab = v[0].map(c => String(c || '').trim().toUpperCase());
+    const c0 = cab.indexOf('JAN');
+    if (c0 < 0) return null;
+
+    const cont = [];
+    for (let m = 0; m < 12; m++) cont.push(0);
+    for (let r = 1; r < v.length; r++) {
+      // A linha de total (ESPERADO/REALIZADO) não é serviço — não conta.
+      const rot = String(v[r][0] || '').trim().toUpperCase();
+      if (rot === 'ESPERADO' || rot === 'REALIZADO') continue;
+      for (let m = 0; m < 12; m++) {
+        if (String(v[r][c0 + m] || '').trim().toUpperCase() === 'SIM') cont[m]++;
+      }
+    }
+    return cont;
+  } catch (e) {
+    Logger.log('Metas PPC: conferência não pôde ler "' + nomeAba + '" — ' + e.message);
+    return null;
+  }
+}
+
+
+/**
+ * Metros de piso — CONTROLE PISO 2026, linha TOTAL REALIZADO.
+ *
+ * O ano é o ACUMULADO até o mês de referência, não a coluna TOTAL da
+ * planilha: aquela soma os 12 meses e inclui setembro em diante.
+ */
+function _metaPiso_(ref) {
+  try {
+    const ss  = _abrirPlanilha_(METAS_PISO_ID, 'METAS_PISO_ID');
+    const aba = ss.getSheets()[0];
+    const v   = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
+
+    let linha = -1, cabIdx = -1;
+    for (let r = 0; r < v.length; r++) {
+      if (_histNorm_(v[r][0]).indexOf('total realizado') >= 0 ||
+          _histNorm_(v[r][8]).indexOf('total realizado') >= 0) { linha = r; break; }
+    }
+    for (let r = 0; r < v.length; r++) {
+      if (v[r].some(c => _histNorm_(c) === 'janeiro')) { cabIdx = r; break; }
+    }
+    if (linha < 0 || cabIdx < 0) { Logger.log('Metas piso: TOTAL REALIZADO ou cabeçalho de meses não encontrado.'); return { mes: null, ano: null }; }
+
+    const c0 = v[cabIdx].findIndex(c => _histNorm_(c) === 'janeiro');
+    const num = s => {
+      const t = String(s || '').replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(t);
+      return isNaN(n) ? 0 : n;
+    };
+    let acum = 0;
+    for (let m = 0; m <= ref.index; m++) acum += num(v[linha][c0 + m]);
+    const mes = num(v[linha][c0 + ref.index]);
+    Logger.log('Metas piso: mês ' + mes.toFixed(2) + 'm · acumulado ' + acum.toFixed(2) + 'm');
+    return { mes: mes, ano: acum };
+  } catch (e) {
+    Logger.log('Metas piso: falha — ' + e.message);
+    return { mes: null, ano: null };
+  }
+}
+
+/**
+ * Taxa de reabertura — reabertos ÷ fechados.
+ *
+ * Lê a BASE BRUTA (aba CHAMADOS FECHADOS, uma linha por chamado, coluna
+ * REABERTURA SIM/NÃO), que é preferível à tabela agregada da mesma planilha
+ * (lição 3). Ambas conferidas: as 19 linhas batem mês a mês com a agregada.
+ *
+ * MÊS SEM FECHAMENTO devolve null, não 0%. Agosto teve zero chamados
+ * fechados: dizer "0% de reabertura" daria crédito por um resultado que não
+ * existiu. O acumulado do ano segue definido (0/19 = 0%).
+ */
+function _metaReabertura_(ref) {
+  try {
+    const ss = _abrirPlanilha_(METAS_REABERTURA_ID, 'METAS_REABERTURA_ID');
+    const aba = ss.getSheetByName('CHAMADOS FECHADOS') || ss.getSheets()[0];
+    const v = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
+
+    const cab = v[0].map(c => _histNorm_(c));
+    const cFech = cab.indexOf('fechado em');
+    const cReab = cab.indexOf('reabertura');
+    if (cFech < 0 || cReab < 0) {
+      Logger.log('Metas reabertura: colunas "Fechado em"/"REABERTURA" não encontradas. Cabeçalho: ' +
+                 v[0].filter(String).join(' | '));
+      return { mes: null, ano: null };
+    }
+
+    let fMes = 0, rMes = 0, fAno = 0, rAno = 0, semData = 0;
+    for (let r = 1; r < v.length; r++) {
+      const d = _histParseDataHora_(v[r][cFech]);
+      if (!d) { if (String(v[r][0] || '').trim()) semData++; continue; }
+      if (d.getUTCFullYear() !== ref.ano) continue;
+      const m = d.getUTCMonth();
+      if (m > ref.index) continue;                       // depois do mês de referência não conta
+      const reaberto = _histNorm_(v[r][cReab]) === 'sim';
+      fAno++; if (reaberto) rAno++;
+      if (m === ref.index) { fMes++; if (reaberto) rMes++; }
+    }
+    // Zero falso: linhas existem mas nenhuma data legível → null, não 0%.
+    if (!fAno && semData) {
+      Logger.log('Metas reabertura: ' + semData + ' linha(s) sem data de fechamento legível.');
+      return { mes: null, ano: null };
+    }
+    Logger.log('Metas reabertura: mês ' + rMes + '/' + fMes + ' · ano ' + rAno + '/' + fAno);
+    return {
+      mes: fMes > 0 ? (rMes / fMes) * 100 : null,
+      ano: fAno > 0 ? (rAno / fAno) * 100 : null
+    };
+  } catch (e) {
+    Logger.log('Metas reabertura: falha — ' + e.message);
+    return { mes: null, ano: null };
+  }
+}
