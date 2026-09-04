@@ -204,7 +204,7 @@ pasta lê a apresentação de cima para baixo.
 | `17_Slide_Contratacoes.gs` | 358 | leitura e desenho da tabela densa de contratações |
 | `18_Slide_TorreManutencao.gs` | 223 | Torre CR e Torre Demercado |
 | `19_Slide_DREBridge.gs` | 538 | **três slides**: DRE, Bridge tabela, Bridge cascata |
-| `20_Slide_Metas.gs` | 279 | Farol de Metas, um slide por analista |
+| `20_Slide_Metas.gs` | 660 | Farol de Metas (método oficial dos Megas — aba METAS da TV, um slide por analista) |
 
 ### Por que alguns arquivos têm mais de um slide
 

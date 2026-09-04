@@ -134,24 +134,18 @@ const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxz
 // ==========================================
 // FAROL DE METAS — PROPERTY
 // ==========================================
-// Uma linha por indicador, no mesmo formato da aba METAS que os Megas leem
-// (20_Slide_Metas.gs lá): Descrição | Pontos | Direcionador | Unidade | Sentido |
-// Meta Mês | Real Mês | Meta Ano | Real Ano.
+// FONTE OFICIAL: aba "METAS" da planilha da Gestão à Vista TV
+// (GESTAO_TV_METAS_SPREADSHEET_ID abaixo), exatamente como no sistema dos Megas
+// (megas-mensal/Slide_Metas.gs). As metas e os valores manuais (SIM/NÃO)
+// são mantidos diretamente na planilha oficial — sem necessidade de alterar código todo mês.
 //
-// POR QUE AQUI E NÃO NUMA PLANILHA: as linhas de SIM/NÃO são atualizadas pelo
-// usuário direto no código (decisão dele). Só as NUMÉRICAS são calculadas —
-// e essas trazem `calc`, que diz de onde o real vem. 08_DadosMetas.gs preenche
-// realMes/realAno de quem tem `calc`; quem não tem fica como está escrito.
+// As 14 colunas da aba METAS:
+//   Mega | Papel | Título | Descrição | Pontos | Direcionador | Unidade |
+//   Sentido | Meta Mês | Real Mês | Status Mês | Meta Acum. | Real Acum. | Status Acum.
 //
-// `calc` disponível:
-//   'slaPreventivas' → SLA das preventivas de Propriedades (todas, não só as
-//                      do analista — foi o que causou a divergência 84,55 x 81,9)
-//   'ppc'            → PPC de manutenção: realizados ÷ previstos, por CONTAGEM
-//   'piso'           → metros de piso do CONTROLE PISO 2026
-//   'reabertura'     → reabertos ÷ fechados (base bruta RICARDO - PROPRIEDADES)
-// Mínimo de pontos no ANO para o analista ficar elegível — mesmo valor que o
-// farol de Facilities usa (METAS_PONTOS_ELEGIVEL em megas-mensal), sobre um
-// total de 100 pontos. Aparece no selo do rodapé do slide.
+// Mínimo de pontos no ANO para o analista ficar elegível (METAS_PONTOS_ELEGIVEL).
+// Aparece no selo do rodapé do slide.
+const GESTAO_TV_METAS_SPREADSHEET_ID = '1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1WiRA';
 const METAS_PONTOS_ELEGIVEL = 50;
 
 const METAS_PROPRIEDADES = [

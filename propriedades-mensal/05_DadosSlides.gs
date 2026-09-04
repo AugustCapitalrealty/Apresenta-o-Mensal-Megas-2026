@@ -832,10 +832,10 @@ function obterMetasCalculadas_() {
 function _metaSlaPreventivas_(ref) {
   try {
     const mes  = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
-    const acum = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index, 'acumulado');
+    const acum = obterAcumuladoPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
     return {
       mes: mes  && mes.total.sla.pct  != null ? mes.total.sla.pct  : null,
-      ano: acum && acum.total.sla.pct != null ? acum.total.sla.pct : null
+      ano: acum && acum.sla && acum.sla.pct != null ? acum.sla.pct : null
     };
   } catch (e) {
     Logger.log('Metas: SLA de preventivas falhou — ' + e.message);

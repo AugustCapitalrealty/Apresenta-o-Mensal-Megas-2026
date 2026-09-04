@@ -56,11 +56,11 @@ ok('SLA 100 >= 90 → Verde', R(0, 3).statusMes === 'Verde');
 ok('SLA 81,9 < 90 → Vermelho', R(0, 3).statusAno === 'Vermelho');
 ok('reabertura 0 <= 2 → Verde (sentido invertido)', R(1, 4).statusAno === 'Verde');
 
-console.log('\n== Não medido ≠ zero ==');
+console.log('\n== Não medido / sem fechamento (regra oficial dos Megas: Amarelo) ==');
 ok('reabertura do mês sem fechamentos → "—"', R(1, 4).realMes === '—', R(1, 4).realMes);
-ok('e status Cinza, não Verde nem Vermelho', R(1, 4).statusMes === 'Cinza', R(1, 4).statusMes);
-ok('cinza não pontua', !R(1, 4).verdeAno === false);
-ok('mas o ANO, medido, pontua', R(1, 4).verdeAno === true);
+ok('e status Amarelo (não Verde nem Vermelho)', R(1, 4).statusMes === 'Amarelo', R(1, 4).statusMes);
+ok('amarelo não pontua no mês', R(1, 4).statusMes !== 'Verde');
+ok('mas o ANO, medido e batido (0 <= 2), pontua como Verde', R(1, 4).verdeAno === true);
 
 console.log('\n== Formatação por unidade ==');
 ok('% com duas casas e vírgula', R(0, 3).realAno === '81,90', R(0, 3).realAno);
@@ -68,6 +68,16 @@ ok('metros com sufixo m', R(1, 2).realAno === '61,03m', R(1, 2).realAno);
 
 console.log('\n== Linhas fixas não são tocadas pelo cálculo ==');
 ok('checklist do Ricardo continua SIM/SIM', R(1, 3).realMes === 'SIM' && R(1, 3).realAno === 'SIM');
+
+console.log('\n== Regras Oficiais dos Megas (Compostas, Colunas, Override) ==');
+ok('14 colunas completas da aba METAS', METAS_COLS_FULL.length === 14);
+ok('11 colunas exibidas na tabela', METAS_COLS.length === 11);
+ok('meta composta: ambas batendo → Verde',
+   _metasCalcularStatus_('R$ 4,21 / 80%', 'R$ 3,86 / 85%', '<=/>=', 'R$ / %') === 'Verde');
+ok('meta composta: uma batendo e outra falhando → Vermelho',
+   _metasCalcularStatus_('R$ 4,21 / 80%', 'R$ 3,86 / 70%', '<=/>=', 'R$ / %') === 'Vermelho');
+ok('override manual da planilha prevalece',
+   _metasStatusCelula_(['Desc', '20', 'Dir', '%', '>=', '90', '80', 'Verde', '90', '80', 'Verde'], 'mes') === 'Verde');
 
 console.log('\n' + (falhas ? '✗ ' + falhas + ' de ' + testes + ' falharam' : '✓ ' + testes + '/' + testes + ' passaram') + '\n');
 process.exit(falhas ? 1 : 0);
