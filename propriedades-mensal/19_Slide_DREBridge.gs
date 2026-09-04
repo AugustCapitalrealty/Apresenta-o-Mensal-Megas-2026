@@ -643,10 +643,10 @@ function _brgGrafico_(slide, x, y, w, h, d) {
   };
 
   chip(x + 16, 300, 'REALIZADO ATÉ AGORA',
-       (totalVar >= 0 ? '▼ ' : '▲ ') + _brgMoedaCompacta_(Math.abs(totalVar)) + ' ' +
+       (totalVar >= 0 ? '▼ ' : '▲ ') + _brgMoeda_(Math.abs(totalVar)) + ' ' +
        (totalVar >= 0 ? 'abaixo' : 'acima') + ' do orçado (' + pctReal + '%)', totalVar >= 0);
   chip(x + 16 + 312, 280, 'PROJEÇÃO ANUAL',
-       (varAnual >= 0 ? '▼ ' : '▲ ') + _brgMoedaCompacta_(Math.abs(varAnual)) + ' ' +
+       (varAnual >= 0 ? '▼ ' : '▲ ') + _brgMoeda_(Math.abs(varAnual)) + ' ' +
        (varAnual >= 0 ? 'abaixo' : 'acima') + ' (' + pctAnual + '%)', varAnual >= 0);
 
   // ── Barras divergentes: variação mensal vs orçado ────────────────────────
