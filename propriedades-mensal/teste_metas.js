@@ -35,8 +35,8 @@ const pontos = i => METAS_PROPRIEDADES[i].linhas
 
 console.log('\n== Pontos: soma das linhas com ANO verde ==');
 ok('Wilson = 0 (nenhuma verde no ano)', pontos(0) === 0, 'deu ' + pontos(0));
-ok('Ricardo = 35 (checklist 20 + reabertura 15)', pontos(1) === 35, 'deu ' + pontos(1));
-ok('e NÃO 15, que era o valor digitado no farol', pontos(1) !== 15);
+ok('Ricardo = 15 (somente reabertura 15, checklist é NÃO/Amarelo)', pontos(1) === 15, 'deu ' + pontos(1));
+ok('e NÃO elegível (< 70)', pontos(1) < 70);
 
 console.log('\n== SIM/NÃO tem cor única (o farol pintava dos dois jeitos) ==');
 const wilsonNao = R(0, 0), ricardoNao = R(1, 1);
@@ -67,7 +67,7 @@ ok('% com duas casas e vírgula', R(0, 3).realAno === '81,90', R(0, 3).realAno);
 ok('metros com sufixo m', R(1, 2).realAno === '61,03m', R(1, 2).realAno);
 
 console.log('\n== Linhas fixas não são tocadas pelo cálculo ==');
-ok('checklist do Ricardo continua SIM/SIM', R(1, 3).realMes === 'SIM' && R(1, 3).realAno === 'SIM');
+ok('checklist do Ricardo é NÃO/NÃO (Amarelo)', R(1, 3).realMes === 'NÃO' && R(1, 3).realAno === 'NÃO' && R(1, 3).statusMes === 'Amarelo');
 
 console.log('\n== Regras Oficiais dos Megas (Compostas, Colunas, Override) ==');
 ok('14 colunas completas da aba METAS', METAS_COLS_FULL.length === 14);

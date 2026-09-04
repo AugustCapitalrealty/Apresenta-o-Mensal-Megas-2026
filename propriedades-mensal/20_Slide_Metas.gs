@@ -745,8 +745,8 @@ function SEED_METAS_PROPRIEDADES() {
     ['Propriedades', 'Ricardo Silva', tRicardo, 'Concluir no mínimo 80% do Planejamento (PPC) previsto em Manutenção', 25, 'Performance', '%', '>=', '80', '', '', '80', '', ''],
     ['Propriedades', 'Ricardo Silva', tRicardo, 'Realizar levantamento de projeto de retrofit de elétrica e hidráulica', 20, 'Projetos', 'SIM/NÃO', '=', 'SIM', 'NÃO', '', 'SIM', 'NÃO', ''],
     ['Propriedades', 'Ricardo Silva', tRicardo, 'Realizar manutenção de piso equivalente a pelo menos 1.000 metros', 20, 'Performance', 'M', '>=', '143', '', '', '1000', '', ''],
-    ['Propriedades', 'Ricardo Silva', tRicardo, 'Desenvolver checklist de recebimento de serviços contratados', 20, 'Padronização', 'SIM/NÃO', '=', 'SIM', 'SIM', '', 'SIM', 'SIM', ''],
-    ['Propriedades', 'Ricardo Silva', tRicardo, 'Obter taxa de reabertura de chamados inferior a 2%', 15, 'Performance', '%', '<=', '2', '', '', '2', '', '']
+    ['Propriedades', 'Ricardo Silva', tRicardo, 'Desenvolver checklist de recebimento de serviços contratados', 20, 'Padronização', 'SIM/NÃO', '=', 'SIM', 'NÃO', '', 'SIM', 'NÃO', ''],
+    ['Propriedades', 'Ricardo Silva', tRicardo, 'TAXA DE REABERTURA', 15, 'Performance', '%', '<=', '2', '', '', '2', '', '']
   ];
 
   aba.getRange(aba.getLastRow() + 1, 1, linhas.length, METAS_COLS_FULL.length).setValues(linhas);

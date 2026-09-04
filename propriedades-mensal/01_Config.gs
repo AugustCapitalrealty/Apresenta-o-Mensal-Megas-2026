@@ -189,8 +189,8 @@ const METAS_PROPRIEDADES = [
         metaMes: '143', metaAno: '1000', calc: 'piso' },
       { descricao: 'Desenvolver checklist de recebimento de serviços contratados', pontos: 20,
         direcionador: 'Padronização', unidade: 'SIM/NÃO', sentido: '=',
-        metaMes: 'SIM', realMes: 'SIM', metaAno: 'SIM', realAno: 'SIM' },
-      { descricao: 'Obter taxa de reabertura de chamados inferior a 2%', pontos: 15,
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+      { descricao: 'TAXA DE REABERTURA', pontos: 15,
         direcionador: 'Performance', unidade: '%', sentido: '<=',
         metaMes: '2', metaAno: '2', calc: 'reabertura' }
     ]
