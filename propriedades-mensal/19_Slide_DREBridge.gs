@@ -98,6 +98,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
   const CINZA_EMPRESA = '#475569';
   const COR_FUTURO    = DS.colors.brandLight;
   const VERM = '#A85450', VERDE = '#4E7B5F';
+  const VERM_DESTAQUE = '#F87171', VERDE_DESTAQUE = '#4ADE80';
 
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
@@ -178,8 +179,9 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
     if (pp === 0) return '0%';
     return (pp > 9999 ? '>9999' : pp.toLocaleString('pt-BR')) + '%';
   };
-  const corVar = va => {
-    if (!va || va.nulo) return DS.colors.textMuted;
+  const corVar = (va, isDestaque) => {
+    if (!va || va.nulo) return isDestaque ? '#CBD5E1' : DS.colors.textMuted;
+    if (isDestaque) return va.maior ? VERM_DESTAQUE : VERDE_DESTAQUE;
     return va.maior ? VERM : VERDE;
   };
 
@@ -215,7 +217,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
       // Seta em caixa própria, colada à esquerda do número
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
-        const cor = destaque ? '#E2E8F0' : corVar(va);
+        const cor = corVar(va, destaque);
         const pp = va ? Math.round(va.pct) : 0;
         const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
@@ -240,6 +242,7 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
   const CINZA_EMPRESA = '#475569';
   const COR_FUTURO    = DS.colors.brandLight;
   const VERM = '#A85450', VERDE = '#4E7B5F';
+  const VERM_DESTAQUE = '#F87171', VERDE_DESTAQUE = '#4ADE80';
 
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
@@ -303,8 +306,9 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
     if (pp === 0) return '0%';
     return (pp > 9999 ? '>9999' : pp.toLocaleString('pt-BR')) + '%';
   };
-  const corVar = va => {
-    if (!va || va.nulo) return DS.colors.textMuted;
+  const corVar = (va, isDestaque) => {
+    if (!va || va.nulo) return isDestaque ? '#CBD5E1' : DS.colors.textMuted;
+    if (isDestaque) return va.maior ? VERM_DESTAQUE : VERDE_DESTAQUE;
     return va.maior ? VERM : VERDE;
   };
 
@@ -341,7 +345,7 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
       // Seta e variação percentual
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
-        const cor = destaque ? '#E2E8F0' : corVar(va);
+        const cor = corVar(va, destaque);
         const pp = va ? Math.round(va.pct) : 0;
         const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
