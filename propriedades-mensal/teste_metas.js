@@ -44,6 +44,12 @@ ok('Wilson "meta SIM, real NÃO" → Amarelo', wilsonNao.statusMes === 'Amarelo'
 ok('Ricardo, mesma situação → Amarelo também', ricardoNao.statusMes === 'Amarelo', ricardoNao.statusMes);
 ok('vermelho fica para meta numérica furada', R(1, 2).statusMes === 'Vermelho');
 
+console.log('\n== PPC: meta 80% no mes e no ano ==');
+ok('meta do mes e 80, nao 6,67', METAS_PROPRIEDADES[1].linhas[0].metaMes === '80',
+   METAS_PROPRIEDADES[1].linhas[0].metaMes);
+ok('PPC 50% no mes < 80 → Vermelho', R(1, 0).statusMes === 'Vermelho', R(1, 0).statusMes);
+ok('PPC 50% no ano < 80 → Vermelho', R(1, 0).statusAno === 'Vermelho');
+
 console.log('\n== Sentido >= e <= ==');
 ok('SLA 100 >= 90 → Verde', R(0, 3).statusMes === 'Verde');
 ok('SLA 81,9 < 90 → Vermelho', R(0, 3).statusAno === 'Vermelho');

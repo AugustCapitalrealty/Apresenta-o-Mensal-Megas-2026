@@ -1,26 +1,24 @@
 /**
  * ARQUIVO: Slide_BridgeManutencao.gs
- * SLIDE — BRIDGE DE MANUTENÇÃO (análise de variação)
+ * SLIDES — BRIDGE DE MANUTENÇÃO (variação) e o GRÁFICO
  *
- * Waterfall: sai do PLANEJADO acumulado, aplica o desvio de cada centro de
- * custo, chega no REALIZADO acumulado. Responde "o plano era X, gastamos Y —
- * onde nasceu a diferença?", que é a pergunta que a tabela do DRE responde
- * devagar e o bridge responde de relance.
+ * MESMO FORMATO DO BRIDGE DOS MEGAS (megas-mensal/Slide06_FinanceiroBridge.gs):
+ * são DOIS slides, e o eixo é o MÊS, não a rubrica.
  *
- * DIFERENÇA PARA O BRIDGE DOS MEGAS (Slide06_FinanceiroBridge.gs): lá as
- * barras são NATUREZAS de despesa e a fonte é uma aba já com a variação
- * calculada. Aqui as barras são CENTROS DE CUSTO, a variação é calculada
- * aqui, e o eixo é acumulado Jan..mês em vez de mês isolado — manutenção é
- * gasto que se concentra em obras pontuais, e um mês isolado dá um retrato
- * enganoso (em Jun o plano é zero e houve gasto; em Ago o real é 11× o mês
- * anterior).
+ *   gerarSlideBridgeManutencao()        → tabela de variação, um mês por linha
+ *   gerarSlideBridgeManutencaoGrafico() → waterfall do orçado anual ao projetado
  *
- * CONVENÇÃO DE COR, e ela é o contrário da intuição de gráfico: gasto ACIMA
- * do plano é RUIM → vermelho e barra para cima. Gasto ABAIXO é BOM → verde.
+ * Colunas da tabela, iguais às de lá:
+ *   MÊS | TIPO | ORÇADO | REAL/RITMO | VARIAÇÃO | VAR %
  *
- * Centro sem plano (só existe na aba de ritmo) não vira barra de variação —
- * não há de quê variar. Entra numa barra "SEM PLANO" separada, para o total
- * continuar fechando sem fingir que havia orçamento.
+ * TIPO separa o que ACONTECEU do que é PROJEÇÃO: mês até a referência é REAL,
+ * depois é RITMO. Sem essa marca, "gastou menos que o plano" em novembro
+ * pareceria conquista, quando é só um mês que ainda não chegou.
+ *
+ * SINAL E COR, iguais aos Megas e contra a intuição de gráfico: variação
+ * POSITIVA é gastar MENOS que o orçado, e isso é BOM (▼ verde). Negativa é
+ * estouro (▲ vermelho). Mês de RITMO sai em âmbar, nem bom nem ruim — ainda
+ * não aconteceu.
  */
 
 function gerarSlideBridgeManutencao() {
@@ -31,218 +29,255 @@ function gerarSlideBridgeManutencao() {
   if (typeof _tabRemoverPorTag_ === 'function') _tabRemoverPorTag_(deck, TAG_BRIDGE_MANUTENCAO);
 
   const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const marginX = 24, topY = 76;
-  const cardH = (H - 14) - topY;
-
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
   if (typeof _tabMarcarSlide_ === 'function') _tabMarcarSlide_(slide, TAG_BRIDGE_MANUTENCAO);
 
-  if (!dados) {
-    criarHeaderPadrao(slide, 'BRIDGE — MANUTENÇÃO', 'Planejado × Realizado');
-    criarCardPainel(slide, marginX, topY, W - 2 * marginX, cardH, 'SEM DADOS', DS.colors.themeCorr);
-    _dreFalha_(slide, marginX, topY, W - 2 * marginX, cardH,
-      new Error('Não foi possível ler as abas do DRE de manutenção.'));
-    return;
-  }
-
-  const nomes = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
-  criarHeaderPadrao(slide, 'BRIDGE — MANUTENÇÃO',
-    'Do planejado ao realizado por centro de custo — acumulado JAN..' +
-    nomes[dados.refIndex] + '/' + String(dados.ref.ano).slice(-2) + ' · R$ mil');
-
   // Vaga 2 da seção FINANCEIRO, logo depois do DRE.
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 2);
 
+  if (!dados) {
+    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)', 'Orçado vs Realizado — Manutenção');
+    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
+    return;
+  }
+
+  criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)',
+    'Orçado vs Realizado — Manutenção · ' + dados.ref.nome + ' ' + dados.ref.ano);
+
+  const marginX = 20, topY = 85, gap = 14;
+  const contH = H - topY - 15;
+  const leftW = 210, rightX = marginX + leftW + gap, rightW = W - rightX - marginX;
+
   try {
-    _bridgeDesenhar_(slide, marginX, topY, W - 2 * marginX, cardH, dados);
+    _brgResumo_(slide, marginX, topY, leftW, contH, dados);
+    _brgTabela_(slide, rightX, topY, rightW, contH, dados);
   } catch (e) {
-    _dreFalha_(slide, marginX, topY, W - 2 * marginX, cardH, e);
+    _dreFalha_(slide, marginX, topY, W - 2 * marginX, contH, e);
     Logger.log('Bridge Manutenção: falhou ao desenhar — ' + e.message);
   }
 }
 
 
-// Monta as barras: início, uma por centro com desvio, sem-plano, fim.
-// Exportada (sem `_` no fim seria ponto de entrada; aqui é interna) para o
-// teste poder conferir a aritmética sem desenhar nada.
-function _bridgeBarras_(dados) {
-  const inicio = dados.total.acum.plan;
-  const fim    = dados.total.acum.real;
-  if (inicio == null || fim == null) return null;
+// ==========================================
+// PAINEL DE RESUMO (esquerda)
+// ==========================================
 
-  const desvios = [], semPlano = [];
-  dados.empresas.forEach(emp => {
-    emp.centros.forEach(c => {
-      const p = c.acum.plan, r = c.acum.real;
-      if (p == null && r == null) return;
-      if (p == null) { if (r) semPlano.push({ nome: c.nome, valor: r, empresa: emp.nome }); return; }
-      const d = (r == null ? 0 : r) - p;
-      if (Math.abs(d) < 500) return;                 // ruído: não vira barra
-      desvios.push({ nome: c.nome, valor: d, empresa: emp.nome });
-    });
+function _brgResumo_(slide, x, y, w, h, d) {
+  const DS = CR_DESIGN_SYSTEM;
+  criarCardPainel(slide, x, y, w, h, null, DS.colors.brandDark);
+
+  const orc = d.total.ano.plan, proj = d.total.ano.proj;
+  const desvio = (orc == null || proj == null) ? null : orc - proj;
+  const pct = (orc && desvio != null) ? (Math.abs(desvio / orc) * 100) : null;
+  const abaixo = desvio != null && desvio >= 0;
+
+  const linhas = [
+    { rot: 'ORÇADO — ANO',        val: orc,  cor: DS.colors.brandLight },
+    { rot: 'PROJETADO — ANO',     val: proj, cor: DS.colors.brandDark },
+    { rot: abaixo ? 'ECONOMIA PROJETADA' : 'ESTOURO PROJETADO',
+      val: desvio == null ? null : Math.abs(desvio),
+      cor: abaixo ? '#166534' : '#DC2626',
+      sub: pct == null ? '' : (abaixo ? '▼ ' : '▲ ') + pct.toFixed(1) + '% vs orçado' },
+    { rot: 'REALIZADO ATÉ ' + d.ref.curto.toUpperCase(), val: d.total.acum.real,
+      cor: DS.colors.textBody,
+      sub: 'orçado ' + _dreMil_(d.total.acum.plan) + ' mil' }
+  ];
+
+  let cy = y + 12;
+  linhas.forEach(l => {
+    const cardH = l.sub ? 46 : 38;
+    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 8, cy, w - 16, cardH - 5);
+    bg.getFill().setSolidFill(l.cor, 0.08);
+    bg.getBorder().setTransparent();
+    _sTxt(slide, x + 14, cy + 3, w - 28, 10, l.rot, 6, true, DS.colors.textMuted, 'left');
+    _sTxt(slide, x + 14, cy + 12, w - 28, 17,
+          l.val == null ? '—' : 'R$ ' + _brgMilhar_(Math.round(l.val / 1000)) + ' mil',
+          12, true, l.cor, 'left');
+    if (l.sub) _sTxt(slide, x + 14, cy + 29, w - 28, 10, l.sub, 5.6, false, l.cor, 'left');
+    cy += cardH;
   });
 
-  // Maior desvio primeiro (em módulo): o bridge é para achar o culpado, e o
-  // culpado tem que ser a primeira barra depois do início.
-  desvios.sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
-
-  const semPlanoTotal = semPlano.reduce((s, i) => s + i.valor, 0);
-  const barras = [{ tipo: 'inicio', nome: 'PLANEJADO', valor: inicio }]
-    .concat(desvios.map(d => ({ tipo: 'delta', nome: d.nome, valor: d.valor, empresa: d.empresa })));
-  if (Math.abs(semPlanoTotal) >= 500) {
-    barras.push({ tipo: 'delta', nome: 'SEM PLANO (' + semPlano.length + ')', valor: semPlanoTotal });
+  if (d.avisos && d.avisos.length) {
+    _sTxt(slide, x + 8, y + h - 22, w - 16, 18, '⚠ ' + d.avisos[0], 5, false,
+          DS.colors.accentOrange, 'left');
   }
-  barras.push({ tipo: 'fim', nome: 'REALIZADO', valor: fim });
-
-  // Conferência: início + todos os deltas tem que dar o fim. Se não der,
-  // faltou centro de custo — o mesmo princípio da identidade estoque × fluxo.
-  const somado = inicio + barras.filter(b => b.tipo === 'delta').reduce((s, b) => s + b.valor, 0);
-  const residuo = fim - somado;
-
-  return { barras: barras, inicio: inicio, fim: fim, residuo: residuo, desvios: desvios };
 }
 
-function _bridgeDesenhar_(slide, x, y, w, h, dados) {
+
+// ==========================================
+// TABELA DE VARIAÇÃO (direita) — um mês por linha
+// ==========================================
+
+function _brgTabela_(slide, x, y, w, h, d) {
   const DS = CR_DESIGN_SYSTEM;
-  const cor = DS.colors.brandMed;
-  const b = _bridgeBarras_(dados);
+  const pad = 12, x0 = x + pad, useW = w - 2 * pad;
 
-  const contentY = criarCardPainel(slide, x, y, w, h,
-    'PLANEJADO → REALIZADO · ACUMULADO', cor);
+  let acc = 0;
+  const col = (t, f, a) => { const o = { t: t, x: x0 + acc * useW, w: useW * f, a: a || 'C' }; acc += f; return o; };
+  const cols = [col('MÊS', 0.13), col('TIPO', 0.13), col('ORÇADO', 0.20),
+                col('REAL/RITMO', 0.21), col('VARIAÇÃO', 0.20), col('VAR %', 0.13)];
 
-  if (!b) {
-    _sTxt(slide, x + 15, contentY + 40, w - 30, 20,
-      'Sem plano ou sem realizado acumulado para montar o bridge.', 9.5, true,
-      DS.colors.textMuted, 'center');
+  const headH = 22;
+  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, y, w - 8, headH);
+  bar.getFill().setSolidFill(DS.colors.brandDark);
+  bar.getBorder().setTransparent();
+  cols.forEach(c => _sTxt(slide, c.x - 5, y + 2, c.w + 10, headH - 4, c.t, 7, true, '#FFFFFF', 'center'));
+
+  const startY = y + headH + 3;
+  const rowH = Math.max(13, Math.min(21, (h - headH - 8) / d.meses.length));
+  const fs = rowH >= 18 ? 7.2 : (rowH >= 15 ? 6.6 : 6);
+  const mil = v => (v == null) ? '-' : _brgMilhar_(Math.round(v / 1000));
+
+  d.meses.forEach((m, i) => {
+    const ry = startY + i * rowH;
+    const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, ry, w - 8, rowH);
+    zebra.getFill().setSolidFill(i % 2 ? '#F8FAFC' : '#FFFFFF');
+    zebra.getBorder().setTransparent();
+
+    const ritmo = m.tipo === 'RITMO';
+    const abaixo = m.variacao != null && m.variacao >= 0;
+    // Âmbar para RITMO: não é bom nem ruim, ainda não aconteceu.
+    const corVar = ritmo ? '#D97706' : (abaixo ? '#166534' : '#DC2626');
+    const seta = m.variacao == null ? '' : (abaixo ? '▼ ' : '▲ ');
+    const varPct = (m.plan && m.variacao != null)
+      ? (Math.abs(m.variacao / m.plan) * 100).toFixed(0) + '%' : '-';
+
+    _sTxt(slide, cols[0].x, ry, cols[0].w, rowH, m.label, fs, true, DS.colors.textMain, 'center');
+
+    // TIPO em pill, para o olho separar realizado de projeção de relance.
+    const pw = Math.min(cols[1].w - 8, 34), px = cols[1].x + (cols[1].w - pw) / 2;
+    const pill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, px, ry + rowH * 0.22, pw, rowH * 0.56);
+    pill.getFill().setSolidFill(ritmo ? '#D97706' : DS.colors.brandMed, 0.15);
+    pill.getBorder().setTransparent();
+    _sTxt(slide, px - 6, ry, pw + 12, rowH, m.tipo, fs - 1.4, true,
+          ritmo ? '#D97706' : DS.colors.brandMed, 'center');
+
+    _sTxt(slide, cols[2].x, ry, cols[2].w, rowH, mil(m.plan), fs, false, DS.colors.textBody, 'center');
+    _sTxt(slide, cols[3].x, ry, cols[3].w, rowH, mil(m.real), fs, true, DS.colors.textMain, 'center');
+    _sTxt(slide, cols[4].x, ry, cols[4].w, rowH,
+          m.variacao == null ? '-' : seta + _brgMilhar_(Math.abs(Math.round(m.variacao / 1000))),
+          fs, true, corVar, 'center');
+    _sTxt(slide, cols[5].x, ry, cols[5].w, rowH, varPct, fs, false, corVar, 'center');
+  });
+}
+
+
+// ==========================================
+// SLIDE 2 — GRÁFICO WATERFALL
+// ==========================================
+
+/**
+ * Do ORÇADO ANUAL ao PROJETADO, com a variação de cada mês no meio.
+ *
+ * O orçado é o ponto ZERO: as barras sobem quando o mês gastou MENOS (bom) e
+ * descem quando estourou. A ponta direita é onde o ano fecha se o ritmo se
+ * confirmar.
+ */
+function gerarSlideBridgeManutencaoGrafico() {
+  const dados = obterDREManutencao_();
+  const deck  = getDeckMensal_();
+  const DS    = CR_DESIGN_SYSTEM;
+
+  if (typeof _tabRemoverPorTag_ === 'function') _tabRemoverPorTag_(deck, TAG_BRIDGE_GRAFICO);
+
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  slide.getBackground().setSolidFill(DS.colors.bgSlide);
+  if (typeof _tabMarcarSlide_ === 'function') _tabMarcarSlide_(slide, TAG_BRIDGE_GRAFICO);
+
+  _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 3);
+
+  if (!dados) {
+    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO', 'Do Orçado ao Realizado/Projetado — Manutenção');
+    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
     return;
   }
 
-  // Resumo à esquerda: os três números que o gráfico ilustra.
-  const boxW = 132;
-  _bridgeResumo_(slide, x + 12, contentY + 4, boxW, dados, b);
+  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO',
+    'Do Orçado ao Realizado/Projetado — Manutenção · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
-  const gx = x + 12 + boxW + 14;
-  const gw = (x + w - 12) - gx;
-  const gy = contentY + 18;
-  const gh = (y + h) - gy - 34;
-
-  const n = b.barras.length;
-  const gap = Math.min(10, gw / (n * 6));
-  const barW = (gw - gap * (n - 1)) / n;
-
-  // Escala: o topo é o maior nível que a linha do waterfall alcança.
-  let nivel = 0, maxNivel = 0;
-  b.barras.forEach(bar => {
-    if (bar.tipo === 'inicio') { nivel = bar.valor; }
-    else if (bar.tipo === 'delta') { nivel += bar.valor; }
-    else { nivel = bar.valor; }
-    if (nivel > maxNivel) maxNivel = nivel;
-    if (bar.tipo === 'inicio' && bar.valor > maxNivel) maxNivel = bar.valor;
-  });
-  maxNivel = Math.max(maxNivel, b.inicio, b.fim) * 1.12;
-  const esc = v => (maxNivel > 0 ? (v / maxNivel) * gh : 0);
-
-  const baseY = gy + gh;
-  let acum = 0;
-
-  b.barras.forEach((bar, i) => {
-    const bx = gx + i * (barW + gap);
-    let topo, alt, corBar;
-
-    if (bar.tipo === 'inicio' || bar.tipo === 'fim') {
-      const v = bar.valor;
-      alt = Math.max(2, esc(v));
-      topo = baseY - alt;
-      corBar = bar.tipo === 'inicio' ? DS.colors.brandLight : DS.colors.brandDark;
-      acum = v;
-    } else {
-      const de = acum, para = acum + bar.valor;
-      const alto = Math.max(de, para), baixo = Math.min(de, para);
-      topo = baseY - esc(alto);
-      alt  = Math.max(2, esc(alto) - esc(baixo));
-      // Gasto acima do plano = ruim = vermelho (ver cabeçalho).
-      corBar = bar.valor > 0 ? DS.colors.accentRed : DS.colors.accentGreen;
-      acum = para;
-
-      // Conector pontilhado do nível anterior, para a escada ficar legível.
-      const con = slide.insertShape(SlidesApp.ShapeType.RECTANGLE,
-        bx - gap, baseY - esc(de) - 0.4, gap, 0.8);
-      con.getFill().setSolidFill(DS.colors.lines);
-      con.getBorder().setTransparent();
-    }
-
-    const r = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, topo, barW, alt);
-    r.getFill().setSolidFill(corBar);
-    r.getBorder().setTransparent();
-
-    // Valor acima da barra.
-    const rot = (bar.tipo === 'delta' ? (bar.valor > 0 ? '+' : '−') : '') +
-                Math.abs(Math.round(bar.valor / 1000));
-    _sTxt(slide, bx - 4, topo - 11, barW + 8, 10, rot, 5.8, true,
-          bar.tipo === 'delta' ? corBar : DS.colors.textMain, 'center');
-
-    // Nome embaixo, encurtado — caixa estreita quebra sozinha (lição 1).
-    _sTxt(slide, bx - 3, baseY + 2, barW + 6, 22,
-          _bridgeNomeCurto_(bar.nome, barW), 5.2, bar.tipo !== 'delta', DS.colors.textBody, 'center');
-  });
-
-  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, gx, baseY, gw, 0.75);
-  eixo.getFill().setSolidFill(DS.colors.lines);
-  eixo.getBorder().setTransparent();
-
-  // Resíduo: se as barras não somam o fim, falta centro de custo. Aparece no
-  // slide em vez de só no log — é erro de dado, não de desenho.
-  if (Math.abs(b.residuo) >= 500) {
-    _sTxt(slide, gx, y + h - 12, gw, 10,
-      '⚠ barras não fecham com o realizado: resíduo de R$ ' +
-      Math.round(b.residuo / 1000) + ' mil — falta centro de custo em DRE_EMPRESAS',
-      5.5, true, DS.colors.accentOrange, 'left');
+  try {
+    _brgGrafico_(slide, 20, 78, W - 40, H - 78 - 15, dados);
+  } catch (e) {
+    _dreFalha_(slide, 20, 78, W - 40, H - 93, e);
+    Logger.log('Bridge gráfico: falhou ao desenhar — ' + e.message);
   }
 }
 
-function _bridgeResumo_(slide, x, y, w, dados, b) {
+function _brgGrafico_(slide, x, y, w, h, d) {
   const DS = CR_DESIGN_SYSTEM;
-  const desvio = b.fim - b.inicio;
-  const pct = b.inicio ? (b.fim / b.inicio - 1) * 100 : null;
-  const acima = desvio > 0;
+  const card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
+  card.getFill().setSolidFill(DS.colors.cardBg);
+  card.getBorder().getLineFill().setSolidFill(DS.colors.lines);
+  card.getBorder().setWeight(1);
 
-  const linhas = [
-    { rot: 'PLANEJADO (acum.)', val: b.inicio, cor: DS.colors.brandLight },
-    { rot: 'REALIZADO (acum.)', val: b.fim,    cor: DS.colors.brandDark },
-    { rot: acima ? 'GASTOU A MAIS' : 'GASTOU A MENOS', val: Math.abs(desvio),
-      cor: acima ? DS.colors.accentRed : DS.colors.accentGreen,
-      sub: pct == null ? '' : (acima ? '▲' : '▼') + Math.abs(Math.round(pct)) + '% vs plano' },
-    { rot: 'PROJEÇÃO DO ANO', val: dados.total.ano.proj, cor: DS.colors.textBody,
-      sub: 'plano ' + Math.round((dados.total.ano.plan || 0) / 1000) + ' mil' }
-  ];
+  const orc = d.total.ano.plan, proj = d.total.ano.proj;
+  const meses = d.meses.filter(m => m.variacao != null);
 
-  let cy = y;
-  linhas.forEach(l => {
-    const cardH = l.sub ? 40 : 32;
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, cy, w, cardH - 4);
-    bg.getFill().setSolidFill(l.cor, 0.08);
-    bg.getBorder().setTransparent();
-    _sTxt(slide, x + 6, cy + 3, w - 12, 9, l.rot, 5.6, true, DS.colors.textMuted, 'left');
-    _sTxt(slide, x + 6, cy + 11, w - 12, 15,
-          l.val == null ? '—' : 'R$ ' + _dreMilhar_(Math.round(l.val / 1000)) + ' mil',
-          11, true, l.cor, 'left');
-    if (l.sub) _sTxt(slide, x + 6, cy + 26, w - 12, 9, l.sub, 5.4, false, l.cor, 'left');
-    cy += cardH;
+  const plotX = x + 46, plotW = w - 92;
+  const plotY = y + 34, plotH = h - 34 - 44;
+
+  // Divide o plot entre o lado positivo e o negativo na proporção dos dados,
+  // com trava: sem ela um único mês extremo (setembro, −743k) achata todo o
+  // resto até virar uma linha reta.
+  const maxUp   = Math.max(0, ...meses.map(m => m.variacao > 0 ? m.variacao : 0));
+  const maxDown = Math.max(0, ...meses.map(m => m.variacao < 0 ? -m.variacao : 0));
+  let fracUp = (maxUp + maxDown) > 0 ? maxUp / (maxUp + maxDown) : 0.5;
+  fracUp = Math.max(0.25, Math.min(0.75, fracUp));
+  const upH = (plotH - 30) * fracUp, downH = (plotH - 30) * (1 - fracUp);
+  const zeroY = plotY + 15 + upH;
+  const escala = Math.max(maxUp / (upH || 1), maxDown / (downH || 1)) || 1;
+
+  const n = meses.length, slotW = plotW / (n + 2), barW = Math.min(slotW * 0.5, 30);
+
+  const eixo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, plotX + slotW * 0.1, zeroY, plotW - slotW * 0.2, 1.2);
+  eixo.getFill().setSolidFill('#94A3B8');
+  eixo.getBorder().setTransparent();
+
+  const fmt = v => 'R$ ' + _brgMilhar_(Math.round(v / 1000)) + ' mil';
+
+  // Ponta esquerda: ORÇADO ANUAL — é o ponto zero, sem barra.
+  _sTxt(slide, plotX - slotW * 0.35, zeroY - 32, slotW * 1.6, 14, fmt(orc), 7.5, true, '#475569', 'center');
+  _sTxt(slide, plotX - slotW * 0.35, zeroY - 20, slotW * 1.6, 10, 'ORÇADO', 6, true, DS.colors.textMuted, 'center');
+
+  meses.forEach((m, i) => {
+    const bx = plotX + slotW * (i + 1) + (slotW - barW) / 2;
+    const alt = Math.max(2, Math.abs(m.variacao) / escala);
+    const acima = m.variacao >= 0;                    // gastou menos = barra para cima
+    const by = acima ? zeroY - alt : zeroY;
+    const ritmo = m.tipo === 'RITMO';
+    const cor = ritmo ? '#D97706' : (acima ? '#166534' : '#DC2626');
+
+    const r = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, by, barW, alt);
+    r.getFill().setSolidFill(cor, ritmo ? 0.55 : 1);
+    r.getBorder().setTransparent();
+
+    const rot = (acima ? '+' : '−') + _brgMilhar_(Math.abs(Math.round(m.variacao / 1000)));
+    _sTxt(slide, bx - 8, acima ? by - 11 : by + alt + 1, barW + 16, 10, rot, 5.6, true, cor, 'center');
+    _sTxt(slide, bx - 8, zeroY + (acima ? 3 : -12), barW + 16, 10, m.label, 5.8, true,
+          ritmo ? '#D97706' : DS.colors.textBody, 'center');
   });
+
+  // Ponta direita: PROJETADO.
+  const px = plotX + slotW * (n + 1);
+  _sTxt(slide, px - slotW * 0.3, zeroY - 32, slotW * 1.6, 14, fmt(proj), 7.5, true, DS.colors.brandDark, 'center');
+  _sTxt(slide, px - slotW * 0.3, zeroY - 20, slotW * 1.6, 10, 'PROJETADO', 6, true, DS.colors.textMuted, 'center');
+
+  _brgLegenda_(slide, x + 14, y + h - 22);
 }
 
-function _dreMilhar_(n) {
+function _brgLegenda_(slide, x, y) {
+  const DS = CR_DESIGN_SYSTEM;
+  [['#166534', 'ABAIXO DO ORÇADO'], ['#DC2626', 'ACIMA DO ORÇADO'], ['#D97706', 'PROJEÇÃO (RITMO)']]
+    .forEach((par, i) => {
+      const cx = x + i * 128;
+      const q = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx, y + 4, 8, 8);
+      q.getFill().setSolidFill(par[0]); q.getBorder().setTransparent();
+      _sTxt(slide, cx + 11, y, 112, 16, par[1], 5.8, true, DS.colors.textBody, 'left');
+    });
+}
+
+function _brgMilhar_(n) {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-// Nome que cabe na barra. A largura vira orçamento de caracteres, senão a
-// TEXT_BOX quebra sozinha e o rótulo cobre a barra vizinha (lição 1).
-function _bridgeNomeCurto_(nome, larg) {
-  const max = Math.max(6, Math.floor(larg / 2.6));
-  const t = String(nome)
-    .replace(/^ARMAZÉM MONOUSUÁRIO /, 'ARM.')
-    .replace(/ DESPESAS?$/, '')
-    .replace(/^LJ 0/, 'LJ ');
-  return t.length <= max ? t : t.slice(0, max - 1) + '…';
 }

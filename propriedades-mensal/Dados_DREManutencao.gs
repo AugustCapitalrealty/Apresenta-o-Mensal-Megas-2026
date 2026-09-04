@@ -126,30 +126,35 @@ function obterDREManutencao_() {
     const p = planMapa ? planMapa[cod] : null;
     const r = ritmoMapa ? ritmoMapa[cod] : null;
 
+    // Na aba PLANEJAMENTO a coluna PAR é "Realizado AA" — o ano ANTERIOR
+    // (ritmo 2025), confirmado batendo com a Torre no Demercado. É a primeira
+    // das cinco colunas do DRE dos Megas, e sem ela o slide não tem contra o
+    // que comparar além do plano.
     const planMes = p ? abs(p[2 * refIndex + 1]) : null;   // ímpar = Planejado
+    const aaMes   = p ? abs(p[2 * refIndex])     : null;   // par   = Realizado AA
     const realMes = r ? abs(r[2 * refIndex + 1]) : null;   // ímpar = Realizado
 
-    const planAcum = [], realAcum = [], projAno = [];
+    const planAcum = [], aaAcum = [], realAcum = [], projAno = [];
     for (let m = 0; m < 12; m++) {
-      if (p && m <= refIndex) planAcum.push(abs(p[2 * m + 1]));
+      if (p && m <= refIndex) { planAcum.push(abs(p[2 * m + 1])); aaAcum.push(abs(p[2 * m])); }
       if (r && m <= refIndex) realAcum.push(abs(r[2 * m + 1]));
       // O splice: realizado no que já aconteceu, ritmo no que falta.
       if (r) projAno.push(_dreMesOcorrido_(m, refIndex) ? abs(r[2 * m + 1]) : abs(r[2 * m]));
     }
-    const planAno = [];
-    if (p) for (let m = 0; m < 12; m++) planAno.push(abs(p[2 * m + 1]));
+    const planAno = [], aaAno = [];
+    if (p) for (let m = 0; m < 12; m++) { planAno.push(abs(p[2 * m + 1])); aaAno.push(abs(p[2 * m])); }
 
     return {
-      mes:  { plan: planMes,               real: realMes },
-      acum: { plan: _dreSoma_(planAcum),   real: _dreSoma_(realAcum) },
-      ano:  { plan: _dreSoma_(planAno),    proj: _dreSoma_(projAno) }
+      mes:  { aa: aaMes,               plan: planMes,             real: realMes },
+      acum: { aa: _dreSoma_(aaAcum),   plan: _dreSoma_(planAcum), real: _dreSoma_(realAcum) },
+      ano:  { aa: _dreSoma_(aaAno),    plan: _dreSoma_(planAno),  proj: _dreSoma_(projAno) }
     };
   };
 
   const somarLista = lista => ({
-    mes:  { plan: _dreSoma_(lista.map(c => c.mes.plan)),  real: _dreSoma_(lista.map(c => c.mes.real)) },
-    acum: { plan: _dreSoma_(lista.map(c => c.acum.plan)), real: _dreSoma_(lista.map(c => c.acum.real)) },
-    ano:  { plan: _dreSoma_(lista.map(c => c.ano.plan)),  proj: _dreSoma_(lista.map(c => c.ano.proj)) }
+    mes:  { aa: _dreSoma_(lista.map(c => c.mes.aa)),   plan: _dreSoma_(lista.map(c => c.mes.plan)),  real: _dreSoma_(lista.map(c => c.mes.real)) },
+    acum: { aa: _dreSoma_(lista.map(c => c.acum.aa)),  plan: _dreSoma_(lista.map(c => c.acum.plan)), real: _dreSoma_(lista.map(c => c.acum.real)) },
+    ano:  { aa: _dreSoma_(lista.map(c => c.ano.aa)),   plan: _dreSoma_(lista.map(c => c.ano.plan)),  proj: _dreSoma_(lista.map(c => c.ano.proj)) }
   });
 
   const empresas = DRE_EMPRESAS.map(emp => {
@@ -177,11 +182,35 @@ function obterDREManutencao_() {
     }
   }
 
+  // Série MENSAL do total — é o eixo do Bridge, que nos Megas é por MÊS e não
+  // por rubrica. Mês até a referência é REAL; depois é RITMO (projeção), e o
+  // slide marca a diferença: comparar plano com ritmo não é o mesmo que
+  // comparar plano com o que aconteceu.
+  const NOMES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const meses = [];
+  for (let m = 0; m < 12; m++) {
+    const somaMes = chave => _dreSoma_(empresas.map(e =>
+      _dreSoma_(e.centros.map(c => {
+        const pp = planMapa ? planMapa[c.codigo] : null;
+        const rr = ritmoMapa ? ritmoMapa[c.codigo] : null;
+        if (chave === 'plan') return pp ? abs(pp[2 * m + 1]) : null;
+        return rr ? abs(_dreMesOcorrido_(m, refIndex) ? rr[2 * m + 1] : rr[2 * m]) : null;
+      }))));
+    const plan = somaMes('plan'), real = somaMes('real');
+    meses.push({
+      index: m, label: NOMES[m],
+      tipo: _dreMesOcorrido_(m, refIndex) ? 'REAL' : 'RITMO',
+      plan: plan, real: real,
+      // Positivo = gastou MENOS que o plano (bom). Mesmo sinal do Bridge dos Megas.
+      variacao: (plan == null || real == null) ? null : plan - real
+    });
+  }
+
   avisos.forEach(a => Logger.log('DRE Manutenção: ⚠ ' + a));
   Logger.log('DRE Manutenção: ref ' + ref.nome + '/' + ref.ano +
              ' · plano ano ' + (total.ano.plan == null ? '—' : total.ano.plan.toFixed(0)) +
              ' · projeção ano ' + (total.ano.proj == null ? '—' : total.ano.proj.toFixed(0)) +
              ' · realizado acum ' + (total.acum.real == null ? '—' : total.acum.real.toFixed(0)));
 
-  return { ref: ref, refIndex: refIndex, empresas: empresas, total: total, avisos: avisos };
+  return { ref: ref, refIndex: refIndex, empresas: empresas, total: total, meses: meses, avisos: avisos };
 }

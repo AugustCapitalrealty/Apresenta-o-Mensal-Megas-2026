@@ -171,27 +171,33 @@ ok('e a divergência é registrada', logs.some(l => /confira se a outra ficou pa
    logs.join(' | '));
 RESERVA_B1 = 'AGOSTO';
 
-console.log('\n== Bridge: as barras reconciliam plano → realizado ==');
+console.log('\n== Coluna do ANO ANTERIOR (2025) ==');
+// É a 1ª das cinco colunas do DRE dos Megas. Vem da coluna PAR da aba
+// PLANEJAMENTO ("Realizado AA"), que eu ignorava na primeira versão.
 global.obterMesReferencia_ = () => ({ index: 7, nome: 'AGOSTO', curto: 'Ago', ano: 2026 });
 const dd = obterDREManutencao_();
-const br = _bridgeBarras_(dd);
-ok('monta barras', !!br);
-ok('início = plano acumulado', perto(br.inicio, dd.total.acum.plan, 1));
-ok('fim = realizado acumulado', perto(br.fim, dd.total.acum.real, 1));
-ok('início + deltas = fim (resíduo zero)', Math.abs(br.residuo) < 1,
-   'resíduo ' + br.residuo);
-ok('primeira barra é o início', br.barras[0].tipo === 'inicio');
-ok('última barra é o fim', br.barras[br.barras.length - 1].tipo === 'fim');
-ok('desvios ordenados do maior para o menor',
-   br.desvios.every((d, i) => i === 0 || Math.abs(br.desvios[i - 1].valor) >= Math.abs(d.valor)));
-ok('gastou menos que o plano no acumulado', br.fim < br.inicio);
+ok('2025 do ano = 602.578 (linha 06.04.15.01 da aba PLANEJAMENTO)',
+   perto(dd.total.ano.aa, 602578, 3), 'veio ' + dd.total.ano.aa);
+ok('CR 2025 = 440.621', perto(dd.empresas[0].total.ano.aa, 440621, 3));
+ok('Demercado 2025 = 161.957', perto(dd.empresas[1].total.ano.aa, 161957, 3));
+ok('2025 ≠ Meta (são colunas diferentes)', dd.total.ano.aa !== dd.total.ano.plan);
+ok('acumulado do 2025 é menor que o do ano', dd.total.acum.aa < dd.total.ano.aa);
 
-console.log('\n== Bridge: centro sem plano não vira variação ==');
-// Terreno Guaratuba não tem plano — não há de quê variar. Tem que cair na
-// barra SEM PLANO, senão o gasto dele seria lido como estouro de orçamento.
-ok('nenhum desvio é do Terreno Guaratuba',
-   !br.desvios.some(d => /Guaratuba/.test(d.nome)));
-ok('existe barra SEM PLANO', br.barras.some(b => /SEM PLANO/.test(b.nome)));
+console.log('\n== Série mensal — o eixo do Bridge ==');
+ok('12 meses', dd.meses.length === 12);
+ok('a soma dos planos mensais dá o plano do ano',
+   perto(dd.meses.reduce((s, m) => s + (m.plan || 0), 0), dd.total.ano.plan, 2));
+ok('a soma dos reais mensais dá a projeção do ano',
+   perto(dd.meses.reduce((s, m) => s + (m.real || 0), 0), dd.total.ano.proj, 2));
+ok('JAN..AGO são REAL', dd.meses.slice(0, 8).every(m => m.tipo === 'REAL'));
+ok('SET..DEZ são RITMO', dd.meses.slice(8).every(m => m.tipo === 'RITMO'));
+ok('variação = plano − real (positivo = gastou menos)',
+   dd.meses.every(m => m.variacao == null || Math.abs(m.variacao - (m.plan - m.real)) < 0.01));
+const jul = dd.meses[6];
+ok('JUL gastou menos que o plano → variação positiva', jul.variacao > 0,
+   'plan ' + Math.round(jul.plan) + ' real ' + Math.round(jul.real));
+const ago = dd.meses[7];
+ok('AGO estourou → variação negativa', ago.variacao < 0);
 
 console.log('\n' + (falhas ? '✗ ' + falhas + ' de ' + testes + ' falharam' : '✓ ' + testes + '/' + testes + ' passaram') + '\n');
 process.exit(falhas ? 1 : 0);

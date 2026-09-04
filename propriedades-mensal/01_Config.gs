@@ -119,6 +119,7 @@ const TAG_BACKLOG_CLIENTES          = '【PROP_BACKLOG_CLIENTES_AUTO】';
 const TAG_TORRE_MANUTENCAO          = '【PROP_TORRE_MANUTENCAO_AUTO】';
 const TAG_DRE_MANUTENCAO            = '【PROP_DRE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_MANUTENCAO         = '【PROP_BRIDGE_MANUTENCAO_AUTO】';
+const TAG_BRIDGE_GRAFICO            = '【PROP_BRIDGE_GRAFICO_AUTO】';
 
 // ==========================================
 // TORRE DE MANUTENÇÃO — CONFIGURAÇÃO E DADOS BASE
@@ -174,9 +175,13 @@ const METAS_PROPRIEDADES = [
     nome: 'RICARDO MURILO DA SILVA',
     papel: 'ANALISTA DE PROPRIEDADES',
     linhas: [
+      // Meta 80% no MÊS e no ANO. O farol trazia 6,67% no mês (= 80÷12), que
+      // fazia sentido quando o real era "quanto do plano anual saiu no mês".
+      // Com o PPC virando taxa de conclusão (realizados ÷ previstos), a escala
+      // vai a 100% e o validador é 80% nos dois recortes — decisão do usuário.
       { descricao: 'Concluir no mínimo 80% do Planejamento (PPC) previsto em Manutenção', pontos: 25,
         direcionador: 'Performance', unidade: '%', sentido: '>=',
-        metaMes: '6,67', metaAno: '80', calc: 'ppc' },
+        metaMes: '80', metaAno: '80', calc: 'ppc' },
       { descricao: 'Realizar levantamento de projeto de retrofit de elétrica e hidráulica', pontos: 20,
         direcionador: 'Projetos', unidade: 'SIM/NÃO', sentido: '=',
         metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },

@@ -1,27 +1,34 @@
 /**
  * ARQUIVO: Slide_DREManutencao.gs
- * SLIDE — DRE DE MANUTENÇÃO (por centro de custo)
+ * SLIDE — DRE DE MANUTENÇÃO
  *
- * Tabela no plano de contas da controladoria, restrita à subárvore
- * 06.04.15.01 (manutenção imóveis). Três recortes, cada um com 3 colunas —
- * os VALORES juntos e a VARIAÇÃO no fim de cada bloco, para não misturar as
- * duas leituras (mesma escolha do DRE dos Megas):
+ * MESMO FORMATO DO DRE DOS MEGAS (megas-mensal/Slide_DRE.gs): três blocos de
+ * cinco colunas, na ordem que a diretoria pediu lá — os VALORES em linha do
+ * tempo (de onde viemos, o que foi planejado, onde chegamos) e as VARIAÇÕES
+ * depois deles:
  *
- *   MÊS (ref)   Plano | Real  | Δ%
- *   ACUMULADO   Plano | Real  | Δ%      (Jan..mês de referência)
- *   ANO         Plano | Proj. | Δ%      (projeção = real + ritmo; é o FUTURO)
+ *     2025 | Meta | Real | Δ% Meta | Δ% 2025
  *
- * O bloco ANO usa PROJEÇÃO, não realizado: realizado do ano ainda não
- * existe em setembro. E projeção aqui é o splice real+ritmo, não a soma da
- * coluna de ritmo da planilha — ver Dados_DREManutencao.gs.
+ *   Bloco 1 — MÊS (mês de referência)
+ *   Bloco 2 — ACUMULADO (Jan..mês de referência)
+ *   Bloco 3 — REALIZADO + RITMO — ANO, em cor própria: é o FUTURO
  *
- * Δ% é VARIAÇÃO contra o plano (real ÷ plano − 1), em módulo, com seta
- * indicando o sentido: ▲ vermelha gastou MAIS que o planejado, ▼ verde
- * gastou MENOS. Sem plano (centro que só existe na aba de ritmo) a coluna
- * mostra "—", nunca 100%.
+ * De onde vem cada coluna nesta apresentação:
+ *   2025 → "Realizado AA" da aba PLANEJAMENTO (é o ritmo do ano anterior)
+ *   Meta → "Planejado" da mesma aba, fixo o ano inteiro
+ *   Real → "Realizado" da aba RITMO; no bloco do ANO é o splice real+ritmo
  *
- * Valores em R$ MIL, sem decimais — no total do ano são centenas de milhares,
- * e centavos numa tabela de 16 linhas só atrapalham a leitura.
+ * Restrito à subárvore 06.04.15.01 (manutenção imóveis). A hierarquia dos
+ * Megas é TOTAL → CATEGORIA → rubricas; aqui é TOTAL → EMPRESA → centros de
+ * custo, que é a mesma forma com outro nome.
+ *
+ * "% Var" é VARIAÇÃO, não atingimento: Real ÷ base − 1, sempre em módulo, com
+ * a seta dando o sentido — ▲ vermelha gastou MAIS, ▼ verde gastou MENOS. É o
+ * contrário da intuição de gráfico, e é o motivo de a seta existir em vez de
+ * só o sinal. Base ZERADA com gasto = 100%; base AUSENTE devolve "-", porque
+ * sem o dado não dá para afirmar variação nenhuma.
+ *
+ * Valores em R$ MIL, sempre inteiros.
  */
 
 function gerarSlideDREManutencao() {
@@ -31,185 +38,183 @@ function gerarSlideDREManutencao() {
 
   if (typeof _tabRemoverPorTag_ === 'function') _tabRemoverPorTag_(deck, TAG_DRE_MANUTENCAO);
 
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const marginX = 24, topY = 76;
-  const cardH = (H - 14) - topY;
-
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS.colors.bgSlide);
   if (typeof _tabMarcarSlide_ === 'function') _tabMarcarSlide_(slide, TAG_DRE_MANUTENCAO);
 
+  // Vaga 1 da seção FINANCEIRO (a capa é a 0).
+  _drePosicionarNaSecao_(deck, slide, 'DRE', 1);
+
   if (!dados) {
     criarHeaderPadrao(slide, 'DRE — MANUTENÇÃO', 'Planejado × Realizado por centro de custo');
-    criarCardPainel(slide, marginX, topY, W - 2 * marginX, cardH, 'SEM DADOS', DS.colors.themeCorr);
-    _dreFalha_(slide, marginX, topY, W - 2 * marginX, cardH,
-      new Error('Não foi possível ler as abas "' + DRE_ABA_PLANEJAMENTO + '" e "' +
-                DRE_ABA_RITMO + '".'));
+    _dreFalha_(slide, 20, 76, deck.getPageWidth() - 40, 120,
+      new Error('Não foi possível ler as abas "' + DRE_ABA_PLANEJAMENTO + '" e "' + DRE_ABA_RITMO + '".'));
     return;
   }
 
   const ref = dados.ref;
+  const mesAbrev = ref.curto.toUpperCase() + '/' + String(ref.ano).slice(-2);
   criarHeaderPadrao(slide, 'DRE — MANUTENÇÃO',
-    'Planejado × Realizado por centro de custo — ' + ref.nome + ' ' + ref.ano +
-    ' · valores em R$ mil');
-
-  // Vaga 1 da seção FINANCEIRO (a capa é a 0).
-  _drePosicionarNaSecao_(deck, slide, 'DRE', 1);
+    'Meta vs Realizado (projeção pelo ritmo) · valores em R$ mil · Mês: ' + mesAbrev);
 
   try {
-    _dreTabela_(slide, marginX, topY, W - 2 * marginX, cardH, dados);
+    _dreGrade_(slide, deck, dados, mesAbrev);
   } catch (e) {
-    _dreFalha_(slide, marginX, topY, W - 2 * marginX, cardH, e);
+    _dreFalha_(slide, 20, 76, deck.getPageWidth() - 40, 120, e);
     Logger.log('DRE Manutenção: falhou ao desenhar — ' + e.message);
   }
 }
 
 
 // ==========================================
-// DESENHO
+// DESENHO — grade de 3 blocos × 5 colunas
 // ==========================================
 
-function _dreTabela_(slide, x, y, w, h, dados) {
+function _dreGrade_(slide, deck, dados, mesAbrev) {
   const DS = CR_DESIGN_SYSTEM;
-  const cor = DS.colors.brandMed;
-  const contentY = criarCardPainel(slide, x, y, w, h,
-    'MANUTENÇÃO IMÓVEIS · ' + DRE_CONTA_RAIZ, cor);
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
 
-  const listY = contentY + 2;
-  const CC_W  = 176;                       // coluna do centro de custo
-  const COLS  = 9;                         // 3 blocos × 3 colunas
-  const gridX = x + 12 + CC_W;
-  const colW  = (w - 24 - CC_W) / COLS;
+  // Mesmos tons do DRE dos Megas. Vermelho/verde DESSATURADOS: a tabela tem
+  // dezenas de variações coloridas e o tom saturado pesa demais na leitura.
+  const CINZA_EMPRESA = '#475569';
+  const COR_FUTURO    = DS.colors.brandLight;
+  const VERM = '#A85450', VERDE = '#4E7B5F';
 
-  const HDR1 = 13, HDR2 = 12;
-  const nomes = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const NCOL = 5;
+  const x0 = 10, tableW = W - 20;
+  const rubricaW = 168;
+  // As colunas de variação carregam seta + número ("▲ 2.088%") e precisam de
+  // mais espaço que as de valor. Os pesos somam 5,00 por bloco, então a
+  // largura total não muda.
+  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];
+  const unidade = (tableW - rubricaW) / (3 * NCOL);
+  const colPos = [], colLarg = [];
+  let accX = x0 + rubricaW;
+  for (let b = 0; b < 3; b++) {
+    for (let i = 0; i < NCOL; i++) {
+      const cw = unidade * PESO_COL[i];
+      colPos.push(accX); colLarg.push(cw); accX += cw;
+    }
+  }
+  const colX = i => colPos[i], colW = i => colLarg[i];
+  const blocoW = c0 => colLarg.slice(c0, c0 + NCOL).reduce((a, b) => a + b, 0);
+
+  const blocoY = 66, blocoH = 14, subH = 14;
+  const anoAnt = dados.ref.ano - 1;
+  const acumTxt = dados.refIndex > 0 ? ('ACUMULADO — JAN A ' + mesAbrev) : ('ACUMULADO — ' + mesAbrev);
   const blocos = [
-    { rot: nomes[dados.refIndex] + '/' + String(dados.ref.ano).slice(-2), campo: 'mes',  b: 'real' },
-    { rot: 'ACUMULADO',                                                   campo: 'acum', b: 'real' },
-    { rot: 'ANO (PROJEÇÃO)',                                              campo: 'ano',  b: 'proj' }
+    { txt: 'MÊS — ' + mesAbrev,             c0: 0,  cor: DS.colors.brandMed },
+    { txt: acumTxt,                          c0: 5,  cor: DS.colors.brandMed },
+    { txt: 'REALIZADO + RITMO — ANO',        c0: 10, cor: COR_FUTURO, futuro: true }
   ];
 
-  // Faixa de bloco: agrupa visualmente as 3 colunas de cada recorte, senão
-  // nove números seguidos viram uma parede indistinguível.
-  blocos.forEach((bl, i) => {
-    const bx = gridX + i * 3 * colW;
-    const faixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, listY, colW * 3 - 2, HDR1);
-    faixa.getFill().setSolidFill(cor, i === 2 ? 0.20 : 0.10);
-    faixa.getBorder().setTransparent();
-    _sTxt(slide, bx, listY, colW * 3 - 2, HDR1, bl.rot, 6.5, true, cor, 'center');
-  });
+  const cabRub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, blocoY, rubricaW - 1, blocoH + subH);
+  cabRub.getFill().setSolidFill(DS.colors.brandDark);
+  cabRub.getBorder().setTransparent();
+  _sTxt(slide, x0 + 4, blocoY, rubricaW - 8, blocoH + subH, 'R$ MIL', 7, true, '#FFFFFF', 'left');
 
-  const sub = ['Plano', 'Real', 'Δ%'];
-  const y2 = listY + HDR1;
-  _sTxt(slide, x + 12, listY, CC_W, HDR1 + HDR2, 'CENTRO DE CUSTO', 7, true, cor, 'left');
-  blocos.forEach((bl, i) => {
-    sub.forEach((sr, j) => {
-      const rot = (j === 1 && bl.campo === 'ano') ? 'Proj.' : sr;
-      _sTxt(slide, gridX + (i * 3 + j) * colW, y2, colW, HDR2, rot, 6, true, DS.colors.textMuted, 'center');
+  blocos.forEach(b => {
+    const bx = colX(b.c0), bw = blocoW(b.c0) - 1;
+    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, blocoY, bw, blocoH);
+    bg.getFill().setSolidFill(b.cor); bg.getBorder().setTransparent();
+    _sTxt(slide, bx, blocoY, bw, blocoH, b.txt, 6.5, true, '#FFFFFF', 'center');
+
+    [String(anoAnt), 'Meta', 'Real', 'Δ% Meta', 'Δ% ' + anoAnt].forEach((t, i) => {
+      const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
+      const sb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, sx, blocoY + blocoH, sw, subH);
+      sb.getFill().setSolidFill(b.futuro ? '#0A4C86' : DS.colors.brandDark);
+      sb.getBorder().setTransparent();
+      // A caixa de texto passa da célula (folga simétrica, sem fundo próprio)
+      // só para vencer o recuo interno do Slides, que quebrava "Realizado"
+      // em "Realizad/o" (lição 1).
+      const folga = 10;
+      _sTxt(slide, sx - folga, blocoY + blocoH, sw + folga * 2, subH, t, 6.5, true, '#FFFFFF', 'center');
     });
   });
-  _dreLinha_(slide, x + 12, y2 + HDR2, w - 24, cor, 1);
 
-  // Altura por linha: 16 centros + 2 subtotais + 1 total = 19 linhas.
-  const nLinhas = dados.empresas.reduce((s, e) => s + e.centros.length + 1, 0) + 1;
-  const dispo   = (y + h) - (y2 + HDR2) - 8;
-  const rowH    = Math.max(9, Math.min(15, dispo / nLinhas));
-  const fs      = rowH >= 13 ? 6.8 : 6.2;
-
-  let cy = y2 + HDR2 + 2;
-
-  // TOTAL primeiro, como no DRE dos Megas: a linha que resume vem no topo,
-  // não no rodapé, porque é a que se olha primeiro.
-  _dreLinhaValores_(slide, x + 12, cy, CC_W, gridX, colW, rowH,
-    'TOTAL MANUTENÇÃO', dados.total, blocos, DS.colors.brandDark, true, cor, fs + 0.4, null);
-  cy += rowH + 1;
-
+  // ── Linhas: TOTAL, depois cada EMPRESA (subtotal) com seus centros ──────
+  const linhas = [{ tipo: 'total', nome: 'MANUTENÇÃO IMÓVEIS', b: dados.total }];
   dados.empresas.forEach(emp => {
-    _dreLinhaValores_(slide, x + 12, cy, CC_W, gridX, colW, rowH,
-      emp.codigo + ' · ' + emp.nome, emp.total, blocos, DS.colors.brandMed, true, cor, fs + 0.2, null);
-    cy += rowH;
-
-    emp.centros.forEach(c => {
-      _dreLinhaValores_(slide, x + 12, cy, CC_W, gridX, colW, rowH,
-        '   ' + _dreNomeCurto_(c.nome), c, blocos, DS.colors.textBody, false, cor, fs, c.so);
-      cy += rowH;
-    });
-    cy += 2;
+    linhas.push({ tipo: 'empresa', nome: emp.codigo + ' · ' + emp.nome.toUpperCase(), b: emp.total });
+    emp.centros.forEach(c => linhas.push({ tipo: 'item', nome: _dreNomeCurto_(c.nome), b: c, so: c.so }));
   });
 
-  // Divisores entre blocos.
-  for (let i = 1; i < 3; i++) {
-    const lx = gridX + i * 3 * colW - 1;
-    const d = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, lx, listY, 0.75, cy - listY - 2);
-    d.getFill().setSolidFill(DS.colors.lines);
-    d.getBorder().setTransparent();
-  }
+  const tY = blocoY + blocoH + subH + 2;
+  // SEM piso mínimo: a tabela precisa caber inteira, senão as últimas linhas
+  // são empurradas para fora da área visível.
+  const rowH = Math.min(16, (H - tY - 8) / linhas.length);
+  const fs = rowH >= 12 ? 7 : (rowH >= 9 ? 6.3 : (rowH >= 7 ? 5.5 : 4.8));
+
+  const mil = v => (v == null || isNaN(v)) ? '-' : Math.round(v / 1000).toLocaleString('pt-BR');
+
+  // Real ÷ base − 1, sempre positiva, com o sentido na seta.
+  // Base ZERADA com gasto = 100%. Base AUSENTE devolve null → "-", senão a
+  // coluna cravaria "▲ 100%" em cima de um dado que não existe.
+  const variacao = (base, real) => {
+    if (real == null || isNaN(real)) return null;
+    if (base == null || isNaN(base)) return null;
+    if (base === 0) return real > 0.005 ? { pct: 100, maior: true, nulo: false } : null;
+    const v = (real / base - 1) * 100;
+    return { pct: Math.abs(v), maior: v > 0, nulo: v === 0 };
+  };
+  const numeroVar = va => {
+    if (!va) return '-';
+    const pp = Math.round(va.pct);
+    if (pp === 0) return '0%';
+    return (pp > 9999 ? '>9999' : pp.toLocaleString('pt-BR')) + '%';
+  };
+  const corVar = va => {
+    if (!va || va.nulo) return DS.colors.textMuted;
+    return va.maior ? VERM : VERDE;
+  };
+
+  linhas.forEach((l, i) => {
+    const ry = tY + i * rowH;
+    const destaque = l.tipo !== 'item';
+    if (destaque) {
+      const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, ry, tableW, rowH - 0.5);
+      bg.getFill().setSolidFill(l.tipo === 'total' ? DS.colors.brandDark : CINZA_EMPRESA);
+      bg.getBorder().setTransparent();
+    }
+    const corTxt = destaque ? '#FFFFFF' : DS.colors.textMain;
+    const indent = l.tipo === 'item' ? 12 : 4;
+    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, l.nome,
+          l.tipo === 'total' ? fs + 0.4 : fs, destaque, corTxt, 'left');
+
+    // Marca de centro que só existe numa das abas — explica o "-" da linha.
+    if (l.so) {
+      _sTxt(slide, x0 + rubricaW - 36, ry, 33, rowH,
+            l.so === 'plano' ? 'só plano' : 'só ritmo', 4.6, false, DS.colors.textMuted, 'right');
+    }
+
+    [['mes', 'real'], ['acum', 'real'], ['ano', 'proj']].forEach(([campo, chaveReal], bi) => {
+      const bloco = l.b[campo] || {};
+      const aa   = bloco.aa;
+      const meta = bloco.plan;
+      const real = bloco[chaveReal];
+      const c0 = bi * NCOL;
+
+      [[0, mil(aa)], [1, mil(meta)], [2, mil(real)]].forEach(([k, txt]) => {
+        _sTxt(slide, colX(c0 + k) - 6, ry, colW(c0 + k) + 11, rowH, txt,
+              fs, destaque || k === 2, corTxt, 'center');
+      });
+
+      // Seta em caixa própria, colada à esquerda do número — junto no mesmo
+      // texto o Slides quebrava "▲ 2.088%" em duas linhas na célula estreita.
+      [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
+        const cxx = colX(c0 + k), cww = colW(c0 + k);
+        const cor = destaque ? '#E2E8F0' : corVar(va);
+        if (va && !va.nulo) {
+          _sTxt(slide, cxx + 1, ry, 8, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
+        }
+        _sTxt(slide, cxx + 7, ry, cww - 9, rowH, numeroVar(va), fs, false, cor, 'right');
+      });
+    });
+  });
 
   if (dados.avisos && dados.avisos.length) {
-    _sTxt(slide, x + 12, y + h - 11, w - 24, 10, '⚠ ' + dados.avisos[0], 5.5, false,
-          DS.colors.accentOrange, 'left');
+    _sTxt(slide, x0, H - 10, tableW, 9, '⚠ ' + dados.avisos[0], 5.2, false, DS.colors.accentOrange, 'left');
   }
-}
-
-function _dreLinhaValores_(slide, xRot, y, wRot, gridX, colW, h, rotulo, item, blocos, corTxt, bold, corTema, fs, so) {
-  const DS = CR_DESIGN_SYSTEM;
-  if (bold) {
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xRot, y, wRot + colW * 9, h);
-    bg.getFill().setSolidFill(corTema, 0.06);
-    bg.getBorder().setTransparent();
-  }
-  _sTxt(slide, xRot, y, wRot, h, rotulo, fs, bold, corTxt, 'left');
-
-  blocos.forEach((bl, i) => {
-    const bloco = item[bl.campo] || {};
-    const plano = bloco.plan;
-    const real  = bloco[bl.b];
-
-    _sTxt(slide, gridX + (i * 3) * colW,     y, colW, h, _dreMil_(plano), fs, false, DS.colors.textMuted, 'center');
-    _sTxt(slide, gridX + (i * 3 + 1) * colW, y, colW, h, _dreMil_(real),  fs, bold,  corTxt,              'center');
-
-    const v = _dreVariacao_(plano, real);
-    _sTxt(slide, gridX + (i * 3 + 2) * colW, y, colW, h, v.txt, fs, false, v.cor, 'center');
-  });
-
-  // Marca de centro que só existe numa das abas — explica o "—" da linha sem
-  // que alguém precise abrir a planilha para descobrir.
-  if (so) {
-    _sTxt(slide, xRot + wRot - 34, y, 32, h, so === 'plano' ? 'só plano' : 'só ritmo',
-          4.8, false, DS.colors.textMuted, 'right');
-  }
-}
-
-// R$ mil sem decimais. null → "—" (não medido), 0 → "0" (medido e é zero).
-function _dreMil_(v) {
-  if (v == null) return '—';
-  const mil = v / 1000;
-  return (Math.abs(mil) < 0.5 && mil !== 0) ? '~0' : String(Math.round(mil));
-}
-
-/**
- * Variação contra o plano, em módulo, com seta pelo sentido.
- *
- * Gasto é despesa: passar do plano é RUIM (▲ vermelha) e ficar abaixo é BOM
- * (▼ verde) — o inverso do que a intuição de "subiu = bom" sugere, e o
- * motivo de a seta existir em vez de só o sinal.
- *
- * Plano ZERO é caso à parte: qualquer gasto é variação infinita, e "∞%" não
- * informa. Mostra "novo" — houve gasto onde não havia plano.
- */
-function _dreVariacao_(plano, real) {
-  const DS = CR_DESIGN_SYSTEM;
-  if (plano == null || real == null) return { txt: '—', cor: DS.colors.textMuted };
-  if (plano === 0) return real === 0
-    ? { txt: '—', cor: DS.colors.textMuted }
-    : { txt: 'novo', cor: DS.colors.accentRed };
-  const pct = (real / plano - 1) * 100;
-  if (Math.abs(pct) < 0.5) return { txt: '0%', cor: DS.colors.textMuted };
-  const acima = pct > 0;
-  return {
-    txt: (acima ? '▲' : '▼') + Math.abs(Math.round(pct)) + '%',
-    cor: acima ? DS.colors.accentRed : DS.colors.accentGreen
-  };
 }
 
 // Encurta o nome do centro de custo para caber na coluna sem quebrar linha.
@@ -220,10 +225,12 @@ function _dreNomeCurto_(nome) {
     .replace(/^LJ 0/, 'LJ ');
 }
 
-function _dreLinha_(slide, x, y, w, cor, alt) {
-  const l = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, alt);
-  l.getFill().setSolidFill(cor);
-  l.getBorder().setTransparent();
+// R$ mil. null → "—" (não medido), 0 → "0" (medido e é zero). Usado pelo
+// resumo do Bridge; a tabela do DRE usa o `mil` local, no formato dos Megas.
+function _dreMil_(v) {
+  if (v == null) return '—';
+  const m = v / 1000;
+  return (Math.abs(m) < 0.5 && m !== 0) ? '~0' : String(Math.round(m));
 }
 
 // Aviso de falha usando SÓ insertShape e CR_DESIGN_SYSTEM — nada de _sTxt,
