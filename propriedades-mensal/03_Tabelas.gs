@@ -4,7 +4,7 @@
  *
  * Motor genérico de tabela em slide: cabeçalho, zebra, badges de status,
  * paginação e rodapé com KPIs. Quem descreve O QUE desenhar são os arquivos
- * Slide_RecebimentoObras.gs e Slide_Contratacoes.gs.
+ * 16_Slide_RecebimentoObras.gs e 17_Slide_Contratacoes.gs.
  *
  * DE ONDE VEIO
  * Port de tabelas/propriedades-semanal/ (recebimento-obras.gs +

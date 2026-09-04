@@ -486,7 +486,7 @@ function conferirIdentidadeBacklog() {
 // nome do arquivo diz o que recopiar — sem isso o erro não aponta para lugar
 // nenhum (lição 6 do CLAUDE.md).
 const _DEPS_BACKLOG_CLIENTES_ = [
-  { nome: '_sTxt',                             arquivo: '00_Helpers.gs',      args: 10 },
+  { nome: '_sTxt',                             arquivo: '00_Helpers.gs',      args: 11 },
   { nome: 'criarCardPainel',                   arquivo: '00_Helpers.gs',             args: 7  },
   { nome: 'criarHeaderPadrao',                 arquivo: '00_Helpers.gs',             args: 3  },
   { nome: 'getDeckMensal_',                    arquivo: '01_Config.gs',             args: 0  },
@@ -507,13 +507,13 @@ const _DEPS_BACKLOG_CLIENTES_ = [
   { nome: '_histFormatarDataCurta_',           arquivo: '05_DadosSlides.gs',              args: 1  },
   { nome: '_histDiasAberto_',                  arquivo: '05_DadosSlides.gs',              args: 2  },
   { nome: '_histNorm_',                        arquivo: '02_Dados.gs',              args: 1  },
-  // Do próprio Slide_BacklogClientesProperties.gs: se estes faltarem, é o
+  // Do próprio 15_Slide_BacklogClientes.gs: se estes faltarem, é o
   // arquivo do slide que está velho no editor.
-  { nome: '_backlogClientesTabela_',           arquivo: 'Slide_BacklogClientesProperties.gs', args: 10 },
-  { nome: '_paginarGruposBacklog_',            arquivo: 'Slide_BacklogClientesProperties.gs', args: 2  },
+  { nome: '_backlogClientesTabela_',           arquivo: '15_Slide_BacklogClientes.gs', args: 10 },
+  { nome: '_paginarGruposBacklog_',            arquivo: '15_Slide_BacklogClientes.gs', args: 2  },
   { nome: '_charsQueCabem_',                   arquivo: '00_Helpers.gs', args: 2  },
-  { nome: '_linhasPorChamadoQueCabem_',        arquivo: 'Slide_BacklogClientesProperties.gs', args: 6  },
-  { nome: '_clienteDisplay_',                  arquivo: 'Slide_BacklogClientesProperties.gs', args: 1  },
+  { nome: '_linhasPorChamadoQueCabem_',        arquivo: '15_Slide_BacklogClientes.gs', args: 6  },
+  { nome: '_clienteDisplay_',                  arquivo: '15_Slide_BacklogClientes.gs', args: 1  },
   { nome: '_TABELA_LINHA_COR_',                arquivo: '01_Config.gs', valor: true },
   { nome: '_CLIENTE_PALETA_',                  arquivo: '01_Config.gs', valor: true }
 ];

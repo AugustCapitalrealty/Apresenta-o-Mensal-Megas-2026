@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_Capa.gs
+ * ARQUIVO: 10_Slide_Capa.gs
  * SLIDE 00 — CAPA DA APRESENTAÇÃO MENSAL DE PROPRIEDADES
  *
  * Mesmo tom institucional das capas dos Megas (Slide00_Capa.gs): fundo
@@ -18,15 +18,8 @@
 function gerarSlideCapa() {
   const deck  = getDeckMensal_();
 
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_CAPA !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_CAPA);
-  }
-
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-
-  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_CAPA !== 'undefined') {
-    _tabMarcarSlide_(slide, TAG_CAPA);
-  }
+  _slideLimpar_(deck, TAG_CAPA);
+  const slide = _slideNovo_(deck, TAG_CAPA);  // sem header: a capa pinta o próprio fundo
 
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;

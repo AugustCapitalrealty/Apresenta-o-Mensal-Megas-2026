@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_IndicadoresGerais.gs
+ * ARQUIVO: 11_Slide_IndicadoresGerais.gs
  * SLIDE — DASHBOARD OPERACIONAL
  *
  * Grid flexível de painéis (criarCardPainel) com suporte a 2, 3 ou 4 quadrantes
@@ -26,21 +26,11 @@ function gerarSlideIndicadoresGerais() {
 
   const deck = getDeckMensal_();
   
-  // Limpeza de slide anterior com a mesma tag
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_DASHBOARD !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_DASHBOARD);
-  }
+  _slideLimpar_(deck, TAG_DASHBOARD);
 
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  const slide = _slideNovo_(deck, TAG_DASHBOARD);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-  // Marcação do slide para substituição segura
-  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_DASHBOARD !== 'undefined') {
-    _tabMarcarSlide_(slide, TAG_DASHBOARD);
-  }
 
   criarHeaderPadrao(
     slide,

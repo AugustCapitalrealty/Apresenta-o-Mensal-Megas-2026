@@ -67,14 +67,14 @@ function _mil_(v) {
 // ==========================================
 
 /**
- * Tira acento para comparar. A classe é escrita ESCAPADA (̀-ͯ) de
+ * Tira acento para comparar. A classe é escrita ESCAPADA (\u0300-\u036f) de
  * propósito: são os acentos combinantes, e escrevê-los literais é o erro que o
  * CLAUDE.md registra — some da tela e quebra a comparação em MARÇO. Já
  * aconteceu neste projeto.
  */
 function _norm_(s) {
   return String(s == null ? '' : s).toLowerCase().normalize('NFD')
-    .replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+    .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 // Corta no último espaço quando ele não fica cedo demais — cortar no meio de
@@ -291,7 +291,7 @@ function criarHeaderPadrao(slide, titulo, subtitulo) {
  * lateral e título opcional na cor do tema, com linha divisória. Retorna o Y
  * onde o conteúdo interno deve começar. Copiado de megas-mensal/01_Config.gs
  * (mesmo desenho) — usado pelo grid 2×2 do Dashboard Operacional
- * (Slide_IndicadoresGerais.gs).
+ * (11_Slide_IndicadoresGerais.gs).
  */
 function criarCardPainel(slide, x, y, w, h, titulo, cor) {
   const DS = CR_DESIGN_SYSTEM;
@@ -464,4 +464,88 @@ function _insertLogoPadrao_(slide, blob, x, y, boxW, boxH, altura) {
      .setLeft(x + (boxW - w) / 2)
      .setTop(y + (boxH - h) / 2);
   return img;
+}
+
+
+// ==========================================
+// ABERTURA E FECHAMENTO DE SLIDE
+// ==========================================
+// Os 14 geradores começavam com o mesmo bloco: apagar a rodada anterior pela
+// tag, criar o slide em branco, pintar o fundo, marcar a tag na nota e
+// desenhar o header. Eram ~15 linhas repetidas 14 vezes, com os `typeof`
+// defensivos copiados junto — e o defensivo copiado 14 vezes é justamente o
+// que envelhece em 13 lugares quando muda em um.
+
+/**
+ * Apaga os slides da rodada anterior desta seção.
+ *
+ * O `typeof` não é paranoia: 03_Tabelas.gs pode não ter sido colado no
+ * editor, e aí é melhor gerar duplicado do que não gerar nada (lição 6).
+ */
+function _slideLimpar_(deck, tag) {
+  if (!tag) return;
+  if (typeof _tabRemoverPorTag_ === 'function') _tabRemoverPorTag_(deck, tag);
+}
+
+/** Slide em branco, fundo do design system, tag na nota e header opcional. */
+function _slideNovo_(deck, tag, titulo, subtitulo) {
+  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
+  if (tag && typeof _tabMarcarSlide_ === 'function') _tabMarcarSlide_(slide, tag);
+  if (titulo) criarHeaderPadrao(slide, titulo, subtitulo || '');
+  return slide;
+}
+
+/**
+ * Escreve a falha NO slide, no lugar de deixá-lo vazio (lição 6).
+ *
+ * USA SÓ `insertShape` E `CR_DESIGN_SYSTEM` — nada de `_sRet_` ou `_sTxt`.
+ * O aviso existe justamente para o caso de faltar helper de desenho; se ele
+ * dependesse desses helpers, quebraria junto e o slide voltaria a ficar
+ * vazio, que é o sintoma que ninguém percebe antes da reunião.
+ */
+function _slideFalha_(slide, x, y, w, h, titulo, erro, dica) {
+  const DS = CR_DESIGN_SYSTEM;
+  const boxH = Math.min(96, Math.max(64, h - 48));
+  const boxY = y + 40;
+
+  const fundo = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x + 15, boxY, w - 30, boxH);
+  fundo.getFill().setSolidFill(DS.colors.accentRed, 0.08);
+  fundo.getBorder().setTransparent();
+
+  const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, boxY + 8, w - 50, boxH - 16);
+  tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const tr = tb.getText();
+  tr.setText('');
+  tr.appendText(titulo + '\n').getTextStyle()
+    .setFontSize(11).setBold(true)
+    .setForegroundColor(DS.colors.accentRed).setFontFamily(DS.typography.body);
+  tr.appendText(String((erro && erro.message) || erro) + (dica ? '\n' : '')).getTextStyle()
+    .setFontSize(8.5).setBold(false)
+    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
+  if (dica) {
+    tr.appendText(dica).getTextStyle()
+      .setFontSize(8).setBold(false).setItalic(true)
+      .setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.body);
+  }
+  tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+}
+
+
+// ==========================================
+// ESCALA DE GRÁFICO
+// ==========================================
+/**
+ * Teto "redondo" da escala a partir do maior valor da série, para a régua do
+ * gráfico cair em número inteiro. Copiado de megas-mensal/Slide_Utilities.gs.
+ *
+ * Morava em 13_Slide_Corretivas.gs e era usado também pelo Backlog — dependência
+ * cruzada entre dois arquivos de slide, que some se um dos dois não for
+ * colado. Helper genérico é helper de 00_Helpers.gs.
+ */
+function _utilEscalaTeto_(vMax) {
+  if (vMax <= 0) return 10;
+  const mag   = Math.pow(10, Math.floor(Math.log10(vMax)));
+  const passo = mag / 4;
+  return Math.ceil((vMax * 1.15) / passo) * passo;
 }

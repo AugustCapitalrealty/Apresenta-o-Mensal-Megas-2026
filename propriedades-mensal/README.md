@@ -13,7 +13,7 @@ ou execute uma das funções de `00_Main.gs`:
 
 | Função | O que faz |
 |---|---|
-| `gerarApresentacaoPropriedades()` | Gera a apresentação completa (10 passos oficiais) |
+| `gerarApresentacaoPropriedades()` | Gera a apresentação completa — 15 slides, na ordem dos arquivos `10_`–`20_` |
 | `gerarSoDashboard()` | Gera/atualiza apenas o **Dashboard Operacional** (4 quadrantes) |
 | `gerarTabelasPropriedades()` | Gera/atualiza apenas as tabelas (**Recebimento de Obras** e **Gestão de Contratações**) |
 | `gerarSoPreventivas()` / `gerarSoCorretivas()` | Gera apenas o slide correspondente |
@@ -178,25 +178,90 @@ fechar.
 - `indicadoresPortfolio_(aba, ano, mesIndex)` — o consolidado, para os slides
 - `indicadoresAcumulado_(aba, ano, mesIndexAte)` — o acumulado do ano
 
+## Os arquivos
+
+O nome de cada arquivo diz **quando ele roda**. `00`–`05` são a infraestrutura
+(lida a planilha, faz conta, desenha primitivo); `10`–`20` são os slides, na
+ordem exata do pipeline de `gerarApresentacaoPropriedades()`. Quem abre a
+pasta lê a apresentação de cima para baixo.
+
+| Arquivo | Linhas | O que tem dentro |
+|---|---|---|
+| `00_Helpers.gs` | 551 | número, texto, cache de planilha, logo, abertura de slide, aviso de falha, escala de gráfico |
+| `00_Main.gs` | 225 | menu, pipeline, conferência de arquivos no editor |
+| `01_Config.gs` | 691 | IDs, tags, constantes de layout, `METAS_PROPRIEDADES`, `DRE_EMPRESAS` |
+| `02_Dados.gs` | 995 | leitura das bases brutas, normalização, SLA, execução, mês de referência |
+| `03_Tabelas.gs` | 441 | motor de tabela: cabeçalho, zebra, badges, paginação, rodapé |
+| `04_Diagnosticos.gs` | 632 | nove diagnósticos, incluindo as 28 dependências do Backlog de Clientes |
+| `05_DadosSlides.gs` | 1.068 | agregação por slide + DRE/Bridge + Farol de Metas |
+| `10_Slide_Capa.gs` | 73 | capa |
+| `11_Slide_IndicadoresGerais.gs` | 258 | Dashboard Operacional, 4 quadrantes |
+| `12_Slide_Preventivas.gs` | 164 | preventivas: cards, SLA, fora de SLA |
+| `13_Slide_Corretivas.gs` | 138 | corretivas: KPIs e gráfico de emergenciais |
+| `14_Slide_Backlog.gs` | 254 | **três slides**: backlog por CC, detalhe dos emergenciais, motivos de pausa |
+| `15_Slide_BacklogClientes.gs` | 468 | backlog de clientes Properties, com logo e paginação |
+| `16_Slide_RecebimentoObras.gs` | 116 | as três fichas de recebimento + cálculo de prazo |
+| `17_Slide_Contratacoes.gs` | 358 | leitura e desenho da tabela densa de contratações |
+| `18_Slide_TorreManutencao.gs` | 223 | Torre CR e Torre Demercado |
+| `19_Slide_DREBridge.gs` | 538 | **três slides**: DRE, Bridge tabela, Bridge cascata |
+| `20_Slide_Metas.gs` | 221 | Farol de Metas, um slide por analista |
+
+### Por que alguns arquivos têm mais de um slide
+
+Junta-se quando os slides **saem da mesma leitura** ou **mudam pelo mesmo
+motivo** — separá-los nesse caso é cerimônia: você abre os dois toda vez.
+
+- `14_Slide_Backlog.gs` — os três são o MESMO estoque visto por onde, por quem
+  e por quê. Mexer na definição de "em aberto" mexe nos três de uma vez.
+- `19_Slide_DREBridge.gs` — os três saem de `obterDREManutencao_()`. O Bridge
+  é o DRE aberto por mês; mudar o recorte de um sem o outro é o jeito de a
+  apresentação sair com dois números para a mesma coisa.
+
+O que **não** se junta: `02_Dados.gs` com `05_DadosSlides.gs`. Seriam 1.600
+linhas, e os dois mudam por motivos diferentes — a base muda quando a operação
+muda de regra, a agregação muda quando alguém pede outra coluna no slide.
+
 ## Estrutura da apresentação
 
-Definida com o time:
-
-| # | Seção | Dados | Estado |
-|---|---|---|---|
-| 1 | **Indicadores gerais** | consolidado do portfólio | a definir |
-| 2 | **Preventivas** | previstas, realizadas e SLA — mês e acumulado do ano | dados prontos |
-| 3 | **Corretivas** | abertas no mês, fechadas no mês | dados prontos |
-| 4 | **Backlog** | quantos chamados, com detalhe | dados prontos |
-| 5 | **Recebimento de Obras** | Esteio, Curitiba e Análise de Projetos | **implementado** |
-| 6 | **Gestão de Contratações** | pipeline de contratações + histórico | **implementado** |
-| 7 | **Fotos de serviços** | espaço para registro | a fazer |
+| # | Seção | Arquivo |
+|---|---|---|
+| 1 | Capa | `10_Slide_Capa.gs` |
+| 2 | Indicadores gerais (Dashboard) | `11_Slide_IndicadoresGerais.gs` |
+| 3 | Preventivas | `12_Slide_Preventivas.gs` |
+| 4 | Corretivas | `13_Slide_Corretivas.gs` |
+| 5 | Backlog por Centro de Custos | `14_Slide_Backlog.gs` |
+| 6 | Backlog Emergencial — detalhe | `14_Slide_Backlog.gs` |
+| 7 | Chamados pendentes por motivo | `14_Slide_Backlog.gs` |
+| 8 | Backlog de Clientes — Properties | `15_Slide_BacklogClientes.gs` |
+| 9 | Recebimento de Obras | `16_Slide_RecebimentoObras.gs` |
+| 10 | Gestão de Contratações | `17_Slide_Contratacoes.gs` |
+| 11 | Torre de Manutenção | `18_Slide_TorreManutencao.gs` |
+| 12 | DRE de Manutenção | `19_Slide_DREBridge.gs` |
+| 13 | Bridge de Manutenção | `19_Slide_DREBridge.gs` |
+| 14 | Bridge — gráfico em cascata | `19_Slide_DREBridge.gs` |
+| 15 | Farol de Metas (um por analista) | `20_Slide_Metas.gs` |
 
 Todas com o corte **Megas × demais imóveis**. As preventivas têm também o
 corte **Propriedades × Facilities**.
 
-Os dados de 2, 3 e 4 já estão implementados em `02_Dados.gs` — falta o
-desenho dos slides. As seções 5 e 6 estão completas (dados + desenho).
+Ainda no rascunho do deck, sem gerador: CAPEX, Vistorias de Entrada,
+Monitoramento de Pendências, Monitoramento de Documentos e Status de Projetos
+Aprovados.
+
+## Testes
+
+Quatro suítes, `node <arquivo>`:
+
+| Arquivo | Asserções | O que trava |
+|---|---|---|
+| `teste_dre_manutencao.js` | 48 | o recorte realizado × ritmo e o splice da projeção anual |
+| `teste_dashboard.js` | 45 | as definições de "% conclusão" e "tempo médio de aprovação" |
+| `teste_slides.js` | 44 | todo slide desenha, nada fora da página, tabelas de dependência batem |
+| `teste_metas.js` | 20 | o status do farol e as linhas digitadas à mão |
+
+`teste_slides.js` é o que cobre a reorganização: carrega os 18 `.gs`, dubla
+`SlidesApp`/`SpreadsheetApp` e roda os 15 slides. Ele falha se um arquivo
+sumir, se um nome for declarado duas vezes ou se um shape sair dos 720×405.
 
 ## Tabelas: Recebimento de Obras e Gestão de Contratações
 
@@ -209,8 +274,8 @@ já gerava esses dois relatórios. Fonte: a planilha da área
 | Arquivo | O que faz |
 |---|---|
 | `03_Tabelas.gs` | Motor: cabeçalho, zebra, badges de status, paginação, rodapé com KPIs |
-| `Slide_RecebimentoObras.gs` | As três fichas de recebimento + o cálculo de prazo |
-| `Slide_Contratacoes.gs` | Leitura e desenho da tabela densa de contratações |
+| `16_Slide_RecebimentoObras.gs` | As três fichas de recebimento + o cálculo de prazo |
+| `17_Slide_Contratacoes.gs` | Leitura e desenho da tabela densa de contratações |
 
 Já estão no pipeline de **`gerarApresentacaoPropriedades()`**. Para
 reprocessar só elas sem tocar no resto do deck: `gerarTabelasPropriedades()`.

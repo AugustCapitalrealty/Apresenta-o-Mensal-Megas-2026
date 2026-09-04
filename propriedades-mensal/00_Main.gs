@@ -78,16 +78,23 @@ function onOpen() {
  * Só `typeof` — nada aqui pode depender do que está faltando.
  */
 const _PROP_DEPENDENCIAS_ = [
-  ['00_Helpers.gs',             ['_num_', '_milhar_', '_norm_', '_sTxt', '_sRet_', 'criarHeaderPadrao', 'criarCardPainel', '_abrirPlanilha_', '_getClienteLogoBlob_']],
-  ['01_Config.gs',              ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'DRE_EMPRESAS', 'METAS_PROPRIEDADES', 'LOGOS_CLIENTES']],
-  ['02_Dados.gs',               ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
-  ['03_Tabelas.gs',             ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
-  ['04_Diagnosticos.gs',        ['diagnosticarPropriedades', 'conferirIdentidadeBacklog', 'diagnosticarBacklogClientes']],
-  ['05_DadosSlides.gs',         ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterMetasCalculadas_']],
-  ['Slide_DREManutencao.gs',    ['gerarSlideDREManutencao', '_dreFalha_', '_drePosicionarNaSecao_']],
-  ['Slide_BridgeManutencao.gs', ['gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico']],
-  ['Slide_Metas.gs',            ['gerarSlidesMetas', '_metaResolver_']],
-  ['Slide_Corretivas.gs',       ['gerarSlideCorretivas']],
+  ['00_Helpers.gs',                 ['_num_', '_milhar_', '_norm_', '_sTxt', '_sRet_', 'criarHeaderPadrao', 'criarCardPainel', '_slideNovo_', '_slideLimpar_', '_slideFalha_', '_utilEscalaTeto_', '_abrirPlanilha_', '_getClienteLogoBlob_']],
+  ['01_Config.gs',                  ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'DRE_EMPRESAS', 'METAS_PROPRIEDADES', 'LOGOS_CLIENTES', 'TAG_BACKLOG']],
+  ['02_Dados.gs',                   ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
+  ['03_Tabelas.gs',                 ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
+  ['04_Diagnosticos.gs',            ['diagnosticarPropriedades', 'conferirIdentidadeBacklog', 'diagnosticarBacklogClientes']],
+  ['05_DadosSlides.gs',             ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterMetasCalculadas_']],
+  ['10_Slide_Capa.gs',              ['gerarSlideCapa']],
+  ['11_Slide_IndicadoresGerais.gs', ['gerarSlideIndicadoresGerais', '_dashGrade_']],
+  ['12_Slide_Preventivas.gs',       ['gerarSlidePreventivas']],
+  ['13_Slide_Corretivas.gs',        ['gerarSlideCorretivas']],
+  ['14_Slide_Backlog.gs',           ['gerarSlideBacklog', 'gerarSlideBacklogEmergencialDetalhe', 'gerarSlideChamadosPendentes']],
+  ['15_Slide_BacklogClientes.gs',   ['gerarSlideBacklogClientesProperties', '_backlogClientesTabela_']],
+  ['16_Slide_RecebimentoObras.gs',  ['gerarSlideRecebimentoObras']],
+  ['17_Slide_Contratacoes.gs',      ['gerarSlideContratacoes']],
+  ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
+  ['19_Slide_DREBridge.gs',         ['gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
+  ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
 ];
 
 function _propConferirProjeto_() {

@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_Preventivas.gs
+ * ARQUIVO: 12_Slide_Preventivas.gs
  * SLIDE — MANUTENÇÃO PREVENTIVA
  *
  * Mesmo desenho do slide de Preventivas dos Megas
@@ -18,18 +18,11 @@
 function gerarSlidePreventivas() {
   const deck  = getDeckMensal_();
   
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_PREVENTIVAS !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_PREVENTIVAS);
-  }
+  _slideLimpar_(deck, TAG_PREVENTIVAS);
 
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_PREVENTIVAS !== 'undefined') {
-    _tabMarcarSlide_(slide, TAG_PREVENTIVAS);
-  }
+  const slide = _slideNovo_(deck, TAG_PREVENTIVAS);
 
   const ref = obterMesReferencia_();
   criarHeaderPadrao(slide, 'MANUTENÇÃO PREVENTIVA',

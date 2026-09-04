@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_BacklogClientesProperties.gs
+ * ARQUIVO: 15_Slide_BacklogClientes.gs
  * SLIDE — BACKLOG DE CLIENTES (chamados de responsabilidade da equipe Property)
  *
  * Port de megas-mensal/Slide_BacklogClientesProperties.gs, com UMA diferença
@@ -24,9 +24,7 @@ function gerarSlideBacklogClientesProperties() {
   const dados = obterDadosBacklogClientesProperties_();
   const deck  = getDeckMensal_();
 
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_BACKLOG_CLIENTES);
-  }
+  _slideLimpar_(deck, TAG_BACKLOG_CLIENTES);
 
   const DS    = CR_DESIGN_SYSTEM;
   const W = deck.getPageWidth(), H = deck.getPageHeight();
@@ -37,12 +35,7 @@ function gerarSlideBacklogClientesProperties() {
   // que um slide ausente — quem abre o deck precisa saber que a pergunta foi
   // feita e a resposta foi zero, não que o slide falhou.
   if (!dados) {
-    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-    slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
-      _tabMarcarSlide_(slide, TAG_BACKLOG_CLIENTES);
-    }
+    const slide = _slideNovo_(deck, TAG_BACKLOG_CLIENTES);
 
     criarHeaderPadrao(slide, 'BACKLOG DE CLIENTES — PROPERTIES',
       'Chamados de clientes pendentes de responsabilidade da equipe Property');
@@ -67,12 +60,7 @@ function gerarSlideBacklogClientesProperties() {
   const paginas = _paginarGruposBacklog_(grupos, listaH);
 
   paginas.forEach((grupoDaPagina, i) => {
-    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-    slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-    if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_BACKLOG_CLIENTES !== 'undefined') {
-      _tabMarcarSlide_(slide, TAG_BACKLOG_CLIENTES);
-    }
+    const slide = _slideNovo_(deck, TAG_BACKLOG_CLIENTES);
 
     const subtitulo = 'Chamados de clientes pendentes de responsabilidade da equipe Property' +
       (paginas.length > 1 ? ' — página ' + (i + 1) + ' de ' + paginas.length : '');
@@ -388,24 +376,8 @@ function _backlogClientesBadge_(slide, x, y, w, texto, cor) {
  * voltaria a ficar vazio.
  */
 function _backlogClientesFalha_(slide, x, y, w, h, erro) {
-  const DS = CR_DESIGN_SYSTEM;
-  const boxY = y + 40, boxH = Math.min(96, h - 48);
-
-  _sRet_(slide, x + 15, boxY, w - 30, boxH, DS.colors.accentRed, 0.08);
-  const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, boxY + 8, w - 50, boxH - 16);
-  txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  const tr = txt.getText();
-  tr.setText('');
-  const t1 = tr.appendText('ESTE SLIDE NÃO FOI GERADO\n');
-  t1.getTextStyle().setFontSize(11).setBold(true)
-    .setForegroundColor(DS.colors.accentRed).setFontFamily(DS.typography.body);
-  const t2 = tr.appendText(String((erro && erro.message) || erro) + '\n');
-  t2.getTextStyle().setFontSize(8.5).setBold(false)
-    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
-  const t3 = tr.appendText('Rode diagnosticarBacklogClientes() no editor: ele diz qual arquivo recopiar.');
-  t3.getTextStyle().setFontSize(8).setBold(false).setItalic(true)
-    .setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.body);
-  tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  _slideFalha_(slide, x, y, w, h, 'ESTE SLIDE NÃO FOI GERADO', erro,
+    'Rode diagnosticarBacklogClientes() no editor: ele diz qual arquivo recopiar.');
 }
 
 
@@ -488,6 +460,9 @@ function _clienteDisplay_(clienteCru) {
 // PONTO DE ENTRADA — SLIDE AVULSO
 // ==========================================
 // Sem parâmetro, para aparecer no menu "Selecionar função" do editor.
+// Apelido do ponto de entrada — o do menu é gerarSoBacklogClientes (00_Main.gs).
+// Delega em vez de chamar o gerador direto para não perder o try/catch e o log
+// de _rodarPassos_: dois nomes, um comportamento só.
 function gerarSoBacklogClientesProperties() {
-  return gerarSlideBacklogClientesProperties();
+  return gerarSoBacklogClientes();
 }

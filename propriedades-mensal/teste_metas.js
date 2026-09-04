@@ -1,5 +1,5 @@
 /**
- * Teste do FAROL DE METAS (Slide_Metas.gs + 08_DadosMetas.gs).
+ * Teste do FAROL DE METAS (20_Slide_Metas.gs + 08_DadosMetas.gs).
  *
  * POR QUE EXISTE: o farol feito à mão errava duas coisas que agora são
  * calculadas — os PONTOS (dizia 15 onde a soma das verdes dá 35) e a COR do
@@ -16,7 +16,7 @@ global.SlidesApp = { ShapeType: {}, ContentAlignment: {}, ParagraphAlignment: {}
 global.SpreadsheetApp = { openById: () => { throw new Error('sem planilha no teste'); } };
 global.DriveApp = { getFileById: () => { throw new Error('sem Drive'); } };
 
-let fonte = ['00_Helpers.gs', '01_Config.gs', 'Slide_Metas.gs']
+let fonte = ['00_Helpers.gs', '01_Config.gs', '20_Slide_Metas.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 (0, eval)(fonte.replace(/^(const|let) /gm, 'var '));
 

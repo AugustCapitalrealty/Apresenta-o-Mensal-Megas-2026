@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_Contratacoes.gs
+ * ARQUIVO: 17_Slide_Contratacoes.gs
  * SEÇÃO:   SLIDE — Gestão de Contratações (Propriedades)
  *
  * Tabela mais densa que a de Recebimento: 10 colunas, com cabeçalho de dois
@@ -163,7 +163,7 @@ function _contSecao_(deck, SW, SH, referencia, linhas, opts) {
     _tabMarcarSlide_(slide, opts.tag);
 
     // criarHeaderPadrao (01_Config.gs), não _tabDesenharBanner_ — ver a nota
-    // em Slide_RecebimentoObras.gs: os dois desenhavam cabeçalhos diferentes
+    // em 16_Slide_RecebimentoObras.gs: os dois desenhavam cabeçalhos diferentes
     // no mesmo deck. topo fixo em 74, mesma linha do resto do deck.
     criarHeaderPadrao(slide, 'GESTÃO DE CONTRATAÇÕES', 'EQUIPE DE PROPRIEDADES');
 

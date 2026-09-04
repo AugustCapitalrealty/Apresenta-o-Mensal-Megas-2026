@@ -135,7 +135,7 @@ const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxz
 // FAROL DE METAS — PROPERTY
 // ==========================================
 // Uma linha por indicador, no mesmo formato da aba METAS que os Megas leem
-// (Slide_Metas.gs lá): Descrição | Pontos | Direcionador | Unidade | Sentido |
+// (20_Slide_Metas.gs lá): Descrição | Pontos | Direcionador | Unidade | Sentido |
 // Meta Mês | Real Mês | Meta Ano | Real Ano.
 //
 // POR QUE AQUI E NÃO NUMA PLANILHA: as linhas de SIM/NÃO são atualizadas pelo
@@ -425,7 +425,7 @@ function formatarNumeroBR(valor) {
 // _DEPS_BACKLOG_CLIENTES_, _PROP_EQUIPE_, _LOGOS_LEGENDA_). Elas só fazem
 // sentido ao lado da função que as usa.
 
-// ── de Slide_Contratacoes.gs ───────────────────────
+// ── de 17_Slide_Contratacoes.gs ───────────────────────
 const ABA_CONTRATACOES = 'GESTÃO DE CONTRATAÇÕES';
 const TAG_CONTRATACOES      = '【CONTRATACOES_AUTO】';
 const TAG_CONTRATACOES_HIST = '【CONTRATACOES_HIST_AUTO】';
@@ -436,7 +436,7 @@ const CONTRAT_FONTE = { colHeader: 7, grupo: 8.5, item: 7, descricao: 7.5 };
 // 6=Participantes 7=Visitas 8=Propostas 9=Início
 const CONTRAT_LARGURAS = [0.110, 0.115, 0.205, 0.085, 0.085, 0.085, 0.105, 0.080, 0.060, 0.070];
 
-// ── de Slide_RecebimentoObras.gs ───────────────────
+// ── de 16_Slide_RecebimentoObras.gs ───────────────────
 const TAG_RECEBIMENTO = '【RECEBIMENTO_AUTO】';
 const REC_COLUNAS = [
   { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.18 },
@@ -512,10 +512,10 @@ const REL_RECEBIMENTO = {
   }
 };
 
-// ── de Slide_Backlog.gs ────────────────────────────
+// ── de 14_Slide_Backlog.gs ────────────────────────────
 const PROP_BACKLOG_MAX_BARRAS = 14;
 
-// ── de Slide_BacklogEmergencialDetalhe.gs ──────────
+// ── de 14_Slide_Backlog.gs ──────────
 const BACKLOG_EMERG_MAX_LINHAS = 8;
 // "Data Abertura" é 'textoCentro', não 'data': _tabDesenharTabela_ só
 // desenha coluna 'data' se o texto bater com dd/mm/AAAA (_tabEhData_,
@@ -529,13 +529,13 @@ const BACKLOG_EMERG_COLUNAS = [
   { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.14 }
 ];
 
-// ── de Slide_Corretivas.gs ─────────────────────────
+// ── de 13_Slide_Corretivas.gs ─────────────────────────
 // Gráfico de barras — chamados emergenciais em aberto, mês a mês
 // (cronológico, mais recente por último). Mesmo desenho de
 // megas-mensal/Slide03_Corretivas.gs (_corretivasGraficoEmergencial_).
 const PROP_MESES_MIN = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
-// ── de Slide_BacklogClientesProperties.gs ──────────
+// ── de 15_Slide_BacklogClientes.gs ──────────
 const _TABELA_LINHA_COR_ = '#E2E8F0';
 const _CLIENTE_PALETA_ = ['#1E3A8A', '#0EA5E9', '#F59E0B', '#10B981', '#9333EA', '#D97706'];
 const _CLIENTE_COR_OUTROS_ = '#94A3B8';

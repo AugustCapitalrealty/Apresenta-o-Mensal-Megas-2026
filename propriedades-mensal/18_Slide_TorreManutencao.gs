@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_TorreManutencao.gs
+ * ARQUIVO: 18_Slide_TorreManutencao.gs
  * SLIDE — TORRE DE MANUTENÇÃO (CAPITAL REALTY & DEMERCADO)
  *
  * Apresentação executiva dos custos orçados vs. ritmo real de manutenção
@@ -21,10 +21,7 @@
 function gerarSlideTorreManutencao() {
   const deck = getDeckMensal_();
 
-  // Limpeza prévia de slides anteriores desta seção
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_TORRE_MANUTENCAO !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_TORRE_MANUTENCAO);
-  }
+  _slideLimpar_(deck, TAG_TORRE_MANUTENCAO);
 
   const dados = obterDadosTorreManutencao_();
 
@@ -47,12 +44,7 @@ function gerarSlideTorreManutencao() {
 function _desenharSlideTorreUnidade_(deck, unidadeNome, dadosTorre) {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_TORRE_MANUTENCAO !== 'undefined') {
-    _tabMarcarSlide_(slide, TAG_TORRE_MANUTENCAO);
-  }
+  const slide = _slideNovo_(deck, TAG_TORRE_MANUTENCAO);
 
   // Header do slide
   criarHeaderPadrao(

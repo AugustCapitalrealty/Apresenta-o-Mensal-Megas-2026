@@ -1,5 +1,5 @@
 /**
- * ARQUIVO: Slide_Corretivas.gs
+ * ARQUIVO: 13_Slide_Corretivas.gs
  * SLIDE — INDICADORES DE CORRETIVAS
  *
  * Mesmo desenho do slide de Corretivas dos Megas
@@ -25,20 +25,11 @@
 function gerarSlideCorretivas() {
   const deck = getDeckMensal_();
   
-  if (typeof _tabRemoverPorTag_ === 'function' && typeof TAG_CORRETIVAS !== 'undefined') {
-    _tabRemoverPorTag_(deck, TAG_CORRETIVAS);
-  }
+  _slideLimpar_(deck, TAG_CORRETIVAS);
 
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-
-  if (typeof _tabMarcarSlide_ === 'function' && typeof TAG_CORRETIVAS !== 'undefined') {
-    _tabMarcarSlide_(slide, TAG_CORRETIVAS);
-  }
-
-  criarHeaderPadrao(slide, 'INDICADORES DE CORRETIVAS',
+  const slide = _slideNovo_(deck, TAG_CORRETIVAS, 'INDICADORES DE CORRETIVAS',
     'Backlog e Performance · ▲/▼ vs mês anterior');
 
   const ref  = obterMesReferencia_();
@@ -145,12 +136,3 @@ function _corrGraficoEmergencial_(slide, x, y, w, h, meses) {
   });
 }
 
-
-// Escala "redonda" pro topo do eixo Y — cópia de
-// megas-mensal/Slide_Utilities.gs (_utilEscalaTeto_).
-function _utilEscalaTeto_(vMax) {
-  if (vMax <= 0) return 10;
-  const mag   = Math.pow(10, Math.floor(Math.log10(vMax)));
-  const passo = mag / 4;
-  return Math.ceil((vMax * 1.15) / passo) * passo;
-}

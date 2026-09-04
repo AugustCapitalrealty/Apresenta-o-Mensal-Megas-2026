@@ -8,7 +8,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 |---|---|---|
 | `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 44 `.gs` |
 | `boletim/` | Boletim 2026 | 18 `.gs` |
-| `propriedades-mensal/` | Apresentação Mensal de Propriedades | 16 `.gs` |
+| `propriedades-mensal/` | Apresentação Mensal de Propriedades | 18 `.gs` |
 | `financeiro-mensal/` | Apresentação Mensal — Financeiro | 14 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 11 `.gs` |
@@ -238,8 +238,8 @@ Script diz só `Cannot read properties of undefined (reading 'rows')`.
 detectar o descompasso antes de rodar e nomear o arquivo a recopiar. Ver
 `_tvConferirProjeto_` em `gestao-tvs/00_Main.gs`, chamada na primeira linha
 de `gerarApresentacao()`, e `diagnosticarBacklogClientes()` em
-`propriedades-mensal/Diagnostico_BacklogClientes.gs`, que confere as 28
-dependências de um slide só e diz qual arquivo recopiar.
+`propriedades-mensal/04_Diagnosticos.gs`, que confere as 28 dependências de um
+slide só — nome, arquivo e número de argumentos — e diz qual recopiar.
 
 **O sintoma engana: parece falta de dado, é helper faltando.** Quando a
 exceção cai no meio do desenho, o que já foi desenhado FICA. Um slide cujo
@@ -252,11 +252,11 @@ arquivo (`_sTxt`, `LOGO_LARG_PADRAO`) que não foi colada no editor.
 Vale envolver o desenho de cada página num `try/catch` que escreve a falha NO
 slide — trocar o vazio silencioso por um aviso que ninguém leva para a reunião
 sem ver. Ver `_backlogClientesFalha_` em
-`propriedades-mensal/Slide_BacklogClientesProperties.gs`. **O aviso não pode
-usar as helpers que podem estar faltando** (nada de `_sTxt`): se dependesse
-delas, quebraria junto e o slide voltaria a ficar vazio. Só `insertShape` e
-`CR_DESIGN_SYSTEM`. De brinde, o `catch` por página impede que a primeira
-falha aborte as outras.
+`_slideFalha_` em `propriedades-mensal/00_Helpers.gs`. **O aviso não pode
+usar as helpers que podem estar faltando** (nada de `_sTxt`, nada de `_sRet_`):
+se dependesse delas, quebraria junto e o slide voltaria a ficar vazio. Só
+`insertShape` e `CR_DESIGN_SYSTEM`. De brinde, o `catch` por página impede que
+a primeira falha aborte as outras.
 
 ## Testes
 
@@ -264,14 +264,17 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Quatro suítes hoje, 277 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Sete suítes hoje, 399 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
 | `boletim/teste_dados.js` | 92 |
 | `gestao-tvs/teste_bases.js` | 79 |
 | `boletim/teste_slides.js` | 71 |
-| `propriedades-mensal/teste_dashboard.js` | 35 |
+| `propriedades-mensal/teste_dre_manutencao.js` | 48 |
+| `propriedades-mensal/teste_dashboard.js` | 45 |
+| `propriedades-mensal/teste_slides.js` | 44 |
+| `propriedades-mensal/teste_metas.js` | 20 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
 
@@ -285,7 +288,16 @@ Quatro suítes hoje, 277 asserções ao todo, cada uma rodando com `node <arquiv
 
 Ao dublar `SlidesApp`, vale registrar cada shape inserida e conferir a
 geometria depois — foi assim que as quebras de caixa do Farol apareceram sem
-precisar abrir a apresentação.
+precisar abrir a apresentação. `propriedades-mensal/teste_slides.js` leva isso
+até o fim: roda os 15 slides e reprova se algum escrever o aviso de falha, se
+um shape sair da página, ou se as tabelas de dependência apontarem para o
+arquivo errado. Como o dublê explode em `NaN`, dimensão negativa e
+`setSolidFill(undefined)`, ele pega erro de layout sem ninguém olhar o deck.
+
+Duas coisas que o dublê precisa saber imitar, senão o teste falha por motivo
+errado: `insertLine` devolve objeto com `getLineFill()` (não `getBorder()`), e
+o grafismo de fundo do header é uma `ELLIPSE` que sangra para fora da página
+**de propósito** — conferir a geometria sem excluí-la reprova todo slide.
 
 Dois detalhes recorrentes do `eval`:
 
@@ -298,6 +310,19 @@ Dois detalhes recorrentes do `eval`:
 
 ## Convenções de código
 
+- **O nome do arquivo diz quando ele roda.** Em `propriedades-mensal/` (o
+  projeto mais organizado hoje, e o modelo a seguir), `00`–`05` é
+  infraestrutura — helpers, config, leitura, motor de tabela, diagnósticos,
+  agregação — e `10`–`20` são os slides, **na ordem exata do pipeline**. Quem
+  abre a pasta lê a apresentação de cima para baixo, sem precisar do
+  `00_Main.gs`. Como o editor do Apps Script lista os arquivos em ordem
+  alfabética, o número vale lá também.
+- **Juntar arquivos: o critério é a fonte, não o assunto.** Dois slides ficam
+  no mesmo arquivo quando saem da MESMA leitura (`19_Slide_DREBridge.gs`: DRE
+  e Bridge vêm os dois de `obterDREManutencao_()`) ou quando mudam pelo mesmo
+  motivo (`14_Slide_Backlog.gs`: três recortes do mesmo estoque). Separar dado
+  de desenho só paga quando o dado é COMPARTILHADO; num par 1:1 é cerimônia —
+  você abre os dois toda vez.
 - Comentários e nomes em português, como o resto do código.
 - Sufixo `_` em função interna (`_histNorm_`), sem sufixo no ponto de entrada
   que aparece no menu do editor (`gerarCuritiba`).

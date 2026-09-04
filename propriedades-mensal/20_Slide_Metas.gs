@@ -1,9 +1,9 @@
 /**
- * ARQUIVO: Slide_Metas.gs
+ * ARQUIVO: 20_Slide_Metas.gs
  * SLIDE — FAROL DE METAS (um por pessoa)
  *
  * Mesmo formato do farol que o Wilson e o Ricardo já usam, e a mesma lógica de
- * status do Slide_Metas.gs dos Megas — portada, não reinventada, para os dois
+ * status do 20_Slide_Metas.gs dos Megas — portada, não reinventada, para os dois
  * decks pintarem igual o mesmo dado.
  *
  *   Descrição | Pontos | Direcionador | Unidade | Sentido |
@@ -25,7 +25,7 @@
 
 function gerarSlidesMetas() {
   const deck = getDeckMensal_();
-  if (typeof _tabRemoverPorTag_ === 'function') _tabRemoverPorTag_(deck, TAG_METAS);
+  _slideLimpar_(deck, TAG_METAS);
 
   const calc = obterMetasCalculadas_();
   const ref  = obterMesReferencia_();
@@ -38,9 +38,7 @@ function gerarSlidesMetas() {
 function _metaSlidePessoa_(deck, pessoa, calc, ref) {
   const DS = CR_DESIGN_SYSTEM;
   const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-  slide.getBackground().setSolidFill(DS.colors.bgSlide);
-  if (typeof _tabMarcarSlide_ === 'function') _tabMarcarSlide_(slide, TAG_METAS);
+  const slide = _slideNovo_(deck, TAG_METAS);
 
   criarHeaderPadrao(slide, 'FAROL DE METAS',
     'PROPERTY — ' + ref.nome + ' ' + ref.ano);
@@ -214,16 +212,8 @@ function _metaCorStatus_(txt) {
 
 // Aviso de falha só com insertShape e CR_DESIGN_SYSTEM (lição 6).
 function _metaFalha_(slide, x, y, w, h, erro) {
-  const DS = CR_DESIGN_SYSTEM;
-  _sRet_(slide, x, y + 40, w, 70, DS.colors.accentRed, 0.08);
-  const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, y + 48, w - 20, 54);
-  tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  const tr = tb.getText(); tr.setText('');
-  tr.appendText('FAROL DE METAS NÃO FOI GERADO\n').getTextStyle()
-    .setFontSize(11).setBold(true).setForegroundColor(DS.colors.accentRed).setFontFamily(DS.typography.body);
-  tr.appendText(String((erro && erro.message) || erro)).getTextStyle()
-    .setFontSize(8.5).setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
-  tr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  _slideFalha_(slide, x, y, w, h, 'FAROL DE METAS NÃO FOI GERADO', erro,
+    'Rode diagnosticarArquivos() no editor: ele diz qual arquivo recopiar.');
 }
 
 // O ponto de entrada avulso (gerarSoMetas) mora em 00_Main.gs, junto com os

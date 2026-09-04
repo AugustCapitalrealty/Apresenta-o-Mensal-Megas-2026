@@ -26,7 +26,7 @@
 
 
 function _histNorm_(s) {
-  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ').trim();
 }
 
@@ -120,7 +120,7 @@ function _idChamadoNormaliza_(v) {
 }
 
 function _histEmpChave_(s) {
-  return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ').trim();
 }
 
@@ -206,11 +206,11 @@ function _propLerBase_(nomeAba) {
     // — lista separada por vírgula, diferente de "Fechado por" que é um nome só.
     const cResp   = col('responsaveis', 'responsável');
     // Nome do serviço/atividade — usada na relação de preventivas fora do
-    // SLA (Slide_Preventivas.gs). Mesma coluna que megas-mensal/02_Dados.gs
+    // SLA (12_Slide_Preventivas.gs). Mesma coluna que megas-mensal/02_Dados.gs
     // já lê da mesma base.
     const cDesc   = col('descricao', 'descrição');
     // Prioridade do chamado (Emergencial/Alta/Normal/Baixa) — usada no
-    // gráfico de Backlog Emergencial (Slide_Corretivas.gs). A aba tem duas
+    // gráfico de Backlog Emergencial (13_Slide_Corretivas.gs). A aba tem duas
     // colunas "Prioridade" (uma de texto, outra numérica); col() pega a
     // primeira ocorrência, que é a de texto — mesmo comportamento de
     // megas-mensal/02_Dados.gs na mesma base.
@@ -220,7 +220,7 @@ function _propLerBase_(nomeAba) {
     // "Alinhamento Operação", "Pendências de Obra"). Confirmado com
     // diagnosticarMotivoPausa: quando preenchido, É o motivo de verdade;
     // quando vazio, o chamado está "Em resolução" (sem pausa formal). Usada
-    // por obterBacklogPorMotivo_ (Slide_ChamadosPendentes.gs).
+    // por obterBacklogPorMotivo_ (14_Slide_Backlog.gs).
     const cMotivo = col('motivo de pausa', 'motivo da pausa');
     // As duas bases nomeiam as datas de formas diferentes — a primeira
     // coluna que existir vence:
@@ -576,7 +576,7 @@ function indicadoresAcumulado_(nomeAba, ano, mesIndexAte, janela) {
 
 // Mesma ideia de indicadoresAcumulado_ (ano inteiro até o mês, inclusive),
 // mas filtrado pra equipe PROPRIEDADES — usada pelo card "ACUMULADO" de
-// Slide_Preventivas.gs, mesmo corte do resto do deck (nada de
+// 12_Slide_Preventivas.gs, mesmo corte do resto do deck (nada de
 // Facilities/Terceiros).
 function obterAcumuladoPropriedades_(nomeAba, ano, mesIndexAte, janela) {
   const resolver = nomeAba === BD_ABA_CORRETIVAS
@@ -765,7 +765,7 @@ function indicadoresPorEquipeSegmento_(nomeAba, resolverEquipeFn, ano, mesIndex,
 const _MESES_SEM_ACENTO_ = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
                             'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
-// Tira acento para comparar. A classe é escrita ESCAPADA (̀-ͯ) de
+// Tira acento para comparar. A classe é escrita ESCAPADA (\u0300-\u036f) de
 // propósito: são os acentos combinantes, e escrevê-los literais é o erro que
 // o CLAUDE.md registra — some da tela e quebra a comparação em MARÇO.
 function _mesNormalizar_(txt) {
@@ -871,7 +871,7 @@ function _mesRefDaReserva_() {
 
 // % de itens concluídos nos relatórios de Recebimento de Obras (Esteio +
 // Curitiba + Análise de Projetos). Lê a mesma REL_RECEBIMENTO
-// e o mesmo _tabLerAba_ que Slide_RecebimentoObras.gs usa para desenhar as
+// e o mesmo _tabLerAba_ que 16_Slide_RecebimentoObras.gs usa para desenhar as
 // tabelas — um número só de fonte, em vez de recalcular por conta própria e
 // arriscar divergir do que a tabela mostra.
 function obterRecebimentoObrasResumo_() {

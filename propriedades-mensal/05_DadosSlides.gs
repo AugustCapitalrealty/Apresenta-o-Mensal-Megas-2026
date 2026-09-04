@@ -28,7 +28,7 @@
 // ==========================================
 // Monta os 3 pontos no tempo (mês atual / mês anterior / mesmo mês ano
 // anterior) que o grid comparativo do Dashboard Operacional
-// (Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
+// (11_Slide_IndicadoresGerais.gs, no estilo de megas-mensal/Slide01_
 // Dashboard.gs) precisa — chamando obterIndicadoresPropriedades_/
 // obterBacklogPorCC_ com (ano, mesIndex) diferentes. Nenhum dado novo: são
 // as MESMAS funções que Preventivas/Backlog já usam pro mês corrente, já
@@ -36,7 +36,7 @@
 //
 // Só Preventivas e Backlog entram — Corretivas e o corte Megas x Demais
 // saíram do Dashboard por pedido do usuário (trabalhando por partes). O
-// mapa fica só com as chaves que Slide_IndicadoresGerais.gs lê hoje; se
+// mapa fica só com as chaves que 11_Slide_IndicadoresGerais.gs lê hoje; se
 // Corretivas voltar ao grid, é só recalcular corr[] igual a prev[] abaixo.
 //
 // Recebimento de Obras fica FORA deste grid, de propósito: a planilha
@@ -314,7 +314,7 @@ function obterBacklogPorCC_(ano, mesIndex) {
 
 
 // ==========================================
-// INDICADORES DE CORRETIVAS — Slide_Corretivas.gs
+// INDICADORES DE CORRETIVAS — 13_Slide_Corretivas.gs
 // ==========================================
 // Chamados criados/fechados e tempo médio entre criado e fechado, mensal e
 // acumulado do ano — os três direto da BD-CORRETIVAS (mesma base e mesma
@@ -421,7 +421,7 @@ function _histDiasAberto_(dtReporte, refFim) {
 // de referência).
 // Ordenado do mais antigo pro mais novo (dias desc) — os que mais
 // precisam de atenção aparecem primeiro. Usado por
-// Slide_BacklogEmergencialDetalhe.gs.
+// 14_Slide_Backlog.gs.
 function obterBacklogEmergencialDetalhe_() {
   const ref    = obterMesReferencia_();
   const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
@@ -443,7 +443,7 @@ function obterBacklogEmergencialDetalhe_() {
 
 
 // ==========================================
-// CHAMADOS PENDENTES (BACKLOG) POR MOTIVO — Slide_ChamadosPendentes.gs
+// CHAMADOS PENDENTES (BACKLOG) POR MOTIVO — 14_Slide_Backlog.gs
 // ==========================================
 // Equivalente honesto do slide "Chamados Pendentes (Backlog)" dos Megas —
 // lá vem de uma aba digitada à mão (MÊS/ESTADO/QUANTIDADE); aqui é 100%
