@@ -151,22 +151,6 @@ function _corrGraficoEmergencial_(slide, x, y, w, h, meses) {
   });
 }
 
-// Texto simples numa caixa, com alinhamento — cópia de
-// megas-mensal/Slide10_EnergiaSolar.gs (_sTxt), usado pelos rótulos do
-// gráfico acima.
-function _sTxt(slide, x, y, w, h, txt, size, bold, cor, align) {
-  const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
-  tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  const ts = tb.getText();
-  ts.setText(String(txt));
-  const st = ts.getTextStyle();
-  st.setFontSize(size).setBold(!!bold).setForegroundColor(cor).setFontFamily(CR_DESIGN_SYSTEM.typography.body);
-  const ps = ts.getParagraphStyle();
-  if (align === 'center')     ps.setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  else if (align === 'right') ps.setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-  else                        ps.setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
-  tb.getBorder().setTransparent();
-}
 
 // Escala "redonda" pro topo do eixo Y — cópia de
 // megas-mensal/Slide_Utilities.gs (_utilEscalaTeto_).

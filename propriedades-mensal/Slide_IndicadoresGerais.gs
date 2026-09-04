@@ -271,6 +271,3 @@ function _dashCor_(valStr, rowDef, corPadrao) {
   return corPadrao || DS.colors.textMain;
 }
 
-function _dashNum_(v) {
-  return (v == null || isNaN(v)) ? null : v;
-}

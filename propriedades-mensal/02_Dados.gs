@@ -1975,13 +1975,6 @@ function _parseTorreRows_(matriz) {
   };
 }
 
-function _toNum_(v) {
-  if (v == null || v === '') return 0;
-  if (typeof v === 'number') return isNaN(v) ? 0 : v;
-  const s = String(v).replace(/\u00A0/g, '').replace('R$', '').replace('%', '').trim().replace(/\./g, '').replace(',', '.');
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
-}
 
 function _calcularTotalTorre_(rows) {
   const tot = {

@@ -179,13 +179,6 @@ function _metaContarSim_(nomeAba) {
   }
 }
 
-// "67,21%" → 67.21. Célula vazia ou #DIV/0! → null, nunca 0.
-function _metaPct_(v) {
-  const t = String(v == null ? '' : v).trim();
-  if (!t || t.indexOf('#') === 0) return null;
-  const n = parseFloat(t.replace('%', '').replace(/\./g, '').replace(',', '.'));
-  return isNaN(n) ? null : n;
-}
 
 /**
  * Metros de piso — CONTROLE PISO 2026, linha TOTAL REALIZADO.

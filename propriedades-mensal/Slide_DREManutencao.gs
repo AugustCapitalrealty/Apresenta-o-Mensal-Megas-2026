@@ -225,13 +225,6 @@ function _dreNomeCurto_(nome) {
     .replace(/^LJ 0/, 'LJ ');
 }
 
-// R$ mil. null → "—" (não medido), 0 → "0" (medido e é zero). Usado pelo
-// resumo do Bridge; a tabela do DRE usa o `mil` local, no formato dos Megas.
-function _dreMil_(v) {
-  if (v == null) return '—';
-  const m = v / 1000;
-  return (Math.abs(m) < 0.5 && m !== 0) ? '~0' : String(Math.round(m));
-}
 
 // Aviso de falha usando SÓ insertShape e CR_DESIGN_SYSTEM — nada de _sTxt,
 // que pode ser exatamente a helper que faltou (ver lição 6 do CLAUDE.md).

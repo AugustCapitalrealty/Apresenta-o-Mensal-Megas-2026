@@ -16,7 +16,7 @@ global.SlidesApp = { ShapeType: {}, ContentAlignment: {}, ParagraphAlignment: {}
 global.SpreadsheetApp = { openById: () => { throw new Error('sem planilha no teste'); } };
 global.DriveApp = { getFileById: () => { throw new Error('sem Drive'); } };
 
-let fonte = ['01_Config.gs', 'Slide_Metas.gs']
+let fonte = ['00_Helpers.gs', '01_Config.gs', 'Slide_Metas.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 (0, eval)(fonte.replace(/^(const|let) /gm, 'var '));
 

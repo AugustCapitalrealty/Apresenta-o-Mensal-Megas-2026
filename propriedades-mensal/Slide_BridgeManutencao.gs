@@ -278,6 +278,3 @@ function _brgLegenda_(slide, x, y) {
     });
 }
 
-function _brgMilhar_(n) {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}

@@ -67,17 +67,6 @@ function _dreLerAba_(nomeAba) {
   return mapa;
 }
 
-// Número no formato da controladoria: "1.234,56" e negativo entre parênteses.
-// Devolve null (não zero) para célula vazia — a diferença importa: um centro
-// de custo ausente de uma aba tem que aparecer como "—", não como zero.
-function _dreNum_(v) {
-  const t = String(v == null ? '' : v).trim();
-  if (!t || t === '-' || t === '—') return null;
-  const neg = /^\(.*\)$/.test(t);
-  const n = parseFloat(t.replace(/[()]/g, '').replace(/\./g, '').replace(',', '.'));
-  if (isNaN(n)) return null;
-  return neg ? -n : n;
-}
 
 // Soma tratando null como "não tem": se NENHUMA parcela existir devolve null,
 // e não zero. Sem isso um centro de custo ausente zeraria o subtotal do grupo.

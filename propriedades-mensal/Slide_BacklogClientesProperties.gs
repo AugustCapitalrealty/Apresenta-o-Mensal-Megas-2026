@@ -427,13 +427,7 @@ const _TABELA_LINHA_COR_ = '#E2E8F0';
 const _CLIENTE_PALETA_ = ['#1E3A8A', '#0EA5E9', '#F59E0B', '#10B981', '#9333EA', '#D97706'];
 const _CLIENTE_COR_OUTROS_ = '#94A3B8';
 
-// Recuo interno da TEXT_BOX que a API do Slides não deixa desligar — entra na
-// conta de quantos caracteres cabem numa caixa.
-const TEXTBOX_INSET_PT = 4;
 
-function _charsQueCabem_(w, fontSize) {
-  return Math.max(8, Math.floor((w - TEXTBOX_INSET_PT * 2) / (fontSize * 0.62)));
-}
 
 /**
  * 2 linhas por chamado se a página inteira couber assim; 1 se não couber.
@@ -453,15 +447,6 @@ function _linhasPorChamadoQueCabem_(paginaColunas, budget, lineH, minRowH, capti
   return alturaDaColunaMaisAlta(2) <= budget ? 2 : 1;
 }
 
-// Corta no último espaço quando ele não fica cedo demais — cortar no meio de
-// uma palavra é mais difícil de ler que perder a palavra inteira.
-function _truncarNome_(txt, max) {
-  const t = String(txt || '').replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  const corte = t.slice(0, max);
-  const ultimoEspaco = corte.lastIndexOf(' ');
-  return (ultimoEspaco > max * 0.6 ? corte.slice(0, ultimoEspaco) : corte) + '…';
-}
 
 function _linhaTabela_(slide, x, y, w, cor, altura) {
   const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, altura);

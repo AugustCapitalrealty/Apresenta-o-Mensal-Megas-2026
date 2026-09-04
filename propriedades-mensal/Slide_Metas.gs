@@ -174,11 +174,6 @@ function _metaFmt_(v, unidade) {
   return String(Math.round(v));
 }
 
-function _metaNum_(s) {
-  let t = String(s || '').trim().replace(/[^0-9,.\-]/g, '');
-  t = t.replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
-  return parseFloat(t);
-}
 
 function _metaOperador_(sentido, unidade) {
   const s = String(sentido || '').replace(/\s/g, '').replace('=>', '>=').replace('=<', '<=');

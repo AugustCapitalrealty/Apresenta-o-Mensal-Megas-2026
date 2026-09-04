@@ -43,7 +43,7 @@ function aba(nome) {
 global.SlidesApp = { openById: () => { throw new Error('sem Slides no teste'); } };
 global.DriveApp  = { getFileById: () => { throw new Error('sem Drive no teste'); } };
 
-let fonte = ['01_Config.gs', '02_Dados.gs', 'Dados_DREManutencao.gs', 'Slide_BridgeManutencao.gs']
+let fonte = ['00_Helpers.gs', '01_Config.gs', '02_Dados.gs', 'Dados_DREManutencao.gs', 'Slide_BridgeManutencao.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 fonte = fonte.replace(/^(const|let) /gm, 'var ');
 (0, eval)(fonte);
