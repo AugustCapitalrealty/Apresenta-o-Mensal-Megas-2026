@@ -48,7 +48,8 @@ function onOpen() {
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
-      .addItem('Bridge — Manutenção', 'gerarSoBridgeManutencao'))
+      .addItem('Bridge — Manutenção', 'gerarSoBridgeManutencao')
+      .addItem('Farol de Metas', 'gerarSoMetas'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
     .addItem('🔍 Diagnosticar Backlog de Clientes', 'diagnosticarBacklogClientes')
@@ -89,7 +90,8 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
     { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
     { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
-    { nome: 'Bridge de Manutenção',          fn: gerarSlideBridgeManutencao }
+    { nome: 'Bridge de Manutenção',          fn: gerarSlideBridgeManutencao },
+    { nome: 'Farol de Metas',                fn: gerarSlidesMetas }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];
@@ -124,6 +126,7 @@ function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão d
 function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
 function gerarSoDREManutencao()       { return _rodarPassos_([{ nome: 'DRE de Manutenção',              fn: gerarSlideDREManutencao }]); }
 function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção',           fn: gerarSlideBridgeManutencao }]); }
+function gerarSoMetas()               { return _rodarPassos_([{ nome: 'Farol de Metas',                 fn: gerarSlidesMetas }]); }
 
 
 // Roda cada passo isolado: slide que falha registra o erro e não derruba os

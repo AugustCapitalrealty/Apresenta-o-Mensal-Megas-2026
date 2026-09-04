@@ -131,6 +131,83 @@ const TORRE_MANUTENCAO_CR_ID        = '1BKvWWjFDarUzSa2aop2EJMrlsw3kGgaydHXC_yfs
 const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxzLqM';
 
 // ==========================================
+// FAROL DE METAS — PROPERTY
+// ==========================================
+// Uma linha por indicador, no mesmo formato da aba METAS que os Megas leem
+// (Slide_Metas.gs lá): Descrição | Pontos | Direcionador | Unidade | Sentido |
+// Meta Mês | Real Mês | Meta Ano | Real Ano.
+//
+// POR QUE AQUI E NÃO NUMA PLANILHA: as linhas de SIM/NÃO são atualizadas pelo
+// usuário direto no código (decisão dele). Só as NUMÉRICAS são calculadas —
+// e essas trazem `calc`, que diz de onde o real vem. Dados_Metas.gs preenche
+// realMes/realAno de quem tem `calc`; quem não tem fica como está escrito.
+//
+// `calc` disponível:
+//   'slaPreventivas' → SLA das preventivas de Propriedades (todas, não só as
+//                      do analista — foi o que causou a divergência 84,55 x 81,9)
+//   'ppc'            → PPC de manutenção: realizados ÷ previstos, por CONTAGEM
+//   'piso'           → metros de piso do CONTROLE PISO 2026
+//   'reabertura'     → reabertos ÷ fechados (base bruta RICARDO - PROPRIEDADES)
+const METAS_PROPRIEDADES = [
+  {
+    nome: 'WILSON FRANCISCO LEFFER JUNIOR',
+    papel: 'ANALISTA DE PROPRIEDADES',
+    linhas: [
+      { descricao: 'INSPEÇÕES PREDIAIS MONOUSUÁRIOS (DEZEMBRO)', pontos: 25,
+        direcionador: 'Projetos', unidade: 'SIM/NÃO', sentido: '=',
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+      { descricao: 'IMPLEMENTAÇÃO DA MEDIÇÃO DE QUALIDADE E PERFORMANCE (DEZEMBRO)', pontos: 20,
+        direcionador: 'Projetos', unidade: 'SIM/NÃO', sentido: '=',
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+      { descricao: 'DESENVOLVIMENTO DE MEMORIAIS DESCRITIVOS (NOVEMBRO)', pontos: 20,
+        direcionador: 'Padronização', unidade: 'SIM/NÃO', sentido: '=',
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+      { descricao: 'INFRASPEAK CHECK-LIST/SLA', pontos: 20,
+        direcionador: 'Performance', unidade: '%', sentido: '>=',
+        metaMes: '90,00', metaAno: '90,00', calc: 'slaPreventivas' },
+      { descricao: 'DESENVOLVIMENTO DE POPS DE VISTORIA DE ENTRADA E SAÍDA (NOVEMBRO)', pontos: 15,
+        direcionador: 'Padronização', unidade: 'SIM/NÃO', sentido: '>=',
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' }
+    ]
+  },
+  {
+    nome: 'RICARDO MURILO DA SILVA',
+    papel: 'ANALISTA DE PROPRIEDADES',
+    linhas: [
+      { descricao: 'Concluir no mínimo 80% do Planejamento (PPC) previsto em Manutenção', pontos: 25,
+        direcionador: 'Performance', unidade: '%', sentido: '>=',
+        metaMes: '6,67', metaAno: '80', calc: 'ppc' },
+      { descricao: 'Realizar levantamento de projeto de retrofit de elétrica e hidráulica', pontos: 20,
+        direcionador: 'Projetos', unidade: 'SIM/NÃO', sentido: '=',
+        metaMes: 'SIM', realMes: 'NÃO', metaAno: 'SIM', realAno: 'NÃO' },
+      { descricao: 'Realizar manutenção de piso equivalente a pelo menos 1.000 metros', pontos: 20,
+        direcionador: 'Performance', unidade: 'M', sentido: '>=',
+        metaMes: '143', metaAno: '1000', calc: 'piso' },
+      { descricao: 'Desenvolver checklist de recebimento de serviços contratados', pontos: 20,
+        direcionador: 'Padronização', unidade: 'SIM/NÃO', sentido: '=',
+        metaMes: 'SIM', realMes: 'SIM', metaAno: 'SIM', realAno: 'SIM' },
+      { descricao: 'Obter taxa de reabertura de chamados inferior a 2%', pontos: 15,
+        direcionador: 'Performance', unidade: '%', sentido: '<=',
+        metaMes: '2', metaAno: '2', calc: 'reabertura' }
+    ]
+  }
+];
+
+// Fontes das linhas calculadas.
+// CONTROLE PISO 2026 - RICARDO: linhas TOTAL REALIZADO e META, um mês por coluna.
+const METAS_PISO_ID = '1mFoMIe5fu2allIDAHN-IrieGGTdNn43Sl_gF1fqitHk';
+// RICARDO - PROPRIEDADES 2026: aba CHAMADOS FECHADOS (base bruta, uma linha por
+// chamado, coluna REABERTURA SIM/NÃO) + tabela agregada FECHADOS/REABERTOS.
+// Lemos a BASE BRUTA e usamos a agregada como reserva (lição 3).
+const METAS_REABERTURA_ID = '1FEC-fSYqc23O4HOMQisZFzelPSqdyxQWQ-pSwtsl4qc';
+// PPC: as duas abas de SIM que substituíram os valores em R$.
+const METAS_PPC_ID = '13H14RAeSZYwlNzrMj32ll1IWyPTGbNAWYeMYaY5WMVE';
+const METAS_PPC_ABA_PREVISTAS  = 'MANUTENÇÕES PREVISTAS';
+const METAS_PPC_ABA_REALIZADAS = 'MANUTENÇÕES REALIZADAS';
+
+const TAG_METAS = '【PROP_METAS_AUTO】';
+
+// ==========================================
 // DRE / BRIDGE DE MANUTENÇÃO — PLANILHA PROPRIEDADES
 // ==========================================
 // Planilha "PLANILHA PROPRIEDADES" — DRE gerencial no plano de contas da
