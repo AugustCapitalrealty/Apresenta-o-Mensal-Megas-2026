@@ -390,159 +390,8 @@ const TORRE_MANUTENCAO_DEMERCADO_REF = [
  */
 var _propDriveAppDisponivel = true;
 
-function criarHeaderPadrao(slide, titulo, subtitulo) {
-  const deck = getDeckMensal_();
-  const W  = deck.getPageWidth();
-  const DS = CR_DESIGN_SYSTEM;
-  const mX = DS.layout.marginX;
 
-  // Grafismo de fundo — elipse suave no canto superior direito (assinatura do boletim)
-  const ellipse = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 350, -80, 450, 450);
-  ellipse.getFill().setSolidFill(DS.colors.brandLight, 0.03);
-  ellipse.getBorder().setTransparent();
 
-  // Barra de destaque à esquerda do título
-  const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, mX, 13, 5, 36);
-  bar.getFill().setSolidFill(DS.colors.brandLight);
-  bar.getBorder().setTransparent();
-
-  // Título
-  const txt1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mX + 14, 6, W - mX - 200, 30);
-  txt1.getText().setText(titulo).getTextStyle()
-    .setFontSize(19).setBold(true)
-    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.titles);
-
-  // Subtítulo
-  if (subtitulo) {
-    const txt2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, mX + 14, 34, W - mX - 200, 18);
-    txt2.getText().setText(subtitulo).getTextStyle()
-      .setFontSize(9.5).setBold(false)
-      .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-  }
-
-  // Logo no canto superior direito (não quebra a geração se indisponível)
-  if (typeof _propDriveAppDisponivel === 'undefined' || _propDriveAppDisponivel) {
-    try {
-      const logoBlob = DriveApp.getFileById(DS.logoId).getBlob();
-      slide.insertImage(logoBlob, W - mX - DS.logoW, 14, DS.logoW, DS.logoH);
-    } catch (e) {
-      _propDriveAppDisponivel = false;
-      Logger.log('Aviso (Header): logo não carregado via DriveApp (' + e.message + ').');
-    }
-  }
-
-  // Linha separadora de largura total + segmento de destaque
-  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 0, 62, W, 62);
-  sep.getLineFill().setSolidFill(DS.colors.lines);
-  sep.setWeight(1);
-
-  const acc = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, mX, 62, mX + 110, 62);
-  acc.getLineFill().setSolidFill(DS.colors.brandLight);
-  acc.setWeight(3);
-}
-
-/**
- * Card de KPI padrão (padrão do boletim/Megas): card branco com borda fina,
- * barra lateral colorida, label pequeno em cima e valor grande embaixo.
- *
- * opts = {
- *   label    : rótulo pequeno superior (obrigatório)
- *   valor    : valor em destaque (obrigatório)
- *   cor      : cor da barra lateral (default brandLight)
- *   corValor : cor do valor (default = cor da barra)
- *   tamValor : tamanho da fonte do valor (default 22)
- *   sub      : linha auxiliar sob o valor, ex.: '▲ 1,2 (+4%)' (opcional)
- *   corSub   : cor da linha auxiliar (default textBody)
- *   nota     : nota menor sob a linha auxiliar, ex.: 'vs mês anterior' (opcional)
- * }
- */
-function criarCardKPI(slide, x, y, w, h, opts) {
-  const DS = CR_DESIGN_SYSTEM;
-  const corBarra = opts.cor || DS.colors.brandLight;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(DS.colors.cardBg);
-  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
-  bg.getBorder().setWeight(1);
-
-  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
-  side.getFill().setSolidFill(corBarra);
-  side.getBorder().setTransparent();
-
-  // +10pt de folga à direita: vence o recuo interno do TEXT_BOX pra rótulos
-  // mais longos (ex.: "SLA RECEBIMENTO DE OBRAS") não quebrarem em duas
-  // linhas à toa — a caixa não tem borda própria, então a folga é invisível.
-  const lbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 6, w - 20 + 10, 13);
-  lbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  lbl.getText().setText(String(opts.label)).getTextStyle()
-    .setFontSize(7.5).setBold(true)
-    .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-
-  // Área do valor ocupa o meio; sub/nota reservam o rodapé do card
-  const footH = (opts.sub ? 13 : 0) + (opts.nota ? 11 : 0);
-  const val = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, y + 18, w - 20, h - 22 - footH);
-  val.getText().setText(String(opts.valor)).getTextStyle()
-    .setFontSize(opts.tamValor || 22).setBold(true)
-    .setForegroundColor(opts.corValor || corBarra)
-    .setFontFamily(DS.typography.titles);
-  val.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-  let fy = y + h - footH - 4;
-  if (opts.sub) {
-    const sub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 13);
-    sub.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    sub.getText().setText(String(opts.sub)).getTextStyle()
-      .setFontSize(8).setBold(true)
-      .setForegroundColor(opts.corSub || DS.colors.textBody).setFontFamily(DS.typography.titles);
-    fy += 13;
-  }
-  if (opts.nota) {
-    const nota = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 12, fy, w - 20, 11);
-    nota.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    nota.getText().setText(String(opts.nota)).getTextStyle()
-      .setFontSize(6.5).setBold(false)
-      .setForegroundColor(DS.colors.textBody).setFontFamily(DS.typography.body);
-  }
-}
-
-/**
- * Painel padrão (contêiner de conteúdo): card branco com borda fina, barra
- * lateral e título opcional na cor do tema, com linha divisória. Retorna o Y
- * onde o conteúdo interno deve começar. Copiado de megas-mensal/01_Config.gs
- * (mesmo desenho) — usado pelo grid 2×2 do Dashboard Operacional
- * (Slide_IndicadoresGerais.gs).
- */
-function criarCardPainel(slide, x, y, w, h, titulo, cor) {
-  const DS = CR_DESIGN_SYSTEM;
-  const corTema = cor || DS.colors.brandLight;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(DS.colors.cardBg);
-  bg.getBorder().getLineFill().setSolidFill(DS.colors.lines);
-  bg.getBorder().setWeight(1);
-
-  const side = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 4, h);
-  side.getFill().setSolidFill(corTema);
-  side.getBorder().setTransparent();
-
-  if (titulo) {
-    // Marcador quadrado na cor do tema antes do título (substitui emojis)
-    const marca = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 11, 7, 7);
-    marca.getFill().setSolidFill(corTema);
-    marca.getBorder().setTransparent();
-
-    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 27, y + 6, w - 37, 18);
-    t.getText().setText(String(titulo)).getTextStyle()
-      .setFontSize(10).setBold(true)
-      .setForegroundColor(corTema).setFontFamily(DS.typography.titles);
-
-    const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 14, y + 26, w - 28, 1);
-    div.getFill().setSolidFill(DS.colors.lines);
-    div.getBorder().setTransparent();
-    return y + 32;
-  }
-  return y + 10;
-}
 
 /**
  * Formata número no padrão brasileiro quando o valor for numérico
@@ -565,18 +414,6 @@ function formatarNumeroBR(valor) {
   });
 }
 
-/**
- * Cor semântica para percentuais de SLA (regra do boletim):
- * ≥95 verde, ≥90 âmbar, <90 vermelho. Sem número → cor padrão.
- * Copiado de megas-mensal/01_Config.gs — usado pelo Dashboard Operacional.
- */
-function corPorSLA(valor, corPadrao) {
-  const n = parseFloat(String(valor == null ? '' : valor).replace('%', '').replace(',', '.'));
-  if (isNaN(n)) return corPadrao || CR_DESIGN_SYSTEM.colors.textMain;
-  if (n < 90) return CR_DESIGN_SYSTEM.colors.accentRed;
-  if (n < 95) return '#F59E0B';
-  return CR_DESIGN_SYSTEM.colors.accentGreen;
-}
 
 
 // ==========================================
@@ -787,3 +624,73 @@ const _LOGO_LEGENDA_MIN_BOX_  = 22;   // altura mínima pra caber logo + legenda
 const LOGO_ALT_PADRAO   = 18;   // altura de TODO logo de cliente do deck
 const LOGO_RATIO_MAX    = 5;    // logo mais largo do acervo (~5:1)
 const LOGO_LARG_PADRAO  = LOGO_ALT_PADRAO * LOGO_RATIO_MAX;   // 90pt
+
+
+// ── LOGOS DE CLIENTE ──────────────────────────────────────────────────────
+// Vieram do antigo Slide_LogosClientes.gs. São tabelas de LOOKUP: mudam
+// quando entra um cliente novo, não quando o desenho muda. O comportamento
+// (buscar no Drive, encaixar na caixa) ficou em 06_Logos.gs.
+
+const LOGOS_CLIENTES = {
+  'Shopee':         '1_5vQjNBWGR8j-e5M94tGobglBTBN1ewH',
+  'Mercado Livre':  '1rtesWo8XV5-CMeyLgc6lLaHXgQRWtuz9',
+  'Sodexo':         '1391EvxTNYW3q9RCArhoc2earckFLGNSt',
+  'Suzano':         '1E4laN6uhI3dgzTDnP9d63OQ3PkLlm36S',
+  'NTN':            '12Oxh8itF46nWBefjv6bOUEi7_aYnSO5H',
+  'Magnum':         '1StAJIlbMM2S523iuIZlAjuo3oGnPdEqF',
+  'Boticario':      '1VLZirUEmMoBsI5fX3wFDiSMoPdms_4La',
+  'Calamo':         '1VLZirUEmMoBsI5fX3wFDiSMoPdms_4La',
+  'Ativa':          '10-uTna_fhwqozMi8dvn-tzEJ6BhnfUo2',
+  'Tornado':        '1Jxwe1oSRlDIR4-Qw0g5fOM_6zo1KHwUZ',
+  'Bosch':          '1lh7-yq4HOFHWu6BI_we35khXldFATHg3',
+  'HP':             '1LB8AfjJnZFHTKIWGfk0sDoMmZ-Fz_7SI',
+  'Damasio':        '1bDprE9vS940Pf04bGqb9OMqhJIypNveU',
+  'Magalu':         '1R1NXo3r04uQQgKnEQUZoZZlBHh9HuiOU',
+  'Magazine Luiza': '1R1NXo3r04uQQgKnEQUZoZZlBHh9HuiOU',
+  'Rio Branco':     '1PXQvjnPymFWJhMGFY8JjLOoZaPRYVNxp',
+  'Triunfante':     '1UxXcR0T39OMrRzpyaPq7ca-OSWUSTrzD',
+  'Daybrasil':      '1W2EKA5TFa-I9pWudmwarSpAFqsNf-Yod',
+  'Day Brasil':     '1W2EKA5TFa-I9pWudmwarSpAFqsNf-Yod',
+  'JBT':            '1ZoUcwT6-Iv9BknWqoGKgJsyjSq4G1uLc',
+  'Domazzi':        '1lq-ALGuWn793yd613WIyG35Nh-ejIfTt',
+  'Flexmodal':      '1lq-ALGuWn793yd613WIyG35Nh-ejIfTt',
+  'Stella':         '1G6D0j4-9p_7iPb4N2-BhO_RfKP2NOxNu',
+  'Orizon':         '1G6D0j4-9p_7iPb4N2-BhO_RfKP2NOxNu',
+  'STH':            '1G6D0j4-9p_7iPb4N2-BhO_RfKP2NOxNu',
+  'Vm Vinhos':      '1G6D0j4-9p_7iPb4N2-BhO_RfKP2NOxNu',
+  'Wine':           '1aoj0mr1Jcut4oXk0tvD5TaZiaK79dF-D',
+  'Sigma':          '1eqv7IxU-utU7TkYjOzlM4hQ5QDtoQacu',
+  'Pacific':        '1l7G3-cq9viXEMJi8bc0lBUejPJoU6W7i',
+  'Domus':          '1VhxvlmFQ27aYiIjdsOJd2VU0s-A6Mg-C',
+  'Veloz':          '1-i3nKyGyVWQIFbCO96Ih-5fiV9ZgtDZ2',
+  'Demercado':      '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T',
+  'DHL':            '1MtKYh79eDwOXw52reQ4WLDEXLGv-cm9z'
+  // TornadoLog e outros apelidos sem logo cadastrado aqui caem no fallback
+  // de texto (_getClienteLogoBlob_ retorna null) — não fabricamos ID de
+  // arquivo pra cliente que não estava no mapa de origem.
+};
+
+// ── Legenda embaixo do logo (marcas que dividem o mesmo arquivo) ─────────
+// Alguns clientes aparecem sob o logo de OUTRA marca porque compartilham o
+// mesmo arquivo no mapa acima — herança do projeto "Controle de Acessos
+// Megas", que já mostra a logo do Boticário para o Cálamo. Sem nada escrito
+// embaixo, o slide exibe duas empresas diferentes com exatamente a mesma
+// imagem e ninguém sabe qual é qual. Nesses casos (e só nesses) o nome curto
+// da empresa vai numa legenda logo abaixo do logo.
+//
+// O casamento é por TRECHO normalizado, igual ao de LOGOS_CLIENTES: o nome
+// que chega aqui pode ser o apelido ("Cálamo") ou a razão social inteira
+// ("ORIZON COMERCIO DE ALIMENTOS LTDA"), e a legenda tem que mostrar sempre
+// o nome curto.
+const _LOGOS_LEGENDA_ = [
+  { trecho: 'boticario', rotulo: 'Boticário' },   // BPB / O Boticário — ícone
+  { trecho: 'calamo',    rotulo: 'Cálamo'    }    // genérico, sem texto próprio: precisa da legenda
+  // Domazzi/Flexmodal e Stella/Orizon/STH/Vm Vinhos dividem arquivo (ver
+  // LOGOS_CLIENTES acima), mas a pedido do usuário NÃO ganham legenda: os
+  // logos de Stella e Domazzi têm o nome escrito na própria imagem (ao
+  // contrário do ícone genérico do Boticário), então a legenda embaixo era
+  // redundante. Fica registrado aqui que Orizon/STH/Vm Vinhos e Flexmodal
+  // continuam mostrando a logo (real) de Stella/Domazzi sem nenhuma marca —
+  // se algum desses aparecer num slide, o logo exibido será o da OUTRA
+  // empresa, sem aviso.
+];

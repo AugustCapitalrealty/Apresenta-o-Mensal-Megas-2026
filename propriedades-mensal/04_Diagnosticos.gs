@@ -486,36 +486,36 @@ function conferirIdentidadeBacklog() {
 // nome do arquivo diz o que recopiar — sem isso o erro não aponta para lugar
 // nenhum (lição 6 do CLAUDE.md).
 const _DEPS_BACKLOG_CLIENTES_ = [
-  { nome: '_sTxt',                             arquivo: 'Slide_Corretivas.gs',      args: 10 },
-  { nome: 'criarCardPainel',                   arquivo: '01_Config.gs',             args: 7  },
-  { nome: 'criarHeaderPadrao',                 arquivo: '01_Config.gs',             args: 3  },
+  { nome: '_sTxt',                             arquivo: '00_Helpers.gs',      args: 10 },
+  { nome: 'criarCardPainel',                   arquivo: '00_Helpers.gs',             args: 7  },
+  { nome: 'criarHeaderPadrao',                 arquivo: '00_Helpers.gs',             args: 3  },
   { nome: 'getDeckMensal_',                    arquivo: '01_Config.gs',             args: 0  },
   { nome: 'CR_DESIGN_SYSTEM',                  arquivo: '01_Config.gs',             valor: true },
   { nome: 'TAG_BACKLOG_CLIENTES',              arquivo: '01_Config.gs',             valor: true },
   { nome: '_tabRemoverPorTag_',                arquivo: '03_Tabelas.gs',            args: 2  },
   { nome: '_tabMarcarSlide_',                  arquivo: '03_Tabelas.gs',            args: 2  },
-  { nome: 'LOGO_LARG_PADRAO',                  arquivo: 'Slide_LogosClientes.gs',   valor: true },
-  { nome: 'LOGO_ALT_PADRAO',                   arquivo: 'Slide_LogosClientes.gs',   valor: true },
-  { nome: '_getClienteLogoBlob_',              arquivo: 'Slide_LogosClientes.gs',   args: 1  },
-  { nome: '_insertLogoFitLegenda_',            arquivo: 'Slide_LogosClientes.gs',   args: 8  },
+  { nome: 'LOGO_LARG_PADRAO',                  arquivo: '01_Config.gs',   valor: true },
+  { nome: 'LOGO_ALT_PADRAO',                   arquivo: '01_Config.gs',   valor: true },
+  { nome: '_getClienteLogoBlob_',              arquivo: '06_Logos.gs',   args: 1  },
+  { nome: '_insertLogoFitLegenda_',            arquivo: '06_Logos.gs',   args: 8  },
   { nome: 'obterMesReferencia_',               arquivo: '02_Dados.gs',              args: 0  },
   { nome: '_propLerCorretivas_',               arquivo: '02_Dados.gs',              args: 0  },
   { nome: '_histAbertoNoMes_',                 arquivo: '02_Dados.gs',              args: 5  },
   { nome: '_ehCondominio_',                    arquivo: '02_Dados.gs',              args: 1  },
   { nome: '_chamadoResponsabilidadeLocatario_', arquivo: '02_Dados.gs',             args: 1  },
   { nome: '_propEquipeCorretiva_',             arquivo: '02_Dados.gs',              args: 1  },
-  { nome: '_histFormatarDataCurta_',           arquivo: '02_Dados.gs',              args: 1  },
-  { nome: '_histDiasAberto_',                  arquivo: '02_Dados.gs',              args: 2  },
+  { nome: '_histFormatarDataCurta_',           arquivo: '05_DadosSlides.gs',              args: 1  },
+  { nome: '_histDiasAberto_',                  arquivo: '05_DadosSlides.gs',              args: 2  },
   { nome: '_histNorm_',                        arquivo: '02_Dados.gs',              args: 1  },
   // Do próprio Slide_BacklogClientesProperties.gs: se estes faltarem, é o
   // arquivo do slide que está velho no editor.
   { nome: '_backlogClientesTabela_',           arquivo: 'Slide_BacklogClientesProperties.gs', args: 10 },
   { nome: '_paginarGruposBacklog_',            arquivo: 'Slide_BacklogClientesProperties.gs', args: 2  },
-  { nome: '_charsQueCabem_',                   arquivo: 'Slide_BacklogClientesProperties.gs', args: 2  },
+  { nome: '_charsQueCabem_',                   arquivo: '00_Helpers.gs', args: 2  },
   { nome: '_linhasPorChamadoQueCabem_',        arquivo: 'Slide_BacklogClientesProperties.gs', args: 6  },
   { nome: '_clienteDisplay_',                  arquivo: 'Slide_BacklogClientesProperties.gs', args: 1  },
-  { nome: '_TABELA_LINHA_COR_',                arquivo: 'Slide_BacklogClientesProperties.gs', valor: true },
-  { nome: '_CLIENTE_PALETA_',                  arquivo: 'Slide_BacklogClientesProperties.gs', valor: true }
+  { nome: '_TABELA_LINHA_COR_',                arquivo: '01_Config.gs', valor: true },
+  { nome: '_CLIENTE_PALETA_',                  arquivo: '01_Config.gs', valor: true }
 ];
 
 function diagnosticarBacklogClientes() {
