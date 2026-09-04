@@ -490,11 +490,7 @@ function _brgTabela_(slide, x, y, w, h, d) {
     const corPill = m.tipo === 'RITMO' ? '#D97706' : (abaixo ? '#10B981' : '#EF4444');
     const pillBg  = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, pillX, pillY, pillW, pillH);
     pillBg.getFill().setSolidFill(corPill); pillBg.getBorder().setTransparent();
-    const pt = pillBg.getText();
-    pt.setText(m.tipo === 'RITMO' ? 'RITMO' : 'REAL')
-      .getTextStyle().setFontSize(5.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily('Montserrat');
-    pt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    pillBg.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    _sTxt(slide, cols[1].x, ry, cols[1].w, rowH, m.tipo === 'RITMO' ? 'RITMO' : 'REAL', 5.5, true, '#FFFFFF', 'center');
 
     _cel(_brgMoeda_(m.plan), cols[2], DS.colors.textBody, false);
     _cel(_brgMoeda_(m.real), cols[3], DS.colors.textMain, true);
@@ -507,11 +503,7 @@ function _brgTabela_(slide, x, y, w, h, d) {
     const vPillY = ry + (rowH - vPillH) / 2;
     const vBg    = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, vPillX, vPillY, vPillW, vPillH);
     vBg.getFill().setSolidFill(bgVarPill); vBg.getBorder().setTransparent();
-    const vt = vBg.getText();
-    vt.setText(varPct)
-      .getTextStyle().setFontSize(6).setBold(true).setForegroundColor(corVar).setFontFamily('Montserrat');
-    vt.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    vBg.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    _sTxt(slide, cols[5].x, ry, cols[5].w, rowH, varPct, 6, true, corVar, 'center');
   });
 
   // Linha de Totais (PERÍODO)
