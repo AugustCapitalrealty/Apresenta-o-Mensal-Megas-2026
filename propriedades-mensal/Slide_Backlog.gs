@@ -11,7 +11,6 @@
  * reaproveitados aqui).
  */
 
-const PROP_BACKLOG_MAX_BARRAS = 14;
 
 function gerarSlideBacklog() {
   const deck = getDeckMensal_();

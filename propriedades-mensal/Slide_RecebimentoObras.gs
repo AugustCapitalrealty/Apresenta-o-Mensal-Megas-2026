@@ -16,83 +16,9 @@
  * do total, a lista não); no histórico, o total geral, os concluídos e o %.
  */
 
-const TAG_RECEBIMENTO = '【RECEBIMENTO_AUTO】';
 
-const REC_COLUNAS = [
-  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.18 },
-  { nome: 'Obra',           tipo: 'texto',       largura: 0.40 },
-  { nome: 'Pendência',      tipo: 'textoCentro', largura: 0.24 },
-  { nome: 'Status',         tipo: 'status',      largura: 0.18 }
-];
 
-// Contam sobre a coluna Status (índice 3).
-const REC_KPIS = [
-  { label: 'TOTAL',     cor: CR_DESIGN_SYSTEM.colors.brandDark,   teste: null },
-  { label: 'CONCLUÍDO', cor: CR_DESIGN_SYSTEM.colors.accentGreen, teste: r => /conclu/i.test(_tabV_(r, 3)) },
-  { label: 'PENDENTE',  cor: CR_DESIGN_SYSTEM.colors.accentRed,   teste: r => /pendente/i.test(_tabV_(r, 3)) }
-];
 
-const REL_RECEBIMENTO = {
-  esteio: {
-    nome:            'Esteio',
-    aba:             'Recebimento de Obras - Esteio',
-    titulo:          'RECEBIMENTO DE OBRAS · ESTEIO',
-    subtitulo:       'Pendências da Obra · MEGA ESTEIO',
-    cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
-    colunas:         REC_COLUNAS,
-    kpis:            REC_KPIS,
-    pctTexto:        'concluído',
-    testeConcluido:  r => /conclu/i.test(_tabV_(r, 3))
-  },
-
-  ctba: {
-    nome:            'Curitiba',
-    aba:             'Recebimento de Obras - Ctba',
-    titulo:          'RECEBIMENTO DE OBRAS · CURITIBA',
-    subtitulo:       'Pendências da Obra · MEGA CURITIBA',
-    cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
-    colunas:         REC_COLUNAS,
-    kpis:            REC_KPIS,
-    pctTexto:        'concluído',
-    testeConcluido:  r => /conclu/i.test(_tabV_(r, 3))
-  },
-
-  analise: {
-    nome:            'Análise de Projetos',
-    aba:             'Análise de Projetos',
-    titulo:          'ANÁLISE DE PROJETOS',
-    subtitulo:       'Recebimento de Obras',
-    cabecalhoContem: ['OBJETIVO', 'AVALIADOR', 'LOCAT'],
-    // 10 colunas: fonte menor e 7 linhas/slide, para o Objetivo de 2 linhas
-    // caber sem transbordar a célula.
-    fonte:           7.5,
-    fonteHeader:     7.5,
-    maxLinhas:       7,
-    colunas: [
-      { nome: 'Empr.',     tipo: 'textoCentro', largura: 0.085 },
-      { nome: 'Locatário', tipo: 'textoCentro', largura: 0.085 },
-      { nome: 'Objetivo',  tipo: 'texto',       largura: 0.175 },
-      { nome: 'Compl.',    tipo: 'textoCentro', largura: 0.13,  fonte: 6.5 },
-      { nome: 'Mem.',      tipo: 'textoCentro', largura: 0.07,  fonte: 6.5 },
-      { nome: 'Recebim.',  tipo: 'data',        largura: 0.085, fonte: 6.5 },
-      { nome: 'Entrega',   tipo: 'data',        largura: 0.085, fonte: 6.5 },
-      { nome: 'Avaliador', tipo: 'textoCentro', largura: 0.11,  maxPalavras: 2 },
-      { nome: 'Status',    tipo: 'status',      largura: 0.11 },
-      // Prazo é calculado, não lido: concluído → Entrega − Recebimento;
-      // em andamento → corre até hoje. Sem isso o prazo de um projeto aberto
-      // congela na data em que alguém digitou pela última vez.
-      { nome: 'Prazo',     tipo: 'textoCentro', largura: 0.065,
-        calcular: r => _recPrazoDias_(_tabV_(r, 5), _tabV_(r, 6), _tabV_(r, 9)) }
-    ],
-    kpis: [
-      { label: 'TOTAL',     cor: CR_DESIGN_SYSTEM.colors.brandDark,    teste: null },
-      { label: 'CONCLUÍDO', cor: CR_DESIGN_SYSTEM.colors.accentGreen,  teste: r => /conclu/i.test(_tabV_(r, 8)) },
-      { label: 'ANDAMENTO', cor: CR_DESIGN_SYSTEM.colors.accentOrange, teste: r => /andamento/i.test(_tabV_(r, 8)) }
-    ],
-    pctTexto:       'concluído',
-    testeConcluido: r => /conclu/i.test(_tabV_(r, 8))
-  }
-};
 
 
 // ==========================================

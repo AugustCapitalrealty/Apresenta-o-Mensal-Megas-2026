@@ -29,24 +29,7 @@
  *      sidebar — o deck mensal é gerado de uma vez, não relatório a relatório.
  */
 
-// ==========================================
-// CONFIGURAÇÃO
-// ==========================================
-const TAB_MAX_LINHAS = 9;    // linhas por slide antes de paginar
 
-const TAB_FONTE = { colHeader: 9, item: 9, descricao: 8.5, celula: 8.5, badge: 7.5 };
-
-const TAB_CORES = {
-  rowAlt1: 'FFFFFF',
-  rowAlt2: 'EAF1FB',
-  status: {
-    ok        : CR_DESIGN_SYSTEM.colors.accentGreen.slice(1),
-    pendente  : CR_DESIGN_SYSTEM.colors.accentRed.slice(1),
-    aguardando: CR_DESIGN_SYSTEM.colors.accentOrange.slice(1),
-    na        : '8A94A6',
-    default   : 'C9CFDB'
-  }
-};
 
 // Atalhos locais, no padrão do projeto semanal (C = cores, TY = tipografia).
 const TAB_C  = CR_DESIGN_SYSTEM.colors;

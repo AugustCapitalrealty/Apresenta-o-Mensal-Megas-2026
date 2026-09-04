@@ -423,9 +423,6 @@ function _backlogClientesFalha_(slide, x, y, w, h, erro) {
 // Slide_ChamadosPrioridade.gs. Mesmos nomes de propósito, para copiar uma
 // correção de lá para cá não exigir reescrever chamada.
 
-const _TABELA_LINHA_COR_ = '#E2E8F0';
-const _CLIENTE_PALETA_ = ['#1E3A8A', '#0EA5E9', '#F59E0B', '#10B981', '#9333EA', '#D97706'];
-const _CLIENTE_COR_OUTROS_ = '#94A3B8';
 
 
 

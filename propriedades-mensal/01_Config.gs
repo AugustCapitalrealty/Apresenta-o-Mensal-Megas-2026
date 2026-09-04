@@ -577,3 +577,213 @@ function corPorSLA(valor, corPadrao) {
   if (n < 95) return '#F59E0B';
   return CR_DESIGN_SYSTEM.colors.accentGreen;
 }
+
+
+// ==========================================
+// CONSTANTES DOS SLIDES — reunidas aqui na onda B
+// ==========================================
+// Estavam espalhadas por nove arquivos: 43 das 81 constantes do projeto
+// moravam fora do Config, incluindo TAGs de slide enquanto as outras onze já
+// estavam aqui. Ajuste de layout, limite de linhas e tag de slide são
+// CONFIGURAÇÃO — mudam sem que a lógica mude, e quem procura por elas procura
+// aqui.
+//
+// O que NÃO veio junto, de propósito: tabelas que são dado interno do próprio
+// algoritmo (_CLIENTE_APELIDOS_, LOGOS_CLIENTES, _PROP_DEPENDENCIAS_,
+// _DEPS_BACKLOG_CLIENTES_, _PROP_EQUIPE_, _LOGOS_LEGENDA_). Elas só fazem
+// sentido ao lado da função que as usa.
+
+// ── de Slide_Contratacoes.gs ───────────────────────
+const ABA_CONTRATACOES = 'GESTÃO DE CONTRATAÇÕES';
+const TAG_CONTRATACOES      = '【CONTRATACOES_AUTO】';
+const TAG_CONTRATACOES_HIST = '【CONTRATACOES_HIST_AUTO】';
+const CONTRAT_MAX_LINHAS = 12;
+const CONTRAT_FONTE = { colHeader: 7, grupo: 8.5, item: 7, descricao: 7.5 };
+// Ordem canônica interna da linha, independente do layout da planilha:
+// 0=Imóvel 1=Etapa 2=Objeto 3=Área 4=Responsável 5=Prazo/SLA
+// 6=Participantes 7=Visitas 8=Propostas 9=Início
+const CONTRAT_LARGURAS = [0.110, 0.115, 0.205, 0.085, 0.085, 0.085, 0.105, 0.080, 0.060, 0.070];
+
+// ── de Slide_RecebimentoObras.gs ───────────────────
+const TAG_RECEBIMENTO = '【RECEBIMENTO_AUTO】';
+const REC_COLUNAS = [
+  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.18 },
+  { nome: 'Obra',           tipo: 'texto',       largura: 0.40 },
+  { nome: 'Pendência',      tipo: 'textoCentro', largura: 0.24 },
+  { nome: 'Status',         tipo: 'status',      largura: 0.18 }
+];
+// Contam sobre a coluna Status (índice 3).
+const REC_KPIS = [
+  { label: 'TOTAL',     cor: CR_DESIGN_SYSTEM.colors.brandDark,   teste: null },
+  { label: 'CONCLUÍDO', cor: CR_DESIGN_SYSTEM.colors.accentGreen, teste: r => /conclu/i.test(_tabV_(r, 3)) },
+  { label: 'PENDENTE',  cor: CR_DESIGN_SYSTEM.colors.accentRed,   teste: r => /pendente/i.test(_tabV_(r, 3)) }
+];
+const REL_RECEBIMENTO = {
+  esteio: {
+    nome:            'Esteio',
+    aba:             'Recebimento de Obras - Esteio',
+    titulo:          'RECEBIMENTO DE OBRAS · ESTEIO',
+    subtitulo:       'Pendências da Obra · MEGA ESTEIO',
+    cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
+    colunas:         REC_COLUNAS,
+    kpis:            REC_KPIS,
+    pctTexto:        'concluído',
+    testeConcluido:  r => /conclu/i.test(_tabV_(r, 3))
+  },
+
+  ctba: {
+    nome:            'Curitiba',
+    aba:             'Recebimento de Obras - Ctba',
+    titulo:          'RECEBIMENTO DE OBRAS · CURITIBA',
+    subtitulo:       'Pendências da Obra · MEGA CURITIBA',
+    cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
+    colunas:         REC_COLUNAS,
+    kpis:            REC_KPIS,
+    pctTexto:        'concluído',
+    testeConcluido:  r => /conclu/i.test(_tabV_(r, 3))
+  },
+
+  analise: {
+    nome:            'Análise de Projetos',
+    aba:             'Análise de Projetos',
+    titulo:          'ANÁLISE DE PROJETOS',
+    subtitulo:       'Recebimento de Obras',
+    cabecalhoContem: ['OBJETIVO', 'AVALIADOR', 'LOCAT'],
+    // 10 colunas: fonte menor e 7 linhas/slide, para o Objetivo de 2 linhas
+    // caber sem transbordar a célula.
+    fonte:           7.5,
+    fonteHeader:     7.5,
+    maxLinhas:       7,
+    colunas: [
+      { nome: 'Empr.',     tipo: 'textoCentro', largura: 0.085 },
+      { nome: 'Locatário', tipo: 'textoCentro', largura: 0.085 },
+      { nome: 'Objetivo',  tipo: 'texto',       largura: 0.175 },
+      { nome: 'Compl.',    tipo: 'textoCentro', largura: 0.13,  fonte: 6.5 },
+      { nome: 'Mem.',      tipo: 'textoCentro', largura: 0.07,  fonte: 6.5 },
+      { nome: 'Recebim.',  tipo: 'data',        largura: 0.085, fonte: 6.5 },
+      { nome: 'Entrega',   tipo: 'data',        largura: 0.085, fonte: 6.5 },
+      { nome: 'Avaliador', tipo: 'textoCentro', largura: 0.11,  maxPalavras: 2 },
+      { nome: 'Status',    tipo: 'status',      largura: 0.11 },
+      // Prazo é calculado, não lido: concluído → Entrega − Recebimento;
+      // em andamento → corre até hoje. Sem isso o prazo de um projeto aberto
+      // congela na data em que alguém digitou pela última vez.
+      { nome: 'Prazo',     tipo: 'textoCentro', largura: 0.065,
+        calcular: r => _recPrazoDias_(_tabV_(r, 5), _tabV_(r, 6), _tabV_(r, 9)) }
+    ],
+    kpis: [
+      { label: 'TOTAL',     cor: CR_DESIGN_SYSTEM.colors.brandDark,    teste: null },
+      { label: 'CONCLUÍDO', cor: CR_DESIGN_SYSTEM.colors.accentGreen,  teste: r => /conclu/i.test(_tabV_(r, 8)) },
+      { label: 'ANDAMENTO', cor: CR_DESIGN_SYSTEM.colors.accentOrange, teste: r => /andamento/i.test(_tabV_(r, 8)) }
+    ],
+    pctTexto:       'concluído',
+    testeConcluido: r => /conclu/i.test(_tabV_(r, 8))
+  }
+};
+
+// ── de Slide_Backlog.gs ────────────────────────────
+const PROP_BACKLOG_MAX_BARRAS = 14;
+
+// ── de Slide_BacklogEmergencialDetalhe.gs ──────────
+const BACKLOG_EMERG_MAX_LINHAS = 8;
+// "Data Abertura" é 'textoCentro', não 'data': _tabDesenharTabela_ só
+// desenha coluna 'data' se o texto bater com dd/mm/AAAA (_tabEhData_,
+// 03_Tabelas.gs) — e _histFormatarDataCurta_ (02_Dados.gs) devolve ano com
+// 2 dígitos (dd/mm/aa), pra caber na coluna estreita. 'textoCentro' exibe
+// o texto como veio, sem essa validação.
+const BACKLOG_EMERG_COLUNAS = [
+  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.20 },
+  { nome: 'Descrição',      tipo: 'texto',        largura: 0.53 },
+  { nome: 'Data Abertura',  tipo: 'textoCentro',  largura: 0.13 },
+  { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.14 }
+];
+
+// ── de Slide_Corretivas.gs ─────────────────────────
+// Gráfico de barras — chamados emergenciais em aberto, mês a mês
+// (cronológico, mais recente por último). Mesmo desenho de
+// megas-mensal/Slide03_Corretivas.gs (_corretivasGraficoEmergencial_).
+const PROP_MESES_MIN = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+// ── de Slide_BacklogClientesProperties.gs ──────────
+const _TABELA_LINHA_COR_ = '#E2E8F0';
+const _CLIENTE_PALETA_ = ['#1E3A8A', '#0EA5E9', '#F59E0B', '#10B981', '#9333EA', '#D97706'];
+const _CLIENTE_COR_OUTROS_ = '#94A3B8';
+
+// ── de 03_Tabelas.gs ───────────────────────────────
+// ==========================================
+// CONFIGURAÇÃO
+// ==========================================
+const TAB_MAX_LINHAS = 9;    // linhas por slide antes de paginar
+
+const TAB_FONTE = { colHeader: 9, item: 9, descricao: 8.5, celula: 8.5, badge: 7.5 };
+const TAB_CORES = {
+  rowAlt1: 'FFFFFF',
+  rowAlt2: 'EAF1FB',
+  status: {
+    ok        : CR_DESIGN_SYSTEM.colors.accentGreen.slice(1),
+    pendente  : CR_DESIGN_SYSTEM.colors.accentRed.slice(1),
+    aguardando: CR_DESIGN_SYSTEM.colors.accentOrange.slice(1),
+    na        : '8A94A6',
+    default   : 'C9CFDB'
+  }
+};
+
+// ── de 02_Dados.gs ─────────────────────────────────
+// Nomes EXATOS das abas na planilha BASE DE DADOS — QUADRO REM. Repare no
+// espaço em volta do hífen em "BD - PREVENTIVAS": as abas não seguem um
+// padrão único, então _propAba_ compara ignorando espaços e pontuação.
+const BD_ABA_CORRETIVAS  = 'BD-CORRETIVAS';
+const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
+// VERIFICADO contra a planilha de controle do time (aba de fórmulas, blocos
+// FACILITIES por Mega): as CANCELADAS ENTRAM na conta. Confronto de 12 casos
+// — Curitiba, Itajaí e Esteio, janeiro a abril/2026 — bateu 12/12 sem filtro
+// de Estado, e errou em 5 deles ao excluir canceladas:
+//
+//     Curitiba jan   oficial 197/28   tudo 197/28 ✓   sem canceladas 197/15 ✗
+//     Esteio   jan   oficial 197/5    tudo 197/5  ✓   sem canceladas 197/2  ✗
+//
+// Não é detalhe: são 1.242 canceladas com SLA classificado na base (1.002
+// delas "Não cumprido"), ~20% de toda a não-conformidade. Deixar em true
+// afastaria o indicador do número oficial.
+const SLA_EXCLUIR_CANCELADAS = false;
+// JANELA DO MÊS — também verificada nos mesmos 12 casos.
+// Vale a DATA DE AGENDAMENTO, não a de fechamento: a preventiva pertence ao
+// mês em que estava programada. Pela data de fechamento os números não batem
+// (Curitiba jun daria 94,88% em vez do valor da planilha).
+// A fórmula da planilha confirma a janela: de "1/1/2026 00:00:00" até
+// "31/1/2026 23:59:59", sobre a coluna de agendamento.
+const SLA_JANELA_PADRAO = 'inicio';
+
+// ── de Slide_LogosClientes.gs ──────────────────────
+const _LOGO_LEGENDA_H_        = 9;    // faixa reservada pra legenda (pt)
+const _LOGO_LEGENDA_FS_       = 6;    // fonte da legenda (pt)
+const _LOGO_LEGENDA_FOLGA_    = 10;   // folga lateral da caixa de texto (ver abaixo)
+const _LOGO_LEGENDA_MIN_BOX_  = 22;   // altura mínima pra caber logo + legenda
+// ── TAMANHO PADRÃO DO LOGO (homogeneidade entre slides) ───────────────────
+// _insertLogoFit_ faz "contain": a imagem cresce até esbarrar na LARGURA ou
+// na ALTURA da caixa, o que vier primeiro. O efeito colateral é justamente a
+// falta de homogeneidade que o usuário apontou: numa mesma tabela, um logo
+// largo (Mercado Livre, ~4:1) esbarra na largura e sai baixinho, enquanto um
+// logo mais quadrado (NTN, HP) esbarra na altura e sai no tamanho cheio —
+// duas marcas lado a lado com alturas visivelmente diferentes.
+//
+// _insertLogoPadrao_ inverte a regra: fixa a ALTURA e deixa a largura variar
+// com a proporção de cada marca. Assim todo logo do deck tem exatamente a
+// mesma altura visual, independente do formato do arquivo e de qual slide
+// está desenhando — que é o que faz a tabela de DOCUMENTAÇÃO LEGAL (a
+// referência que o usuário considerou correta) parecer alinhada.
+//
+// Pra isso funcionar a coluna precisa ser larga o bastante pro logo mais
+// largo do acervo caber na altura padrão:
+//     larguraDaColuna >= LOGO_ALT_PADRAO * LOGO_RATIO_MAX
+// Abaixo disso o logo largo volta a ser limitado pela largura (e sai menor
+// que os demais) — por isso as colunas de logo dos slides estão
+// dimensionadas a partir de LOGO_LARG_PADRAO.
+// Altura ÚNICA pro deck inteiro (tabelas e cards-resumo): a pedido do
+// usuário, a mesma marca tem que ter o mesmo tamanho em qualquer página —
+// nada de logo maior no resumo e menor na tabela. Uma altura só também
+// evita o problema de a faixa de destaque precisar de uma coluna mais larga
+// do que o tile comporta (aí o logo largo encolheria e a homogeneidade se
+// perderia justamente onde ela é mais visível).
+const LOGO_ALT_PADRAO   = 18;   // altura de TODO logo de cliente do deck
+const LOGO_RATIO_MAX    = 5;    // logo mais largo do acervo (~5:1)
+const LOGO_LARG_PADRAO  = LOGO_ALT_PADRAO * LOGO_RATIO_MAX;   // 90pt

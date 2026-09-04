@@ -13,18 +13,9 @@
  * histórico interessa quantas foram contratadas.
  */
 
-const ABA_CONTRATACOES = 'GESTÃO DE CONTRATAÇÕES';
 
-const TAG_CONTRATACOES      = '【CONTRATACOES_AUTO】';
-const TAG_CONTRATACOES_HIST = '【CONTRATACOES_HIST_AUTO】';
 
-const CONTRAT_MAX_LINHAS = 12;
-const CONTRAT_FONTE = { colHeader: 7, grupo: 8.5, item: 7, descricao: 7.5 };
 
-// Ordem canônica interna da linha, independente do layout da planilha:
-// 0=Imóvel 1=Etapa 2=Objeto 3=Área 4=Responsável 5=Prazo/SLA
-// 6=Participantes 7=Visitas 8=Propostas 9=Início
-const CONTRAT_LARGURAS = [0.110, 0.115, 0.205, 0.085, 0.085, 0.085, 0.105, 0.080, 0.060, 0.070];
 
 
 // ==========================================

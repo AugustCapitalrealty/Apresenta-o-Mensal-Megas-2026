@@ -107,10 +107,6 @@ function _corrCardKPIs_(slide, x, y, w, h, dados, corTema) {
   });
 }
 
-// Gráfico de barras — chamados emergenciais em aberto, mês a mês
-// (cronológico, mais recente por último). Mesmo desenho de
-// megas-mensal/Slide03_Corretivas.gs (_corretivasGraficoEmergencial_).
-const PROP_MESES_MIN = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 function _corrGraficoEmergencial_(slide, x, y, w, h, meses) {
   const DS = CR_DESIGN_SYSTEM;

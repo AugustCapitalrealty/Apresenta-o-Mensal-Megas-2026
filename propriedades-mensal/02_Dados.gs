@@ -21,32 +21,8 @@
  * chamadas internas. Ver o CLAUDE.md da raiz.
  */
 
-// Nomes EXATOS das abas na planilha BASE DE DADOS — QUADRO REM. Repare no
-// espaço em volta do hífen em "BD - PREVENTIVAS": as abas não seguem um
-// padrão único, então _propAba_ compara ignorando espaços e pontuação.
-const BD_ABA_CORRETIVAS  = 'BD-CORRETIVAS';
-const BD_ABA_PREVENTIVAS = 'BD - PREVENTIVAS';
 
-// VERIFICADO contra a planilha de controle do time (aba de fórmulas, blocos
-// FACILITIES por Mega): as CANCELADAS ENTRAM na conta. Confronto de 12 casos
-// — Curitiba, Itajaí e Esteio, janeiro a abril/2026 — bateu 12/12 sem filtro
-// de Estado, e errou em 5 deles ao excluir canceladas:
-//
-//     Curitiba jan   oficial 197/28   tudo 197/28 ✓   sem canceladas 197/15 ✗
-//     Esteio   jan   oficial 197/5    tudo 197/5  ✓   sem canceladas 197/2  ✗
-//
-// Não é detalhe: são 1.242 canceladas com SLA classificado na base (1.002
-// delas "Não cumprido"), ~20% de toda a não-conformidade. Deixar em true
-// afastaria o indicador do número oficial.
-const SLA_EXCLUIR_CANCELADAS = false;
 
-// JANELA DO MÊS — também verificada nos mesmos 12 casos.
-// Vale a DATA DE AGENDAMENTO, não a de fechamento: a preventiva pertence ao
-// mês em que estava programada. Pela data de fechamento os números não batem
-// (Curitiba jun daria 94,88% em vez do valor da planilha).
-// A fórmula da planilha confirma a janela: de "1/1/2026 00:00:00" até
-// "31/1/2026 23:59:59", sobre a coluna de agendamento.
-const SLA_JANELA_PADRAO = 'inicio';
 
 
 function _histNorm_(s) {

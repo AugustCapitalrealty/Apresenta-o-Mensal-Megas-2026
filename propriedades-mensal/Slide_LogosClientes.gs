@@ -133,10 +133,6 @@ const _LOGOS_LEGENDA_ = [
   // empresa, sem aviso.
 ];
 
-const _LOGO_LEGENDA_H_        = 9;    // faixa reservada pra legenda (pt)
-const _LOGO_LEGENDA_FS_       = 6;    // fonte da legenda (pt)
-const _LOGO_LEGENDA_FOLGA_    = 10;   // folga lateral da caixa de texto (ver abaixo)
-const _LOGO_LEGENDA_MIN_BOX_  = 22;   // altura mínima pra caber logo + legenda
 
 // Devolve o nome curto da marca quando o logo é ambíguo, senão null.
 function _logoLegendaRotulo_(nomeCliente) {
@@ -185,35 +181,6 @@ function _insertLogoFitLegenda_(slide, blob, nomeCliente, x, y, boxW, boxH, altu
   return img;
 }
 
-// ── TAMANHO PADRÃO DO LOGO (homogeneidade entre slides) ───────────────────
-// _insertLogoFit_ faz "contain": a imagem cresce até esbarrar na LARGURA ou
-// na ALTURA da caixa, o que vier primeiro. O efeito colateral é justamente a
-// falta de homogeneidade que o usuário apontou: numa mesma tabela, um logo
-// largo (Mercado Livre, ~4:1) esbarra na largura e sai baixinho, enquanto um
-// logo mais quadrado (NTN, HP) esbarra na altura e sai no tamanho cheio —
-// duas marcas lado a lado com alturas visivelmente diferentes.
-//
-// _insertLogoPadrao_ inverte a regra: fixa a ALTURA e deixa a largura variar
-// com a proporção de cada marca. Assim todo logo do deck tem exatamente a
-// mesma altura visual, independente do formato do arquivo e de qual slide
-// está desenhando — que é o que faz a tabela de DOCUMENTAÇÃO LEGAL (a
-// referência que o usuário considerou correta) parecer alinhada.
-//
-// Pra isso funcionar a coluna precisa ser larga o bastante pro logo mais
-// largo do acervo caber na altura padrão:
-//     larguraDaColuna >= LOGO_ALT_PADRAO * LOGO_RATIO_MAX
-// Abaixo disso o logo largo volta a ser limitado pela largura (e sai menor
-// que os demais) — por isso as colunas de logo dos slides estão
-// dimensionadas a partir de LOGO_LARG_PADRAO.
-// Altura ÚNICA pro deck inteiro (tabelas e cards-resumo): a pedido do
-// usuário, a mesma marca tem que ter o mesmo tamanho em qualquer página —
-// nada de logo maior no resumo e menor na tabela. Uma altura só também
-// evita o problema de a faixa de destaque precisar de uma coluna mais larga
-// do que o tile comporta (aí o logo largo encolheria e a homogeneidade se
-// perderia justamente onde ela é mais visível).
-const LOGO_ALT_PADRAO   = 18;   // altura de TODO logo de cliente do deck
-const LOGO_RATIO_MAX    = 5;    // logo mais largo do acervo (~5:1)
-const LOGO_LARG_PADRAO  = LOGO_ALT_PADRAO * LOGO_RATIO_MAX;   // 90pt
 
 // Insere o logo com ALTURA FIXA (`altura`, default LOGO_ALT_PADRAO),
 // centralizado na caixa x,y,boxW,boxH. Só reduz abaixo da altura padrão

@@ -16,18 +16,6 @@
  * precise de mais de um slide.
  */
 
-const BACKLOG_EMERG_MAX_LINHAS = 8;
-// "Data Abertura" é 'textoCentro', não 'data': _tabDesenharTabela_ só
-// desenha coluna 'data' se o texto bater com dd/mm/AAAA (_tabEhData_,
-// 03_Tabelas.gs) — e _histFormatarDataCurta_ (02_Dados.gs) devolve ano com
-// 2 dígitos (dd/mm/aa), pra caber na coluna estreita. 'textoCentro' exibe
-// o texto como veio, sem essa validação.
-const BACKLOG_EMERG_COLUNAS = [
-  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.20 },
-  { nome: 'Descrição',      tipo: 'texto',        largura: 0.53 },
-  { nome: 'Data Abertura',  tipo: 'textoCentro',  largura: 0.13 },
-  { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.14 }
-];
 
 function gerarSlideBacklogEmergencialDetalhe() {
   const deck = getDeckMensal_();
