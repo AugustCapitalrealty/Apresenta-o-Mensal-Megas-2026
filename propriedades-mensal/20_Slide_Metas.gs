@@ -74,13 +74,38 @@ function _metasTendenciaTexto_(delta, menorMelhor, neutro) {
 }
 
 function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
+  // Metas qualitativas SIM/NÃO nunca são sobrescritas por indicadores numéricos
+  const mUpper = String(metaStr || '').trim().toUpperCase();
+  if (mUpper === 'SIM' || mUpper === 'NAO' || mUpper === 'NÃO') return null;
+
   const d = _histNorm_(descricao);
+  // Se for projeto/padronização de checklist de entrega/recebimento de serviços (SIM/NÃO)
+  if (d.includes('recebimento') || d.includes('desenvolver checklist')) return null;
+
   const ehMensal = qual === 'mes';
   try {
     const ref = obterMesReferencia_();
 
-    // 1. CHECK-LIST / SLA (Preventivas de Propriedades)
-    if ((d.includes('check') || d.includes('sla')) && !d.includes('terceiro') && !d.includes('acesso')) {
+    // 1. PPC (Planejamento e Controle da Manutenção)
+    // Deve vir ANTES de Preventivas para não casar "Planejamento ... previsto"
+    if (d.includes('ppc') || (d.includes('planejamento') && !d.includes('infraspeak'))) {
+      const ppc = typeof _metaPPC_ === 'function' ? _metaPPC_(ref) : null;
+      if (!ppc) return null;
+      const valNum = ehMensal ? ppc.mes : ppc.ano;
+      const valAnt = ehMensal ? ppc.mesAnt : ppc.anoAnt;
+      if (valNum == null) return null;
+      const valStr = valNum.toFixed(2).replace('.', ',');
+      let delta = null;
+      if (valAnt != null) {
+        delta = Math.round((valNum - valAnt) * 100) / 100;
+      }
+      return { valor: valStr, delta: delta, menorMelhor: false };
+    }
+
+    // 2. CHECK-LIST / SLA (Preventivas de Propriedades - Infraspeak)
+    // Só casa com SLA de preventivas, NUNCA com projetos de padronização
+    if ((d.includes('sla') || (d.includes('check') && (d.includes('infraspeak') || d.includes('preventiv')))) &&
+        !d.includes('terceiro') && !d.includes('acesso')) {
       let valNum = null, valAnt = null;
       if (ehMensal) {
         const indAtual = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
@@ -118,8 +143,8 @@ function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
       return { valor: valStr, delta: delta, menorMelhor: false };
     }
 
-    // 2. EXECUÇÃO DE PREVENTIVAS (PLAN/REAL)
-    if ((d.includes('plan') || d.includes('execu')) && (d.includes('prev') || d.includes('infraspeak'))) {
+    // 3. EXECUÇÃO DE PREVENTIVAS (PLAN/REAL)
+    if (!d.includes('ppc') && (d.includes('plan/real') || (d.includes('execuc') && d.includes('prev')) || (d.includes('infraspeak') && d.includes('plan')))) {
       let valNum = null, valAnt = null;
       if (ehMensal) {
         const indAtual = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
@@ -148,21 +173,6 @@ function obterMetaAutoPropriedades_(descricao, metaStr, qual) {
         }
       }
 
-      if (valNum == null) return null;
-      const valStr = valNum.toFixed(2).replace('.', ',');
-      let delta = null;
-      if (valAnt != null) {
-        delta = Math.round((valNum - valAnt) * 100) / 100;
-      }
-      return { valor: valStr, delta: delta, menorMelhor: false };
-    }
-
-    // 3. PPC
-    if (d.includes('ppc') || d.includes('planejamento')) {
-      const ppc = typeof _metaPPC_ === 'function' ? _metaPPC_(ref) : null;
-      if (!ppc) return null;
-      const valNum = ehMensal ? ppc.mes : ppc.ano;
-      const valAnt = ehMensal ? ppc.mesAnt : ppc.anoAnt;
       if (valNum == null) return null;
       const valStr = valNum.toFixed(2).replace('.', ',');
       let delta = null;
