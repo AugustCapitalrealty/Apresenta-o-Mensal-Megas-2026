@@ -922,7 +922,7 @@ function obterDREPropriedades_() {
       itens0604.push({
         tipo: 'item',
         codigo: sub.cod,
-        nome: sub.nome.toUpperCase(),
+        nome: _dreLimparNome_(sub.nome).toUpperCase(),
         b: recSub
       });
     }
@@ -947,7 +947,7 @@ function obterDREPropriedades_() {
     return {
       tipo: 'grupo',
       codigo: g.cod,
-      nome: g.nome,
+      nome: _dreLimparNome_(g.nome),
       b: bGrp
     };
   });
@@ -962,7 +962,7 @@ function obterDREPropriedades_() {
   linhas.push({
     tipo: 'total',
     codigo: est.raiz.cod,
-    nome: est.raiz.nome,
+    nome: _dreLimparNome_(est.raiz.nome),
     b: recRaiz
   });
 

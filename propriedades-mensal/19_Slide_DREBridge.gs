@@ -151,7 +151,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
   // ── Linhas: TOTAL, depois cada EMPRESA (subtotal) com seus centros ──────
   const linhas = [{ tipo: 'total', nome: 'MANUTENÇÃO IMÓVEIS', b: dados.total }];
   dados.empresas.forEach(emp => {
-    linhas.push({ tipo: 'empresa', nome: emp.codigo + ' · ' + emp.nome.toUpperCase(), b: emp.total });
+    linhas.push({ tipo: 'empresa', nome: _dreLimparNome_(emp.nome).toUpperCase(), b: emp.total });
     emp.centros.forEach(c => linhas.push({ tipo: 'item', nome: _dreNomeCurto_(c.nome), b: c, so: c.so }));
   });
 
@@ -193,7 +193,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
     }
     const corTxt = destaque ? '#FFFFFF' : DS.colors.textMain;
     const indent = l.tipo === 'item' ? 12 : 4;
-    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, l.nome,
+    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, _dreLimparNome_(l.nome),
           l.tipo === 'total' ? fs + 0.4 : fs, destaque, corTxt, 'left');
 
     // Marca de centro que só existe numa das abas — explica o "-" da linha.
@@ -325,7 +325,7 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
 
     const corTxt = destaque ? '#FFFFFF' : DS.colors.textMain;
     const indent = isTotal ? 4 : (isGrupo ? 8 : 16);
-    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, l.nome,
+    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, _dreLimparNome_(l.nome),
           isTotal ? fs + 0.4 : fs, destaque, corTxt, 'left');
 
     [['mes', 'real'], ['acum', 'real'], ['ano', 'proj']].forEach(([campo, chaveReal], bi) => {
@@ -359,7 +359,7 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
 
 // Encurta o nome do centro de custo para caber na coluna sem quebrar linha.
 function _dreNomeCurto_(nome) {
-  return String(nome)
+  return _dreLimparNome_(String(nome))
     .replace(/^ARMAZÉM MONOUSUÁRIO /, 'ARM. ')
     .replace(/ DESPESAS?$/, '')
     .replace(/^LJ 0/, 'LJ ');
@@ -485,13 +485,13 @@ function gerarSlideBridgeManutencao() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 3);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO', 'Orçado vs Realizado · Equipe de Manutenção (rubrica 06.04.15)');
+    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO', 'Orçado vs Realizado · Equipe de Manutenção (Manutenção Imóveis)');
     _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
     return;
   }
 
   criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO',
-    'Orçado vs Realizado · Equipe de Manutenção (rubrica 06.04.15) · ' + dados.ref.nome + ' ' + dados.ref.ano);
+    'Orçado vs Realizado · Equipe de Manutenção (Manutenção Imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   const marginX = 20, topY = 85, gap = 14;
   const contH = H - topY - 15;
@@ -751,13 +751,13 @@ function gerarSlideBridgeManutencaoGrafico() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 4);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO', 'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (rubrica 06.04.15)');
+    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO', 'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (Manutenção Imóveis)');
     _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
     return;
   }
 
   criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO',
-    'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (rubrica 06.04.15) · ' + dados.ref.nome + ' ' + dados.ref.ano);
+    'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (Manutenção Imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   try {
     _brgGrafico_(slide, 20, 78, W - 40, H - 78 - 15, dados);

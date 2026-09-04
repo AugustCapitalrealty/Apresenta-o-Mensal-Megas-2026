@@ -87,6 +87,16 @@ function _truncar_(txt, max) {
   return (esp > max * 0.6 ? corte.slice(0, esp) : corte) + '…';
 }
 
+// Remove códigos numéricos de contas e rubricas (ex.: "06 · ", "06.01 · ", "06.04.15 · ", "01 · ")
+// deixando exclusivamente o nome da rubrica.
+function _dreLimparNome_(nome) {
+  if (nome == null || nome === '') return '';
+  return String(nome)
+    .replace(/^[0-9]+(?:\.[0-9]+)*\s*[-·•–]\s*/, '')
+    .replace(/^[0-9]+(?:\.[0-9]+)*\s+/, '')
+    .trim();
+}
+
 /**
  * Quantos caracteres cabem numa caixa dessa largura, nessa fonte.
  *

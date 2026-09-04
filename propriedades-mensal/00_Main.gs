@@ -80,7 +80,7 @@ function onOpen() {
  * Só `typeof` — nada aqui pode depender do que está faltando.
  */
 const _PROP_DEPENDENCIAS_ = [
-  ['00_Helpers.gs',                 ['_num_', '_milhar_', '_norm_', '_sTxt', '_sRet_', 'criarHeaderPadrao', 'criarCardPainel', '_slideNovo_', '_slideLimpar_', '_slideFalha_', '_utilEscalaTeto_', '_abrirPlanilha_', '_getClienteLogoBlob_']],
+  ['00_Helpers.gs',                 ['_num_', '_milhar_', '_norm_', '_dreLimparNome_', '_sTxt', '_sRet_', 'criarHeaderPadrao', 'criarCardPainel', '_slideNovo_', '_slideLimpar_', '_slideFalha_', '_utilEscalaTeto_', '_abrirPlanilha_', '_getClienteLogoBlob_']],
   ['01_Config.gs',                  ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'DRE_EMPRESAS', 'METAS_PROPRIEDADES', 'LOGOS_CLIENTES', 'TAG_BACKLOG']],
   ['02_Dados.gs',                   ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
   ['03_Tabelas.gs',                 ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
