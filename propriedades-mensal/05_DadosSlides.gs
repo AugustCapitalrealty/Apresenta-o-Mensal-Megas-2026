@@ -913,7 +913,7 @@ function obterDREPropriedades_() {
   est.contasGerais.forEach(sub => {
     let recSub;
     if (sub.cod === '06.04.15') {
-      // 06.04.15 · MANUTENÇÃO IMÓVEIS: recebe os valores do DRE de Manutenção (pai da estratificação)
+      // MANUTENÇÃO IMÓVEIS: recebe os valores do DRE de Manutenção (pai da estratificação)
       recSub = recManut || recorte(sub.cod);
     } else {
       recSub = recorte(sub.cod);
@@ -922,7 +922,7 @@ function obterDREPropriedades_() {
       itens0604.push({
         tipo: 'item',
         codigo: sub.cod,
-        nome: sub.cod + ' · ' + sub.nome.toUpperCase(),
+        nome: sub.nome.toUpperCase(),
         b: recSub
       });
     }
@@ -935,11 +935,11 @@ function obterDREPropriedades_() {
     ano:  { aa: _dreSoma_(itens0604.map(i => i.b.ano.aa)),   plan: _dreSoma_(itens0604.map(i => i.b.ano.plan)),  proj: _dreSoma_(itens0604.map(i => i.b.ano.proj)) }
   };
 
-  // 3. Grupos 06.01, 06.02, 06.03, 06.04
+  // 3. Grupos 06.01, 06.02, 06.03, 06.04 (somente nomes, sem código)
   const gruposRec = est.grupos.map(g => {
     let bGrp;
     if (g.cod === '06.04') {
-      // O grupo 06.04 é exatamente a soma dos seus subitens exibidos (incluindo 06.04.15 Manutenção)
+      // O grupo DESPESAS GERAIS é exatamente a soma dos seus subitens exibidos
       bGrp = somaItens0604;
     } else {
       bGrp = recorte(g.cod);
@@ -947,12 +947,12 @@ function obterDREPropriedades_() {
     return {
       tipo: 'grupo',
       codigo: g.cod,
-      nome: g.cod + ' · ' + g.nome,
+      nome: g.nome,
       b: bGrp
     };
   });
 
-  // 4. Raiz 06 · DESPESAS OPERACIONAIS: soma os 4 grupos (06.01 + 06.02 + 06.03 + 06.04)
+  // 4. Raiz DESPESAS OPERACIONAIS: soma os 4 grupos (06.01 + 06.02 + 06.03 + 06.04)
   let recRaiz = {
     mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
     acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
@@ -962,7 +962,7 @@ function obterDREPropriedades_() {
   linhas.push({
     tipo: 'total',
     codigo: est.raiz.cod,
-    nome: est.raiz.cod + ' · ' + est.raiz.nome,
+    nome: est.raiz.nome,
     b: recRaiz
   });
 

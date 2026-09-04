@@ -267,18 +267,18 @@ console.log('\n== DRE de Propriedades (Despesas Operacionais) ==');
 {
   const dreProp = porSlide['DRE de Propriedades'] || [];
   const textos = dreProp.map(s => s.txt);
-  checa(textos.some(t => /06 · DESPESAS OPERACIONAIS/i.test(t)), 'linha raiz 06 · DESPESAS OPERACIONAIS');
-  checa(textos.some(t => /06\.01 · DESPESA DE PESSOAL/i.test(t)), 'grupo 06.01 · DESPESA DE PESSOAL');
-  checa(textos.some(t => /06\.02 · SERVIÇOS DE TERCEIROS/i.test(t)), 'grupo 06.02 · SERVIÇOS DE TERCEIROS');
-  checa(textos.some(t => /06\.03 · DESPESAS FISCAIS/i.test(t)), 'grupo 06.03 · DESPESAS FISCAIS');
-  checa(textos.some(t => /06\.04 · DESPESAS GERAIS/i.test(t)), 'grupo 06.04 · DESPESAS GERAIS');
+  checa(textos.some(t => /^DESPESAS OPERACIONAIS$/i.test(t)), 'linha raiz DESPESAS OPERACIONAIS');
+  checa(textos.some(t => /^DESPESA DE PESSOAL$/i.test(t)), 'grupo DESPESA DE PESSOAL');
+  checa(textos.some(t => /^SERVIÇOS DE TERCEIROS$/i.test(t)), 'grupo SERVIÇOS DE TERCEIROS');
+  checa(textos.some(t => /^DESPESAS FISCAIS$/i.test(t)), 'grupo DESPESAS FISCAIS');
+  checa(textos.some(t => /^DESPESAS GERAIS$/i.test(t)), 'grupo DESPESAS GERAIS');
 
-  // Subitens com valor aparecem, subitens zerados NÃO aparecem
-  checa(textos.some(t => /06\.04\.01 · seguros/i.test(t)), 'subitem com valor 06.04.01 · seguros presente');
-  checa(textos.some(t => /06\.04\.15 · manutenção imóveis/i.test(t)), 'subitem com valor 06.04.15 · manutenção imóveis presente');
-  checa(textos.some(t => t === '592'), '06.04.15 traz o plano 592k vindo do DRE de Manutenção');
-  checa(!textos.some(t => /06\.04\.02/.test(t)), 'subitem zerado 06.04.02 · material consumo ocultado');
-  checa(!textos.some(t => /06\.04\.03/.test(t)), 'subitem zerado 06.04.03 · telefone ocultado');
+  // Subitens com valor aparecem, subitens zerados NÃO aparecem (somente nomes, sem código)
+  checa(textos.some(t => /^SEGUROS$/i.test(t)), 'subitem com valor SEGUROS presente');
+  checa(textos.some(t => /^MANUTENÇÃO IMÓVEIS$/i.test(t)), 'subitem com valor MANUTENÇÃO IMÓVEIS presente');
+  checa(textos.some(t => t === '592'), 'MANUTENÇÃO IMÓVEIS traz o plano 592k vindo do DRE de Manutenção');
+  checa(!textos.some(t => /^MATERIAL CONSUMO$/i.test(t)), 'subitem zerado MATERIAL CONSUMO ocultado');
+  checa(!textos.some(t => /^TELEFONE$/i.test(t)), 'subitem zerado TELEFONE ocultado');
 }
 
 // ── 4.2. Bridge explícito de Manutenção e ponto de entrada geral ────────

@@ -106,7 +106,7 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
   // As colunas de variação carregam seta + número ("▲ 2.088%") e precisam de
   // mais espaço que as de valor. Os pesos somam 5,00 por bloco, então a
   // largura total não muda.
-  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];
+  const PESO_COL = [0.76, 0.76, 0.76, 1.40, 1.32];
   const unidade = (tableW - rubricaW) / (3 * NCOL);
   const colPos = [], colLarg = [];
   let accX = x0 + rubricaW;
@@ -218,12 +218,10 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
         const cor = corVar(va, destaque);
-        const pp = va ? Math.round(va.pct) : 0;
-        const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
           _sTxt(slide, cxx, ry, 6, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
         }
-        _sTxt(slide, cxx + 4, ry, cww - 4, rowH, numeroVar(va), fsNum, false, cor, 'right', 3);
+        _sTxt(slide, cxx + 2, ry, cww - 4, rowH, numeroVar(va), fs, false, cor, 'right', 2);
       });
     });
   });
@@ -246,8 +244,8 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
 
   const NCOL = 5;
   const x0 = 10, tableW = W - 20;
-  const rubricaW = 168;
-  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];
+  const rubricaW = 148;
+  const PESO_COL = [0.76, 0.76, 0.76, 1.40, 1.32];
   const unidade = (tableW - rubricaW) / (3 * NCOL);
   const colPos = [], colLarg = [];
   let accX = x0 + rubricaW;
@@ -346,12 +344,10 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
       [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
         const cxx = colX(c0 + k), cww = colW(c0 + k);
         const cor = corVar(va, destaque);
-        const pp = va ? Math.round(va.pct) : 0;
-        const fsNum = pp >= 1000 ? Math.min(fs - 1.2, 5.0) : fs;
         if (va && !va.nulo) {
           _sTxt(slide, cxx, ry, 6, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
         }
-        _sTxt(slide, cxx + 4, ry, cww - 4, rowH, numeroVar(va), fsNum, false, cor, 'right', 3);
+        _sTxt(slide, cxx + 2, ry, cww - 4, rowH, numeroVar(va), fs, false, cor, 'right', 2);
       });
     });
   });
