@@ -481,13 +481,13 @@ function gerarSlideBridgeManutencao() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 3);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)', 'Orçado vs Realizado — Manutenção');
+    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO', 'Orçado vs Realizado · Equipe de Manutenção (rubrica 06.04.15)');
     _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
     return;
   }
 
-  criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)',
-    'Orçado vs Realizado — Manutenção · ' + dados.ref.nome + ' ' + dados.ref.ano);
+  criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO',
+    'Orçado vs Realizado · Equipe de Manutenção (rubrica 06.04.15) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   const marginX = 20, topY = 85, gap = 14;
   const contH = H - topY - 15;
@@ -551,7 +551,7 @@ function _brgResumo_(slide, x, y, w, h, d) {
   const sinalAnual     = abaixoAnual ? '▼ ' : '▲ ';
 
   let cy = y + 10;
-  _txt('RESUMO DO PERÍODO', x + 12, cy, w - 20, 16, 7.5, true, '#64748B');
+  _txt('RESUMO — MANUTENÇÃO', x + 12, cy, w - 20, 16, 7.5, true, '#64748B');
   cy += 20;
 
   // ORÇADO
@@ -747,13 +747,13 @@ function gerarSlideBridgeManutencaoGrafico() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 4);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO', 'Do Orçado ao Realizado/Projetado — Manutenção');
+    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO', 'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (rubrica 06.04.15)');
     _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
     return;
   }
 
-  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO',
-    'Do Orçado ao Realizado/Projetado — Manutenção · ' + dados.ref.nome + ' ' + dados.ref.ano);
+  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO',
+    'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (rubrica 06.04.15) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   try {
     _brgGrafico_(slide, 20, 78, W - 40, H - 78 - 15, dados);

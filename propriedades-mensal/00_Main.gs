@@ -32,6 +32,7 @@ function onOpen() {
   if (!ui) return;
 
   ui.createMenu('🏢 Propriedades 2026')
+    .addItem('▶ Gerar Todos os Slides', 'gerarTodosOsSlides')
     .addItem('▶ Gerar Apresentação Completa', 'gerarApresentacaoPropriedades')
     .addItem('📊 Gerar / Atualizar Dashboard', 'gerarSoDashboard')
     .addItem('📋 Gerar Só Tabelas (Obras + Contratações)', 'gerarTabelasPropriedades')
@@ -49,8 +50,8 @@ function onOpen() {
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
       .addItem('DRE — Propriedades (Desp. Operacionais)', 'gerarSoDREPropriedades')
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
-      .addItem('Bridge — Manutenção', 'gerarSoBridgeManutencao')
-      .addItem('Bridge — Gráfico', 'gerarSoBridgeGrafico')
+      .addItem('Bridge — Manutenção (Tabela)', 'gerarSoBridgeManutencao')
+      .addItem('Bridge — Manutenção (Gráfico)', 'gerarSoBridgeGrafico')
       .addItem('Farol de Metas', 'gerarSoMetas'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
@@ -162,14 +163,25 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
     { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
     { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
-    { nome: 'Bridge de Manutenção',          fn: gerarSlideBridgeManutencao },
-    { nome: 'Bridge — Gráfico',              fn: gerarSlideBridgeManutencaoGrafico },
+    { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
+    { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
     { nome: 'Farol de Metas',                fn: gerarSlidesMetas }
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
     // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
   ];
 
   return _rodarPassos_(passos);
+}
+
+/**
+ * PONTO DE ENTRADA: Gera todos os slides da Apresentação Mensal de Propriedades.
+ */
+function gerarTodosOsSlides() {
+  return gerarApresentacaoPropriedades();
+}
+
+function rodarTodosOsSlides() {
+  return gerarApresentacaoPropriedades();
 }
 
 
@@ -199,8 +211,8 @@ function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão d
 function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
 function gerarSoDREPropriedades()     { return _rodarPassos_([{ nome: 'DRE de Propriedades',            fn: gerarSlideDREPropriedades }]); }
 function gerarSoDREManutencao()       { return _rodarPassos_([{ nome: 'DRE de Manutenção',              fn: gerarSlideDREManutencao }]); }
-function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção',           fn: gerarSlideBridgeManutencao }]); }
-function gerarSoBridgeGrafico()       { return _rodarPassos_([{ nome: 'Bridge — Gráfico',               fn: gerarSlideBridgeManutencaoGrafico }]); }
+function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao }]); }
+function gerarSoBridgeGrafico()       { return _rodarPassos_([{ nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico }]); }
 function gerarSoMetas()               { return _rodarPassos_([{ nome: 'Farol de Metas',                 fn: gerarSlidesMetas }]); }
 
 

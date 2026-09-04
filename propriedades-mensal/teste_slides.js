@@ -276,8 +276,21 @@ console.log('\n== DRE de Propriedades (Despesas Operacionais) ==');
   // Subitens com valor aparecem, subitens zerados NÃO aparecem
   checa(textos.some(t => /06\.04\.01 · seguros/i.test(t)), 'subitem com valor 06.04.01 · seguros presente');
   checa(textos.some(t => /06\.04\.15 · manutenção imóveis/i.test(t)), 'subitem com valor 06.04.15 · manutenção imóveis presente');
+  checa(textos.some(t => t === '592'), '06.04.15 traz o plano 592k vindo do DRE de Manutenção');
   checa(!textos.some(t => /06\.04\.02/.test(t)), 'subitem zerado 06.04.02 · material consumo ocultado');
   checa(!textos.some(t => /06\.04\.03/.test(t)), 'subitem zerado 06.04.03 · telefone ocultado');
+}
+
+// ── 4.2. Bridge explícito de Manutenção e ponto de entrada geral ────────
+console.log('\n== Bridge de Manutenção & Execução Geral ==');
+{
+  const brgTab = porSlide['Bridge (tabela)'] || [];
+  const brgGra = porSlide['Bridge (gráfico)'] || [];
+  checa(brgTab.some(s => /MANUTENÇÃO/i.test(s.txt)), 'Bridge (tabela) traz "MANUTENÇÃO" explicitamente');
+  checa(brgGra.some(s => /MANUTENÇÃO/i.test(s.txt)), 'Bridge (gráfico) traz "MANUTENÇÃO" explicitamente');
+
+  checa(typeof gerarTodosOsSlides === 'function', 'função gerarTodosOsSlides existe');
+  checa(typeof rodarTodosOsSlides === 'function', 'função rodarTodosOsSlides existe');
 }
 
 // ── 5. O Farol de Metas saiu na grade de Facilities ─────────────────────

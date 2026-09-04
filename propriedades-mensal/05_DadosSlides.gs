@@ -880,26 +880,59 @@ function obterDREPropriedades_() {
     return v.some(val => val != null && Math.abs(val) > 0.005);
   };
 
+  // Helper para somar dois blocos de DRE { mes, acum, ano }
+  const somarBlocos = (b1, b2) => {
+    if (!b1 && !b2) return null;
+    if (!b1) return b2;
+    if (!b2) return b1;
+    const s = (v1, v2) => {
+      if (v1 == null && v2 == null) return null;
+      return (v1 || 0) + (v2 || 0);
+    };
+    return {
+      mes:  { aa: s(b1.mes.aa, b2.mes.aa),   plan: s(b1.mes.plan, b2.mes.plan),  real: s(b1.mes.real, b2.mes.real) },
+      acum: { aa: s(b1.acum.aa, b2.acum.aa), plan: s(b1.acum.plan, b2.acum.plan), real: s(b1.acum.real, b2.acum.real) },
+      ano:  { aa: s(b1.ano.aa, b2.ano.aa),   plan: s(b1.ano.plan, b2.ano.plan),  proj: s(b1.ano.proj, b2.ano.proj) }
+    };
+  };
+
+  // Obtém o DRE de Manutenção para preencher 06.04.15 · MANUTENÇÃO IMÓVEIS (o pai da estratificação)
+  let recManut = null;
+  try {
+    const dadosManut = obterDREManutencao_();
+    if (dadosManut && dadosManut.total) recManut = dadosManut.total;
+  } catch (e) {
+    Logger.log('DRE Propriedades: aviso ao obter DRE Manutenção — ' + e.message);
+  }
+
   const est = DRE_PROP_ESTRUTURA;
   const linhas = [];
 
   // Grupos 06.01, 06.02, 06.03, 06.04
-  const gruposRec = est.grupos.map(g => ({
-    tipo: 'grupo',
-    codigo: g.cod,
-    nome: g.cod + ' · ' + g.nome,
-    b: recorte(g.cod)
-  }));
-
-  // Raiz 06: usa a linha direta se existir ou soma os 4 grupos
-  let recRaiz = recorte(est.raiz.cod);
-  if (!temValor(recRaiz)) {
-    recRaiz = {
-      mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
-      acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
-      ano:  { aa: _dreSoma_(gruposRec.map(g => g.b.ano.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.ano.plan)),  proj: _dreSoma_(gruposRec.map(g => g.b.ano.proj)) }
+  const gruposRec = est.grupos.map(g => {
+    let bGrp = recorte(g.cod);
+    if (g.cod === '06.04' && recManut) {
+      // Se a conta 06.04.15 na planilha de propriedades estava sem valor ou vazia,
+      // adiciona os valores de manutenção ao grupo 06.04 (DESPESAS GERAIS)
+      const rec060415Prop = recorte('06.04.15');
+      if (!temValor(rec060415Prop)) {
+        bGrp = somarBlocos(bGrp, recManut);
+      }
+    }
+    return {
+      tipo: 'grupo',
+      codigo: g.cod,
+      nome: g.cod + ' · ' + g.nome,
+      b: bGrp
     };
-  }
+  });
+
+  // Raiz 06: soma os 4 grupos para garantir consistência perfeita entre o total e os grupos
+  let recRaiz = {
+    mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
+    acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
+    ano:  { aa: _dreSoma_(gruposRec.map(g => g.b.ano.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.ano.plan)),  proj: _dreSoma_(gruposRec.map(g => g.b.ano.proj)) }
+  };
 
   linhas.push({
     tipo: 'total',
@@ -913,7 +946,11 @@ function obterDREPropriedades_() {
     if (grp.codigo === '06.04') {
       // Subitens de 06.04: somente os que têm valor
       est.contasGerais.forEach(sub => {
-        const recSub = recorte(sub.cod);
+        let recSub = recorte(sub.cod);
+        if (sub.cod === '06.04.15' && recManut) {
+          // Linha 06.04.15 · MANUTENÇÃO IMÓVEIS: recebe os valores do DRE Manutenção (pai da estratificação)
+          recSub = somarBlocos(recSub, recManut);
+        }
         if (temValor(recSub)) {
           linhas.push({
             tipo: 'item',
