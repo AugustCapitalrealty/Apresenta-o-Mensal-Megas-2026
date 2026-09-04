@@ -53,6 +53,7 @@ function onOpen() {
       .addItem('Farol de Metas', 'gerarSoMetas'))
     .addSeparator()
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
+    .addItem('🔍 Conferir arquivos no editor', 'diagnosticarArquivos')
     .addItem('🔍 Diagnosticar Backlog de Clientes', 'diagnosticarBacklogClientes')
     .addItem('🧮 Conferir Backlog (estoque × fluxo)', 'conferirIdentidadeBacklog')
     .addToUi();
@@ -61,7 +62,73 @@ function onOpen() {
 // ==========================================
 // PONTOS DE ENTRADA
 // ==========================================
+// ==========================================
+// CONFERÊNCIA DE PROJETO — roda antes de tudo
+// ==========================================
+/**
+ * O código é colado à mão, arquivo por arquivo, então é normal o editor ficar
+ * com metade de uma versão. Quando um arquivo inteiro não entra, TODAS as
+ * funções dele somem e a geração devolve um `X is not defined` por slide —
+ * oito erros diferentes para uma causa só.
+ *
+ * Esta função roda na primeira linha do pipeline e agrupa o que falta PELO
+ * ARQUIVO que declara, que é a informação de que se precisa: qual recopiar.
+ * Mesmo papel de _tvConferirProjeto_ em gestao-tvs/00_Main.gs (lição 6).
+ *
+ * Só `typeof` — nada aqui pode depender do que está faltando.
+ */
+const _PROP_DEPENDENCIAS_ = [
+  ['01_Config.gs',                ['CR_DESIGN_SYSTEM', 'getDeckMensal_', 'criarHeaderPadrao',
+                                   'criarCardPainel', 'DRE_MANUTENCAO_ID', 'METAS_PROPRIEDADES']],
+  ['02_Dados.gs',                 ['obterMesReferencia_', 'obterDashboardPropriedades_',
+                                   'obterBacklogPorCC_', 'obterBacklogEmergencialDetalhe_',
+                                   'obterDadosChamadosPendentes_', 'obterIndicadoresPropriedades_',
+                                   '_propLerCorretivas_', '_histNorm_']],
+  ['03_Tabelas.gs',               ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_',
+                                   '_tabRotuloReferencia_']],
+  ['Slide_Corretivas.gs',         ['_sTxt', 'gerarSlideCorretivas']],
+  ['Slide_LogosClientes.gs',      ['LOGO_LARG_PADRAO', '_getClienteLogoBlob_']],
+  ['Dados_DREManutencao.gs',      ['obterDREManutencao_']],
+  ['Slide_DREManutencao.gs',      ['gerarSlideDREManutencao', '_dreFalha_', '_drePosicionarNaSecao_']],
+  ['Slide_BridgeManutencao.gs',   ['gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico']],
+  ['Dados_Metas.gs',              ['obterMetasCalculadas_']],
+  ['Slide_Metas.gs',              ['gerarSlidesMetas', '_metaResolver_']]
+];
+
+function _propConferirProjeto_() {
+  const faltando = [];
+  _PROP_DEPENDENCIAS_.forEach(par => {
+    const arquivo = par[0], nomes = par[1];
+    const ausentes = [];
+    nomes.forEach(n => {
+      let existe = false;
+      try { existe = eval('typeof ' + n) !== 'undefined'; } catch (e) { existe = false; }
+      if (!existe) ausentes.push(n);
+    });
+    if (ausentes.length) faltando.push({ arquivo: arquivo, nomes: ausentes });
+  });
+
+  if (!faltando.length) return true;
+
+  Logger.log('======================================================');
+  Logger.log('⚠ ARQUIVOS QUE FALTAM NO EDITOR — a geração vai falhar');
+  Logger.log('======================================================');
+  faltando.forEach(f => Logger.log('  · ' + f.arquivo + '  → ' + f.nomes.join(', ')));
+  Logger.log('');
+  Logger.log('Quando TODAS as funções de um arquivo somem de uma vez, ou ele não');
+  Logger.log('foi colado, ou foi colado por cima de outro. Recopie e rode de novo.');
+  return false;
+}
+
+// Ponto de entrada avulso, para conferir sem gerar nada.
+function diagnosticarArquivos() {
+  if (_propConferirProjeto_()) Logger.log('✓ Todos os arquivos esperados estão no editor.');
+}
+
 function gerarApresentacaoPropriedades() {
+  // Antes de qualquer coisa: o editor tem todos os arquivos? (lição 6)
+  if (!_propConferirProjeto_()) return;
+
   Logger.log('▶ Apresentação Mensal de Propriedades — portfólio');
 
   // Ordem oficial, conforme definido com o time:
