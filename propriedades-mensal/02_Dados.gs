@@ -1114,38 +1114,112 @@ function conferirEquipes(ano, mes) {
 // ==========================================
 // Mês de referência — usa a última célula da aba DADOS ou fallback de calendário.
 // Propriedades tem uma única apresentação, sem o esquema de projeto ativo dos Megas.
+// Meses por extenso, SEM acento, para casar com texto normalizado.
+const _MESES_SEM_ACENTO_ = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
+                            'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+
+// Tira acento para comparar. A classe é escrita ESCAPADA (̀-ͯ) de
+// propósito: são os acentos combinantes, e escrevê-los literais é o erro que
+// o CLAUDE.md registra — some da tela e quebra a comparação em MARÇO.
+function _mesNormalizar_(txt) {
+  return String(txt || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+// Texto → índice do mês (0-11), ou -1. Aceita "AGOSTO", "Agosto/2026", "AGO".
+function _mesIndiceDoTexto_(txt) {
+  const t = _mesNormalizar_(txt);
+  if (!t) return -1;
+  let i = _MESES_SEM_ACENTO_.findIndex(m => t.indexOf(m) === 0);
+  if (i < 0) i = _MESES_SEM_ACENTO_.findIndex(m => t.indexOf(m.slice(0, 3)) === 0);
+  return i;
+}
+
+/**
+ * O MÊS DA APRESENTAÇÃO — fonte única do deck.
+ *
+ * Vem de CONFIG!B1 da PLANILHA PROPRIEDADES (aba CONFIG, A1 "MÊS",
+ * B1 "AGOSTO"). Foi decisão explícita do usuário: esse B1 é A referência, e
+ * vale para TODOS os slides — capa, preventivas, corretivas, backlog, rodapé
+ * das tabelas e o DRE/Bridge de manutenção.
+ *
+ * POR QUE UMA FONTE SÓ: até 03/09/2026 o mês vinha do B1 da primeira aba da
+ * ANÁLISE DE PROJETOS, outra planilha. Com o DRE de manutenção lendo a
+ * PLANILHA PROPRIEDADES, o deck passaria a ter duas fontes de mês — e no dia
+ * em que uma fosse atualizada e a outra não, a capa diria um mês e o DRE
+ * mostraria outro, sem erro nenhum na tela.
+ *
+ * A antiga vira RESERVA: se o CONFIG não abrir ou o B1 não tiver mês
+ * reconhecível, ela assume, e o Logger diz que assumiu. Divergência entre as
+ * duas é registrada — não é erro (a antiga pode só estar desatualizada), mas
+ * é o tipo de coisa que se quer ver antes da reunião.
+ *
+ * Sem nenhuma das duas, cai no calendário: mês anterior ao de hoje.
+ */
 function obterMesReferencia_() {
   const hoje = new Date();
-  let idx = -1;
-  try {
-    const ss    = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
-    const sheets = ss.getSheets();
-    const sheet = sheets[0]; // primeira aba
-    const cab   = String(sheet.getRange(1, 2).getDisplayValue() || '').toUpperCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '');
-    // Procura por padrão de mês em português: JAN, FEV, MAR, etc.
-    const nomesMeses = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO',
-                        'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
-    idx = nomesMeses.findIndex(m => cab.indexOf(m) === 0);
-  } catch (e) {
-    Logger.log('Mês de referência: usando fallback de calendário. ' + e.message);
+  let idx = -1, fonte = 'calendário';
+
+  const doConfig = _mesRefDoConfig_();
+  const daReserva = _mesRefDaReserva_();
+
+  if (doConfig >= 0) {
+    idx = doConfig; fonte = 'CONFIG!B1';
+    if (daReserva >= 0 && daReserva !== doConfig) {
+      Logger.log('Mês de referência: CONFIG!B1 diz ' + _MESES_SEM_ACENTO_[doConfig] +
+                 ', a ANÁLISE DE PROJETOS diz ' + _MESES_SEM_ACENTO_[daReserva] +
+                 '. Vale o CONFIG — confira se a outra ficou para trás.');
+    }
+  } else if (daReserva >= 0) {
+    idx = daReserva; fonte = 'ANÁLISE DE PROJETOS (reserva)';
+    Logger.log('Mês de referência: CONFIG!B1 não deu mês; usando a reserva.');
   }
+
   if (idx < 0) {
     const ant = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
     idx = ant.getMonth();
+    Logger.log('Mês de referência: nem CONFIG nem reserva deram mês; usando o calendário.');
   }
+
   const ano = idx > hoje.getMonth() ? hoje.getFullYear() - 1 : hoje.getFullYear();
-  const nomesMesesCompleto = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
-                               'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+  const nomesCompleto = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
+                         'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
   const nomesCurto = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const nome = nomesMesesCompleto[idx];
   return {
     index: idx,
-    nome: nome,
+    nome: nomesCompleto[idx],
     curto: nomesCurto[idx],
     ano: ano,
-    label: nome + ' / ' + ano
+    fonte: fonte,
+    label: nomesCompleto[idx] + ' / ' + ano
   };
+}
+
+// CONFIG!B1 da PLANILHA PROPRIEDADES. Busca a aba pelo NOME, não pela
+// posição: aba nova entra na frente e a primeira deixa de ser a que se pensa.
+function _mesRefDoConfig_() {
+  try {
+    const ss  = SpreadsheetApp.openById(DRE_MANUTENCAO_ID);
+    const aba = ss.getSheetByName('CONFIG');
+    if (!aba) {
+      Logger.log('Mês de referência: aba CONFIG não existe em "' + ss.getName() +
+                 '". Abas: ' + ss.getSheets().map(x => x.getName()).join(' | '));
+      return -1;
+    }
+    return _mesIndiceDoTexto_(aba.getRange(1, 2).getDisplayValue());
+  } catch (e) {
+    Logger.log('Mês de referência: CONFIG não abriu — ' + e.message);
+    return -1;
+  }
+}
+
+// A fonte antiga: B1 da primeira aba da ANÁLISE DE PROJETOS.
+function _mesRefDaReserva_() {
+  try {
+    const ss = SpreadsheetApp.openById(PROPRIEDADES_SPREADSHEET_ID);
+    return _mesIndiceDoTexto_(ss.getSheets()[0].getRange(1, 2).getDisplayValue());
+  } catch (e) {
+    return -1;
+  }
 }
 
 // % de itens concluídos nos relatórios de Recebimento de Obras (Esteio +

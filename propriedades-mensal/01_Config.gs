@@ -163,6 +163,22 @@ const DRE_COL_TOTAL_B = 25;   // PLANEJAMENTO: Planejado    · RITMO: Realizado
 // pessoal, fiscais) não entra nesta apresentação.
 const DRE_CONTA_RAIZ = '06.04.15.01';   // manutenção imóveis
 
+// ⚠ ERRO CONHECIDO DA CONTABILIDADE — NÃO CONSERTAR AQUI.
+//
+// As duas abas não têm os mesmos centros de custo, e isso é ERRO NA ORIGEM,
+// não decisão de modelagem. Confirmado com o usuário em 03/09/2026: "o
+// pessoal da contabilidade vai arrumar".
+//
+// POR QUE O CÓDIGO NÃO CORRIGE: escolher uma das abas, ou somar a diferença
+// à mão, esconderia o erro justamente de quem pode consertá-lo. E no dia em
+// que a contabilidade arrumar a planilha, o ajuste viraria contagem dobrada
+// em silêncio. Então a divergência fica VISÍVEL: os centros aparecem na
+// tabela marcados com "só plano" / "só ritmo", e o slide avisa quando as
+// linhas não somam o total do grupo.
+//
+// QUANDO AVISAREM QUE ARRUMOU: reconferir as duas abas, e só então tirar as
+// marcas `so:` daqui e o aviso do slide.
+//
 // A LISTA É A UNIÃO DAS DUAS ABAS, não a de uma delas.
 //
 // POR QUE ISSO IMPORTA: as abas não têm os mesmos centros de custo. Três
@@ -202,6 +218,7 @@ const DRE_EMPRESAS = [
   ]}
 ];
 
+// ⚠ ERRO CONHECIDO DA CONTABILIDADE (o mesmo de cima) — NÃO CONSERTAR AQUI.
 // DIVERGÊNCIA CONHECIDA contra a Torre de Manutenção (TORRE_MANUTENCAO_*_REF
 // acima), que alimenta o quadrante Financeiro do Dashboard. Reconciliado
 // linha a linha em 03/09/2026:

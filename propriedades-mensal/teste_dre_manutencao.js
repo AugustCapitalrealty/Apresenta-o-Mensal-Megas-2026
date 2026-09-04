@@ -43,10 +43,14 @@ function aba(nome) {
 global.SlidesApp = { openById: () => { throw new Error('sem Slides no teste'); } };
 global.DriveApp  = { getFileById: () => { throw new Error('sem Drive no teste'); } };
 
-let fonte = ['01_Config.gs', 'Dados_DREManutencao.gs', 'Slide_BridgeManutencao.gs']
+let fonte = ['01_Config.gs', '02_Dados.gs', 'Dados_DREManutencao.gs', 'Slide_BridgeManutencao.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 fonte = fonte.replace(/^(const|let) /gm, 'var ');
 (0, eval)(fonte);
+
+// A obterMesReferencia_ DE VERDADE, guardada antes de os dublês a
+// sobrescreverem — os testes de CONFIG!B1 lá embaixo precisam dela de volta.
+const obterMesReferenciaReal_ = obterMesReferencia_;
 
 // Ago/2026: é o último mês com realizado na planilha real.
 global.obterMesReferencia_ = () => ({ index: 7, nome: 'AGOSTO', curto: 'Ago', ano: 2026 });
@@ -125,6 +129,47 @@ const jun = obterDREManutencao_();
 ok('avisa que o último realizado é AGO, não JUN',
    jun.avisos.some(a => /último mês com realizado/.test(a)), jun.avisos.join(' | '));
 ok('e o acumulado encolhe para Jan..Jun', jun.total.acum.real < d.total.acum.real);
+
+console.log('\n== Mês de referência vem de CONFIG!B1 ==');
+// A partir daqui usa a obterMesReferencia_ DE VERDADE (02_Dados.gs), não o dublê.
+global.obterMesReferencia_ = obterMesReferenciaReal_;
+let CONFIG_B1 = 'AGOSTO', RESERVA_B1 = 'AGOSTO';
+global.SpreadsheetApp = {
+  openById: id => ({
+    getName: () => 'planilha',
+    getSheets: () => (id === DRE_MANUTENCAO_ID
+      ? [abaConfig()].concat(Object.keys(ABAS).map(n => aba(n)))
+      : [abaB1(RESERVA_B1)]),
+    getSheetByName: n => (n === 'CONFIG' ? abaConfig() : (ABAS[n] ? aba(n) : null))
+  })
+};
+function abaB1(v) { return { getName: () => 'x', getRange: () => ({ getDisplayValue: () => v }) }; }
+function abaConfig() { return { getName: () => 'CONFIG', getRange: () => ({ getDisplayValue: () => CONFIG_B1 }) }; }
+
+let r = obterMesReferencia_();
+ok('lê AGOSTO do CONFIG!B1', r.index === 7 && r.nome === 'AGOSTO', JSON.stringify(r));
+ok('e diz de onde veio', r.fonte === 'CONFIG!B1');
+
+CONFIG_B1 = 'Março';
+r = obterMesReferencia_();
+ok('MARÇO com cedilha e acento vira índice 2', r.index === 2, JSON.stringify(r));
+
+CONFIG_B1 = 'setembro/2026';
+r = obterMesReferencia_();
+ok('aceita "setembro/2026" minúsculo com sufixo', r.index === 8);
+
+CONFIG_B1 = '';
+RESERVA_B1 = 'JUNHO';
+r = obterMesReferencia_();
+ok('CONFIG vazio → cai na reserva', r.index === 5 && /reserva/.test(r.fonte), JSON.stringify(r));
+
+CONFIG_B1 = 'AGOSTO'; RESERVA_B1 = 'JUNHO';
+logs.length = 0;
+r = obterMesReferencia_();
+ok('CONFIG ganha da reserva', r.index === 7);
+ok('e a divergência é registrada', logs.some(l => /confira se a outra ficou para trás/.test(l)),
+   logs.join(' | '));
+RESERVA_B1 = 'AGOSTO';
 
 console.log('\n== Bridge: as barras reconciliam plano → realizado ==');
 global.obterMesReferencia_ = () => ({ index: 7, nome: 'AGOSTO', curto: 'Ago', ano: 2026 });
