@@ -47,6 +47,7 @@ function onOpen() {
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
+      .addItem('DRE — Propriedades (Desp. Operacionais)', 'gerarSoDREPropriedades')
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
       .addItem('Bridge — Manutenção', 'gerarSoBridgeManutencao')
       .addItem('Bridge — Gráfico', 'gerarSoBridgeGrafico')
@@ -83,7 +84,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['02_Dados.gs',                   ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
   ['03_Tabelas.gs',                 ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
   ['04_Diagnosticos.gs',            ['diagnosticarPropriedades', 'conferirIdentidadeBacklog', 'diagnosticarBacklogClientes']],
-  ['05_DadosSlides.gs',             ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterMetasCalculadas_']],
+  ['05_DadosSlides.gs',             ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterDREPropriedades_', 'obterMetasCalculadas_']],
   ['10_Slide_Capa.gs',              ['gerarSlideCapa']],
   ['11_Slide_IndicadoresGerais.gs', ['gerarSlideIndicadoresGerais', '_dashGrade_']],
   ['12_Slide_Preventivas.gs',       ['gerarSlidePreventivas']],
@@ -93,7 +94,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['16_Slide_RecebimentoObras.gs',  ['gerarSlideRecebimentoObras']],
   ['17_Slide_Contratacoes.gs',      ['gerarSlideContratacoes']],
   ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
-  ['19_Slide_DREBridge.gs',         ['gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
+  ['19_Slide_DREBridge.gs',         ['gerarSlideDREPropriedades', 'gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
 ];
 
@@ -159,6 +160,7 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
     { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
+    { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
     { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
     { nome: 'Bridge de Manutenção',          fn: gerarSlideBridgeManutencao },
     { nome: 'Bridge — Gráfico',              fn: gerarSlideBridgeManutencaoGrafico },
@@ -195,6 +197,7 @@ function gerarSoBacklogClientes()     { return _rodarPassos_([{ nome: 'Backlog d
 function gerarSoRecebimentoObras()    { return _rodarPassos_([{ nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras }]); }
 function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }]); }
 function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
+function gerarSoDREPropriedades()     { return _rodarPassos_([{ nome: 'DRE de Propriedades',            fn: gerarSlideDREPropriedades }]); }
 function gerarSoDREManutencao()       { return _rodarPassos_([{ nome: 'DRE de Manutenção',              fn: gerarSlideDREManutencao }]); }
 function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção',           fn: gerarSlideBridgeManutencao }]); }
 function gerarSoBridgeGrafico()       { return _rodarPassos_([{ nome: 'Bridge — Gráfico',               fn: gerarSlideBridgeManutencaoGrafico }]); }

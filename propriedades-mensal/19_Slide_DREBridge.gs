@@ -19,6 +19,39 @@
  */
 
 
+function gerarSlideDREPropriedades() {
+  const dados = obterDREPropriedades_();
+  const deck  = getDeckMensal_();
+  const DS    = CR_DESIGN_SYSTEM;
+
+  _slideLimpar_(deck, TAG_DRE_PROPRIEDADES);
+
+  const slide = _slideNovo_(deck, TAG_DRE_PROPRIEDADES);
+
+  // Vaga 1 da seção FINANCEIRO (visão macro de Despesas Operacionais).
+  _drePosicionarNaSecao_(deck, slide, 'DRE PROPRIEDADES', 1);
+
+  if (!dados) {
+    criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS', 'Equipe de Propriedades');
+    _dreFalha_(slide, 20, 76, deck.getPageWidth() - 40, 120,
+      new Error('Não foi possível ler as abas "' + DRE_PROP_ABA_PLANEJAMENTO + '" e "' + DRE_PROP_ABA_RITMO + '".'));
+    return;
+  }
+
+  const ref = dados.ref;
+  const mesAbrev = ref.curto.toUpperCase() + '/' + String(ref.ano).slice(-2);
+  criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS',
+    'Meta vs Realizado (projeção pelo ritmo) · Equipe Propriedades · valores em R$ mil · Mês: ' + mesAbrev);
+
+  try {
+    _drePropGrade_(slide, deck, dados, mesAbrev);
+  } catch (e) {
+    _dreFalha_(slide, 20, 76, deck.getPageWidth() - 40, 120, e);
+    Logger.log('DRE Propriedades: falhou ao desenhar — ' + e.message);
+  }
+}
+
+
 function gerarSlideDREManutencao() {
   const dados = obterDREManutencao_();
   const deck  = getDeckMensal_();
@@ -28,8 +61,8 @@ function gerarSlideDREManutencao() {
 
   const slide = _slideNovo_(deck, TAG_DRE_MANUTENCAO);
 
-  // Vaga 1 da seção FINANCEIRO (a capa é a 0).
-  _drePosicionarNaSecao_(deck, slide, 'DRE', 1);
+  // Vaga 2 da seção FINANCEIRO (visão micro da rubrica 06.04.15 por centro de custo).
+  _drePosicionarNaSecao_(deck, slide, 'DRE', 2);
 
   if (!dados) {
     criarHeaderPadrao(slide, 'DRE — MANUTENÇÃO', 'Planejado × Realizado por centro de custo');
@@ -197,6 +230,129 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
   }
 }
 
+
+// Grade de Despesas Operacionais de Propriedades (06, 06.01..06.04 e subitens estratificados)
+function _drePropGrade_(slide, deck, dados, mesAbrev) {
+  const DS = CR_DESIGN_SYSTEM;
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+
+  const CINZA_EMPRESA = '#475569';
+  const COR_FUTURO    = DS.colors.brandLight;
+  const VERM = '#A85450', VERDE = '#4E7B5F';
+
+  const NCOL = 5;
+  const x0 = 10, tableW = W - 20;
+  const rubricaW = 168;
+  const PESO_COL = [0.82, 0.82, 0.82, 1.30, 1.24];
+  const unidade = (tableW - rubricaW) / (3 * NCOL);
+  const colPos = [], colLarg = [];
+  let accX = x0 + rubricaW;
+  for (let b = 0; b < 3; b++) {
+    for (let i = 0; i < NCOL; i++) {
+      const cw = unidade * PESO_COL[i];
+      colPos.push(accX); colLarg.push(cw); accX += cw;
+    }
+  }
+  const colX = i => colPos[i], colW = i => colLarg[i];
+  const blocoW = c0 => colLarg.slice(c0, c0 + NCOL).reduce((a, b) => a + b, 0);
+
+  const blocoY = 66, blocoH = 14, subH = 14;
+  const anoAnt = dados.ref.ano - 1;
+  const acumTxt = dados.refIndex > 0 ? ('ACUMULADO — JAN A ' + mesAbrev) : ('ACUMULADO — ' + mesAbrev);
+  const blocos = [
+    { txt: 'MÊS — ' + mesAbrev,             c0: 0,  cor: DS.colors.brandMed },
+    { txt: acumTxt,                          c0: 5,  cor: DS.colors.brandMed },
+    { txt: 'REALIZADO + RITMO — ANO',        c0: 10, cor: COR_FUTURO, futuro: true }
+  ];
+
+  _sRet_(slide, x0, blocoY, rubricaW - 1, blocoH + subH, DS.colors.brandDark);
+  _sTxt(slide, x0 + 4, blocoY, rubricaW - 8, blocoH + subH, 'R$ MIL', 7, true, '#FFFFFF', 'left');
+
+  blocos.forEach(b => {
+    const bx = colX(b.c0), bw = blocoW(b.c0) - 1;
+    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, blocoY, bw, blocoH);
+    bg.getFill().setSolidFill(b.cor); bg.getBorder().setTransparent();
+    _sTxt(slide, bx, blocoY, bw, blocoH, b.txt, 6.5, true, '#FFFFFF', 'center');
+
+    [String(anoAnt), 'Meta', 'Real', 'Δ% Meta', 'Δ% ' + anoAnt].forEach((t, i) => {
+      const sx = colX(b.c0 + i), sw = colW(b.c0 + i) - 1;
+      _sRet_(slide, sx, blocoY + blocoH, sw, subH, b.futuro ? '#0A4C86' : DS.colors.brandDark);
+      const folga = 10;
+      _sTxt(slide, sx - folga, blocoY + blocoH, sw + folga * 2, subH, t, 6.5, true, '#FFFFFF', 'center');
+    });
+  });
+
+  const tY = blocoY + blocoH + subH + 2;
+  const numLinhas = Math.max(dados.linhas.length, 1);
+  const rowH = Math.min(16, (H - tY - 8) / numLinhas);
+  const fs = rowH >= 12 ? 7 : (rowH >= 9 ? 6.3 : (rowH >= 7 ? 5.5 : 4.8));
+
+  const mil = v => (v == null || isNaN(v)) ? '-' : Math.round(v / 1000).toLocaleString('pt-BR');
+
+  const variacao = (base, real) => {
+    if (real == null || isNaN(real)) return null;
+    if (base == null || isNaN(base)) return null;
+    if (base === 0) return real > 0.005 ? { pct: 100, maior: true, nulo: false } : null;
+    const v = (real / base - 1) * 100;
+    return { pct: Math.abs(v), maior: v > 0, nulo: v === 0 };
+  };
+  const numeroVar = va => {
+    if (!va) return '-';
+    const pp = Math.round(va.pct);
+    if (pp === 0) return '0%';
+    return (pp > 9999 ? '>9999' : pp.toLocaleString('pt-BR')) + '%';
+  };
+  const corVar = va => {
+    if (!va || va.nulo) return DS.colors.textMuted;
+    return va.maior ? VERM : VERDE;
+  };
+
+  dados.linhas.forEach((l, i) => {
+    const ry = tY + i * rowH;
+    const isTotal = l.tipo === 'total';
+    const isGrupo = l.tipo === 'grupo';
+    const destaque = isTotal || isGrupo;
+
+    if (destaque) {
+      _sRet_(slide, x0, ry, tableW, rowH - 0.5, isTotal ? DS.colors.brandDark : CINZA_EMPRESA);
+    } else {
+      const bgZebra = i % 2 === 0 ? '#F8FAFC' : '#FFFFFF';
+      _sRet_(slide, x0, ry, tableW, rowH - 0.5, bgZebra);
+    }
+
+    const corTxt = destaque ? '#FFFFFF' : DS.colors.textMain;
+    const indent = isTotal ? 4 : (isGrupo ? 8 : 16);
+    _sTxt(slide, x0 + indent, ry, rubricaW - indent - 4, rowH, l.nome,
+          isTotal ? fs + 0.4 : fs, destaque, corTxt, 'left');
+
+    [['mes', 'real'], ['acum', 'real'], ['ano', 'proj']].forEach(([campo, chaveReal], bi) => {
+      const bloco = l.b[campo] || {};
+      const aa   = bloco.aa;
+      const meta = bloco.plan;
+      const real = bloco[chaveReal];
+      const c0 = bi * NCOL;
+
+      [[0, mil(aa)], [1, mil(meta)], [2, mil(real)]].forEach(([k, txt]) => {
+        _sTxt(slide, colX(c0 + k) - 6, ry, colW(c0 + k) + 11, rowH, txt,
+              fs, destaque || k === 2, corTxt, 'center');
+      });
+
+      [[3, variacao(meta, real)], [4, variacao(aa, real)]].forEach(([k, va]) => {
+        const cxx = colX(c0 + k), cww = colW(c0 + k);
+        const cor = destaque ? '#E2E8F0' : corVar(va);
+        if (va && !va.nulo) {
+          _sTxt(slide, cxx + 1, ry, 8, rowH, va.maior ? '▲' : '▼', fs - 0.8, false, cor, 'center');
+        }
+        _sTxt(slide, cxx + 7, ry, cww - 9, rowH, numeroVar(va), fs, false, cor, 'right');
+      });
+    });
+  });
+
+  if (dados.avisos && dados.avisos.length) {
+    _sTxt(slide, x0, H - 10, tableW, 9, '⚠ ' + dados.avisos[0], 5.2, false, DS.colors.accentOrange, 'left');
+  }
+}
+
 // Encurta o nome do centro de custo para caber na coluna sem quebrar linha.
 function _dreNomeCurto_(nome) {
   return String(nome)
@@ -321,8 +477,8 @@ function gerarSlideBridgeManutencao() {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const slide = _slideNovo_(deck, TAG_BRIDGE_MANUTENCAO);
 
-  // Vaga 2 da seção FINANCEIRO, logo depois do DRE.
-  _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 2);
+  // Vaga 3 da seção FINANCEIRO, logo depois do DRE de Manutenção.
+  _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 3);
 
   if (!dados) {
     criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)', 'Orçado vs Realizado — Manutenção');
@@ -588,7 +744,7 @@ function gerarSlideBridgeManutencaoGrafico() {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const slide = _slideNovo_(deck, TAG_BRIDGE_GRAFICO);
 
-  _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 3);
+  _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 4);
 
   if (!dados) {
     criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO', 'Do Orçado ao Realizado/Projetado — Manutenção');

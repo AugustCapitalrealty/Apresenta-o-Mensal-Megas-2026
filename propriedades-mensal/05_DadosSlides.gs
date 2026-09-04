@@ -804,6 +804,143 @@ function obterDREManutencao_() {
   return { ref: ref, refIndex: refIndex, empresas: empresas, total: total, meses: meses, avisos: avisos };
 }
 
+/**
+ * DRE de Despesas Operacionais de Propriedades.
+ * Lê as abas:
+ *   - PLANEJAMENTO 2026 - PROPRIEDADES (Meta e Realizado AA)
+ *   - RITMO 2026 - PROPRIEDADES (Realizado e Ritmo de projeção)
+ *
+ * Estrutura:
+ *   06 - DESPESAS OPERACIONAIS
+ *     06.01 - DESPESA DE PESSOAL
+ *     06.02 - SERVIÇOS DE TERCEIROS
+ *     06.03 - DESPESAS FISCAIS
+ *     06.04 - DESPESAS GERAIS
+ *       (estratificação apenas dos subitens de 06.04 que têm valor)
+ */
+function obterDREPropriedades_() {
+  const planMapa  = _dreLerAba_(DRE_PROP_ABA_PLANEJAMENTO);
+  const ritmoMapa = _dreLerAba_(DRE_PROP_ABA_RITMO);
+  if (!planMapa && !ritmoMapa) return null;
+
+  const ref      = obterMesReferencia_();
+  const refIndex = ref.index;
+  const avisos   = [];
+
+  const abs = v => (v == null ? null : Math.abs(v));
+
+  // Helper para buscar código tolerando variações de formatação ('06' ou '6', etc.)
+  const buscarLinha = (mapa, cod) => {
+    if (!mapa) return null;
+    if (mapa[cod]) return mapa[cod];
+    const semZero = cod.replace(/^0+([1-9])/, '$1');
+    if (mapa[semZero]) return mapa[semZero];
+    const chaves = Object.keys(mapa);
+    for (let i = 0; i < chaves.length; i++) {
+      const k = chaves[i];
+      if (k === cod || k.startsWith(cod + ' ') || k.startsWith(cod + '-')) {
+        return mapa[k];
+      }
+    }
+    return null;
+  };
+
+  const recorte = cod => {
+    const p = buscarLinha(planMapa, cod);
+    const r = buscarLinha(ritmoMapa, cod);
+
+    const planMes = p ? abs(p[2 * refIndex + 1]) : null;   // ímpar = Planejado
+    const aaMes   = p ? abs(p[2 * refIndex])     : null;   // par   = Realizado AA
+    const realMes = r ? abs(r[2 * refIndex + 1]) : null;   // ímpar = Realizado
+
+    const planAcum = [], aaAcum = [], realAcum = [], projAno = [];
+    for (let m = 0; m < 12; m++) {
+      if (p && m <= refIndex) { planAcum.push(abs(p[2 * m + 1])); aaAcum.push(abs(p[2 * m])); }
+      if (r && m <= refIndex) realAcum.push(abs(r[2 * m + 1]));
+      if (r) projAno.push(_dreMesOcorrido_(m, refIndex) ? abs(r[2 * m + 1]) : abs(r[2 * m]));
+    }
+    const planAno = [], aaAno = [];
+    if (p) for (let m = 0; m < 12; m++) { planAno.push(abs(p[2 * m + 1])); aaAno.push(abs(p[2 * m])); }
+
+    return {
+      mes:  { aa: aaMes,               plan: planMes,             real: realMes },
+      acum: { aa: _dreSoma_(aaAcum),   plan: _dreSoma_(planAcum), real: _dreSoma_(realAcum) },
+      ano:  { aa: _dreSoma_(aaAno),    plan: _dreSoma_(planAno),  proj: _dreSoma_(projAno) }
+    };
+  };
+
+  // Verifica se o bloco de dados tem algum valor não-zero
+  const temValor = rec => {
+    if (!rec) return false;
+    const v = [
+      rec.mes.aa, rec.mes.plan, rec.mes.real,
+      rec.acum.aa, rec.acum.plan, rec.acum.real,
+      rec.ano.aa, rec.ano.plan, rec.ano.proj
+    ];
+    return v.some(val => val != null && Math.abs(val) > 0.005);
+  };
+
+  const est = DRE_PROP_ESTRUTURA;
+  const linhas = [];
+
+  // Grupos 06.01, 06.02, 06.03, 06.04
+  const gruposRec = est.grupos.map(g => ({
+    tipo: 'grupo',
+    codigo: g.cod,
+    nome: g.cod + ' · ' + g.nome,
+    b: recorte(g.cod)
+  }));
+
+  // Raiz 06: usa a linha direta se existir ou soma os 4 grupos
+  let recRaiz = recorte(est.raiz.cod);
+  if (!temValor(recRaiz)) {
+    recRaiz = {
+      mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
+      acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
+      ano:  { aa: _dreSoma_(gruposRec.map(g => g.b.ano.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.ano.plan)),  proj: _dreSoma_(gruposRec.map(g => g.b.ano.proj)) }
+    };
+  }
+
+  linhas.push({
+    tipo: 'total',
+    codigo: est.raiz.cod,
+    nome: est.raiz.cod + ' · ' + est.raiz.nome,
+    b: recRaiz
+  });
+
+  gruposRec.forEach(grp => {
+    linhas.push(grp);
+    if (grp.codigo === '06.04') {
+      // Subitens de 06.04: somente os que têm valor
+      est.contasGerais.forEach(sub => {
+        const recSub = recorte(sub.cod);
+        if (temValor(recSub)) {
+          linhas.push({
+            tipo: 'item',
+            codigo: sub.cod,
+            nome: sub.cod + ' · ' + sub.nome.toUpperCase(),
+            b: recSub
+          });
+        }
+      });
+    }
+  });
+
+  Logger.log('DRE Propriedades: ref ' + ref.nome + '/' + ref.ano +
+             ' · plano ano ' + (recRaiz.ano.plan == null ? '—' : recRaiz.ano.plan.toFixed(0)) +
+             ' · projeção ano ' + (recRaiz.ano.proj == null ? '—' : recRaiz.ano.proj.toFixed(0)) +
+             ' · realizado acum ' + (recRaiz.acum.real == null ? '—' : recRaiz.acum.real.toFixed(0)) +
+             ' · ' + linhas.length + ' linhas no slide');
+
+  return {
+    ref: ref,
+    refIndex: refIndex,
+    total: recRaiz,
+    linhas: linhas,
+    avisos: avisos
+  };
+}
+
 
 // ==========================================
 // FAROL DE METAS  (era 08_DadosMetas.gs)

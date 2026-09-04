@@ -117,6 +117,7 @@ const TAG_BACKLOG_EMERG_DETALHE     = '【PROP_BACKLOG_EMERG_DETALHE_AUTO】';
 const TAG_CHAMADOS_PENDENTES        = '【PROP_CHAMADOS_PENDENTES_AUTO】';
 const TAG_BACKLOG_CLIENTES          = '【PROP_BACKLOG_CLIENTES_AUTO】';
 const TAG_TORRE_MANUTENCAO          = '【PROP_TORRE_MANUTENCAO_AUTO】';
+const TAG_DRE_PROPRIEDADES          = '【PROP_DRE_PROPRIEDADES_AUTO】';
 const TAG_DRE_MANUTENCAO            = '【PROP_DRE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_MANUTENCAO         = '【PROP_BRIDGE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_GRAFICO            = '【PROP_BRIDGE_GRAFICO_AUTO】';
@@ -234,6 +235,45 @@ const DRE_MANUTENCAO_ID = '1SVlPPyPuvGtCM4pzoA5kpc4VaszzP91NaMyTWRzkKSo';
 //     da outra aba, e os dois divergem muito (ano: −592.450 × −1.083.499).
 const DRE_ABA_PLANEJAMENTO = 'PLANEJAMENTO 2026 - MANUTENÇÕES';
 const DRE_ABA_RITMO        = 'RITMO 2026 - MANUTENÇÕES';
+
+// Abas de DRE de Despesas Operacionais (Propriedades)
+const DRE_PROP_ABA_PLANEJAMENTO = 'PLANEJAMENTO 2026 - PROPRIEDADES';
+const DRE_PROP_ABA_RITMO        = 'RITMO 2026 - PROPRIEDADES';
+
+const DRE_PROP_ESTRUTURA = {
+  raiz: { cod: '06', nome: 'DESPESAS OPERACIONAIS' },
+  grupos: [
+    { cod: '06.01', nome: 'DESPESA DE PESSOAL' },
+    { cod: '06.02', nome: 'SERVIÇOS DE TERCEIROS' },
+    { cod: '06.03', nome: 'DESPESAS FISCAIS' },
+    { cod: '06.04', nome: 'DESPESAS GERAIS' }
+  ],
+  contasGerais: [
+    { cod: '06.04.01', nome: 'seguros' },
+    { cod: '06.04.02', nome: 'material consumo' },
+    { cod: '06.04.03', nome: 'telefone' },
+    { cod: '06.04.04', nome: 'quilometragem, estacionamento e pedágio' },
+    { cod: '06.04.05', nome: 'alugueis e condominios' },
+    { cod: '06.04.06', nome: 'propaganda e publicidade' },
+    { cod: '06.04.07', nome: 'energia eletrica' },
+    { cod: '06.04.08', nome: 'água' },
+    { cod: '06.04.09', nome: 'despesa com passagens' },
+    { cod: '06.04.10', nome: 'despesas com hospedagem' },
+    { cod: '06.04.11', nome: 'representação e refeição' },
+    { cod: '06.04.12', nome: 'despesa com taxi' },
+    { cod: '06.04.13', nome: 'locação de veículos' },
+    { cod: '06.04.14', nome: 'despesa com combustiveis' },
+    { cod: '06.04.15', nome: 'manutenção imóveis' },
+    { cod: '06.04.16', nome: 'despesas condomínio MEGA Esteio' },
+    { cod: '06.04.17', nome: 'despesas condomínio MEGA Itajaí' },
+    { cod: '06.04.18', nome: 'despesas condomínio MEGA Curitiba' },
+    { cod: '06.04.19', nome: 'despesas condomínio MEGA Canoas' },
+    { cod: '06.04.20', nome: 'processos judiciais' },
+    { cod: '06.04.21', nome: 'outras despesas gerais' },
+    { cod: '06.04.22', nome: 'despesas condomínios Mega' },
+    { cod: '06.04.23', nome: 'Outras Receitas Operacionais' }
+  ]
+};
 
 // Em cada aba, por mês, duas colunas na ordem acima; depois duas de Total.
 // Par = 1ª coluna do mês, ímpar = 2ª. Mês m (0-based) → colunas 2m e 2m+1.

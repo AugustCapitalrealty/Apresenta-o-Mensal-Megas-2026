@@ -215,6 +215,7 @@ const PASSOS = [
   ['Recebimento de Obras',   () => gerarSlideRecebimentoObras()],
   ['Gestão de Contratações', () => gerarSlideContratacoes()],
   ['Torre de Manutenção',    () => gerarSlideTorreManutencao()],
+  ['DRE de Propriedades',    () => gerarSlideDREPropriedades()],
   ['DRE de Manutenção',      () => gerarSlideDREManutencao()],
   ['Bridge (tabela)',        () => gerarSlideBridgeManutencao()],
   ['Bridge (gráfico)',       () => gerarSlideBridgeManutencaoGrafico()],
@@ -223,7 +224,7 @@ const PASSOS = [
 
 // Os slides sem fixture leem planilha vazia e saem pelo "sem dados" — o que
 // interessa neles é não EXPLODIR e não escrever o aviso de falha.
-const COM_FIXTURE = ['DRE de Manutenção', 'Bridge (tabela)', 'Bridge (gráfico)', 'Farol de Metas'];
+const COM_FIXTURE = ['DRE de Propriedades', 'DRE de Manutenção', 'Bridge (tabela)', 'Bridge (gráfico)', 'Farol de Metas'];
 
 const porSlide = {};   // shapes de cada passo, para as conferências de layout
 PASSOS.forEach(([nome, fn]) => {
@@ -250,7 +251,7 @@ PASSOS.forEach(([nome, fn]) => {
     checa(novos.length > 20, nome + ' — desenhou (' + novos.length + ' shapes)');
 });
 
-// ── 4. O DRE saiu no formato dos Megas ──────────────────────────────────
+// ── 4. O DRE de Manutenção saiu no formato dos Megas ─────────────────────
 console.log('\n== DRE no formato dos Megas ==');
 {
   const dre = porSlide['DRE de Manutenção'] || [];
@@ -259,6 +260,24 @@ console.log('\n== DRE no formato dos Megas ==');
     checa(cab.indexOf(c) !== -1, 'coluna "' + c + '" no cabeçalho'));
   const blocos = dre.filter(s => /MÊS —|ACUMULADO —|RITMO — ANO/.test(s.txt));
   checa(blocos.length >= 3, 'os três blocos (MÊS / ACUMULADO / ANO)');
+}
+
+// ── 4.1. O DRE de Propriedades (Despesas Operacionais) ───────────────────
+console.log('\n== DRE de Propriedades (Despesas Operacionais) ==');
+{
+  const dreProp = porSlide['DRE de Propriedades'] || [];
+  const textos = dreProp.map(s => s.txt);
+  checa(textos.some(t => /06 · DESPESAS OPERACIONAIS/i.test(t)), 'linha raiz 06 · DESPESAS OPERACIONAIS');
+  checa(textos.some(t => /06\.01 · DESPESA DE PESSOAL/i.test(t)), 'grupo 06.01 · DESPESA DE PESSOAL');
+  checa(textos.some(t => /06\.02 · SERVIÇOS DE TERCEIROS/i.test(t)), 'grupo 06.02 · SERVIÇOS DE TERCEIROS');
+  checa(textos.some(t => /06\.03 · DESPESAS FISCAIS/i.test(t)), 'grupo 06.03 · DESPESAS FISCAIS');
+  checa(textos.some(t => /06\.04 · DESPESAS GERAIS/i.test(t)), 'grupo 06.04 · DESPESAS GERAIS');
+
+  // Subitens com valor aparecem, subitens zerados NÃO aparecem
+  checa(textos.some(t => /06\.04\.01 · seguros/i.test(t)), 'subitem com valor 06.04.01 · seguros presente');
+  checa(textos.some(t => /06\.04\.15 · manutenção imóveis/i.test(t)), 'subitem com valor 06.04.15 · manutenção imóveis presente');
+  checa(!textos.some(t => /06\.04\.02/.test(t)), 'subitem zerado 06.04.02 · material consumo ocultado');
+  checa(!textos.some(t => /06\.04\.03/.test(t)), 'subitem zerado 06.04.03 · telefone ocultado');
 }
 
 // ── 5. O Farol de Metas saiu na grade de Facilities ─────────────────────
