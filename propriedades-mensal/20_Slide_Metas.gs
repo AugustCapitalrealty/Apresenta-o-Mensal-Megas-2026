@@ -36,15 +36,17 @@ function gerarSlidesMetas() {
 }
 
 function _metaSlidePessoa_(deck, pessoa, calc, ref) {
-  const DS = CR_DESIGN_SYSTEM;
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const slide = _slideNovo_(deck, TAG_METAS);
 
-  criarHeaderPadrao(slide, 'FAROL DE METAS',
-    'PROPERTY — ' + ref.nome + ' ' + ref.ano);
+  // Título e subtítulo do farol de Facilities. O mês de referência entra no
+  // fim porque neste deck ele é convenção — todo slide diz de que mês fala
+  // (as colunas "Meta Mês"/"Real Mês" sozinhas não dizem QUAL mês).
+  criarHeaderPadrao(slide, 'METAS',
+    'Objetivos e Resultados · ' + pessoa.papel + ' · ' + ref.nome + ' ' + ref.ano);
 
   try {
-    _metaTabela_(slide, 20, 74, W - 40, H - 88, pessoa, calc);
+    _metaTabela_(slide, W, H, pessoa, calc);
   } catch (e) {
     _metaFalha_(slide, 20, 74, W - 40, H - 88, e);
     Logger.log('Farol de Metas (' + pessoa.nome + '): falhou ao desenhar — ' + e.message);
@@ -53,84 +55,140 @@ function _metaSlidePessoa_(deck, pessoa, calc, ref) {
 
 
 // ==========================================
-// DESENHO
+// DESENHO — mesma grade de megas-mensal/Slide_Metas.gs
 // ==========================================
 
-function _metaTabela_(slide, x, y, w, h, pessoa, calc) {
+/**
+ * As 11 colunas do farol de Facilities, na mesma ordem e nas mesmas larguras.
+ *
+ * OS PESOS SÃO PONTOS, NÃO PROPORÇÕES: somam 708, que é exatamente a largura
+ * útil de um slide de 720pt com 6pt de margem de cada lado. Foram
+ * dimensionados lá para o conteúdo caber em UMA linha na fonte 7,5pt, já
+ * descontando o recuo interno (~7pt) das caixas de texto do Slides — por isso
+ * "Pontos" tem 54 e não 40. Mexer neles é mexer no layout do farol inteiro.
+ */
+const METAS_PESOS_COL = [114, 54, 76, 62, 46, 68, 66, 44, 68, 66, 44];
+
+/**
+ * Texto do "cromo" da tabela — faixa de título, cabeçalho de coluna, rodapé e
+ * selo. Existe porque essas quatro peças usam a fonte de TÍTULOS (Montserrat),
+ * enquanto _sTxt desenha na de corpo (Open Sans). No farol de Facilities essa
+ * distinção é visível: o cabeçalho é Montserrat, os dados são Open Sans.
+ */
+function _metaTxtCromo_(slide, x, y, w, h, txt, size, cor, align, folga) {
+  const f = folga || 0;
+  const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - f, y, w + f * 2, h);
+  tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const ts = tb.getText();
+  ts.setText(String(txt == null ? '' : txt));
+  ts.getTextStyle().setFontSize(size).setBold(true).setForegroundColor(cor)
+    .setFontFamily(CR_DESIGN_SYSTEM.typography.titles);
+  ts.getParagraphStyle().setParagraphAlignment(align === 'center'
+    ? SlidesApp.ParagraphAlignment.CENTER : SlidesApp.ParagraphAlignment.START);
+  tb.getBorder().setTransparent();
+  return tb;
+}
+
+function _metaTabela_(slide, W, H, pessoa, calc) {
   const DS = CR_DESIGN_SYSTEM;
   const linhas = pessoa.linhas.map(l => _metaResolver_(l, calc));
-  const pontos = linhas.reduce((s, l) => s + (l.verdeAno ? l.pontos : 0), 0);
 
-  // Faixa de título com o nome, no azul da marca.
-  const TIT_H = 20;
-  _sRet_(slide, x, y, w, TIT_H, DS.colors.brandMed);
-  _sTxt(slide, x, y, w, TIT_H, 'METAS ' + pessoa.nome + ' - PROPERTY ' + new Date().getFullYear(),
-        8, true, '#FFFFFF', 'center');
+  const somaPesos = METAS_PESOS_COL.reduce((a, b) => a + b, 0);
+  const totalW = W - 12;
+  const larg = METAS_PESOS_COL.map(p => p / somaPesos * totalW);
+  const x0 = Math.round((W - totalW) / 2);
+  const xs = []; let acc = x0;
+  larg.forEach(w => { xs.push(acc); acc += w; });
 
-  // Grade: rótulo largo + 4 colunas estreitas + 2 blocos de (Meta|Real|Status).
-  const ROT_W = w * 0.30, PTS_W = w * 0.055, DIR_W = w * 0.105,
-        UNI_W = w * 0.075, SEN_W = w * 0.055;
-  const restante = w - ROT_W - PTS_W - DIR_W - UNI_W - SEN_W;
-  const celW = restante / 6;                       // Meta,Real,Status × 2 blocos
-  const cx = [];
-  let acc = x;
-  [ROT_W, PTS_W, DIR_W, UNI_W, SEN_W].forEach(cw => { cx.push({ x: acc, w: cw }); acc += cw; });
-  for (let i = 0; i < 6; i++) { cx.push({ x: acc, w: celW }); acc += celW; }
+  let y = 66;
 
-  // Cabeçalho em duas alturas: MÊS e ANO agrupam suas três colunas.
-  const H1 = 15, H2 = 13;
-  const y1 = y + TIT_H, y2 = y1 + H1;
-  const cabBg = (bx, bw, by, bh, cor) => {
-    const s = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, by, bw, bh);
-    s.getFill().setSolidFill(cor); s.getBorder().setTransparent();
-  };
-  cabBg(x, ROT_W + PTS_W + DIR_W + UNI_W + SEN_W, y1, H1 + H2, DS.colors.brandDark);
-  _sTxt(slide, cx[0].x, y1, ROT_W, H1 + H2, pessoa.papel, 7, true, '#FFFFFF', 'center');
-  ['Pontos', 'Direcionador', 'Unidade', 'Sentido'].forEach((t, i) => {
-    _sTxt(slide, cx[i + 1].x, y1, cx[i + 1].w, H1 + H2, t, 6, true, '#FFFFFF', 'center');
+  // --- Faixa de título ---
+  const TIT_H = 22;
+  _sRet_(slide, x0, y, totalW, TIT_H, DS.colors.brandMed);
+  _metaTxtCromo_(slide, x0, y, totalW, TIT_H,
+        'METAS ' + pessoa.nome + ' - PROPERTY ' + new Date().getFullYear(),
+        11, '#FFFFFF', 'center');
+  y += TIT_H;
+
+  // --- Cabeçalho das colunas: UMA linha, como em Facilities ---
+  // Mês e Ano não ganham faixa agrupadora: o rótulo já diz ("Meta Mês",
+  // "Meta Ac."), e a faixa dupla era a principal diferença visual em relação
+  // ao farol que o time usa.
+  const CAB_H = 28;
+  const titulosCab = [pessoa.papel, 'Pontos', 'Direcionador', 'Unidade', 'Sentido',
+    'Meta Mês', 'Real Mês', 'Status', 'Meta Ac.', 'Real Ac.', 'Status'];
+  titulosCab.forEach((t, c) => {
+    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], y, larg[c], CAB_H);
+    bg.getFill().setSolidFill(DS.colors.brandDark);
+    bg.getBorder().setWeight(1).getLineFill().setSolidFill('#FFFFFF');
+    _metaTxtCromo_(slide, xs[c] + 1, y, larg[c] - 2, CAB_H, t, 7, '#FFFFFF',
+          c === 0 ? 'left' : 'center', c === 0 ? 0 : 6);
   });
+  y += CAB_H;
 
-  // O bloco do ANO ganha cor própria: é o que decide os pontos.
-  [['MÊS', 5, DS.colors.brandMed], ['ANO', 8, DS.colors.brandLight]].forEach(([rot, c0, cor]) => {
-    cabBg(cx[c0].x, celW * 3 - 1, y1, H1, cor);
-    _sTxt(slide, cx[c0].x, y1, celW * 3 - 1, H1, rot, 7, true, '#FFFFFF', 'center');
-    ['Meta', 'Real', 'Status'].forEach((t, i) => {
-      cabBg(cx[c0 + i].x, celW - 1, y2, H2, DS.colors.brandDark);
-      _sTxt(slide, cx[c0 + i].x - 6, y2, celW + 11, H2, t, 6, true, '#FFFFFF', 'center');
+  // --- Rodapé de pontuação: reserva o espaço ANTES de dividir as linhas ---
+  const RES_H = 26, resumoY = H - RES_H - 8;
+
+  const n = linhas.length;
+  const dispH = resumoY - 6 - y;
+  const rowH = Math.max(20, Math.min(78, Math.floor(dispH / Math.max(1, n))));
+
+  linhas.forEach((l, i) => {
+    const ry = y + i * rowH;
+    const fundo = (i % 2 === 0) ? DS.colors.cardBg : '#F8FAFC';
+
+    // As 11 colunas na ordem do cabeçalho.
+    const valores = [l.descricao, String(l.pontos), l.direcionador, l.unidade, l.sentido,
+                     l.metaMes, l.realMes, null, l.metaAno, l.realAno, null];
+
+    valores.forEach((valor, c) => {
+      const ehStatus = (c === 7 || c === 10);
+      const cell = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], ry, larg[c], rowH);
+      cell.getFill().setSolidFill(ehStatus
+        ? _metaCorStatus_(c === 7 ? l.statusMes : l.statusAno)
+        : fundo);
+      cell.getBorder().setWeight(1).getLineFill().setSolidFill(DS.colors.lines);
+      if (ehStatus) return;
+
+      let txt = String(valor == null ? '' : valor).trim();
+      if (!txt || txt === 'undefined' || txt === 'null') txt = (c === 0 ? '—' : '-');
+
+      // FOLGA: a caixa de texto do Slides tem ~7pt de recuo interno de cada
+      // lado que a API não desliga, e em coluna estreita ele quebra a linha
+      // com espaço visual sobrando ("R$ 6,46" virando duas linhas). Alargar a
+      // caixa simetricamente para fora da célula devolve o espaço sem mover o
+      // texto de lugar. A Descrição não precisa: ela pode quebrar mesmo.
+      _sTxt(slide, xs[c] + 3, ry, larg[c] - 6, rowH, txt,
+            c === 0 ? 8 : 7.5, c === 0, DS.colors.textMain,
+            c === 0 ? 'left' : 'center', c === 0 ? 0 : 10);
     });
   });
 
-  // Linha de pontos, logo abaixo do papel — é o placar, some se ninguém olhar.
-  const yPts = y2 + H2;
-  const PTS_H = 14;
-  cabBg(x, ROT_W, yPts, PTS_H, '#E2E8F0');
-  _sTxt(slide, x, yPts, ROT_W, PTS_H, pontos + ' PONTOS', 8, true, DS.colors.brandDark, 'center');
+  // --- Barra de pontuação, com selo de elegibilidade ---
+  // Os pontos vêm do status do ANO: a meta é anual, o placar acompanha.
+  let totalPontos = 0, pontosAno = 0;
+  linhas.forEach(l => { totalPontos += l.pontos; if (l.verdeAno) pontosAno += l.pontos; });
+  const elegivel = pontosAno >= METAS_PONTOS_ELEGIVEL;
 
-  const tY = yPts + PTS_H;
-  const rowH = Math.min(46, (y + h) - tY - 4) / linhas.length > 0
-    ? Math.min(46, ((y + h) - tY - 4) / linhas.length) : 20;
-  const fs = rowH >= 34 ? 7 : (rowH >= 26 ? 6.4 : 5.8);
+  _sRet_(slide, x0, resumoY, totalW, RES_H, DS.colors.brandMed);
 
-  linhas.forEach((l, i) => {
-    const ry = tY + i * rowH;
-    const fundo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, ry, w, rowH - 1);
-    fundo.getFill().setSolidFill(i % 2 ? '#F8FAFC' : '#FFFFFF');
-    fundo.getBorder().getLineFill().setSolidFill(DS.colors.lines);
-    fundo.getBorder().setWeight(0.5);
+  const badgeW = 130, badgeH = 18;
+  const badgeX = x0 + totalW - badgeW - 10;
+  const badgeY = resumoY + (RES_H - badgeH) / 2;
 
-    _sTxt(slide, cx[0].x + 4, ry, ROT_W - 8, rowH - 1, l.descricao, fs, false, DS.colors.textMain, 'left');
-    _sTxt(slide, cx[1].x, ry, cx[1].w, rowH - 1, String(l.pontos), fs, true, DS.colors.textMain, 'center');
-    _sTxt(slide, cx[2].x, ry, cx[2].w, rowH - 1, l.direcionador, fs, false, DS.colors.textBody, 'center');
-    _sTxt(slide, cx[3].x, ry, cx[3].w, rowH - 1, l.unidade, fs, false, DS.colors.textBody, 'center');
-    _sTxt(slide, cx[4].x, ry, cx[4].w, rowH - 1, l.sentido, fs, false, DS.colors.textBody, 'center');
+  _metaTxtCromo_(slide, x0 + 12, resumoY, totalW - badgeW - 36, RES_H,
+        'PONTUAÇÃO ACUMULADA  •  ' + pontosAno + ' / ' + totalPontos + ' PONTOS  •  MÍN. ' +
+        METAS_PONTOS_ELEGIVEL + ' P/ ELEGIBILIDADE',
+        9, '#FFFFFF', 'left');
 
-    [[5, l.metaMes, l.realMes, l.statusMes], [8, l.metaAno, l.realAno, l.statusAno]]
-      .forEach(([c0, meta, real, status]) => {
-        _sTxt(slide, cx[c0].x, ry, celW, rowH - 1, meta, fs, false, DS.colors.textBody, 'center');
-        _sTxt(slide, cx[c0 + 1].x, ry, celW, rowH - 1, real, fs, true, DS.colors.textMain, 'center');
-        _sRet_(slide, cx[c0 + 2].x, ry, celW - 1, rowH - 1, _metaCorStatus_(status));
-      });
-  });
+  const badge = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, badgeX, badgeY, badgeW, badgeH);
+  badge.getFill().setSolidFill(elegivel ? DS.colors.accentGreen : DS.colors.accentRed);
+  badge.getBorder().setTransparent();
+  _metaTxtCromo_(slide, badgeX, badgeY, badgeW, badgeH,
+        elegivel ? '✓ ELEGÍVEL' : '✗ NÃO ELEGÍVEL', 8.5, '#FFFFFF', 'center', 10);
+
+  Logger.log('Farol de Metas — ' + pessoa.nome + ': ' + n + ' indicador(es), ' +
+             pontosAno + '/' + totalPontos + ' pontos' + (elegivel ? ' (elegível).' : '.'));
 }
 
 

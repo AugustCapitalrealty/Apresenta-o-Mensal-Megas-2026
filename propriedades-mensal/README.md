@@ -204,7 +204,7 @@ pasta lê a apresentação de cima para baixo.
 | `17_Slide_Contratacoes.gs` | 358 | leitura e desenho da tabela densa de contratações |
 | `18_Slide_TorreManutencao.gs` | 223 | Torre CR e Torre Demercado |
 | `19_Slide_DREBridge.gs` | 538 | **três slides**: DRE, Bridge tabela, Bridge cascata |
-| `20_Slide_Metas.gs` | 221 | Farol de Metas, um slide por analista |
+| `20_Slide_Metas.gs` | 279 | Farol de Metas, um slide por analista |
 
 ### Por que alguns arquivos têm mais de um slide
 
@@ -256,7 +256,7 @@ Quatro suítes, `node <arquivo>`:
 |---|---|---|
 | `teste_dre_manutencao.js` | 48 | o recorte realizado × ritmo e o splice da projeção anual |
 | `teste_dashboard.js` | 45 | as definições de "% conclusão" e "tempo médio de aprovação" |
-| `teste_slides.js` | 44 | todo slide desenha, nada fora da página, tabelas de dependência batem |
+| `teste_slides.js` | 50 | todo slide desenha, nada fora da página, DRE e Farol na grade de Facilities |
 | `teste_metas.js` | 20 | o status do farol e as linhas digitadas à mão |
 
 `teste_slides.js` é o que cobre a reorganização: carrega os 18 `.gs`, dubla

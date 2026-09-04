@@ -149,6 +149,11 @@ const TORRE_MANUTENCAO_DEMERCADO_ID = '1DvqLw3EIDerqJhSZedKrx_ZJZ5JWiGIkXXacAgxz
 //   'ppc'            → PPC de manutenção: realizados ÷ previstos, por CONTAGEM
 //   'piso'           → metros de piso do CONTROLE PISO 2026
 //   'reabertura'     → reabertos ÷ fechados (base bruta RICARDO - PROPRIEDADES)
+// Mínimo de pontos no ANO para o analista ficar elegível — mesmo valor que o
+// farol de Facilities usa (METAS_PONTOS_ELEGIVEL em megas-mensal), sobre um
+// total de 100 pontos. Aparece no selo do rodapé do slide.
+const METAS_PONTOS_ELEGIVEL = 50;
+
 const METAS_PROPRIEDADES = [
   {
     nome: 'WILSON FRANCISCO LEFFER JUNIOR',

@@ -215,11 +215,13 @@ const PASSOS = [
 // interessa neles é não EXPLODIR e não escrever o aviso de falha.
 const COM_FIXTURE = ['DRE de Manutenção', 'Bridge (tabela)', 'Bridge (gráfico)', 'Farol de Metas'];
 
+const porSlide = {};   // shapes de cada passo, para as conferências de layout
 PASSOS.forEach(([nome, fn]) => {
   const antes = shapes.length;
   let erro = null;
   try { fn(); } catch (e) { erro = e; }
   const novos = shapes.slice(antes);
+  porSlide[nome] = novos;
   const aviso = novos.filter(s => /NÃO FOI GERADO/.test(s.txt));
   // A ELLIPSE do header sangra para fora de propósito (é o grafismo de fundo
   // do design system), então fica de fora da conferência.
@@ -241,11 +243,37 @@ PASSOS.forEach(([nome, fn]) => {
 // ── 4. O DRE saiu no formato dos Megas ──────────────────────────────────
 console.log('\n== DRE no formato dos Megas ==');
 {
-  const cab = shapes.filter(s => /^(2025|Meta|Real|Δ% Meta|Δ% 2025)$/.test(s.txt)).map(s => s.txt);
+  const dre = porSlide['DRE de Manutenção'] || [];
+  const cab = dre.filter(s => /^(2025|Meta|Real|Δ% Meta|Δ% 2025)$/.test(s.txt)).map(s => s.txt);
   ['2025', 'Meta', 'Real', 'Δ% Meta', 'Δ% 2025'].forEach(c =>
     checa(cab.indexOf(c) !== -1, 'coluna "' + c + '" no cabeçalho'));
-  const blocos = shapes.filter(s => /MÊS —|ACUMULADO —|RITMO — ANO/.test(s.txt));
+  const blocos = dre.filter(s => /MÊS —|ACUMULADO —|RITMO — ANO/.test(s.txt));
   checa(blocos.length >= 3, 'os três blocos (MÊS / ACUMULADO / ANO)');
+}
+
+// ── 5. O Farol de Metas saiu na grade de Facilities ─────────────────────
+// A versão anterior tinha inventado um cabeçalho de DUAS alturas (faixas
+// "MÊS"/"ANO" agrupando três colunas cada) e uma banda cinza "35 PONTOS" na
+// coluna da esquerda, no lugar da barra de pontuação no rodapé. Estas
+// asserções travam a grade do farol que o time usa.
+console.log('\n== Farol de Metas na grade de Facilities ==');
+{
+  const meta = porSlide['Farol de Metas'] || [];
+  const COLS = ['ANALISTA DE PROPRIEDADES', 'Pontos', 'Direcionador', 'Unidade', 'Sentido',
+                'Meta Mês', 'Real Mês', 'Status', 'Meta Ac.', 'Real Ac.'];
+  const cab = COLS.map(c => meta.filter(s => s.txt === c)).filter(a => a.length);
+  checa(cab.length === COLS.length, 'as 11 colunas de Facilities no cabeçalho');
+
+  // Uma linha só: todos os rótulos do cabeçalho no mesmo y.
+  const ys = [...new Set(cab.map(a => Math.round(a[0].y)))];
+  checa(ys.length === 1, 'cabeçalho em UMA altura, não em duas (y=' + ys.join(',') + ')');
+
+  checa(meta.some(s => /PONTUAÇÃO ACUMULADA/.test(s.txt)), 'barra de pontuação no rodapé');
+  checa(meta.some(s => /ELEGÍVEL/.test(s.txt)), 'selo de elegibilidade');
+  checa(!meta.some(s => /^\d+ PONTOS$/.test(s.txt)),
+        'sem a banda "N PONTOS" na coluna da esquerda');
+  checa(!meta.some(s => s.txt === 'MÊS' || s.txt === 'ANO'),
+        'sem as faixas agrupadoras MÊS/ANO');
 }
 
 console.log('\n' + (falhou ? '✗ ' + falhou + ' falha(s), ' : '✓ ') + ok + '/' + (ok + falhou) + ' passaram');
