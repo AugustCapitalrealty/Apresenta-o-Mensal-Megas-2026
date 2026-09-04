@@ -25,7 +25,7 @@ function ok(d, c, e) { testes++; if (c) console.log('  ✓ ' + d); else { falhas
 
 const CALC = {
   slaPreventivas: { mes: 100.0, ano: 81.9 },
-  ppc:            { mes: 50.0,  ano: 50.0 },
+  ppc:            { mes: 71.43, ano: 67.21 },   // lido do painel, como o Facilities
   piso:           { mes: 6.50,  ano: 61.03 },
   reabertura:     { mes: null,  ano: 0.0 }
 };
@@ -47,8 +47,9 @@ ok('vermelho fica para meta numérica furada', R(1, 2).statusMes === 'Vermelho')
 console.log('\n== PPC: meta 80% no mes e no ano ==');
 ok('meta do mes e 80, nao 6,67', METAS_PROPRIEDADES[1].linhas[0].metaMes === '80',
    METAS_PROPRIEDADES[1].linhas[0].metaMes);
-ok('PPC 50% no mes < 80 → Vermelho', R(1, 0).statusMes === 'Vermelho', R(1, 0).statusMes);
-ok('PPC 50% no ano < 80 → Vermelho', R(1, 0).statusAno === 'Vermelho');
+ok('PPC 71,43% no mes < 80 → Vermelho', R(1, 0).statusMes === 'Vermelho', R(1, 0).statusMes);
+ok('PPC 67,21% no ano < 80 → Vermelho', R(1, 0).statusAno === 'Vermelho');
+ok('o valor vem da celula, com as duas casas', R(1, 0).realAno === '67,21', R(1, 0).realAno);
 
 console.log('\n== Sentido >= e <= ==');
 ok('SLA 100 >= 90 → Verde', R(0, 3).statusMes === 'Verde');

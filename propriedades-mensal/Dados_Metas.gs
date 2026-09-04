@@ -49,44 +49,118 @@ function _metaSlaPreventivas_(ref) {
 }
 
 /**
- * PPC — Percent Plan Complete, por CONTAGEM de serviços.
+ * PPC — lido DAS CÉLULAS do painel, igual ao Facilities.
  *
- * realizados ÷ previstos, contando marcas "SIM" nas duas abas. NÃO é média
- * ponderada por R$: a definição clássica de PPC conta tarefas, e é o que a
- * referência (PPC MEGA CURITIBA 2026) faz na linha ADERENCIA %.
+ * O Facilities (gestao-tvs/Dados.gs, obterDadosPPC) abre a planilha de PPC e
+ * pega o que já está calculado nas linhas ADERENCIA % / META / ACUMULADO. Aqui
+ * é o mesmo: a planilha é dona do número, o código só lê. Decisão do usuário
+ * — "siga o que está aparecendo na célula".
  *
- * A diferença entre as duas leituras é grande — 50% contra 48,7% ponderado —
- * então a escolha está travada por teste.
+ *   mês → ADERENCIA % na coluna do mês de referência
+ *   ano → ACUMULADO   na mesma coluna (é a série acumulada, não o ano inteiro)
+ *
+ * UMA DIFERENÇA DELIBERADA para o Facilities: lá as linhas são pegas por
+ * POSIÇÃO (data[6], data[7], data[8]). Aqui são achadas pelo RÓTULO da coluna
+ * A. É o caso do boletim no CLAUDE.md — uma linha a mais na aba moveu o TOTAL
+ * de C40 para C41 e o slide passou a mostrar outro número, sem erro nenhum.
+ * Rótulo sobrevive a linha inserida; posição não.
+ *
+ * A contagem de SIM continua sendo feita, mas só como CONFERÊNCIA: se a
+ * célula e a contagem divergirem, o Logger avisa. Foi assim que apareceu que
+ * o painel tinha ficado defasado depois de o usuário editar as abas.
  */
 function _metaPPC_(ref) {
+  const painel = _metaPainelPPC_();
+  if (!painel) return { mes: null, ano: null };
+
+  const mes = painel.aderencia[ref.index];
+  const ano = painel.acumulado[ref.index];
+
+  // Conferência: recontar os SIM tem que dar o mesmo que a célula diz.
   const prev = _metaContarSim_(METAS_PPC_ABA_PREVISTAS);
   const real = _metaContarSim_(METAS_PPC_ABA_REALIZADAS);
-  if (!prev || !real) return { mes: null, ano: null };
+  if (prev && real) {
+    let p = 0, r = 0;
+    for (let m = 0; m <= ref.index; m++) { p += prev[m]; r += real[m]; }
+    const contado = p > 0 ? (r / p) * 100 : null;
+    if (contado != null && ano != null && Math.abs(contado - ano) > 0.5) {
+      Logger.log('Metas PPC: ⚠ o painel diz ' + ano.toFixed(2) + '% acumulado, mas contar os ' +
+                 'SIM das abas dá ' + contado.toFixed(2) + '% (' + r + '/' + p + '). ' +
+                 'As linhas ESPERADO/REALIZADO do painel podem estar como número fixo ' +
+                 'em vez de fórmula — o slide mostra o que a célula diz.');
+    }
+  }
 
-  const pct = (r, p) => (p > 0 ? (r / p) * 100 : null);
-  let pAcum = 0, rAcum = 0;
-  for (let m = 0; m <= ref.index; m++) { pAcum += prev[m]; rAcum += real[m]; }
-
-  Logger.log('Metas PPC: mês ' + real[ref.index] + '/' + prev[ref.index] +
-             ' · acumulado ' + rAcum + '/' + pAcum);
-  return { mes: pct(real[ref.index], prev[ref.index]), ano: pct(rAcum, pAcum) };
+  if (painel.meta[ref.index] != null) {
+    Logger.log('Metas PPC: mês ' + (mes == null ? '—' : mes.toFixed(2) + '%') +
+               ' · acumulado ' + (ano == null ? '—' : ano.toFixed(2) + '%') +
+               ' · meta da planilha ' + painel.meta[ref.index].toFixed(2) + '%');
+  }
+  return { mes: mes, ano: ano };
 }
 
-// Conta "SIM" por mês numa das abas do PPC. As 12 colunas de mês vêm depois
-// de Empresa|Empreendimento|Categoria|Manutenção|Responsavel|META.
+/**
+ * Acha o painel do PPC e devolve as três séries por mês.
+ *
+ * Não pede o nome da aba: procura em todas a que tem uma linha começando por
+ * ADERENCIA. O usuário montou esse painel à mão e o nome pode mudar; o rótulo
+ * da linha é o que identifica.
+ */
+function _metaPainelPPC_() {
+  const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
+                 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  try {
+    const ss = SpreadsheetApp.openById(METAS_PPC_ID);
+    const abas = ss.getSheets();
+    for (let i = 0; i < abas.length; i++) {
+      const data = abas[i].getDataRange().getDisplayValues();
+      const acha = pref => {
+        for (let r = 0; r < data.length; r++) {
+          if (_histNorm_(data[r][0]).indexOf(pref) === 0) return data[r];
+        }
+        return null;
+      };
+      const lAder = acha('aderencia');
+      if (!lAder) continue;
+      const lMeta = acha('meta'), lAcum = acha('acumulado'), lMes = acha('mes');
+      if (!lMes) continue;
+
+      // Coluna de cada mês, pelo nome no cabeçalho. A aba tem colunas extras
+      // (ANO, ACUMULADO) depois dos 12 meses — casar pelo nome as ignora.
+      const aderencia = [], meta = [], acumulado = [];
+      lMes.forEach((cel, c) => {
+        const idx = MESES.indexOf(_histNorm_(cel));
+        if (idx < 0) return;
+        aderencia[idx] = _metaPct_(lAder[c]);
+        meta[idx]      = lMeta ? _metaPct_(lMeta[c]) : null;
+        acumulado[idx] = lAcum ? _metaPct_(lAcum[c]) : null;
+      });
+      if (aderencia.length) {
+        Logger.log('Metas PPC: painel lido da aba "' + abas[i].getName() + '".');
+        return { aderencia: aderencia, meta: meta, acumulado: acumulado };
+      }
+    }
+    Logger.log('Metas PPC: nenhuma aba com linha ADERENCIA. Abas: ' +
+               abas.map(a => a.getName()).join(' | '));
+    return null;
+  } catch (e) {
+    Logger.log('Metas PPC: falha lendo o painel — ' + e.message);
+    return null;
+  }
+}
+
+// Conta "SIM" por mês numa das abas do PPC — usado só como CONFERÊNCIA
+// contra o que a célula do painel diz. As 12 colunas de mês vêm depois de
+// Empresa|Empreendimento|Categoria|Manutenção|Responsavel|META.
 function _metaContarSim_(nomeAba) {
   try {
     const ss  = SpreadsheetApp.openById(METAS_PPC_ID);
     const aba = ss.getSheetByName(nomeAba);
-    if (!aba) {
-      Logger.log('Metas PPC: aba "' + nomeAba + '" não existe. Abas: ' +
-                 ss.getSheets().map(s => s.getName()).join(' | '));
-      return null;
-    }
+    if (!aba) return null;
     const v = aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues();
     const cab = v[0].map(c => String(c || '').trim().toUpperCase());
     const c0 = cab.indexOf('JAN');
-    if (c0 < 0) { Logger.log('Metas PPC: coluna JAN não encontrada em "' + nomeAba + '".'); return null; }
+    if (c0 < 0) return null;
 
     const cont = [];
     for (let m = 0; m < 12; m++) cont.push(0);
@@ -100,9 +174,17 @@ function _metaContarSim_(nomeAba) {
     }
     return cont;
   } catch (e) {
-    Logger.log('Metas PPC: falha lendo "' + nomeAba + '" — ' + e.message);
+    Logger.log('Metas PPC: conferência não pôde ler "' + nomeAba + '" — ' + e.message);
     return null;
   }
+}
+
+// "67,21%" → 67.21. Célula vazia ou #DIV/0! → null, nunca 0.
+function _metaPct_(v) {
+  const t = String(v == null ? '' : v).trim();
+  if (!t || t.indexOf('#') === 0) return null;
+  const n = parseFloat(t.replace('%', '').replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? null : n;
 }
 
 /**
