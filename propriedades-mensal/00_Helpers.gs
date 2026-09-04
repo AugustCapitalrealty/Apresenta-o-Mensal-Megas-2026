@@ -114,11 +114,12 @@ function _charsQueCabem_(w, fontSize) {
  * faria o texto invadir a célula vizinha.
  */
 function _sTxt(slide, x, y, w, h, txt, size, bold, cor, align, folga) {
+  if (txt == null || txt === '') return null;
   const f = folga || 0;
   const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - f, y, w + f * 2, h);
   tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   const ts = tb.getText();
-  ts.setText(String(txt == null ? '' : txt));
+  ts.setText(String(txt));
   ts.getTextStyle().setFontSize(size).setBold(!!bold).setForegroundColor(cor)
     .setFontFamily(CR_DESIGN_SYSTEM.typography.body);
   const ps = ts.getParagraphStyle();
@@ -516,13 +517,15 @@ function _slideFalha_(slide, x, y, w, h, titulo, erro, dica) {
   const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 25, boxY + 8, w - 50, boxH - 16);
   tb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   const tr = tb.getText();
-  tr.setText('');
-  tr.appendText(titulo + '\n').getTextStyle()
+  tr.setText(String(titulo || 'AVISO') + '\n');
+  tr.getTextStyle()
     .setFontSize(11).setBold(true)
     .setForegroundColor(DS.colors.accentRed).setFontFamily(DS.typography.body);
-  tr.appendText(String((erro && erro.message) || erro) + (dica ? '\n' : '')).getTextStyle()
-    .setFontSize(8.5).setBold(false)
-    .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
+  if (erro) {
+    tr.appendText(String((erro && erro.message) || erro) + (dica ? '\n' : '')).getTextStyle()
+      .setFontSize(8.5).setBold(false)
+      .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
+  }
   if (dica) {
     tr.appendText(dica).getTextStyle()
       .setFontSize(8).setBold(false).setItalic(true)

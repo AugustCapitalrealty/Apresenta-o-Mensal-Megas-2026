@@ -43,9 +43,18 @@ function texto() {
   const o = {
     _t: '',
     setText(t) { o._t = String(t); return o; },
-    appendText(t) { o._t += String(t); return { getTextStyle: estilo }; },
-    getTextStyle: estilo,
-    getRange: () => ({ getTextStyle: estilo }),
+    appendText(t) { o._t += String(t); return { getTextStyle: () => {
+      if (o._t === '') throw new Error('The object (MOCK_SHAPE) has no text.');
+      return estilo();
+    } }; },
+    getTextStyle: () => {
+      if (o._t === '') throw new Error('The object (MOCK_SHAPE) has no text.');
+      return estilo();
+    },
+    getRange: () => ({ getTextStyle: () => {
+      if (o._t === '') throw new Error('The object (MOCK_SHAPE) has no text.');
+      return estilo();
+    } }),
     asString: () => o._t,
     getParagraphStyle: () => ({ setLineSpacing: () => ({}), setParagraphAlignment: () => ({}) })
   };

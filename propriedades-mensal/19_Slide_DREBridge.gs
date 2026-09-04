@@ -261,6 +261,13 @@ function _drePosicionarNaSecao_(deck, slide, tituloReservado, offsetNaSecao) {
       if (t.indexOf('FINANCEIRO') !== -1 && t.indexOf('APRESENTAÇÃO MENSAL') !== -1) { capa = i; break; }
     }
     if (capa < 0) {
+      // Fallback: busca qualquer slide que tenha FINANCEIRO sem ser o quadrante do dashboard
+      for (let i = 0; i < slides.length; i++) {
+        const t = _dreTextoDoSlide_(slides[i]);
+        if (t.indexOf('FINANCEIRO') !== -1 && t.indexOf('ORÇAMENTO') === -1) { capa = i; break; }
+      }
+    }
+    if (capa < 0) {
       Logger.log('DRE/Bridge: capa da seção FINANCEIRO não encontrada; slide fica no fim do deck.');
       return;
     }
@@ -278,8 +285,16 @@ function _dreTextoDoSlide_(slide) {
   try {
     slide.getPageElements().forEach(el => {
       try {
-        const t = el.asShape().getText().asString();
-        if (t) txt += t + '\n';
+        if (el.getPageElementType() === SlidesApp.PageElementType.SHAPE) {
+          const sh = el.asShape();
+          try {
+            const t = sh.getText();
+            if (t) {
+              const s = t.asString();
+              if (s) txt += s + '\n';
+            }
+          } catch (e) {}
+        }
       } catch (e) {}
     });
   } catch (e) {}
@@ -341,9 +356,10 @@ function _brgResumo_(slide, x, y, w, h, d) {
   criarCardPainel(slide, x, y, w, h, null, DS.colors.brandDark);
 
   const _txt = (texto, fx, fy, fw, fh, size, bold, cor, align) => {
+    if (texto == null || texto === '') return null;
     const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, fh);
     const t = b.getText();
-    t.setText(texto).getTextStyle()
+    t.setText(String(texto)).getTextStyle()
       .setFontSize(size).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
     if (align === 'C') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     if (align === 'R') t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
@@ -352,12 +368,14 @@ function _brgResumo_(slide, x, y, w, h, d) {
   };
 
   const _val = (valorStr, fx, fy, fw, size, cor) => {
+    if (valorStr == null || valorStr === '') return null;
     const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, fx, fy, fw, size + 11);
     const t = b.getText();
-    t.setText(valorStr).getTextStyle()
+    t.setText(String(valorStr)).getTextStyle()
       .setFontSize(size).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
     t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
     b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    return b;
   };
 
   const totalOrc     = d.total.acum.plan || 0;
@@ -472,12 +490,14 @@ function _brgTabela_(slide, x, y, w, h, d) {
     zebra.getFill().setSolidFill(bgRow); zebra.getBorder().setTransparent();
 
     const _cel = (texto, col, cor, bold) => {
+      if (texto == null || texto === '') return null;
       const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, ry, col.w, rowH);
       const t = b.getText();
       t.setText(String(texto)).getTextStyle()
         .setFontSize(7.5).setBold(!!bold).setForegroundColor(cor).setFontFamily('Montserrat');
       t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      return b;
     };
 
     _cel(m.label, cols[0], DS.colors.brandDark, true);
@@ -516,12 +536,14 @@ function _brgTabela_(slide, x, y, w, h, d) {
     totBar.getFill().setSolidFill('#EEF2F7'); totBar.getBorder().setTransparent();
 
     const _totCel = (txt, col, cor) => {
+      if (txt == null || txt === '') return null;
       const b = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, col.x, totY + 3, col.w, 22);
       const t = b.getText();
-      t.setText(txt).getTextStyle()
+      t.setText(String(txt)).getTextStyle()
         .setFontSize(7.5).setBold(true).setForegroundColor(cor).setFontFamily('Montserrat');
       t.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       b.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      return b;
     };
 
     const totalOrc = d.total.acum.plan || 0;
@@ -532,7 +554,6 @@ function _brgTabela_(slide, x, y, w, h, d) {
     const pct = totalOrc > 0 ? (Math.abs(totalVar / totalOrc) * 100).toFixed(1).replace('.', ',') + '%' : '-';
 
     _totCel('PERÍODO', cols[0], DS.colors.brandDark);
-    _totCel('', cols[1], DS.colors.brandDark);
     _totCel(_brgMoeda_(totalOrc), cols[2], DS.colors.brandDark);
     _totCel(_brgMoeda_(totalReal), cols[3], DS.colors.brandDark);
     _totCel((abTot ? '▼ ' : '▲ ') + _brgMoeda_(Math.abs(totalVar)), cols[4], corTot);
@@ -613,8 +634,10 @@ function _brgGrafico_(slide, x, y, w, h, d) {
     const tr = t.getText();
     tr.setText(titulo + '  ' + valor);
     tr.getTextStyle().setFontSize(8.5).setBold(true).setForegroundColor(txtC).setFontFamily('Montserrat');
-    if (typeof tr.getRange === 'function') {
-      tr.getRange(0, titulo.length).getTextStyle().setFontSize(7).setForegroundColor(positivo ? '#15803D' : '#B91C1C');
+    if (typeof tr.getRange === 'function' && titulo) {
+      try {
+        tr.getRange(0, titulo.length).getTextStyle().setFontSize(7).setForegroundColor(positivo ? '#15803D' : '#B91C1C');
+      } catch (e) {}
     }
     t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
   };
@@ -707,8 +730,10 @@ function _brgGrafico_(slide, x, y, w, h, d) {
     cr.setText(capTxt).getTextStyle()
       .setFontSize(6).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily('Montserrat');
     if (typeof cr.getRange === 'function') {
-      cr.getRange(capTxt.indexOf('\n') + 1, capTxt.length)
-        .getTextStyle().setBold(false).setForegroundColor('#64748B');
+      try {
+        cr.getRange(capTxt.indexOf('\n') + 1, capTxt.length)
+          .getTextStyle().setBold(false).setForegroundColor('#64748B');
+      } catch (e) {}
     }
     cr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
   }
