@@ -43,7 +43,7 @@ global.SlidesApp = { openById: () => { throw new Error('sem Slides no teste'); }
 global.DriveApp  = { getFileById: () => { throw new Error('sem Drive no teste'); } };
 
 // ── Carrega o código de produção ─────────────────────────────────────────
-let fonte = ['00_Helpers.gs', '01_Config.gs', '02_Dados.gs']
+let fonte = ['00_Helpers.gs', '01_Config.gs', '02_Dados.gs', '05_DadosSlides.gs']
   .map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 // Gotcha do CLAUDE.md: em eval indireto, `function` vai pro globalThis mas
 // `const`/`let` de topo ficam presos no escopo do próprio eval.
