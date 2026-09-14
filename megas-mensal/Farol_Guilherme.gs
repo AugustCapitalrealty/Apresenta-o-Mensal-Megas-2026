@@ -1,13 +1,25 @@
 /**
  * ARQUIVO: Farol_Guilherme.gs
  * DESCRIÇÃO: Gera o Farol de Metas de Planejamento & Gestão (Guilherme
- * August Padilha Marques) + 4 slides de detalhe, um por meta — para
- * apresentar ao gestor. Segue o mesmo design system (cores, tipografia,
- * componentes) usado nas apresentações mensais dos Megas.
+ * August Padilha Marques): a tabela do farol, 4 slides de detalhe (um por
+ * meta) e o slide de Projetos em Andamento — para apresentar ao gestor.
+ * Segue o mesmo design system (cores, tipografia, componentes) usado nas
+ * apresentações mensais dos Megas.
  *
- * Este é um script AUTÔNOMO: não depende de nenhum outro arquivo do
- * projeto Apresentação Mensal Megas (essa apresentação de Farol de Metas
- * é um arquivo do Slides separado, não uma das 3 cidades).
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ ESTE ARQUIVO RODA SOZINHO.                                           │
+ * │                                                                      │
+ * │ Não chama NADA de outro arquivo: só SlidesApp, DriveApp (o logo, e   │
+ * │ ainda assim dentro de try/catch) e Logger. Colar ele num projeto     │
+ * │ Apps Script vazio é suficiente para gerar a apresentação inteira.    │
+ * │                                                                      │
+ * │ O CORolário importa: ele também não pode conviver com uma CÓPIA de   │
+ * │ si mesmo. Dois arquivos com este conteúdo no mesmo projeto dão       │
+ * │ "SyntaxError: Identifier 'DS_G' has already been declared" — e como  │
+ * │ SyntaxError acontece ANTES de qualquer linha rodar, o projeto todo   │
+ * │ para, não só o Farol. Se aparecer esse erro, procure um segundo      │
+ * │ arquivo (costuma se chamar "Sem título.gs") e apague-o.              │
+ * └──────────────────────────────────────────────────────────────────────┘
  *
  * A apresentação de destino é FIXA por ID (constante FAROL_DECK_ID logo
  * abaixo) — não usa getActivePresentation(), então funciona rodando de
@@ -16,8 +28,15 @@
  * COMO USAR:
  *   1. Em QUALQUER projeto Apps Script (pode ser avulso, script.google.com
  *      → Novo Projeto), cole este arquivo inteiro.
- *   2. Rode a função gerarFarolGuilherme() (▶ no topo do editor).
- *   3. Os 5 slides são adicionados no FIM da apresentação "Farol de Metas".
+ *   2. Rode diagnosticarFarol() — confere o deck e o logo antes de desenhar.
+ *   3. Rode gerarFarolGuilherme() (▶ no topo do editor).
+ *
+ * PODE RODAR QUANTAS VEZES QUISER: cada slide é marcado nas anotações do
+ * apresentador com uma etiqueta (FAROL_TAG) e, antes de desenhar, os
+ * slides com a mesma etiqueta são removidos. Sem isso, a segunda execução
+ * duplicaria os 6 slides — que era o comportamento antigo e o motivo de o
+ * deck encher de repetição. Slides que você criou à mão não têm etiqueta e
+ * nunca são tocados.
  *
  * SOBRE O LAYOUT: todo texto passa por _gUmaLinha_ (texto curto, nunca
  * quebra) ou _gParagrafo_ (bloco, encolhe até caber na altura). Os dois
@@ -48,6 +67,25 @@ const DS_G = {
 // estar vinculado ao arquivo nem de haver uma apresentação "ativa").
 const FAROL_DECK_ID = '125XfdWiYis2J7nACFLxUVI5f0Tv6Zb85On74Nl2-LZI';
 
+// Etiqueta gravada nas anotações do apresentador de todo slide que este
+// script desenha. É o que permite rodar de novo sem duplicar: antes de
+// desenhar, quem tem a etiqueta sai. Fica nas ANOTAÇÕES (e não numa shape
+// escondida) porque ali ninguém esbarra por acidente e não aparece na
+// projeção.
+//
+// Cada slide leva a etiqueta geral + um sufixo próprio, então dá para
+// regerar um slide só sem mexer nos outros — é como
+// gerarProjetosPlanejamentoGestao() substitui apenas o seu.
+const FAROL_TAG = '[FAROL-PEG]';
+const FAROL_TAGS = {
+  tabela:   FAROL_TAG + ' TABELA',
+  meta1:    FAROL_TAG + ' META1',
+  meta2:    FAROL_TAG + ' META2',
+  meta3:    FAROL_TAG + ' META3',
+  meta4:    FAROL_TAG + ' META4',
+  projetos: FAROL_TAG + ' PROJETOS'
+};
+
 // Mês de referência do Farol. Fica num lugar só: o título do slide 1 e o
 // calendário da Meta 2 (meses já decorridos) saem daqui.
 const FAROL_MES_NOME = 'MAIO';
@@ -74,23 +112,166 @@ function _gTopoRodape_(H)  { return H - 47; }
 
 function gerarFarolGuilherme() {
   const deck = SlidesApp.openById(FAROL_DECK_ID);
+
+  // Cada slide já remove a própria versão anterior dentro de _gNovoSlide, pela
+  // sua etiqueta. Esta chamada aqui é para o caso de um sufixo ter deixado de
+  // existir (um slide removido do roteiro): a etiqueta GERAL casa com todos,
+  // então nada antigo fica órfão no meio do deck.
+  const removidos = _gLimparEtiquetados_(deck, FAROL_TAG);
+
   _gFarolSlideTabela(deck);
   _gFarolSlideMeta1(deck);
   _gFarolSlideMeta2(deck);
   _gFarolSlideMeta3(deck);
   _gFarolSlideMeta4(deck);
   _gSlideProjetosPeG(deck);
-  Logger.log('Farol de Metas — Guilherme: 6 slides gerados no fim da apresentação.');
+
+  Logger.log('Farol de Metas — Guilherme: 6 slides gerados' +
+    (removidos ? ' (' + removidos + ' da execução anterior foram substituídos).' : '.'));
 }
 
-// Só o slide de Projetos em Andamento, para reprocessar sem regerar o Farol
-// inteiro (que só APENDA — rodar o completo de novo duplicaria os 5 slides de
-// meta). É sem argumento de propósito: é assim que ele aparece no menu
-// "Selecionar função" do editor.
+// Só o slide de Projetos em Andamento, para atualizar o status dos projetos
+// sem regerar o Farol inteiro. Sem argumento de propósito: é assim que ele
+// aparece no menu "Selecionar função" do editor.
 function gerarProjetosPlanejamentoGestao() {
   const deck = SlidesApp.openById(FAROL_DECK_ID);
   _gSlideProjetosPeG(deck);
-  Logger.log('Projetos em Andamento — Planejamento & Gestão: slide gerado.');
+  Logger.log('Projetos em Andamento — Planejamento & Gestão: slide atualizado.');
+}
+
+
+// ==========================================
+// DIAGNÓSTICO — RODE ISTO PRIMEIRO
+// ==========================================
+// Mesmo espírito do diagnosticarBacklog() dos Megas: antes de desenhar
+// qualquer coisa, dizer se a configuração está de pé e o que vai sair.
+// Não escreve nada na apresentação — dá para rodar sem medo.
+//
+// Sem sufixo `_` de propósito: função cujo nome começa ou termina com `_`
+// não aparece no menu "Selecionar função" do editor, e diagnóstico que não
+// dá para rodar não serve de nada.
+function diagnosticarFarol() {
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO — Farol de Metas · Planejamento & Gestão');
+  Logger.log('======================================================');
+
+  const pend = [];
+  let deck = null;
+
+  Logger.log('\nApresentação de destino:');
+  try {
+    deck = SlidesApp.openById(FAROL_DECK_ID);
+    Logger.log('  ✓ "' + deck.getName() + '" — ' + deck.getSlides().length + ' slides, ' +
+               Math.round(deck.getPageWidth()) + '×' + Math.round(deck.getPageHeight()) + 'pt');
+  } catch (e) {
+    Logger.log('  ✗ não abriu: ' + e.message);
+    Logger.log('    Confira FAROL_DECK_ID e se a conta que roda o script tem acesso.');
+    pend.push('apresentação inacessível');
+  }
+
+  if (deck) {
+    Logger.log('\nSlides já etiquetados por este script (serão SUBSTITUÍDOS):');
+    let achou = 0;
+    Object.keys(FAROL_TAGS).forEach(k => {
+      const n = _gContarEtiquetados_(deck, FAROL_TAGS[k]);
+      achou += n;
+      Logger.log('  · ' + k + ': ' + (n === 0 ? 'nenhum (será criado)'
+                 : n + (n > 1 ? ' — DUPLICADO, os ' + n + ' saem e volta 1' : '')));
+    });
+    // Slides sem etiqueta nenhuma: ou são seus, ou sobraram de uma execução
+    // anterior à etiqueta existir. O script não mexe neles — e é exatamente
+    // por isso que precisam aparecer aqui.
+    const semTag = deck.getSlides().length - achou;
+    Logger.log('  Outros ' + semTag + ' slide(s) sem etiqueta — este script NÃO toca neles.');
+    if (achou === 0 && semTag > 0) {
+      Logger.log('    ⚠ Se esses slides forem Farol de uma execução antiga, apague-os à');
+      Logger.log('      mão UMA vez: eles são anteriores à etiqueta e ficariam repetidos.');
+    }
+  }
+
+  Logger.log('\nLogo Capital Realty:');
+  try {
+    const nome = DriveApp.getFileById(DS_G.logoId).getName();
+    Logger.log('  ✓ "' + nome + '"');
+  } catch (e) {
+    Logger.log('  · não acessível — os slides saem sem logo, o resto funciona. ' + e.message);
+  }
+
+  Logger.log('\nConteúdo configurado:');
+  const totalPontos = FAROL_PONTOS.meta1 + FAROL_PONTOS.meta2 +
+                      FAROL_PONTOS.meta3 + FAROL_PONTOS.meta4;
+  Logger.log('  · Mês do Farol: ' + FAROL_MES_NOME + ' (nº ' + FAROL_MES_NUM + ')');
+  Logger.log('  · Metas: 4, somando ' + totalPontos + ' pontos' +
+             (totalPontos === 100 ? '' : ' — ⚠ deveria somar 100'));
+  if (totalPontos !== 100) pend.push('pontuação das metas soma ' + totalPontos + ', não 100');
+
+  const frentes = PEG_PROJETOS.reduce((a, p) => a.concat(p.frentes), []);
+  Logger.log('  · Projetos: ' + PEG_PROJETOS.length + ' (' + PEG_REFERENCIA + '), ' +
+             frentes.length + ' frentes');
+  PEG_PROJETOS.forEach((p, i) => {
+    Logger.log('      ' + (i + 1) + '. ' + p.nome + ' — ' + _pegCor_(_pegEstadoProjeto_(p)).rotulo);
+    p.frentes.forEach(f => {
+      Logger.log('         · ' + f.nome + ' [' + f.estado + ']' +
+                 (f.aguardando ? ' aguardando ' + f.aguardando : '') +
+                 ((f.marcos || []).length ? ' · ' + f.marcos.map(m => m.data).join(', ') : ''));
+    });
+  });
+
+  Logger.log('\n' + (pend.length
+    ? 'PENDÊNCIAS (' + pend.length + '):\n    ' + pend.join('\n    ')
+    : 'Tudo certo. Rode gerarFarolGuilherme().'));
+}
+
+
+// ==========================================
+// IDEMPOTÊNCIA — ETIQUETA NAS ANOTAÇÕES
+// ==========================================
+
+// Slides cuja anotação do apresentador contém `tag`.
+//
+// O try/catch não é decoração: slide sem anotação nenhuma faz
+// getSpeakerNotesShape() devolver null em vez de shape vazia, e um layout
+// sem notas chega a lançar. Nos dois casos a resposta certa é "não é nosso",
+// nunca abortar — senão um slide alheio no meio do deck impediria o Farol
+// de rodar.
+function _gSlidesComTag_(deck, tag) {
+  return deck.getSlides().filter(s => {
+    try {
+      const shape = s.getNotesPage().getSpeakerNotesShape();
+      return !!shape && shape.getText().asString().indexOf(tag) >= 0;
+    } catch (e) {
+      return false;
+    }
+  });
+}
+
+function _gContarEtiquetados_(deck, tag) {
+  return _gSlidesComTag_(deck, tag).length;
+}
+
+// Remove os slides etiquetados e devolve quantos saíram. getSlides() devolve
+// uma cópia da lista, então dá para remover enquanto percorre.
+function _gLimparEtiquetados_(deck, tag) {
+  const alvos = _gSlidesComTag_(deck, tag);
+  alvos.forEach(s => s.remove());
+  return alvos.length;
+}
+
+// Grava a etiqueta. Se falhar (permissão, layout sem notas), o slide sai
+// certo do mesmo jeito — só não será substituído na próxima execução, o que
+// é bem menos grave que abortar o desenho por causa de uma anotação.
+function _gEtiquetar_(slide, tag) {
+  try {
+    const shape = slide.getNotesPage().getSpeakerNotesShape();
+    if (shape) {
+      shape.getText().setText(tag +
+        '\nGerado por Farol_Guilherme.gs — esta linha marca o slide para ser ' +
+        'substituído na próxima execução. Apagar a linha faz o slide virar ' +
+        'permanente (e a próxima execução criar outro ao lado).');
+    }
+  } catch (e) {
+    Logger.log('Aviso: não consegui etiquetar o slide ' + tag + '. ' + e.message);
+  }
 }
 
 
@@ -192,9 +373,14 @@ function _gParagrafo_(slide, x, y, w, h, texto, op) {
 // ==========================================
 // HEADER E RODAPÉ PADRÃO
 // ==========================================
-function _gNovoSlide(deck) {
+// Remove a versão anterior DESTE slide (pela etiqueta) e devolve uma página
+// nova, em branco, já etiquetada. É o único lugar que cria slide, então a
+// regra de "não duplicar" vale para os seis sem ninguém precisar lembrar.
+function _gNovoSlide(deck, tag) {
+  if (tag) _gLimparEtiquetados_(deck, tag);
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(DS_G.colors.bgSlide);
+  if (tag) _gEtiquetar_(slide, tag);
   return slide;
 }
 
@@ -370,7 +556,7 @@ function _gTimelineCheck(slide, etapas, x, y, w, doneUntil, limites) {
 // SLIDE 1 — FAROL DE METAS (TABELA)
 // ==========================================
 function _gFarolSlideTabela(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.tabela);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'FAROL DE METAS · ' + FAROL_MES_NOME,
     ['Planejamento & Gestão', 'Guilherme August Padilha Marques', 'Ciclo 2026']);
@@ -493,7 +679,7 @@ function _gFarolSlideTabela(deck) {
 // SLIDE 2 — PLATAFORMA DE UTILITIES
 // ==========================================
 function _gFarolSlideMeta1(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.meta1);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Plataforma de Utilities — Mega Curitiba',
     ['Meta 1', FAROL_PONTOS.meta1 + ' pontos', 'Direcionador Projetos', 'Prazo 30/11/26']);
@@ -552,7 +738,7 @@ function _gFarolSlideMeta1(deck) {
 // SLIDE 3 — PROGRAMA DE EXCELÊNCIA 2026
 // ==========================================
 function _gFarolSlideMeta2(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.meta2);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Programa de Excelência 2026',
     ['Meta 2', FAROL_PONTOS.meta2 + ' pontos', 'Direcionador Projetos', 'Prazo 30/09/26']);
@@ -623,7 +809,7 @@ function _gFarolSlideMeta2(deck) {
 // SLIDE 4 — INTEGRAÇÃO DAS ÁREAS
 // ==========================================
 function _gFarolSlideMeta3(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.meta3);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Integração das Áreas',
     ['Meta 3', FAROL_PONTOS.meta3 + ' pontos', 'Facilities · Financeiro · Jurídico', 'Prazo 30/11/26']);
@@ -686,7 +872,7 @@ function _gFarolSlideMeta3(deck) {
 // SLIDE 5 — REEMBOLSOS
 // ==========================================
 function _gFarolSlideMeta4(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.meta4);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'Solicitação e Controle de Reembolsos',
     ['Meta 4', FAROL_PONTOS.meta4 + ' pontos', 'Direcionador Projetos', 'Prazo 30/11/26']);
@@ -852,7 +1038,7 @@ function _pegEstadoProjeto_(p) {
 }
 
 function _gSlideProjetosPeG(deck) {
-  const slide = _gNovoSlide(deck);
+  const slide = _gNovoSlide(deck, FAROL_TAGS.projetos);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   _gHeader(slide, W, 'PROJETOS EM ANDAMENTO',
     ['Planejamento & Gestão', 'Guilherme August Padilha Marques', PEG_REFERENCIA]);

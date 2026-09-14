@@ -264,7 +264,8 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Sete suítes hoje, 405 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Oito suítes hoje, 405 asserções contadas nas sete primeiras, cada uma
+rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -275,6 +276,16 @@ Sete suítes hoje, 405 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_dashboard.js` | 45 |
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
+| `megas-mensal/teste_farol.js` | idempotência + autonomia |
+
+`megas-mensal/teste_farol.js` é o único que roda o deck DUAS vezes: o dublê
+guarda os slides e as anotações entre as chamadas, e `remove()` tira de
+verdade. É assim que se prova que gerar de novo substitui em vez de
+duplicar — e que um slide feito à mão (sem etiqueta) não é apagado no
+caminho. Ele também roda o arquivo num `vm` cujo handler `has` intercepta
+toda busca de nome global: qualquer identificador que o arquivo use e não
+declare vira falha, o que transforma "este script é autônomo" de comentário
+em asserção.
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
 
