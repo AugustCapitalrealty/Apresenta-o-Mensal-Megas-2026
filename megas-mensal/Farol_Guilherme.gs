@@ -79,7 +79,18 @@ function gerarFarolGuilherme() {
   _gFarolSlideMeta2(deck);
   _gFarolSlideMeta3(deck);
   _gFarolSlideMeta4(deck);
-  Logger.log('Farol de Metas — Guilherme: 5 slides gerados no fim da apresentação.');
+  _gSlideProjetosPeG(deck);
+  Logger.log('Farol de Metas — Guilherme: 6 slides gerados no fim da apresentação.');
+}
+
+// Só o slide de Projetos em Andamento, para reprocessar sem regerar o Farol
+// inteiro (que só APENDA — rodar o completo de novo duplicaria os 5 slides de
+// meta). É sem argumento de propósito: é assim que ele aparece no menu
+// "Selecionar função" do editor.
+function gerarProjetosPlanejamentoGestao() {
+  const deck = SlidesApp.openById(FAROL_DECK_ID);
+  _gSlideProjetosPeG(deck);
+  Logger.log('Projetos em Andamento — Planejamento & Gestão: slide gerado.');
 }
 
 
@@ -757,4 +768,201 @@ function _gFarolSlideMeta4(deck) {
   _gRodapeNota(slide, W, H,
     'Próximo passo: acionar o RH na próxima semana para fechar a entrevista do Ernani e desenhar o novo fluxo de reembolsos.');
   Logger.log('Farol — Meta 4 (Reembolsos) gerado.');
+}
+
+
+// ==========================================
+// SLIDE 6 — PROJETOS EM ANDAMENTO (PLANEJAMENTO & GESTÃO)
+// ==========================================
+//
+// Este slide NÃO é uma meta do Farol: é o retrato dos projetos tocados pela
+// área, com o estado de cada FRENTE de trabalho. Por isso vive fora da
+// numeração meta1..meta4 e tem ponto de entrada próprio
+// (gerarProjetosPlanejamentoGestao).
+//
+// ────────────────────────────────────────────────────────────────────────
+// É AQUI QUE SE EDITA TODO MÊS. Nada abaixo desta constante precisa mudar:
+// os quatro números do topo, a pastilha de status de cada projeto e as cores
+// saem todos DAQUI, por contagem — não há número digitado duas vezes, então
+// o cabeçalho não tem como contradizer os cartões.
+//
+// estado da frente: 'feito' | 'andamento' | 'nao_iniciado'
+// aguardando:       quem está segurando (vira a pastilha âmbar de bloqueio e
+//                   entra na contagem "AGUARDANDO TERCEIROS"). Opcional.
+// marcos:           datas do que já aconteceu, em ordem. Opcional.
+// ────────────────────────────────────────────────────────────────────────
+const PEG_REFERENCIA = 'Setembro/26';
+
+const PEG_PROJETOS = [
+  {
+    nome: 'Pesquisa do RH',
+    objetivo: 'Criar a plataforma da pesquisa e aplicá-la entre as áreas.',
+    frentes: [
+      { nome: 'Plataforma da pesquisa', estado: 'feito',
+        detalhe: 'Plataforma criada e disponibilizada para o RH.' },
+      { nome: 'Pesquisa entre as áreas', estado: 'feito',
+        detalhe: 'Aplicada e encerrada — projeto entregue.' }
+    ]
+  },
+  {
+    nome: 'Automações no Jurídico',
+    objetivo: 'Automatizar a criação do Kronnos e organizar as pastas do Jurídico.',
+    frentes: [
+      { nome: 'Criação do Kronnos', estado: 'andamento',
+        detalhe: 'Automatizar a criação do Kronnos.',
+        marcos: [
+          { data: '19/ago', txt: 'iniciado' },
+          { data: '11/set', txt: 'feedbacks recebidos' }
+        ] },
+      { nome: 'Organização de Pastas', estado: 'nao_iniciado',
+        detalhe: 'Não iniciado — depende do Jurídico para começar.',
+        aguardando: 'Jurídico' }
+    ]
+  }
+];
+
+const PEG_PROXIMO_PASSO =
+  'Próximo passo: tratar os feedbacks de 11/set na automação do Kronnos e ' +
+  'acionar o Jurídico para destravar a Organização de Pastas.';
+
+
+// Paleta por estado. É função (e não const de topo) de propósito: const de
+// topo em outro arquivo do projeto poderia ser avaliada antes de DS_G e vir
+// undefined — aqui a leitura acontece só na hora de desenhar.
+function _pegCor_(estado) {
+  const c = DS_G.colors;
+  if (estado === 'feito') {
+    return { rotulo: '✓ CONCLUÍDO', solid: c.greenSolid, ink: c.greenInk, bg: c.greenBg };
+  }
+  if (estado === 'andamento') {
+    return { rotulo: '⏳ EM ANDAMENTO', solid: c.amberSolid, ink: c.amberInk, bg: c.amberBg };
+  }
+  return { rotulo: 'NÃO INICIADO', solid: c.lineStrong, ink: c.textBody, bg: '#EEF2F9' };
+}
+
+// O status do PROJETO é derivado das frentes, nunca digitado: tudo feito =
+// concluído; qualquer frente andando = em andamento; nenhuma começou = não
+// iniciado. Assim a pastilha do cartão não tem como divergir das linhas que
+// estão logo abaixo dela.
+function _pegEstadoProjeto_(p) {
+  const estados = p.frentes.map(f => f.estado);
+  if (estados.every(e => e === 'feito')) return 'feito';
+  if (estados.some(e => e === 'andamento')) return 'andamento';
+  return 'nao_iniciado';
+}
+
+function _gSlideProjetosPeG(deck) {
+  const slide = _gNovoSlide(deck);
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  _gHeader(slide, W, 'PROJETOS EM ANDAMENTO',
+    ['Planejamento & Gestão', 'Guilherme August Padilha Marques', PEG_REFERENCIA]);
+
+  const contW = W - 2 * G_MX, fim = _gFimConteudo_(H);
+
+  // --- Faixa de contagem (tudo derivado de PEG_PROJETOS) ---
+  const frentes = PEG_PROJETOS.reduce((acc, p) => acc.concat(p.frentes), []);
+  const nFeitas    = frentes.filter(f => f.estado === 'feito').length;
+  const nConcluidos = PEG_PROJETOS.filter(p => _pegEstadoProjeto_(p) === 'feito').length;
+  const nAguardando = frentes.filter(f => f.aguardando).length;
+
+  const blocos = [
+    { label: 'PROJETOS',             valor: String(PEG_PROJETOS.length),        cor: DS_G.colors.brandMed },
+    { label: 'PROJETOS CONCLUÍDOS',  valor: nConcluidos + ' de ' + PEG_PROJETOS.length,
+      cor: nConcluidos ? DS_G.colors.greenInk : DS_G.colors.textMuted },
+    { label: 'FRENTES CONCLUÍDAS',   valor: nFeitas + ' de ' + frentes.length,  cor: DS_G.colors.greenInk },
+    { label: 'AGUARDANDO TERCEIROS', valor: String(nAguardando),
+      cor: nAguardando ? DS_G.colors.amberInk : DS_G.colors.textMuted }
+  ];
+
+  const stripH = 52;
+  _gCartao_(slide, G_MX, G_TOP, contW, stripH, DS_G.colors.brandLight);
+  const bw = contW / blocos.length;
+  blocos.forEach((b, i) => {
+    const bx = G_MX + i * bw;
+    if (i > 0) {
+      const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, G_TOP + 12, 1, stripH - 24);
+      div.getFill().setSolidFill(DS_G.colors.line); div.getBorder().setTransparent();
+    }
+    _gUmaLinha_(slide, bx + 18, G_TOP + 8, bw - 34, 12, b.label,
+      { fs: 7.2, fsMin: 5.8, bold: true, cor: DS_G.colors.textMuted,
+        fonte: DS_G.typography.body, align: 'L', folga: 8 });
+    // Altura ≥ fonte × 1,2, senão a linha única não cabe na vertical.
+    _gUmaLinha_(slide, bx + 18, G_TOP + 24, bw - 34, 21, b.valor,
+      { fs: 15, fsMin: 9.5, bold: true, cor: b.cor, align: 'L', folga: 8 });
+  });
+
+  // --- Um cartão por projeto, lado a lado ---
+  const gap = 20, cardY = G_TOP + stripH + 16, cardH = fim - cardY;
+  const n = PEG_PROJETOS.length;
+  const cardW = (contW - gap * (n - 1)) / n;
+
+  PEG_PROJETOS.forEach((p, i) => {
+    const x = G_MX + i * (cardW + gap);
+    const cor = _pegCor_(_pegEstadoProjeto_(p));
+    _gCartao_(slide, x, cardY, cardW, cardH, cor.solid);
+
+    const px = x + 20, pw = cardW - 40;
+
+    // Pastilha de status no canto superior direito; a largura sai do texto,
+    // e o título é limitado pelo que sobra — nunca passa por baixo dela.
+    const pillW = _gLarguraTexto_(cor.rotulo, 7, DS_G.typography.body, true) + 22;
+    _gPill_(slide, x + cardW - 20 - pillW, cardY + 13, pillW, 16, cor.rotulo,
+      cor.solid, DS_G.colors.white, 7);
+
+    _gUmaLinha_(slide, px, cardY + 11, pw - pillW - 10, 20, (i + 1) + '. ' + p.nome,
+      { fs: 13.5, fsMin: 9, bold: true, cor: DS_G.colors.textMain, align: 'L', folga: 8 });
+    _gParagrafo_(slide, px, cardY + 34, pw, 30, p.objetivo,
+      { fs: 9, fsMin: 7.2, cor: DS_G.colors.textBody, espac: 122 });
+
+    const sepY = cardY + 66;
+    const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, px, sepY, x + cardW - 20, sepY);
+    sep.getLineFill().setSolidFill(DS_G.colors.line); sep.setWeight(1);
+
+    _gUmaLinha_(slide, px, sepY + 4, pw, 13, 'FRENTES DE TRABALHO',
+      { fs: 6.8, fsMin: 5.8, bold: true, cor: DS_G.colors.textMuted,
+        fonte: DS_G.typography.body, align: 'L', folga: 8 });
+
+    // As frentes dividem por igual o que sobrou do cartão, então acrescentar
+    // uma terceira frente não exige recalcular nada aqui.
+    const fY = sepY + 22, fH = (cardY + cardH - 12 - fY) / p.frentes.length;
+
+    p.frentes.forEach((f, k) => {
+      const y = fY + k * fH;
+      const cf = _pegCor_(f.estado);
+
+      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, px, y + 4, 9, 9);
+      dot.getFill().setSolidFill(cf.solid); dot.getBorder().setTransparent();
+
+      const tx = px + 16, tw = pw - 16;
+      _gUmaLinha_(slide, tx, y, tw, 14, f.nome,
+        { fs: 9.6, fsMin: 7.4, bold: true, cor: DS_G.colors.textMain, align: 'L', folga: 8 });
+      _gParagrafo_(slide, tx, y + 16, tw, 20, f.detalhe,
+        { fs: 8.2, fsMin: 6.8, cor: DS_G.colors.textBody, espac: 116 });
+
+      // Marcos e bloqueio viram pastilhas na mesma linha, na ordem em que
+      // aconteceram. Sem marco nenhum a linha simplesmente não é desenhada.
+      let cx = tx;
+      const chipY = y + 38, chipH = 14;
+      (f.marcos || []).forEach(m => {
+        const txt = m.data + ' · ' + m.txt;
+        const w = _gLarguraTexto_(txt, 6.6, DS_G.typography.body, true) + 18;
+        if (cx + w > tx + tw) return;   // não cabe: melhor omitir que vazar
+        _gPill_(slide, cx, chipY, w, chipH, txt, cf.bg, cf.ink, 6.6);
+        cx += w + 6;
+      });
+      if (f.aguardando) {
+        const txt = '⏸ aguardando ' + f.aguardando;
+        const w = _gLarguraTexto_(txt, 6.6, DS_G.typography.body, true) + 18;
+        if (cx + w <= tx + tw) {
+          _gPill_(slide, cx, chipY, w, chipH, txt,
+            DS_G.colors.amberBg, DS_G.colors.amberInk, 6.6);
+        }
+      }
+    });
+  });
+
+  _gRodapeNota(slide, W, H, PEG_PROXIMO_PASSO);
+  Logger.log('Projetos em Andamento — ' + PEG_PROJETOS.length + ' projetos, ' +
+             frentes.length + ' frentes (' + nFeitas + ' concluídas, ' +
+             nAguardando + ' aguardando terceiros).');
 }
