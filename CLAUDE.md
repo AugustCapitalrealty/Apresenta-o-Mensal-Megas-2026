@@ -127,10 +127,14 @@ arquivos num `Dados.gs` a duplicata apareceu; foi o que motivou juntar.
 
 ## Como isso vai pro ar
 
-Não há `clasp` nem `.clasp.json`. O código é copiado à mão para o editor do
-Apps Script de cada projeto. **`git push` não publica nada** — se o
-comportamento não mudou depois de um commit, a primeira coisa a verificar é
-se os arquivos foram copiados para o editor.
+Nos seis projetos mensais não há `clasp` nem `.clasp.json`. O código é
+copiado à mão para o editor do Apps Script de cada projeto. **`git push` não
+publica nada** — se o comportamento não mudou depois de um commit, a
+primeira coisa a verificar é se os arquivos foram copiados para o editor.
+
+A exceção é `orcamento-2027/`, que sobe com `clasp push` de dentro da pasta
+(ver o [`README`](orcamento-2027/README.md) dela). Lá, editar direto no
+editor é que perde trabalho: o próximo push sobrescreve.
 
 ## Design system
 

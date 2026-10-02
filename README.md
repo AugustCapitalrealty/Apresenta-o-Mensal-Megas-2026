@@ -13,6 +13,7 @@ apresentações no Google Slides.
 | [`controle-acessos/`](controle-acessos/) | Boletim de Controle de Acessos |
 | [`propriedades-mensal/`](propriedades-mensal/) | Apresentação Mensal de Propriedades — **em construção** |
 | [`financeiro-mensal/`](financeiro-mensal/) | Apresentação Mensal do Financeiro — **em construção** |
+| [`orcamento-2027/`](orcamento-2027/) | Orçamento 2027 dos Megas — Manutenção de Imóveis por categoria (usa `clasp`) |
 | [`tabelas/`](tabelas/) | Apresentações semanais — Mega Curitiba, Mega Itajaí, Previsão do Tempo, Propriedades |
 
 Cada pasta é um **projeto Apps Script independente**, com seu próprio arquivo

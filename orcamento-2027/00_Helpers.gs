@@ -1,0 +1,247 @@
+/**
+ * ARQUIVO: 00_Helpers.gs
+ * SEÇÃO:   NÚCLEO — Helpers de texto, formatação e desenho
+ * DESCRIÇÃO: Tudo que os slides usam para medir texto, formatar dinheiro e
+ *            desenhar cabeçalho, rodapé e o aviso de falha.
+ */
+
+// ==========================================
+// TEXTO E NÚMEROS
+// ==========================================
+
+// Compara nomes vindos da planilha: tira acento, troca o espaço não-quebrável
+// (a planilha grava "manutenção imóveis") e ignora caixa.
+function _orcNorm_(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/ /g, ' ')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// getValues() devolve número; o fallback cobre célula digitada como texto
+// no formato brasileiro ("-1.234,56") e no contábil, com o negativo entre
+// parênteses ("(1.234,56)") — os relatórios da controladoria usam esse.
+function _orcNum_(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  if (v === null || v === undefined || v === '') return 0;
+  const s = String(v);
+  const n = parseFloat(s.replace(/[^\d,.\-]/g, '').replace(/\./g, '').replace(',', '.'));
+  if (!isFinite(n)) return 0;
+  return /^\s*\(.*\)\s*$/.test(s) ? -Math.abs(n) : n;
+}
+
+function _orcMilhar_(n) {
+  const r = Math.round(n);
+  return (r < 0 ? '-' : '') + String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// R$ 1.417.219
+function _orcMoeda_(v) {
+  return 'R$ ' + _orcMilhar_(v);
+}
+
+// R$ 1,42 mi | R$ 302 mil | R$ 7,5 mil | R$ 900
+function _orcCompacto_(v) {
+  const a = Math.abs(v);
+  if (a >= 1e6) return 'R$ ' + (v / 1e6).toFixed(2).replace('.', ',') + ' mi';
+  if (a >= 1e4) return 'R$ ' + Math.round(v / 1e3) + ' mil';
+  if (a >= 1e3) return 'R$ ' + (v / 1e3).toFixed(1).replace('.', ',') + ' mil';
+  return 'R$ ' + Math.round(v);
+}
+
+function _orcPct_(p) {
+  return (p * 100).toFixed(1).replace('.', ',') + '%';
+}
+
+// Em que meses o item tem valor: "JAN–DEZ", "ABR–JUN", "MAI · NOV", "5 meses".
+function _orcQuando_(meses) {
+  const idx = [];
+  meses.forEach((v, i) => { if (Math.abs(v) > 0.005) idx.push(i); });
+  if (!idx.length) return '—';
+  if (idx.length === 1) return ORC_MESES[idx[0]];
+  const ult = idx[idx.length - 1];
+  if (ult - idx[0] + 1 === idx.length) return ORC_MESES[idx[0]] + '–' + ORC_MESES[ult];
+  if (idx.length <= 3) return idx.map(i => ORC_MESES[i]).join(' · ');
+  return idx.length + ' meses';
+}
+
+// ==========================================
+// MEDIÇÃO DE TEXTO
+// ==========================================
+// A API do Slides não expõe métrica de fonte, então estimamos pela largura
+// média do caractere (mesmo método de megas-mensal/Farol_Guilherme.gs).
+const _ORC_FATOR_FONTE = { 'Montserrat': 0.58, 'Open Sans': 0.52 };
+
+// Recuo interno que toda TEXT_BOX tem e a API não deixa desligar (~7pt de
+// cada lado). É ele que faz texto curto quebrar dentro de caixa estreita.
+const _ORC_RECUO_TEXTBOX = 14;
+
+function _orcLarguraTexto_(texto, fs, fonte, bold) {
+  const f = (_ORC_FATOR_FONTE[fonte] || 0.55) * (bold ? 1.04 : 1);
+  return String(texto).length * fs * f;
+}
+
+function _orcLinhasTexto_(texto, larguraCaixa, fs, fonte, bold) {
+  const util = Math.max(12, larguraCaixa - _ORC_RECUO_TEXTBOX);
+  return Math.max(1, Math.ceil(_orcLarguraTexto_(texto, fs, fonte, bold) / util));
+}
+
+/**
+ * Texto que TEM que caber numa linha (valor, rótulo de célula, pill).
+ *   1) a caixa é desenhada mais larga que o espaço visível (folga simétrica
+ *      quando centralizado, só à direita quando alinhado à esquerda, e só à
+ *      esquerda quando alinhado à direita) — a TEXT_BOX não tem fundo, então
+ *      esticá-la não aparece e devolve o recuo interno;
+ *   2) se ainda não couber, a fonte encolhe até fsMin;
+ *   3) com op.cortar, o que sobrar em fsMin é cortado com reticências.
+ * Ver .claude/skills/slides-caixa-texto-sem-quebra.
+ */
+function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
+  let t = (texto === null || texto === undefined) ? '' : String(texto);
+  if (t === '') return null;   // caixa vazia: estilizar lançaria "object has no text"
+
+  const o = op || {};
+  const fonte = o.fonte || CR_DESIGN_SYSTEM.typography.titles;
+  const align = o.align || 'C';
+  const folga = o.folga === undefined ? 12 : o.folga;
+  const fsMin = o.fsMin || 6;
+  let   fs    = o.fs === undefined ? 10 : o.fs;
+
+  let bx = x, bw = w;
+  if (align === 'C') { bx = x - folga; bw = w + folga * 2; }
+  else if (align === 'L') { bw = w + folga; }
+  else { bx = x - folga; bw = w + folga; }
+
+  // A folga vence o recuo; o que decide se cabe é a largura VISÍVEL. Centrado,
+  // o texto pode ocupar w inteiro; alinhado a um lado, o recuo (~7pt) desse
+  // lado continua valendo. Nunca mais que o miolo útil da caixa.
+  const util = Math.min(bw - _ORC_RECUO_TEXTBOX, align === 'C' ? w : w - _ORC_RECUO_TEXTBOX / 2);
+  while (fs > fsMin && _orcLarguraTexto_(t, fs, fonte, o.bold) > util) fs -= 0.25;
+  if (o.cortar && _orcLarguraTexto_(t, fs, fonte, o.bold) > util) {
+    while (t.length > 4 && _orcLarguraTexto_(t + '…', fs, fonte, o.bold) > util) t = t.slice(0, -1);
+    t = t.replace(/[\s\-–·,]+$/, '') + '…';
+  }
+
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx, y, bw, h);
+  box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  box.getText().setText(t).getTextStyle()
+    .setFontSize(fs).setBold(!!o.bold).setItalic(!!o.italic)
+    .setForegroundColor(o.cor || CR_DESIGN_SYSTEM.colors.textMain).setFontFamily(fonte);
+  box.getText().getParagraphStyle().setParagraphAlignment(
+    align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
+      : align === 'R' ? SlidesApp.ParagraphAlignment.END
+      : SlidesApp.ParagraphAlignment.START);
+  return box;
+}
+
+/**
+ * Bloco de texto que pode ocupar várias linhas, mas encolhe a fonte até caber
+ * na altura h — impede o texto de transbordar o card quando o conteúdo cresce.
+ */
+function _orcParagrafo_(slide, x, y, w, h, texto, op) {
+  const t = (texto === null || texto === undefined) ? '' : String(texto);
+  if (t === '') return null;
+
+  const o = op || {};
+  const fonte = o.fonte || CR_DESIGN_SYSTEM.typography.body;
+  const espac = o.espac || 115;
+  const fsMin = o.fsMin || 6.5;
+  let   fs    = o.fs === undefined ? 10 : o.fs;
+
+  const alturaLinha = f => f * 1.2 * (espac / 100);
+  while (fs > fsMin && _orcLinhasTexto_(t, w, fs, fonte, o.bold) * alturaLinha(fs) > h) fs -= 0.25;
+
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
+  if (o.meio) box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  box.getText().setText(t).getTextStyle()
+    .setFontSize(fs).setBold(!!o.bold).setItalic(!!o.italic)
+    .setForegroundColor(o.cor || CR_DESIGN_SYSTEM.colors.textBody).setFontFamily(fonte);
+  box.getText().getParagraphStyle()
+    .setParagraphAlignment(o.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
+                                           : SlidesApp.ParagraphAlignment.START)
+    .setLineSpacing(espac);   // o Slides recusa espaçamento < 100
+  return box;
+}
+
+// ==========================================
+// FORMAS
+// ==========================================
+function _orcRet_(slide, x, y, w, h, cor, op) {
+  const o = op || {};
+  const s = slide.insertShape(o.redondo ? SlidesApp.ShapeType.ROUND_RECTANGLE : SlidesApp.ShapeType.RECTANGLE,
+                              x, y, Math.max(0.5, w), Math.max(0.5, h));
+  if (cor) s.getFill().setSolidFill(cor, o.alpha === undefined ? 1 : o.alpha);
+  else s.getFill().setTransparent();
+  if (o.borda) { s.getBorder().getLineFill().setSolidFill(o.borda); s.getBorder().setWeight(o.peso || 0.75); }
+  else s.getBorder().setTransparent();
+  return s;
+}
+
+function _orcLinha_(slide, x1, y1, x2, y2, cor, peso) {
+  const l = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x1, y1, x2, y2);
+  l.getLineFill().setSolidFill(cor);
+  l.setWeight(peso || 0.75);
+  return l;
+}
+
+// Card branco com borda fina e rótulo em caixa alta no topo.
+function _orcCard_(slide, x, y, w, h, rotulo) {
+  const DS = CR_DESIGN_SYSTEM;
+  _orcRet_(slide, x, y, w, h, DS.colors.cardBg, { redondo: true, borda: DS.colors.lines });
+  if (rotulo) {
+    _orcUmaLinha_(slide, x + 12, y + 6, w - 24, 16, rotulo.toUpperCase(),
+      { align: 'L', fs: 7.5, bold: true, cor: DS.colors.textBody, fonte: DS.typography.titles, cortar: true });
+  }
+}
+
+// ==========================================
+// SLIDE PADRÃO: fundo, cabeçalho e rodapé
+// ==========================================
+function _orcNovoSlide_(deck) {
+  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
+  return slide;
+}
+
+function _orcHeader_(slide, W, titulo, subtitulo) {
+  const DS = CR_DESIGN_SYSTEM;
+  const MX = DS.layout.marginX;
+  _orcRet_(slide, MX, 16, 5, 36, DS.colors.brandLight);
+  _orcUmaLinha_(slide, MX + 14, 12, W - MX * 2 - 150, 26, titulo,
+    { align: 'L', fs: 19, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 12, cortar: true });
+  if (subtitulo) {
+    _orcUmaLinha_(slide, MX + 14, 36, W - MX * 2 - 150, 18, subtitulo,
+      { align: 'L', fs: 9.5, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 7, cortar: true });
+  }
+  // Logo no canto direito. Se a imagem não carregar, o cabeçalho segue sem ela.
+  try {
+    const img = slide.insertImage(DriveApp.getFileById(LOGOS_CR.fullPositivo).getBlob());
+    const h = 24, w = h * img.getWidth() / img.getHeight();
+    img.setWidth(w).setHeight(h).setLeft(W - MX - w).setTop(20);
+  } catch (e) {
+    Logger.log('Cabeçalho: logo indisponível. ' + e.message);
+  }
+  _orcLinha_(slide, MX, DS.layout.headerH, W - MX, DS.layout.headerH, DS.colors.lines, 1);
+}
+
+function _orcRodape_(slide, W, H, texto) {
+  const DS = CR_DESIGN_SYSTEM;
+  _orcUmaLinha_(slide, DS.layout.marginX, H - 20, W - DS.layout.marginX * 2, 14, texto,
+    { align: 'L', fs: 7, cor: DS.colors.textMuted, fonte: DS.typography.body, cortar: true });
+}
+
+// Aviso de falha desenhado NO slide. Usa só insertShape e CR_DESIGN_SYSTEM:
+// se dependesse das helpers acima, quebraria junto com elas e o slide
+// voltaria a ficar vazio sem ninguém perceber.
+function _orcSlideFalha_(slide, W, H, titulo, erro) {
+  const DS = CR_DESIGN_SYSTEM;
+  const caixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 40, 60, W - 80, H - 120);
+  caixa.getFill().setSolidFill('#FEF2F2');
+  caixa.getBorder().getLineFill().setSolidFill(DS.colors.accentRed);
+  caixa.getBorder().setWeight(1.5);
+  const msg = (erro && erro.message) ? erro.message : String(erro);
+  const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 56, 72, W - 112, H - 144);
+  t.getText().setText('Falha ao gerar: ' + titulo + '\n\n' + msg);
+  t.getText().getTextStyle().setFontSize(11).setForegroundColor('#991B1B').setFontFamily(DS.typography.body);
+  Logger.log('FALHA [' + titulo + ']: ' + msg + (erro && erro.stack ? '\n' + erro.stack : ''));
+}
