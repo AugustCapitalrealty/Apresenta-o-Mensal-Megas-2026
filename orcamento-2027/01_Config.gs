@@ -5,12 +5,18 @@
  *            por cidade, e os tokens visuais da marca.
  */
 
-// Apresentação onde o orçamento é gerado. Cada geração acrescenta os slides
-// novos e só no fim apaga os antigos: se algo quebrar no meio, a versão
-// anterior continua lá.
-const ORC_DECK_ID = '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI';
+// A apresentação de cada cidade é `deckId` em ORC_CIDADES. Cada geração
+// acrescenta os slides novos e só no fim apaga os antigos: se algo quebrar no
+// meio, a versão anterior continua lá.
 const ORC_ANO = 2027;
 const ORC_ABA_MODELO = 'Valores do Modelo';
+
+// Planilha "ORÇAMENTO 2027 - TEXTOS DAS TABELAS" (pasta APRESENTAÇÃO
+// ORÇAMENTO): o texto curto que o gestor escolhe para cada descrição longa
+// das tabelas. Ver 06_TextosTabelas.gs.
+const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
+// As propostas de texto curto que aplicarPropostasTextos() copia para a
+// coluna C estão em 07_PropostasTextos.gs.
 
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide
@@ -18,6 +24,7 @@ const ORC_ABA_MODELO = 'Valores do Modelo';
 const ORC_CIDADES = {
   CURITIBA: {
     nome: 'Mega Curitiba',
+    deckId: '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI',            // MEGA CURITIBA
     despesasGeraisId:    '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA',  // 090-Despesas-Gerais - MEGA CURITIBA - 2027
     servicosTerceirosId: '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw',  // 070-Servicos-de-Terceiros - MEGA CURITIBA - 2027
     // Relatórios da controladoria (pasta "MEGA CURITIBA"), uma aba cada:
@@ -39,10 +46,44 @@ const ORC_CIDADES = {
       'Manutenção de imóveis':  '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA',  // MEGA CURITIBA - MANUTENÇÕES DE IMOVEIS - CONTRATOS
       'Segurança e vigilância': '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8',  // MEGA CURITIBA - SEGURANÇA E VIGILANCIA - CONTRATOS
       'Limpeza e conservação':  '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI'   // MEGA CURITIBA - LIMPEZA E CONSERVAÇÃO - CONTRATOS
+    },
+    // Texto do slide de Premissas (10_Capa.gs). Vazio = espaço para o gestor
+    // escrever no próprio slide. Depois que ele escrever, copie o texto para
+    // cá: cada geração recria o deck e apagaria o que foi escrito lá.
+    premissas: {
+      premissas: '',
+      analisado: '',
+      comoLer:   ''
     }
   },
-  ITAJAI: { nome: 'Mega Itajaí', despesasGeraisId: '', servicosTerceirosId: '' },
-  ESTEIO: { nome: 'Mega Esteio', despesasGeraisId: '', servicosTerceirosId: '' }
+  // Itajaí e Esteio (05/10/2026): relatórios da controladoria nas pastas
+  // "MEGA ITAJAÍ" / "MEGA ESTEIO", convertidos dos .xlsx. Sem planilhas de
+  // CONTRATOS ainda: a diferença entre modelos e METRAGEM aparece como "Não
+  // detalhado" na composição até elas entrarem em `contratos`.
+  ITAJAI: {
+    nome: 'Mega Itajaí',
+    deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ
+    despesasGeraisId:    '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg',  // 090-Despesas-Gerais-MEGA-ITAJAI-2027
+    servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // 070-Servicos-de-Terceiros - MEGA ITAJAÍ 2027
+    relatorios: {
+      metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // METRAGEM-COND-MEGA-ITAJAI
+      mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA'    // Despesas-Mensal-2026-x-2027 - MEGA ITAJAI
+    },
+    contratos: {},
+    premissas: { premissas: '', analisado: '', comoLer: '' }
+  },
+  ESTEIO: {
+    nome: 'Mega Esteio',
+    deckId: '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0',            // MEGA ESTEIO
+    despesasGeraisId:    '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ',  // 090-Despesas-Gerais-MEGA-ESTEIO - 2027
+    servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // 070-Servicos-de-Terceiros- MEGA ESTEIO 2027
+    relatorios: {
+      metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // METRAGEM-COND-MEGA-ESTEIO
+      mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg'    // Despesas-Mensal-2026-x-2027 - MEGA ESTEIO
+    },
+    contratos: {},
+    premissas: { premissas: '', analisado: '', comoLer: '' }
+  }
 };
 
 // Colunas da aba "Valores do Modelo" (base 0): A = descrição do item (é a

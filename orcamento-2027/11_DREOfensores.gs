@@ -1,7 +1,8 @@
 /**
  * ARQUIVO: 11_DREOfensores.gs
  * SLIDES:  DRE do orçamento (padrão da apresentação mensal dos Megas) e o
- *          quadro de Ofensores e Defensores (padrão do financeiro mensal).
+ *          quadro de Ofensores e Defensores (padrão do financeiro mensal),
+ *          um slide para cada bloco.
  *          Ficam juntos porque saem da mesma leitura (obterRelatorioAnual_)
  *          e desenham a mesma tabela numérica.
  *
@@ -74,8 +75,10 @@ function _orcEstiloLinha_(tipo) {
 
 /**
  * colunas: [{ titulo, w, align, destaque }]   (a primeira é o rótulo)
- * linhas:  [{ tipo, nome, celulas: [{ texto, sentido }] }]
+ * linhas:  [{ tipo, nome, revisar, celulas: [{ texto, sentido }] }]
  *   sentido pinta a célula de variação (1 vermelho, -1 verde).
+ *   revisar pinta a linha de laranja com um ⚠ no fim do rótulo (conta com
+ *   divergência entre os relatórios — 19_Revisar.gs).
  * cabecalhoGrupos: [{ titulo, c0, n }] — faixa acima dos títulos das colunas.
  */
 function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
@@ -100,11 +103,13 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
     if (c.destaque) _orcRet_(slide, xs[i], yCab, c.w, hCab, C.brandLight);
     _orcUmaLinha_(slide, xs[i] + (i === 0 ? 4 : 0), yCab, c.w - (i === 0 ? 4 : 0), hCab, c.titulo,
       { align: i === 0 ? 'L' : 'C', fs: 6.5, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles,
-        folga: 4, fsMin: 5, cortar: true });
+        folga: 4, fsMin: 6.5, cortar: true });
   });
 
   const y0 = yCab + hCab;
   const rowH = Math.min(15, (h - (y0 - y)) / Math.max(1, linhas.length));
+  // Uma fonte para a tabela inteira (fsMin = fs em toda célula): o que não
+  // cabe é cortado, não encolhido só naquela linha.
   const fs = rowH >= 12 ? 7 : (rowH >= 10 ? 6.5 : 6);
 
   // Fundos primeiro (zebra recomeça a cada grupo), conteúdo depois.
@@ -113,24 +118,33 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
     const ry = y0 + r * rowH, st = _orcEstiloLinha_(ln.tipo);
     if (st.bg) { _orcRet_(slide, x, ry, w, rowH, st.bg); zebra = 0; }
     else {
-      if (zebra++ % 2 === 1) _orcRet_(slide, x, ry, w, rowH, C.zebra);
+      if (ln.revisar) _orcRet_(slide, x, ry, w, rowH, _ORC_COR_REVISAR.fundo);
+      else if (zebra % 2 === 1) _orcRet_(slide, x, ry, w, rowH, C.zebra);
+      zebra++;
       colunas.forEach((c, i) => { if (c.destaque) _orcRet_(slide, xs[i], ry, c.w, rowH, '#DBEAFE', { alpha: 0.55 }); });
     }
+    if (ln.revisar) _orcRet_(slide, x, ry, 2.5, rowH, _ORC_COR_REVISAR.borda);
   });
   linhas.forEach((ln, r) => {
     const ry = y0 + r * rowH, st = _orcEstiloLinha_(ln.tipo);
-    _orcUmaLinha_(slide, x + st.recuo, ry, colunas[0].w - st.recuo, rowH, ln.nome,
+    const wAviso = ln.revisar ? 12 : 0;
+    _orcUmaLinha_(slide, x + st.recuo, ry, colunas[0].w - st.recuo - wAviso, rowH, ln.nome,
       { align: 'L', fs: fs, bold: st.bold, cor: st.cor, fonte: ln.tipo === 'item' ? DS.typography.body : DS.typography.titles,
-        folga: 4, fsMin: 5, cortar: true });
+        folga: 4, fsMin: fs, cortar: true });
+    if (ln.revisar) {
+      _orcUmaLinha_(slide, x + colunas[0].w - wAviso, ry, wAviso, rowH, '⚠',
+        { align: 'C', fs: fs, bold: true, cor: st.escuro ? '#FDBA74' : _ORC_COR_REVISAR.borda, fonte: DS.typography.body,
+          folga: 2, fsMin: fs });
+    }
     (ln.celulas || []).forEach((cel, k) => {
       if (!cel || !cel.texto) return;
       const i = k + 1, c = colunas[i];
       let cor = st.cor;
       if (cel.sentido === 1) cor = st.escuro ? _ORC_COR_VAR.sobeClaro : _ORC_COR_VAR.sobe;
       else if (cel.sentido === -1) cor = st.escuro ? _ORC_COR_VAR.desceClaro : _ORC_COR_VAR.desce;
-      _orcUmaLinha_(slide, xs[i], ry, c.w - 4, rowH, cel.texto,
-        { align: c.align || 'R', fs: fs, bold: st.bold || !!cel.bold || cel.sentido !== undefined, cor: cor,
-          fonte: DS.typography.body, folga: 4, fsMin: 5, cortar: !!cel.cortar });
+      _orcUmaLinha_(slide, xs[i], ry, c.w, rowH, cel.texto,
+        { align: c.align || 'C', fs: fs, bold: st.bold || !!cel.bold || cel.sentido !== undefined, cor: cor,
+          fonte: DS.typography.body, folga: 4, fsMin: fs, cortar: true, aba: cel.aba, original: cel.original, sufixo: cel.sufixo });
     });
   });
   const yFim = y0 + linhas.length * rowH;
@@ -161,15 +175,15 @@ function _orcLinhasDRE_(rel) {
     const pequena = c => Math.max(c.v.real, c.v.orcAnt, c.v.ritmo, c.v.orc) < ORC_DRE_AGRUPAR_ABAIXO;
     const miudas = contas.filter(pequena);
     contas.filter(c => !pequena(c) || miudas.length === 1)
-      .forEach(c => out.push({ tipo: 'item', nome: c.nome, v: c.v }));
+      .forEach(c => out.push({ tipo: 'item', nome: c.nome, chaves: [c.chave], v: c.v }));
     if (miudas.length > 1) {
       out.push({ tipo: 'item', nome: 'Demais contas (' + miudas.length + ')', v: soma(miudas.map(c => c.v)),
-                 agrupadas: miudas.map(c => c.nome) });
+                 agrupadas: miudas.map(c => c.nome), chaves: miudas.map(c => c.chave) });
     }
   });
   out.push({ tipo: 'grupo', nome: 'IPTU E SEGURO', v: soma([rel.iptu, rel.seguro]) });
-  out.push({ tipo: 'item', nome: 'IPTU', v: rel.iptu });
-  out.push({ tipo: 'item', nome: 'Seguro', v: rel.seguro });
+  out.push({ tipo: 'item', nome: 'IPTU', chaves: [_orcChaveConta_('IPTU')], v: rel.iptu });
+  out.push({ tipo: 'item', nome: 'Seguro', chaves: [_orcChaveConta_('Seguro')], v: rel.seguro });
   return out;
 }
 
@@ -191,7 +205,7 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
     }
     const vR = _orcVariacao_(l.v.ritmo, l.v.orc), vO = _orcVariacao_(l.v.orcAnt, l.v.orc);
     const d = l.v.orc - l.v.ritmo;
-    return { tipo: l.tipo, nome: l.nome, celulas: [
+    return { tipo: l.tipo, nome: l.nome, revisar: !!l.chaves && _orcRevisarDe_(rel, l.chaves).length > 0, celulas: [
       { texto: _orcMil_(l.v.real) }, { texto: _orcMil_(l.v.orcAnt) }, { texto: _orcMil_(l.v.ritmo) },
       { texto: _orcMil_(l.v.orc), bold: true },
       { texto: _orcDeltaMil_(d), sentido: Math.abs(d) < 0.5 ? 0 : (d > 0 ? 1 : -1) },
@@ -249,6 +263,7 @@ function _orcOfensores_(rel) {
     return {
       contas: grandes,
       demais: miudas.length ? { nome: 'Demais contas (' + miudas.length + ')', v: somaV(miudas),
+                                chaves: miudas.map(c => c.chave),
                                 delta: miudas.reduce((a, c) => a + c.delta, 0) } : null,
       total: { v: somaV(lista), delta: lista.reduce((a, c) => a + c.delta, 0) }
     };
@@ -260,36 +275,42 @@ function _orcOfensores_(rel) {
   };
 }
 
-function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo) {
+// Um slide por bloco (lado = 'ofensores' | 'defensores'): juntos não cabiam
+// com folga e o gestor pediu separados (30/09/2026). O TOTAL GERAL fecha os
+// dois, para cada slide mostrar o peso do bloco no orçamento.
+function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const DS = CR_DESIGN_SYSTEM;
   const MX = DS.layout.marginX;
   const a = rel.anos;
   const q = _orcOfensores_(rel);
-  _orcHeader_(slide, W, 'Ofensores e Defensores — Orçamento ' + ORC_ANO,
-    'O que puxa o orçamento para cima e para baixo · Orç ' + a.orc + ' contra o Ritmo ' + a.ritmo + ' · ' +
-    cid.nome + ' · R$ mil');
+  const ofensor = lado !== 'defensores';
+  _orcHeader_(slide, W, (ofensor ? 'Ofensores' : 'Defensores') + ' — Orçamento ' + ORC_ANO,
+    'O que puxa o orçamento para ' + (ofensor ? 'cima' : 'baixo') + ' · Orç ' + a.orc + ' contra o Ritmo ' + a.ritmo +
+    ' · ' + cid.nome + ' · R$ mil');
 
-  // Maior item orçado da conta nos modelos 070/090 — dá nome ao número.
+  // Maior item orçado da conta nos modelos 070/090 — dá nome ao número. A
+  // chave na planilha de textos é só a descrição, sem o valor.
   const maiorItem = chave => {
     const it = _orcItensDaConta_(linhasModelo || [], chave)[0];
-    return it ? it.descricao + ' · ' + _orcCompacto_(it.total) : '';
+    const sufixo = it ? ' · ' + _orcCompacto_(it.total) : '';
+    return it ? { texto: _orcTextoEscolhido_('Ofensores', it.descricao) + sufixo,
+                  aba: 'Ofensores', original: it.descricao, sufixo: sufixo } : null;
   };
   const linhaConta = (c, tipo) => {
     const v = _orcVariacao_(c.v.ritmo, c.v.orc);
-    return { tipo: tipo || 'item', nome: c.nome, celulas: [
+    const chaves = c.chaves || (c.chave ? [c.chave] : null);
+    return { tipo: tipo || 'item', nome: c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
       { texto: _orcMil_(c.v.orcAnt) }, { texto: _orcMil_(c.v.ritmo) }, { texto: _orcMil_(c.v.orc), bold: true },
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
-      { texto: c.chave ? maiorItem(c.chave) : '', cortar: true }] };
+      c.chave ? maiorItem(c.chave) : null] };
   };
-  const linhas = [];
-  [['OFENSORES — SOBEM EM ' + a.orc, q.ofensores, 'TOTAL OFENSORES'],
-   ['DEFENSORES — CAEM EM ' + a.orc, q.defensores, 'TOTAL DEFENSORES']].forEach(b => {
-    linhas.push({ tipo: 'secao', nome: b[0], celulas: [] });
-    b[1].contas.forEach(c => linhas.push(linhaConta(c)));
-    if (b[1].demais) linhas.push(linhaConta(b[1].demais));
-    linhas.push(linhaConta({ nome: b[2], v: b[1].total.v, delta: b[1].total.delta }, 'grupo'));
-  });
+  const b = ofensor ? ['OFENSORES — SOBEM EM ' + a.orc, q.ofensores, 'TOTAL OFENSORES']
+                    : ['DEFENSORES — CAEM EM ' + a.orc, q.defensores, 'TOTAL DEFENSORES'];
+  const linhas = [{ tipo: 'secao', nome: b[0], celulas: [] }];
+  b[1].contas.forEach(c => linhas.push(linhaConta(c)));
+  if (b[1].demais) linhas.push(linhaConta(b[1].demais));
+  linhas.push(linhaConta({ nome: b[2], v: b[1].total.v, delta: b[1].total.delta }, 'grupo'));
   linhas.push(linhaConta({ nome: 'TOTAL GERAL (ÁREA COMUM + IPTU + SEGURO)', v: q.total.v, delta: q.total.delta }, 'total'));
 
   const tw = W - MX * 2, labW = 170, numW = 54, itemW = tw - labW - numW * 5;

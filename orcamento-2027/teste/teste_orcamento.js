@@ -120,10 +120,52 @@ const FIX_070 = fixture('fixture_070_curitiba_2027.json');
 let porId = {};          // id → matriz (primeira aba ou "Valores do Modelo")
 const aba = (nome, matriz) => ({ getName: () => nome, getDataRange: () => ({ getValues: () => matriz.map(r => r.slice()) }) });
 
+// Planilha de textos (06_TextosTabelas.gs): lida e ESCRITA pela geração.
+// Nasce como uma planilha nova do Drive, com uma aba vazia.
+function novaPlanilhaTextos() {
+  const abas = [];
+  const novaAba = nome => {
+    let dados = [];
+    const sh = {
+      getName: () => nome,
+      getLastRow: () => dados.length,
+      getDataRange: () => ({ getValues: () => dados.map(r => r.slice()) }),
+      clearContents: () => { dados = []; return sh; },
+      getRange: (r, c, nr, nc) => {
+        [r, c, nr, nc].forEach(v => { if (!(v >= 1)) throw new Error('getRange inválido: ' + [r, c, nr, nc]); });
+        const rg = {
+          setValues: v => {
+            if (v.length !== nr || v.some(l => l.length !== nc)) throw new Error('setValues fora da dimensão do range');
+            v.forEach((l, i) => {
+              const linha = dados[r - 1 + i] || (dados[r - 1 + i] = []);
+              l.forEach((val, j) => { linha[c - 1 + j] = val; });
+            });
+            return rg;
+          },
+          setFontWeight: () => rg, setBackground: c2 => { cor(c2, 'planilha'); return rg; }, setFontColor: () => rg
+        };
+        return rg;
+      },
+      setFrozenRows: () => sh, setColumnWidth: () => sh
+    };
+    abas.push(sh);
+    return sh;
+  };
+  novaAba('Página1');
+  return {
+    abas: abas,
+    getSheets: () => abas.slice(),
+    getSheetByName: n => abas.filter(s => s.getName() === n)[0] || null,
+    insertSheet: n => novaAba(n),
+    deleteSheet: s => { abas.splice(abas.indexOf(s), 1); }
+  };
+}
+let PLANILHA_TEXTOS = novaPlanilhaTextos();
+
 const ctx = {
   Logger: { log: m => LOG.push(String(m)) },
   SpreadsheetApp: {
-    openById: id => ({
+    openById: id => id === ctx.ORC_TEXTOS_ID ? PLANILHA_TEXTOS : ({
       getSheetByName: nome => {
         if (nome !== 'Valores do Modelo') return null;
         const mz = id in porId ? porId[id] : matrizAtual;
@@ -393,43 +435,116 @@ ok(fx.fora.map(c => c.nome).join() === 'Despesa de pessoal', 'fluxo: pessoal fic
 const m2 = G._orcM2PorConta_(rel);
 perto(m2.total.m2.orc, rel.m2Total.orc, 'R$/m²: total recompõe o R$/m² da METRAGEM');
 pertoReal(m2.linhas.reduce((a, l) => a + l.v.orc, 0), rel.total.orc, 'R$/m²: linhas somam o total geral');
+const m2Top = m2.linhas.slice(0, G.ORC_M2_TOP);
+ok(m2Top.length === 10 && /^Demais contas \(\d+\)$/.test(m2.linhas[10].nome) && m2.linhas.length === 11,
+   'R$/m²: top 10 contas + Demais (' + m2.linhas.map(l => l.nome).join(', ') + ')');
+ok(m2Top.every((l, i) => i === 0 || l.v.orc <= m2Top[i - 1].v.orc), 'R$/m²: top 10 em ordem decrescente do Orç 2027');
+ok(m2Top[0].nome === 'Segurança e vigilância' && m2Top.some(l => l.nome === 'IPTU') && m2Top.some(l => l.nome === 'Seguro'),
+   'R$/m²: segurança no topo, IPTU e Seguro concorrem ao top');
+ok(rel.contas.filter(c => !m2Top.some(l => l.nome === c.nome)).every(c => c.v.orc <= m2Top[9].v.orc),
+   'R$/m²: nenhuma conta fora do top é maior que a 10ª');
 
 console.log('Erros que têm que parar a geração');
 lanca(() => G._orcLerMetragem_([['', 'Real 2024', 'Orça 2025']]), 'cabeçalho inesperado', 'metragem de outro ano → erro');
 lanca(() => G._orcLerMetragem_(FIX_METRAGEM.filter(r => !/^TOTAL/i.test(String(r[0]).replace(/ /g, ' ')))),
       'não encontrada', 'metragem sem as linhas de total → erro');
-lanca(() => G.obterRelatorioAnual_('ITAJAI'), 'ainda não foram', 'cidade sem relatórios');
+// Cidade fictícia, sem nenhuma planilha: Itajaí e Esteio já estão configuradas.
+G.ORC_CIDADES.VAZIA = { nome: 'Mega Vazio', deckId: 'deck-vazia', despesasGeraisId: '', servicosTerceirosId: '' };
+lanca(() => G.obterRelatorioAnual_('VAZIA'), 'ainda não foi', 'cidade sem relatórios');
 matrizAtual = FIXTURE.filter((r, i) => i === 0 || G._orcNorm_(r[0]) !== 'manutencao imoveis');
 lanca(() => G.obterManutencao_('CURITIBA'), 'Contas encontradas', 'sem a conta → erro, não R$ 0');
 matrizAtual = FIXTURE.map(r => [''].concat(r));           // coluna inserida no começo
 lanca(() => G.obterManutencao_('CURITIBA'), 'Cabeçalho inesperado', 'coluna deslocada → erro');
 matrizAtual = FIXTURE;
-lanca(() => G.obterManutencao_('ITAJAI'), 'ainda não foi configurada', 'cidade sem planilha');
+lanca(() => G.obterManutencao_('VAZIA'), 'ainda não foi configurada', 'cidade sem planilha');
+
+// Itajaí e Esteio (relatórios recebidos em 05/10/2026, xlsx em fixtures).
+// O total geral vem com o mesmo rótulo do subtotal ("TOTAL ÁREA COMUM" duas
+// vezes) e o mensal tem que fechar com a METRAGEM conta a conta.
+console.log('Relatórios — Itajaí e Esteio');
+[['itajai', 6576240.43, 5518167.54], ['esteio', 4207370.9, 3664791.14]].forEach(([c, total, area]) => {
+  const r = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json'));
+  pertoReal(r.total.orc, total, c + ': total geral pelo 2º "TOTAL ÁREA COMUM"');
+  pertoReal(r.areaComum.orc, area, c + ': área comum pelo 1º');
+  ok(r.avisos.length === 0, c + ': metragem fecha as somas (' + r.avisos.join(' | ') + ')');
+  ok(r.m2Total && r.m2AreaComum && r.m2Total.orc > r.m2AreaComum.orc, c + ': R$/m² da área comum e do total separados');
+  ok(r.contas.every(x => x.grupo !== G.ORC_DRE_OUTRAS), c + ': toda conta num grupo da DRE (' +
+     r.contas.filter(x => x.grupo === G.ORC_DRE_OUTRAS).map(x => x.nome).join(', ') + ')');
+  const mm = G._orcLerMensal_(fixture('fixture_mensal_' + c + '.json'));
+  G._orcConferirMensal_(r, mm);
+  ok(r.avisos.length === 0, c + ': mensal fecha com a METRAGEM conta a conta (' + r.avisos.join(' | ') + ')');
+  ok(G.ORC_CONTAS_DETALHE.every(n => mm.contas[G._orcChaveConta_(n)]), c + ': mensal traz as três contas em foco');
+});
+const relErrado = G._orcLerMetragem_(fixture('fixture_metragem_itajai.json'));
+const mensalErrado = G._orcLerMensal_(fixture('fixture_mensal_itajai.json'));
+mensalErrado.contas[G._orcChaveConta_('Segurança e vigilância')].orc[3] += 1000;   // um mês digitado errado
+G._orcConferirMensal_(relErrado, mensalErrado);
+ok(relErrado.avisos.length === 1 && /Segurança e vigilância/.test(relErrado.avisos[0]),
+   'mês digitado errado no mensal vira aviso (' + relErrado.avisos.join(' | ') + ')');
 
 // ---------------- Geração ----------------
 console.log('Geração — Curitiba');
 decks = {};
 G.gerarCuritiba();
-const deck = decks[G.ORC_DECK_ID];
+ok(Object.keys(decks).join() === CUR.deckId, 'Curitiba escreve só na apresentação dela');
+ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => G.ORC_CIDADES[k].deckId) &&
+   new Set(['CURITIBA', 'ITAJAI', 'ESTEIO'].map(k => G.ORC_CIDADES[k].deckId)).size === 3,
+   'cada cidade tem a sua apresentação');
+const deck = decks[CUR.deckId];
 const slides = deck.getSlides();
-// Visão geral (DRE, ofensores, uma página por conta) vem antes da manutenção.
-const OFF = 2 + contasLL.length;
-const nPagDemais = G._orcPaginasDemais_(div.demais).length;
-const iDemais = 3 + div.proprias.length + OFF;                // primeira página de Demais
-const iSug = iDemais + nPagDemais;                            // abertura da seção de sugestões
-const N_SUG = 9;                                              // abertura + 8 sugestões
-ok(slides.length === iSug + N_SUG, (iSug + N_SUG) + ' slides: capa, DRE, ofensores, ' + contasLL.length +
-   ' linha a linha, resumo, mensal, ' + div.proprias.length + ' categorias, ' + nPagDemais +
-   ' de demais, ' + N_SUG + ' de sugestões (veio ' + slides.length + ')');
 const textos = sl => sl.shapes.filter(x => x.texto).map(x => x.texto);
-ok(textos(slides[1]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[1]).indexOf('ÁREA COMUM') >= 0, 'slide 2 é a DRE');
-ok(textos(slides[2]).some(t => /^OFENSORES/.test(t)) && textos(slides[2]).some(t => /^DEFENSORES/.test(t)),
-   'slide 3 é o quadro de ofensores e defensores');
-const iSeg = 3 + contasLL.findIndex(c => /seguran/i.test(c.nome));
+const titulo = sl => textos(sl)[0];
+
+// Seções: a sub capa escreve o número ("01") e o nome logo depois.
+const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza e Conservação',
+                'Investimento × Recorrente', 'Custo por m²'];
+const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
+ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
+   'sub capas 01–08 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
+const nPagDemais = G._orcPaginasDemais_(div.demais).length;
+const N_MANUT = 3 + div.proprias.length + nPagDemais;         // linha a linha, resumo, mensal, categorias, demais
+// Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro): +1 slide
+// de revisão logo depois da capa.
+const N_ESPERADO = 1 + 1 + SECOES.length + 1 + 2 + 3 + N_MANUT + 2 + 2;
+ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, revisão, 8 sub capas, premissas, resumo + ponte, ' +
+   'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, investimento, custo por m² (veio ' +
+   slides.length + ')');
+
+ok(titulo(slides[1]) === 'Revisar antes da versão final', 'slide de revisão logo depois da capa');
+ok(iSub[0] === 2 && titulo(slides[3]) === 'Premissas — Orçamento 2027', 'Premissas logo depois da revisão');
+const tPrem = textos(slides[3]);
+ok(['Premissas', 'O que foi analisado', 'Como ler o relatório'].every(t => tPrem.indexOf(t) >= 0) &&
+   tPrem.filter(t => t === G.ORC_PREMISSAS_VAZIO).length === 3,
+   'Premissas: três blocos com o espaço para o gestor escrever');
+
+ok(titulo(slides[iSub[1] + 1]) === 'Resumo executivo — Orçamento 2027' &&
+   titulo(slides[iSub[1] + 2]) === 'Ponte Ritmo 2026 → Orçamento 2027', 'seção Resumo Executivo: resumo e ponte');
+ok([1, 2].every(k => textos(slides[iSub[1] + k]).indexOf('SUGESTÃO') < 0), 'resumo e ponte aprovados: sem o selo SUGESTÃO');
+
+const iDRE = iSub[2] + 1;
+ok(textos(slides[iDRE]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[iDRE]).indexOf('ÁREA COMUM') >= 0,
+   'DRE logo depois da sub capa');
+const tOf = textos(slides[iDRE + 1]), tDf = textos(slides[iDRE + 2]);
+ok(tOf[0] === 'Ofensores — Orçamento 2027' && tOf.some(t => /^OFENSORES/.test(t)) && !tOf.some(t => /^DEFENSORES/.test(t)),
+   'um slide só de ofensores');
+ok(tDf[0] === 'Defensores — Orçamento 2027' && tDf.some(t => /^DEFENSORES/.test(t)) && !tDf.some(t => /^OFENSORES/.test(t)),
+   'um slide só de defensores');
+ok(tOf.some(t => /^TOTAL GERAL/.test(t)) && tDf.some(t => /^TOTAL GERAL/.test(t)), 'TOTAL GERAL fecha os dois');
+
+ok(iSub[3] === iDRE + 3, 'Manutenção logo depois dos defensores');
+const iLLManut = iSub[3] + 1, iResManut = iSub[3] + 2, iCat0 = iSub[3] + 4;
+const iDemais = iCat0 + div.proprias.length;                  // primeira página de Demais
+ok(titulo(slides[iLLManut]) === contasLL[0].nome, 'Manutenção abre com o linha a linha');
+ok(iSub[4] === iDemais + nPagDemais, 'Segurança logo depois da última página de Demais');
+const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
+ok(titulo(slides[iSeg]) === contasLL[1].nome && titulo(slides[iLimp]) === contasLL[2].nome,
+   'Segurança e Limpeza: linha a linha depois da sub capa');
+ok(iSub[6] === iLimp + 1 && iSub[7] === iSub[6] + 2 && slides.length === iSub[7] + 2,
+   'Investimento e Custo por m² fecham o deck, cada um depois da sua sub capa');
+const iInv = iSub[6] + 1, iM2 = iSub[7] + 1;
 ok(!textos(slides[iSeg]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    textos(slides[iSeg]).some(t => /^CONTRATO — SERVIÇO DE VIGILANCIA/.test(t)),
    'linha a linha da segurança lista os contratos, sem "não detalhado"');
-const iLimp = 3 + contasLL.findIndex(c => /limpeza/i.test(c.nome));
 ok(!textos(slides[iLimp]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    textos(slides[iLimp]).some(t => /^CONTRATO — EMPRESA AUXILIAR/.test(t)),
    'linha a linha da limpeza lista os contratos, sem "não detalhado"');
@@ -452,15 +567,15 @@ ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf(
    'capa: título é a cidade, não a conta');
 ok(slides.every(sl => textos(sl).indexOf('QUANDO O DINHEIRO SAI') < 0 && textos(sl).indexOf('QUANDO') < 0),
    'nenhum slide fala em "quando o dinheiro sai" — é previsão de entrega');
-ok(textos(slides[3 + OFF]).indexOf('PREVISÃO DE ENTREGA') >= 0 && textos(slides[3 + OFF]).indexOf('ENTREGA') >= 0,
+ok(textos(slides[iCat0]).indexOf('PREVISÃO DE ENTREGA') >= 0 && textos(slides[iCat0]).indexOf('ENTREGA') >= 0,
    'categoria: card e coluna de previsão de entrega');
 
 // Coluna FONTE: uma célula "—" por item, nas linhas de total não.
 const nFonte = sl => sl.shapes.filter(x => x.texto === '—').length;
-ok(textos(slides[3 + OFF]).indexOf('FONTE') >= 0, 'categoria: coluna FONTE');
-ok(nFonte(slides[3 + OFF]) === 11, 'PPCI: 11 itens (10 do modelo + Firecam), 11 células de fonte (veio ' +
-   nFonte(slides[3 + OFF]) + ')');
-const pagsDemais = slides.slice(iDemais, iSug);
+ok(textos(slides[iCat0]).indexOf('FONTE') >= 0, 'categoria: coluna FONTE');
+ok(nFonte(slides[iCat0]) === 11, 'PPCI: 11 itens (10 do modelo + Firecam), 11 células de fonte (veio ' +
+   nFonte(slides[iCat0]) + ')');
+const pagsDemais = slides.slice(iDemais, iDemais + nPagDemais);
 const nItensDemais = div.demais.reduce((a, c) => a + c.itens.length, 0);
 const fonteDemais = pagsDemais.reduce((a, sl) => a + nFonte(sl), 0);
 ok(pagsDemais.every(sl => textos(sl).indexOf('FONTE') >= 0) && fonteDemais === nItensDemais,
@@ -484,51 +599,175 @@ if (pillMon.length === 1 && itensMon.length === 2) {
 } else {
   ok(false, 'itens de MONITORAMENTO não encontrados em Demais');
 }
-ok(textos(slides[1 + OFF]).indexOf('R$ 1.760.408') >= 0, 'resumo mostra o total com os contratos');
-ok(textos(slides[1 + OFF]).some(t => /^149 contr\. \+ 289 avulsos/.test(t)), 'resumo: PPCI em barra combinada 149 + 289');
-ok(textos(slides[3 + OFF]).indexOf('PPCI') >= 0 && textos(slides[3 + OFF]).indexOf('R$ 437.985') >= 0, 'slide PPCI com o total');
-ok(textos(slides[3 + OFF]).some(t => /^CONTRATO — FIRECAM/.test(t)), 'slide PPCI lista o contrato Firecam');
+ok(textos(slides[iResManut]).indexOf('R$ 1.760.408') >= 0, 'resumo mostra o total com os contratos');
+ok(textos(slides[iResManut]).some(t => /^149 contr\. \+ 289 avulsos/.test(t)), 'resumo: PPCI em barra combinada 149 + 289');
+ok(textos(slides[iCat0]).indexOf('PPCI') >= 0 && textos(slides[iCat0]).indexOf('R$ 437.985') >= 0, 'slide PPCI com o total');
+ok(textos(slides[iCat0]).some(t => /^CONTRATO — FIRECAM/.test(t)), 'slide PPCI lista o contrato Firecam');
 const totDemais = div.demais.reduce((a, c) => a + c.total, 0);
-ok(textos(slides[iSug - 1]).indexOf(G._orcMoeda_(totDemais)) >= 0, 'Demais fecha com o TOTAL ' + G._orcMoeda_(totDemais));
+ok(textos(slides[iDemais + nPagDemais - 1]).indexOf(G._orcMoeda_(totDemais)) >= 0, 'Demais fecha com o TOTAL ' + G._orcMoeda_(totDemais));
 
-// Seção de sugestões: abertura + 8, todas com o selo e sem aviso de falha.
-const sug = slides.slice(iSug);
-ok(textos(sug[0]).indexOf('Outras leituras do orçamento') >= 0, 'abertura da seção de sugestões');
-ok(sug.slice(1).every(sl => textos(sl).indexOf('SUGESTÃO') >= 0), 'todo slide sugerido leva o selo SUGESTÃO');
-ok(sug.slice(1).map(sl => textos(sl)[0]).join(' | ') ===
-   'Resumo executivo — Orçamento 2027 | Ponte Ritmo 2026 → Orçamento 2027 | Manutenção: investimento × custo recorrente | ' +
-   'Cenários: o que dá para adiar | Contratos: concentração e reajustes | Contratos sem reajuste no orçamento | Fluxo mensal do orçamento | Custo por m² ao mês, 2025 → 2027',
-   'ordem das sugestões: ' + sug.slice(1).map(sl => textos(sl)[0]).join(' | '));
-const tSem = textos(sug[6]);
-ok(tSem.indexOf(G._orcMilhar_(rj.baseSemReajuste)) >= 0 && tSem.indexOf(G._orcMilhar_(rj.umPorCento)) >= 0,
-   'lista sem reajuste fecha na base ' + G._orcMilhar_(rj.baseSemReajuste) + ' e no 1%');
-ok(textos(sug[5]).indexOf('SEM REAJUSTE NO ORÇAMENTO') >= 0 && !textos(sug[5]).some(t => /ALTERAÇÃO DE ESCALA|^ITAU$/.test(t)),
-   'contratos: card "sem reajuste" e ranking sem pseudo-fornecedores');
+// Aprovados (05/10/2026): sem selo; os pendentes (90_Pendentes.gs) não saem.
+ok(titulo(slides[iInv]) === 'Manutenção: investimento × custo recorrente' &&
+   titulo(slides[iM2]) === 'Custo por m² ao mês, 2025 → 2027', 'slides aprovados: investimento e custo por m²');
+ok(slides.every(sl => textos(sl).indexOf('SUGESTÃO') < 0), 'nenhum slide com o selo SUGESTÃO');
+const PENDENTES = /^(Cenários: o que dá para adiar|Contratos: concentração e reajustes|Contratos sem reajuste no orçamento|Fluxo mensal do orçamento|Outras leituras do orçamento)$/;
+ok(!slides.some(sl => PENDENTES.test(titulo(sl) || '')), 'pendentes não são gerados');
 
 // R$/m² fica abaixo de R$ 1: a variação não pode usar a tolerância de R$ 0,50.
-const tM2 = textos(sug[8]);
-ok(tM2.indexOf('▲ 10%') >= 0 && tM2.indexOf('▲ 45%') >= 0 && tM2.indexOf('▼ 21%') >= 0 &&
-   tM2.indexOf('0%') < 0 && tM2.indexOf('▲ novo') < 0,
-   'R$/m²: Δ% real (total +10%, limpeza +45%, demais −21%), sem "0%" nem "novo"');
+const tM2 = textos(slides[iM2]);
+ok(tM2.indexOf('▲ 10%') >= 0 && tM2.indexOf('▲ 45%') >= 0 && tM2.indexOf('0%') < 0 && tM2.indexOf('▲ novo') < 0,
+   'R$/m²: Δ% real (total +10%, limpeza +45%), sem "0%" nem "novo"');
+ok(m2Top.every(l => tM2.indexOf(l.nome) >= 0) && tM2.some(t => /^Demais contas \(\d+\)$/.test(t)),
+   'R$/m²: o slide lista as 10 contas do top e as Demais');
 ok(tM2.some(t => /o custo por m² sobe 10% contra o Ritmo/.test(t)), 'R$/m²: nota diz "custo por m² sobe 10%"');
 LOG.length = 0;
 
-console.log('Geração — só as sugestões');
+console.log('Planilha de textos');
+const plTx = PLANILHA_TEXTOS;
+const linhasAba = n => plTx.getSheetByName(n).getDataRange().getValues();
+ok(plTx.abas.map(s => s.getName()).join() === G.ORC_TEXTOS_ABAS.join(),
+   'uma aba por tipo de tabela, sem a "Página1" vazia (' + plTx.abas.map(s => s.getName()).join(', ') + ')');
+ok(G.ORC_TEXTOS_ABAS.every(n => linhasAba(n)[0].join('|') === G.ORC_TEXTOS_CABECALHO.join('|') && linhasAba(n).length > 1),
+   'toda aba com cabeçalho e textos');
+const PAIS = 'IMPLANTAÇÃO ÁREA DE PAISAGISMO EM 1500M2 AO LADO DO RESTAURANTE INDUSTRIAL';
+const lPais = linhasAba('Composição').filter(r => r[0] === PAIS)[0];
+ok(lPais && lPais[3] === 'SIM' && /…$/.test(lPais[1]) && lPais[2] === '' && lPais[4] > 10 && lPais[4] < PAIS.length,
+   'paisagismo cortado na composição, com quanto cabe e a coluna de escolha vazia (' + JSON.stringify(lPais) + ')');
+ok(lPais && /Linha a linha/.test(lPais[5]), 'diz em que slide o texto aparece');
+ok(linhasAba('Ofensores').slice(1).every(r => !/ · R\$/.test(r[0])), 'ofensores: a chave é a descrição, sem o valor');
+
+// Fonte única: toda descrição da tabela sai com a mesma letra, cortada ou não.
+const fontesDe = (sl, n) => {
+  const exib = new Set(linhasAba(n).slice(1).map(r => r[1]));
+  return sl.shapes.filter(x => exib.has(x.texto)).map(x => x.fs);
+};
+[[iLLManut, 'Composição'], [iCat0, 'Categorias'], [iDemais, 'Categorias'], [iDRE + 1, 'Ofensores']].forEach(p => {
+  const f = fontesDe(slides[p[0]], p[1]);
+  ok(f.length >= 3 && f.every(v => v === f[0]),
+     'slide ' + (p[0] + 1) + ' (' + p[1] + '): descrições com a mesma fonte (' + Array.from(new Set(f)).join(', ') + ')');
+});
+// Tabelas numéricas: uma fonte por tabela, também nos números.
+// O relatório de Curitiba diverge de verdade (mensal × METRAGEM em IPTU e
+// Seguro): a DRE leva o aviso no rodapé, que não é parte da tabela.
+ok(textos(slides[iDRE]).some(t => /^⚠ Mensal ≠ METRAGEM em IPTU/.test(t)),
+   'DRE de Curitiba avisa a divergência do mensal em IPTU e Seguro');
+
+// Revisão: o slide lista os dois valores de cada conta; o selo vai nos
+// slides com o total geral (e no linha a linha só se a conta divergir); a
+// linha da conta ganha o ⚠.
+const tRev = textos(slides[1]);
+ok(['IPTU', 'Seguro', 'R$ 497.079', 'R$ 494.048', 'R$ 614.427', 'R$ 603.783'].every(t => tRev.indexOf(t) >= 0),
+   'revisão: mensal × METRAGEM de IPTU e Seguro (' + tRev.filter(t => /^R\$/.test(t)).join(', ') + ')');
+ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t)), 'revisão: diz em que slides a conta aparece (' +
+   tRev.filter(t => /^DRE/.test(t)).join(' | ') + ')');
+ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
+const SELO = '⚠ REVISAR · IPTU, Seguro';
+const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2];
+ok(comSeloIdx.every(i => textos(slides[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e custo por m²');
+ok(slides.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
+   'selo só nesses (linha a linha, investimento e manutenção não passam por IPTU/Seguro)');
+const nAviso = sl => textos(sl).filter(t => t === '⚠').length;
+ok(nAviso(slides[iDRE]) === 2 && nAviso(slides[iM2]) === 2, 'DRE e custo por m²: ⚠ nas linhas de IPTU e Seguro (DRE ' +
+   nAviso(slides[iDRE]) + ', m² ' + nAviso(slides[iM2]) + ')');
+ok(['⚠ IPTU', '⚠ Seguro'].every(t => textos(slides[iSub[1] + 2]).indexOf(t) >= 0), 'ponte: degraus de IPTU e Seguro com ⚠');
+ok(relErrado.revisar.length === 1 && relErrado.revisar[0].nome === 'Segurança e vigilância',
+   'mês digitado errado entra em rel.revisar');
+[iDRE, iDRE + 1, iDRE + 2].forEach(i => {
+  const fs = new Set(slides[i].shapes.filter(x => x.texto && !/^⚠/.test(x.texto) && x.y > 90 && x.y < H - 30).map(x => x.fs));
+  ok(fs.size === 1, 'slide ' + (i + 1) + ': tabela numérica com uma fonte só (' + Array.from(fs).join(', ') + ')');
+});
+
+// O gestor escolhe o texto curto: vale na geração seguinte, em toda tabela.
+const shComp = plTx.getSheetByName('Composição');
+const iPais = shComp.getDataRange().getValues().findIndex(r => r[0] === PAIS);
+const nAntes = shComp.getLastRow();
+shComp.getRange(iPais + 1, 3, 1, 1).setValues([['ÁREA DE PAISAGISMO 1500M2']]);
 decks = {};
-G.gerarSugestoes();
-const sS = decks[G.ORC_DECK_ID].getSlides();
-ok(sS.length === N_SUG, 'gerarSugestoes: só abertura + 8 sugestões (veio ' + sS.length + ')');
-ok(sS.map(sl => textos(sl).join('\n')).join('\n\n') === sug.map(sl => textos(sl).join('\n')).join('\n\n'),
-   'gerarSugestoes desenha os mesmos slides da seção do deck completo');
+G.gerarCuritiba();
+const s2 = decks[CUR.deckId].getSlides();
+ok(textos(s2[iLLManut]).indexOf('ÁREA DE PAISAGISMO 1500M2') >= 0 &&
+   !textos(s2[iLLManut]).some(t => /^IMPLANTAÇÃO ÁREA DE PAISAGISMO/.test(t)), 'texto escolhido substitui o original na composição');
+const iPaisCat = iCat0 + div.proprias.findIndex(c => c.nome === 'PAISAGISMO');
+ok(textos(s2[iPaisCat]).indexOf('ÁREA DE PAISAGISMO 1500M2') >= 0,
+   'escolha feita numa aba vale nas outras tabelas (categoria PAISAGISMO)');
+const lPais2 = shComp.getDataRange().getValues()[iPais];
+ok(shComp.getLastRow() === nAntes && lPais2[2] === 'ÁREA DE PAISAGISMO 1500M2' &&
+   lPais2[1] === 'ÁREA DE PAISAGISMO 1500M2' && lPais2[3] === '',
+   'nova geração mantém a escolha, atualiza "como aparece hoje" e não duplica a linha (' + JSON.stringify(lPais2) + ')');
+PLANILHA_TEXTOS = novaPlanilhaTextos();
+LOG.length = 0;
+
+// Propostas (07_PropostasTextos.gs): toda proposta de Curitiba acha sua
+// linha e nenhuma sai cortada no deck. As de Itajaí e Esteio ficam sem linha
+// aqui (o teste só gera Curitiba) e entram na conta das "sem linha".
+console.log('Propostas de texto');
+const PROPOSTAS = G.ORC_PROPOSTAS_TEXTOS;
+const nProp = PROPOSTAS.length;
+ok(PROPOSTAS.every(p => p.length === 4 && p[0] && p[1] && p[2]), 'propostas: [aba, original, proposta, anterior] preenchidas');
+decks = {};
+G.gerarCuritiba();                                 // a planilha de textos ganha as linhas
+const shC = PLANILHA_TEXTOS.getSheetByName('Composição');
+shC.getRange(2, 3, 1, 1).setValues([['ESCRITO PELO GESTOR']]);
+// Propostas de slides pendentes (contratos, cenários) não têm linha: o
+// deck não os gera mais. Ficam fora da conta e aparecem no log.
+const temLinha = PROPOSTAS.filter(p => {
+  const sh = PLANILHA_TEXTOS.getSheetByName(p[0]);
+  return sh && sh.getDataRange().getValues().some(r => G._orcNorm_(r[0]) === G._orcNorm_(p[1]));
+}).length;
+ok(temLinha > 100, 'a maioria das ' + nProp + ' propostas é de slides gerados (' + temLinha + ')');
+// Proposta revista (coluna PROPOSTA ANTERIOR): a célula que ainda tem a
+// anterior intacta recebe a nova.
+const REJ = 'COLETA DE REJEITOS DO RESTAURANTE (TRANSRESÍDUOS)';
+const pRej = PROPOSTAS.filter(p => p[0] === 'Composição' && p[1] === REJ)[0];
+const iRej = shC.getDataRange().getValues().findIndex(r => r[0] === REJ);
+ok(pRej && pRej[3] && pRej[3] !== pRej[2] && iRej > 0, 'fixture tem uma proposta revista com a anterior (' + JSON.stringify(pRej) + ')');
+if (iRej > 0) shC.getRange(iRej + 1, 3, 1, 1).setValues([[pRej[3]]]);
+LOG.length = 0;
+G.aplicarPropostasTextos();
+ok(LOG.some(l => l.indexOf('Propostas aplicadas: ' + (temLinha - 2) + ' · revistas (trocaram a anterior): 1' +
+                           ' · já preenchidas (mantidas): 1' +
+                           (nProp > temLinha ? ' · sem linha na planilha de textos: ' + (nProp - temLinha) : '')) === 0),
+   'aplica toda proposta que tem linha, troca a anterior intacta, mantém a escrita à mão e conta as sem linha (' +
+   LOG.join(' | ') + ')');
+ok(shC.getDataRange().getValues()[1][2] === 'ESCRITO PELO GESTOR', 'o que o gestor escreveu não é trocado');
+ok(iRej > 0 && shC.getDataRange().getValues()[iRej][2] === pRej[2], 'proposta anterior intacta é trocada pela revista');
+decks = {};
+G.gerarCuritiba();
+const todasLinhas = G.ORC_TEXTOS_ABAS.reduce((a, n) =>
+  a.concat(PLANILHA_TEXTOS.getSheetByName(n).getDataRange().getValues().slice(1)), []);
+const aindaCortadas = todasLinhas.filter(r => r[3] === 'SIM' && r[2] !== 'ESCRITO PELO GESTOR');
+ok(aindaCortadas.length === 0, 'com as propostas nenhum texto sai cortado (' + aindaCortadas.map(r => r[1]).join(' | ') + ')');
+PLANILHA_TEXTOS = novaPlanilhaTextos();      // as próximas gerações comparam com o deck sem escolhas
 LOG.length = 0;
 
 console.log('Geração — cidade sem planilha');
 decks = {};
-G.gerarItajai();
-const sI = decks[G.ORC_DECK_ID].getSlides();
-ok(sI.length === 3, 'Itajaí: capa + aviso dos relatórios + aviso da manutenção (veio ' + sI.length + ')');
-ok(textos(sI[1]).some(t => t.indexOf('ainda não foram') >= 0), 'aviso dos relatórios escrito no slide');
-ok(textos(sI[2]).some(t => t.indexOf('ainda não foi configurada') >= 0), 'aviso da manutenção escrito no slide');
+G._orcGerar_(['VAZIA']);
+ok(Object.keys(decks).join() === 'deck-vazia', 'cada cidade escreve só na sua apresentação (' + Object.keys(decks).join() + ')');
+const sI = decks['deck-vazia'].getSlides();
+ok(sI.length === 5, 'cidade vazia: capa, sub capa e slide de Premissas, aviso dos relatórios, aviso da manutenção (veio ' +
+   sI.length + ')');
+ok(textos(sI[3]).some(t => t.indexOf('METRAGEM-COND ainda não foi') >= 0), 'aviso dos relatórios escrito no slide');
+ok(textos(sI[4]).some(t => t.indexOf('ainda não foi configurada') >= 0), 'aviso da manutenção escrito no slide');
+ok(!sI.some(sl => textos(sl)[0] === '02'), 'cidade vazia: seção sem dado não ganha sub capa');
+
+console.log('Pendentes (fora do deck, mas ainda desenham)');
+[['cenários', s => G.gerarSlideSugCenarios_(s, W, H, CUR, rel, clsM)],
+ ['contratos', s => G.gerarSlideSugContratos_(s, W, H, CUR, rel, ctr, rj)],
+ ['sem reajuste', s => G.gerarSlideSugSemReajuste_(s, W, H, CUR, rel, rj)],
+ ['fluxo mensal', s => G.gerarSlideSugFluxo_(s, W, H, CUR, rel, mensal)]].forEach(p => {
+  const sl = novoSlide({ _slides: [] });
+  try { p[1](sl); ok(textos(sl).indexOf('SUGESTÃO') >= 0, 'pendente "' + p[0] + '" desenha com o selo'); }
+  catch (e) { ok(false, 'pendente "' + p[0] + '" quebrou: ' + e.message); }
+});
+
+console.log('Premissas com texto');
+const slP = novoSlide({ _slides: [] });
+G.gerarSlidePremissas_(slP, W, H, Object.assign({}, CUR,
+  { premissas: { premissas: 'Contratos reajustados pelo IPCA em janeiro.', analisado: '', comoLer: '' } }));
+const tP = textos(slP);
+ok(tP.indexOf('Contratos reajustados pelo IPCA em janeiro.') >= 0 && tP.filter(t => t === G.ORC_PREMISSAS_VAZIO).length === 2,
+   'Premissas: texto da configuração no lugar do "Escreva aqui."');
 
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
 process.exit(falhas ? 1 : 0);

@@ -15,8 +15,12 @@ const ORC_DEMAIS_POR_PAGINA = 18;
 // ==========================================
 /**
  * colunas: [{ titulo, w (null = ocupa a sobra), align: 'L'|'C'|'R' }]
- * linhas:  [{ celulas: [{ texto, bold, cor, fs, fsMin, pill, span }], total: bool,
+ * linhas:  [{ celulas: [{ texto, bold, cor, fs, pill, span, aba, original }], total: bool,
  *            faixa: 0|1, separador: bool }]
+ *   fonte     → fixa por célula (cel.fs ou op.fs): o que não cabe é cortado,
+ *               nunca encolhido — a tabela inteira com uma letra só.
+ *   aba       → descrição longa: texto curto e registro pela planilha de
+ *               textos (06_TextosTabelas.gs).
  *   span      → a célula ocupa esta linha e as span-1 seguintes (que trazem
  *               null nessa coluna); a pill fica centrada no bloco todo.
  *   faixa     → zebra por grupo em vez de por linha (1 = pintada).
@@ -36,7 +40,7 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
   let cx = x;
   colunas.forEach((c, i) => {
     _orcUmaLinha_(slide, cx, y, ws[i], hCab, c.titulo.toUpperCase(),
-      { align: c.align || 'L', fs: 7, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, folga: 6, fsMin: 5.5 });
+      { align: c.align || 'L', fs: 7, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, folga: 6, fsMin: 7, cortar: true });
     cx += ws[i];
   });
 
@@ -61,11 +65,13 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
         const ph = Math.min(14, rowH - 4);
         _orcRet_(slide, cx + 4, ry + (bloco - ph) / 2, ws[i] - 8, ph, DS.colors.brandSoft, { redondo: true, alpha: 0.35 });
         _orcUmaLinha_(slide, cx + 4, ry + (bloco - rowH) / 2, ws[i] - 8, rowH, cel.texto,
-          { align: 'C', fs: 6.5, bold: true, cor: DS.colors.brandMed, fonte: DS.typography.titles, folga: 6, fsMin: 5, cortar: true });
+          { align: 'C', fs: 6.5, bold: true, cor: DS.colors.brandMed, fonte: DS.typography.titles, folga: 6, fsMin: 6.5, cortar: true });
       } else if (cel && cel.texto) {
+        const f = cel.fs || fs;
         _orcUmaLinha_(slide, cx, ry, ws[i], rowH, cel.texto,
-          { align: c.align || 'L', fs: cel.fs || fs, bold: !!(cel.bold || ln.total),
-            cor: cel.cor || DS.colors.textMain, fonte: DS.typography.body, fsMin: cel.fsMin || 6, folga: 6, cortar: true });
+          { align: c.align || 'L', fs: f, bold: !!(cel.bold || ln.total),
+            cor: cel.cor || DS.colors.textMain, fonte: DS.typography.body, fsMin: f, folga: 6, cortar: true,
+            aba: cel.aba, original: cel.original });
       }
       cx += ws[i];
     });
@@ -132,7 +138,7 @@ function gerarSlideCategoria_(slide, W, H, cid, dados, cat) {
   const rowH = Math.min(24, disp / nLin);
 
   const linhas = itens.map(it => ({ celulas: [
-    { texto: it.descricao },
+    { texto: it.descricao, aba: 'Categorias' },
     { texto: _orcQuando_(it.meses), cor: DS.colors.textBody, fs: 7.5 },
     { texto: _orcMoeda_(it.total), bold: true },
     { texto: _orcPct_(cat.total ? it.total / cat.total : 0), cor: DS.colors.textBody, fs: 7.5 },
@@ -155,8 +161,8 @@ function gerarSlideCategoria_(slide, W, H, cid, dados, cat) {
   _orcTabela_(slide, tx, ty, tw, [
     { titulo: 'Item', w: null, align: 'L' },
     { titulo: 'Entrega', w: 54, align: 'C' },
-    { titulo: 'Valor', w: 72, align: 'R' },
-    { titulo: '% cat.', w: 40, align: 'R' },
+    { titulo: 'Valor', w: 72, align: 'C' },
+    { titulo: '% cat.', w: 40, align: 'C' },
     { titulo: 'Fonte', w: 78, align: 'L' }
   ], linhas, rowH);
 
@@ -184,7 +190,7 @@ function gerarSlideCategoria_(slide, W, H, cid, dados, cat) {
   if (n > 1) {
     const maior = cat.itens[0];
     _orcParagrafo_(slide, px + 12, yTxt, pw - 20, c2y + c2h - 6 - yTxt,
-      'Maior item: ' + maior.descricao + ' — ' + _orcPct_(maior.total / cat.total) + ' da categoria',
+      'Maior item: ' + _orcTextoEscolhido_('Categorias', maior.descricao) + ' — ' + _orcPct_(maior.total / cat.total) + ' da categoria',
       { fs: 7.5, fsMin: 6, cor: DS.colors.textBody });
   }
 
@@ -236,7 +242,7 @@ function gerarSlideDemais_(slide, W, H, cid, dados, demais, pagina, iPag, nPag) 
       separador: k === b.ini && ib > 0,
       celulas: [
         k === b.ini ? { texto: l.cat.nome, pill: true, span: b.n } : null,
-        { texto: l.it.descricao },
+        { texto: l.it.descricao, aba: 'Categorias' },
         { texto: _orcQuando_(l.it.meses), cor: DS.colors.textBody, fs: 7.5 },
         { texto: _orcMoeda_(l.it.total), bold: true },
         _orcCelulaFonte_()
@@ -255,7 +261,7 @@ function gerarSlideDemais_(slide, W, H, cid, dados, demais, pagina, iPag, nPag) 
     { titulo: 'Categoria', w: 128, align: 'C' },
     { titulo: 'Item', w: null, align: 'L' },
     { titulo: 'Entrega', w: 70, align: 'C' },
-    { titulo: 'Valor', w: 90, align: 'R' },
+    { titulo: 'Valor', w: 90, align: 'C' },
     { titulo: 'Fonte', w: 96, align: 'L' }
   ], linhas, rowH);
 

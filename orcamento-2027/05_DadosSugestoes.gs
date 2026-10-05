@@ -1,7 +1,8 @@
 /**
  * ARQUIVO: 05_DadosSugestoes.gs
  * SEÇÃO:   NÚCLEO — Cálculos da seção "Sugestões"
- * DESCRIÇÃO: Os números dos slides sugeridos para discussão (16_Sugestoes.gs),
+ * DESCRIÇÃO: Os números dos slides que nasceram como sugestão (10_ResumoExecutivo,
+ *            17_Investimento, 18_CustoM2 e os pendentes de 90_Pendentes.gs),
  *            todos derivados dos dados já lidos — relatório anual (METRAGEM),
  *            mensal, modelos 070/090 e planilhas de contratos. Separados do
  *            desenho para o teste conferir as contas sem olhar coordenada.
@@ -59,7 +60,7 @@ function _orcAreaImplicita_(rel, k) {
 }
 
 // ==========================================
-// S1 — RESUMO EXECUTIVO
+// S1 — RESUMO EXECUTIVO (slide promovido: 10_ResumoExecutivo.gs)
 // ==========================================
 /**
  * Decompõe a variação do total (Orç − Ritmo) em efeito ÁREA (mais m² ao
@@ -91,7 +92,7 @@ function _orcResumoExecutivo_(rel, classManut) {
 }
 
 // ==========================================
-// S2 — PONTE RITMO → ORÇAMENTO
+// S2 — PONTE RITMO → ORÇAMENTO (slide promovido: 10_ResumoExecutivo.gs)
 // ==========================================
 /**
  * Degraus da ponte, na ordem: as contas em foco, IPTU, Seguro, demais altas
@@ -104,15 +105,15 @@ function _orcPonte_(rel, mensal) {
   const usadas = {};
   const degraus = [];
   const contaDe = nome => rel.contas.filter(x => x.chave === _orcChaveConta_(nome))[0];
-  const empurrar = (nome, v, chaveMensal, separar) => {
+  const empurrar = (nome, v, chave, separar) => {
     const delta = v.orc - v.ritmo;
     let partes = [{ tipo: 'total', v: delta }];
-    const m = separar && mensal && mensal.contas[chaveMensal];
+    const m = separar && mensal && mensal.contas[chave];
     if (m) {
       const saida = m.real[11] * 12 - v.ritmo;
       partes = [{ tipo: 'saida', v: saida }, { tipo: 'novo', v: delta - saida }];
     }
-    degraus.push({ nome: nome, delta: delta, partes: partes });
+    degraus.push({ nome: nome, chave: chave, delta: delta, partes: partes });
   };
 
   ORC_CONTAS_DETALHE.forEach(nome => {
@@ -122,8 +123,8 @@ function _orcPonte_(rel, mensal) {
     const separar = ORC_PONTE_SEPARAR.some(n => _orcChaveConta_(n) === c.chave);
     empurrar(c.nome, c.v, c.chave, separar);
   });
-  empurrar('Seguro', rel.seguro, null, false);
-  empurrar('IPTU', rel.iptu, null, false);
+  empurrar('Seguro', rel.seguro, _orcChaveConta_('Seguro'), false);
+  empurrar('IPTU', rel.iptu, _orcChaveConta_('IPTU'), false);
 
   let altas = 0, reducoes = 0, nAltas = 0, nRed = 0;
   rel.contas.forEach(c => {
@@ -356,6 +357,10 @@ function _orcFluxoMensal_(mensal, rel) {
 // ==========================================
 // S7 — R$/m² POR CONTA
 // ==========================================
+// Contas abertas no slide: as maiores pelo Orç do ano, do maior para o menor
+// (pedido do gestor, 30/09/2026); as outras somam em "Demais contas".
+const ORC_M2_TOP = 10;
+
 function _orcM2PorConta_(rel) {
   const ks = ['real', 'orcAnt', 'ritmo', 'orc'];
   const area = {};
@@ -364,17 +369,17 @@ function _orcM2PorConta_(rel) {
   // sem ele, usa a área do ritmo do mesmo ano.
   if (!area.orcAnt) area.orcAnt = area.ritmo;
   const m2 = v => { const o = {}; ks.forEach(k => { o[k] = area[k] ? v[k] / area[k] / 12 : null; }); return o; };
-  const linhas = [];
-  ORC_CONTAS_DETALHE.forEach(nome => {
-    const c = rel.contas.filter(x => x.chave === _orcChaveConta_(nome))[0];
-    if (c) linhas.push({ nome: c.nome, v: c.v, m2: m2(c.v) });
-  });
-  linhas.push({ nome: 'IPTU', v: rel.iptu, m2: m2(rel.iptu) });
-  linhas.push({ nome: 'Seguro', v: rel.seguro, m2: m2(rel.seguro) });
-  const usadas = linhas.map(l => _orcChaveConta_(l.nome));
-  const resto = ks.reduce((o, k) => {
-    o[k] = rel.contas.filter(c => usadas.indexOf(c.chave) < 0).reduce((a, c) => a + c.v[k], 0); return o;
-  }, {});
-  linhas.push({ nome: 'Demais contas', v: resto, m2: m2(resto) });
+  // IPTU e Seguro ficam fora de rel.contas (são linhas próprias da METRAGEM),
+  // mas concorrem ao top como qualquer conta.
+  const todas = rel.contas.map(c => ({ nome: c.nome, chave: c.chave, v: c.v }))
+    .concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
+             { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }])
+    .sort((a, b) => b.v.orc - a.v.orc);
+  const linhas = todas.slice(0, ORC_M2_TOP).map(c => ({ nome: c.nome, chaves: [c.chave], v: c.v, m2: m2(c.v) }));
+  const fora = todas.slice(ORC_M2_TOP);
+  if (fora.length) {
+    const resto = ks.reduce((o, k) => { o[k] = fora.reduce((a, c) => a + c.v[k], 0); return o; }, {});
+    linhas.push({ nome: 'Demais contas (' + fora.length + ')', chaves: fora.map(c => c.chave), v: resto, m2: m2(resto) });
+  }
   return { area: area, linhas: linhas, total: { nome: 'TOTAL GERAL', v: rel.total, m2: m2(rel.total) } };
 }

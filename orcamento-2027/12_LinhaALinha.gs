@@ -134,7 +134,7 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
     itens = itens.slice(0, cabem);
   }
   const linhas = itens.map(it => ({ celulas: [
-    { texto: it.descricao }, { texto: _orcMoeda_(it.total), bold: true }] }));
+    { texto: it.descricao, aba: 'Composição' }, { texto: _orcMoeda_(it.total), bold: true }] }));
   if (resto) linhas.push({ celulas: [{ texto: '+ ' + resto.n + ' itens menores', cor: C.textBody },
                                      { texto: _orcMoeda_(resto.total), bold: true }] });
   if (comp.base) linhas.push({ celulas: [
@@ -146,7 +146,7 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
   linhas.push({ total: true, celulas: [{ texto: 'TOTAL ' + conta.nome.toUpperCase() }, { texto: _orcMoeda_(v.orc) }] });
   const rowH = Math.min(18, disp / Math.max(1, linhas.length));
   _orcTabela_(slide, rx + 8, ty, rw - 16, [
-    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'R' }
+    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'C' }
   ], linhas, rowH, { hCab: 16 });
   if (comp.excesso) {
     _orcUmaLinha_(slide, rx + 8, by + bh - 20, rw - 16, 12,

@@ -40,7 +40,7 @@ const ORC_DRE_GRUPOS = [
     'Representação e refeição', 'Despesa com taxi', 'Locação de veículos', 'Despesa com combustíveis',
     'KM, estacionamento e pedágio', 'Quilometragem, estacionamento e pedágio', 'Despesa com veículos',
     'Material de expediente', 'Outras despesas administrativas', 'Cópias e reproduções', 'Correios',
-    'Bens de pequeno valor'] },
+    'Fretes e Carretos', 'Bens de pequeno valor'] },
   { nome: 'Serviços de Terceiros', contas: [
     'Assistência jurídica', 'Segurança e vigilância', 'Consultoria e assessoria',
     'Assistência em informática', 'Serviços diversos', 'Propaganda e publicidade'] },
@@ -68,18 +68,20 @@ function _orcGrupoDaConta_(nome) {
  * retrasado, orçado e ritmo do ano anterior, orçado do ano em curso.
  */
 function obterRelatorioAnual_(chaveCidade) {
-  const rel = _orcRelatoriosDa_(chaveCidade);
-  return _orcLerMetragem_(_orcLerPrimeiraAba_(rel.metragemId));
+  return _orcLerMetragem_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'metragemId', 'METRAGEM-COND')));
 }
 
-function _orcRelatoriosDa_(chaveCidade) {
+// Cada relatório é cobrado só por quem o usa: sem o mensal a cidade perde o
+// mês a mês, não a DRE (a METRAGEM pode chegar antes).
+function _orcRelatorioId_(chaveCidade, campo, nome) {
   const cid = ORC_CIDADES[chaveCidade];
   if (!cid) throw new Error('Cidade desconhecida: ' + chaveCidade);
-  if (!cid.relatorios || !cid.relatorios.metragemId || !cid.relatorios.mensalId) {
-    throw new Error(cid.nome + ': os relatórios da controladoria (metragem e mensal) ainda não foram ' +
-                    'configurados em ORC_CIDADES (01_Config.gs).');
+  const id = cid.relatorios && cid.relatorios[campo];
+  if (!id) {
+    throw new Error(cid.nome + ': o relatório da controladoria ' + nome + ' ainda não foi ' +
+                    'configurado em ORC_CIDADES (01_Config.gs).');
   }
-  return cid.relatorios;
+  return id;
 }
 
 function _orcLerPrimeiraAba_(planilhaId) {
@@ -108,7 +110,7 @@ function _orcLerMetragem_(dados) {
 
   const out = { anos: { real: ORC_ANO - 2, orcAnt: ORC_ANO - 1, ritmo: ORC_ANO - 1, orc: ORC_ANO },
                 contas: [], areaComum: null, m2AreaComum: null, iptu: null, seguro: null,
-                total: null, m2Total: null, avisos: [] };
+                total: null, m2Total: null, avisos: [], revisar: [] };
   let depoisDoTotal = false;
   for (let i = 1; i < dados.length; i++) {
     const nome = String(dados[i][0] === null || dados[i][0] === undefined ? '' : dados[i][0])
@@ -116,6 +118,10 @@ function _orcLerMetragem_(dados) {
     if (!nome) continue;
     const n = _orcNorm_(nome);
     if (/^total area comum \+/.test(n)) out.total = valores(dados[i]);
+    // Itajaí e Esteio escrevem o total geral com o mesmo rótulo do subtotal
+    // ("TOTAL ÁREA COMUM" duas vezes): a segunda, depois de IPTU e Seguro, é
+    // o total geral — a conferência abaixo confirma pela soma.
+    else if (/^total area comum/.test(n) && out.areaComum) out.total = valores(dados[i]);
     else if (/^total area comum/.test(n)) { out.areaComum = valores(dados[i]); depoisDoTotal = true; }
     else if (/^r\$ m/.test(n)) {
       if (out.total) out.m2Total = valores(dados[i]); else out.m2AreaComum = valores(dados[i]);
@@ -168,7 +174,33 @@ function _orcRotuloColuna_(k, anos) {
  * projetado nos seguintes — o relatório não separa os dois.
  */
 function obterRelatorioMensal_(chaveCidade) {
-  return _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatoriosDa_(chaveCidade).mensalId));
+  return _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
+}
+
+/**
+ * Os doze meses do Orç do ano no relatório mensal têm que somar o Orç da
+ * mesma conta na METRAGEM. Divergência vira aviso em rel.avisos (rodapé da
+ * DRE e log) e entra em rel.revisar ({ nome, chave, mensal, metragem }), que
+ * gera o slide "Revisar antes da versão final" e o selo ⚠ REVISAR nos slides
+ * com a conta (19_Revisar.gs) — um mês digitado errado não passa calado.
+ * Conta que o mensal não traz (despesa de pessoal) não é cobrada: o gráfico
+ * avisa que ficou fora.
+ */
+function _orcConferirMensal_(rel, mensal) {
+  const contas = rel.contas.concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
+                                    { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
+  contas.forEach(c => {
+    const m = mensal.contas[c.chave];
+    if (!m) return;
+    const soma = m.orc.reduce((a, v) => a + v, 0);
+    if (Math.abs(soma - c.v.orc) > 1) {
+      const aviso = 'Mensal ≠ METRAGEM em ' + c.nome + ': ' + _orcMoeda_(soma) + ' × ' + _orcMoeda_(c.v.orc) +
+                    ' (Orç ' + rel.anos.orc + ')';
+      rel.avisos.push(aviso);
+      rel.revisar.push({ nome: c.nome, chave: c.chave, mensal: soma, metragem: c.v.orc });
+      Logger.log('AVISO mensal: ' + aviso);
+    }
+  });
 }
 
 const _ORC_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];

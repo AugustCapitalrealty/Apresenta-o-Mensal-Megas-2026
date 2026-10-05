@@ -74,7 +74,7 @@ function gerarSlideResumo_(slide, W, H, cid, dados) {
     const y = ly + i * rowH;
     _orcUmaLinha_(slide, MX + 12, y, labW, rowH, c.nome,
       { align: 'L', fs: 8, bold: true, cor: c.demais ? DS.colors.textBody : DS.colors.textMain,
-        fonte: DS.typography.titles, fsMin: 6, cortar: true });
+        fonte: DS.typography.titles, fsMin: 8, cortar: true });
     const bh2 = Math.min(12, rowH * 0.5), byy = y + (rowH - bh2) / 2;
     const wC = bMax * c.totalContratos / maxT, wA = bMax * c.totalAvulsos / maxT;
     if (wC > 0.5) _orcRet_(slide, bx0, byy, wC, bh2, c.demais ? '#64748B' : COR_CONTR);
@@ -82,11 +82,11 @@ function gerarSlideResumo_(slide, W, H, cid, dados) {
     const temContr = c.totalContratos > 0.5;
     _orcUmaLinha_(slide, MX + lw - 12 - valW, y + (temContr ? 1 : 0), valW, temContr ? rowH * 0.55 : rowH,
       _orcCompacto_(c.total) + ' · ' + _orcPct_(c.pct),
-      { align: 'R', fs: 8, bold: true, cor: DS.colors.textMain, fonte: DS.typography.body, fsMin: 6.5 });
+      { align: 'R', fs: 8, bold: true, cor: DS.colors.textMain, fonte: DS.typography.body, fsMin: 8, cortar: true });
     if (temContr) {
       _orcUmaLinha_(slide, MX + lw - 12 - valW, y + rowH * 0.5, valW, rowH * 0.45,
         mil(c.totalContratos) + ' contr. + ' + mil(c.totalAvulsos) + ' avulsos (mil)',
-        { align: 'R', fs: 6.5, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 5, cortar: true });
+        { align: 'R', fs: 6.5, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 6.5, cortar: true });
     }
   });
 
@@ -101,9 +101,9 @@ function gerarSlideResumo_(slide, W, H, cid, dados) {
     _orcUmaLinha_(slide, rx + 12, y + 3, rw - 24 - vW, 12, it.categoria,
       { align: 'L', fs: 6.5, bold: true, cor: DS.colors.brandLight, fonte: DS.typography.titles, cortar: true });
     _orcUmaLinha_(slide, rx + 12, y + 14, rw - 24 - vW, Math.max(12, ih - 16), it.descricao,
-      { align: 'L', fs: 8, cor: DS.colors.textMain, fonte: DS.typography.body, fsMin: 6.5, cortar: true });
+      { align: 'L', fs: 8, cor: DS.colors.textMain, fonte: DS.typography.body, fsMin: 8, cortar: true, aba: 'Maiores itens' });
     _orcUmaLinha_(slide, rx + rw - 12 - vW, y, vW, ih, _orcCompacto_(it.total),
-      { align: 'R', fs: 9, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 7 });
+      { align: 'R', fs: 9, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 9, cortar: true });
   });
 
   _orcRodape_(slide, W, H, _orcFonteManutencao_(cid, dados));

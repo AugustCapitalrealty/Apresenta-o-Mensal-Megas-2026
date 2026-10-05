@@ -76,9 +76,24 @@ const _ORC_FATOR_FONTE = { 'Montserrat': 0.58, 'Open Sans': 0.52 };
 // cada lado). É ele que faz texto curto quebrar dentro de caixa estreita.
 const _ORC_RECUO_TEXTBOX = 14;
 
+// Peso de cada caractere sobre a largura média da fonte. Maiúscula é ~30%
+// mais larga: com uma média só, a descrição em caixa alta ("IMPLANTAÇÃO ÁREA
+// DE PAISAGISMO…") parecia caber, e o Slides quebrava a linha dentro da
+// célula. Espaço e pontuação são estreitos.
+const _ORC_PESO_MAIUSCULA = 1.3;
+function _orcPesoCaractere_(ch) {
+  if (ch === ' ') return 0.5;
+  if (/[.,;:'|!iIl]/.test(ch)) return 0.55;
+  if (/[A-ZÀ-ÖØ-Þ]/.test(ch)) return _ORC_PESO_MAIUSCULA;
+  if (/[0-9]/.test(ch)) return 1.1;
+  return 1;
+}
+
 function _orcLarguraTexto_(texto, fs, fonte, bold) {
   const f = (_ORC_FATOR_FONTE[fonte] || 0.55) * (bold ? 1.04 : 1);
-  return String(texto).length * fs * f;
+  let u = 0;
+  for (const ch of String(texto)) u += _orcPesoCaractere_(ch);
+  return u * fs * f;
 }
 
 function _orcLinhasTexto_(texto, larguraCaixa, fs, fonte, bold) {
@@ -94,6 +109,9 @@ function _orcLinhasTexto_(texto, larguraCaixa, fs, fonte, bold) {
  *      esticá-la não aparece e devolve o recuo interno;
  *   2) se ainda não couber, a fonte encolhe até fsMin;
  *   3) com op.cortar, o que sobrar em fsMin é cortado com reticências.
+ * Com op.aba (descrição longa de tabela), o texto passa antes pela planilha
+ * de textos (06_TextosTabelas.gs) e o resultado fica registrado para ela;
+ * op.original é a chave quando o texto vem montado ("item · R$ 200 mil").
  * Ver .claude/skills/slides-caixa-texto-sem-quebra.
  */
 function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
@@ -101,6 +119,8 @@ function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
   if (t === '') return null;   // caixa vazia: estilizar lançaria "object has no text"
 
   const o = op || {};
+  const original = o.aba ? String(o.original || t) : null;
+  if (o.aba && !o.original) t = _orcTextoEscolhido_(o.aba, t);
   const fonte = o.fonte || CR_DESIGN_SYSTEM.typography.titles;
   const align = o.align || 'C';
   const folga = o.folga === undefined ? 12 : o.folga;
@@ -120,6 +140,13 @@ function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
   if (o.cortar && _orcLarguraTexto_(t, fs, fonte, o.bold) > util) {
     while (t.length > 4 && _orcLarguraTexto_(t + '…', fs, fonte, o.bold) > util) t = t.slice(0, -1);
     t = t.replace(/[\s\-–·,]+$/, '') + '…';
+  }
+  if (o.aba) {
+    // "Cabe até" é da descrição: o que vem montado depois dela (op.sufixo,
+    // " · R$ 200 mil") ocupa parte da célula.
+    const fator = (_ORC_FATOR_FONTE[fonte] || 0.55) * (o.bold ? 1.04 : 1);
+    const livre = util - (o.sufixo ? _orcLarguraTexto_(o.sufixo, fs, fonte, o.bold) : 0);
+    _orcRegistrarTexto_(o.aba, original, t, Math.max(0, Math.floor(livre / (fs * fator * _ORC_PESO_MAIUSCULA))));
   }
 
   const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx, y, bw, h);

@@ -64,7 +64,7 @@ function gerarSlideMensal_(slide, W, H, cid, dados) {
       { align: 'L', fs: 11, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles });
     if (driver) {
       _orcParagrafo_(slide, x + 12, hy + 23, hw - 20, hh - 27,
-        'Principal: [' + driver.categoria + '] ' + driver.descricao + ' — ' + _orcCompacto_(driver.meses[m.i]),
+        'Principal: [' + driver.categoria + '] ' + _orcTextoEscolhido_('Maiores itens', driver.descricao) + ' — ' + _orcCompacto_(driver.meses[m.i]),
         { fs: 7.5, fsMin: 6, cor: DS.colors.textBody });
     }
   });

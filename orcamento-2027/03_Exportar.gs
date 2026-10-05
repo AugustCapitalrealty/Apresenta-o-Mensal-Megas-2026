@@ -13,8 +13,8 @@ const ORC_PASTA_ORCAMENTO_ID = '13PO9xDvPG3wmoVLfv41fZZo0I3rvl_gw';
 
 // Cópia com os comentários do gestor → _slides-exportados.
 function exportarSlidesRevisao() { _orcExportarSlides_(ORC_DECK_REVISAO_ID, '_slides-exportados'); }
-// Apresentação que o gerador escreve → _slides-gerados (revisão visual).
-function exportarSlidesGerados() { _orcExportarSlides_(ORC_DECK_ID, '_slides-gerados'); }
+// Apresentação de Curitiba que o gerador escreve → _slides-gerados (revisão visual).
+function exportarSlidesGerados() { _orcExportarSlides_(ORC_CIDADES.CURITIBA.deckId, '_slides-gerados'); }
 
 function _orcExportarSlides_(deckId, nomePasta) {
   const deck = SlidesApp.openById(deckId);

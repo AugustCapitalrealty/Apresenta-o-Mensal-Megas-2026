@@ -1,15 +1,17 @@
 /**
  * ARQUIVO: 00_Main.gs
  * SEÇÃO:   NÚCLEO — Pontos de entrada
- * DESCRIÇÃO: Gera a apresentação do Orçamento 2027 em ORC_DECK_ID.
+ * DESCRIÇÃO: Gera a apresentação do Orçamento 2027 de cada cidade, na
+ *            apresentação dela (`deckId` em ORC_CIDADES).
  *
  *   ▸ gerarCuritiba() / gerarItajai() / gerarEsteio()   → uma cidade
  *   ▸ gerarTodas()                                     → as três, em sequência
- *   ▸ gerarSugestoes()                                 → só a seção de sugestões (Curitiba)
+ *   ▸ aplicarPropostasTextos()                         → textos curtos na planilha de textos
  *   ▸ diagnosticarOrcamento()                          → só lê e mostra no log
  *
- * Toda geração SUBSTITUI o conteúdo da apresentação: os slides novos são
- * criados primeiro e os antigos só são apagados no fim.
+ * Toda geração SUBSTITUI o conteúdo da apresentação da cidade: os slides
+ * novos são criados primeiro e os antigos só são apagados no fim. As três
+ * juntas chegam perto do limite de 6 min do Apps Script: prefira uma por vez.
  */
 
 function gerarCuritiba() { _orcGerar_(['CURITIBA']); }
@@ -17,35 +19,116 @@ function gerarItajai()   { _orcGerar_(['ITAJAI']); }
 function gerarEsteio()   { _orcGerar_(['ESTEIO']); }
 function gerarTodas()    { _orcGerar_(['CURITIBA', 'ITAJAI', 'ESTEIO']); }
 
-// Só a seção de sugestões de Curitiba (abertura + 7), sem o resto do deck:
-// para revisar as sugestões rápido. gerarCuritiba() volta o deck completo.
-function gerarSugestoes() { _orcGerar_(['CURITIBA'], _orcGerarSoSugestoes_); }
-
-function _orcGerar_(chaves, gerarCidade) {
-  const deck = SlidesApp.openById(ORC_DECK_ID);
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const antigos = deck.getSlides();
-  const fn = gerarCidade || _orcGerarCidade_;
-
-  chaves.forEach(k => fn(deck, W, H, k));
-
-  antigos.forEach(s => s.remove());
-  Logger.log('Pronto: ' + deck.getSlides().length + ' slides — ' + deck.getUrl());
+function _orcGerar_(chaves) {
+  _orcTextosReiniciar_();
+  chaves.forEach(k => {
+    const cid = ORC_CIDADES[k];
+    if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
+    const deck = SlidesApp.openById(cid.deckId);
+    const W = deck.getPageWidth(), H = deck.getPageHeight();
+    const antigos = deck.getSlides();
+    _orcGerarCidade_(deck, W, H, k);
+    antigos.forEach(s => s.remove());
+    Logger.log('Pronto: ' + cid.nome + ', ' + deck.getSlides().length + ' slides — ' + deck.getUrl());
+  });
+  _orcSalvarTextos_();
 }
 
+/**
+ * Ordem do deck, por seções (revisão do gestor em 30/09/2026):
+ *   Capa → 01 Premissas → 02 Resumo Executivo (resumo + ponte) →
+ *   03 DRE (DRE, ofensores, defensores) → 04 Manutenção (linha a linha,
+ *   resumo, mensal, categorias) → 05 Segurança → 06 Limpeza →
+ *   07 Investimento × Recorrente → 08 Custo por m².
+ * Seção sem dado não ganha sub capa: o aviso de falha fica logo após as
+ * Premissas, e a numeração das seções seguintes não pula.
+ * Relatórios que divergem entre si abrem o deck com o slide "Revisar antes
+ * da versão final" (antes da 01) e põem o selo ⚠ REVISAR nos slides cujos
+ * números passam pela conta (19_Revisar.gs).
+ */
 function _orcGerarCidade_(deck, W, H, chave) {
   const cid = ORC_CIDADES[chave];
-  _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid));
-  const visao = _orcGerarVisaoGeral_(deck, W, H, chave, cid);
+  let nSecao = 0;
+  const secao = titulo => {
+    const n = ++nSecao;
+    _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo));
+  };
 
-  let dados;
-  try {
-    dados = obterManutencao_(chave);
-  } catch (e) {
-    _orcSlideFalha_(_orcNovoSlide_(deck), W, H, 'Leitura do orçamento — ' + cid.nome, e);
-    return;
+  // Leituras antes do desenho: o slide de revisão vem logo depois da capa, e
+  // o Resumo Executivo usa a manutenção e os contratos. As falhas são
+  // desenhadas depois das Premissas.
+  let visao = null, dados = null, contas = null;
+  const falhas = [];
+  try { visao = _orcLerVisaoGeral_(chave); }
+  catch (e) { falhas.push(['Relatórios da controladoria — ' + cid.nome, e]); }
+  try { dados = obterManutencao_(chave); }
+  catch (e) { falhas.push(['Leitura do orçamento — ' + cid.nome, e]); }
+  if (visao) {
+    try { contas = _orcContasLinhaALinha_(visao.rel); }
+    catch (e) { falhas.push(['Linha a linha — ' + cid.nome, e]); }
+  }
+  const calc = visao ? _orcCalculosCompartilhados_(cid, visao, dados) : null;
+
+  _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid));
+  if (visao && visao.rel.avisos.length) {
+    _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
+  }
+  secao('Premissas');
+  _orcPasso_(deck, W, H, 'Premissas', s => gerarSlidePremissas_(s, W, H, cid));
+  falhas.forEach(f => _orcSlideFalha_(_orcNovoSlide_(deck), W, H, f[0], f[1]));
+
+  // Slide com números da METRAGEM: selo ⚠ REVISAR se alguma das contas
+  // (todas, sem chaves — o total geral soma todas) diverge entre os relatórios.
+  const comSelo = (nome, chaves, fn) =>
+    _orcPasso_(deck, W, H, nome, s => { fn(s); _orcSeloRevisar_(s, W, visao.rel, chaves); });
+
+  if (visao) {
+    const rel = visao.rel;
+    secao('Resumo Executivo');
+    comSelo('Resumo executivo', null, s => gerarSlideResumoExecutivo_(s, W, H, cid, rel, calc.cls, calc.reaj));
+    comSelo('Ponte', null, s => gerarSlidePonte_(s, W, H, cid, rel, visao.mensal));
+
+    secao('DRE');
+    comSelo('DRE', null, s => gerarSlideDRE_(s, W, H, cid, rel));
+    comSelo('Ofensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'ofensores'));
+    comSelo('Defensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'defensores'));
   }
 
+  // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança, 2 limpeza).
+  const linhaALinha = i => {
+    const c = contas[i];
+    comSelo('Linha a linha — ' + c.nome, [c.chave],
+      s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c));
+  };
+
+  if (contas || dados) {
+    secao('Manutenção');
+    if (contas) linhaALinha(0);
+    if (dados) _orcGerarManutencao_(deck, W, H, cid, dados);
+  }
+  if (contas) {
+    secao('Segurança');
+    linhaALinha(1);
+    secao('Limpeza e Conservação');
+    linhaALinha(2);
+  }
+
+  // Aprovados entre as sugestões (05/10/2026). As demais estão pendentes em
+  // 90_Pendentes.gs e não são geradas.
+  if (visao && calc.cls) {
+    secao('Investimento × Recorrente');
+    comSelo('Investimento × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
+      s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
+  }
+  if (visao) {
+    secao('Custo por m²');
+    comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
+  }
+}
+
+// Manutenção por categoria: resumo, distribuição mensal, um slide por
+// categoria grande e as páginas de Demais.
+function _orcGerarManutencao_(deck, W, H, cid, dados) {
   _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados));
   _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados));
 
@@ -56,40 +139,15 @@ function _orcGerarCidade_(deck, W, H, chave) {
   const paginas = _orcPaginasDemais_(div.demais);
   paginas.forEach((pag, i) =>
     _orcPasso_(deck, W, H, 'Demais categorias', s => gerarSlideDemais_(s, W, H, cid, dados, div.demais, pag, i, paginas.length)));
-
-  if (visao) _orcGerarSugestoes_(deck, W, H, cid, visao, dados);
 }
 
-// Seção "Sugestões para discussão" (16_Sugestoes.gs): só existe quando a
-// visão geral leu os relatórios. Os cálculos compartilhados saem uma vez aqui.
-function _orcGerarSugestoes_(deck, W, H, cid, visao, dados) {
-  const rel = visao.rel, mensal = visao.mensal;
-  const cls = _orcClassificarManutencao_(dados);
+// Cálculos que o Resumo Executivo e o slide de investimento compartilham.
+// Sem a manutenção (dados null) não há classificação: o resumo omite a
+// mensagem de projetos e o slide de investimento não sai.
+function _orcCalculosCompartilhados_(cid, visao, dados) {
   const contratos = _orcContratosCidade_(cid, visao.modelos);
-  const reaj = _orcReajustes_(contratos);
-
-  _orcPasso_(deck, W, H, 'Sugestões — abertura', s => gerarSlideSugestoesAbertura_(s, W, H, cid));
-  _orcPasso_(deck, W, H, 'Sugestão — resumo executivo', s => gerarSlideSugResumo_(s, W, H, cid, rel, cls, reaj));
-  _orcPasso_(deck, W, H, 'Sugestão — ponte', s => gerarSlideSugPonte_(s, W, H, cid, rel, mensal));
-  _orcPasso_(deck, W, H, 'Sugestão — investimento × recorrente', s => gerarSlideSugInvestimento_(s, W, H, cid, rel, cls));
-  _orcPasso_(deck, W, H, 'Sugestão — cenários', s => gerarSlideSugCenarios_(s, W, H, cid, rel, cls));
-  _orcPasso_(deck, W, H, 'Sugestão — contratos', s => gerarSlideSugContratos_(s, W, H, cid, rel, contratos, reaj));
-  _orcPasso_(deck, W, H, 'Sugestão — contratos sem reajuste', s => gerarSlideSugSemReajuste_(s, W, H, cid, rel, reaj));
-  if (mensal) _orcPasso_(deck, W, H, 'Sugestão — fluxo mensal', s => gerarSlideSugFluxo_(s, W, H, cid, rel, mensal));
-  _orcPasso_(deck, W, H, 'Sugestão — R$/m²', s => gerarSlideSugM2_(s, W, H, cid, rel));
-}
-
-function _orcGerarSoSugestoes_(deck, W, H, chave) {
-  const cid = ORC_CIDADES[chave];
-  let visao, dados;
-  try {
-    visao = _orcLerVisaoGeral_(chave);
-    dados = obterManutencao_(chave);
-  } catch (e) {
-    _orcSlideFalha_(_orcNovoSlide_(deck), W, H, 'Sugestões — ' + cid.nome, e);
-    return;
-  }
-  _orcGerarSugestoes_(deck, W, H, cid, visao, dados);
+  return { cls: dados ? _orcClassificarManutencao_(dados) : null, contratos: contratos,
+           reaj: _orcReajustes_(contratos) };
 }
 
 // Relatórios da controladoria + linhas dos modelos: { rel, mensal, modelos }.
@@ -99,38 +157,15 @@ function _orcLerVisaoGeral_(chave) {
   let mensal = null;
   try { mensal = obterRelatorioMensal_(chave); }
   catch (e) { Logger.log('Relatório mensal indisponível — linha a linha sem o mês a mês: ' + e.message); }
+  if (mensal) _orcConferirMensal_(rel, mensal);
   return { rel: rel, mensal: mensal, modelos: _orcLinhasModelosCidade_(chave) };
-}
-
-// DRE, ofensores e linha a linha: todas as contas do condomínio, a partir dos
-// relatórios da controladoria. Falha aqui (relatório ausente ou fora do
-// formato) vira aviso num slide e NÃO impede a seção de manutenção.
-// Devolve o que leu ({ rel, mensal, modelos }) para a seção de sugestões, ou
-// null se o relatório anual não abriu.
-function _orcGerarVisaoGeral_(deck, W, H, chave, cid) {
-  let visao;
-  try {
-    visao = _orcLerVisaoGeral_(chave);
-  } catch (e) {
-    _orcSlideFalha_(_orcNovoSlide_(deck), W, H, 'Relatórios da controladoria — ' + cid.nome, e);
-    return null;
-  }
-  const rel = visao.rel, mensal = visao.mensal, modelos = visao.modelos;
-
-  _orcPasso_(deck, W, H, 'DRE', s => gerarSlideDRE_(s, W, H, cid, rel));
-  _orcPasso_(deck, W, H, 'Ofensores e Defensores', s => gerarSlideOfensores_(s, W, H, cid, rel, modelos));
-  let contas;
-  try { contas = _orcContasLinhaALinha_(rel); }
-  catch (e) { _orcSlideFalha_(_orcNovoSlide_(deck), W, H, 'Linha a linha — ' + cid.nome, e); return visao; }
-  contas.forEach(c =>
-    _orcPasso_(deck, W, H, 'Linha a linha — ' + c.nome, s => gerarSlideLinhaALinha_(s, W, H, cid, rel, mensal, modelos, c)));
-  return visao;
 }
 
 // Um slide por passo, com try/catch próprio: a falha fica escrita NO slide e
 // não impede os seguintes.
 function _orcPasso_(deck, W, H, nome, fn) {
   const slide = _orcNovoSlide_(deck);
+  _ORC_SLIDE_ATUAL = nome;                     // coluna ONDE APARECE da planilha de textos
   try {
     fn(slide);
   } catch (e) {
