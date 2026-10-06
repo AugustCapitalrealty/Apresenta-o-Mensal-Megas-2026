@@ -39,7 +39,7 @@ function _orcGerar_(chaves) {
  *   Capa → 01 Premissas → 02 Resumo Executivo (resumo + ponte) →
  *   03 DRE (DRE, ofensores, defensores) → 04 Manutenção (linha a linha,
  *   resumo, mensal, categorias) → 05 Segurança → 06 Limpeza →
- *   07 Investimento × Recorrente → 08 Custo por m².
+ *   07 Projetos × Recorrente → 08 Custo por m².
  * Seção sem dado não ganha sub capa: o aviso de falha fica logo após as
  * Premissas, e a numeração das seções seguintes não pula.
  * Relatórios que divergem entre si abrem o deck com o slide "Revisar antes
@@ -94,11 +94,19 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('Defensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'defensores'));
   }
 
-  // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança, 2 limpeza).
+  // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança,
+  // 2 limpeza): o slide da conta e, se a composição não couber, as páginas
+  // com os itens menores ("(1/2)", "(2/2)"…).
   const linhaALinha = i => {
     const c = contas[i];
+    let fora = [];
+    try { fora = _orcCorteComposicao_(c, visao.modelos, H).fora; }
+    catch (e) { Logger.log('Itens menores de ' + c.nome + ' indisponíveis: ' + e.message); }
+    const paginas = _orcPaginasItens_(fora), nPag = 1 + paginas.length;
     comSelo('Linha a linha — ' + c.nome, [c.chave],
-      s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c));
+      s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c, nPag));
+    paginas.forEach((pag, k) => comSelo('Linha a linha — ' + c.nome + ' (' + (k + 2) + '/' + nPag + ')', [c.chave],
+      s => gerarSlideItensMenores_(s, W, H, cid, visao.rel, c, pag, k, nPag, fora)));
   };
 
   if (contas || dados) {
@@ -116,13 +124,14 @@ function _orcGerarCidade_(deck, W, H, chave) {
   // Aprovados entre as sugestões (05/10/2026). As demais estão pendentes em
   // 90_Pendentes.gs e não são geradas.
   if (visao && calc.cls) {
-    secao('Investimento × Recorrente');
-    comSelo('Investimento × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
+    secao('Projetos × Recorrente');
+    comSelo('Projetos × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
       s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
   }
   if (visao) {
     secao('Custo por m²');
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
+    comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
   }
 }
 
@@ -150,15 +159,18 @@ function _orcCalculosCompartilhados_(cid, visao, dados) {
            reaj: _orcReajustes_(contratos) };
 }
 
-// Relatórios da controladoria + linhas dos modelos: { rel, mensal, modelos }.
+// Relatórios da controladoria + linhas dos modelos: { rel, mensal, realAnt, modelos }.
 // Lança se o relatório anual não abre; sem o mensal segue com mensal = null.
 function _orcLerVisaoGeral_(chave) {
   const rel = obterRelatorioAnual_(chave);
   let mensal = null;
   try { mensal = obterRelatorioMensal_(chave); }
   catch (e) { Logger.log('Relatório mensal indisponível — linha a linha sem o mês a mês: ' + e.message); }
-  if (mensal) _orcConferirMensal_(rel, mensal);
-  return { rel: rel, mensal: mensal, modelos: _orcLinhasModelosCidade_(chave) };
+  if (mensal) _orcConferirMensal_(rel, mensal, ORC_CIDADES[chave].relatorios.valeMetragem);
+  let realAnt = null;
+  try { realAnt = obterRealMensalAnoRetrasado_(chave); }
+  catch (e) { Logger.log('Real ' + (ORC_ANO - 2) + ' mês a mês indisponível — custo por m² sem ele: ' + e.message); }
+  return { rel: rel, mensal: mensal, realAnt: realAnt, modelos: _orcLinhasModelosCidade_(chave) };
 }
 
 // Um slide por passo, com try/catch próprio: a falha fica escrita NO slide e

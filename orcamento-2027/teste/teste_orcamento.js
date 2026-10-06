@@ -34,6 +34,7 @@ const LOG = [];
 const W = 720, H = 405;
 let matrizAtual = FIXTURE;
 let decks = {};
+const porIdFinanceiro = {};
 
 function num(v, onde) {
   if (typeof v !== 'number' || !isFinite(v)) throw new Error('Número inválido em ' + onde + ': ' + v);
@@ -167,6 +168,7 @@ const ctx = {
   SpreadsheetApp: {
     openById: id => id === ctx.ORC_TEXTOS_ID ? PLANILHA_TEXTOS : ({
       getSheetByName: nome => {
+        if (/^Financeiro \d{4}$/.test(nome)) return porIdFinanceiro[id] ? aba(nome, porIdFinanceiro[id]) : null;
         if (nome !== 'Valores do Modelo') return null;
         const mz = id in porId ? porId[id] : matrizAtual;
         return mz ? aba(nome, mz) : null;
@@ -204,6 +206,8 @@ if (!FIX_METRAGEM || !FIX_MENSAL || !FIX_070) {
 }
 porId[CUR.relatorios.metragemId] = FIX_METRAGEM;
 porId[CUR.relatorios.mensalId] = FIX_MENSAL;
+// Planilha dos Megas: só a aba "Financeiro 2025" (exportada em 06/10/2026).
+porIdFinanceiro[CUR.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_curitiba.json');
 porId[CUR.servicosTerceirosId] = FIX_070;
 // Geradas da leitura das planilhas de contratos em 30/09/2026 (manutenção:
 // 5 contratos, segurança: 4, × 12 meses); exportarFixtures() as substitui
@@ -321,11 +325,39 @@ const somaItensDRE = ldre.filter(l => l.tipo === 'item').reduce((a, l) => a + l.
 pertoReal(somaItensDRE, rel.total.orc, 'DRE: itens (contas + demais + IPTU + seguro) somam o total geral');
 ldre.filter(l => l.tipo === 'grupo').forEach(g => {
   const i = ldre.indexOf(g);
+  ok(ldre[i + 1].tipo === 'm2grupo', 'DRE: R$/m² logo abaixo do grupo ' + g.nome + ' (como nos Megas)');
   let s = 0;
-  for (let k = i + 1; k < ldre.length && ldre[k].tipo === 'item'; k++) s += ldre[k].v.orc;
-  perto(s, g.v.orc, 'DRE: subtotal ' + g.nome);
+  for (let k = i + 2; k < ldre.length && ldre[k].tipo === 'item'; k++) s += ldre[k].v.orc;
+  // Conta que só mostraria "–"/"0" sai da lista mas fica no subtotal: menos
+  // de R$ 500 por conta.
+  ok(Math.abs(s - g.v.orc) < 2000, 'DRE: subtotal ' + g.nome + ' ≈ soma das contas listadas (' + Math.round(s) + ' × ' + Math.round(g.v.orc) + ')');
 });
-ok(ldre.length <= 34, 'DRE cabe em até 34 linhas (veio ' + ldre.length + ')');
+// Igual à DRE dos Megas: um total só, IPTU e Seguro dentro de Utilities e as
+// contas na ordem fixa do mapa.
+ok(ldre[0].nome === 'DESPESAS OPERACIONAIS' && ldre[1].tipo === 'm2' &&
+   !ldre.some(l => /ÁREA COMUM|IPTU E SEGURO/.test(l.nome)), 'DRE: um total (Despesas Operacionais), sem Área Comum');
+const iUtil = ldre.findIndex(l => l.nome === 'UTILITIES, TAXAS E CONSUMO');
+const nomesUtil = ldre.slice(iUtil + 2).map(l => l.nome);
+ok(nomesUtil.join(' | ') === 'Energia elétrica | Água | Telefone | Material de consumo | Outras taxas e impostos | IPTU | Seguro',
+   'DRE: Utilities na ordem dos Megas, com IPTU e Seguro no fim (veio ' + nomesUtil.join(' | ') + ')');
+const gM2 = ldre[ldre.indexOf(ldre.filter(l => l.tipo === 'grupo')[0]) + 1];
+perto(Math.round(ldre.filter(l => l.tipo === 'm2grupo').reduce((a, l) => a + l.v.orc, 0) * 100) / 100,
+      Math.round(rel.m2Total.orc * 100) / 100, 'DRE: R$/m² dos grupos somam o R$/m² do total');
+ok(gM2.v.orc > 0 && gM2.v.orcAnt > 0, 'DRE: R$/m² do grupo em todas as colunas');
+// Completa como a dos Megas: toda conta com valor numa linha, sem "Demais".
+const comValor = rel.contas.filter(c => ['real', 'orcAnt', 'ritmo', 'orc'].some(k => Math.round(Math.abs(c.v[k]) / 1000) >= 1));
+pertoReal(ldre.filter(l => l.tipo === 'grupo').reduce((a, l) => a + l.v.orc, 0), rel.total.orc,
+          'DRE: grupos somam o total (com as contas que só mostrariam "–")');
+ok(['Material de expediente', 'Correios', 'Cópias e reproduções', 'Outras despesas administrativas']
+   .every(n => !ldre.some(l => l.nome === n)), 'DRE: conta com "–"/"0" em todas as colunas sai');
+ok(ldre.filter(l => l.tipo === 'item').every(l => ['real', 'orcAnt', 'ritmo', 'orc'].some(k => G._orcMil_(l.v[k]) !== '–' && G._orcMil_(l.v[k]) !== '0')),
+   'DRE: toda linha listada tem algum valor visível');
+ok(!ldre.some(l => /^Demais contas/.test(l.nome)) &&
+   ldre.filter(l => l.tipo === 'item').length === comValor.length + 2,
+   'DRE: toda conta com valor numa linha, sem "Demais contas" (' + ldre.filter(l => l.tipo === 'item').length + ' itens)');
+ok(['Cursos e seminários', 'Despesa com passagens', 'Despesa com taxi', 'Propaganda e publicidade']
+   .every(n => ldre.some(l => l.nome === n)), 'DRE: contas pequenas aparecem pelo nome');
+ok(ldre.length <= 44, 'DRE cabe em até 44 linhas (veio ' + ldre.length + ')');
 
 const q = G._orcOfensores_(rel);
 pertoReal(q.ofensores.total.delta + q.defensores.total.delta, q.total.delta, 'ofensores + defensores = variação total');
@@ -342,6 +374,37 @@ perto(mSeg.orcAnt[0], 149186.09, 'mensal: Orç jan/26 da segurança');
 
 const modelos = G._orcLinhasModelosCidade_('CURITIBA');
 const contasLL = G._orcContasLinhaALinha_(rel);
+
+// Custo por m² mês a mês (20_M2Mensal.gs): a média dos meses é o R$/m² da
+// área comum da METRAGEM — no Orç exato (o mensal fecha conta a conta), no
+// ritmo com a diferença do realizado no mensal (centavos de R$/m²).
+// Real 2025 da planilha dos Megas: área comum = TOTAL − IPTU − seguro, e a
+// soma do ano fecha com o Real 2025 da METRAGEM (Itajaí e Esteio exatos,
+// Curitiba a 0,3%: a METRAGEM tem R$ 8,9 mil a mais).
+['curitiba', 'itajai', 'esteio'].forEach(c => {
+  const ra = G._orcLerFinanceiroMegas_(fixture('fixture_financeiro2025_' + c + '.json'), 2025);
+  const rm = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json'));
+  const soma = ra.ac.reduce((t, v) => t + v, 0);
+  ok(Math.abs(soma / rm.areaComum.real - 1) < 0.003, c + ': Real 2025 mês a mês (área comum) fecha com a METRAGEM (' +
+     Math.round(soma) + ' × ' + Math.round(rm.areaComum.real) + ')');
+});
+lanca(() => G._orcLerFinanceiroMegas_([['', 'Orç Jan/25']], 2025), 'cabeçalho inesperado', 'Financeiro 2025 sem "Real Jan/25" → erro');
+const realAnt = G.obterRealMensalAnoRetrasado_('CURITIBA');
+ok(realAnt && realAnt.ac.length === 12 && realAnt.ac.every(v => v > 0), 'Real 2025 de Curitiba lido pela config (financeiroMegasId)');
+const m2m = G._orcM2Mensal_(rel, mensal, realAnt);
+const serie = k => m2m.series.filter(s => s.k === k)[0];
+ok(m2m.series.map(s => s.nome).join(' | ') === 'Real 2025 | Orç 2026 | Ritmo 2026 | Orç 2027', 'm² mensal: quatro séries');
+ok(Math.abs(serie('real').media - rel.m2AreaComum.real) < 0.02, 'm² mensal: média do Real 2025 ≈ R$/m² da METRAGEM (' +
+   serie('real').media.toFixed(3) + ' × ' + rel.m2AreaComum.real + ')');
+ok(G._orcM2Mensal_(rel, mensal, null).series.length === 3, 'm² mensal: sem a planilha dos Megas, segue sem o Real');
+ok(Math.abs(serie('orc').media - rel.areaComum.orc / m2m.area.orc / 12) < 0.001, 'm² mensal: média do Orç 2027 = área comum ÷ área ÷ 12');
+ok(Math.abs(serie('orc').media - rel.m2AreaComum.orc) < 0.01 && Math.abs(serie('ritmo').media - rel.m2AreaComum.ritmo) < 0.02,
+   'm² mensal: média bate com o R$/m² da área comum da METRAGEM (' + serie('orc').media.toFixed(3) + ', ' +
+   serie('ritmo').media.toFixed(3) + ')');
+ok(m2m.fora.indexOf('Despesa de pessoal') >= 0, 'm² mensal: despesa de pessoal (sem abertura mensal) entra 1/12 por mês');
+['ritmo', 'orc'].forEach(k => ok(Math.abs(m2m.custo[k].areaComum.m2 + m2m.custo[k].iptu.m2 + m2m.custo[k].seguro.m2 - m2m.custo[k].total.m2) < 0.015,
+   'm² mensal: área comum + IPTU + seguro = total em R$/m² (' + k + ')'));
+ok(m2m.custo.ritmo.areaComum.m2 === rel.m2AreaComum.ritmo, 'm² mensal: R$/m² da área comum é o da METRAGEM');
 ok(contasLL.map(c => c.nome).join(' | ') === 'Manutenção de imóveis | Segurança e vigilância | Limpeza e conservação',
    'linha a linha: só manutenção, segurança e limpeza, nessa ordem (veio ' + contasLL.map(c => c.nome).join(' | ') + ')');
 lanca(() => G._orcContasLinhaALinha_({ contas: rel.contas.filter(c => !/limpeza/i.test(c.nome)) }),
@@ -388,7 +451,7 @@ const pt = G._orcPonte_(rel, mensal);
 pertoReal(pt.inicio + pt.degraus.reduce((a, x) => a + x.delta, 0), pt.fim, 'ponte: ritmo + degraus = orçamento');
 pt.degraus.forEach(x => perto(x.partes.reduce((a, p) => a + p.v, 0), x.delta, 'ponte: partes somam o degrau ' + x.nome));
 const pSeg = pt.degraus.filter(x => /seguran/i.test(x.nome))[0];
-ok(pSeg.partes.length === 2 && pSeg.partes[0].tipo === 'saida', 'ponte: segurança separa o que já roda do novo');
+ok(pSeg.partes.length === 1, 'ponte: segurança numa barra só (o "já roda em dez" saiu em 06/10/2026)');
 ok(pt.degraus.filter(x => /manuten/i.test(x.nome))[0].partes.length === 1, 'ponte: manutenção não separa (conta de projetos)');
 
 const cn = G._orcCenarios_(rel, clsM);
@@ -486,6 +549,7 @@ ok(relErrado.avisos.length === 1 && /Segurança e vigilância/.test(relErrado.av
 console.log('Geração — Curitiba');
 decks = {};
 G.gerarCuritiba();
+const logGeracao = LOG.slice();
 ok(Object.keys(decks).join() === CUR.deckId, 'Curitiba escreve só na apresentação dela');
 ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => G.ORC_CIDADES[k].deckId) &&
    new Set(['CURITIBA', 'ITAJAI', 'ESTEIO'].map(k => G.ORC_CIDADES[k].deckId)).size === 3,
@@ -497,22 +561,26 @@ const titulo = sl => textos(sl)[0];
 
 // Seções: a sub capa escreve o número ("01") e o nome logo depois.
 const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza e Conservação',
-                'Investimento × Recorrente', 'Custo por m²'];
+                'Projetos × Recorrente', 'Custo por m²'];
 const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
 ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
    'sub capas 01–08 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
 const nPagDemais = G._orcPaginasDemais_(div.demais).length;
-const N_MANUT = 3 + div.proprias.length + nPagDemais;         // linha a linha, resumo, mensal, categorias, demais
-// Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro): +1 slide
-// de revisão logo depois da capa.
-const N_ESPERADO = 1 + 1 + SECOES.length + 1 + 2 + 3 + N_MANUT + 2 + 2;
-ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, revisão, 8 sub capas, premissas, resumo + ponte, ' +
+// Páginas do linha a linha de cada conta: o slide da conta + as dos itens
+// menores que não couberam na composição.
+const nLL = contasLL.map(c => 1 + G._orcPaginasItens_(G._orcCorteComposicao_(c, modelos, H).fora).length);
+ok(nLL[0] === 2, 'manutenção: linha a linha em 2 páginas (os itens menores na 2/2) (veio ' + nLL.join(',') + ')');
+const N_MANUT = nLL[0] + 2 + div.proprias.length + nPagDemais;   // linha a linha, resumo, mensal, categorias, demais
+// Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
+// contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
+const N_ESPERADO = 1 + SECOES.length + 1 + 2 + 3 + N_MANUT + nLL[1] + nLL[2] + 3;
+ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, 8 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, investimento, custo por m² (veio ' +
    slides.length + ')');
 
-ok(titulo(slides[1]) === 'Revisar antes da versão final', 'slide de revisão logo depois da capa');
-ok(iSub[0] === 2 && titulo(slides[3]) === 'Premissas — Orçamento 2027', 'Premissas logo depois da revisão');
-const tPrem = textos(slides[3]);
+ok(!slides.some(sl => titulo(sl) === 'Revisar antes da versão final'), 'IPTU e Seguro em valeMetragem: sem slide de revisão');
+ok(iSub[0] === 1 && titulo(slides[2]) === 'Premissas — Orçamento 2027', 'Premissas logo depois da capa');
+const tPrem = textos(slides[2]);
 ok(['Premissas', 'O que foi analisado', 'Como ler o relatório'].every(t => tPrem.indexOf(t) >= 0) &&
    tPrem.filter(t => t === G.ORC_PREMISSAS_VAZIO).length === 3,
    'Premissas: três blocos com o espaço para o gestor escrever');
@@ -520,28 +588,53 @@ ok(['Premissas', 'O que foi analisado', 'Como ler o relatório'].every(t => tPre
 ok(titulo(slides[iSub[1] + 1]) === 'Resumo executivo — Orçamento 2027' &&
    titulo(slides[iSub[1] + 2]) === 'Ponte Ritmo 2026 → Orçamento 2027', 'seção Resumo Executivo: resumo e ponte');
 ok([1, 2].every(k => textos(slides[iSub[1] + k]).indexOf('SUGESTÃO') < 0), 'resumo e ponte aprovados: sem o selo SUGESTÃO');
+const tPonte = textos(slides[iSub[1] + 2]);
+ok(!tPonte.some(t => /já roda|novo/i.test(t)) && tPonte.indexOf('Alta da conta') >= 0 && tPonte.indexOf('Redução') >= 0,
+   'ponte: sem "já roda", legenda só com Alta da conta e Redução (' + tPonte.filter(t => /roda|novo|Alta|Redu/i.test(t)).join(' | ') + ')');
 
 const iDRE = iSub[2] + 1;
-ok(textos(slides[iDRE]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[iDRE]).indexOf('ÁREA COMUM') >= 0,
+ok(textos(slides[iDRE]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[iDRE]).indexOf('DESPESAS OPERACIONAIS') >= 0,
    'DRE logo depois da sub capa');
 const tOf = textos(slides[iDRE + 1]), tDf = textos(slides[iDRE + 2]);
 ok(tOf[0] === 'Ofensores — Orçamento 2027' && tOf.some(t => /^OFENSORES/.test(t)) && !tOf.some(t => /^DEFENSORES/.test(t)),
    'um slide só de ofensores');
 ok(tDf[0] === 'Defensores — Orçamento 2027' && tDf.some(t => /^DEFENSORES/.test(t)) && !tDf.some(t => /^OFENSORES/.test(t)),
    'um slide só de defensores');
-ok(tOf.some(t => /^TOTAL GERAL/.test(t)) && tDf.some(t => /^TOTAL GERAL/.test(t)), 'TOTAL GERAL fecha os dois');
+ok(tOf.indexOf('DESPESAS OPERACIONAIS') >= 0 && tDf.indexOf('DESPESAS OPERACIONAIS') >= 0, 'DESPESAS OPERACIONAIS (total geral, nome da DRE) fecha os dois');
+ok(!tOf.concat(tDf).some(t => /^Demais contas/.test(t)), 'ofensores/defensores: sem "Demais contas"');
+ok(['Material de consumo', 'Representação e refeição', 'Cursos e seminários', 'Despesa com combustíveis'].every(n => tOf.indexOf(n) >= 0),
+   'ofensores: conta com variação visível tem linha própria (cursos, refeição, consumo, combustíveis)');
 
 ok(iSub[3] === iDRE + 3, 'Manutenção logo depois dos defensores');
-const iLLManut = iSub[3] + 1, iResManut = iSub[3] + 2, iCat0 = iSub[3] + 4;
+const iLLManut = iSub[3] + 1, iResManut = iSub[3] + nLL[0] + 1, iCat0 = iSub[3] + nLL[0] + 3;
 const iDemais = iCat0 + div.proprias.length;                  // primeira página de Demais
-ok(titulo(slides[iLLManut]) === contasLL[0].nome, 'Manutenção abre com o linha a linha');
+ok(titulo(slides[iLLManut]) === contasLL[0].nome + ' (1/2)', 'Manutenção abre com o linha a linha (1/2)');
+// Página 2/2: os itens menores que a composição não mostrava, fechando com o
+// mesmo total da linha "+ N itens menores" da página 1/2.
+const foraManut = G._orcCorteComposicao_(contasLL[0], modelos, H).fora;
+const tPag2 = textos(slides[iLLManut + 1]);
+const totalFora = G._orcMoeda_(foraManut.reduce((a, it) => a + it.total, 0));
+ok(tPag2[0] === contasLL[0].nome + ' (2/2)', 'itens menores na página 2/2 (' + tPag2[0] + ')');
+ok(textos(slides[iLLManut]).some(t => t === '+ ' + foraManut.length + ' itens menores (página 2/2)') &&
+   textos(slides[iLLManut]).indexOf(totalFora) >= 0, 'página 1/2 aponta para a 2/2 com o total dos itens menores');
+ok(tPag2.indexOf('TOTAL DOS ' + foraManut.length + ' ITENS MENORES') >= 0 && tPag2.indexOf(totalFora) >= 0,
+   'página 2/2 fecha com o total dos itens menores (' + totalFora + ')');
+ok(foraManut.every(it => tPag2.some(t => t === G._orcMoeda_(it.total))), 'página 2/2 lista o valor de cada item menor');
 ok(iSub[4] === iDemais + nPagDemais, 'Segurança logo depois da última página de Demais');
 const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
-ok(titulo(slides[iSeg]) === contasLL[1].nome && titulo(slides[iLimp]) === contasLL[2].nome,
+const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');
+ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2),
    'Segurança e Limpeza: linha a linha depois da sub capa');
-ok(iSub[6] === iLimp + 1 && iSub[7] === iSub[6] + 2 && slides.length === iSub[7] + 2,
+ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 2 && slides.length === iSub[7] + 3,
    'Investimento e Custo por m² fecham o deck, cada um depois da sua sub capa');
 const iInv = iSub[6] + 1, iM2 = iSub[7] + 1;
+const tM2m = textos(slides[iM2 + 1]);
+ok(tM2m[0] === 'Custo por m² mês a mês — Orçamento 2027', 'custo por m² mês a mês depois do custo por m²');
+ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU', 'Seguro',
+    'Total de despesas', 'REAL 2025', 'Área (m², implícita)', G._orcMoeda_(rel.total.orc), G._orcM2_(serie('orc').media),
+    'média ' + G._orcM2_(serie('orc').media)].every(t => tM2m.indexOf(t) >= 0),
+   'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
+ok(!tM2m.some(t => /…$/.test(t)), 'm² mês a mês: nenhum texto cortado (' + tM2m.filter(t => /…$/.test(t)).join(' | ') + ')');
 ok(!textos(slides[iSeg]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    textos(slides[iSeg]).some(t => /^CONTRATO — SERVIÇO DE VIGILANCIA/.test(t)),
    'linha a linha da segurança lista os contratos, sem "não detalhado"');
@@ -607,7 +700,7 @@ const totDemais = div.demais.reduce((a, c) => a + c.total, 0);
 ok(textos(slides[iDemais + nPagDemais - 1]).indexOf(G._orcMoeda_(totDemais)) >= 0, 'Demais fecha com o TOTAL ' + G._orcMoeda_(totDemais));
 
 // Aprovados (05/10/2026): sem selo; os pendentes (90_Pendentes.gs) não saem.
-ok(titulo(slides[iInv]) === 'Manutenção: investimento × custo recorrente' &&
+ok(titulo(slides[iInv]) === 'Manutenção: projetos × custo recorrente' &&
    titulo(slides[iM2]) === 'Custo por m² ao mês, 2025 → 2027', 'slides aprovados: investimento e custo por m²');
 ok(slides.every(sl => textos(sl).indexOf('SUGESTÃO') < 0), 'nenhum slide com o selo SUGESTÃO');
 const PENDENTES = /^(Cenários: o que dá para adiar|Contratos: concentração e reajustes|Contratos sem reajuste no orçamento|Fluxo mensal do orçamento|Outras leituras do orçamento)$/;
@@ -647,29 +740,41 @@ const fontesDe = (sl, n) => {
      'slide ' + (p[0] + 1) + ' (' + p[1] + '): descrições com a mesma fonte (' + Array.from(new Set(f)).join(', ') + ')');
 });
 // Tabelas numéricas: uma fonte por tabela, também nos números.
-// O relatório de Curitiba diverge de verdade (mensal × METRAGEM em IPTU e
-// Seguro): a DRE leva o aviso no rodapé, que não é parte da tabela.
-ok(textos(slides[iDRE]).some(t => /^⚠ Mensal ≠ METRAGEM em IPTU/.test(t)),
-   'DRE de Curitiba avisa a divergência do mensal em IPTU e Seguro');
+// Divergência confirmada pela contabilidade: nem aviso no rodapé, nem selo,
+// nem ⚠ na linha — só o log.
+ok(!slides.some(sl => textos(sl).some(t => /^⚠/.test(t))), 'valeMetragem: nenhum ⚠ no deck');
+ok(logGeracao.some(l => /vale a METRAGEM.*IPTU/.test(l)) && logGeracao.some(l => /vale a METRAGEM.*Seguro/.test(l)),
+   'valeMetragem: a divergência de IPTU e Seguro continua no log');
 
-// Revisão: o slide lista os dois valores de cada conta; o selo vai nos
-// slides com o total geral (e no linha a linha só se a conta divergir); a
-// linha da conta ganha o ⚠.
-const tRev = textos(slides[1]);
+// Sem o valeMetragem a mesma divergência abre o deck com a revisão: o slide
+// lista os dois valores de cada conta; o selo vai nos slides com o total
+// geral (e no linha a linha só se a conta divergir); a linha da conta ganha o ⚠.
+const valeMetragemCur = CUR.relatorios.valeMetragem;
+CUR.relatorios.valeMetragem = [];
+decks = {};
+G.gerarCuritiba();
+const slidesRev = decks[CUR.deckId].getSlides();
+CUR.relatorios.valeMetragem = valeMetragemCur;
+ok(slidesRev.length === slides.length + 1 && titulo(slidesRev[1]) === 'Revisar antes da versão final',
+   'sem valeMetragem: slide de revisão logo depois da capa');
+const iR = i => i + 1;                                         // índice no deck com a revisão
+ok(textos(slidesRev[iR(iDRE)]).some(t => /^⚠ Mensal ≠ METRAGEM em IPTU/.test(t)),
+   'DRE de Curitiba avisa a divergência do mensal em IPTU e Seguro');
+const tRev = textos(slidesRev[1]);
 ok(['IPTU', 'Seguro', 'R$ 497.079', 'R$ 494.048', 'R$ 614.427', 'R$ 603.783'].every(t => tRev.indexOf(t) >= 0),
    'revisão: mensal × METRAGEM de IPTU e Seguro (' + tRev.filter(t => /^R\$/.test(t)).join(', ') + ')');
 ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t)), 'revisão: diz em que slides a conta aparece (' +
    tRev.filter(t => /^DRE/.test(t)).join(' | ') + ')');
 ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
 const SELO = '⚠ REVISAR · IPTU, Seguro';
-const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2];
-ok(comSeloIdx.every(i => textos(slides[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e custo por m²');
-ok(slides.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
+const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1].map(iR);
+ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e os dois de custo por m²');
+ok(slidesRev.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
    'selo só nesses (linha a linha, investimento e manutenção não passam por IPTU/Seguro)');
 const nAviso = sl => textos(sl).filter(t => t === '⚠').length;
-ok(nAviso(slides[iDRE]) === 2 && nAviso(slides[iM2]) === 2, 'DRE e custo por m²: ⚠ nas linhas de IPTU e Seguro (DRE ' +
-   nAviso(slides[iDRE]) + ', m² ' + nAviso(slides[iM2]) + ')');
-ok(['⚠ IPTU', '⚠ Seguro'].every(t => textos(slides[iSub[1] + 2]).indexOf(t) >= 0), 'ponte: degraus de IPTU e Seguro com ⚠');
+ok(nAviso(slidesRev[iR(iDRE)]) === 2 && nAviso(slidesRev[iR(iM2)]) === 2, 'DRE e custo por m²: ⚠ nas linhas de IPTU e Seguro (DRE ' +
+   nAviso(slidesRev[iR(iDRE)]) + ', m² ' + nAviso(slidesRev[iR(iM2)]) + ')');
+ok(['⚠ IPTU', '⚠ Seguro'].every(t => textos(slidesRev[iR(iSub[1] + 2)]).indexOf(t) >= 0), 'ponte: degraus de IPTU e Seguro com ⚠');
 ok(relErrado.revisar.length === 1 && relErrado.revisar[0].nome === 'Segurança e vigilância',
    'mês digitado errado entra em rel.revisar');
 [iDRE, iDRE + 1, iDRE + 2].forEach(i => {

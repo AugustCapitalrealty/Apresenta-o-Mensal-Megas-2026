@@ -34,21 +34,25 @@ function _orcChaveConta_(s) {
 // apresentação mensal (megas-mensal/02_Dados.gs, DRE_CATEGORIAS), com os
 // nomes que estes relatórios usam. Conta fora da lista cai em "Outras
 // despesas" — aparece solta em vez de sumir.
+// Mesmos grupos, nomes e ORDEM das contas da DRE dos Megas (DRE_CATEGORIAS
+// em megas-mensal/02_Dados.gs): a conta aparece sempre na mesma posição, e
+// IPTU e Seguro ficam em Utilities. As contas que só a METRAGEM tem vêm no
+// fim do grupo.
 const ORC_DRE_GRUPOS = [
-  { nome: 'Pessoal e Administrativas', contas: [
+  { nome: 'Despesas com Pessoal e Administrativas', contas: [
     'Despesa de pessoal', 'Cursos e seminários', 'Despesa com passagens', 'Despesa com hospedagem',
     'Representação e refeição', 'Despesa com taxi', 'Locação de veículos', 'Despesa com combustíveis',
     'KM, estacionamento e pedágio', 'Quilometragem, estacionamento e pedágio', 'Despesa com veículos',
-    'Material de expediente', 'Outras despesas administrativas', 'Cópias e reproduções', 'Correios',
-    'Fretes e Carretos', 'Bens de pequeno valor'] },
+    'Bens de pequeno valor', 'Outras despesas administrativas',
+    'Material de expediente', 'Cópias e reproduções', 'Correios', 'Fretes e Carretos'] },
   { nome: 'Serviços de Terceiros', contas: [
-    'Assistência jurídica', 'Segurança e vigilância', 'Consultoria e assessoria',
-    'Assistência em informática', 'Serviços diversos', 'Propaganda e publicidade'] },
+    'Assistência jurídica', 'Segurança e vigilância', 'Assistência em informática',
+    'Consultoria e assessoria', 'Serviços diversos', 'Propaganda e publicidade'] },
   { nome: 'Manutenção e Conservação', contas: [
     'Limpeza e conservação', 'Manutenção de imóveis', 'Manutenção de máquinas e equipamentos',
     'Materiais de informática'] },
   { nome: 'Utilities, Taxas e Consumo', contas: [
-    'Energia elétrica', 'Água', 'Telefone', 'Material de consumo', 'Outras taxas e impostos'] }
+    'Energia elétrica', 'Água', 'Telefone', 'Material de consumo', 'Outras taxas e impostos', 'IPTU', 'Seguro'] }
 ];
 const ORC_DRE_OUTRAS = 'Outras despesas';
 
@@ -185,8 +189,11 @@ function obterRelatorioMensal_(chaveCidade) {
  * com a conta (19_Revisar.gs) — um mês digitado errado não passa calado.
  * Conta que o mensal não traz (despesa de pessoal) não é cobrada: o gráfico
  * avisa que ficou fora.
+ * @param valeMetragem  nomes de conta em que a contabilidade já confirmou a
+ *                      METRAGEM (relatorios.valeMetragem): divergência só no log
  */
-function _orcConferirMensal_(rel, mensal) {
+function _orcConferirMensal_(rel, mensal, valeMetragem) {
+  const confirmadas = (valeMetragem || []).map(_orcChaveConta_);
   const contas = rel.contas.concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
                                     { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
   contas.forEach(c => {
@@ -196,6 +203,10 @@ function _orcConferirMensal_(rel, mensal) {
     if (Math.abs(soma - c.v.orc) > 1) {
       const aviso = 'Mensal ≠ METRAGEM em ' + c.nome + ': ' + _orcMoeda_(soma) + ' × ' + _orcMoeda_(c.v.orc) +
                     ' (Orç ' + rel.anos.orc + ')';
+      if (confirmadas.indexOf(c.chave) >= 0) {
+        Logger.log('Mensal ≠ METRAGEM (vale a METRAGEM, confirmado pela contabilidade): ' + aviso);
+        return;
+      }
       rel.avisos.push(aviso);
       rel.revisar.push({ nome: c.nome, chave: c.chave, mensal: soma, metragem: c.v.orc });
       Logger.log('AVISO mensal: ' + aviso);
@@ -204,6 +215,49 @@ function _orcConferirMensal_(rel, mensal) {
 }
 
 const _ORC_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+// ==========================================
+// REAL DO ANO RETRASADO MÊS A MÊS (planilha dos Megas)
+// ==========================================
+/**
+ * Despesa de cada mês do ano retrasado (Real 2025 no orçamento 2027), da aba
+ * "Financeiro <ano>" da planilha da apresentação mensal dos Megas — a mesma
+ * que a DRE dos Megas usa na coluna do ano anterior. O Despesas-Mensal não
+ * traz esse ano. null sem a planilha configurada ou sem a aba: o slide de
+ * custo por m² segue sem a linha do Real.
+ * @return { ano, total: number[12], ac: number[12] } em R$ positivos;
+ *         ac = área comum, sem IPTU e seguro
+ */
+function obterRealMensalAnoRetrasado_(chaveCidade) {
+  const id = (ORC_CIDADES[chaveCidade].relatorios || {}).financeiroMegasId;
+  if (!id) return null;
+  const ano = ORC_ANO - 2;
+  const aba = SpreadsheetApp.openById(id).getSheetByName('Financeiro ' + ano);
+  if (!aba) {
+    Logger.log('Planilha dos Megas sem a aba "Financeiro ' + ano + '": custo por m² sem o Real ' + ano + '.');
+    return null;
+  }
+  return _orcLerFinanceiroMegas_(aba.getDataRange().getValues(), ano);
+}
+
+// Cabeçalho "Orç Jan/25 | Real Jan/25 | Variação R$" por mês; linhas por
+// rubrica, IPTU e SEGURO, e "TOTAL ÁREA COMUM" — que nessa aba JÁ soma IPTU e
+// seguro (o nome engana: em março/25 ele traz o IPTU do ano).
+function _orcLerFinanceiroMegas_(dados, ano) {
+  const cab = (dados[0] || []).map(_orcNorm_);
+  const aa = String(ano).slice(-2);
+  const col = _ORC_MES_ABREV.map(m => cab.indexOf('real ' + m + '/' + aa));
+  if (col.some(c => c < 0)) {
+    throw new Error('Financeiro ' + ano + ' (planilha dos Megas): cabeçalho inesperado, esperava "Real Jan/' + aa +
+                    '" … "Real Dez/' + aa + '" na linha 1.');
+  }
+  const linha = re => dados.slice(1).filter(r => re.test(_orcNorm_(r[0])))[0];
+  const tot = linha(/^total/), iptu = linha(/^iptu$/), seg = linha(/^seguros?$/);
+  if (!tot) throw new Error('Financeiro ' + ano + ' (planilha dos Megas): linha TOTAL não encontrada.');
+  const serie = r => col.map(c => r ? -_orcNum_(r[c]) : 0);
+  const total = serie(tot), ip = serie(iptu), sg = serie(seg);
+  return { ano: ano, total: total, ac: total.map((v, i) => v - ip[i] - sg[i]) };
+}
 
 function _orcLerMensal_(dados) {
   const cab = (dados[0] || []).map(_orcNorm_);

@@ -36,6 +36,39 @@ function _orcComposicaoConta_(conta, linhasModelo) {
   return { itens: itens, somaItens: somaItens, base: dif > 1 ? dif : 0, excesso: dif < -1 ? -dif : 0 };
 }
 
+// Layout do slide principal da conta: cards de KPI no topo e, embaixo, o mês a
+// mês e a composição. O corte da composição depende dele.
+const _ORC_LL = { ky: 72, kh: 50, gap: 10 };
+
+// Itens por página de continuação: duas colunas de até 30 linhas.
+const ORC_ITENS_POR_PAGINA = 60;
+
+/**
+ * O que cabe na tabela de composição do slide principal e o que sobra para
+ * as páginas seguintes (gerarSlideItensMenores_, pedido do gestor em
+ * 06/10/2026 — antes os itens menores viravam só "+ N itens menores").
+ * { comp, itens, fora }
+ */
+function _orcCorteComposicao_(conta, linhasModelo, H) {
+  const comp = _orcComposicaoConta_(conta, linhasModelo);
+  const by = _ORC_LL.ky + _ORC_LL.kh + _ORC_LL.gap, bh = H - 26 - by;
+  const disp = bh - 30 - 20;
+  const maxLinhas = Math.max(2, Math.floor(disp / 14) - 1);          // -1 = TOTAL
+  const extras = (comp.base ? 1 : 0);
+  if (comp.itens.length + extras <= maxLinhas) return { comp: comp, itens: comp.itens.slice(), fora: [] };
+  const cabem = Math.max(0, maxLinhas - extras - 1);
+  return { comp: comp, itens: comp.itens.slice(0, cabem), fora: comp.itens.slice(cabem) };
+}
+
+// Divide por igual entre as páginas: 70 itens viram 35 + 35, não 60 + 10.
+function _orcPaginasItens_(fora) {
+  if (!fora.length) return [];
+  const nPag = Math.ceil(fora.length / ORC_ITENS_POR_PAGINA), porPag = Math.ceil(fora.length / nPag);
+  const paginas = [];
+  for (let i = 0; i < fora.length; i += porPag) paginas.push(fora.slice(i, i + porPag));
+  return paginas;
+}
+
 // Colunas agrupadas por mês, uma cor por série, com legenda no topo.
 function _orcBarrasAgrupadas_(slide, x, y, w, h, series) {
   const DS = CR_DESIGN_SYSTEM;
@@ -68,19 +101,21 @@ function _orcBarrasAgrupadas_(slide, x, y, w, h, series) {
   }
 }
 
-function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, conta) {
+// nPag: total de páginas da conta (esta + as dos itens menores); com mais de
+// uma, o título leva "(1/n)".
+function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, conta, nPag) {
   const DS = CR_DESIGN_SYSTEM;
   const C = DS.colors;
   const MX = DS.layout.marginX;
   const a = rel.anos;
   const v = conta.v;
   const varR = _orcVariacao_(v.ritmo, v.orc);
-  _orcHeader_(slide, W, conta.nome,
+  _orcHeader_(slide, W, conta.nome + (nPag > 1 ? ' (1/' + nPag + ')' : ''),
     'Orç ' + a.orc + ' ' + _orcCompacto_(v.orc) + ' · ' + varR.texto + ' contra o Ritmo ' + a.ritmo + ' (' +
     _orcDeltaMil_(v.orc - v.ritmo) + ' mil) · ' + cid.nome);
 
   // ---- Total contra os anos anteriores ----
-  const ky = 72, kh = 50, gap = 10;
+  const ky = _ORC_LL.ky, kh = _ORC_LL.kh, gap = _ORC_LL.gap;
   const kpis = [
     ['Real ' + a.real, v.real, null],
     ['Orçado ' + a.orcAnt, v.orcAnt, null],
@@ -122,21 +157,15 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
 
   // ---- Composição do orçamento ----
   _orcCard_(slide, rx, by, rw, bh, 'Composição do Orç ' + a.orc);
-  const comp = _orcComposicaoConta_(conta, linhasModelo);
+  const corte = _orcCorteComposicao_(conta, linhasModelo, H), comp = corte.comp;
   const ty = by + 22, disp = bh - 30 - 20;
-  const maxLinhas = Math.max(2, Math.floor(disp / 14) - 1);          // -1 = TOTAL
-  const extras = (comp.base ? 1 : 0);
-  let itens = comp.itens.slice(), resto = null;
-  if (itens.length + extras > maxLinhas) {
-    const cabem = Math.max(0, maxLinhas - extras - 1);
-    const fora = itens.slice(cabem);
-    resto = { n: fora.length, total: fora.reduce((s, it) => s + it.total, 0) };
-    itens = itens.slice(0, cabem);
-  }
-  const linhas = itens.map(it => ({ celulas: [
+  const linhas = corte.itens.map(it => ({ celulas: [
     { texto: it.descricao, aba: 'Composição' }, { texto: _orcMoeda_(it.total), bold: true }] }));
-  if (resto) linhas.push({ celulas: [{ texto: '+ ' + resto.n + ' itens menores', cor: C.textBody },
-                                     { texto: _orcMoeda_(resto.total), bold: true }] });
+  if (corte.fora.length) {
+    linhas.push({ celulas: [
+      { texto: '+ ' + corte.fora.length + ' itens menores' + (nPag > 1 ? ' (página 2/' + nPag + ')' : ''), cor: C.textBody },
+      { texto: _orcMoeda_(corte.fora.reduce((s, it) => s + it.total, 0)), bold: true }] });
+  }
   if (comp.base) linhas.push({ celulas: [
     // Rótulo neutro: na segurança e na limpeza a diferença são os contratos,
     // mas na energia é consumo — o modelo não diz qual é qual.
@@ -156,4 +185,40 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
 
   _orcRodape_(slide, W, H, 'Fontes: METRAGEM-COND e Despesas-Mensal ' + a.ritmo + ' x ' + a.orc + ' (controladoria); itens: ' +
     'modelos 070/090 de ' + a.orc + ' · ' + cid.nome);
+}
+
+/**
+ * Página de continuação da conta: os itens menores que não couberam na
+ * composição do slide principal, do maior para o menor, em duas colunas. A
+ * última página fecha com o total dos itens menores — o mesmo valor da linha
+ * "+ N itens menores" do slide principal.
+ * todosFora: os itens menores de todas as páginas (para o total).
+ */
+function gerarSlideItensMenores_(slide, W, H, cid, rel, conta, pagina, iPag, nPag, todosFora) {
+  const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX;
+  const a = rel.anos;
+  const totalFora = todosFora.reduce((s, it) => s + it.total, 0);
+  const ultima = iPag === nPag - 2;
+  _orcHeader_(slide, W, conta.nome + ' (' + (iPag + 2) + '/' + nPag + ')',
+    'Itens menores da composição do Orç ' + a.orc + ' · ' + todosFora.length + ' itens · ' + _orcMoeda_(totalFora) +
+    ' · ' + cid.nome);
+
+  const linhas = pagina.map(it => ({ celulas: [
+    { texto: it.descricao, aba: 'Composição' }, { texto: _orcMoeda_(it.total), bold: true }] }));
+  const nTotal = ultima ? 1 : 0;
+  const porCol = Math.ceil((linhas.length + nTotal) / 2);
+  const ty = 74, hCab = 16, gap = 12, cw = (W - MX * 2 - gap) / 2;
+  const rowH = Math.min(15, (H - 28 - ty - hCab) / Math.max(1, porCol));
+  const fs = rowH >= 12 ? 7.5 : (rowH >= 10 ? 7 : 6.5);
+  const colunas = [{ titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'C' }];
+  const esq = linhas.slice(0, porCol), dir = linhas.slice(porCol);
+  if (ultima) {
+    dir.push({ total: true, celulas: [{ texto: 'TOTAL DOS ' + todosFora.length + ' ITENS MENORES' },
+                                      { texto: _orcMoeda_(totalFora) }] });
+  }
+  _orcTabela_(slide, MX, ty, cw, colunas, esq, rowH, { hCab: hCab, fs: fs });
+  if (dir.length) _orcTabela_(slide, MX + cw + gap, ty, cw, colunas, dir, rowH, { hCab: hCab, fs: fs });
+
+  _orcRodape_(slide, W, H, 'Fonte: modelos 070/090 de ' + a.orc + ' e planilhas de contratos · continuação da composição de ' +
+    conta.nome + ' (página 1/' + nPag + ') · ' + cid.nome);
 }

@@ -1,22 +1,34 @@
 /**
  * ARQUIVO: 17_Investimento.gs
- * SLIDE:   Manutenção: investimento × custo recorrente — a alta da
+ * SLIDE:   Manutenção: projetos × custo recorrente — a alta da
  *          manutenção é custo de manter ou projeto pontual? Nasceu como
  *          sugestão e foi aprovado pelo gestor (05/10/2026); a
  *          classificação dos itens está em 05_DadosSugestoes.gs
  *          (_orcClassificarManutencao_).
  */
 
+// O que entra em cada grupo, em palavras de quem lê o slide — vai na faixa de
+// legenda embaixo dos cards (pedido do gestor, 06/10/2026: "vai gerar
+// dúvidas"). Mesma ordem de classManut.grupos.
+const ORC_GRUPOS_MANUT_LEGENDA = [
+  'Serviço com contrato fechado com o fornecedor (vem das planilhas de contratos ou da tag [CONTRATO]).',
+  'Sem contrato, mas se repete em 6 meses ou mais do ano (ex.: provisões).',
+  'Serviço em poucos meses do ano para manter o que já existe (pintura, revisão, lavagem).',
+  'Obra ou compra nova, que não existia antes (implantação, instalação, compra, plantio).'
+];
+
 function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
   const a = rel.anos;
   const cls = classManut, proj = cls.projetos;
   const manut = rel.contas.filter(c => c.chave === _orcChaveConta_('Manutenção de imóveis'))[0];
-  _orcHeader_(slide, W, 'Manutenção: investimento × custo recorrente',
+  _orcHeader_(slide, W, 'Manutenção: projetos × custo recorrente',
     _orcCompacto_(cls.total) + ' · ' + _orcCompacto_(proj.total) + ' (' + _orcPct_(cls.total ? proj.total / cls.total : 0) +
     ') são projetos pontuais · ' + cid.nome);
 
-  const ty = 72, gap = 10, lw = 250, rx = MX + lw + gap, rw = W - MX - rx, bh = H - 28 - ty;
+  // Embaixo dos cards, a faixa que explica cada grupo (hLeg).
+  const hLeg = 44;
+  const ty = 72, gap = 10, lw = 250, rx = MX + lw + gap, rw = W - MX - rx, bh = H - 28 - ty - hLeg - 6;
   _orcCard_(slide, MX, ty, lw, bh, 'Composição do Orç ' + a.orc);
   const cores = [C.brandDark, C.brandMed, C.brandLight, C.brandSoft];
   const maxG = Math.max.apply(null, cls.grupos.map(g => g.total)) || 1;
@@ -31,19 +43,22 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
   const by = ty + 26 + 4 * 34 + 6;
   _orcLinha_(slide, MX + 12, by, MX + lw - 12, by, C.lines, 0.75);
   const semProj = cls.total - proj.total;
-  _orcUmaLinha_(slide, MX + 12, by + 6, lw - 24, 13, 'SEM OS PROJETOS', { align: 'L', fs: 7, bold: true, cor: C.textBody, fonte: DS.typography.titles });
+  // Tudo menos os projetos: o que o Mega gasta para continuar funcionando.
+  _orcUmaLinha_(slide, MX + 12, by + 6, lw - 24, 13, 'CUSTO PARA MANTER O MEGA RODANDO',
+    { align: 'L', fs: 7, bold: true, cor: C.textBody, fonte: DS.typography.titles, fsMin: 6 });
   _orcUmaLinha_(slide, MX + 12, by + 19, lw - 24, 24, _orcMoeda_(semProj),
     { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: DS.typography.titles, fsMin: 10 });
-  if (manut) {
-    const vv = _orcVariacao_(manut.v.ritmo, semProj);
-    _orcParagrafo_(slide, MX + 12, by + 44, lw - 20, ty + bh - by - 50,
-      'Contra ' + _orcMoeda_(manut.v.ritmo) + ' no Ritmo ' + a.ritmo + ' (' + vv.texto + '). A alta da manutenção ' +
-      'vem dos projetos; o custo de manter fica ' + (semProj <= manut.v.ritmo ? 'abaixo' : 'acima') + ' do ritmo.',
-      { fs: 7.5, fsMin: 6, cor: C.textBody });
-  }
+  // O ritmo é a conta inteira de 2026 — com os projetos de 2026, que a
+  // METRAGEM não separa. Dito no slide para a comparação não enganar.
+  const txt = 'Contratos + recorrente + manutenção pontual (tudo menos os projetos).' + (manut
+    ? ' Ritmo ' + a.ritmo + ' da conta inteira: ' + _orcMoeda_(manut.v.ritmo) + ' (' +
+      _orcVariacao_(manut.v.ritmo, semProj).texto + ') — o ritmo inclui os projetos de ' + a.ritmo +
+      ', que o relatório não separa.'
+    : '');
+  _orcParagrafo_(slide, MX + 12, by + 44, lw - 20, ty + bh - by - 48, txt, { fs: 7, fsMin: 6, cor: C.textBody });
 
   // Tabela dos projetos.
-  _orcCard_(slide, rx, ty, rw, bh, 'Projetos / investimento — do maior para o menor');
+  _orcCard_(slide, rx, ty, rw, bh, 'Projetos — do maior para o menor');
   const disp = bh - 30 - 18, maxL = Math.floor(disp / 14) - 1;
   let itens = proj.itens.slice(), resto = null;
   if (itens.length > maxL) {
@@ -62,6 +77,18 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
     { titulo: 'Entrega', w: 52, align: 'C' }, { titulo: 'Valor', w: 70, align: 'C' }
   ], linhas, Math.min(16, disp / linhas.length), { hCab: 16 });
 
-  _orcRodape_(slide, W, H, 'Critério: contrato → recorrente (6+ meses) → projeto (implantação, instalação, compra, ' +
-    'defensas, melhoria, plantio) → pontual');
+  // Legenda: o que é cada grupo, na cor da barra.
+  const ly = ty + bh + 6, lgw = (W - MX * 2 - gap * 3) / 4;
+  cls.grupos.forEach((g, i) => {
+    const x = MX + i * (lgw + gap);
+    _orcRet_(slide, x, ly, lgw, hLeg, C.cardBg, { redondo: true, borda: C.lines });
+    _orcRet_(slide, x + 8, ly + 7, 8, 8, cores[i], { redondo: true });
+    _orcUmaLinha_(slide, x + 20, ly + 4, lgw - 26, 14, g.nome,
+      { align: 'L', fs: 7, bold: true, cor: C.textMain, fonte: DS.typography.titles, fsMin: 6, cortar: true });
+    _orcParagrafo_(slide, x + 6, ly + 17, lgw - 10, hLeg - 19, ORC_GRUPOS_MANUT_LEGENDA[i] || '',
+      { fs: 6.5, fsMin: 5.5, cor: C.textBody, espac: 100 });
+  });
+
+  _orcRodape_(slide, W, H, 'Cada item cai no primeiro grupo que servir, nesta ordem: contrato → recorrente (6+ meses) → ' +
+    'projeto (palavra de obra nova na descrição) → pontual · ' + cid.nome);
 }

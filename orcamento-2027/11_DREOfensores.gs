@@ -11,13 +11,12 @@
  * em vez de um "100%" que não diz nada.
  */
 
-// Conta com menos que isto em TODAS as colunas vai para "Demais contas" do
-// seu grupo — mantém a DRE em ~30 linhas, com fonte legível.
-const ORC_DRE_AGRUPAR_ABAIXO = 10000;
-
-// Ofensor/defensor com variação menor que isto (em módulo) vai para
-// "Demais contas" do bloco.
-const ORC_OFENSOR_MINIMO = 5000;
+// Ofensor/defensor com variação menor que isto (em módulo) não tem linha:
+// R$ 500 = o que em R$ mil apareceria como "0". Toda conta com variação
+// visível tem linha própria e não há "Demais contas" (pedido do gestor,
+// 06/10/2026 — antes eram R$ 5 mil em "Demais" e escondia cursos, refeição,
+// consumo). A conta sem linha continua somando no total do bloco.
+const ORC_OFENSOR_MINIMO = 500;
 
 // Vermelho/verde dessaturados, como na DRE mensal: a tabela tem dezenas de
 // variações coloridas e o tom saturado pesa demais. Os claros vão sobre fundo
@@ -68,6 +67,7 @@ function _orcEstiloLinha_(tipo) {
     m2:       { bg: C.brandMed,   cor: '#FFFFFF', bold: false, recuo: 10, escuro: true },
     subtotal: { bg: C.brandLight, cor: '#FFFFFF', bold: true,  recuo: 4,  escuro: true },
     grupo:    { bg: '#475569',    cor: '#FFFFFF', bold: true,  recuo: 4,  escuro: true },
+    m2grupo:  { bg: '#64748B',    cor: '#FFFFFF', bold: false, recuo: 10, escuro: true },   // como na DRE dos Megas
     secao:    { bg: C.brandDark,  cor: '#FFFFFF', bold: true,  recuo: 4,  escuro: true },
     item:     { bg: null,         cor: C.textMain, bold: false, recuo: 14, escuro: false }
   }[tipo];
@@ -110,7 +110,7 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
   const rowH = Math.min(15, (h - (y0 - y)) / Math.max(1, linhas.length));
   // Uma fonte para a tabela inteira (fsMin = fs em toda célula): o que não
   // cabe é cortado, não encolhido só naquela linha.
-  const fs = rowH >= 12 ? 7 : (rowH >= 10 ? 6.5 : 6);
+  const fs = rowH >= 12 ? 7 : (rowH >= 10 ? 6.5 : (rowH >= 8 ? 6 : 5.5));
 
   // Fundos primeiro (zebra recomeça a cada grupo), conteúdo depois.
   let zebra = 0;
@@ -157,33 +157,47 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
 // ==========================================
 // Linhas da DRE, já agrupadas e somadas. Separado do desenho para o teste
 // conferir a estrutura e as somas sem olhar coordenada.
+// Mesmo desenho da DRE dos Megas: um total (DESPESAS OPERACIONAIS = área
+// comum + IPTU + Seguro) com o R$/m², e cada grupo com o seu R$/m² logo
+// abaixo e as contas na ordem fixa de ORC_DRE_GRUPOS. As contas aparecem
+// todas, uma por linha, sem "Demais contas" (pedido do gestor, 06/10/2026) —
+// a tabela encolhe a linha para caber. Só sai a conta que mostraria "–" ou
+// "0" nas quatro colunas (menos de R$ 500 em todas); o subtotal do grupo
+// continua somando ela, para fechar com o total da METRAGEM.
 function _orcLinhasDRE_(rel) {
-  const soma = lista => ['real', 'orcAnt', 'ritmo', 'orc'].reduce((o, k) => {
+  const ks = ['real', 'orcAnt', 'ritmo', 'orc'];
+  const soma = lista => ks.reduce((o, k) => {
     o[k] = lista.reduce((a, v) => a + v[k], 0); return o;
   }, {});
+  // R$/m² do grupo pela área implícita do total (a mesma do custo por m²).
+  const area = {};
+  ks.forEach(k => { area[k] = _orcAreaImplicita_(rel, k); });
+  if (!area.orcAnt) area.orcAnt = area.ritmo;
+  const m2 = v => ks.reduce((o, k) => { o[k] = area[k] ? v[k] / area[k] / 12 : null; return o; }, {});
   const out = [];
-  out.push({ tipo: 'total', nome: 'TOTAL GERAL — ÁREA COMUM + IPTU + SEGURO', v: rel.total });
+  out.push({ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', v: rel.total });
   if (rel.m2Total) out.push({ tipo: 'm2', nome: 'R$/m²', v: rel.m2Total });
-  out.push({ tipo: 'subtotal', nome: 'ÁREA COMUM', v: rel.areaComum });
-  if (rel.m2AreaComum) out.push({ tipo: 'm2', nome: 'R$/m²', v: rel.m2AreaComum });
 
+  const ordem = c => {
+    const g = ORC_DRE_GRUPOS.filter(gr => gr.nome === c.grupo)[0];
+    const i = g ? g.contas.map(_orcChaveConta_).indexOf(c.chave) : -1;
+    return i < 0 ? 999 : i;
+  };
+  const utilities = ORC_DRE_GRUPOS[ORC_DRE_GRUPOS.length - 1].nome;
+  const todas = rel.contas.concat([
+    { nome: 'IPTU', chave: _orcChaveConta_('IPTU'), grupo: utilities, v: rel.iptu },
+    { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), grupo: utilities, v: rel.seguro }]);
   const grupos = ORC_DRE_GRUPOS.map(g => g.nome).concat([ORC_DRE_OUTRAS]);
   grupos.forEach(nomeGrupo => {
-    const contas = rel.contas.filter(c => c.grupo === nomeGrupo);
+    const doGrupo = todas.filter(c => c.grupo === nomeGrupo);
+    const contas = doGrupo.filter(c => ks.some(k => Math.round(Math.abs(c.v[k]) / 1000) >= 1))
+      .map((c, i) => ({ c: c, i: i })).sort((a, b) => (ordem(a.c) - ordem(b.c)) || (a.i - b.i)).map(x => x.c);
     if (!contas.length) return;
-    out.push({ tipo: 'grupo', nome: nomeGrupo.toUpperCase(), v: soma(contas.map(c => c.v)) });
-    const pequena = c => Math.max(c.v.real, c.v.orcAnt, c.v.ritmo, c.v.orc) < ORC_DRE_AGRUPAR_ABAIXO;
-    const miudas = contas.filter(pequena);
-    contas.filter(c => !pequena(c) || miudas.length === 1)
-      .forEach(c => out.push({ tipo: 'item', nome: c.nome, chaves: [c.chave], v: c.v }));
-    if (miudas.length > 1) {
-      out.push({ tipo: 'item', nome: 'Demais contas (' + miudas.length + ')', v: soma(miudas.map(c => c.v)),
-                 agrupadas: miudas.map(c => c.nome), chaves: miudas.map(c => c.chave) });
-    }
+    const vGrupo = soma(doGrupo.map(c => c.v));
+    out.push({ tipo: 'grupo', nome: nomeGrupo.toUpperCase(), v: vGrupo });
+    if (rel.m2Total) out.push({ tipo: 'm2grupo', nome: 'R$/m²', v: m2(vGrupo) });
+    contas.forEach(c => out.push({ tipo: 'item', nome: c.nome, chaves: [c.chave], v: c.v }));
   });
-  out.push({ tipo: 'grupo', nome: 'IPTU E SEGURO', v: soma([rel.iptu, rel.seguro]) });
-  out.push({ tipo: 'item', nome: 'IPTU', chaves: [_orcChaveConta_('IPTU')], v: rel.iptu });
-  out.push({ tipo: 'item', nome: 'Seguro', chaves: [_orcChaveConta_('Seguro')], v: rel.seguro });
   return out;
 }
 
@@ -196,10 +210,10 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
     ' contra o Ritmo e o Orç ' + a.ritmo);
 
   const linhas = _orcLinhasDRE_(rel).map(l => {
-    if (l.tipo === 'm2') {
+    if (l.tipo === 'm2' || l.tipo === 'm2grupo') {
       // R$/m²: só os valores. A variação seria idêntica à da linha em R$
       // (dividir os dois lados pela mesma área não muda a razão).
-      return { tipo: 'm2', nome: l.nome, celulas: [
+      return { tipo: l.tipo, nome: l.nome, celulas: [
         { texto: _orcM2_(l.v.real) }, { texto: _orcM2_(l.v.orcAnt) }, { texto: _orcM2_(l.v.ritmo) },
         { texto: _orcM2_(l.v.orc) }, null, null, null] };
     }
@@ -247,8 +261,8 @@ function _orcAvisosRodape_(slide, W, H, avisos) {
 /**
  * Contas (mais IPTU e Seguro) com a variação Orç 2027 − Ritmo 2026, divididas
  * em ofensores (sobem) e defensores (caem), da maior variação para a menor.
- * Variação abaixo de ORC_OFENSOR_MINIMO vai para "Demais" do bloco, para o
- * quadro fechar com o total sem listar centavos.
+ * Variação abaixo de ORC_OFENSOR_MINIMO não ganha linha (seria "0"), mas
+ * entra no total do bloco, que fecha com a variação geral.
  */
 function _orcOfensores_(rel) {
   const todas = rel.contas.map(c => ({ nome: c.nome, chave: c.chave, v: c.v }))
@@ -258,13 +272,9 @@ function _orcOfensores_(rel) {
   const bloco = (filtro, ordem) => {
     const lista = todas.filter(filtro).sort(ordem);
     const grandes = lista.filter(c => Math.abs(c.delta) >= ORC_OFENSOR_MINIMO);
-    const miudas = lista.filter(c => Math.abs(c.delta) < ORC_OFENSOR_MINIMO);
     const somaV = l => ['real', 'orcAnt', 'ritmo', 'orc'].reduce((o, k) => { o[k] = l.reduce((a, c) => a + c.v[k], 0); return o; }, {});
     return {
       contas: grandes,
-      demais: miudas.length ? { nome: 'Demais contas (' + miudas.length + ')', v: somaV(miudas),
-                                chaves: miudas.map(c => c.chave),
-                                delta: miudas.reduce((a, c) => a + c.delta, 0) } : null,
       total: { v: somaV(lista), delta: lista.reduce((a, c) => a + c.delta, 0) }
     };
   };
@@ -276,7 +286,8 @@ function _orcOfensores_(rel) {
 }
 
 // Um slide por bloco (lado = 'ofensores' | 'defensores'): juntos não cabiam
-// com folga e o gestor pediu separados (30/09/2026). O TOTAL GERAL fecha os
+// com folga e o gestor pediu separados (30/09/2026). DESPESAS OPERACIONAIS
+// (o total geral, mesmo nome da DRE) fecha os
 // dois, para cada slide mostrar o peso do bloco no orçamento.
 function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const DS = CR_DESIGN_SYSTEM;
@@ -309,9 +320,8 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
                     : ['DEFENSORES — CAEM EM ' + a.orc, q.defensores, 'TOTAL DEFENSORES'];
   const linhas = [{ tipo: 'secao', nome: b[0], celulas: [] }];
   b[1].contas.forEach(c => linhas.push(linhaConta(c)));
-  if (b[1].demais) linhas.push(linhaConta(b[1].demais));
   linhas.push(linhaConta({ nome: b[2], v: b[1].total.v, delta: b[1].total.delta }, 'grupo'));
-  linhas.push(linhaConta({ nome: 'TOTAL GERAL (ÁREA COMUM + IPTU + SEGURO)', v: q.total.v, delta: q.total.delta }, 'total'));
+  linhas.push(linhaConta({ nome: 'DESPESAS OPERACIONAIS', v: q.total.v, delta: q.total.delta }, 'total'));
 
   const tw = W - MX * 2, labW = 170, numW = 54, itemW = tw - labW - numW * 5;
   const colunas = [
@@ -323,5 +333,5 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   ];
   _orcTabelaNum_(slide, MX, 74, tw, H - 26 - 74, colunas, linhas, null);
   _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); maior item: modelos 070 e 090 de ' +
-    a.orc + ' · contas com variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' em "Demais"');
+    a.orc + ' · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' (aparece como 0) fica só no total');
 }

@@ -7,6 +7,8 @@
  *
  * Nada disso é para a reunião: corrigida a planilha da controladoria, a
  * geração seguinte não acha divergência e o slide e os selos somem sozinhos.
+ * Se a contabilidade disser que vale a METRAGEM, a conta entra em
+ * relatorios.valeMetragem (01_Config.gs) e deixa de ser cobrada.
  */
 
 const _ORC_COR_REVISAR = { fundo: '#FFEDD5', borda: '#F97316', texto: '#9A3412', card: '#FFF7ED' };

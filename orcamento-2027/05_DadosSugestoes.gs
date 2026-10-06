@@ -23,7 +23,9 @@ const ORC_CATEGORIAS_NORMA = ['PPCI', 'SPCQ'];
 // Contas em que a ponte separa "o que já roda em dez/ano anterior" do que é
 // novo. Só faz sentido em conta de contrato mensal: na manutenção, dezembro
 // anualizado não diz nada (é conta de projetos).
-const ORC_PONTE_SEPARAR = ['Segurança e vigilância', 'Limpeza e conservação'];
+// Vazio desde 06/10/2026: o gestor tirou o "já roda em dez" da ponte —
+// confundia o leitor. Para voltar: ['Segurança e vigilância', 'Limpeza e conservação'].
+const ORC_PONTE_SEPARAR = [];
 
 // Fornecedores que aparecem com nomes diferentes em planilhas diferentes e
 // são o mesmo grupo ("EMPRESA AUXILIAR DE SEGURANÇA", "…DE SERVIÇOS GERAIS",
@@ -153,7 +155,7 @@ function _orcClassificarManutencao_(dados) {
     contratos:  { nome: 'Contratos',            total: 0, itens: [] },
     recorrente: { nome: 'Recorrente (6+ meses)', total: 0, itens: [] },
     pontual:    { nome: 'Manutenção pontual',    total: 0, itens: [] },
-    projetos:   { nome: 'Projetos / investimento', total: 0, itens: [] }
+    projetos:   { nome: 'Projetos', total: 0, itens: [] }
   };
   dados.categorias.forEach(cat => cat.itens.forEach(it => {
     const nMeses = it.meses.filter(v => Math.abs(v) > 0.005).length;

@@ -37,7 +37,16 @@ const ORC_CIDADES = {
     // segurança).
     relatorios: {
       metragemId: '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c',   // METRAGEM-COND-MEGA-CURITIBA
-      mensalId:   '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM'    // Despesas-Mensal-2026-x-2027
+      mensalId:   '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM',   // Despesas-Mensal-2026-x-2027
+      // Planilha da apresentação mensal dos Megas (megas-mensal/01_Config.gs,
+      // PROJETOS.<cidade>.spreadsheetId): a aba "Financeiro <ano retrasado>"
+      // dá o Real mês a mês do slide de custo por m² (20_M2Mensal.gs).
+      financeiroMegasId: '160_zGacZ5c4Y9uPnJbmP9Ca5vMMQTm8sjmFI5WvOg8Q',   // Mega Curitiba - Planilha 2026
+      // Contas em que o mensal não fecha com a METRAGEM e a contabilidade
+      // orientou usar a METRAGEM (06/10/2026: IPTU −R$ 3.032, Seguro
+      // −R$ 10.645 no Orç 2027). Ficam sem o ⚠ REVISAR e fora do slide de
+      // revisão; a divergência só vai para o log.
+      valeMetragem: ['IPTU', 'Seguro']
     },
     // Contratos recorrentes por conta — o que os modelos 070/090 NÃO listam.
     // Modelo + contratos = total da conta na METRAGEM. Conta sem planilha
@@ -67,7 +76,8 @@ const ORC_CIDADES = {
     servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // 070-Servicos-de-Terceiros - MEGA ITAJAÍ 2027
     relatorios: {
       metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // METRAGEM-COND-MEGA-ITAJAI
-      mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA'    // Despesas-Mensal-2026-x-2027 - MEGA ITAJAI
+      mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // Despesas-Mensal-2026-x-2027 - MEGA ITAJAI
+      financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4'    // planilha dos Megas (Itajaí)
     },
     contratos: {},
     premissas: { premissas: '', analisado: '', comoLer: '' }
@@ -79,7 +89,8 @@ const ORC_CIDADES = {
     servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // 070-Servicos-de-Terceiros- MEGA ESTEIO 2027
     relatorios: {
       metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // METRAGEM-COND-MEGA-ESTEIO
-      mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg'    // Despesas-Mensal-2026-x-2027 - MEGA ESTEIO
+      mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // Despesas-Mensal-2026-x-2027 - MEGA ESTEIO
+      financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY'    // planilha dos Megas (Esteio)
     },
     contratos: {},
     premissas: { premissas: '', analisado: '', comoLer: '' }
