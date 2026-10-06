@@ -1,25 +1,9 @@
 /**
  * ARQUIVO: 00_Main.gs
- * SEÇÃO:   NÚCLEO — Orquestrador
- * DESCRIÇÃO: Pontos de entrada da geração de slides.
- *
- *   Para rodar UMA cidade:
- *     ▸ gerarCuritiba()   / gerarItajai()   / gerarEsteio()
- *     ▸ regerarCuritiba() / regerarItajai() / regerarEsteio()   (limpa antes)
- *
- *   Para rodar AS TRÊS de uma vez:
- *     ▸ gerarTodas()      → gera (acrescenta)
- *     ▸ regerarTodas()    → limpa e gera
- *
- *   Para rodar UM SLIDE avulso (gerarSoXxxCuritiba/Itajai/Esteio): a função
- *   fica no próprio arquivo do slide (ex.: gerarSoChamadosClientesCuritiba
- *   está em Slide_ChamadosClientes.gs, perto de gerarSlideChamadosClientes),
- *   não aqui — Apps Script compila todos os arquivos num namespace só, então
- *   a localização não muda o comportamento, só a organização. Este arquivo
- *   fica só com o pipeline completo e os pontos de entrada por cidade/todas.
+ * SEÇÃO:   NÚCLEO — Orquestrador Principal
+ * DESCRIÇÃO: Pipeline de geração dos Megas (Curitiba, Itajaí, Esteio),
+ *            menu interativo, matriz de integridade e controle de execução.
  */
-
-
 // ==========================================
 // FUNÇÃO INTERATIVA PARA ESCOLHER O EMPREENDIMENTO
 // ==========================================
@@ -108,19 +92,31 @@ function onOpen() {
       .addItem('Preventivas', 'gerarSoPreventivasCuritiba')
       .addItem('Corretivas', 'gerarSoCorretivasCuritiba')
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesCuritiba')
-      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesCuritiba'))
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesCuritiba')
+      .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaCuritiba')
+      .addItem('Custo M²', 'gerarSoCustoM2Curitiba'))
     .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Itajaí')
       .addItem('Dashboard', 'gerarSoDashboardItajai')
       .addItem('Preventivas', 'gerarSoPreventivasItajai')
       .addItem('Corretivas', 'gerarSoCorretivasItajai')
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesItajai')
-      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesItajai'))
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesItajai')
+      .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaItajai')
+      .addItem('Custo M²', 'gerarSoCustoM2Itajai'))
     .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Esteio')
       .addItem('Dashboard', 'gerarSoDashboardEsteio')
       .addItem('Preventivas', 'gerarSoPreventivasEsteio')
       .addItem('Corretivas', 'gerarSoCorretivasEsteio')
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesEsteio')
-      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesEsteio'))
+      .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesEsteio')
+      .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaEsteio')
+      .addItem('Custo M²', 'gerarSoCustoM2Esteio'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('🔍 Diagnósticos & Auditoria')
+      .addItem('Conferir 22 arquivos no editor', 'diagnosticarArquivos')
+      .addItem('Diagnosticar Backlog (Estoque × Fluxo)', 'diagnosticarBacklog')
+      .addItem('Check de Consistência (Slide Descartável)', 'gerarSlideCheckConsistencia')
+      .addItem('Conferir Ícones das Capas no Drive', 'conferirIconesCapas'))
     .addToUi();
 }
 
@@ -185,7 +181,62 @@ function regerarTodosOsMegas() {
 // ==========================================
 // FLUXOS INTERNOS (usam o projeto já setado)
 // ==========================================
+
+// ==========================================
+// MATRIZ DE DEPENDÊNCIAS DO PROJETO (22 ARQUIVOS)
+// ==========================================
+const _MEGAS_DEPENDENCIAS_ = [
+  ['00_Helpers.gs',           ['criarHeaderPadrao', 'criarCardKPI', 'criarCardPainel', 'formatarNumeroBR', 'padronizarRubrica_', 'formatarReaisM2_', 'desenharGraficoHistorico', '_desenharAreaReservada', '_gUmaLinha_', '_gParagrafo_']],
+  ['00_Main.gs',              ['gerarCuritiba', 'gerarItajai', 'gerarEsteio', 'gerarTodas', 'regerarCuritiba', 'regerarItajai', 'regerarEsteio', 'regerarTodas', 'gerarApresentacaoCompleta_']],
+  ['01_Config.gs',            ['CR_DESIGN_SYSTEM', 'CORES', 'PROJETOS', 'setProjetoAtivo', 'getProjetoAtivo', 'getDeckAtivo', 'ACESSOS_SPREADSHEET_ID']],
+  ['02_Dados.gs',             ['obterMesReferencia_', 'obterDadosDashboard', 'obterDadosPreventivas', 'obterDadosCorretivasV6', 'obterDadosTempo', 'obterDadosFinanceiro', 'obterDadosCustoM2', 'obterDadosBacklogClientesFacilities_', 'obterDadosBacklogClientesProperties_']],
+  ['04_Diagnosticos.gs',      ['diagnosticarArquivos', 'diagnosticarBacklog', 'listarColunasBdCorretivas', 'gerarSlideCheckConsistencia']],
+  ['05_Suporte.gs',           ['marcarFinalCuritiba', 'registrarHistoricoDados_', 'gerarEmailMensalCuritiba']],
+  ['10_Slide_Capas.gs',       ['gerarSlideCapa', 'gerarCapaSecao', 'gerarSlideContraCapa', 'gerarSlideAgenda', '_capaFundo_', 'conferirIconesCapas']],
+  ['11_Slide_Destaques.gs',   ['gerarSlideDestaques']],
+  ['12_Slide_Dashboard.gs',   ['gerarSlideDashboard']],
+  ['13_Slide_Metas.gs',       ['gerarSlidesMetas', 'gerarSlidesMetasGuilherme', 'gerarFarolGuilherme']],
+  ['14_Slide_Preventivas.gs', ['gerarSlidePreventivas']],
+  ['15_Slide_Corretivas.gs',  ['gerarSlideCorretivas']],
+  ['16_Slide_BacklogOperacao.gs', ['gerarSlideChamadosPrioridade', 'gerarSlideBacklogPendentes', 'gerarSlideBacklogEmergencialDetalhe', 'gerarSlideBacklogFacilities']],
+  ['17_Slide_BacklogClientes.gs', ['gerarSlideChamadosClientes', 'gerarSlideBacklogClientesDetalhes', 'gerarSlideBacklogClientesFacilities', 'gerarSlideBacklogClientesProperties', 'LOGOS_CLIENTES']],
+  ['18_Slide_FotosServicos.gs',   ['gerarSlidesServicosContratados_', 'gerarSlidesServicosInternos_', 'gerarSlideRegistroFotos']],
+  ['19_Slide_AcessoSeguranca.gs', ['gerarSlideTempo', 'gerarSoAcessoSegurancaCuritiba', 'gerarSoAcessoSegurancaItajai', 'gerarSoAcessoSegurancaEsteio']],
+  ['20_Slide_Financeiro.gs',  ['gerarSlideFinanceiro', 'gerarSlideFinanceiroAnual']],
+  ['21_Slide_DREBridge.gs',   ['gerarSlideBridge', 'gerarSlideBridgeGrafico', 'gerarSlideDRE', 'gerarSlideDREComRitmo']],
+  ['22_Slide_CustoM2.gs',     ['gerarSlideCustoM2', 'gerarSlideCustoM2Quadrimestre', 'gerarSoCustoM2Curitiba', 'gerarSoCustoM2Itajai', 'gerarSoCustoM2Esteio']],
+  ['23_Slide_Utilities.gs',   ['gerarSlideEnergiaSolar', 'gerarSlidesUtilities_', 'gerarSlidesMonitoramentoEsteio_']],
+  ['24_Slide_Documentos.gs',  ['gerarSlideDocumentos']],
+  ['25_Slide_Encerramento.gs',['gerarSlideEncerramento']]
+];
+
+function _megasConferirProjeto_() {
+  const faltando = [];
+  _MEGAS_DEPENDENCIAS_.forEach(par => {
+    const arquivo = par[0], nomes = par[1];
+    const ausentes = [];
+    nomes.forEach(n => {
+      let existe = false;
+      try { existe = eval('typeof ' + n) !== 'undefined'; } catch (e) { existe = false; }
+      if (!existe) ausentes.push(n);
+    });
+    if (ausentes.length) faltando.push({ arquivo: arquivo, nomes: ausentes });
+  });
+
+  if (!faltando.length) return true;
+
+  Logger.log('======================================================');
+  Logger.log('⚠ ARQUIVOS OU SÍMBOLOS FALTANDO NO EDITOR');
+  Logger.log('======================================================');
+  faltando.forEach(f => Logger.log('  · ' + f.arquivo + '  → ' + f.nomes.join(', ')));
+  Logger.log('');
+  Logger.log('Verifique se todos os arquivos foram salvos corretamente.');
+  return false;
+}
+
+
 function gerarApresentacaoCompleta_() {
+  if (!_megasConferirProjeto_()) return;
   const projeto = getProjetoAtivo();
   Logger.log('▶ Gerando apresentação de ' + projeto.nome);
 
@@ -289,6 +340,7 @@ function limparApresentacao_() {
 }
 
 function regerarApresentacaoCompleta_() {
+  if (!_megasConferirProjeto_()) return;
   limparApresentacao_();
   gerarApresentacaoCompleta_();
 
@@ -413,136 +465,3 @@ function _financeiroConferencia_() {
 
 // Pontos de entrada por cidade — é por eles que se roda no editor do Apps
 // Script (o menu suspenso lista só funções sem argumento).
-function gerarSoFinanceiroCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlidesFinanceiro_(); }
-function gerarSoFinanceiroItajai()   { setProjetoAtivo('ITAJAI');   gerarSlidesFinanceiro_(); }
-function gerarSoFinanceiroEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlidesFinanceiro_(); }
-
-// Os três de uma vez — pra conferir se os números batem entre as cidades
-// numa rodada só (foi assim que apareceu a diferença de metragem de Esteio).
-function gerarSoFinanceiroTodosOsMegas() {
-  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
-    setProjetoAtivo(cidade);
-    gerarSlidesFinanceiro_();
-  });
-}
-
-
-// ==========================================
-// PONTOS DE ENTRADA — DOCUMENTAÇÃO LEGAL (Slide 11)
-// ==========================================
-// Gera SOMENTE os slides de Documentação Legal (resumo + tabela paginada),
-// por cidade. Padrão idêntico ao dos financeiros.
-
-function gerarSoDocumentosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDocumentos(); }
-function gerarSoDocumentosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDocumentos(); }
-function gerarSoDocumentosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDocumentos(); }
-
-function gerarSoDocumentosTodosOsMegas() {
-  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
-    setProjetoAtivo(cidade);
-    gerarSlideDocumentos();
-  });
-}
-
-
-// ==========================================
-// DIAGNÓSTICO — POR QUE O BACKLOG NÃO FECHA COM CRIADOS − FECHADOS
-// ==========================================
-// Roda no editor e joga no Logger tudo que é preciso pra responder à
-// pergunta "se entraram 29 e saíram 29, como o backlog sobe 14?" sem
-// depender de olhar planilha:
-//
-//   - se o código novo está mesmo carregado no projeto (as constantes de
-//     01_Config.gs e as funções de 02_Dados.gs existem);
-//   - quantas linhas da BD-CORRETIVAS batem com o Centro de Custos da
-//     cidade (se der 0, o filtro é o problema e todo o resto sai zerado);
-//   - o vocabulário real da coluna Estado — a regra de backlog só tira do
-//     estoque quem está exatamente em "Fechado";
-//   - a conciliação do mês, lado a lado com o que está digitado na aba
-//     BACKLOG.
-//
-// Use diagnosticarBacklog() pra cidade ativa ou
-// diagnosticarBacklogTodosOsMegas() pras três.
-function diagnosticarBacklog() {
-  const nome = getProjetoAtivo().nome;
-  Logger.log('======================================================');
-  Logger.log('DIAGNÓSTICO DE BACKLOG — ' + nome);
-  Logger.log('======================================================');
-
-  // 1. O código novo está carregado?
-  const faltando = [];
-  [['BACKLOG_RECALCULAR_DA_BD', 'const (01_Config.gs)'],
-   ['obterFluxoCorretivasBD_', 'função (02_Dados.gs)'],
-   ['obterDadosBacklogPorMesBD_', 'função (02_Dados.gs)'],
-   ['_bdChamadoFechado_', 'função (02_Dados.gs)']].forEach(([n, onde]) => {
-    try { if (eval('typeof ' + n) === 'undefined') faltando.push(n + ' — ' + onde); }
-    catch (e) { faltando.push(n + ' — ' + onde); }
-  });
-  if (faltando.length) {
-    Logger.log('⚠ O PROJETO NÃO ESTÁ COM O CÓDIGO NOVO. Falta:');
-    faltando.forEach(f => Logger.log('    ' + f));
-    Logger.log('  Copie os arquivos atualizados pro editor do Apps Script e rode de novo.');
-    return;
-  }
-  Logger.log('Código novo carregado. Recálculo do backlog: ' +
-             (BACKLOG_RECALCULAR_DA_BD ? 'LIGADO' : 'DESLIGADO'));
-
-  // 2. A BD responde pra esta cidade?
-  const itens = _lerBdCorretivasCru_();
-  Logger.log('\nBD-CORRETIVAS: ' + itens.length + ' linha(s) com Centro de Custos = "' +
-             nome.toUpperCase() + '".');
-  if (!itens.length) {
-    Logger.log('⚠ ZERO linhas. O filtro de Centro de Custos não casa — confira como o ' +
-               'nome da cidade aparece na coluna "Centro de Custos" da BD.');
-    return;
-  }
-  const semData = itens.filter(it => !it.dtReporte).length;
-  if (semData) Logger.log('  ' + semData + ' sem "Data de reporte" legível.');
-
-  // 3. Vocabulário do Estado — é aqui que costuma morar a diferença.
-  const porEstado = {};
-  itens.forEach(it => {
-    const e = String(it.estado || '(vazio)').trim();
-    porEstado[e] = (porEstado[e] || 0) + 1;
-  });
-  Logger.log('\nValores da coluna Estado (só "Fechado" tira do backlog):');
-  Object.keys(porEstado).sort((a, b) => porEstado[b] - porEstado[a])
-    .forEach(e => Logger.log('    ' + e + ': ' + porEstado[e]));
-  const encerradoSemEstado = itens.filter(it => it.dtFechado && !_bdChamadoFechado_(it.estado, it.dtFechado));
-  if (encerradoSemEstado.length) {
-    Logger.log('  ⚠ ' + encerradoSemEstado.length + ' chamado(s) têm "Fechado em" preenchido ' +
-               'mas Estado ≠ "Fechado" — ficam no backlog pra sempre.');
-    Logger.log('    Estados: ' + Array.from(new Set(encerradoSemEstado.map(it => it.estado))).join(', '));
-  }
-
-  // 4. Conciliação do mês de referência.
-  const ref = obterMesReferencia_();
-  const ord = ref.ano * 100 + (ref.index + 1);
-  const serie = obterDadosBacklogHistorico_();
-  const iAlvo = serie.findIndex(p => p.ord === ord);
-  const fluxo = obterFluxoCorretivasBD_();
-  Logger.log('\nMês de referência: ' + MESES_NOME_REF[ref.index] + '/' + ref.ano);
-  if (!fluxo) { Logger.log('  Fluxo indisponível (ver avisos acima).'); return; }
-  Logger.log('  criados  = ' + fluxo.mCriados);
-  Logger.log('  fechados = ' + fluxo.mFechados);
-  if (iAlvo < 0) { Logger.log('  ⚠ mês não encontrado na aba BACKLOG.'); return; }
-
-  const atual = serie[iAlvo], ant = iAlvo > 0 ? serie[iAlvo - 1] : null;
-  if (!ant || ant.geral == null || atual.geral == null) {
-    Logger.log('  Sem mês anterior pra conciliar.');
-    return;
-  }
-  const esperado = ant.geral + fluxo.mCriados - fluxo.mFechados;
-  Logger.log('  backlog anterior (' + ant.mes + ') = ' + ant.geral);
-  Logger.log('  esperado = ' + ant.geral + ' + ' + fluxo.mCriados + ' − ' +
-             fluxo.mFechados + ' = ' + esperado);
-  Logger.log('  no slide = ' + atual.geral +
-             (esperado === atual.geral ? '  ✓ FECHA' : '  ✗ diferença de ' + (atual.geral - esperado)));
-  Logger.log('  quebra por equipe: facilities ' + atual.facilities +
-             ' + property ' + atual.property + ' + locatário ' + atual.locatario +
-             ' = ' + (atual.facilities + atual.property + atual.locatario));
-}
-
-function diagnosticarBacklogTodosOsMegas() {
-  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => { setProjetoAtivo(c); diagnosticarBacklog(); });
-}

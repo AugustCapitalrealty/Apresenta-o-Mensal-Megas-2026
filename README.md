@@ -30,5 +30,6 @@ estoque e fluxo, e quando preferir a base bruta à planilha digitada.
 
 ## Publicação
 
-Não há `clasp`. O código é copiado à mão para o editor do Apps Script de cada
-projeto — **`git push` não publica nada**.
+`megas-mensal/` e `orcamento-2027/` sobem com `clasp push` de dentro da
+pasta. Nos outros projetos o código é copiado à mão para o editor do Apps
+Script — **`git push` não publica nada**.

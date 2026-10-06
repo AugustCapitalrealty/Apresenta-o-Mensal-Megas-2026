@@ -5,6 +5,10 @@
 // ==========================================
 
 function gerarSlideTempo() {
+  if (!_projetoAtivoChave) {
+    Logger.log('Aviso: Nenhum projeto ativo especificado. Assumindo CURITIBA como padrão.');
+    setProjetoAtivo('CURITIBA');
+  }
   const dados = obterDadosTempo();
   
   if (!dados) {
@@ -19,7 +23,7 @@ function gerarSlideTempo() {
   const PageWidth = deck.getPageWidth();
   const PageHeight = deck.getPageHeight();
   const ref = obterMesReferencia_();
-  criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', 'Fluxo, Segurança e Turnover · Mês: ' + ref.siglaAno);
+  criarHeaderPadrao(slide, 'INDICADORES DE ACESSO E SEGURANÇA', getProjetoAtivo().nome + ' — Fluxo, Segurança e Turnover · Mês: ' + ref.siglaAno);
 
   const marginX = 40;
   const topY = 80;
@@ -111,3 +115,33 @@ function desenharCardTempo(slide, x, y, w, h, CORES, dados, corTema) {
     vr.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
   });
 }
+
+
+// ==========================================
+// PONTOS DE ENTRADA — SLIDE AVULSO
+// ==========================================
+// Gera o slide de Acesso e Segurança no empreendimento ativo
+function gerarSoAcessoSeguranca(cidade) {
+  if (cidade) setProjetoAtivo(cidade);
+  else if (!_projetoAtivoChave) setProjetoAtivo('CURITIBA');
+  gerarSlideTempo();
+}
+
+function gerarSoAcessoSegurancaCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideTempo(); }
+function gerarSoAcessoSegurancaItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideTempo(); }
+function gerarSoAcessoSegurancaEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideTempo(); }
+
+// Aliases curtos
+function gerarSoTempoCuritiba() { gerarSoAcessoSegurancaCuritiba(); }
+function gerarSoTempoItajai()   { gerarSoAcessoSegurancaItajai(); }
+function gerarSoTempoEsteio()   { gerarSoAcessoSegurancaEsteio(); }
+function gerarSoTempo(cidade)   { gerarSoAcessoSeguranca(cidade); }
+
+// Gera em todas as apresentações dos Megas de uma vez
+function gerarSoAcessoSegurancaTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => {
+    setProjetoAtivo(c);
+    gerarSlideTempo();
+  });
+}
+function gerarSoTempoTodosOsMegas() { gerarSoAcessoSegurancaTodosOsMegas(); }

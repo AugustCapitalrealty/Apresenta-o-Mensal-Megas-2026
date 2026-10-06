@@ -213,4 +213,3 @@ function gerarSoCorretivasTodosOsMegas() {
     gerarSlideCorretivas();
   });
 }
-

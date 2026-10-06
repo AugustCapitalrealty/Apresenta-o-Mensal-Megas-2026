@@ -1,4 +1,333 @@
 /**
+ * ARQUIVO: 05_Suporte.gs
+ * SEÇÃO:   NÚCLEO — Suporte, Histórico, Registro e Comunicação Mensal
+ * DESCRIÇÃO: Utilitários de suporte para gravação de indicadores mensais na
+ *            planilha, versionamento no Drive, setup inicial e geração do
+ *            e-mail mensal de envio da apresentação.
+ */
+
+// ==========================================
+// VERSIONAMENTO NO GOOGLE DRIVE
+// ==========================================
+/**
+ * ARQUIVO: Suporte_Historico.gs
+ * SEÇÃO:   SUPORTE — Versionamento
+ * DESCRIÇÃO: Versionamento VISUAL das apresentações (estratégia híbrida).
+ *            Para o histórico CONSULTÁVEL dos números/indicadores,
+ *            veja Suporte_RegistroDados.gs (aba HISTORICO na planilha).
+ *
+ *   SOB DEMANDA (quando uma versão "vale registrar"):
+ *     ▸ marcarFinalCuritiba() / marcarFinalItajai() / marcarFinalEsteio()
+ *       cria uma cópia da apresentação atual com nome
+ *       "Mega [Cidade] — VERSÃO FINAL — [Data]" na mesma pasta.
+ *
+ *   registrarRevisaoAutomatica_() (marcar a revisão atual como "manter para
+ *   sempre" no histórico nativo do Drive a CADA execução) DESLIGADA a pedido
+ *   do usuário — não é mais chamada pelo pipeline (00_Main.gs). A função
+ *   continua aqui, funcional, caso alguém queira religar um dia; só exige a
+ *   Drive API habilitada no editor (Serviços (+) → Drive API).
+ */
+
+
+// ==========================================
+// Chamada SOB DEMANDA, se algum dia quiserem religar o registro automático —
+// hoje NENHUM ponto do pipeline chama esta função (ver nota acima).
+// ==========================================
+function registrarRevisaoAutomatica_() {
+  const projeto = getProjetoAtivo();
+  const fileId  = projeto.presentationId;
+
+  try {
+    // Drive Advanced Service (v2) — precisa ser habilitado no editor
+    if (typeof Drive === 'undefined' || !Drive.Revisions) {
+      Logger.log('  ⓘ Drive API não habilitada — versão automática pulada.');
+      return;
+    }
+
+    const revs = Drive.Revisions.list(fileId);
+    if (!revs.items || !revs.items.length) return;
+
+    const ultima = revs.items[revs.items.length - 1];
+    Drive.Revisions.update({ keepForever: true }, fileId, ultima.id);
+    Logger.log('  ⚑ Revisão marcada no histórico do Drive (' + ultima.id + ').');
+  } catch (e) {
+    Logger.log('  ⓘ Versão automática não registrada: ' + e.message);
+  }
+}
+
+
+// ==========================================
+// SOB DEMANDA — cópia "VERSÃO FINAL"
+// ==========================================
+function marcarFinalCuritiba() { _marcarFinal('CURITIBA'); }
+function marcarFinalItajai()   { _marcarFinal('ITAJAI');   }
+function marcarFinalEsteio()   { _marcarFinal('ESTEIO');   }
+
+function _marcarFinal(chave) {
+  setProjetoAtivo(chave);
+  const projeto = getProjetoAtivo();
+  const orig    = DriveApp.getFileById(projeto.presentationId);
+
+  const dataStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+  const nome    = projeto.nome + ' — VERSÃO FINAL — ' + dataStr;
+
+  // Coloca a cópia na mesma pasta da apresentação original
+  const pais = orig.getParents();
+  const copia = pais.hasNext() ? orig.makeCopy(nome, pais.next()) : orig.makeCopy(nome);
+
+  Logger.log('✔ Versão final salva: ' + nome);
+  Logger.log('  ' + copia.getUrl());
+  return copia.getUrl();
+}
+
+// ==========================================
+// REGISTRO DE DADOS MENSAIS NA PLANILHA
+// ==========================================
+/**
+ * ARQUIVO: Suporte_RegistroDados.gs
+ * SEÇÃO:   SUPORTE — Histórico de indicadores
+ * DESCRIÇÃO: Histórico CONSULTÁVEL dos números de cada geração.
+ *
+ *   A cada execução (chamado pelo Main após gerar a apresentação),
+ *   os principais indicadores são gravados como linhas numa aba
+ *   "HISTORICO" — uma por cidade, na respectiva planilha.
+ *
+ *   Colunas: Timestamp | Categoria | Indicador | Valor | Referência
+ *
+ *   Isso permite:
+ *     ▸ Consultar a evolução de qualquer indicador ao longo do tempo
+ *     ▸ Alimentar futuramente os selos de tendência (▲ ▼ —) comparando
+ *       a execução atual com a anterior
+ *
+ *   Não armazena a apresentação em si — apenas os números que a geraram.
+ */
+
+const ABA_HISTORICO = 'HISTORICO';
+const HISTORICO_CABECALHO = ['Timestamp', 'Categoria', 'Indicador', 'Valor', 'Referência'];
+
+
+// ==========================================
+// REGISTRA OS NÚMEROS DA GERAÇÃO ATUAL
+// ==========================================
+function registrarHistoricoDados_() {
+  // DESATIVADO: o histórico numérico automático podia gravar dados errados.
+  // O histórico validado agora é mantido à mão na planilha HISTORICO_VALIDADO_ID
+  // (01_Config.gs) e lido por consultarHistoricoIndicador(). Mantemos a função
+  // aqui (não chamada pelo Main) para preservar os coletores como referência.
+  Logger.log('  ▤ Histórico automático desativado — usar planilha validada.');
+  return;
+
+  try {                                                    // eslint-disable-line no-unreachable
+    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+    const sheet = obterOuCriarAbaHistorico_(ss);
+    const ts    = new Date();
+
+    const linhas = [];
+    const add = (categoria, indicador, valor, referencia) => {
+      if (valor === null || valor === undefined || valor === '' || valor === '-') return;
+      linhas.push([ts, categoria, indicador, valor, referencia || '']);
+    };
+
+    coletarDashboard_(add);
+    coletarPreventivas_(add);
+    coletarCorretivas_(add);
+    coletarTempo_(add);
+    coletarFinanceiro_(add);
+    coletarBridge_(add);
+    coletarCustoM2_(add);
+    coletarDocumentos_(add);
+
+    if (!linhas.length) {
+      Logger.log('  ⓘ Histórico de dados: nada para registrar.');
+      return;
+    }
+
+    sheet.getRange(sheet.getLastRow() + 1, 1, linhas.length, HISTORICO_CABECALHO.length).setValues(linhas);
+    Logger.log('  ▤ Histórico de dados: ' + linhas.length + ' indicador(es) registrados.');
+  } catch (e) {
+    Logger.log('  ⓘ Histórico de dados não registrado: ' + e.message);
+  }
+}
+
+function obterOuCriarAbaHistorico_(ss) {
+  let sheet = ss.getSheetByName(ABA_HISTORICO);
+  if (!sheet) {
+    sheet = ss.insertSheet(ABA_HISTORICO);
+    sheet.getRange(1, 1, 1, HISTORICO_CABECALHO.length).setValues([HISTORICO_CABECALHO]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+
+// ==========================================
+// COLETORES — extraem indicadores de cada obterDados*()
+// ==========================================
+function coletarDashboard_(add) {
+  const d = obterDadosDashboard();
+  if (!d || !d.map) return;
+  d.map.forEach((val, chave) => add('Dashboard', chave, val.atual, d.headers[0]));
+}
+
+function coletarPreventivas_(add) {
+  const d = obterDadosPreventivas();
+  if (!d) return;
+  add('Preventivas', 'Previstas (mensal)',  d.mensal.previstas,  d.mensal.titulo);
+  add('Preventivas', 'Realizadas (mensal)', d.mensal.realizadas, d.mensal.titulo);
+  add('Preventivas', 'SLA (mensal)',        d.mensal.sla,        d.mensal.titulo);
+  add('Preventivas', 'Previstas (anual)',   d.anual.previstas,   d.anual.titulo);
+  add('Preventivas', 'Realizadas (anual)',  d.anual.realizadas,  d.anual.titulo);
+  add('Preventivas', 'SLA (anual)',         d.anual.sla,         d.anual.titulo);
+}
+
+function coletarCorretivas_(add) {
+  const d = obterDadosCorretivasV6();
+  if (!d) return;
+  d.mensal.kpis.forEach(k => add('Corretivas', k.l + ' (mensal)', k.v, d.mensal.titulo));
+  d.anual.kpis.forEach(k  => add('Corretivas', k.l + ' (anual)',  k.v, d.anual.titulo));
+}
+
+function coletarTempo_(add) {
+  const d = obterDadosTempo();
+  if (!d) return;
+  d.mensal.kpis.forEach(k => add('Tempo/Segurança', k.l + ' (mensal)', k.v, d.mensal.titulo));
+  d.anual.kpis.forEach(k  => add('Tempo/Segurança', k.l + ' (anual)',  k.v, d.anual.titulo));
+}
+
+function coletarFinanceiro_(add) {
+  const d = obterDadosFinanceiro();
+  if (!d) return;
+  add('Financeiro', 'Total orçado',    d.totalOrcado,    'Mês atual');
+  add('Financeiro', 'Total realizado', d.totalRealizado, 'Mês atual');
+}
+
+function coletarCustoM2_(add) {
+  const d = obterDadosCustoM2();
+  if (!d) return;
+  const ref = d.referencia.mesExtenso + ' ' + d.referencia.ano;
+  add('Custo M²', 'Custo (R$/m²)', d.kpis.custo, ref);
+  add('Custo M²', 'Meta orçada',   d.kpis.meta,  ref);
+}
+
+
+function coletarDocumentos_(add) {
+  const d = obterDadosDocumentos();
+  if (!d || !d.resumo) return;
+  add('Documentos', 'Vencidos',     d.resumo.vencido,  'Mês atual');
+  add('Documentos', 'Vence em 60d', d.resumo.critico,  'Mês atual');
+  add('Documentos', 'Em dia',       d.resumo.emDia,    'Mês atual');
+  add('Documentos', 'Pendentes',    d.resumo.pendente, 'Mês atual');
+}
+
+
+function coletarBridge_(add) {
+  try {
+    const d = obterDadosBridge();
+    if (!d) return;
+    add('Bridge', 'Orçado do Período',   d.totalOrc,       'Mês atual');
+    add('Bridge', 'Realizado do Período', d.totalReal,      'Mês atual');
+    add('Bridge', 'Variação do Período',  d.totalVar,       'Mês atual');
+    add('Bridge', 'Orçado Anual',         d.totalOrcAnual,  'Anual');
+    add('Bridge', 'Projeção Anual',       d.totalProjetado, 'Anual');
+    add('Bridge', 'Variação Anual',       d.varAnual,       'Anual');
+  } catch (e) {
+    // aba pode não existir em todas as cidades ainda
+  }
+}
+
+
+// ==========================================
+// CONSULTA — evolução de um indicador ao longo do tempo
+// ==========================================
+// Uso no editor: Logger.log(JSON.stringify(consultarHistoricoIndicador('SLA (mensal)')));
+// Lê da planilha de HISTÓRICO VALIDADO (mantida à mão), não mais da aba local.
+function consultarHistoricoIndicador(nomeIndicador) {
+  const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
+  const sheet = ss.getSheets()[0];
+  if (!sheet) return [];
+
+  const data = sheet.getDataRange().getValues();
+  const resultado = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const [timestamp, categoria, indicador, valor, referencia] = data[i];
+    if (String(indicador).trim() === nomeIndicador.trim()) {
+      resultado.push({ timestamp, categoria, indicador, valor, referencia });
+    }
+  }
+  return resultado;
+}
+
+// ==========================================
+// SETUP INICIAL DE PLANILHAS
+// ==========================================
+/**
+ * ARQUIVO: Suporte_SetupPlanilha.gs
+ * SEÇÃO:   SUPORTE — Setup inicial (uso único)
+ * DESCRIÇÃO: Script para rodar 1 ÚNICA VEZ no editor da planilha.
+ *            Duplica as abas-modelo para cada cidade (CURITIBA, ITAJAI, ESTEIO),
+ *            mantendo formatação, fórmulas e formatos.
+ *
+ * COMO USAR:
+ *   1. Abra a planilha → Extensões → Apps Script
+ *   2. Cole este arquivo no editor
+ *   3. Rode a função `setupAbasPorCidade()` uma vez
+ *   4. Confira as novas abas criadas (ex.: DADOS_CURITIBA, PREVENTIVAS_ITAJAI, ...)
+ *   5. Preencha os dados de cada cidade na aba correspondente
+ *
+ * Seguro rodar de novo: se a aba já existe, ele PULA (não sobrescreve).
+ */
+
+const CIDADES_SETUP = ['CURITIBA', 'ITAJAI', 'ESTEIO'];
+
+// Abas-modelo atuais → serão duplicadas com sufixo "_CIDADE"
+const ABAS_MODELO = [
+  'DADOS',
+  'PREVENTIVAS',
+  'INDICADORES',
+  'TEMPO',
+  'FINANCEIRO',
+  'METRO QUADRADO',
+  'FINANCEIRO ANUAL'
+];
+
+function setupAbasPorCidade() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const log = [];
+
+  ABAS_MODELO.forEach(nomeBase => {
+    const modelo = ss.getSheetByName(nomeBase);
+    if (!modelo) {
+      log.push('AVISO: aba-modelo "' + nomeBase + '" não encontrada. Pulando.');
+      return;
+    }
+
+    CIDADES_SETUP.forEach(cidade => {
+      const nomeNovo = nomeBase + '_' + cidade;
+
+      if (ss.getSheetByName(nomeNovo)) {
+        log.push('• ' + nomeNovo + ' já existe — pulando.');
+        return;
+      }
+
+      const copia = modelo.copyTo(ss);
+      copia.setName(nomeNovo);
+      log.push('✔ ' + nomeNovo + ' criada.');
+    });
+  });
+
+  Logger.log(log.join('\n'));
+  SpreadsheetApp.getUi().alert(
+    'Setup concluído',
+    log.join('\n') + '\n\nAgora preencha os dados de cada cidade na aba correspondente.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+// ==========================================
+// CORPO DE E-MAIL MENSAL (GOOGLE DOCS)
+// ==========================================
+/**
  * ARQUIVO: Email_Mensal.gs
  * TEXTO DE E-MAIL DE ENVIO DA APRESENTAÇÃO MENSAL — gerado num Google Doc
  *

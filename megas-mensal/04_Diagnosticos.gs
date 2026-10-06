@@ -1,4 +1,286 @@
 /**
+ * ARQUIVO: 04_Diagnosticos.gs
+ * SEÇÃO:   NÚCLEO — Diagnósticos e Conferência de Consistência
+ * DESCRIÇÃO: Ferramentas de auditoria e diagnóstico para validação de dados,
+ *            integridade de arquivos e conferência cruzada entre slides.
+ */
+
+// ==========================================
+// CONFERÊNCIA DE ARQUIVOS DO PROJETO
+// ==========================================
+function diagnosticarArquivos() {
+  if (typeof _megasConferirProjeto_ === 'function') {
+    if (_megasConferirProjeto_()) {
+      Logger.log('✓ Todos os 22 arquivos e símbolos essenciais estão no editor.');
+    }
+  } else {
+    Logger.log('⚠ Função _megasConferirProjeto_ não encontrada em 00_Main.gs');
+  }
+}
+
+// ==========================================
+// DIAGNÓSTICO DO BANCO DE DADOS (BD-CORRETIVAS)
+// ==========================================
+function listarColunasBdCorretivas() {
+  const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
+  const aba = ss.getSheetByName('BD-CORRETIVAS');
+  if (!aba) {
+    Logger.log('Aba BD-CORRETIVAS não encontrada.');
+    return;
+  }
+  const headers = aba.getRange(1, 1, 1, aba.getLastColumn()).getValues()[0];
+  Logger.log('Colunas de BD-CORRETIVAS (' + headers.length + '):');
+  headers.forEach((h, i) => Logger.log('  [' + (i + 1) + '] ' + h));
+}
+
+// ==========================================
+// DIAGNÓSTICO DE BACKLOG (ESTOQUE × FLUXO)
+// ==========================================
+function diagnosticarBacklog() {
+  const nome = getProjetoAtivo().nome;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO DE BACKLOG — ' + nome);
+  Logger.log('======================================================');
+
+  // 1. O código novo está carregado?
+  const faltando = [];
+  [['BACKLOG_RECALCULAR_DA_BD', 'const (01_Config.gs)'],
+   ['obterFluxoCorretivasBD_', 'função (02_Dados.gs)'],
+   ['obterDadosBacklogPorMesBD_', 'função (02_Dados.gs)'],
+   ['_bdChamadoFechado_', 'função (02_Dados.gs)']].forEach(([n, onde]) => {
+    try { if (eval('typeof ' + n) === 'undefined') faltando.push(n + ' — ' + onde); }
+    catch (e) { faltando.push(n + ' — ' + onde); }
+  });
+  if (faltando.length) {
+    Logger.log('⚠ O PROJETO NÃO ESTÁ COM O CÓDIGO NOVO. Falta:');
+    faltando.forEach(f => Logger.log('    ' + f));
+    Logger.log('  Copie os arquivos atualizados pro editor do Apps Script e rode de novo.');
+    return;
+  }
+  Logger.log('Código novo carregado. Recálculo do backlog: ' +
+             (BACKLOG_RECALCULAR_DA_BD ? 'LIGADO' : 'DESLIGADO'));
+
+  // 2. A BD responde pra esta cidade?
+  const itens = _lerBdCorretivasCru_();
+  Logger.log('\nBD-CORRETIVAS: ' + itens.length + ' linha(s) com Centro de Custos = "' +
+             nome.toUpperCase() + '".');
+  if (!itens.length) {
+    Logger.log('⚠ ZERO linhas. O filtro de Centro de Custos não casa — confira como o ' +
+               'nome da cidade aparece na coluna "Centro de Custos" da BD.');
+    return;
+  }
+  const semData = itens.filter(it => !it.dtReporte).length;
+  if (semData) Logger.log('  ' + semData + ' sem "Data de reporte" legível.');
+
+  // 3. Vocabulário do Estado — é aqui que costuma morar a diferença.
+  const porEstado = {};
+  itens.forEach(it => {
+    const e = String(it.estado || '(vazio)').trim();
+    porEstado[e] = (porEstado[e] || 0) + 1;
+  });
+  Logger.log('\nValores da coluna Estado (só "Fechado" tira do backlog):');
+  Object.keys(porEstado).sort((a, b) => porEstado[b] - porEstado[a])
+    .forEach(e => Logger.log('    ' + e + ': ' + porEstado[e]));
+  const encerradoSemEstado = itens.filter(it => it.dtFechado && !_bdChamadoFechado_(it.estado, it.dtFechado));
+  if (encerradoSemEstado.length) {
+    Logger.log('  ⚠ ' + encerradoSemEstado.length + ' chamado(s) têm "Fechado em" preenchido ' +
+               'mas Estado ≠ "Fechado" — ficam no backlog pra sempre.');
+    Logger.log('    Estados: ' + Array.from(new Set(encerradoSemEstado.map(it => it.estado))).join(', '));
+  }
+
+  // 4. Conciliação do mês de referência.
+  const ref = obterMesReferencia_();
+  const ord = ref.ano * 100 + (ref.index + 1);
+  const serie = obterDadosBacklogHistorico_();
+  const iAlvo = serie.findIndex(p => p.ord === ord);
+  const fluxo = obterFluxoCorretivasBD_();
+  Logger.log('\nMês de referência: ' + MESES_NOME_REF[ref.index] + '/' + ref.ano);
+  if (!fluxo) { Logger.log('  Fluxo indisponível (ver avisos acima).'); return; }
+  Logger.log('  criados  = ' + fluxo.mCriados);
+  Logger.log('  fechados = ' + fluxo.mFechados);
+  if (iAlvo < 0) { Logger.log('  ⚠ mês não encontrado na aba BACKLOG.'); return; }
+
+  const atual = serie[iAlvo], ant = iAlvo > 0 ? serie[iAlvo - 1] : null;
+  if (!ant || ant.geral == null || atual.geral == null) {
+    Logger.log('  Sem mês anterior pra conciliar.');
+    return;
+  }
+  const esperado = ant.geral + fluxo.mCriados - fluxo.mFechados;
+  Logger.log('  backlog anterior (' + ant.mes + ') = ' + ant.geral);
+  Logger.log('  esperado = ' + ant.geral + ' + ' + fluxo.mCriados + ' − ' +
+             fluxo.mFechados + ' = ' + esperado);
+  Logger.log('  no slide = ' + atual.geral +
+             (esperado === atual.geral ? '  ✓ FECHA' : '  ✗ diferença de ' + (atual.geral - esperado)));
+  Logger.log('  quebra por equipe: facilities ' + atual.facilities +
+             ' + property ' + atual.property + ' + locatário ' + atual.locatario +
+             ' = ' + (atual.facilities + atual.property + atual.locatario));
+}
+
+function diagnosticarBacklogTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => { setProjetoAtivo(c); diagnosticarBacklog(); });
+}
+
+
+// ==========================================
+// DIAGNÓSTICO — POR QUE O SLA DAS PREVENTIVAS NÃO BATE COM O INFRASPEAK
+// ==========================================
+// O Infraspeak (Ocorrências agendadas no intervalo → Agrupar por Cumprimento
+// dos SLAs) calcula cumprido ÷ (cumprido + não cumprido). A apresentação faz
+// a mesma conta na BD-PREVENTIVAS; se o número sai diferente, a diferença
+// está nas LINHAS que entram na conta, não na fórmula. Este diagnóstico mostra:
+//
+//   - se o código novo está carregado (as setas de mês anterior agora saem
+//     da própria base — sem ele, o slide fica sem comparativo);
+//   - os dois meses (referência e anterior) contados na base;
+//   - linhas DUPLICADAS (mesmo ID mais de uma vez — colar a exportação duas
+//     vezes infla o "cumprido");
+//   - de onde veio o "Curitiba" de cada linha (outro imóvel com o nome da
+//     cidade entra no filtro);
+//   - o vocabulário real da coluna SLA e o período que a base cobre.
+//
+// Compare o "cumprido / não cumprido" daqui com o gráfico do Infraspeak.
+function diagnosticarPreventivas() {
+  const nome = getProjetoAtivo().nome;
+  Logger.log('======================================================');
+  Logger.log('DIAGNÓSTICO DE PREVENTIVAS — ' + nome);
+  Logger.log('======================================================');
+
+  // 1. O código novo está carregado?
+  let carregado = true;
+  try { carregado = eval('typeof _contarPreventivasBD_') === 'function'; } catch (e) { carregado = false; }
+  if (!carregado) {
+    Logger.log('⚠ O PROJETO NÃO ESTÁ COM O 02_Dados.gs NOVO (falta _contarPreventivasBD_).');
+    Logger.log('  É por isso que o slide sai sem comparativo: o código antigo procura o mês');
+    Logger.log('  anterior no HISTORICO GERENCIAL. Copie o 02_Dados.gs inteiro e rode de novo.');
+    return;
+  }
+  Logger.log('Código novo carregado — mês anterior calculado na própria BD-PREVENTIVAS.');
+
+  // 2. A base responde pra esta cidade?
+  const itens = _lerBdPreventivasCru_();
+  Logger.log('\nBD-PREVENTIVAS: ' + itens.length + ' linha(s) deste Mega (todas as datas).');
+  if (!itens.length) { Logger.log('⚠ ZERO linhas — confira a aba e o filtro de empreendimento.'); return; }
+
+  const datas = itens.map(it => it.dtAgendado).filter(Boolean).sort((a, b) => a - b);
+  const fmtD  = d => d ? Utilities.formatDate(d, 'UTC', 'dd/MM/yyyy HH:mm') : '—';
+  Logger.log('  agendamentos de ' + fmtD(datas[0]) + ' a ' + fmtD(datas[datas.length - 1]) +
+             (itens.length - datas.length ? ' · ' + (itens.length - datas.length) + ' sem data legível' : ''));
+
+  const origens = {};
+  itens.forEach(it => { origens[it.origemMega] = (origens[it.origemMega] || 0) + 1; });
+  Logger.log('\nValores que fizeram a linha contar como ' + nome + ' (só deveria ter o próprio Mega):');
+  Object.keys(origens).sort((a, b) => origens[b] - origens[a])
+    .forEach(o => Logger.log('    "' + o + '": ' + origens[o]));
+
+  // 3. Os dois meses contados na base.
+  const ref    = obterMesReferencia_();
+  const antIdx = ref.index === 0 ? 11 : ref.index - 1;
+  const antAno = ref.index === 0 ? ref.ano - 1 : ref.ano;
+  [[ref.ano, ref.index], [antAno, antIdx]].forEach(([ano, idx]) => {
+    const c = _contarPreventivasBD_(itens, ano, idx);
+    Logger.log('\n' + MESES_3_REF[idx] + '/' + ano + ': previstas ' + c.mPrevistas +
+               ', realizadas ' + c.mRealizadas +
+               ' · SLA cumprido ' + c.mCumpridos + ', não cumprido ' + c.mNaoCumpridos +
+               ', sem SLA ' + (c.mPrevistas - c.mCumpridos - c.mNaoCumpridos) +
+               ' → SLA ' + c.mSla + '%');
+    if (!c.mPrevistas) Logger.log('  ⚠ nenhuma preventiva neste mês na base — o slide fica sem seta.');
+  });
+
+  // 4. Detalhe do mês de referência: SLA, duplicatas.
+  const ini = new Date(Date.UTC(ref.ano, ref.index, 1));
+  const fim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+  const doMes = itens.filter(it => it.dtAgendado && it.dtAgendado >= ini && it.dtAgendado < fim);
+
+  const porSla = {};
+  doMes.forEach(it => {
+    const k = (it.sla || '(vazio)') + ' → ' + _slaClasse_(it.sla);
+    porSla[k] = (porSla[k] || 0) + 1;
+  });
+  Logger.log('\nColuna SLA em ' + MESES_3_REF[ref.index] + ' (valor na base → como a conta classifica):');
+  Object.keys(porSla).forEach(k => Logger.log('    ' + k + ': ' + porSla[k]));
+
+  const porId = {};
+  doMes.forEach(it => { if (it.id) (porId[it.id] = porId[it.id] || []).push(it); });
+  const dups = Object.keys(porId).filter(id => porId[id].length > 1);
+  const semId = doMes.filter(it => !it.id).length;
+  if (dups.length) {
+    const extra = dups.reduce((s, id) => s + porId[id].length - 1, 0);
+    Logger.log('\n⚠ ' + dups.length + ' ID(s) repetido(s) no mês — ' + extra + ' linha(s) a mais na conta:');
+    dups.forEach(id => Logger.log('    ID ' + id + ' ×' + porId[id].length + ' · linhas ' +
+      porId[id].map(it => it.linha).join(', ') + ' · SLA ' + porId[id].map(it => it.sla || '(vazio)').join(' / ') +
+      ' · ' + porId[id][0].descricao));
+  } else {
+    Logger.log('\nNenhum ID repetido no mês.');
+  }
+  if (semId) Logger.log('  ' + semId + ' linha(s) do mês sem ID — não dá pra checar duplicata nelas.');
+
+  // 5. Linha a linha contra uma exportação do Infraspeak (mesmo mês e Mega).
+  if (DIAG_EXPORT_INFRASPEAK_PREVENTIVAS_ID) _compararPreventivasComExportacao_(doMes, DIAG_EXPORT_INFRASPEAK_PREVENTIVAS_ID);
+}
+
+// Planilha com a exportação "Ocorrências agendadas no intervalo" do
+// Infraspeak (uma linha por ocorrência, coluna "ID ocorrência") — do MESMO
+// mês e Mega do diagnóstico. Vazio = pula a comparação.
+// 06/10/2026: "_Cumprimento dos SLAs", Mega Curitiba, SET/26 (207 linhas,
+// 183 cumpridas × 188 na BD-PREVENTIVAS).
+const DIAG_EXPORT_INFRASPEAK_PREVENTIVAS_ID = '129RnJStJgyIBVikrNhJTGNookpG99ktH7eVooYu0Nfw';
+
+function _compararPreventivasComExportacao_(doMes, exportId) {
+  try {
+    const dados = SpreadsheetApp.openById(exportId).getSheets()[0].getDataRange().getDisplayValues();
+    const h  = dados[0].map(_histNorm_);
+    const cI = h.findIndex(x => x.indexOf('id ocorrencia') >= 0);
+    if (cI < 0) { Logger.log('\nExportação do Infraspeak: coluna "ID ocorrência" não encontrada.'); return; }
+
+    // A exportação é de UM Mega; comparar com outro só lista tudo como diferença.
+    const cCC   = h.findIndex(x => x.indexOf('centro de custo') >= 0);
+    const alvo  = _histEmpChave_(getProjetoAtivo().nome);
+    const ccExp = cCC >= 0 && dados.length > 1 ? dados[1][cCC] : '';
+    if (ccExp && !_valorEhDoMega_(ccExp, alvo)) {
+      Logger.log('\nExportação do Infraspeak é de "' + ccExp + '" — comparação pulada para ' + getProjetoAtivo().nome + '.');
+      return;
+    }
+
+    const deles  = new Set(dados.slice(1).map(r => _idChamadoNormaliza_(r[cI])).filter(Boolean));
+    const nossos = new Set(doMes.map(it => it.id).filter(Boolean));
+    const aMais  = doMes.filter(it => it.id && !deles.has(it.id));
+    const aMenos = Array.from(deles).filter(id => !nossos.has(id));
+
+    Logger.log('\nCOMPARAÇÃO COM A EXPORTAÇÃO DO INFRASPEAK');
+    Logger.log('  Infraspeak: ' + deles.size + ' ocorrência(s) · BD-PREVENTIVAS: ' + doMes.length + ' linha(s) no mês');
+    if (!aMais.length && !aMenos.length) { Logger.log('  ✓ Os mesmos IDs dos dois lados.'); return; }
+
+    if (aMais.length) {
+      Logger.log('  ⚠ ' + aMais.length + ' na BD-PREVENTIVAS que o Infraspeak NÃO tem (entram na nossa conta):');
+      if (aMais.length > 30) Logger.log('    (mostrando as 30 primeiras)');
+      aMais.slice(0, 30).forEach(it => Logger.log('    ID ' + it.id + ' · linha ' + it.linha +
+        ' · agendada ' + Utilities.formatDate(it.dtAgendado, 'UTC', 'dd/MM HH:mm') +
+        ' · ' + (it.sla || 'sem SLA') + ' · ' + (it.estado || '—') +
+        ' · Mega por "' + it.origemMega + '" · ' + it.descricao));
+    }
+    if (aMenos.length) {
+      Logger.log('  ⚠ ' + aMenos.length + ' no Infraspeak que a BD-PREVENTIVAS não tem neste mês: ' +
+                 aMenos.slice(0, 30).join(', ') + (aMenos.length > 30 ? ', …' : ''));
+    }
+  } catch (e) {
+    Logger.log('\nExportação do Infraspeak indisponível: ' + e.message);
+  }
+}
+
+// Pontos de entrada por cidade: diagnosticarPreventivas() sozinho não sabe
+// de qual Mega é e para em "Nenhum projeto ativo".
+function diagnosticarPreventivasCuritiba() { setProjetoAtivo('CURITIBA'); diagnosticarPreventivas(); }
+function diagnosticarPreventivasItajai()   { setProjetoAtivo('ITAJAI');   diagnosticarPreventivas(); }
+function diagnosticarPreventivasEsteio()   { setProjetoAtivo('ESTEIO');   diagnosticarPreventivas(); }
+
+function diagnosticarPreventivasTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => { setProjetoAtivo(c); diagnosticarPreventivas(); });
+}
+
+// ==========================================
+// SLIDE DE CHECK DE CONSISTÊNCIA
+// ==========================================
+/**
  * ARQUIVO: Slide_CheckConsistencia.gs
  * SLIDE — CHECK DE CONSISTÊNCIA (conferência interna, EXCLUIR da versão final)
  * DESCRIÇÃO: Slide de auto-verificação. Roda um conjunto de checagens que
@@ -223,21 +505,7 @@ function _rodarChecagensConsistencia_() {
   // O que vale checar é a ABA de origem (`finMes.planilha` /
   // `finAcum.planilha`): quando ela discorda da BRIDGE, alguém atualizou uma
   // e esqueceu a outra — e é isso que precisa aparecer.
-  const G_FIN = 'Financeiro — BRIDGE x abas FINANCEIRO';
-  [['mês',       'mes',  () => finMes,  'FINANCEIRO'],
-   ['acumulado', 'acum', () => finAcum, 'FINANCEIRO ANUAL']].forEach(par => {
-    const rotulo = par[0], bloco = par[1], obter = par[2], aba = par[3];
-    ['real', 'orc'].forEach(campo => {
-      const nomeCampo = campo === 'real' ? 'REALIZADO' : 'ORÇADO';
-      _ckAdd_(L, G_FIN, 'Total ' + rotulo + ' ' + nomeCampo + ' (BRIDGE x aba ' + aba + ')', () => {
-        const fin = obter();
-        if (!dre || !fin || !fin.planilha) return null;
-        const a = dre.total[bloco][campo];
-        const b = campo === 'real' ? fin.planilha.totalRealizado : fin.planilha.totalOrcado;
-        return { ok: _ckDinheiro_(a, b), esperado: _ckMil_(a) + ' (BRIDGE)', obtido: _ckMil_(b) + ' (aba)' };
-      });
-    });
-  });
+  const G_FIN = 'Financeiro — BRIDGE';
   // Coerência da planilha de origem: o deck já EXIBE a soma das rubricas
   // (obterDadosDRE_ monta `total` somando), então comparar `total` com a
   // soma seria sempre verdadeiro. O que vale checar é a linha "TOTAL" CRUA
@@ -595,7 +863,7 @@ function _rodarChecagensConsistencia_() {
   const G_IND = 'Indicadores (Dashboard x slide de detalhe)';
   _ckAdd_(L, G_IND, 'SLA de preventivas do mês: Dashboard x Preventivas', () => {
     if (!dash || !prev) return null;
-    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla preventivas', true) || _ckDash_(dash, 'sla atendido', true);
+    const a = _ckPct_(prev.mensal.sla), b = _ckDash_(dash, 'sla atendido', true);
     if (a == null || b == null) return null;
     const r = _ckPctIguais_(a, b);
     return { ok: r.ok, esperado: _ckM2_(r.a) + '%', obtido: _ckM2_(r.b) + '%' };
@@ -696,3 +964,11 @@ function _ckMediaAnualCustoM2_(custoM2, regex) {
 function gerarSoCheckCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideCheckConsistencia(); }
 function gerarSoCheckItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCheckConsistencia(); }
 function gerarSoCheckEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCheckConsistencia(); }
+
+// Pontos de entrada avulsos para o Check de Consistência
+function gerarSoCheckConsistenciaCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideCheckConsistencia(); }
+function gerarSoCheckConsistenciaItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideCheckConsistencia(); }
+function gerarSoCheckConsistenciaEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideCheckConsistencia(); }
+function gerarSoCheckConsistenciaTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(c => { setProjetoAtivo(c); gerarSlideCheckConsistencia(); });
+}

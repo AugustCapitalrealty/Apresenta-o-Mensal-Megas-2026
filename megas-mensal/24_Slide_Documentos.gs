@@ -1,3 +1,10 @@
+/**
+ * ARQUIVO: 24_Slide_Documentos.gs
+ * SEÇÃO:   SLIDES — Documentação Legal dos Inquilinos
+ * DESCRIÇÃO: Status de conformidade documental dos locatários e tabela
+ *            paginada detalhada por pendência.
+ */
+
 // ==========================================
 // ARQUIVO: Slide11_Documentos.gs
 // SLIDE 11 — DOCUMENTAÇÃO LEGAL (DOCUMENTOS INQUILINOS)
@@ -357,4 +364,18 @@ function truncarParaLargura_(texto, larguraPt, fontSize) {
   const maxChars = Math.max(3, Math.floor(larguraUtil / (fontSize * 0.60)));
   if (texto.length <= maxChars) return texto;
   return texto.substring(0, maxChars - 1).trim() + '…';
+}
+
+// ==========================================
+// PONTOS DE ENTRADA AVULSOS — DOCUMENTOS
+// ==========================================
+function gerarSoDocumentosCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideDocumentos(); }
+function gerarSoDocumentosItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideDocumentos(); }
+function gerarSoDocumentosEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideDocumentos(); }
+
+function gerarSoDocumentosTodosOsMegas() {
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(cidade => {
+    setProjetoAtivo(cidade);
+    gerarSlideDocumentos();
+  });
 }

@@ -6,7 +6,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 
 | Pasta | Projeto | Arquivos |
 |---|---|---|
-| `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 44 `.gs` |
+| `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 23 `.gs` (sobe com `clasp`) |
 | `boletim/` | Boletim 2026 | 18 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 18 `.gs` |
 | `financeiro-mensal/` | Apresentação Mensal — Financeiro | 14 `.gs` |
@@ -132,9 +132,17 @@ copiado à mão para o editor do Apps Script de cada projeto. **`git push` não
 publica nada** — se o comportamento não mudou depois de um commit, a
 primeira coisa a verificar é se os arquivos foram copiados para o editor.
 
-A exceção é `orcamento-2027/`, que sobe com `clasp push` de dentro da pasta
-(ver o [`README`](orcamento-2027/README.md) dela). Lá, editar direto no
-editor é que perde trabalho: o próximo push sobrescreve.
+As exceções são `orcamento-2027/` (ver o [`README`](orcamento-2027/README.md)
+dela) e `megas-mensal/`, que sobem com `clasp push` de dentro da pasta. Lá,
+editar direto no editor é que perde trabalho: o próximo push sobrescreve.
+
+A `megas-mensal` foi ligada ao clasp em 06/10/2026, e aconteceu de novo o
+problema acima: o editor rodava uma versão reorganizada (23 arquivos no
+padrão `00`–`05` infraestrutura / `10`–`25` slides, mais o Farol P&G, a
+contracapa e os `gerarSo*`) que **nunca tinha ido pro git** — o repo ainda
+tinha os 44 arquivos antigos. Para ligar outro projeto ao clasp: `clasp pull`
+numa pasta **temporária** (pull direto na pasta do repo sobrescreve o que
+foi editado aqui), compare com o repo, junte, e só então `push`.
 
 ## Design system
 

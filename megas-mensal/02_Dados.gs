@@ -1,5 +1,13 @@
 /**
  * ARQUIVO: 02_Dados.gs
+ * SEÇÃO:   NÚCLEO — Leitura e Extração de Dados
+ * DESCRIÇÃO: Camada de acesso e transformação de dados das planilhas:
+ *            Dashboard, Preventivas, Corretivas, Histórico Validado,
+ *            BD-Corretivas, Controle de Acessos, PPC, Financeiro e DRE.
+ */
+
+/**
+ * ARQUIVO: 02_Dados.gs
  * SEÇÃO:   NÚCLEO — Camada de dados
  * DESCRIÇÃO: Busca os dados na planilha da cidade ativa (setProjetoAtivo em 01_Config.gs/00_Main.gs).
  *            As abas são localizadas pelo NOME (cada cópia da planilha tem GIDs próprios).
@@ -444,7 +452,24 @@ function obterKpisAcessos_() {
     if (!melhor) return null;
 
     const fluxoM = c.fluxo  >= 0 ? _histNum_(melhor[c.fluxo])  : NaN;
-    const fluxoA = c.fluxoA >= 0 ? _histNum_(melhor[c.fluxoA]) : NaN;
+    let fluxoA   = c.fluxoA >= 0 ? _histNum_(melhor[c.fluxoA]) : NaN;
+
+    // Se a coluna 'fluxo acum' não existir, soma os meses do ano corrente até o mês de referência
+    if (isNaN(fluxoA) && melhorOrd > 0 && c.fluxo >= 0) {
+      const anoAtual = Math.floor(melhorOrd / 100);
+      let soma = 0, count = 0;
+      for (let i = hRow + 1; i < data.length; i++) {
+        const row = data[i];
+        if (_histEmpChave_(row[c.emp]) !== alvoEmp) continue;
+        const mes = _histParseMes_(row[c.mes]);
+        if (mes && Math.floor(mes.ord / 100) === anoAtual && mes.ord <= melhorOrd) {
+          const v = _histNum_(row[c.fluxo]);
+          if (!isNaN(v)) { soma += v; count++; }
+        }
+      }
+      if (count > 0) fluxoA = soma;
+    }
+
     return {
       mensal: {
         fluxo: isNaN(fluxoM) ? '' : formatarNumeroBR(Math.round(fluxoM)),
@@ -1145,14 +1170,53 @@ function _abaBdPreventivas_(ss) {
   return sheet || null;
 }
 
-function _rowPertenceAoMega_(row, colsToCheck, alvoEmp) {
+// O valor é do próprio Mega? Exige "MEGA <cidade>" escrito — não basta o
+// nome da cidade. _histEmpChave_ aceita qualquer texto com "Curitiba", e na
+// BD-PREVENTIVAS isso trazia o POSTO CURITIBA, o Truck Center, o Armazém
+// Monousuário Esteio II, a Friozem e a Martini Meat (Itajaí) pra dentro do
+// Mega: SET/26 Curitiba saiu com 212 preventivas e SLA 92,16% contra 207 e
+// 91,96% no Infraspeak — as 5 a mais eram do Posto.
+function _valorEhDoMega_(v, alvoEmp) {
+  const norm = String(v || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  return !!norm && norm.indexOf(alvoEmp) >= 0;
+}
+
+// A PRIMEIRA coluna preenchida decide — colsToCheck começa pelo Centro de
+// Custos, que é o que define o empreendimento (é o filtro do Infraspeak).
+// Edifício/Local só contam quando o Centro de Custos vem vazio; um Local
+// "MEGA Curitiba - ..." não puxa pra dentro uma linha de outro centro de custo.
+//
+// dataLinha (Date): agendamento da preventiva / reporte do chamado. Só é
+// usada pros `agregados` do projeto (01_Config.gs) — imóveis de outro centro
+// de custo que entram no Mega a partir de uma data (Monousuário Esteio II e
+// Friozem no Esteio, desde 2026). Sem data legível, o agregado fica fora.
+function _rowPertenceAoMega_(row, colsToCheck, alvoEmp, dataLinha) {
   for (let i = 0; i < colsToCheck.length; i++) {
     const c = colsToCheck[i];
-    if (c >= 0 && row[c]) {
-      if (_histEmpChave_(row[c]) === alvoEmp) return true;
-    }
+    const v = c >= 0 ? String(row[c] || '').trim() : '';
+    if (!v) continue;
+    if (_valorEhDoMega_(v, alvoEmp)) return true;
+    const ag = _agregadoDoMega_(v);
+    return !!ag && !!dataLinha && dataLinha >= ag.desdeData;
   }
   return false;
+}
+
+// Agregado do projeto ativo que bate com o valor, ou null. As datas vêm como
+// texto 'AAAA-MM-DD' na config e viram Date UTC aqui (as datas da base
+// também são lidas em UTC por _histParseDataHora_).
+function _agregadoDoMega_(v) {
+  let lista = [];
+  try { lista = getProjetoAtivo().agregados || []; } catch (e) { return null; }   // sem cidade ativa: sem agregados
+  if (!lista.length) return null;
+  const norm = String(v || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const ag = lista.find(a => norm.indexOf(a.nome) >= 0);
+  if (!ag) return null;
+  if (!ag.desdeData) {
+    const m = String(ag.desde || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    ag.desdeData = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : new Date(8.64e15);   // data inválida = nunca
+  }
+  return ag;
 }
 
 function _lerBdPreventivasCru_() {
@@ -1193,11 +1257,16 @@ function _lerBdPreventivasCru_() {
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp, cAgend >= 0 ? _histParseDataHora_(row[cAgend]) : null)) continue;
 
       const rawDescricao = cDesc >= 0 ? String(row[cDesc] || '').trim() : '';
+      // Qual valor fez a linha contar como deste Mega (a 1ª coluna
+      // preenchida) — o diagnóstico mostra a distribuição.
+      const origemMega = colsMega.map(c => String(row[c] || '').trim()).find(v => v) || '';
 
       saida.push({
+        linha:       r + 1,
+        origemMega:  origemMega,
         id:          _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
         rawDesc:     rawDescricao,
         descricao:   _limparDescricaoPreventiva_(rawDescricao),
@@ -1217,6 +1286,64 @@ function _lerBdPreventivasCru_() {
   }
 }
 
+// Conta previstas/realizadas/SLA de UM mês (e o acumulado do ano até ele)
+// na BD-PREVENTIVAS. Recebe o mês porque o mês anterior das setas ▲/▼ tem
+// que sair desta mesma conta: comparar o valor da base com um número
+// digitado em outra planilha (o antigo HISTORICO GERENCIAL) produziu SET/26
+// com SLA acumulado subindo +0,22 num mês que ficou abaixo da média — o
+// que é impossível numa média ponderada.
+function _contarPreventivasBD_(itens, ano, index) {
+  const refIni = new Date(Date.UTC(ano, index, 1));
+  const refFim = new Date(Date.UTC(ano, index + 1, 1));   // exclusivo
+  const anoIni = new Date(Date.UTC(ano, 0, 1));
+
+  const dentro = (d, ini, fim) => !!d && d >= ini && d < fim;
+
+  const c = {
+    mPrevistas: 0, mRealizadas: 0, mCumpridos: 0, mNaoCumpridos: 0,
+    aPrevistas: 0, aRealizadas: 0, aCumpridos: 0, aNaoCumpridos: 0,
+    foraSla: [], counts: { facilities: 0, terceiros: 0 }
+  };
+
+  itens.forEach(it => {
+    const noMes   = dentro(it.dtAgendado, refIni, refFim);
+    const noAno   = dentro(it.dtAgendado, anoIni, refFim);
+    if (!noMes && !noAno) return;
+    const estNorm = _histNorm_(it.estado);
+    const fechada = _bdChamadoFechado_(it.estado, it.dtFechado) || estNorm === 'fechada' || estNorm === 'fechado' || estNorm === 'concluida' || estNorm === 'concluido';
+    const slaCls  = _slaClasse_(it.sla);
+
+    if (noMes) {
+      c.mPrevistas++;
+      if (fechada) c.mRealizadas++;
+      if (slaCls === 'CUMPRIDO') c.mCumpridos++;
+      else if (slaCls === 'NAO') {
+        c.mNaoCumpridos++;
+        const tipo = _equipePreventiva_(it.fechadoPor, it.rawDesc);
+        if (tipo === 'FACILITIES') c.counts.facilities++;
+        else c.counts.terceiros++;
+
+        const desc = _limparDescricaoPreventiva_(it.rawDesc || it.descricao) || 'Serviço preventivo';
+        c.foraSla.push({ name: desc, type: tipo });
+      }
+    }
+
+    if (noAno) {
+      c.aPrevistas++;
+      if (fechada) c.aRealizadas++;
+      if (slaCls === 'CUMPRIDO') c.aCumpridos++;
+      else if (slaCls === 'NAO') c.aNaoCumpridos++;
+    }
+  });
+
+  // SLA em %, já arredondado em 2 casas — o delta é calculado sobre o valor
+  // que aparece no slide, senão 92,16 − 94,74 poderia sair −2,57.
+  const pct = (cump, nao) => (cump + nao) > 0 ? Math.round((cump / (cump + nao)) * 10000) / 100 : null;
+  c.mSla = pct(c.mCumpridos, c.mNaoCumpridos);
+  c.aSla = pct(c.aCumpridos, c.aNaoCumpridos);
+  return c;
+}
+
 function obterDadosPreventivasBD_() {
   const itens = _lerBdPreventivasCru_();
   if (!itens.length) return null;
@@ -1226,48 +1353,26 @@ function obterDadosPreventivasBD_() {
     return null;
   }
 
-  const ref    = obterMesReferencia_();
-  const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
-  const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));   // exclusivo
-  const anoIni = new Date(Date.UTC(ref.ano, 0, 1));
+  const ref     = obterMesReferencia_();
+  const antIdx  = ref.index === 0 ? 11 : ref.index - 1;
+  const antAno  = ref.index === 0 ? ref.ano - 1 : ref.ano;
+  const atual   = _contarPreventivasBD_(itens, ref.ano, ref.index);
+  const ant     = _contarPreventivasBD_(itens, antAno, antIdx);
 
-  const dentro = (d, ini, fim) => !!d && d >= ini && d < fim;
+  // Mês anterior sem nenhuma preventiva na base = a base não cobre aquele
+  // mês. Sem seta, em vez de "+212" contra um zero que não é dado.
+  const temAnt  = ant.mPrevistas > 0;
+  const dif     = (a, b) => (a === null || b === null) ? null : Math.round((a - b) * 100) / 100;
 
-  let mPrevistas = 0, mRealizadas = 0, mCumpridos = 0, mNaoCumpridos = 0;
-  let aPrevistas = 0, aRealizadas = 0, aCumpridos = 0, aNaoCumpridos = 0;
+  const rawServices = atual.foraSla;
+  const counts      = atual.counts;
 
-  let rawServices = [];
-  let counts = { facilities: 0, terceiros: 0 };
-
-  itens.forEach(it => {
-    const noMes   = dentro(it.dtAgendado, refIni, refFim);
-    const noAno   = dentro(it.dtAgendado, anoIni, refFim);
-    const estNorm = _histNorm_(it.estado);
-    const fechada = _bdChamadoFechado_(it.estado, it.dtFechado) || estNorm === 'fechada' || estNorm === 'fechado' || estNorm === 'concluida' || estNorm === 'concluido';
-    const slaCls  = _slaClasse_(it.sla);
-
-    if (noMes) {
-      mPrevistas++;
-      if (fechada) mRealizadas++;
-      if (slaCls === 'CUMPRIDO') mCumpridos++;
-      else if (slaCls === 'NAO') {
-        mNaoCumpridos++;
-        const tipo = _equipePreventiva_(it.fechadoPor, it.rawDesc);
-        if (tipo === 'FACILITIES') counts.facilities++;
-        else counts.terceiros++;
-
-        const desc = _limparDescricaoPreventiva_(it.rawDesc || it.descricao) || 'Serviço preventivo';
-        rawServices.push({ name: desc, type: tipo });
-      }
-    }
-
-    if (noAno) {
-      aPrevistas++;
-      if (fechada) aRealizadas++;
-      if (slaCls === 'CUMPRIDO') aCumpridos++;
-      else if (slaCls === 'NAO') aNaoCumpridos++;
-    }
-  });
+  Logger.log('Preventivas BD ' + MESES_3_REF[ref.index] + '/' + ref.ano +
+             ': previstas ' + atual.mPrevistas + ', realizadas ' + atual.mRealizadas +
+             ', SLA ' + atual.mSla + ' (' + atual.mCumpridos + '/' + (atual.mCumpridos + atual.mNaoCumpridos) + '), acum. SLA ' + atual.aSla +
+             ' | ' + MESES_3_REF[antIdx] + '/' + antAno +
+             ': previstas ' + ant.mPrevistas + ', realizadas ' + ant.mRealizadas +
+             ', SLA ' + ant.mSla + ', acum. SLA ' + ant.aSla);
 
   const grouped = {};
   rawServices.forEach(s => {
@@ -1282,24 +1387,29 @@ function obterDadosPreventivasBD_() {
     return { text: txt, type: g.type };
   });
 
-  const mBase = mCumpridos + mNaoCumpridos;
-  const aBase = aCumpridos + aNaoCumpridos;
-
-  const mSla = mBase > 0 ? (Math.round((mCumpridos / mBase) * 10000) / 100).toFixed(2).replace('.', ',') + '%' : '-';
-  const aSla = aBase > 0 ? (Math.round((aCumpridos / aBase) * 10000) / 100).toFixed(2).replace('.', ',') + '%' : '-';
+  const fmtSla = v => v === null ? '-' : v.toFixed(2).replace('.', ',') + '%';
 
   return {
     mensal: {
       titulo: 'VISÃO MENSAL (' + MESES_3_REF[ref.index] + ')',
-      previstas: String(mPrevistas),
-      realizadas: String(mRealizadas),
-      sla: mSla
+      previstas: String(atual.mPrevistas),
+      realizadas: String(atual.mRealizadas),
+      sla: fmtSla(atual.mSla),
+      previstasDelta:  temAnt ? atual.mPrevistas  - ant.mPrevistas  : null,
+      realizadasDelta: temAnt ? atual.mRealizadas - ant.mRealizadas : null,
+      slaDelta:        temAnt ? dif(atual.mSla, ant.mSla) : null
     },
     anual: {
       titulo: 'VISÃO ACUMULADA (' + ref.ano + ')',
-      previstas: String(aPrevistas),
-      realizadas: String(aRealizadas),
-      sla: aSla
+      previstas: String(atual.aPrevistas),
+      realizadas: String(atual.aRealizadas),
+      sla: fmtSla(atual.aSla),
+      // Acumulado: o quanto o ano cresceu com o mês de referência.
+      previstasDelta:  atual.mPrevistas,
+      realizadasDelta: atual.mRealizadas,
+      // Em janeiro o "acumulado anterior" seria o do ano passado inteiro —
+      // outra régua; sem seta.
+      slaDelta:        (temAnt && antAno === ref.ano) ? dif(atual.aSla, ant.aSla) : null
     },
     servicosForaSla: servicosForaSla,
     counts: counts
@@ -1316,21 +1426,11 @@ function obterDadosPreventivas() {
       Logger.log('BD-PREVENTIVAS indisponível (' + eBd.message + ') — caindo na aba PREVENTIVAS da cidade.');
     }
 
-    // Se a BD-PREVENTIVAS calculou com sucesso, enriquece com tendências e retorna
+    // Se a BD-PREVENTIVAS calculou com sucesso, retorna — as tendências
+    // (mês anterior) já vêm calculadas da mesma base.
     if (res && res.mensal && res.mensal.previstas !== '-') {
       Logger.log('Preventivas ' + getProjetoAtivo().nome + ': calculado da BD-PREVENTIVAS (Previstas: ' +
                  res.mensal.previstas + ', Realizadas: ' + res.mensal.realizadas + ', SLA: ' + res.mensal.sla + ')');
-
-      const _dp = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'PREVENTIVAS'); return r ? r.delta : null; };
-      res.mensal.previstasDelta  = _dp(res.mensal.previstas,  'PREVISTAS');
-      res.mensal.realizadasDelta = _dp(res.mensal.realizadas, 'REALIZADAS');
-      res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
-      res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
-
-      const _n = v => { const n = _numLenient_(v); return isNaN(n) ? null : n; };
-      res.anual.previstasDelta  = _n(res.mensal.previstas);
-      res.anual.realizadasDelta = _n(res.mensal.realizadas);
-
       return res;
     }
 
@@ -1397,11 +1497,9 @@ function obterDadosPreventivas() {
       return { text: txt, type: g.type };
     });
 
-    const _dp = (atual, ind) => { const r = deltaVsMesAnterior_(atual, ind, 'PREVENTIVAS'); return r ? r.delta : null; };
-    res.mensal.previstasDelta  = _dp(res.mensal.previstas,  'PREVISTAS');
-    res.mensal.realizadasDelta = _dp(res.mensal.realizadas, 'REALIZADAS');
-    res.mensal.slaDelta        = _dp(res.mensal.sla,        'SLA MENSAL');
-    res.anual.slaDelta         = _dp(res.anual.sla,         'SLA ACUMULADO');
+    // Reserva digitada: sem seta de mês anterior. Comparar contra o antigo
+    // HISTORICO GERENCIAL (aposentado) misturaria fontes de novo.
+    Logger.log('⚠️ Preventivas ' + getProjetoAtivo().nome + ': BD-PREVENTIVAS indisponível — usando a aba PREVENTIVAS digitada, sem tendências.');
 
     const _n = v => { const n = _numLenient_(v); return isNaN(n) ? null : n; };
     res.anual.previstasDelta  = _n(res.mensal.previstas);
@@ -1543,37 +1641,49 @@ function obterDadosCorretivasV6() {
 // ==========================================
 function obterDadosTempo() {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('TEMPO');
-    if (!sheet) throw new Error('Aba TEMPO não encontrada.');
-
-    const data = sheet.getDataRange().getDisplayValues();
-    const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
     let kpis = {
       fluxo: '-', aFluxo: '-',
       tempoAcesso: '-', aTempoAcesso: '-',
-      turnover: '-', aTurnover: '-',
-      seguranca: '-', aSeguranca: '-'
+      turnover: '', aTurnover: '',
+      seguranca: '0', aSeguranca: '0'
     };
 
-    data.forEach(row => {
-      const ind = norm(row[0]);
-      if      (ind.includes('fluxo') && ind.includes('pessoas'))        { kpis.fluxo       = row[1]; kpis.aFluxo       = row[2]; }
-      else if (ind.includes('tempo') && ind.includes('acesso'))         { kpis.tempoAcesso = formatarTempo(row[1]); kpis.aTempoAcesso = formatarTempo(row[2]); }
-      else if (ind.includes('turnover'))                                 { kpis.turnover    = formatarPorcentagem(row[1]); kpis.aTurnover = formatarPorcentagem(row[2]); }
-      else if (ind.includes('ocorrencia') || ind.includes('seguranca')) { kpis.seguranca   = row[1]; kpis.aSeguranca   = row[2]; }
-    });
+    // Tenta ler ocorrências de segurança da aba TEMPO da cidade ativa caso exista
+    try {
+      const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
+      const sheet = ss ? ss.getSheetByName('TEMPO') : null;
+      if (sheet) {
+        const data = sheet.getDataRange().getDisplayValues();
+        const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+        data.forEach(row => {
+          const ind = norm(row[0]);
+          if      (ind.includes('fluxo') && ind.includes('pessoas'))        { kpis.fluxo       = row[1]; kpis.aFluxo       = row[2]; }
+          else if (ind.includes('tempo') && ind.includes('acesso'))         { kpis.tempoAcesso = formatarTempo(row[1]); kpis.aTempoAcesso = formatarTempo(row[2]); }
+          else if (ind.includes('turnover'))                                 { kpis.turnover    = formatarPorcentagem(row[1]); kpis.aTurnover = formatarPorcentagem(row[2]); }
+          else if (ind.includes('ocorrencia') || ind.includes('seguranca')) { kpis.seguranca   = row[1]; kpis.aSeguranca   = row[2]; }
+        });
+      }
+    } catch (eLocal) {
+      Logger.log('Aviso (aba TEMPO local não encontrada, usando Controle de Acessos): ' + eLocal.message);
+    }
 
     // Fluxo e Tempo médio vêm da planilha validada de Controle de Acessos
-    // (fonte autoritativa). Turnover fica EM BRANCO (a pedido). Ocorrências
-    // continua vindo da aba TEMPO. Se a planilha de acessos estiver
-    // indisponível, cai nos valores da aba TEMPO.
+    // (fonte autoritativa para TODOS os Megas — Curitiba, Itajaí, Esteio).
     const acc = obterKpisAcessos_();
-    const fluxoMensal = acc && acc.mensal.fluxo ? acc.mensal.fluxo : kpis.fluxo;
-    const tempoMensal = acc && acc.mensal.tempo ? acc.mensal.tempo : kpis.tempoAcesso;
-    const fluxoAnual  = acc && acc.anual.fluxo  ? acc.anual.fluxo  : kpis.aFluxo;
-    const tempoAnual  = acc && acc.anual.tempo  ? acc.anual.tempo  : kpis.aTempoAcesso;
+    let fluxoMensal = (acc && acc.mensal && acc.mensal.fluxo) ? acc.mensal.fluxo : kpis.fluxo;
+    let tempoMensal = (acc && acc.mensal && acc.mensal.tempo) ? acc.mensal.tempo : kpis.tempoAcesso;
+    let fluxoAnual  = (acc && acc.anual  && acc.anual.fluxo)  ? acc.anual.fluxo  : kpis.aFluxo;
+    let tempoAnual  = (acc && acc.anual  && acc.anual.tempo)  ? acc.anual.tempo  : kpis.aTempoAcesso;
+
+    // Se o Controle de Acessos não retornou o fluxo, tenta o Histórico Validado
+    if (!fluxoMensal || fluxoMensal === '-') {
+      const hv = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
+      if (hv && hv.length) {
+        fluxoMensal = formatarNumeroBR(Math.round(hv[hv.length - 1].valor));
+        fluxoAnual  = formatarNumeroBR(Math.round(hv.reduce((s, x) => s + (x.valor || 0), 0)));
+      }
+    }
 
     return {
       mensal: {
@@ -1674,74 +1784,11 @@ function _financeiroDoBridge_(bloco) {
 // Slide05 e outra em Slide08). Hoje o retorno é usado só como CONFERÊNCIA
 // contra a BRIDGE, então uma aba ausente devolve null em vez de lançar erro:
 // o deck não depende mais dela para ser gerado.
-function _financeiroDaAba_(nomeAba) {
-  try {
-    const ss  = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const aba = ss.getSheetByName(nomeAba);
-    if (!aba) { Logger.log('_financeiroDaAba_: aba "' + nomeAba + '" não encontrada (só conferência).'); return null; }
-
-    const ultimaLinha  = aba.getLastRow();
-    const ultimaColuna = aba.getLastColumn();
-    if (ultimaLinha < 2) return null;
-
-    const valores   = aba.getRange(1, 1, ultimaLinha, ultimaColuna).getValues();
-    const cabecalho = valores[0].map(v => normalizarTexto(v));
-
-    const idxNatureza  = cabecalho.indexOf('natureza');
-    const idxOrcado    = cabecalho.indexOf('orcado');
-    const idxRealizado = cabecalho.indexOf('custo mensal') >= 0
-      ? cabecalho.indexOf('custo mensal')
-      : cabecalho.indexOf('realizado');
-    const idxVariacao  = cabecalho.indexOf('variacao');
-    if (idxNatureza === -1 || idxOrcado === -1 || idxRealizado === -1) {
-      Logger.log('_financeiroDaAba_: colunas NATUREZA/ORÇADO/REALIZADO não encontradas em "' + nomeAba + '".');
-      return null;
-    }
-
-    const linhasDados = [];
-    let totalOrcado = 0, totalRealizado = 0;
-
-    for (let i = 1; i < valores.length; i++) {
-      const linha       = valores[i];
-      const naturezaRaw = limparTexto(linha[idxNatureza]);
-      if (!naturezaRaw) continue;
-
-      const norm = normalizarTexto(naturezaRaw);
-      if (norm === 'total geral' || norm === 'total' || norm.indexOf('resultado total') >= 0) continue;
-
-      const orcado    = converterNumero(linha[idxOrcado]);
-      const realizado = converterNumero(linha[idxRealizado]);
-      if (orcado === 0 && realizado === 0) continue;
-
-      const diffCalculado = orcado - realizado;
-      const diffPlanilha  = idxVariacao >= 0 ? converterNumero(linha[idxVariacao]) : diffCalculado;
-      const diff          = Number.isFinite(diffPlanilha) ? diffPlanilha : diffCalculado;
-
-      linhasDados.push({
-        natureza: padronizarRubrica_(naturezaRaw),
-        orcado, realizado, diff, absDiff: Math.abs(diff)
-      });
-      totalOrcado    += orcado;
-      totalRealizado += realizado;
-    }
-
-    if (!linhasDados.length) return null;
-    return { aba: nomeAba, linhasDados, totalOrcado, totalRealizado, cabecalho: valores[0] };
-
-  } catch (e) {
-    Logger.log('_financeiroDaAba_("' + nomeAba + '"): ' + e.message);
-    return null;
-  }
-}
 
 
 // ==========================================
 // DADOS FINANCEIROS (registro de dados / histórico)
 // ==========================================
-// Mantido pela compatibilidade com Suporte_RegistroDados.gs, mas agora sai da
-// mesma fonte do deck (BRIDGE) em vez de reler a aba FINANCEIRO por índice de
-// coluna fixo — o registro histórico tem que gravar o número que foi
-// APRESENTADO, senão o histórico e o deck contam histórias diferentes.
 function obterDadosFinanceiro() {
   try {
     const d = obterDadosFinanceiroMensal_();
@@ -1759,32 +1806,6 @@ function obterDadosFinanceiro() {
   }
 }
 
-
-// ==========================================
-// DADOS CUSTO M² (Slide 09 - Custo do m²)
-// ==========================================
-//
-// Estrutura fixa da aba METRO QUADRADO (cidade na col A pode variar):
-//
-//  [0] Headers
-//  [1] TOTAL ÁREA COM IPTU E SEGURO   ← âncora 1
-//  [2] R$ M² MÊS- <CIDADE>            ← Orç e Real (com IPTU e Seguro)
-//  [3] R$ M² ANO - <CIDADE>
-//  [4] TOTAL ÁREA COMUM
-//  [5] R$ M² MÊS- <CIDADE>            ← sem IPTU e sem Seguro
-//  [6] R$ M² ANO - <CIDADE>
-//  [7] TOTAL ÁREA - COM SEGURO SEM IPTU  ← âncora 2
-//  [8] R$ M² MÊS- <CIDADE>            ← sem IPTU (com Seguro)
-//
-//  tabela retornada:
-//    'Orç 2026'           → linha [2] colunas Orç  (com IPTU e Seguro)
-//    'Real 2026'          → linha [2] colunas Real (com IPTU e Seguro)
-//    'Real 2026 sem IPTU' → linha [8] colunas Real (com Seguro, sem IPTU)
-//
-//  A linha 'IPTU/m²' é calculada automaticamente no slide:
-//    IPTU/m² = Real 2026 − Real 2026 sem IPTU  (só aparece nos meses com IPTU)
-//
-// ==========================================
 let _custoM2Cache = {};
 function obterDadosCustoM2() {
   const _ckCusto = getProjetoAtivo().nome;
@@ -2129,8 +2150,10 @@ function obterMetaAuto_(descricao, metaStr, qual) {
       const p = obterDadosPreventivas();
       const val = ehMensal ? p.mensal.sla : p.anual.sla;
       if (!val || val === '-') return null;
-      const dv = deltaVsMesAnterior_(val, ehMensal ? 'SLA MENSAL' : 'SLA ACUMULADO', 'PREVENTIVAS');
-      return { valor: String(val), delta: dv ? dv.delta : null, menorMelhor: false };
+      // Mesma tendência do slide de Preventivas (calculada na BD-PREVENTIVAS),
+      // para Metas e Preventivas nunca mostrarem setas diferentes.
+      const delta = ehMensal ? p.mensal.slaDelta : p.anual.slaDelta;
+      return { valor: String(val), delta: (delta === undefined ? null : delta), menorMelhor: false };
     }
 
     // ÍNDICE DE DISPONIBILIDADE (Histórico Validado — aba CHAMADOS)
@@ -3903,7 +3926,7 @@ function _lerBdCorretivasCru_() {
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp, cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null)) continue;
 
       const rawEstado = cEstado >= 0 ? String(row[cEstado] || '').trim() : '';
       const rawMotivo = cMotivo >= 0 ? String(row[cMotivo] || '').trim() : '';
@@ -4189,7 +4212,7 @@ function _lerBacklogClientesDetalhes_() {
           const saida = [];
           for (let r = 1; r < data.length; r++) {
             const row = data[r];
-            if (_histEmpChave_(row[cCC]) !== alvoEmp) continue;
+            if (!_valorEhDoMega_(row[cCC], alvoEmp)) continue;
 
             const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
             const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
@@ -4380,21 +4403,11 @@ function _abaBdCorretivas_(ss) {
 /**
  * Função utilitária para listar no Logger todas as colunas existentes na aba BD-CORRETIVAS.
  */
-function listarColunasBdCorretivas() {
-  try {
-    const ss = SpreadsheetApp.openById(BD_CORRETIVAS_ID);
-    const sheet = _abaBdCorretivas_(ss);
-    if (!sheet) { Logger.log('Aba BD-CORRETIVAS não encontrada na planilha ' + BD_CORRETIVAS_ID); return; }
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    Logger.log('====================================================');
-    Logger.log('COLUNAS ENCONTRADAS NA BD-CORRETIVAS (' + headers.length + ' colunas):');
-    headers.forEach((h, i) => Logger.log(`Coluna ${i + 1} (${String.fromCharCode(65 + (i % 26))}): "${h}"`));
-    Logger.log('====================================================');
-  } catch (e) {
-    Logger.log('Erro ao listar colunas da BD-CORRETIVAS: ' + e.message);
-  }
-}
 
+
+// ==========================================
+// BACKLOG DE CLIENTES — LEITURA BD-CORRETIVAS
+// ==========================================
 // Lê a aba BD-CORRETIVAS filtrando por Centro de Custos do empreendimento
 // ativo, chamados de CLIENTE de verdade (exclui "CONDOMÍNIO MEGA
 // <CIDADE>" — mesma regra de _ehCondominio_), em aberto no mês de
@@ -4434,7 +4447,7 @@ function _lerBdCorretivasChamadosClientes_() {
     const saida = [];
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp)) continue;
+      if (!_rowPertenceAoMega_(row, colsMega, alvoEmp, cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null)) continue;
 
       const cliente = String(row[cCliente] || '').trim();
       if (!cliente || _ehCondominio_(cliente)) continue;

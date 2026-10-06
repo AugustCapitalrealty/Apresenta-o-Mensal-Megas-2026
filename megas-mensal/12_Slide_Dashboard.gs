@@ -291,4 +291,3 @@ function gerarSoDashboardTodosOsMegas() {
     gerarSlideDashboard();
   });
 }
-

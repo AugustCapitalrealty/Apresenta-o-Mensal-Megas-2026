@@ -5,6 +5,13 @@ operacionais dos empreendimentos **Mega Curitiba**, **Mega Itajaí** e **Mega Es
 (August Capital Realty). Os dados são lidos das planilhas Google de cada cidade e os
 slides são gerados diretamente na apresentação Google Slides correspondente.
 
+> **Publicação: esta pasta sobe com `clasp push`** (projeto
+> [`1Mj5tx6a…`](https://script.google.com/home/projects/1Mj5tx6av7GyERqjn8JixbSUeqOCHIJj-XNHFib1yp0VMERQ3nUz5j4NW/edit)).
+> Não edite no editor do Apps Script: o próximo push apaga. Se editar, `clasp pull`
+> antes. Desde 06/10/2026 os arquivos seguem o padrão da `propriedades-mensal`
+> (`00`–`05` infraestrutura, `10`–`25` slides na ordem do deck); as tabelas de
+> "Estrutura do projeto" abaixo ainda citam os nomes antigos (`SlideNN_*`).
+
 ## Como usar
 
 No editor do Apps Script, rode uma das funções de `00_Main.gs`:
