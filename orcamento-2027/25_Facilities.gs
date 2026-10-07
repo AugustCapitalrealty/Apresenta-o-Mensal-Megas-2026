@@ -17,7 +17,7 @@
 
 const ORC_FACILITIES = {
   nome: 'FACILITIES - APRESENTAÇÃO ORÇAMENTO ' + ORC_ANO,
-  deckId: '',                                   // vazio: vale a propriedade gravada por criarDeckFacilities()
+  deckId: '1w_diCsSIpuuryXliPRBcW4YWoMmM8RyuT7O7307DsqQ',   // criado em 07/10/2026 por criarDeckFacilities()
   partes: ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO']
 };
 
