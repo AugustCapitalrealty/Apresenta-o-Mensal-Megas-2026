@@ -110,6 +110,41 @@ function exportarFixtures() {
   Logger.log('Pronto: ' + ok + ' de ' + Object.keys(fontes).length + ' arquivos em ' + pasta.getUrl());
 }
 
+/**
+ * Copia as fotos das sub capas (ORC_FOTOS_SECAO e a foto da capa de cada
+ * Mega) para a pasta "_fotos-subcapas" (G:\…\APRESENTAÇÃO ORÇAMENTO\
+ * _fotos-subcapas), com o nome da chave: PREVENTIVA.jpg, MEGA CURITIBA.png…
+ * É de lá que ferramentas/subcapas_youtube.py tira as fotos para tratar
+ * (retícula, papel rasgado). Foto que falhar vai para o log.
+ */
+function exportarFotosSubcapas() {
+  const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
+  const it = pai.getFoldersByName('_fotos-subcapas');
+  const pasta = it.hasNext() ? it.next() : pai.createFolder('_fotos-subcapas');
+  const velhos = pasta.getFiles();
+  while (velhos.hasNext()) velhos.next().setTrashed(true);
+
+  const fotos = {};
+  Object.keys(ORC_FOTOS_SECAO).forEach(k => { fotos[k] = ORC_FOTOS_SECAO[k]; });
+  Object.keys(ORC_CIDADES).forEach(k => {
+    const cid = ORC_CIDADES[k];
+    if (cid.fotoFundoId) fotos[cid.nome.toUpperCase()] = cid.fotoFundoId;
+  });
+  let ok = 0;
+  Object.keys(fotos).forEach(nome => {
+    try {
+      const b = DriveApp.getFileById(fotos[nome]).getBlob();
+      const ext = (b.getContentType() || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
+      pasta.createFile(b.setName(nome + '.' + ext));
+      Logger.log('Salva ' + nome + '.' + ext);
+      ok++;
+    } catch (e) {
+      Logger.log('FALHOU ' + nome + ': ' + e.message);
+    }
+  });
+  Logger.log('Pronto: ' + ok + ' de ' + Object.keys(fotos).length + ' fotos em ' + pasta.getUrl());
+}
+
 // O export do Slides devolve 429 quando as chamadas vêm rápido demais: espera
 // um pouco antes de cada uma e tenta de novo, com espera crescente.
 function _orcBuscarComEspera_(url, token) {
