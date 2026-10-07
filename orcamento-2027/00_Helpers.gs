@@ -195,6 +195,13 @@ function _orcParagrafo_(slide, x, y, w, h, texto, op) {
 // ==========================================
 function _orcRet_(slide, x, y, w, h, cor, op) {
   const o = op || {};
+  // Card (arredondado, branco ou escuro da marca, de 60×30 pt para cima): vai
+  // para a moldura do slide em vez de virar forma agora (_orcFecharMoldura_).
+  if (_ORC_MOLD && !o.semMoldura && o.redondo && o.alpha === undefined && w >= 60 && h >= 30 &&
+      (cor === CR_DESIGN_SYSTEM.colors.cardBg || cor === CR_DESIGN_SYSTEM.colors.brandDark)) {
+    _ORC_MOLD.cards.push({ x: x, y: y, w: w, h: h, cor: cor, borda: o.borda || null, peso: o.borda ? (o.peso || 0.75) : 0 });
+    return null;
+  }
   const s = slide.insertShape(o.redondo ? SlidesApp.ShapeType.ROUND_RECTANGLE : SlidesApp.ShapeType.RECTANGLE,
                               x, y, Math.max(0.5, w), Math.max(0.5, h));
   if (cor) s.getFill().setSolidFill(cor, o.alpha === undefined ? 1 : o.alpha);
@@ -251,9 +258,9 @@ function _orcLogoBlob_(qual) {
 // com as seções até a atual coloridas e as futuras em cinza. Só no deck com as
 // 8 seções e dentro de uma seção (_ORC_TRILHA = número da seção, 0 fora).
 let _ORC_TRILHA = 0;
-function _orcTrilhaTopo_(slide, W) {
-  if (!_ORC_TRILHA) return;
-  const b = _orcImagemDaPasta_(CR_DESIGN_SYSTEM.marca.trilha + ' - ' + ('0' + _ORC_TRILHA).slice(-2) + '.png');
+function _orcTrilhaTopo_(slide, W, secao) {
+  if (!secao) return;
+  const b = _orcImagemDaPasta_(CR_DESIGN_SYSTEM.marca.trilha + ' - ' + ('0' + secao).slice(-2) + '.png');
   if (b) slide.insertImage(b).setLeft(0).setTop(0).setWidth(W).setHeight(W * 32 / 1920);
 }
 
@@ -266,11 +273,12 @@ function _orcNovoSlide_(deck) {
 function _orcHeader_(slide, W, titulo, subtitulo) {
   const DS = CR_DESIGN_SYSTEM;
   const MX = DS.layout.marginX;
-  _orcRet_(slide, MX, 16, 5, 36, DS.colors.brandLight);
+  // Com a moldura: barra, trilha e linha vão para a imagem do fundo.
+  if (_ORC_MOLD) { _ORC_MOLD.header = true; _ORC_MOLD.secao = _ORC_TRILHA; }
+  else _orcCabecalhoFundo_(slide, W, _ORC_TRILHA);
   const serifa = DS.typography.heading !== DS.typography.titles;   // a serifa é menor no mesmo corpo
   _orcUmaLinha_(slide, MX + 14, 12, W - MX * 2 - 150, 26, titulo,
     { align: 'L', fs: serifa ? 22 : 19, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.heading, fsMin: 12, cortar: true });
-  _orcTrilhaTopo_(slide, W);
   if (subtitulo) {
     _orcUmaLinha_(slide, MX + 14, 36, W - MX * 2 - 150, 18, subtitulo,
       { align: 'L', fs: 9.5, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 7, cortar: true });
@@ -283,7 +291,70 @@ function _orcHeader_(slide, W, titulo, subtitulo) {
   } catch (e) {
     Logger.log('Cabeçalho: logo indisponível. ' + e.message);
   }
+}
+
+// O fundo do cabeçalho em formas: barra de destaque, trilha de progresso e
+// linha de baixo (o que a moldura traz pronto).
+function _orcCabecalhoFundo_(slide, W, secao) {
+  const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX;
+  _orcRet_(slide, MX, 16, 5, 36, DS.colors.brandLight);
+  _orcTrilhaTopo_(slide, W, secao);
   _orcLinha_(slide, MX, DS.layout.headerH, W - MX, DS.layout.headerH, DS.colors.lines, 1);
+}
+
+// ==========================================
+// MOLDURA DO SLIDE (v2)
+// ==========================================
+// _orcPasso_ abre a coleta antes de desenhar o slide e fecha depois: os cards
+// e o cabeçalho anotados viram UMA imagem de fundo (se ela existir na pasta)
+// ou as formas de sempre, mandadas para trás do conteúdo.
+let _ORC_MOLD = null;
+let _ORC_MOLDURAS_USADAS = {};   // assinatura → especificação (o teste grava o manifesto)
+let _ORC_MOLDURAS_PASSOS = [];   // [marca, passo, assinatura], na ordem (conferência no teste)
+
+function _orcAbrirMoldura_() {
+  _ORC_MOLD = ORC_USAR_MOLDURAS ? { cards: [], header: false, secao: 0 } : null;
+}
+
+// Especificação da moldura em texto ASCII (a assinatura é o MD5 dele): marca,
+// seção da trilha, cabeçalho e os cards em pt com uma casa.
+function _orcSpecMoldura_(m, W, H) {
+  const r = v => Math.round(v * 10) / 10;
+  return JSON.stringify({ v: 1, W: r(W), H: r(H), marca: CR_DESIGN_SYSTEM.marca.trilha.replace('TRILHA - ', ''),
+    bg: CR_DESIGN_SYSTEM.colors.bgSlide, cor: CR_DESIGN_SYSTEM.colors.brandLight, linhas: CR_DESIGN_SYSTEM.colors.lines,
+    header: m.header ? 1 : 0, secao: m.header ? m.secao : 0,
+    cards: m.cards.map(c => [r(c.x), r(c.y), r(c.w), r(c.h), c.cor, c.borda || '', c.peso]) });
+}
+
+function _orcAssinatura_(texto) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, texto, Utilities.Charset.UTF_8)
+    .map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('').slice(0, 12);
+}
+
+function _orcFecharMoldura_(slide, W, H) {
+  const m = _ORC_MOLD;
+  _ORC_MOLD = null;
+  if (!m || (!m.header && !m.cards.length)) return;
+  try {
+    const spec = _orcSpecMoldura_(m, W, H), assin = _orcAssinatura_(spec);
+    _ORC_MOLDURAS_USADAS[assin] = spec;
+    _ORC_MOLDURAS_PASSOS.push([CR_DESIGN_SYSTEM.marca.nome, _ORC_SLIDE_ATUAL, assin]);
+    const img = _orcImagemDaPasta_('MOLDURA - ' + assin + '.png');
+    if (img) {
+      slide.insertImage(img).setLeft(0).setTop(0).setWidth(W).setHeight(H).sendToBack();
+      return;
+    }
+  } catch (e) {
+    Logger.log('Moldura não aplicada (vão as formas): ' + e.message);
+  }
+  // Sem a imagem: as formas de antes, atrás do conteúdo (de trás para a
+  // frente, para o primeiro card ficar no fundo).
+  const DS = CR_DESIGN_SYSTEM;
+  m.cards.slice().reverse().forEach(c => {
+    const s = _orcRet_(slide, c.x, c.y, c.w, c.h, c.cor, { redondo: true, borda: c.borda, peso: c.peso || undefined, semMoldura: true });
+    s.sendToBack();
+  });
+  if (m.header) _orcCabecalhoFundo_(slide, W, m.secao);
 }
 
 // ==========================================

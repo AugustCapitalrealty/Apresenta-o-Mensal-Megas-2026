@@ -304,11 +304,14 @@ function _orcLerVisaoGeral_(chave) {
 function _orcPasso_(deck, W, H, nome, fn) {
   const slide = _orcNovoSlide_(deck);
   _ORC_SLIDE_ATUAL = nome;                     // coluna ONDE APARECE da planilha de textos
+  _orcAbrirMoldura_();
   try {
     fn(slide);
   } catch (e) {
+    _ORC_MOLD = null;
     _orcSlideFalha_(slide, W, H, nome, e);
   }
+  _orcFecharMoldura_(slide, W, H);
   return slide;
 }
 

@@ -84,7 +84,8 @@ function novoSlide(deck) {
         getBorder: () => ({ setTransparent: () => {}, getLineFill: () => lineFill, setWeight: v => num(v, 'weight') }),
         setContentAlignment: () => {},
         getText: () => textRange(reg),
-        getObjectId: () => reg.id
+        getObjectId: () => reg.id,
+        sendToBack: () => { slide.shapes.splice(slide.shapes.indexOf(reg), 1); slide.shapes.unshift(reg); }
       };
     },
     insertLine: (cat, x1, y1, x2, y2) => {
@@ -106,7 +107,8 @@ function novoSlide(deck) {
         setWidth: v => { reg.w = v; return img; },
         setHeight: v => { reg.h = v; return img; },
         setLeft: v => { reg.x = v; return img; }, setTop: v => { reg.y = v; return img; },
-        setRotation: v => { reg.rot = v; return img; }, bringToFront: () => img
+        setRotation: v => { reg.rot = v; return img; }, bringToFront: () => img,
+        sendToBack: () => { slide.shapes.splice(slide.shapes.indexOf(reg), 1); slide.shapes.unshift(reg); return img; }
       };
       return img;
     },
@@ -243,7 +245,10 @@ const ctx = {
   // Sem Drive no teste: força o caminho de reserva do logo (texto no lugar).
   // Guarda os IDs pedidos (fotos das sub capas) antes de recusar.
   DriveApp: { getFileById: id => { PEDIDOS_DRIVE.push(id); throw new Error('sem Drive no teste'); } },
-  Utilities: { sleep: () => {}, parseCsv: (t, sep) => _csv(t, sep || ',') },
+  Utilities: { sleep: () => {}, parseCsv: (t, sep) => _csv(t, sep || ','),
+               DigestAlgorithm: { MD5: 'md5' }, Charset: { UTF_8: 'utf8' },
+               // como o Apps Script: bytes com sinal (-128..127)
+               computeDigest: (alg, t) => Array.from(require('crypto').createHash(alg).update(t, 'utf8').digest()).map(b => b > 127 ? b - 256 : b) },
   console: console
 };
 vm.createContext(ctx);
@@ -1245,7 +1250,9 @@ console.log('Capa como imagem');
   const ESTEIO = G.ORC_CIDADES.ESTEIO;
   const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
   const pedidos = [];
-  const TEM = ['CAPA - MEGA ESTEIO.jpg', 'SUBCAPA - MEGA ESTEIO - 04.jpg'];
+  // Molduras (v2): as que a geração anterior do Esteio anotou (mesmas assinaturas) estão na pasta.
+  const MOLDS = Object.keys(G._ORC_MOLDURAS_USADAS).map(h => 'MOLDURA - ' + h + '.png');
+  const TEM = ['CAPA - MEGA ESTEIO.jpg', 'SUBCAPA - MEGA ESTEIO - 04.jpg'].concat(MOLDS);
   const pasta = { getFilesByName: n => { pedidos.push(n); return iter(TEM.indexOf(n) >= 0 ? [{ getBlob: () => ({ nome: n, w: 1920, h: 1080 }) }] : []); } };
   ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => iter(n === G.ORC_PASTA_IMAGENS ? [pasta] : []) });
   decks = {};
@@ -1269,6 +1276,14 @@ console.log('Capa como imagem');
   const areas = sub4 ? sub4.shapes.filter(s => s.link) : [];
   ok(areas.length === 7 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 7 áreas clicáveis na trilha, com link');
   ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Segurança'), 'sub capa sem imagem continua com formas');
+  // Moldura em imagem: no fundo (primeira forma), sem os cards e sem barra/linha do cabeçalho em formas.
+  const comMold = slE.filter(x => x.shapes[0] && /^MOLDURA - /.test(x.shapes[0].nome || ''));
+  const llM = slE.filter(x => textos(x).indexOf('Manutenção de imóveis (1/2)') >= 0)[0];
+  ok(comMold.length >= 20 && llM && comMold.indexOf(llM) >= 0 &&
+     !llM.shapes.some(f => f.tipo === 'ROUND_RECTANGLE' && f.w >= 60 && f.h >= 30) &&
+     !llM.shapes.some(f => f.tipo === 'LINE' && f.y === G.CR_DESIGN_SYSTEM.layout.headerH) &&
+     Math.abs(llM.shapes[0].w - W) < 0.01 && Math.abs(llM.shapes[0].h - H) < 0.01,
+     'moldura em imagem: ' + comMold.length + ' slides com a moldura no fundo; cards e cabeçalho não viram formas');
   G._ORC_BLOBS = {};
 }
 
@@ -1355,4 +1370,8 @@ console.log('Gravação no Slides');
 }
 
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
+// Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
+// os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras_passos.json'), JSON.stringify(G._ORC_MOLDURAS_PASSOS, null, 1));
 process.exit(falhas ? 1 : 0);

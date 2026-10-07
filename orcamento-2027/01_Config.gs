@@ -312,6 +312,13 @@ const ORC_PENDENCIAS_GESTOR = {
 // imagem, o slide é desenhado com formas, como antes.
 const ORC_PASTA_IMAGENS = 'IMAGENS - SLIDES';
 
+// Molduras em imagem (v2, 07/10/2026): o fundo de cada slide — cards com
+// sombra suave, barra e linha do cabeçalho, trilha de progresso — vem numa
+// imagem só, "MOLDURA - <assinatura>.png" da pasta acima, feita por
+// ferramentas/molduras_imagem.py a partir do manifesto que o teste grava. Sem
+// a imagem (ou com false aqui), o slide desenha tudo com formas, como antes.
+const ORC_USAR_MOLDURAS = true;
+
 // Onde está o assunto em cada foto (fração da largura): a foto do bloco da
 // sub capa é centrada nesse ponto quando dá.
 const ORC_FOTO_FOCO = {
