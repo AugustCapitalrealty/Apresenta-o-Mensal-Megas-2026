@@ -10,9 +10,10 @@
  *   ▸ diagnosticarOrcamento()                          → só lê e mostra no log
  *
  * Toda geração SUBSTITUI o conteúdo da apresentação da cidade: os slides
- * novos são criados e gravados primeiro; os antigos só são apagados depois,
- * numa segunda gravação. As três juntas chegam perto do limite de 6 min do
- * Apps Script: prefira uma por vez.
+ * novos são criados e gravados primeiro, uma gravação por seção; os antigos
+ * só são apagados depois, numa gravação à parte. O log mostra o tempo de
+ * cada parte. As três juntas chegam perto do limite de 6 min do Apps
+ * Script: prefira uma por vez.
  */
 
 function gerarCuritiba() { _orcGerar_(['CURITIBA']); }
@@ -23,18 +24,19 @@ function gerarTodas()    { _orcGerar_(['CURITIBA', 'ITAJAI', 'ESTEIO']); }
 function _orcGerar_(chaves) {
   _orcTextosReiniciar_();
   _ORC_PASTA_IMG = undefined;   // procura de novo a pasta das imagens das sub capas
+  _ORC_BLOBS = {};              // e baixa de novo logos e fotos (uma vez cada)
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
     const deck = SlidesApp.openById(cid.deckId);
     const W = deck.getPageWidth(), H = deck.getPageHeight();
     const antigos = new Set(deck.getSlides().map(s => s.getObjectId()));
+    // Grava os slides novos seção por seção (07/10/2026): com tudo numa
+    // gravação só, o Esteio falhava no fim com "Service unavailable" e
+    // Curitiba com "Service timed out". A remoção dos antigos é a última
+    // gravação; se ela falhar, o deck fica com os novos E os antigos — nada
+    // se perde, e a próxima geração apaga tudo o que havia antes.
     _orcGerarCidade_(deck, W, H, k);
-    // Duas gravações (07/10/2026): com tudo numa só, a do Esteio falhava no
-    // fim da execução com "Service unavailable: Slides". Se a segunda falhar,
-    // o deck fica com os slides novos E os antigos — nada se perde, e a
-    // próxima geração apaga tudo o que havia antes.
-    _orcSalvarDeck_(deck, 'os slides novos de ' + cid.nome);
     const final = SlidesApp.openById(cid.deckId);
     final.getSlides().forEach(s => { if (antigos.has(s.getObjectId())) s.remove(); });
     const n = final.getSlides().length, url = final.getUrl();
@@ -44,14 +46,15 @@ function _orcGerar_(chaves) {
   _orcSalvarTextos_();
 }
 
-// Grava o que está pendente no Slides. "Service unavailable" é o Slides
-// ocupado: espera e tenta de novo (3 tentativas, espera crescente). Outro
-// erro, ou a terceira falha, para a geração com o que fazer.
+// Grava o que está pendente no Slides. "Service unavailable", "timed out" e
+// "server error" são o Slides ocupado ou lento: espera e tenta de novo (3
+// tentativas, espera crescente). Outro erro, ou a terceira falha, para a
+// geração com o que fazer.
 function _orcSalvarDeck_(deck, etapa) {
   for (let t = 1; ; t++) {
     try { deck.saveAndClose(); return; }
     catch (e) {
-      if (t >= 3 || !/unavailable/i.test(e.message)) {
+      if (t >= 3 || !/unavailable|timed out|server error/i.test(e.message)) {
         throw new Error('O Slides não gravou ' + etapa + ' (' + e.message + '). Rode a geração de novo em alguns ' +
                         'minutos: ela recria a apresentação inteira e apaga o que tiver sobrado.');
       }
@@ -76,9 +79,28 @@ function _orcSalvarDeck_(deck, etapa) {
 function _orcGerarCidade_(deck, W, H, chave) {
   const cid = ORC_CIDADES[chave];
   let nSecao = 0;
+  // Gravação por seção (07/10/2026): grava o que foi desenhado e reabre a
+  // apresentação — depois do saveAndClose o objeto não aceita mais edição;
+  // as funções abaixo (secao, comSelo, linhaALinha) usam esta mesma variável
+  // deck, então passam a desenhar na apresentação reaberta. Nenhum slide é
+  // guardado de uma seção para outra. O log mostra o tempo de cada parte.
+  const t0 = Date.now();
+  let tParte = t0, parte = 'capa';
+  const seg = ms => (ms / 1000).toFixed(1).replace('.', ',');
+  const gravar = reabrir => {
+    const t1 = Date.now();
+    _orcSalvarDeck_(deck, 'os slides novos de ' + cid.nome + ' (' + parte + ')');
+    const t2 = Date.now();
+    Logger.log(cid.nome + ' · ' + parte + ': ' + seg(t1 - tParte) + ' s desenhando + ' + seg(t2 - t1) +
+               ' s gravando (total ' + seg(t2 - t0) + ' s)');
+    if (reabrir) deck = SlidesApp.openById(cid.deckId);
+    tParte = Date.now();
+  };
   // A sub capa abre com o número da seção (_orcDestaqueSecao_, 10_Capa.gs);
   // visao e contas já foram lidos quando a primeira seção é desenhada.
   const secao = titulo => {
+    if (nSecao > 0) gravar(true);
+    parte = nSecao === 0 ? 'capa e ' + titulo : titulo;
     const n = ++nSecao;
     let dest = null;
     try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
@@ -106,6 +128,8 @@ function _orcGerarCidade_(deck, W, H, chave) {
     try { visao.rel.pendencias = _orcPendencias_(cid, visao.rel, visao.mensal, visao.modelos); }
     catch (e) { Logger.log('Pendências não conferidas: ' + e.message); visao.rel.pendencias = []; }
   }
+  Logger.log(cid.nome + ' · leitura das planilhas: ' + seg(Date.now() - t0) + ' s');
+  tParte = Date.now();
 
   _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid, visao ? visao.rel : null));
   if (visao && (visao.rel.avisos.length || visao.rel.pendencias.length)) {
@@ -185,6 +209,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
     comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
   }
+  gravar(false);   // a última seção; a remoção dos antigos fica em _orcGerar_
 }
 
 // Manutenção por categoria: resumo, distribuição mensal, um slide por

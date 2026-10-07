@@ -61,7 +61,9 @@ def main(chaves):
         seed = zlib.crc32(chave.encode('utf-8')) % 1000   # o rasgo muda de foto para foto, mas é sempre o mesmo para cada uma
         peca = ef.com_sombra(ef.rasgar(ef.foto_reticula(im, MARINHO, PAPEL, CELULA, 900, seed), amp=10, seed=seed))
         destino = os.path.join(SAIDA, 'SUBCAPA - ' + chave + '.png')
-        peca.save(destino, optimize=True)
+        # Paleta de 32 cores: a peça é só marinho, papel e sombra; 1,8 MB → ~180 KB, sem diferença visível.
+        # PNG pesado deixa a geração lenta (cada sub capa sobe a imagem para o Slides).
+        peca.quantize(colors=32, method=Image.Quantize.FASTOCTREE).save(destino, optimize=True)
         feitas.append(destino)
         print('ok ->', os.path.relpath(destino, RAIZ), f'({os.path.getsize(destino) // 1024} KB)')
     ef.caneta('sublinhado', 600, 120, AZUL, espessura=7).save(os.path.join(SAIDA, 'CANETA - SUBLINHADO.png'))

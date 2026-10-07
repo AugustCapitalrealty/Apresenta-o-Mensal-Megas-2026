@@ -124,7 +124,7 @@ function novoDeck() {
   // "Service unavailable" antes de aceitar.
   deck.salvos = 0; deck.falhasAoSalvar = 0;
   deck.saveAndClose = () => {
-    if (deck.falhasAoSalvar > 0) { deck.falhasAoSalvar--; throw new Error('Service unavailable: Slides'); }
+    if (deck.falhasAoSalvar > 0) { deck.falhasAoSalvar--; throw new Error(deck.msgFalha || 'Service unavailable: Slides'); }
     deck.salvos++;
   };
   return deck;
@@ -1069,7 +1069,8 @@ console.log('Sub capa recorte');
   const ARQ = { 'SUBCAPA - PREVENTIVA.png': { w: 900, h: 1125 }, 'SUBCAPA - INTERNOS.png': { w: 900, h: 1125 },
                 'CANETA - SUBLINHADO.png': { w: 600, h: 120 } };
   const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
-  const pasta = { getFilesByName: n => iter(ARQ[n] ? [{ getBlob: () => Object.assign({ nome: n }, ARQ[n]) }] : []) };
+  const pedidosArq = [];
+  const pasta = { getFilesByName: n => { pedidosArq.push(n); return iter(ARQ[n] ? [{ getBlob: () => Object.assign({ nome: n }, ARQ[n]) }] : []); } };
   const pastasPedidas = [];
   ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => { pastasPedidas.push(n); return iter(n === G.ORC_PASTA_IMAGENS_SUBCAPAS ? [pasta] : []); } });
   decks = {};
@@ -1079,6 +1080,7 @@ console.log('Sub capa recorte');
   const sub = nome => sl.filter(x => textos(x)[1] === nome)[0];
   const man = sub('Manutenção'), m2 = sub('Custo por m²'), prem = sub('Premissas');
   ok(pastasPedidas.length === 1, 'pasta das imagens procurada uma vez por geração (' + pastasPedidas.length + ')');
+  ok(pedidosArq.filter(n => n === 'CANETA - SUBLINHADO.png').length === 1, 'traço de caneta baixado uma vez só');
   ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'SUBCAPA - PREVENTIVA.png' && s.rot === -2.5),
      'Manutenção: recorte da foto PREVENTIVA, girado');
   ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'CANETA - SUBLINHADO.png'), 'Manutenção: traço de caneta');
@@ -1110,8 +1112,16 @@ console.log('Gravação no Slides');
   const antigo = d.getSlides()[0];
   d.falhasAoSalvar = 2;                       // duas recusas, a terceira passa
   LOG.length = 0;
+  PEDIDOS_DRIVE.length = 0;
   G._orcGerar_(['ESTEIO']);
-  ok(d.salvos === 2, 'Slides ocupado: grava em duas etapas depois de tentar de novo (' + d.salvos + ' gravações)');
+  const nSub = d.getSlides().filter(x => /^0\d$/.test(textos(x)[0] || '')).length;
+  ok(nSub === 8 && d.salvos === nSub + 1,
+     'Slides ocupado: uma gravação por seção + a da remoção, depois de tentar de novo (' + d.salvos + ' gravações, ' + nSub + ' seções)');
+  ok(PEDIDOS_DRIVE.filter(id => id === G.LOGOS_CR.fullPositivo).length === 1, 'logo do cabeçalho pedido ao Drive uma vez só');
+  ok(PEDIDOS_DRIVE.filter(id => id === ESTEIO.fotoFundoId).length === 1, 'foto do Mega (capa e Resumo) pedida uma vez só');
+  ok(LOG.some(m => /^Mega Esteio · leitura das planilhas: [\d,]+ s$/.test(m)) &&
+     LOG.some(m => /^Mega Esteio · Manutenção: [\d,]+ s desenhando \+ [\d,]+ s gravando \(total [\d,]+ s\)$/.test(m)),
+     'log com o tempo da leitura e de cada seção');
   ok(LOG.filter(m => /^Slides ocupado/.test(m)).length === 2, 'cada nova tentativa fica no log');
   ok(d.getSlides().indexOf(antigo) < 0 && d.getSlides().length > 1, 'slide antigo apagado, novos ficam');
 
@@ -1125,6 +1135,16 @@ console.log('Gravação no Slides');
   ok(erro && /O Slides não gravou os slides novos de Mega Esteio/.test(erro.message) && /Rode a geração de novo/.test(erro.message),
      'Slides fora do ar: para com mensagem do que fazer (' + (erro && erro.message) + ')');
   ok(d2.getSlides().indexOf(antigo2) >= 0, 'sem gravar os novos, o slide antigo não é apagado');
+
+  // "Service timed out" (Curitiba, 07/10/2026) também tenta de novo.
+  decks = {};
+  const d3 = novoDeck();
+  decks[ESTEIO.deckId] = d3;
+  d3.falhasAoSalvar = 1; d3.msgFalha = 'Service timed out: Slides';
+  LOG.length = 0;
+  let erro3 = null;
+  try { G._orcGerar_(['ESTEIO']); } catch (e) { erro3 = e; }
+  ok(!erro3 && LOG.some(m => /^Slides ocupado.*timed out/.test(m)), 'Slides lento (timed out): tenta de novo e termina (' + (erro3 && erro3.message) + ')');
 }
 
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');

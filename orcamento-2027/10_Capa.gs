@@ -33,7 +33,7 @@ function _orcGradiente_(slide, x, y, w, h, c1, c2, op) {
 function _orcFotoFundo_(slide, W, H, fotoId, cor, alpha) {
   if (!fotoId) return false;
   try {
-    const img = slide.insertImage(DriveApp.getFileById(fotoId).getBlob());
+    const img = slide.insertImage(_orcBlobDrive_(fotoId, true));
     const ar = img.getWidth() / img.getHeight();
     const w = ar > W / H ? H * ar : W, h = ar > W / H ? H : W / ar;
     img.setWidth(w).setHeight(h).setLeft((W - w) / 2).setTop((H - h) / 2);
@@ -51,7 +51,7 @@ function _orcLogoMega_(slide, W, id) {
   if (!id) return;
   const bw = 104, bh = 34, x = W - 42 - bw, y = 28;
   try {
-    const img = slide.insertImage(DriveApp.getFileById(id).getBlob());
+    const img = slide.insertImage(_orcBlobDrive_(id));
     _orcRet_(slide, x - 12, y - 7, bw + 24, bh + 14, '#FFFFFF', { redondo: true, alpha: 0.95 });
     const ar = img.getWidth() / img.getHeight();
     let w = bw, h = bw / ar;
@@ -96,7 +96,7 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
 
   // Logo Capital Realty branco; sem a imagem, o nome em texto.
   try {
-    const img = slide.insertImage(DriveApp.getFileById(LOGOS_CR.fullNegativo).getBlob());
+    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullNegativo));
     const h = 30, w = h * img.getWidth() / img.getHeight();
     img.setWidth(w).setHeight(h).setLeft(44).setTop(32);
   } catch (e) {
@@ -283,13 +283,17 @@ function _orcImagemSubcapa_(nome) {
     }
   }
   if (!_ORC_PASTA_IMG) return null;
-  try {
-    const f = _ORC_PASTA_IMG.getFilesByName(nome);
-    return f.hasNext() ? f.next().getBlob() : null;
-  } catch (e) {
-    Logger.log('Imagem ' + nome + ' indisponível: ' + e.message);
-    return null;
+  const k = 'pasta:' + nome;   // no mesmo cache das imagens (a caneta vai em 8 sub capas)
+  if (!(k in _ORC_BLOBS)) {
+    try {
+      const f = _ORC_PASTA_IMG.getFilesByName(nome);
+      _ORC_BLOBS[k] = { blob: f.hasNext() ? f.next().getBlob() : null };
+    } catch (e) {
+      Logger.log('Imagem ' + nome + ' indisponível: ' + e.message);
+      _ORC_BLOBS[k] = { blob: null };
+    }
   }
+  return _ORC_BLOBS[k].blob;
 }
 
 // ==========================================

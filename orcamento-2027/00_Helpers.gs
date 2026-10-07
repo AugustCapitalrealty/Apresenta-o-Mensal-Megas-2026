@@ -242,13 +242,57 @@ function _orcHeader_(slide, W, titulo, subtitulo) {
   }
   // Logo no canto direito. Se a imagem não carregar, o cabeçalho segue sem ela.
   try {
-    const img = slide.insertImage(DriveApp.getFileById(LOGOS_CR.fullPositivo).getBlob());
+    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullPositivo));
     const h = 24, w = h * img.getWidth() / img.getHeight();
     img.setWidth(w).setHeight(h).setLeft(W - MX - w).setTop(20);
   } catch (e) {
     Logger.log('Cabeçalho: logo indisponível. ' + e.message);
   }
   _orcLinha_(slide, MX, DS.layout.headerH, W - MX, DS.layout.headerH, DS.colors.lines, 1);
+}
+
+// ==========================================
+// IMAGENS DO DRIVE (uma vez por geração)
+// ==========================================
+// Blob de um arquivo do Drive, baixado UMA vez por geração (_orcGerar_ zera
+// _ORC_BLOBS): o logo do cabeçalho entra em quase todo slide. A falha também
+// fica guardada e é relançada, para o chamador cair no caminho sem imagem sem
+// pedir de novo. reduzir = foto de fundo: a miniatura de 1600 px do Drive no
+// lugar do original — fotos de câmera têm vários MB e, nas 8 sub capas,
+// levaram a geração de Curitiba a 5,5 min e ao "Service timed out" (07/10/2026).
+let _ORC_BLOBS = {};
+function _orcBlobDrive_(id, reduzir) {
+  const k = id + (reduzir ? '@1600' : '');
+  if (!(k in _ORC_BLOBS)) {
+    try { _ORC_BLOBS[k] = { blob: reduzir ? _orcFotoReduzida_(id) : DriveApp.getFileById(id).getBlob() }; }
+    catch (e) { _ORC_BLOBS[k] = { erro: e }; }
+  }
+  if (_ORC_BLOBS[k].erro) throw _ORC_BLOBS[k].erro;
+  return _ORC_BLOBS[k].blob;
+}
+
+// Miniatura de 1600 px pela API do Drive (thumbnailLink termina em "=s220";
+// troca pelo tamanho que queremos). Se algo falhar, o arquivo original.
+function _orcFotoReduzida_(id) {
+  try {
+    const cab = { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true };
+    const meta = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id +
+                                   '?fields=thumbnailLink,size,name&supportsAllDrives=true', cab);
+    if (meta.getResponseCode() !== 200) throw new Error('metadados HTTP ' + meta.getResponseCode());
+    const m = JSON.parse(meta.getContentText());
+    if (!m.thumbnailLink) throw new Error('o Drive não tem miniatura');
+    const resp = UrlFetchApp.fetch(m.thumbnailLink.replace(/=s\d+$/, '=s1600'), cab);
+    const b = resp.getBlob(), tipo = String(b.getContentType() || '');
+    if (resp.getResponseCode() !== 200 || !/^image\/(png|jpeg|gif)$/.test(tipo)) {
+      throw new Error('miniatura HTTP ' + resp.getResponseCode() + ' ' + tipo);
+    }
+    Logger.log('Foto ' + (m.name || id) + ': ' + (m.size ? (m.size / 1048576).toFixed(1).replace('.', ',') + ' MB' : '?') +
+               ' → ' + Math.round(b.getBytes().length / 1024) + ' KB');
+    return b;
+  } catch (e) {
+    Logger.log('Foto ' + id + ': sem versão reduzida (' + e.message + '), vai o original.');
+    return DriveApp.getFileById(id).getBlob();
+  }
 }
 
 function _orcRodape_(slide, W, H, texto) {
