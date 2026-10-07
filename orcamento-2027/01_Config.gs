@@ -229,6 +229,26 @@ const ORC_SUBCAPAS = {
   'Projetos × Recorrente': { foto: 'PREVENTIVA',   frase: 'O que é obra pontual e o que é rotina' },
   'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' }
 };
+// Perguntas em aberto com o gestor ou a controladoria, por Mega (nome em
+// ORC_CIDADES): entram no slide "Revisar antes da versão final" junto com as
+// pendências de dados e põem o selo ⚠ PENDENTE nos slides da conta. Resolvida
+// a pergunta, apague a linha e gere de novo. Origem: comentários do gestor nas
+// planilhas de comparação 2026 × 2027 (07/10/2026).
+const ORC_PENDENCIAS_GESTOR = {
+  'Mega Itajaí': [
+    { conta: 'Manutenção de imóveis', tipo: 'Sem provisão de 3%',
+      texto: 'O 090 de 2027 não tem a linha de 3% para não previstos (Curitiba e Esteio têm). Esquecida?' },
+    { conta: 'Manutenção de imóveis', tipo: 'Par a confirmar',
+      texto: 'Orbital (PPCI) → Firecam? E a preventiva NFPA de 2026 (R$ 8.465) compara com qual linha?' },
+    { conta: 'Manutenção de imóveis', tipo: 'Reconferir (controladoria)',
+      texto: 'Recalque paver de incêndio, R$ 14.000 no Orç 2026: o gestor diz que foi feito em 2026' }
+  ],
+  'Mega Curitiba': [
+    { conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar',
+      texto: 'Comparação, linha 4: vale o SIM (provisão de acesso × FM Security) ou entra nos 3%?' }
+  ]
+};
+
 // Onde está o assunto em cada foto (fração da largura): a foto do bloco da
 // sub capa é centrada nesse ponto quando dá.
 const ORC_FOTO_FOCO = {

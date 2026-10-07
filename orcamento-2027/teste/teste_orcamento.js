@@ -586,6 +586,11 @@ ok(relErrado.avisos.length === 1 && /Segurança e vigilância/.test(relErrado.av
 
 // ---------------- Geração ----------------
 console.log('Geração — Curitiba');
+// As perguntas em aberto de Curitiba (ORC_PENDENCIAS_GESTOR) criariam o slide
+// de revisão: a estrutura do deck é conferida sem elas; elas têm teste próprio
+// em "Pendências de dados".
+const PEND_GESTOR_REAL = G.ORC_PENDENCIAS_GESTOR;
+G.ORC_PENDENCIAS_GESTOR = {};
 decks = {};
 G.gerarCuritiba();
 const logGeracao = LOG.slice();
@@ -1004,6 +1009,7 @@ ok(tP.indexOf('Contratos reajustados pelo IPCA em janeiro.') >= 0 && tP.filter(t
 
 // ---------------- Pendências ----------------
 console.log('Pendências de dados');
+G.ORC_PENDENCIAS_GESTOR = PEND_GESTOR_REAL;
 {
   const cidX = G.ORC_CIDADES.ESTEIO;
   porId[cidX.relatorios.metragemId] = fixture('fixture_metragem_esteio.json');
@@ -1017,6 +1023,12 @@ console.log('Pendências de dados');
   ok(pX.some(p => p.texto === 'R$ 120.068 em "Não detalhado" — sem os contratos de 2027 no cadastro'), 'pendência da segurança com o valor');
   ok(G._orcPendencias_(cidX, relX, menX, G._orcLinhasModelosCidade_('ESTEIO')).every(p => p.tipo !== 'Contratos 2027 não informados'),
      'com o cadastro: nenhuma conta sem contrato');
+  // Perguntas em aberto com o gestor: entram como pendência da conta.
+  const comPergunta = Object.assign({}, cidX, { nome: 'Mega Curitiba' });
+  const pG = G._orcPendencias_(comPergunta, relX, menX, G._orcLinhasModelosCidade_('ESTEIO'))
+    .filter(p => p.tipo === 'Decisão a confirmar');
+  ok(pG.length === 1 && pG[0].chave === G._orcChaveConta_('Manutenção de imóveis') && /linha 4/.test(pG[0].texto),
+     'pergunta em aberto do Mega vira pendência da Manutenção (selo ⚠ PENDENTE nos slides dela)');
 }
 
 // ---------------- Geração — Itajaí e Esteio ----------------
@@ -1052,6 +1064,10 @@ const ESTADO_CIDADES = {};
   // de dados (19_Revisar.gs, _orcPendencias_).
   const iRev = titulos.indexOf('Revisar antes da versão final');
   ok(iRev === 1, c + ': slide de revisão logo depois da capa (pendências de dados)');
+  if (chave === 'ITAJAI') {
+    ok(['Sem provisão de 3%', 'Par a confirmar', 'Reconferir (controladoria)'].every(t => textos(sl[iRev]).indexOf(t) >= 0),
+       'Itajaí: as perguntas em aberto com o gestor no slide de revisão');
+  }
   const tRev = iRev >= 0 ? textos(sl[iRev]) : [];
   ok(tRev.some(t => /dados pendentes/.test(t)) && !tRev.some(t => /não fecham entre si/.test(t)),
      c + ': revisão só com pendências — os relatórios fecham entre si');

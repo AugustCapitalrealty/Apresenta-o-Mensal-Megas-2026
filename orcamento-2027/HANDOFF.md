@@ -125,8 +125,34 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
 
 1. **V1** — o usuário gera e confere (`PASSO-A-PASSO.md`). Se ele relatar
    problema num slide, peça o PNG (`exportarSlides…`) em vez de adivinhar.
-2. **Slide de comparação item a item** (manutenção, Orç 2026 × Orç 2027),
-   depois que o gestor marcar SIM/NÃO nas três planilhas. As planilhas são do
+2. **Slide de comparação item a item** (manutenção, Orç 2026 × Orç 2027).
+   **O gestor preencheu as três planilhas em 07/10/2026** (SIM/NÃO na coluna
+   K e comentário na L). O que ele disse, além dos pares:
+   - **Obras de 2026 que ficaram para 2027** ("não foi realizado, apenas
+     deslocamos"): Itajaí 7 itens, R$ 611 mil no Orç 2027 (~62% da alta da
+     manutenção: docas, torniquetes, impermeabilizações, iluminação do bolsão e
+     do AMZ 4/5, quadro da portaria); Curitiba 2 itens, R$ 233 mil (~48%:
+     guard-rail, 4º torniquete). A pendência de R$ 29.313 de Itajaí são itens
+     reais de 2027 (iluminações adiadas; totem é estrutura, a lona foi em 2026).
+   - **Provisões por disciplina de 2026 viraram a provisão de 3%** de
+     manutenções não previstas em 2027 (Curitiba R$ 39 mil, Esteio R$ 20,8 mil;
+     **Itajaí não tem a linha** — pergunta em aberto). Explica "Esteio sem
+     acesso/CFTV".
+   - **Mudou de conta:** tratores e bombas → Manutenção de Bens Móveis;
+     paisagismo de Curitiba → LPU na Conservação; potabilidade e limpeza de
+     caixa d'água viraram contrato.
+   - **Contratos com o ano cheio em 2027** (PMOC, Equilíbrio em Curitiba) e
+     **Esteio cresce com os Armazéns B1 e B2** (subestação, gerador,
+     elevatórias semestrais, 5 linhas de vida, juntas).
+   - Par certo em Itajaí: Orbital (PPCI, rescindido) → Firecam; FM Security é
+     contrato novo.
+   - Pedido dele: **comparar também por disciplina** ("em 2026 gastamos X com
+     pintura, em 2027 projetamos X").
+   Perguntas em aberto estão em `ORC_PENDENCIAS_GESTOR` (01_Config.gs) e saem
+   no slide de revisão. Proposta ao usuário (não aprovada ainda): slide "Por
+   que a manutenção sobe" (ponte ritmo → Orç com os degraus adiados, contratos
+   cheios/ampliados, obras novas, 3%, mudança de conta), comparação por
+   disciplina e a item a item só com os SIM. As planilhas são do
    Drive: peça ao usuário para baixá-las como .xlsx para uma pasta do G: (ou
    rodar uma exportação). As linhas de origem estão em
    `ferramentas/comparacao_linhas_<cidade>.json` (gerado por
@@ -141,8 +167,9 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
    Itajaí do Orç 2026 item a item foi **erro de digitação** (confirmado pelo
    Guilherme em 07/10/2026) — fica fora da comparação; o seguro do próprio
    Itajaí na manutenção (R$ 66.780) segue como "Não compara"; Esteio sem
-   verba de acesso/CFTV em 2027; tratores do Esteio saíram da manutenção;
-   Orç 2026 item a item do Esteio R$ 4.500 acima da METRAGEM.
+   verba de acesso/CFTV em 2027 e tratores do Esteio fora da manutenção — os
+   dois explicados pelo gestor (3% e Bens Móveis, item 2); Orç 2026 item a
+   item do Esteio R$ 4.500 acima da METRAGEM.
 5. **Melhorias visuais (capas, subcapas, infográficos):** propostas em
    [`IDEIAS-DESIGN.md`](IDEIAS-DESIGN.md), com o que foi aprendido na produção
    de capas de vídeo do Guilherme (07/10/2026). **Nada aprovado ainda**:

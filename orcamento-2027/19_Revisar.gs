@@ -13,7 +13,9 @@
  * Pendências de dados (rel.pendencias, _orcPendencias_) entram no mesmo
  * slide e põem o selo ⚠ PENDENTE nos slides da conta — pedido do gestor,
  * 07/10/2026: "sempre ligue o alerta que está pendente". Somem quando a
- * fonte for preenchida.
+ * fonte for preenchida. As perguntas em aberto com o gestor ou a
+ * controladoria (ORC_PENDENCIAS_GESTOR, 01_Config.gs) entram do mesmo jeito
+ * e somem quando a linha é apagada.
  */
 
 const _ORC_COR_REVISAR = { fundo: '#FFEDD5', borda: '#F97316', texto: '#9A3412', card: '#FFF7ED' };
@@ -53,7 +55,8 @@ function _orcSeloRevisar_(slide, W, rel, chaves) {
  *     sem contrato no cadastro do ano, com parte do total "Não detalhado";
  *   ▸ modelos acima da METRAGEM — itens dos modelos + contratos somam mais
  *     que o relatório (item que a controladoria não pôs na METRAGEM), com os
- *     meses em que isso acontece, pelo relatório mensal.
+ *     meses em que isso acontece, pelo relatório mensal;
+ *   ▸ as perguntas em aberto do Mega (ORC_PENDENCIAS_GESTOR).
  * @return [{ nome, chave, tipo, texto }]
  */
 function _orcPendencias_(cid, rel, mensal, modelos) {
@@ -79,6 +82,10 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
       out.push({ nome: c.nome, chave: c.chave, tipo: 'Modelos acima da METRAGEM',
                  texto: 'itens somam ' + _orcMoeda_(comp.excesso) + ' a mais' + (meses.length ? ' · ' + meses.join(' · ') : '') });
     }
+  });
+  (ORC_PENDENCIAS_GESTOR[cid.nome] || []).forEach(p => {
+    const chave = _orcChaveConta_(p.conta), c = rel.contas.filter(x => x.chave === chave)[0];
+    out.push({ nome: c ? c.nome : p.conta, chave: chave, tipo: p.tipo, texto: p.texto });
   });
   return out;
 }
@@ -111,8 +118,9 @@ function gerarSlideRevisar_(slide, W, H, cid, rel) {
   _orcParagrafo_(slide, MX + 14, ky + 4, tw - 24, kh - 8,
     (divergem ? 'O deck usa a METRAGEM-COND. Os slides com estes números levam o selo ⚠ REVISAR e a linha da conta em laranja. ' +
                 'Confirmar com a controladoria qual relatório está certo; corrigida a planilha, gere de novo — o selo e este slide somem.'
-              : 'Falta dado nas fontes: os slides da conta levam o selo ⚠ PENDENTE. Preenchida a fonte, gere de novo — ' +
-                'o selo e este slide somem.'),
+              : 'Falta dado nas fontes ou há pergunta em aberto com o gestor/controladoria: os slides da conta levam o selo ' +
+                '⚠ PENDENTE. Preenchida a fonte ou respondida a pergunta (ORC_PENDENCIAS_GESTOR), gere de novo — o selo e ' +
+                'este slide somem.'),
     { fs: 8.5, fsMin: 6.5, cor: _ORC_COR_REVISAR.texto, meio: true });
 
   let y = ky + kh + 14;
