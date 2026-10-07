@@ -126,6 +126,10 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
 1. **V1** — o usuário gera e confere (`PASSO-A-PASSO.md`). Se ele relatar
    problema num slide, peça o PNG (`exportarSlides…`) em vez de adivinhar.
 2. **Slide de comparação item a item** (manutenção, Orç 2026 × Orç 2027).
+   ⚠ **A base 2026 vai mudar (07/10/2026):** a comparação usou o ORÇADO 2026; o
+   Guilherme vai trocar pelo RITMO 2026. Tudo o que existia antes da troca
+   (planilhas preenchidas pelo gestor, base, decisões) e o roteiro do que
+   conferir com a base nova: [`APRENDIZADOS-COMPARACAO-2026.md`](APRENDIZADOS-COMPARACAO-2026.md).
    **O gestor preencheu as três planilhas em 07/10/2026** (SIM/NÃO na coluna
    K e comentário na L). O que ele disse, além dos pares:
    - **Obras de 2026 que ficaram para 2027** ("não foi realizado, apenas

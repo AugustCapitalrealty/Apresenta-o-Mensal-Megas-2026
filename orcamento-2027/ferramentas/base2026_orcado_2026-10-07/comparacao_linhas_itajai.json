@@ -1,0 +1,802 @@
+[
+ {
+  "tipo": "Contrato",
+  "d26": "CONTRATO — PREVENTIVA E CORRETIVA DAS COBERTURAS",
+  "v26": 237168,
+  "d27": "CONTRATO — PREVENTIVA E CORRETIVA DAS COBERTURAS",
+  "v27": 132723.16000000003,
+  "cat27": "COBERTURA",
+  "leitura": "Compara",
+  "motivo": "Mesmo contrato de cobertura. Cai 44% em 2027 (contrato renovado em set/26): confirmar se o escopo mudou."
+ },
+ {
+  "tipo": "Contrato",
+  "d26": "CONTRATO — RODRIGO ROHDE",
+  "v26": 36386.700000000004,
+  "d27": "CONTRATO — RODRIGO ROHDE",
+  "v27": 45144,
+  "cat27": "ELÉTRICA",
+  "leitura": "Compara",
+  "motivo": "Mesmo contrato (ITAC, subestações e SPDA). Sobe 24%, acima do IPCA."
+ },
+ {
+  "tipo": "Contrato",
+  "d26": "CONTRATO — MG GERADORES EIRELI",
+  "v26": 31303.37,
+  "d27": "CONTRATO — MG GERADORES",
+  "v27": 26719.92,
+  "cat27": "ELÉTRICA",
+  "leitura": "Compara",
+  "motivo": "Mesmo contrato (geradores). Cai 15% em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Contrato Rentbrella * 6995759",
+  "v26": 14400,
+  "d27": "MAQUINA DE GUARDA-CHUVA RENTBRELLA",
+  "v27": 14400,
+  "cat27": "CONTRATO",
+  "leitura": "Compara",
+  "motivo": "Mesmo contrato (máquina de guarda-chuva), mesmo valor."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva/PAE Brigada/ extintores",
+  "v26": 15619.55,
+  "d27": "PLANO DE EMERGÊNCIA E CURSO DE BRIGADA DE INCÊNDIO NR 23 ANUAL + SERVIÇO DE RECARGA DE EXTINTORES E TESTE HIDROSTÁTICO DE MANGUEIRAS",
+  "v27": 14560,
+  "cat27": "PPCI",
+  "leitura": "Compara",
+  "motivo": "Em 2026 era um item só; em 2027 virou dois (brigada/PAE e extintores)."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva analise de efluentes",
+  "v26": 15012.88,
+  "d27": "SERVIÇO DE ANÁLISE LABORATORIAL SEMESTRAL DOS 20 STE (ENTRADA E SAÍDA)",
+  "v27": 21693.32,
+  "cat27": "HIDROSSANITÁRIO",
+  "leitura": "Compara",
+  "motivo": "Mesmo serviço: análise dos efluentes (STE)."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Limpeza pórtico prédio apoio/pórtico *10229601",
+  "v26": 28728.2,
+  "d27": "SERVIÇO DE LIMPEZA, PREPARO E PINTURA PORTARIA E PREDIO APOIO",
+  "v27": 20604.54,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Compara",
+  "motivo": "Mesma estrutura (pórtico e prédio de apoio); em 2027 inclui preparo e pintura."
+ },
+ {
+  "tipo": "Contrato",
+  "d26": "CONTRATO — ORBITAL ENGENHARIA E SISTEMAS DE SEGURANCA",
+  "v26": 125196.60000000002,
+  "d27": "MANUTENÇÃO PREVENTIVA E CORRETIVA DE SEGURANÇA ELETRÔNICA (FM SECURITY)",
+  "v27": 61532.39999999999,
+  "cat27": "CONTRATO",
+  "leitura": "Dúvida",
+  "motivo": "Orbital (sistemas de segurança) não segue em 2027 e entra o contrato FM Security (segurança eletrônica). Troca de fornecedor do mesmo serviço?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Provisão reparo sistemas de acesso",
+  "v26": 24801.52,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Dúvida",
+  "motivo": "Ver a linha de cima: se o contrato FM Security cobre o acesso, esta provisão entra na mesma comparação."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva sistema de PPCI com teste NFPA",
+  "v26": 8464.5,
+  "d27": "CONTRATO — FIRECAM",
+  "v27": 120000,
+  "cat27": "PPCI",
+  "leitura": "Dúvida",
+  "motivo": "Em 2027 entra o contrato Firecam (preventiva de PPCI). Ele substitui a preventiva NFPA de 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva condicionadores de ar",
+  "v26": 4750,
+  "d27": "CONTRATO DE MANUTENÇÃO DE APARELHOS DE AR CONDICIONADO CONFORME PMOC",
+  "v27": 9840,
+  "cat27": "AVAC",
+  "leitura": "Dúvida",
+  "motivo": "Mesmo serviço, mas em 2027 virou contrato (PMOC) e o valor dobra. Comparar como o mesmo item?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "02 torniquetes digcon par ampliação da portaria * 14752402",
+  "v26": 146800,
+  "d27": "COMPRA DE 3 TORNIQUETES TX1500 DIGICON INOX (PARCELADO 3X)",
+  "v27": 206700,
+  "cat27": "EQUIPAMENTOS",
+  "leitura": "Dúvida",
+  "motivo": "Torniquetes Digicon nos dois anos: 2 em 2026 (ampliação da portaria) e 3 em 2027. Os de 2026 foram comprados?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Troca lona totem *14795504",
+  "v26": 18000,
+  "d27": "MANUTENÇÃO E PINTURA DO TOTEM MEGA",
+  "v27": 11500,
+  "cat27": "ESTRUTURA METÁLICA",
+  "leitura": "Dúvida",
+  "motivo": "Totem nos dois anos. O item de 2027 (R$ 11.500, jan) está no 090 mas não na METRAGEM: foi feito em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Iluminação rua armazém 4/5 * 6011694",
+  "v26": 13589,
+  "d27": "INSTALAÇÃO DE ILUMINAÇÃO ADICIONAL NA LATERAL DO AMZ 4 E 5 (PERÍMETRO)",
+  "v27": 11875.48,
+  "cat27": "ELÉTRICA",
+  "leitura": "Dúvida",
+  "motivo": "Iluminação do AMZ 4/5 nos dois anos. O item de 2027 (R$ 11.875, fev) está no 090 mas não na METRAGEM: foi feito em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Iluminação bolsão externo * 12182452",
+  "v26": 20383.5,
+  "d27": "INSTALAÇÃO DE ILUMINAÇÃO PARA O BOLSÃO DE VEÍCULOS LEVES (ESTACIONAMENTO)",
+  "v27": 5937.74,
+  "cat27": "ELÉTRICA",
+  "leitura": "Dúvida",
+  "motivo": "Iluminação do bolsão nos dois anos. O item de 2027 (R$ 5.938, fev) está no 090 mas não na METRAGEM: foi feito em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Organização quadro elétrico portaria * 2791575",
+  "v26": 4890,
+  "d27": "ORGANIZAÇÃO, IDENTIFICAÇÃO E DESATIVAÇÃO DE CIRCUITOS INOPERANTES QUADRO PORTARIA",
+  "v27": 4290,
+  "cat27": "ELÉTRICA",
+  "leitura": "Dúvida",
+  "motivo": "Mesmo serviço (organização do quadro da portaria) orçado nos dois anos. Foi feito em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Impermeabilização subestações * 3886349",
+  "v26": 44750.69,
+  "d27": "IMPERMEANILIZAÇÃO DA LAJE DA SUBESTAÇÃO 1 - A CADA 5 ANOS + IMPERMEABILIZAÇÃO DA LAJE DA SUBESTAÇÃO 2 - A CADA 5 ANOS",
+  "v27": 131769.55,
+  "cat27": "REVESTIMENTOS",
+  "leitura": "Dúvida",
+  "motivo": "Impermeabilização das subestações em 2026 e de novo em 2027 — o item de 2027 diz \"a cada 5 anos\". Foi feita em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Impermeabilização casa de bombas * 12494396",
+  "v26": 27375.36,
+  "d27": "IMPERMEABILIZAÇÃO DA LAJE DA CASA DE BOMBAS - A CADA 5 ANOS",
+  "v27": 39426.11,
+  "cat27": "REVESTIMENTOS",
+  "leitura": "Dúvida",
+  "motivo": "Impermeabilização da casa de bombas em 2026 e de novo em 2027 — o item de 2027 diz \"a cada 5 anos\". Foi feita em 2026?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Pintura alvenaria fase 01 e 02 *  14752305",
+  "v26": 113942,
+  "d27": "PINTURA DA ALVENARIA DAS FACES EXTERNAS DO ARMAZÉM 1, 2 E 3",
+  "v27": 171000,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Dúvida",
+  "motivo": "Pintura de alvenaria nos dois anos: 2026 fases 1 e 2; 2027 armazéns 1, 2 e 3. Continuação da obra ou repetição?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Reforma reservatórios de água *6143163",
+  "v26": 85000,
+  "d27": "LIMPEZA, TRATAMENTO E PINTURA DO RESERVATÓRIO SPK",
+  "v27": 179543.16,
+  "cat27": "ESTRUTURA METÁLICA",
+  "leitura": "Dúvida",
+  "motivo": "2026: reforma dos reservatórios de água; 2027: tratamento e pintura do reservatório do sprinkler. Mesmo reservatório?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Reparo recalque docas funcionais * 14752188",
+  "v26": 75334.66,
+  "d27": "NIVELAMENTO DAS DOCAS DO ARMAZÉM 4 E 5 (R$ 188,88/M2 X 800m2) + ELEVAÇÃO DE PAVIMENTO NA DOCA DOS MÓDULOS 12 E 13 (R$ 188,88/m2 x 315m2)",
+  "v27": 210601.2,
+  "cat27": "PAVIMENTAÇÃO",
+  "leitura": "Dúvida",
+  "motivo": "Recalque de docas nos dois anos: 2026 docas funcionais; 2027 nivelamento das docas do AMZ 4/5 e elevação nos módulos 12/13. Mesmo problema em outras docas?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Limpeza vertical fase 3 * 8295809",
+  "v26": 84798.34999999999,
+  "d27": "LIMPEZA DAS ESTRUTURAS METÁLICAS DO ARMAZÉM 1, 2 E 3",
+  "v27": 90000,
+  "cat27": "ESTRUTURA METÁLICA",
+  "leitura": "Dúvida",
+  "motivo": "Limpeza das estruturas nos dois anos: 2026 fase 3; 2027 armazéns 1, 2 e 3. Mesma frente de serviço em outra área?"
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "SEGURO MEGA ITAJAÍ 2026",
+  "v26": 66780,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Seguro lançado na manutenção em 2026. Em 2027 o seguro está na conta Seguro."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "SEGURO MEGA ESTEIO - ÁRMAZEM A",
+  "v26": 13376.81,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Erro de digitação no Orç 2026 (confirmado pelo Guilherme em 07/10/2026): seguro do Mega Esteio lançado na manutenção de Itajaí. Não é despesa de Itajaí."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Obra cancelas 2/2 *  2594805",
+  "v26": 90000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Obra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Forro lambril galvanizado *6551962",
+  "v26": 62400,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Obra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Aquisição dilacerador cancela 4 * 4131205",
+  "v26": 45500,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Compra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Bicicletario externo * 14512183",
+  "v26": 15000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Obra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Semáforo cancelas *7609565",
+  "v26": 13500,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Compra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Botão Pânico clientes * 14753033",
+  "v26": 12900,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Não compara",
+  "motivo": "Compra pontual de 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Provisão manutenções emergências",
+  "v26": 54000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva Limpeza caixa de água/com laudo",
+  "v26": 5708,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva/Consultoria Ambiental",
+  "v26": 12000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva bombas de drenagem",
+  "v26": 1800,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventiva trator/tratorito",
+  "v26": 8762.5,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Preventivo/recalque paver preventivo de incêndio * 4168847",
+  "v26": 14000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Reparo totens de acesso",
+  "v26": 11480,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Provisão para iluminação da área comum/manutenções elétricas",
+  "v26": 24170.92,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Provisão gastos PPCI",
+  "v26": 15562.23,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Provisão gastos com comunicação visual * 3311473 /  6014375",
+  "v26": 9640.14,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Alteração das botoeiras dilaceradores * 6983376",
+  "v26": 2550,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Instalação vídeo porteiro * 7597153",
+  "v26": 7900,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Botoeiras adicionais cancelas * 3538187",
+  "v26": 3500,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Interligar nobreak cancelas * 5738417",
+  "v26": 5000,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Recalque pavimento interno * 4168847 / 6117386",
+  "v26": 54860,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "Reparo recalque área de docas fase  3 * 6551917 / 6551928",
+  "v26": 51352.56,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "PPCI prédio de apoio *2803230",
+  "v26": 12500,
+  "d27": "",
+  "v27": 0,
+  "cat27": "",
+  "leitura": "Só 2026",
+  "motivo": "Sem item parecido em 2027."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (ÁREA DE ACESSOS (100M2)",
+  "v27": 7800,
+  "cat27": "COMUNICAÇÃO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA CASA DE BOMBAS",
+  "v27": 24233.43,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMERCAÇÃO EMB, E DESEMBARQUE (20M2)",
+  "v27": 1560,
+  "cat27": "COMUNICAÇAO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (PONTE - 22,2 m2 x R$ 39)",
+  "v27": 1731.6,
+  "cat27": "COMUNICAÇÃO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇAÕ PREVENTIVA ANUAL DA DEMARCAÇÃO DO BOLSÃO (300m2)",
+  "v27": 11700,
+  "cat27": "COMUNICAÇÃO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "REPOSIÇÃO DE TACHINHAS DE SINALIZAÇÃO (100 UND X R$ 55,00)",
+  "v27": 5500,
+  "cat27": "SINALIZAÇÃO VIÁRIA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE DEFENSAS METÁLICAS ANTI-EVASÃO (EST. LEVES 36M H2)",
+  "v27": 59497.2,
+  "cat27": "SINALIZAÇÃO VIÁRIA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE DEFENSAS METÁLICAS ANTI-EVASÃO LATERAL 2/3 H2 (140M X R$ 509,8)",
+  "v27": 71376.33,
+  "cat27": "SINALIZAÇÃO VIÁRIA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SERVIÇO DE LIMPEZA, PREPARO E PINTURA ÁREA DE CONVIVÊNCIA",
+  "v27": 7344,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "REPOSIÇÃO E SUBSTITUIÇÃO DE PLACAS DE SINALIZAÇÃO",
+  "v27": 12000,
+  "cat27": "COMUNICAÇÃO VERTICAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "BEBEDOURO INDUSTRIAL 50L PARA O PÚBLICO EXTERNO",
+  "v27": 1898,
+  "cat27": "EQUIPAMENTOS",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "ALIMENTAÇÃO DO BEBEDOURO EXTERNO",
+  "v27": 2000,
+  "cat27": "HIDRÁULICA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA ANUAL DA DEMARCAÇÃO DA CALÇADA (",
+  "v27": 26218.14,
+  "cat27": "COMUNICAÇÃO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA ANUAL DAS VIAS DE CARRO (1.059,86 M2 X R$ 39)",
+  "v27": 41334.54,
+  "cat27": "COMUNICAÇÃO HORIZONTAL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA SUBESTAÇÃO 1",
+  "v27": 34544,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA SUBESTAÇÃO 2",
+  "v27": 16398.92,
+  "cat27": "REVESTIMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SUBSTITUIÇÃO DE PAVIMENTO PINTADO (MATERIAL E MÃO DE OBRA)",
+  "v27": 30047.04,
+  "cat27": "PAVIMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "ADEQUAÇÃO E MELHORIA COPA",
+  "v27": 18300,
+  "cat27": "CIVIL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SUBSTITUIÇÃO DA GELADEIRA DA COPA",
+  "v27": 2855,
+  "cat27": "ELETRO DOMÉSTICO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MÃO DE OBRA PRA SUBSTITUIÇÃO DE APARELHOS DE AR CONDICIONADO (PORTARIA E ADM)",
+  "v27": 9900,
+  "cat27": "AVAC",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INFRA ELÉTRICA E LÓGICA PARA DISPOSITIVO DE MONITORAMENTO",
+  "v27": 2000,
+  "cat27": "MONITORAMENTO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SUBS. DE ENCAMENAMENTO PVC POR PPR NO RESTAURANTE (ÁGUA QUENTE) - MATERIAL",
+  "v27": 8746.62,
+  "cat27": "HIDRÁULICA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SUBS. DE ENCANAMENTO DE PVC POR PPR NO RESTAURANTE (ÁGUA QUENTE) - MÃO DE OBRA",
+  "v27": 30000,
+  "cat27": "HIDRÁULICA",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ 1",
+  "v27": 7635,
+  "cat27": "SCPQ",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 2",
+  "v27": 7635,
+  "cat27": "SCPQ",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 4",
+  "v27": 7635,
+  "cat27": "SCPQ",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "SERVIÇO DE LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS (R$ 80 M3 X 450M3)",
+  "v27": 36000,
+  "cat27": "HIDROSSANITÁRIO",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO E EXECUÇÃO DAS BANDEIRAS",
+  "v27": 30000,
+  "cat27": "CIVIL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE 4 CAIXAS COM CALHAS PARSHALLS/ETE NAS SAÍDAS PLUVIAIS (2 PARCELAS)",
+  "v27": 107600,
+  "cat27": "CIVIL",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 3",
+  "v27": 7635,
+  "cat27": "SCPQ",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MATERIAL DE CONSTRUÇÃO PARA USO PELO ZELADOR PARA PEQUENOS REPAROS",
+  "v27": 18000,
+  "cat27": "OUTROS",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Avulso",
+  "d26": "",
+  "v26": 0,
+  "d27": "MANUTENÇÃO PREVENTIVA E REVISÃO DAS VÁLVULAS DE GOVERNO (FASE 1 A 3 VGAS)",
+  "v27": 24318.7,
+  "cat27": "PPCI",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ },
+ {
+  "tipo": "Contrato",
+  "d26": "",
+  "v26": 0,
+  "d27": "CONTRATO — ARCA AGRO - MANUTENÇÃO AREA VERDE",
+  "v27": 91350,
+  "cat27": "ÁREA VERDE",
+  "leitura": "Só 2027",
+  "motivo": "Item novo, sem par em 2026."
+ }
+]
