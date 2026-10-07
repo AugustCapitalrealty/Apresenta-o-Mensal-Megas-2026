@@ -279,6 +279,14 @@ Scripts que montam planilhas de apoio no Drive a partir das cópias em
 
 Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
+Imagens e revisão visual (`python -m pip install pillow numpy`):
+
+- `python ferramentas/efeitos_imagem.py foto|carimbo|folha|miniatura …` —
+  foto em retícula na cor da marca (com borda rasgada e sombra), carimbo
+  PENDENTE, folha de contato dos PNG exportados e teste de miniatura. O que
+  o Slides não faz sozinho; as ideias de uso estão em
+  [`IDEIAS-DESIGN.md`](IDEIAS-DESIGN.md).
+
 ## Para incluir outro Mega
 
 Acrescente a cidade em `ORC_CIDADES` (`01_Config.gs`) com a apresentação

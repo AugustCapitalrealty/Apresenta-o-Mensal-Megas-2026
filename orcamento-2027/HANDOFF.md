@@ -140,6 +140,10 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
    na manutenção de Itajaí em 2026 (R$ 13.377 dele é do Esteio); Esteio sem
    verba de acesso/CFTV em 2027; tratores do Esteio saíram da manutenção;
    Orç 2026 item a item do Esteio R$ 4.500 acima da METRAGEM.
+5. **Melhorias visuais (capas, subcapas, infográficos):** propostas em
+   [`IDEIAS-DESIGN.md`](IDEIAS-DESIGN.md), com o que foi aprendido na produção
+   de capas de vídeo do Guilherme (07/10/2026). **Nada aprovado ainda**:
+   propor, mostrar o PNG e esperar o "sim" do gestor antes de mexer.
 
 ## 8. Armadilhas já encontradas
 
