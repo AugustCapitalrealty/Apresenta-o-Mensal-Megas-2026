@@ -1,11 +1,23 @@
-import json, os
+# Planilha de decisão do gestor: itens de manutenção do Orç 2026 × Orç 2027
+# de um Mega, com a coluna COMPARA? (SIM/NÃO).
+# Uso: python ferramentas/planilha_comparacao.py <curitiba|itajai|esteio>
+# (antes: node ferramentas/curadoria.js . <cidade> ferramentas/comparacao_linhas_<cidade>.json)
+import json, os, sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 
 S = os.path.dirname(os.path.abspath(__file__))
-# Pares revisados por curadoria.js (node ferramentas/curadoria.js . ferramentas/comparacao_linhas_curitiba.json)
-linhas = json.load(open(os.path.join(S, 'comparacao_linhas_curitiba.json'), encoding='utf-8'))
+CIDADE = sys.argv[1] if len(sys.argv) > 1 else 'curitiba'
+MEGA = {'curitiba': 'Mega Curitiba', 'itajai': 'Mega Itajaí', 'esteio': 'Mega Esteio'}[CIDADE]
+CONTRATOS27 = {'curitiba': 'planilha de contratos de manutenção de Curitiba'}.get(CIDADE, '"MESTRA - CONTRATOS 2027"')
+# Diferenças conhecidas entre a soma dos itens e a METRAGEM-COND (07/10/2026).
+NOTA = {
+    'curitiba': 'Totais iguais aos da METRAGEM-COND.',
+    'itajai': 'Orç 2026 igual à METRAGEM-COND. Orç 2027: R$ 29.313 acima da METRAGEM (totem, iluminação do AMZ 4/5 e do bolsão — ver as dúvidas).',
+    'esteio': 'Orç 2026: R$ 4.500 acima da METRAGEM-COND. Orç 2027: R$ 15.268 acima (as duas linhas de vida, out).',
+}[CIDADE]
+linhas = json.load(open(os.path.join(S, 'comparacao_linhas_' + CIDADE + '.json'), encoding='utf-8'))
 ORDEM = {'Dúvida': 0, 'Compara': 1, 'Não compara': 2, 'Só 2026': 3, 'Só 2027': 4}
 linhas.sort(key=lambda l: (ORDEM[l['leitura']], -max(l['v26'], l['v27'])))
 
@@ -19,13 +31,13 @@ MOEDA = '"R$" #,##0;-"R$" #,##0;"–"'
 wb = Workbook()
 ws = wb.active
 ws.title = 'Comparação'
-ws['A1'] = 'Manutenção de imóveis — Mega Curitiba · itens do Orç 2026 × Orç 2027'
+ws['A1'] = 'Manutenção de imóveis — ' + MEGA + ' · itens do Orç 2026 × Orç 2027'
 ws['A1'].font = Font(name=F, bold=True, size=13, color=AZUL)
 ws['A2'] = ('Preencha a coluna COMPARA? com SIM ou NÃO nas linhas amarelas (dúvidas). As outras já vêm com a leitura da '
             'análise e podem ser trocadas. Só os pares com SIM entram na comparação item a item da apresentação.')
 ws['A2'].font = Font(name=F, size=9, color='475569')
-ws['A3'] = ('Orç 2026: "Modelos 2025 Megas" (centro de custo do condomínio) + "2025 - Contratos" (valores de 2026). '
-            'Orç 2027: modelo 090 + planilha de contratos de manutenção. Totais iguais aos da METRAGEM-COND.')
+ws['A3'] = ('Orç 2026: "MESTRA - ORÇAMENTO 2026 ITEM A ITEM" (centro de custo do condomínio) + "MESTRA - CONTRATOS 2026". '
+            'Orç 2027: modelo 090 + ' + CONTRATOS27 + '. ' + NOTA)
 ws['A3'].font = Font(name=F, size=9, color='94A3B8')
 
 cab = ['#', 'Tipo', 'Item no Orç 2026', 'Orç 2026', 'Item(ns) no Orç 2027', 'Categoria 2027', 'Orç 2027', 'Δ R$',
@@ -85,12 +97,12 @@ for i, (rot, f) in enumerate(itens):
     a = rs.cell(row=r, column=1, value=rot); a.font = Font(name=F, size=10)
     b = rs.cell(row=r, column=2, value=f); b.font = Font(name=F, size=10, bold=True, color=AZUL)
     b.number_format = '0.0%' if '(%)' in rot else ('#,##0' if 'Pares' in rot or 'Dúvidas' in rot else MOEDA)
-rs['A12'] = 'Fonte: aba Comparação (Orç 2026 = Modelos 2025 Megas + 2025 - Contratos; Orç 2027 = modelo 090 e contratos de Curitiba).'
+rs['A12'] = 'Fonte: aba Comparação (' + MEGA + '; Orç 2026 = mestras de 2026; Orç 2027 = modelo 090 + ' + CONTRATOS27 + ').'
 rs['A12'].font = Font(name=F, size=8, color='94A3B8')
 rs.column_dimensions['A'].width = 40
 rs.column_dimensions['B'].width = 18
 
 os.makedirs(os.path.join(S, 'saida'), exist_ok=True)
-out = os.path.join(S, 'saida', 'comparacao_itens.xlsx')
+out = os.path.join(S, 'saida', 'comparacao_itens_' + CIDADE + '.xlsx')
 wb.save(out)
 print(out, os.path.getsize(out))

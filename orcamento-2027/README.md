@@ -37,7 +37,7 @@ não exclui neste Drive compartilhado; quem exclui é o usuário).
 | Pasta | O que tem |
 |---|---|
 | `00 - PLANILHAS MESTRAS` | **guardar**: `MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS` (era "Modelos 2025 Megas"), `MESTRA - CONTRATOS 2026 - TODOS OS MEGAS` (era "2025 - Contratos"), `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (era "CONTRATOS-2027-COMPLETO" — **fonte dos contratos de Itajaí e Esteio**), `MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES` (era "2026") |
-| `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027` (o gestor marca SIM/NÃO) |
+| `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>` (uma por Mega; o gestor marca SIM/NÃO) |
 | `02 - MEGA CURITIBA` / `03 - MEGA ITAJAÍ` / `04 - MEGA ESTEIO` | `MEGA <X> - APRESENTAÇÃO ORÇAMENTO 2027`, `- METRAGEM-COND 2027`, `- DESPESAS MENSAL 2026 x 2027`, `- 090 DESPESAS GERAIS 2027`, `- 070 SERVIÇOS DE TERCEIROS 2027`, (Curitiba) `- CONTRATOS 2027 - <CONTA>` e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, aba LEIA-ME com cada arquivo) |
 | `02 - MEGA CURITIBA/99 - ARQUIVO (não usado pela apresentação)` | lançamentos de jan–jul/26 (090, 070, manutenção de máquinas) e a cópia com os apontamentos do gestor de 29/09 (`exportarSlidesRevisao()` lê ela) |
 | `PODE EXCLUIR - …` | cópias e testes: `_fixtures` e `_slides-exportados` (o código recria se precisar), `TESTE-2 - COMPLETO` e `CONTRATOS 2027` (substituídas pela mestra 2027), planilhas "SERVIÇOS" de Curitiba e "MODELOS" de Itajaí (repetem o 070/090) |
@@ -261,10 +261,18 @@ Scripts que montam planilhas de apoio no Drive a partir das cópias em
 
 - `python ferramentas/planilha_mega.py` — `MEGA <X> - BASE DO ORÇAMENTO 2027`
   de cada cidade.
-- `node ferramentas/parear.js . <saida.json>` — sugestão automática de pares
-  item 2026 × 2027; `curadoria.js` tem os pares revisados à mão e gera
-  `comparacao_linhas_curitiba.json`; `python ferramentas/planilha_comparacao.py`
-  monta a planilha de decisão do gestor.
+- Comparação item a item da manutenção, Orç 2026 × Orç 2027, por Mega
+  (`<cidade>` = `curitiba`, `itajai` ou `esteio`; itens em
+  `comparacao_base.js`):
+  - `node ferramentas/parear.js . <cidade> <saida.json>` — sugestão
+    automática de pares;
+  - `node ferramentas/curadoria.js . <cidade> ferramentas/comparacao_linhas_<cidade>.json`
+    — pares revisados à mão (`PARES`), com a leitura Compara / Não compara /
+    Dúvida e o porquê;
+  - `python ferramentas/planilha_comparacao.py <cidade>` — planilha de
+    decisão do gestor (`ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 -
+    MEGA <X>`, pasta `01 - CONTROLE DA APRESENTAÇÃO`).
+  Em 07/10/2026: Curitiba 9 dúvidas, Itajaí 15, Esteio 8.
 
 Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 

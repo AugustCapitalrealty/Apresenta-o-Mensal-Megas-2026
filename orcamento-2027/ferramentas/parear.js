@@ -1,30 +1,10 @@
-// Pareia os itens de manutenção do Orç 2026 (Modelos 2025 Megas + cadastro de
-// contratos) com os do Orç 2027 (modelo 090 + contratos) de Curitiba.
-// Uso: node parear.js <pasta orcamento-2027> <saida.json>
-const fs = require('fs'), vm = require('vm'), path = require('path');
-const D = process.argv[2];
-const ctx = { Logger: { log() {} }, console }; vm.createContext(ctx);
-fs.readdirSync(D).filter(f => f.endsWith('.gs')).sort().forEach(f =>
-  vm.runInContext(fs.readFileSync(path.join(D, f), 'utf8').replace(/^(const|let) /gm, 'var '), ctx));
-const fx = n => JSON.parse(fs.readFileSync(path.join(D, 'teste', n), 'utf8'));
-const G = ctx, K = G._orcChaveConta_('Manutenção de imóveis');
-
-// 2026: modelo (só o centro de custo do condomínio) + contratos do cadastro.
-const mod26 = fx('fixture_modelos2026_megas.json').slice(1)
-  .filter(r => G._orcChaveConta_(r[0]) === K && r[2] === 'Mega Curitiba' && /RATEIO/.test(r[4]))
-  .map(r => { const meses = r.slice(8, 20).map(v => -(+v || 0)); return { desc: String(r[5]).trim(), meses, total: meses.reduce((a, v) => a + v, 0), contrato: false }; })
-  .filter(x => x.total > 0.5);
-const cad = G._orcLerCadastroContratos_(fx('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026)
-  .map(c => ({ desc: 'CONTRATO — ' + c.fornecedor, meses: c.meses, total: c.total, contrato: true, forn: c.fornecedor }));
-const it26 = mod26.concat(cad);
-
-// 2027: linhas do modelo 090 + contratos 2027.
-const m27 = G._orcLinhasModelo_(fx('fixture_090_curitiba_2027.json')).filter(l => G._orcChaveConta_(l.conta) === K && Math.abs(l.total) > 0.5)
-  .map(l => { const s = G._orcSepararCategoria_(l.item); return { desc: s.descricao, cat: s.categoria, meses: l.meses, total: l.total,
-    contrato: G._orcItemEhContrato_(s.categoria, s.descricao) }; });
-const c27 = G._orcLinhasContratos_(fx('fixture_contratos_manutencao_curitiba.json'))
-  .map(c => ({ desc: c.descricao, cat: c.categoria, meses: c.meses, total: c.total, contrato: true }));
-const it27 = m27.concat(c27);
+// Pareia os itens de manutenção do Orç 2026 com os do Orç 2027 de um Mega
+// (sugestão automática; a revisão fica em curadoria.js).
+// Uso: node ferramentas/parear.js . <curitiba|itajai|esteio> <saida.json>
+const fs = require('fs'), path = require('path');
+const { carregar } = require('./comparacao_base');
+const D = process.argv[2], CIDADE = process.argv[3], SAIDA = process.argv[4];
+const { G, it26, it27 } = carregar(D, CIDADE);
 
 const PARE = new Set(('de da do das dos e em para no na nos nas com a o as os ao por sem ate fase amz armazem armazens ' +
   'servico servicos contrato manutencao mao obra material materiais compra provisao preventiva').split(' '));
@@ -67,7 +47,7 @@ const out = pares.map(p => ({
 const usados = new Set(out.map(o => o.j27).filter(j => j >= 0));
 const novos = it27.map((b, j) => ({ b, j })).filter(x => !usados.has(x.j))
   .map(x => ({ d27: x.b.desc, cat27: x.b.cat, v27: x.b.total, m27: meses(x.b.meses).length, contrato: x.b.contrato }));
-fs.writeFileSync(process.argv[3], JSON.stringify({ pares: out, novos, tot26: it26.reduce((a, x) => a + x.total, 0), tot27: it27.reduce((a, x) => a + x.total, 0) }, null, 1));
+fs.writeFileSync(SAIDA, JSON.stringify({ pares: out, novos, tot26: it26.reduce((a, x) => a + x.total, 0), tot27: it27.reduce((a, x) => a + x.total, 0) }, null, 1));
 out.sort((x, y) => y.score - x.score).forEach(o => console.log(o.score.toFixed(2).padStart(5), '|', Math.round(o.v26), '|', o.d26.slice(0, 60), '=>', o.d27.slice(0, 60), '|', Math.round(o.v27), '|', o.comuns, o.chamado ? '#' + o.chamado : ''));
 console.log('--- 2027 sem par:', novos.length, Math.round(novos.reduce((a, x) => a + x.v27, 0)));
 console.log('tot26', Math.round(it26.reduce((a, x) => a + x.total, 0)), 'tot27', Math.round(it27.reduce((a, x) => a + x.total, 0)));
