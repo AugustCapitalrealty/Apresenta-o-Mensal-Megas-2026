@@ -100,23 +100,60 @@ function _orcCelulaFonte_() {
 }
 
 // Mini gráfico de 12 colunas (sem rótulo de valor), usado no painel lateral.
+// Calendário (aprovado em 07/10/2026, rascunho grafico_m2_rascunho_v2.py):
+// 12 meses em 4×3, cada um com o valor do mês e o fundo mais forte quanto
+// maior o valor; mês sem entrega fica em branco com "—". O pico só ganha o
+// verde escuro quando existe de verdade — contrato com o mesmo valor todo mês
+// não tem pico (as barras antigas destacavam JAN nesse caso). Embaixo, a
+// frase: "R$ 11,6 mil todo mês" ou "Pico em MAR: R$ 48 mil". Valores em R$ mil.
 function _orcMiniMeses_(slide, x, y, w, h, meses) {
-  const DS = CR_DESIGN_SYSTEM;
-  const base = y + h - 14, ph = h - 18;
-  const max = Math.max.apply(null, meses) || 1;
-  const colW = w / 12, barW = colW * 0.62;
-  let iPico = 0;
-  meses.forEach((v, i) => { if (v > meses[iPico]) iPico = i; });
-  _orcLinha_(slide, x, base, x + w, base, DS.colors.lines, 0.75);
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors;
+  const comValor = meses.filter(v => v > 0.5);
+  // Em R$ mil (a unidade fica no topo do card): "12", "147", "2,0" — com o
+  // "mil" no quadrinho de 33 pt o valor quebrava a linha.
+  const valor = v => v < 9950 ? (v / 1000).toFixed(1).replace('.', ',') : _orcMilhar_(Math.round(v / 1000));
+  if (!comValor.length) {
+    _orcUmaLinha_(slide, x, y + h / 2 - 7, w, 14, 'sem valor no ano', { align: 'L', fs: 7.5, cor: C.textBody, fonte: DS.typography.body });
+    return;
+  }
+  const max = Math.max.apply(null, comValor), min = Math.min.apply(null, comValor);
+  const plano = comValor.length === 12 && max / min < 1.10;
+  const picos = plano ? [] : meses.map((v, i) => v >= max * 0.999 ? i : -1).filter(i => i >= 0);
+  const g = 4, cw = (w - 3 * g) / 4, ch = 25;
+  _orcUmaLinha_(slide, x, y - 20, w, 12, 'R$ mil', { align: 'R', fs: 6, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, folga: 4 });
   meses.forEach((v, i) => {
-    const bx = x + i * colW;
-    if (v > 0.005) {
-      const bh = Math.max(1.5, ph * v / max);
-      _orcRet_(slide, bx + (colW - barW) / 2, base - bh, barW, bh, i === iPico ? DS.colors.brandDark : DS.colors.brandLight);
+    const cx = x + (i % 4) * (cw + g), cy = y + Math.floor(i / 4) * (ch + g);
+    let fundo = '#FFFFFF', corM = C.textBody, corV = C.textBody, txt = '—';
+    if (v > 0.5) {
+      const t = plano ? 0.35 : 0.15 + 0.85 * (v - min) / ((max - min) || 1);
+      const pico = picos.indexOf(i) >= 0;
+      fundo = pico ? C.brandDark : _orcMisturarCor_(C.brandTint, C.brandMed, t * 0.75);
+      const claro = pico || t > 0.7;
+      corM = claro ? '#FFFFFF' : C.textBody;
+      corV = claro ? '#FFFFFF' : C.brandDark;
+      txt = valor(v);
     }
-    _orcUmaLinha_(slide, bx, base + 1, colW, 12, ORC_MESES[i].charAt(0),
-      { align: 'C', fs: 6.5, bold: i === iPico, cor: DS.colors.textBody, folga: 6 });
+    _orcRet_(slide, cx, cy, cw, ch, fundo, { redondo: true, borda: v > 0.5 ? null : C.lines, peso: 0.6 });
+    _orcUmaLinha_(slide, cx + 1, cy + 1.5, cw - 2, 9, ORC_MESES[i],
+      { align: 'L', fs: 5.6, fsMin: 5, bold: true, cor: corM, fonte: DS.typography.titles, folga: 2 });
+    _orcUmaLinha_(slide, cx + 1, cy + 10.5, cw - 2, 12, txt,
+      { align: 'L', fs: 7, fsMin: 5.5, bold: true, cor: corV, fonte: DS.typography.body, folga: 2 });
   });
+
+  const zeros = meses.map((v, i) => v > 0.5 ? null : ORC_MESES[i]).filter(m => m);
+  const l1 = plano ? _orcCompacto_(comValor[0]) + ' todo mês'
+    : 'Pico em ' + picos.slice(0, 2).map(i => ORC_MESES[i]).join(' e ') + ': ' + _orcCompacto_(max);
+  const l2 = zeros.length ? (zeros.length <= 3 ? 'sem entrega em ' + zeros.join(', ') : comValor.length + (comValor.length === 1 ? ' mês' : ' meses') + ' com entrega')
+    : (plano ? 'mesmo valor nos 12 meses' : 'média de ' + _orcCompacto_(comValor.reduce((t, v) => t + v, 0) / 12) + ' por mês');
+  const yl = y + 3 * (ch + g) + 1;
+  _orcUmaLinha_(slide, x, yl, w, 10, l1, { align: 'L', fs: 7, fsMin: 6, bold: true, cor: C.brandDark, fonte: DS.typography.body, cortar: true });
+  _orcUmaLinha_(slide, x, yl + 9, w, 10, l2, { align: 'L', fs: 6.5, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, cortar: true });
+}
+
+// Mistura duas cores #RRGGBB: t = 0 → a, t = 1 → b.
+function _orcMisturarCor_(a, b, t) {
+  const ca = [1, 3, 5].map(i => parseInt(a.substr(i, 2), 16)), cb = [1, 3, 5].map(i => parseInt(b.substr(i, 2), 16));
+  return '#' + ca.map((v, k) => ('0' + Math.round(v + (cb[k] - v) * t).toString(16)).slice(-2)).join('').toUpperCase();
 }
 
 // ==========================================

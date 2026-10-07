@@ -163,6 +163,12 @@ const ORC_FATIA_SLIDE_PROPRIO = 0.05;
 // Mês 1 do modelo = janeiro.
 const ORC_MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
+// Último mês FECHADO do ritmo do ano anterior (9 = setembro). O relatório
+// Despesas-Mensal não separa o realizado da projeção: daqui em diante o ritmo
+// é projeção (tracejado e com a faixa "projeção" no Custo por m² mês a mês).
+// Atualizar a cada fechamento.
+const ORC_RITMO_ULTIMO_MES_FECHADO = 9;
+
 // ==========================================
 // DESIGN SYSTEM — CAPITAL REALTY
 // ==========================================

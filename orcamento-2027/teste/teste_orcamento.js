@@ -862,7 +862,7 @@ const tM2m = textos(slides[iM2 + 1]);
 ok(tM2m[0] === 'Custo por m² mês a mês — Orçamento 2027', 'custo por m² mês a mês depois do custo por m²');
 ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU', 'Seguro',
     'Total de despesas', 'REAL 2025', 'Área (m², implícita)', G._orcMoeda_(rel.total.orc), G._orcM2_(serie('orc').media),
-    'média ' + G._orcM2_(serie('orc').media)].every(t => tM2m.indexOf(t) >= 0),
+    'R$ ' + G._orcM2_(serie('orc').media) + '/m²'].every(t => tM2m.indexOf(t) >= 0),
    'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
 ok(!tM2m.some(t => /…$/.test(t)), 'm² mês a mês: nenhum texto cortado (' + tM2m.filter(t => /…$/.test(t)).join(' | ') + ')');
 ok(!textos(slides[iSeg]).some(t => /^Não detalhado nos modelos/.test(t)) &&
