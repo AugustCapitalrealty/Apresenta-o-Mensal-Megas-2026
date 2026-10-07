@@ -71,8 +71,8 @@ def meio_tom(im, celula, ang=45, gama=.7):
 
 
 def foto_reticula(caminho, cor='#151E49', fundo='#F8FAFC', celula=7, largura=1600, seed=1):
-    """Foto -> pontos na cor da marca sobre papel. Desenha em 2x e reduz (pontos sem serrilhado)."""
-    im = Image.open(caminho).convert('RGB')
+    """Foto (caminho ou imagem PIL) -> pontos na cor da marca sobre papel. Desenha em 2x e reduz (pontos sem serrilhado)."""
+    im = (caminho if isinstance(caminho, Image.Image) else Image.open(caminho)).convert('RGB')
     f = largura * 2 / im.width
     im = im.resize((largura * 2, int(im.height * f)), Image.LANCZOS)
     ht = meio_tom(im, celula * 2)

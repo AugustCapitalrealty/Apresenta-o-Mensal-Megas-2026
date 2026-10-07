@@ -22,6 +22,7 @@ function gerarTodas()    { _orcGerar_(['CURITIBA', 'ITAJAI', 'ESTEIO']); }
 
 function _orcGerar_(chaves) {
   _orcTextosReiniciar_();
+  _ORC_PASTA_IMG = undefined;   // procura de novo a pasta das imagens das sub capas
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
@@ -75,9 +76,14 @@ function _orcSalvarDeck_(deck, etapa) {
 function _orcGerarCidade_(deck, W, H, chave) {
   const cid = ORC_CIDADES[chave];
   let nSecao = 0;
+  // A sub capa abre com o número da seção (_orcDestaqueSecao_, 10_Capa.gs);
+  // visao e contas já foram lidos quando a primeira seção é desenhada.
   const secao = titulo => {
     const n = ++nSecao;
-    _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo));
+    let dest = null;
+    try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
+    catch (e) { Logger.log('Número da sub capa ' + titulo + ' indisponível: ' + e.message); }
+    _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo, dest));
   };
 
   // Leituras antes do desenho: o slide de revisão vem logo depois da capa, e

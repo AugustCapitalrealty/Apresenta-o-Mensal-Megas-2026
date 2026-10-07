@@ -95,7 +95,19 @@ function novoSlide(deck) {
       };
       return l;
     },
-    insertImage: () => { throw new Error('insertImage não deveria ser chamado sem blob'); },
+    insertImage: b => {
+      if (!b) throw new Error('insertImage não deveria ser chamado sem blob');
+      const reg = { tipo: 'IMAGE', x: 0, y: 0, w: b.w || 100, h: b.h || 100, nome: b.nome, texto: null };
+      slide.shapes.push(reg);
+      const img = {
+        getWidth: () => reg.w, getHeight: () => reg.h,
+        setWidth: v => { reg.w = v; return img; },
+        setHeight: v => { reg.h = v; return img; },
+        setLeft: v => { reg.x = v; return img; }, setTop: v => { reg.y = v; return img; },
+        setRotation: v => { reg.rot = v; return img; }, bringToFront: () => img
+      };
+      return img;
+    },
     remove: () => { slide.removido = true; deck._slides = deck._slides.filter(s => s !== slide); }
   };
   return slide;
@@ -1047,6 +1059,45 @@ const ESTADO_CIDADES = {};
               ESTADO_CIDADES[c].naoDetalhado.join(', '));
 });
 if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
+console.log('Sub capa recorte');
+// Com as fotos tratadas na pasta "IMAGENS - SUBCAPAS" (07/10/2026): painel
+// de cor, recorte, frase com caneta e o número da seção. Sem a foto de uma
+// seção, ela fica no padrão da mensal.
+{
+  const ESTEIO = G.ORC_CIDADES.ESTEIO;
+  const ARQ = { 'SUBCAPA - PREVENTIVA.png': { w: 900, h: 1125 }, 'SUBCAPA - INTERNOS.png': { w: 900, h: 1125 },
+                'CANETA - SUBLINHADO.png': { w: 600, h: 120 } };
+  const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
+  const pasta = { getFilesByName: n => iter(ARQ[n] ? [{ getBlob: () => Object.assign({ nome: n }, ARQ[n]) }] : []) };
+  const pastasPedidas = [];
+  ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => { pastasPedidas.push(n); return iter(n === G.ORC_PASTA_IMAGENS_SUBCAPAS ? [pasta] : []); } });
+  decks = {};
+  G._orcGerar_(['ESTEIO']);
+  delete ctx.DriveApp.getFolderById;
+  const sl = decks[ESTEIO.deckId].getSlides();
+  const sub = nome => sl.filter(x => textos(x)[1] === nome)[0];
+  const man = sub('Manutenção'), m2 = sub('Custo por m²'), prem = sub('Premissas');
+  ok(pastasPedidas.length === 1, 'pasta das imagens procurada uma vez por geração (' + pastasPedidas.length + ')');
+  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'SUBCAPA - PREVENTIVA.png' && s.rot === -2.5),
+     'Manutenção: recorte da foto PREVENTIVA, girado');
+  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'CANETA - SUBLINHADO.png'), 'Manutenção: traço de caneta');
+  ok(man && textos(man).indexOf('o que custa manter o Mega rodando') >= 0, 'Manutenção: a frase da seção');
+  const tm = man ? textos(man) : [];
+  ok(tm.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tm.some(t => /orçamento 2027 da conta · R\$ [\d,]+\/m² ao mês/.test(t)),
+     'Manutenção: abre com o número da conta em R$ e R$/m² ao mês (' + tm.join(' | ') + ')');
+  ok(m2 && textos(m2).some(t => /^R\$ [\d,]+\/m²$/.test(t)), 'Custo por m²: abre com o R$/m² ao mês');
+  ok(prem && !prem.shapes.some(s => s.tipo === 'IMAGE') && !textos(prem).some(t => /^R\$/.test(t)),
+     'Premissas sem foto tratada: padrão da mensal, sem número');
+  sl.forEach((x, i) => x.shapes.forEach(sh => {
+    if (sh.tipo === 'ELLIPSE') return;
+    if (!(sh.x >= -0.5 && sh.y >= -0.5 && sh.x + sh.w <= W + 0.5 && sh.y + sh.h <= H + 0.5))
+      ok(false, 'sub capa recorte, slide ' + (i + 1) + ': ' + sh.tipo + ' fora da página');
+  }));
+  const cortados = [];
+  sl.forEach(x => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push(t); }));
+  ok(!cortados.length, 'sub capa recorte: nenhum texto cortado (' + cortados.join(' | ') + ')');
+}
 
 console.log('Gravação no Slides');
 // "Service unavailable: Slides" no fim da execução (Esteio, 07/10/2026):

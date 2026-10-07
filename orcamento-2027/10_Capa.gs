@@ -161,9 +161,13 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
 // seção à direita, no azul de destaque. A foto e o desenho de cada seção
 // estão em ORC_SUBCAPAS (01_Config.gs). Sem foto, fundo azul-escuro.
 // O número vem primeiro e o título logo depois (o teste procura assim).
-function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo) {
+// Com a foto tratada na pasta das imagens, sai a sub capa "recorte"
+// (_orcSubcapaRecorte_); sem ela, a do padrão da mensal, abaixo.
+function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, AZUL = '#60A5FA';
   const cfg = ORC_SUBCAPAS[titulo] || {};
+  const peca = cfg.foto ? _orcImagemSubcapa_('SUBCAPA - ' + (cfg.foto === 'MEGA' ? cid.nome.toUpperCase() : cfg.foto) + '.png') : null;
+  if (peca) return _orcSubcapaRecorte_(slide, W, H, cid, numero, titulo, cfg, peca, destaque);
   const fotoId = cfg.foto === 'MEGA' ? cid.fotoFundoId : ORC_FOTOS_SECAO[cfg.foto];
   slide.getBackground().setSolidFill(C.brandDark);
 
@@ -190,6 +194,102 @@ function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo) {
     { align: 'L', fs: 7.5, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
 
   _orcMotivoSecao_(slide, cfg.motivo, W * 0.80, H * 0.42, AZUL);
+}
+
+// ==========================================
+// SUB CAPA "RECORTE" (jeito das capas de vídeo, 07/10/2026)
+// ==========================================
+// Receita das thumbs/cartazes (orcamento-2027/IDEIAS-DESIGN.md): fundo
+// escuro com UMA forma de cor (o painel azul à direita), a foto da seção como
+// um recorte de papel em retícula colado por cima (meio no painel, meio fora,
+// levemente girado), título grande, uma frase em serifa itálica com o traço
+// de caneta embaixo e o número da seção como protagonista.
+function _orcSubcapaRecorte_(slide, W, H, cid, numero, titulo, cfg, peca, destaque) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, AZUL = '#60A5FA';
+  slide.getBackground().setSolidFill(C.brandDark);
+  _orcRet_(slide, W * 0.64, 0, W * 0.36, H, C.brandLight);   // a forma de cor
+
+  // O recorte: já vem com papel, borda rasgada e sombra (PNG transparente).
+  const img = slide.insertImage(peca);
+  const ar = img.getWidth() / img.getHeight();
+  let h = H * 0.86, w = h * ar;
+  if (w > W * 0.44) { w = W * 0.44; h = w / ar; }
+  img.setWidth(w).setHeight(h).setLeft(W * 0.745 - w / 2).setTop(H * 0.47 - h / 2);
+  img.setRotation(-2.5);
+
+  const x = 48, tw = W * 0.5, y0 = Math.round(H * 0.2);
+  _orcUmaLinha_(slide, x, y0, 160, 40, ('0' + numero).slice(-2),
+    { align: 'L', fs: 28, bold: true, cor: AZUL, fonte: DS.typography.titles });
+  _orcUmaLinha_(slide, x, y0 + 36, tw, 48, titulo,
+    { align: 'L', fs: 34, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 20 });
+  if (cfg.frase) {
+    _orcUmaLinha_(slide, x, y0 + 84, tw, 26, cfg.frase,
+      { align: 'L', fs: 15, italic: true, cor: AZUL, fonte: 'Playfair Display', fsMin: 10 });
+    const caneta = _orcImagemSubcapa_('CANETA - SUBLINHADO.png');
+    if (caneta) {
+      const c = slide.insertImage(caneta);
+      const cw = 150, ch = cw * c.getHeight() / c.getWidth();
+      c.setWidth(cw).setHeight(ch).setLeft(x + 2).setTop(y0 + 101);
+    }
+  }
+
+  // O número da seção (R$ e R$/m² ao mês, como o diretor lê).
+  if (destaque) {
+    _orcUmaLinha_(slide, x, H * 0.6, tw, 42, destaque.valor,
+      { align: 'L', fs: 30, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 18 });
+    _orcUmaLinha_(slide, x, H * 0.6 + 40, tw, 16, destaque.linha,
+      { align: 'L', fs: 9, cor: '#CBD5E1', fonte: DS.typography.body, fsMin: 7 });
+  }
+  _orcUmaLinha_(slide, x, H - 62, tw, 16, cid.nome + ' · Orçamento ' + ORC_ANO,
+    { align: 'L', fs: 9, cor: '#94A3B8', fonte: DS.typography.body });
+
+  _orcLinha_(slide, 42, H - 40, W * 0.64 - 12, H - 40, '#475569', 0.75);
+  _orcUmaLinha_(slide, 42, H - 34, W * 0.6 - 42, 18, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
+    { align: 'L', fs: 7.5, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
+}
+
+// O número que abre a seção: { valor, linha } ou null (seção sem número).
+// Contas em foco: orçamento da conta; Resumo: o total; Custo por m²: o R$/m²
+// ao mês. A linha leva o R$/m² e a variação contra o ritmo do ano anterior.
+function _orcDestaqueSecao_(titulo, rel, contas) {
+  const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
+  const contra = vr => vr.texto !== '–' ? vr.texto + ' × ritmo ' + (ORC_ANO - 1) : null;
+  if (titulo === 'Custo por m²') {
+    if (!area) return null;
+    const m2 = rel.total.orc / area / 12;
+    const vr = aRit ? contra(_orcVariacao_(rel.total.ritmo / aRit / 12, m2, 0.005)) : null;
+    return { valor: 'R$ ' + _orcM2_(m2) + '/m²', linha: ['ao mês, todas as contas', vr].filter(Boolean).join(' · ') };
+  }
+  const iConta = { 'Manutenção': 0, 'Segurança': 1, 'Limpeza e Conservação': 2 }[titulo];
+  let v, rotulo;
+  if (iConta !== undefined && contas) { v = contas[iConta].v; rotulo = 'orçamento ' + ORC_ANO + ' da conta'; }
+  else if (titulo === 'Resumo Executivo') { v = rel.total; rotulo = 'orçamento ' + ORC_ANO + ', todas as contas'; }
+  else return null;
+  const m2 = area ? 'R$ ' + _orcM2_(v.orc / area / 12) + '/m² ao mês' : null;
+  return { valor: _orcCompacto_(v.orc), linha: [rotulo, m2, contra(_orcVariacao_(v.ritmo, v.orc))].filter(Boolean).join(' · ') };
+}
+
+// Arquivo da pasta das imagens das sub capas (blob) ou null. A pasta é
+// procurada uma vez por geração (_orcGerar_ zera _ORC_PASTA_IMG).
+let _ORC_PASTA_IMG;
+function _orcImagemSubcapa_(nome) {
+  if (_ORC_PASTA_IMG === undefined) {
+    _ORC_PASTA_IMG = null;
+    try {
+      const it = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID).getFoldersByName(ORC_PASTA_IMAGENS_SUBCAPAS);
+      if (it.hasNext()) _ORC_PASTA_IMG = it.next();
+    } catch (e) {
+      Logger.log('Imagens das sub capas indisponíveis: ' + e.message);
+    }
+  }
+  if (!_ORC_PASTA_IMG) return null;
+  try {
+    const f = _ORC_PASTA_IMG.getFilesByName(nome);
+    return f.hasNext() ? f.next().getBlob() : null;
+  } catch (e) {
+    Logger.log('Imagem ' + nome + ' indisponível: ' + e.message);
+    return null;
+  }
 }
 
 // ==========================================

@@ -213,16 +213,24 @@ const ORC_FOTOS_SECAO = {
 // Sub capa de cada seção (gerarSlideSubcapa_, 10_Capa.gs), pelo título:
 //   foto   → chave de ORC_FOTOS_SECAO, ou 'MEGA' = a foto da capa do próprio
 //            Mega (cid.fotoFundoId). Sem foto, fundo azul-escuro.
-//   motivo → o desenho à direita (_orcMotivoSecao_), o mesmo da mensal quando
-//            a chave existe lá; 'M2' (planta) e 'ANEIS' são só do orçamento.
-// Primeira escolha em 07/10/2026, sem ver as fotos: troque à vontade.
+//   motivo → o desenho à direita no padrão da mensal (_orcMotivoSecao_); 'M2'
+//            (planta) e 'ANEIS' são só do orçamento.
+//   frase  → a linha em serifa itálica da sub capa "recorte" (jeito das capas
+//            de vídeo, 07/10/2026): diz do que a seção trata, sem número.
+// A sub capa "recorte" usa a foto já tratada (retícula + papel rasgado) da
+// pasta ORC_PASTA_IMAGENS_SUBCAPAS, feita por ferramentas/subcapas_youtube.py;
+// sem ela, a sub capa sai no padrão da mensal (foto + véu + motivo).
 const ORC_SUBCAPAS = {
-  'Premissas':             { foto: 'DOCUMENTACAO', motivo: 'DOCUMENTACAO' },
-  'Resumo Executivo':      { foto: 'MEGA',         motivo: 'ANEIS' },
-  'DRE':                   { foto: 'OPERACIONAL',  motivo: 'OPERACIONAL' },
-  'Manutenção':            { foto: 'PREVENTIVA',   motivo: 'PREVENTIVA' },
-  'Segurança':             { foto: 'PATRIMONIAL',  motivo: 'PATRIMONIAL' },
-  'Limpeza e Conservação': { foto: 'CONTRATADOS',  motivo: 'CONTRATADOS' },
-  'Projetos × Recorrente': { foto: 'CORRETIVA',    motivo: 'INTERNOS' },
-  'Custo por m²':          { foto: 'INTERNOS',     motivo: 'M2' }
+  'Premissas':             { foto: 'DOCUMENTACAO', motivo: 'DOCUMENTACAO', frase: 'como este orçamento foi construído' },
+  'Resumo Executivo':      { foto: 'MEGA',         motivo: 'ANEIS',        frase: 'o orçamento do ano em uma página' },
+  'DRE':                   { foto: 'OPERACIONAL',  motivo: 'OPERACIONAL',  frase: 'conta a conta, do ritmo ao orçamento' },
+  'Manutenção':            { foto: 'PREVENTIVA',   motivo: 'PREVENTIVA',   frase: 'o que custa manter o Mega rodando' },
+  'Segurança':             { foto: 'PATRIMONIAL',  motivo: 'PATRIMONIAL',  frase: 'vigilância, portaria e monitoramento' },
+  'Limpeza e Conservação': { foto: 'CONTRATADOS',  motivo: 'CONTRATADOS',  frase: 'o Mega limpo e conservado o ano inteiro' },
+  'Projetos × Recorrente': { foto: 'CORRETIVA',    motivo: 'INTERNOS',     frase: 'o que é obra pontual e o que é rotina' },
+  'Custo por m²':          { foto: 'INTERNOS',     motivo: 'M2',           frase: 'quanto custa cada m² por mês' }
 };
+// Pasta (dentro de APRESENTAÇÃO ORÇAMENTO) com as fotos tratadas das sub
+// capas: "SUBCAPA - <chave da foto>.png" (MEGA → "SUBCAPA - MEGA CURITIBA.png")
+// e o traço de caneta "CANETA - SUBLINHADO.png".
+const ORC_PASTA_IMAGENS_SUBCAPAS = 'IMAGENS - SUBCAPAS';
