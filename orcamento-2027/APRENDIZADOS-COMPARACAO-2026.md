@@ -159,7 +159,7 @@ projeção, elas continuam adiadas.
 **Conferido em 07/10/2026: as três estão no ritmo (dez/2026) e no Orç 2027 (quadro em jan; as duas iluminações em
 fev), e o totem também (ritmo dez/2026 R$ 17.400; Orç 2027 jan R$ 11.500).** Regra combinada com o Guilherme: o que
 está só no ritmo é ritmo; o que está no ritmo e no Orç 2027 é pergunta ao gestor. As quatro foram para
-`ORC_PENDENCIAS_GESTOR` ("Duplicada em 2026 e 2027?"). Indício: o slide de revisão já mostrava "Modelos acima da
+`ORC_PENDENCIAS_GESTOR` ("Parcelado ou em dobro?" — o Guilherme acha que é parcelamento). Indício: o slide de revisão já mostrava "Modelos acima da
 METRAGEM: JAN R$ 11.500 · FEV R$ 17.813", exatamente o totem e as duas iluminações, que a METRAGEM 2027 não tem.
 Retiradas das pendências: recalque paver e Orbital → Firecam/NFPA (respondidas abaixo).
 

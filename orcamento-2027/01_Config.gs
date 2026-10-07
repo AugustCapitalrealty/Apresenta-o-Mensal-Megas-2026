@@ -239,16 +239,17 @@ const ORC_PENDENCIAS_GESTOR = {
     { conta: 'Manutenção de imóveis', tipo: 'Sem provisão de 3%',
       texto: 'O 090 de 2027 não tem a linha de 3% para não previstos (Curitiba e Esteio têm). Esquecida?' },
     // Ritmo 2026 (07/10/2026): no ritmo em dez/2026 e no Orç 2027 em jan–fev.
+    // O Guilherme acha que é parcelamento; a pergunta fica para o gestor confirmar.
     // Respondidas pelo ritmo e retiradas: recalque paver (feito em ago/2026) e
     // Orbital → Firecam / NFPA (NFPA feita em out/2026; em 2027 só a Firecam).
-    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
-      texto: 'Iluminação rua armazém 4/5: R$ 17.250 no ritmo de dez/2026 e R$ 11.875 no Orç 2027 (fev)' },
-    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
-      texto: 'Iluminação do bolsão: R$ 1.800 no ritmo de dez/2026 e R$ 5.938 no Orç 2027 (fev)' },
-    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
-      texto: 'Quadro elétrico da portaria: R$ 5.900 no ritmo de dez/2026 e R$ 4.290 no Orç 2027 (jan)' },
-    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
-      texto: 'Totem do bolsão: R$ 17.400 no ritmo de dez/2026 e totem Mega R$ 11.500 no Orç 2027 (jan)' }
+    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
+      texto: 'Iluminação rua armazém 4/5: dez/2026 R$ 17.250 (ritmo) e fev/2027 R$ 11.875 (Orç). Parcelas da mesma obra?' },
+    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
+      texto: 'Iluminação do bolsão: dez/2026 R$ 1.800 (ritmo) e fev/2027 R$ 5.938 (Orç). Parcelas da mesma obra?' },
+    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
+      texto: 'Quadro elétrico da portaria: dez/2026 R$ 5.900 (ritmo) e jan/2027 R$ 4.290 (Orç). Parcelas da mesma obra?' },
+    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
+      texto: 'Totem: bolsão dez/2026 R$ 17.400 (ritmo) e totem Mega jan/2027 R$ 11.500 (Orç). Parcelas da mesma obra?' }
   ],
   'Mega Curitiba': [
     { conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar',
