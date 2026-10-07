@@ -27,6 +27,7 @@ function _orcGerar_(chaves) {
   _ORC_PASTA_IMG = undefined;   // e procura de novo a pasta das imagens de slide
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
+    _orcAplicarMarca_(cid);                    // Demercado em Curitiba (ORC_MARCAS)
     _ORC_LINKS = { alvos: {}, origens: [] };   // sumário e trilhas → sub capas (10_Capa.gs)
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
     let deck = SlidesApp.openById(cid.deckId);
@@ -55,6 +56,7 @@ function _orcGerar_(chaves) {
     _orcSalvarDeck_(final, 'a remoção do último slide antigo de ' + cid.nome);
     Logger.log('Pronto: ' + cid.nome + ', ' + n + ' slides — ' + url);
   });
+  _orcAplicarMarca_(null);
   _orcSalvarTextos_();
 }
 

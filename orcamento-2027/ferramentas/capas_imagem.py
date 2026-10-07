@@ -12,6 +12,7 @@ está desenhado nela); deck com seção faltando volta às formas.
 
 Uso (de dentro de orcamento-2027; precisa de pillow e numpy):
   python ferramentas/capas_imagem.py                      (capa e 8 sub capas dos três Megas)
+  python ferramentas/capas_imagem.py "MEGA CURITIBA"      (só um Mega; Curitiba sai com as cores da Demercado)
   python ferramentas/capas_imagem.py --previa-subcapa     (prévia da sub capa 04 de Itajaí, com números)
   python ferramentas/capas_imagem.py --previa "R$ 6,58 mi" "R$ 5,07" "▲ 22%" "MEGA ITAJAÍ"
      (só a prévia de um Mega, com os números desenhados, em ferramentas/saida/; não vai para o Drive)
@@ -33,6 +34,19 @@ ANO = 2027
 W, H = 1920, 1080
 K = W / 720                                     # px por pt
 NAVY, LIGHT, AZUL, TXT, MUTED, LINHA = '#151E49', '#065CA9', '#60A5FA', '#475569', '#94A3B8', '#E2E8F0'
+MARCA, SLOGAN = 'Capital Realty', 'Expandir Eficiência'
+# = ORC_MARCAS (01_Config.gs): o Mega Curitiba é da Demercado (07/10/2026).
+MARCAS = {
+    'CAPITAL':   dict(NAVY='#151E49', LIGHT='#065CA9', AZUL='#60A5FA', TXT='#475569', MUTED='#94A3B8', LINHA='#E2E8F0',
+                      MARCA='Capital Realty', SLOGAN='Expandir Eficiência'),
+    'DEMERCADO': dict(NAVY='#00594F', LIGHT='#AF9800', AZUL='#C9B037', TXT='#4B5250', MUTED='#9AA19F', LINHA='#E3E8E6',
+                      MARCA='Demercado Investimentos', SLOGAN=''),
+}
+MARCA_DO_MEGA = {'MEGA CURITIBA': 'DEMERCADO'}
+
+
+def usar_marca(mega):
+    globals().update(MARCAS[MARCA_DO_MEGA.get(mega, 'CAPITAL')])
 FOCO = {'MEGA CURITIBA': 0.26, 'MEGA ITAJAÍ': 0.30, 'MEGA ESTEIO': 0.52}   # = ORC_FOTO_FOCO (horizontal)
 FOCO_Y = {'MEGA CURITIBA': 0.12, 'MEGA ITAJAÍ': 0.0, 'MEGA ESTEIO': 0.5}  # altura do recorte: 0 = topo da foto
 RECUO = 7.2                                     # pt: recuo interno da caixa de texto do Slides
@@ -111,7 +125,7 @@ def subcapa(mega, nome_mega, n):
         texto(d, (x, 318, w, 12), '%02d' % (i + 1), 'M', 'Bold', 8, LIGHT if atual else MUTED)
         paragrafo(d, (x, 329, w, 26), nome, 'O', 'Bold' if atual else 'Regular', 7.5, NAVY if atual else MUTED)
     d.line([(48 * K, 372 * K), (684 * K, 372 * K)], fill=LINHA, width=max(1, int(0.75 * K)))
-    texto(d, (48, 376, 500, 16), '%s · Orçamento %d · Capital Realty · Facilities' % (nome_mega, ANO), 'O', 'Regular', 7.5, MUTED)
+    texto(d, (48, 376, 500, 16), '%s · Orçamento %d · %s · Facilities' % (nome_mega, ANO, MARCA), 'O', 'Regular', 7.5, MUTED)
     return t
 
 
@@ -149,9 +163,10 @@ def capa(mega, nome_exibido):
     texto(d, (46, 242, 320, 54), nome_exibido, 'M', 'Bold', 40, NAVY, pt_min=24)
     texto(d, (48, 296, 330, 18), 'Despesas do condomínio · do Ritmo %d ao Orçamento %d' % (ANO - 1, ANO), 'O', 'Regular', 11, TXT, pt_min=8)
     d.line([(48 * K, 372 * K), (684 * K, 372 * K)], fill=LINHA, width=max(1, int(0.75 * K)))
-    texto(d, (48, 376, 400, 16), 'Capital Realty · Facilities · Planejamento %d' % ANO, 'O', 'Regular', 7.5, MUTED)
-    d.rectangle([584 * K, 381 * K, 589 * K, 386 * K], fill=AZUL)
-    texto(d, (592, 376, 100, 16), 'Expandir Eficiência', 'M', 'Bold', 8, NAVY)
+    texto(d, (48, 376, 400, 16), '%s · Facilities · Planejamento %d' % (MARCA, ANO), 'O', 'Regular', 7.5, MUTED)
+    if SLOGAN:
+        d.rectangle([584 * K, 381 * K, 589 * K, 386 * K], fill=AZUL)
+        texto(d, (592, 376, 100, 16), SLOGAN, 'M', 'Bold', 8, NAVY)
     return t
 
 
@@ -164,7 +179,7 @@ def numeros(t, total, m2, var):
         texto(d, (546 + i * 80, 252, 76, 22), v, 'M', 'Bold', 16, NAVY)
         texto(d, (546 + i * 80, 274, 76, 14), r, 'O', 'Regular', 8.5, TXT)
     # logos (no deck são as imagens oficiais)
-    texto(d, (48, 30, 260, 24), 'CAPITAL REALTY', 'M', 'Bold', 13, 'white')
+    texto(d, (48, 30, 260, 24), MARCA.upper(), 'M', 'Bold', 13, 'white')
     d.rectangle([574 * K, 21 * K, 702 * K, 69 * K], fill='white')
     texto(d, (586, 30, 110, 30), 'logo do Mega', 'O', 'Regular', 8, MUTED)
     return t
@@ -180,10 +195,14 @@ def main(args):
     if args and args[0] == '--previa':
         total, m2, var, mega = args[1:5]
         destino = os.path.join(AQUI, 'saida', 'previa_capa_%s.jpg' % mega.replace(' ', '_'))
+        usar_marca(mega)
         numeros(capa(mega, mega.title()), total, m2, var).save(destino, quality=90)
         print('prévia ->', destino); return
     os.makedirs(SAIDA, exist_ok=True)
+    so = [a.upper() for a in args]   # ex.: "MEGA CURITIBA" refaz só um Mega
     for mega in ('MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO'):
+        if so and mega not in so: continue
+        usar_marca(mega)
         if not os.path.exists(os.path.join(FOTOS, mega + '.png')):
             print('sem foto:', mega); continue
         destino = os.path.join(SAIDA, 'CAPA - %s.jpg' % mega)

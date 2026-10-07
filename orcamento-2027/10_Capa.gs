@@ -124,23 +124,25 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
   if (rel) _orcCapaNumeros_(slide, k, rel);
 
   _orcLinha_(slide, 48 * k, 372 * k, 684 * k, 372 * k, C.lines, 0.75);
-  _orcUmaLinha_(slide, 48 * k, 376 * k, 400 * k, 16 * k, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
+  _orcUmaLinha_(slide, 48 * k, 376 * k, 400 * k, 16 * k, CR_DESIGN_SYSTEM.marca.nome + ' · Facilities · Planejamento ' + ORC_ANO,
     { align: 'L', fs: 7.5, cor: C.textMuted, fonte: T.body });
-  _orcRet_(slide, 584 * k, 381 * k, 5 * k, 5 * k, '#60A5FA');
-  _orcUmaLinha_(slide, 592 * k, 376 * k, 100 * k, 16 * k, 'Expandir Eficiência',
-    { align: 'L', fs: 8, bold: true, cor: C.brandDark, fonte: T.titles });
+  if (CR_DESIGN_SYSTEM.marca.slogan) {
+    _orcRet_(slide, 584 * k, 381 * k, 5 * k, 5 * k, C.brandAccent);
+    _orcUmaLinha_(slide, 592 * k, 376 * k, 100 * k, 16 * k, CR_DESIGN_SYSTEM.marca.slogan,
+      { align: 'L', fs: 8, bold: true, cor: C.brandDark, fonte: T.titles });
+  }
 }
 
 // Logo Capital Realty branco sobre o azul (sem a imagem, o nome em texto) e
 // o logo do Mega no chip branco.
 function _orcCapaLogos_(slide, W, k, cid) {
   try {
-    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullNegativo));
+    const img = slide.insertImage(_orcLogoBlob_('fullNegativo'));
     const h = 24 * k, w = h * img.getWidth() / img.getHeight();
     img.setWidth(w).setHeight(h).setLeft(48 * k).setTop(30 * k);
   } catch (e) {
     Logger.log('Capa: logo indisponível, usando texto. ' + e.message);
-    _orcUmaLinha_(slide, 48 * k, 30 * k, 260 * k, 24 * k, 'CAPITAL REALTY',
+    _orcUmaLinha_(slide, 48 * k, 30 * k, 260 * k, 24 * k, CR_DESIGN_SYSTEM.marca.nome.toUpperCase(),
       { align: 'L', fs: 13, bold: true, cor: '#FFFFFF', fonte: CR_DESIGN_SYSTEM.typography.titles });
   }
   _orcLogoMega_(slide, W, cid.unitLogoId);
@@ -240,7 +242,7 @@ function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque, secoes) 
   _orcRet_(slide, bx, by, 4 * k, bh, C.brandLight);
 
   _orcUmaLinha_(slide, 46 * k, 26 * k, 200 * k, 66 * k, ('0' + numero).slice(-2),
-    { align: 'L', fs: 54, bold: true, cor: '#60A5FA', fonte: T.titles });
+    { align: 'L', fs: 54, bold: true, cor: CR_DESIGN_SYSTEM.colors.brandAccent, fonte: T.titles });
   _orcUmaLinha_(slide, 48 * k, 116 * k, 340 * k, 44 * k, titulo,
     { align: 'L', fs: 32, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 20 });
   if (cfg.frase) {
@@ -290,7 +292,7 @@ function _orcRodapeClaro_(slide, k, cid) {
   const DS = CR_DESIGN_SYSTEM;
   _orcLinha_(slide, 48 * k, 372 * k, 684 * k, 372 * k, DS.colors.lines, 0.75);
   _orcUmaLinha_(slide, 48 * k, 376 * k, 500 * k, 16 * k,
-    cid.nome + ' · Orçamento ' + ORC_ANO + ' · Capital Realty · Facilities',
+    cid.nome + ' · Orçamento ' + ORC_ANO + ' · ' + CR_DESIGN_SYSTEM.marca.nome + ' · Facilities',
     { align: 'L', fs: 7.5, cor: DS.colors.textMuted, fonte: DS.typography.body });
 }
 
@@ -370,7 +372,7 @@ function gerarSlideSumario_(slide, W, H, cid, secoes) {
     const x = (48 + Math.floor(i / porColuna) * 324) * k, y = (126 + (i % porColuna) * 58) * k;
     _orcRet_(slide, x, y, colW * k, 1 * k, C.lines);
     const num = _orcUmaLinha_(slide, x, y + 8 * k, 44 * k, 26 * k, ('0' + (i + 1)).slice(-2),
-      { align: 'L', fs: 20, bold: true, cor: '#60A5FA', fonte: T.titles });
+      { align: 'L', fs: 20, bold: true, cor: CR_DESIGN_SYSTEM.colors.brandAccent, fonte: T.titles });
     const nome = _orcUmaLinha_(slide, x + 48 * k, y + 8 * k, (colW - 48) * k, 20 * k, t,
       { align: 'L', fs: 13, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 9 });
     const frase = (ORC_SUBCAPAS[t] || {}).frase;

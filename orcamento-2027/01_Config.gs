@@ -24,6 +24,9 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 const ORC_CIDADES = {
   CURITIBA: {
     nome: 'Mega Curitiba',
+    // O Mega Curitiba é da Demercado, não da Capital Realty: cores, logo e
+    // nome da marca da Demercado (ORC_MARCAS) — Guilherme, 07/10/2026.
+    marca: 'DEMERCADO',
     deckId: '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI',            // MEGA CURITIBA - APRESENTAÇÃO ORÇAMENTO 2027
     // Capa (10_Capa.gs): foto do Mega e logo do Mega — os mesmos da capa da
     // apresentação mensal dos Megas (megas-mensal/01_Config.gs, PROJETOS).
@@ -176,7 +179,10 @@ const CR_DESIGN_SYSTEM = {
     zebra:      '#F1F5F9',
     accentGreen:  '#10B981',
     accentOrange: '#F97316',
-    accentRed:    '#EF4444'
+    accentRed:    '#EF4444',
+    brandAccent:  '#60A5FA',   // destaque claro (número da sub capa, ponto do rodapé da capa)
+    brandTint:    '#EFF6FF',   // fundo bem claro da marca (caixas de leitura)
+    brandTint2:   '#DBEAFE'    // linha de total e coluna em destaque das tabelas
   },
   typography: {
     titles: 'Montserrat',
@@ -185,14 +191,49 @@ const CR_DESIGN_SYSTEM = {
   layout: {
     marginX: 30,
     headerH: 64
-  }
+  },
+  marca: { nome: 'Capital Realty', slogan: 'Expandir Eficiência' }
 };
 
 // Logos oficiais (mesmos IDs de megas-mensal/01_Config.gs).
 //   Negativo (branco) → capa, fundo escuro.  Positivo (escuro) → cabeçalho.
+//   "pasta:<nome>" = imagem da pasta ORC_PASTA_IMAGENS, pelo nome.
 const LOGOS_CR = {
   fullNegativo: '1Tx9cwk1-1_P1TSGoXLZ828JNQ-rY-w6p',
   fullPositivo: '1XqFtIobiEq7VC2H41sKnFNUuOluw_J4V'
+};
+
+// Marcas dos Megas (cid.marca; sem ela, CAPITAL). _orcAplicarMarca_
+// (00_Helpers.gs) troca, durante a geração do Mega, as cores de
+// CR_DESIGN_SYSTEM, o nome da marca e os logos de LOGOS_CR; no fim volta à
+// Capital Realty. Demercado: manual de marca AF-6914-21 (cores p. 9: verde
+// 3292 C #00594F, amarelo 104 C #AF9800, cinza escuro #262626) e logos
+// extraídos do PDF "Atualização logo DEMERCADO" (IMAGENS - SLIDES).
+const ORC_MARCAS = {
+  CAPITAL: {
+    colors: JSON.parse(JSON.stringify(CR_DESIGN_SYSTEM.colors)),
+    marca: { nome: 'Capital Realty', slogan: 'Expandir Eficiência' },
+    logos: { fullNegativo: LOGOS_CR.fullNegativo, fullPositivo: LOGOS_CR.fullPositivo }
+  },
+  DEMERCADO: {
+    colors: {
+      brandDark:  '#00594F',   // verde petróleo (principal)
+      brandMed:   '#3C8C7F',   // verde médio (distinto do principal nas marcas dos grupos)
+      brandLight: '#AF9800',   // amarelo ouro
+      brandSoft:  '#D9CB7E',   // ouro claro
+      bgSlide:    '#F8FAF9',
+      textMain:   '#262626',   // cinza escuro
+      textBody:   '#4B5250',
+      textMuted:  '#9AA19F',
+      lines:      '#E3E8E6',
+      zebra:      '#F2F6F5',
+      brandAccent: '#C9B037',
+      brandTint:  '#EEF5F3',
+      brandTint2: '#D7E8E4'
+    },
+    marca: { nome: 'Demercado Investimentos', slogan: '' },
+    logos: { fullNegativo: 'pasta:LOGO - DEMERCADO - NEGATIVO.png', fullPositivo: 'pasta:LOGO - DEMERCADO - POSITIVO.png' }
+  }
 };
 
 // Fotos das sub capas: os MESMOS arquivos das capas de seção da apresentação

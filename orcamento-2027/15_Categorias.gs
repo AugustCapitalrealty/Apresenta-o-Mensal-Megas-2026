@@ -49,7 +49,7 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
   let ry = y + hCab;
   linhas.forEach((ln, r) => {
     const pintada = ln.faixa === undefined ? r % 2 === 1 : ln.faixa === 1;
-    if (ln.total) _orcRet_(slide, x, ry, w, rowH, '#DBEAFE');
+    if (ln.total) _orcRet_(slide, x, ry, w, rowH, DS.colors.brandTint2);
     else if (pintada) _orcRet_(slide, x, ry, w, rowH, DS.colors.zebra);
     if (ln.separador) _orcLinha_(slide, x, ry, x + w, ry, DS.colors.lines, 0.75);
     ry += rowH;

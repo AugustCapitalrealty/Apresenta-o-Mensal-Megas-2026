@@ -631,6 +631,8 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => G.ORC_CIDADES[k].deckId) &&
    'cada cidade tem a sua apresentação');
 const deck = decks[CUR.deckId];
 const slides = deck.getSlides();
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_curitiba.json'),
+  JSON.stringify({ W: W, H: H, slides: slides.map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
 const textos = sl => sl.shapes.filter(x => x.texto).map(x => x.texto);
 const titulo = sl => textos(sl)[0];
 
@@ -875,8 +877,18 @@ ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf(
    'capa: título é a cidade, não a conta');
 const tCapa = textos(slides[0]);
 ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m² ao mês', 'vs. ritmo 2026', 'Orçamento 2027, todas as contas',
-    'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12), 'Expandir Eficiência'].every(t => tCapa.indexOf(t) >= 0),
+    'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12)].every(t => tCapa.indexOf(t) >= 0),
    'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
+// Curitiba é Demercado (ORC_MARCAS): nome e rodapé da marca, sem o slogan da
+// Capital; depois da geração, o tema volta à Capital Realty.
+ok(tCapa.indexOf('Demercado Investimentos · Facilities · Planejamento 2027') >= 0 && tCapa.indexOf('Expandir Eficiência') < 0 &&
+   G.CR_DESIGN_SYSTEM.colors.brandDark === '#151E49' && G.LOGOS_CR.fullPositivo === G.ORC_MARCAS.CAPITAL.logos.fullPositivo,
+   'Curitiba com a marca Demercado na capa; o tema volta à Capital no fim');
+{
+  const cores = [].concat.apply([], slides.slice(0, 8).map(x => x.shapes.map(s => s.cor))).filter(Boolean);
+  ok(cores.indexOf('#00594F') >= 0 && cores.indexOf('#151E49') < 0, 'Curitiba: verde Demercado no lugar do azul da Capital (' +
+     cores.filter((c, i) => cores.indexOf(c) === i).slice(0, 12).join(' ') + ')');
+}
 ok(slides.every(sl => textos(sl).indexOf('QUANDO O DINHEIRO SAI') < 0 && textos(sl).indexOf('QUANDO') < 0),
    'nenhum slide fala em "quando o dinheiro sai" — é previsão de entrega');
 ok(textos(slides[iCat0]).indexOf('PREVISÃO DE ENTREGA') >= 0 && textos(slides[iCat0]).indexOf('ENTREGA') >= 0,

@@ -119,7 +119,7 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     const soma = tipo => notas.reduce((t, d) => t + d.partes.filter(pt => pt.tipo === tipo)[0].v, 0);
     chip(chipX, notas.map(d => d.nome.split(' ')[0]).join(' e ').toUpperCase(),
       _orcDeltaMil_(soma('saida')) + ' mil já rodam em ' + dez + ' · ' + _orcDeltaMil_(soma('novo')) + ' mil novos',
-      '#EFF6FF', C.brandMed);
+      C.brandTint, C.brandMed);
   }
 
   // Colunas: início, degraus, fim. O eixo começa num piso redondo (meio

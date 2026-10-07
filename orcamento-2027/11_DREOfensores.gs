@@ -121,7 +121,7 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
       if (ln.revisar) _orcRet_(slide, x, ry, w, rowH, _ORC_COR_REVISAR.fundo);
       else if (zebra % 2 === 1) _orcRet_(slide, x, ry, w, rowH, C.zebra);
       zebra++;
-      colunas.forEach((c, i) => { if (c.destaque) _orcRet_(slide, xs[i], ry, c.w, rowH, '#DBEAFE', { alpha: 0.55 }); });
+      colunas.forEach((c, i) => { if (c.destaque) _orcRet_(slide, xs[i], ry, c.w, rowH, C.brandTint2, { alpha: 0.55 }); });
     }
     if (ln.revisar) _orcRet_(slide, x, ry, 2.5, rowH, _ORC_COR_REVISAR.borda);
   });

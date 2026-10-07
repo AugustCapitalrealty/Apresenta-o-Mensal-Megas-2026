@@ -87,7 +87,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   });
   // A leitura sem as obras adiadas, embaixo da ponte.
   const ly = base + 30;
-  _orcRet_(slide, cx + 12, ly, cw - 24, 30, '#EFF6FF', { redondo: true });
+  _orcRet_(slide, cx + 12, ly, cw - 24, 30, C.brandTint, { redondo: true });
   _orcRet_(slide, cx + 12, ly, 3, 30, C.brandLight);
   _orcParagrafo_(slide, cx + 20, ly + 2, cw - 36, 26,
     'Sem as obras adiadas: ' + _orcCompacto_(semAdiados) + (area ? ' · ' + m2(semAdiados, area) + ' ao mês' : '') +

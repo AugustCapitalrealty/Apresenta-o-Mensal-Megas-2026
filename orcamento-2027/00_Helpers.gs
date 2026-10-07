@@ -224,6 +224,27 @@ function _orcCard_(slide, x, y, w, h, rotulo) {
 // ==========================================
 // SLIDE PADRÃO: fundo, cabeçalho e rodapé
 // ==========================================
+// Cores, nome e logos da marca do Mega (ORC_MARCAS, 01_Config.gs); sem cid,
+// volta à Capital Realty.
+function _orcAplicarMarca_(cid) {
+  const base = ORC_MARCAS.CAPITAL, m = ORC_MARCAS[(cid && cid.marca) || 'CAPITAL'] || base;
+  Object.assign(CR_DESIGN_SYSTEM.colors, base.colors, m.colors || {});
+  CR_DESIGN_SYSTEM.marca = Object.assign({}, base.marca, m.marca || {});
+  Object.assign(LOGOS_CR, base.logos, m.logos || {});
+}
+
+// Blob de um logo de LOGOS_CR: ID do Drive ou "pasta:<nome>" na pasta das
+// imagens de slide.
+function _orcLogoBlob_(qual) {
+  const v = LOGOS_CR[qual];
+  if (/^pasta:/.test(v)) {
+    const b = _orcImagemDaPasta_(v.slice(6));
+    if (!b) throw new Error('logo "' + v.slice(6) + '" não está na pasta ' + ORC_PASTA_IMAGENS);
+    return b;
+  }
+  return _orcBlobDrive_(v);
+}
+
 function _orcNovoSlide_(deck) {
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
@@ -242,7 +263,7 @@ function _orcHeader_(slide, W, titulo, subtitulo) {
   }
   // Logo no canto direito. Se a imagem não carregar, o cabeçalho segue sem ela.
   try {
-    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullPositivo));
+    const img = slide.insertImage(_orcLogoBlob_('fullPositivo'));
     const h = 24, w = h * img.getWidth() / img.getHeight();
     img.setWidth(w).setHeight(h).setLeft(W - MX - w).setTop(20);
   } catch (e) {
