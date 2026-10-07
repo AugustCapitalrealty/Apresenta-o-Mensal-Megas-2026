@@ -8,3 +8,7 @@ Mais recente que a `MESTRA - CONTRATOS 2026` do Drive (que dá R$ 430 mil de man
 renovações de 2026 com valor novo. O que ele já confirmou está em `../../APRENDIZADOS-COMPARACAO-2026.md`, seção 4.
 | `RITMO 2026 - 090 DESPESAS GERAIS - exportado 2026-10-07.xlsx` | Ritmo 2026 item a item da 090 (manutenção de imóveis e o resto das despesas gerais), todas as unidades, aba "Valores do Modelo", mesmo formato do modelo 090 de 2027 (Mês 1…12, valores negativos). Só **itens avulsos**: obras, compras, serviços. | Os contratos (estão no cadastro acima). Manutenção aqui: Curitiba R$ 839 mil, Itajaí R$ 998 mil, Esteio R$ 572 mil; somando os contratos do cadastro: R$ 1,19 mi, R$ 1,22 mi e R$ 719 mil, contra o ritmo da METRAGEM de R$ 1,27 mi, R$ 1,28 mi e R$ 628 mil. |
 | `RITMO 2026 - 070 SERVICOS DE TERCEIROS - exportado 2026-10-07.xlsx` | Ritmo 2026 item a item da 070 (segurança, limpeza e outros serviços de terceiros), mesmo formato. | Os contratos de segurança (no cadastro). Segurança aqui é pequena: Curitiba R$ 212 mil, Itajaí R$ 91 mil, Esteio zero. |
+
+Para a comparação item a item, `python ferramentas/ritmo2026_fixtures.py` converte o 090 e o cadastro em
+`teste/fixture_ritmo2026_090.json` e `teste/fixture_contratos_2026_cadastro.json` (lidos por
+`ferramentas/comparacao_base.js`). Chegou base nova: salve aqui com a data no nome e rode de novo.

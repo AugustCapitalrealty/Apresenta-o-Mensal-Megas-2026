@@ -171,3 +171,49 @@ Retiradas das pendências: recalque paver e Orbital → Firecam/NFPA (respondida
   2027 inteiro. Bate com o gestor ("a NFPA tem todo o ano"): Orbital → Firecam é o par; a NFPA de 2026 é "Só 2026".
 - Itajaí, totem: "Recuperação e manutenção do totem do bolsão externo", R$ 17.400 em dezembro de 2026. Conferir
   se é o mesmo totem da "manutenção e pintura do totem Mega" de 2027 (R$ 11.500).
+
+## 6. Planilhas refeitas com o ritmo 2026 (07/10/2026)
+
+Novas planilhas na pasta `01 - CONTROLE DA APRESENTAÇÃO`: "ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS RITMO 2026 x ORÇ 2027 -
+MEGA <X>.xlsx". As da base do orçado continuam lá, como o gestor deixou. Como foram feitas:
+- lado 2026 = ritmo 090 item a item (centro de custo do condomínio) + cadastro de contratos 2026;
+- os pares continuam os da versão anterior, escritos sobre o orçado. Cada item do orçado foi casado com o item do
+  ritmo (mesmo fornecedor, mesmo chamado ou nome parecido; os casos difíceis à mão em `APELIDOS_RITMO`);
+- o SIM/NÃO e o comentário do gestor vieram pela linha (item do orçado + itens de 2027). Se o par mudou, veio só
+  o comentário, com "[o par mudou…]";
+- colunas novas: M/N = orçado 2026 (referência), O = o que mudou, P = "Olhar de novo?".
+
+**Correção do gestor aplicada nos pares de Itajaí:** Orbital → Firecam (Compara); NFPA de 2026 → Não compara (em 2027
+está dentro da Firecam); FM Security → Só 2027 (contrato novo).
+
+**Totais (os itens fecham com o ritmo inteiro e o orçado inteiro):**
+| | Curitiba | Itajaí | Esteio |
+|---|---|---|---|
+| Ritmo 2026 dos itens (avulsos + contratos) | 1.188.623 | 1.219.103 | 718.802 |
+| Ritmo 2026 na METRAGEM-COND | 1.270.981 | 1.279.157 | 628.319 |
+| Diferença | −82.358 | −60.054 | **+90.483** |
+| Linhas "Olhar de novo?" | 12 | 21 | 12 |
+
+A diferença com a METRAGEM fica para a controladoria: o cadastro de 2026 não traz contratos encerrados no ano
+(ex.: a Orbital de Itajaí, rescindida); em Esteio, o ritmo item a item tem vários gastos com tratores na
+manutenção de imóveis.
+
+**Achados:**
+- **Nome trocado no ritmo de Itajaí:** "SEGURO MEGA ITAJAÍ 2026" (R$ 9.640, jun) e "SEGURO MEGA ESTEIO - ÁRMAZEM A"
+  (R$ 7.900, abr) têm o valor e o mês exatos da comunicação visual e do vídeo porteiro do orçado. Foram casados
+  com esses itens. Os seguros do orçado não têm gasto no ritmo.
+- **Obras adiadas com gasto no ritmo** (Itajaí): as duas iluminações e o quadro da portaria (seção 5). Estão em
+  `ORC_PENDENCIAS_GESTOR` como "Parcelado ou em dobro?". O Guilherme acha que é parcelamento.
+- **Marcado SIM, sem gasto no ritmo 2026:** Itajaí, pintura da alvenaria (o gestor disse "em 2026 é parcial");
+  Esteio, lona do totem.
+- **Gastos grandes só no ritmo** (sem item no orçado 2026):
+  - Curitiba: reforma do reservatório potável R$ 70 mil, abrandador R$ 31 mil, barreiras New Jersey R$ 30 mil;
+  - Itajaí: escadas marinheiro e subestação 02 R$ 59 mil, robô na tubulação R$ 55 mil, esgoto do restaurante
+    R$ 49 mil, cancela 03 R$ 30 mil;
+  - Esteio: bomba nova do trator 4 R$ 25 mil.
+- **Coberturas de Itajaí:** o ritmo 2026 é de R$ 98 mil, contra R$ 237 mil no orçado; em 2027, R$ 133 mil. O
+  contrato foi renovado em set/26. Contra o ritmo, a cobertura sobe; contra o orçado, caía 44%.
+- As obras adiadas do slide "Por que a manutenção sobe" saíram idênticas às da versão anterior (rodado
+  `decisoes_gestor.py` nas planilhas novas e comparado com `decisoes_gestor_2026-10-07.js.txt`). Os pares SIM
+  de Itajaí passaram de 21 para 23: Orbital → Firecam, as fossas e o material de construção, que só existem no
+  ritmo.

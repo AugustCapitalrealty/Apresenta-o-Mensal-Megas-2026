@@ -264,18 +264,28 @@ Scripts que montam planilhas de apoio no Drive a partir das cópias em
 
 - `python ferramentas/planilha_mega.py` — `MEGA <X> - BASE DO ORÇAMENTO 2027`
   de cada cidade.
-- Comparação item a item da manutenção, Orç 2026 × Orç 2027, por Mega
+- Comparação item a item da manutenção, **Ritmo 2026** × Orç 2027, por Mega
   (`<cidade>` = `curitiba`, `itajai` ou `esteio`; itens em
-  `comparacao_base.js`):
+  `comparacao_base.js`; `BASE26=orcado` volta à base do orçado 2026):
+  - `python ferramentas/ritmo2026_fixtures.py` — converte o ritmo 2026
+    exportado do sistema (`ferramentas/bases_2026/`: 090 item a item e cadastro
+    de contratos) em `teste/fixture_ritmo2026_090.json` e
+    `teste/fixture_contratos_2026_cadastro.json`;
   - `node ferramentas/parear.js . <cidade> <saida.json>` — sugestão
     automática de pares;
-  - `node ferramentas/curadoria.js . <cidade> ferramentas/comparacao_linhas_<cidade>.json`
-    — pares revisados à mão (`PARES`), com a leitura Compara / Não compara /
-    Dúvida e o porquê;
+  - `node ferramentas/curadoria.js . <cidade> ferramentas/saida/ritmo_linhas_<cidade>.json`
+    — pares revisados à mão (`PARES`, escritos sobre o orçado 2026), com a
+    leitura Compara / Não compara / Dúvida e o porquê. Cada item do orçado é
+    casado com o do ritmo (`APELIDOS_RITMO`, mesmo fornecedor, mesmo chamado
+    ou nome parecido); item só do ritmo entra por `PARES_RITMO` ou como "Só
+    2026"; orçado sem gasto no ritmo e sem par vira "Não executado";
   - `python ferramentas/planilha_comparacao.py <cidade>` — planilha de
-    decisão do gestor (`ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 -
-    MEGA <X>`, pasta `01 - CONTROLE DA APRESENTAÇÃO`).
-  Em 07/10/2026: Curitiba 9 dúvidas, Itajaí 15, Esteio 8.
+    decisão do gestor (`ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS RITMO 2026 x ORÇ
+    2027 - MEGA <X>`, pasta `01 - CONTROLE DA APRESENTAÇÃO`). Traz o SIM/NÃO e
+    os comentários da versão anterior (`ferramentas/base2026_orcado_2026-10-07/`),
+    o orçado 2026 nas colunas M e N e a coluna P "Olhar de novo?" com o que o
+    ritmo mudou (essas linhas vêm primeiro).
+  Em 07/10/2026 (ritmo): olhar de novo Curitiba 12, Itajaí 21, Esteio 12.
 
 Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
@@ -290,10 +300,10 @@ Imagens e revisão visual (`python -m pip install pillow numpy`):
   em imagem só no deck com as 8 seções (o número está desenhado nela). Fotos de `_fotos-subcapas` (`zipFotosSubcapas()` no editor). Rodar de
   novo se mudar foto, ano ou nome; `--previa` desenha uma com números.
 - `python ferramentas/decisoes_gestor.py` — lê as planilhas de comparação
-  que o gestor preencheu (Itajaí e Esteio em .xlsx na pasta `01 - CONTROLE DA
-  APRESENTAÇÃO`; Curitiba é Planilha Google: baixar como .xlsx para
-  Downloads) e grava `23_DecisoesGestor.gs` (obras adiadas de 2026 e pares
-  SIM). Rodar de novo sempre que ele mudar uma planilha; depois teste, commit e
+  que o gestor preencheu ("… RITMO 2026 x ORÇ 2027 - MEGA <X>.xlsx" na pasta
+  `01 - CONTROLE DA APRESENTAÇÃO`; se ele editar como Planilha Google, baixar
+  como .xlsx para Downloads, que vence) e grava `23_DecisoesGestor.gs` (obras
+  adiadas de 2026, com o orçado e o ritmo, e pares SIM). Rodar de novo sempre que ele mudar uma planilha; depois teste, commit e
   `clasp push`. Alimenta o slide "Por que a manutenção sobe" (`24_PorQueSobe.gs`).
 - `python ferramentas/previa_slides.py ferramentas/saida/formas_<cidade>.json <índices>` —
   prévia aproximada dos slides, a partir das formas que o teste grava com

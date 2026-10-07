@@ -169,7 +169,9 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
    rodar uma exportação). As linhas de origem estão em
    `ferramentas/comparacao_linhas_<cidade>.json` (gerado por
    `ferramentas/curadoria.js`); a decisão do gestor vem da coluna K
-   (COMPARA?). Siga o visual do slide `21_ContratosComparados.gs` (cards +
+   (COMPARA?). **Desde 07/10/2026 a base de 2026 é o ritmo**
+   (`ferramentas/saida/ritmo_linhas_<cidade>.json` e as planilhas "… RITMO 2026
+   x ORÇ 2027 - MEGA <X>"; ver APRENDIZADOS-COMPARACAO-2026.md, seção 6). Siga o visual do slide `21_ContratosComparados.gs` (cards +
    tabela com R$ e R$/m²), entre na seção Manutenção.
 3. Pendências com a controladoria (aparecem sozinhas no slide de revisão):
    Itajaí R$ 29.313 (totem, iluminação do AMZ 4/5 e do bolsão — todos com par

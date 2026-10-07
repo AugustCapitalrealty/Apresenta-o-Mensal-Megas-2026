@@ -2,10 +2,18 @@
 // de cada Mega (itens de comparacao_base.js). Gera as linhas da planilha de
 // decisão do gestor (planilha_comparacao.py).
 // Uso: node ferramentas/curadoria.js . <curitiba|itajai|esteio> ferramentas/comparacao_linhas_<cidade>.json
+//
+// Os pares foram escritos sobre os itens do Orç 2026 (a versão que o gestor
+// leu em 07/10/2026). Com BASE26=ritmo (padrão), cada item do orçado é casado
+// com o(s) item(ns) do ritmo 2026 — apelido à mão, mesmo fornecedor (contrato),
+// mesmo chamado ou nome parecido — e o lado 2026 da linha passa a ser o ritmo;
+// o orçado fica como referência (dOrc/vOrc). Item que só existe no ritmo entra
+// por PARES_RITMO ou como "Só 2026". Com BASE26=orcado, sai como antes.
 const fs = require('fs');
 const { carregar } = require('./comparacao_base');
 const D = process.argv[2], CIDADE = process.argv[3], SAIDA = process.argv[4];
-const { G, it26, it27 } = carregar(D, CIDADE);
+const RITMO = (process.env.BASE26 || 'ritmo') === 'ritmo';
+const { G, it26, it27, metragem } = carregar(D, CIDADE, 'orcado');
 const N = G._orcNorm_;
 
 // [trecho do item 2026, [trechos dos itens 2027], leitura, motivo]
@@ -65,11 +73,13 @@ const PARES = {
     ['Preventiva analise de efluentes', ['ANÁLISE LABORATORIAL SEMESTRAL DOS 20 STE'], 'Compara', 'Mesmo serviço: análise dos efluentes (STE).'],
     ['Limpeza pórtico prédio apoio', ['PINTURA PORTARIA E PREDIO APOIO'], 'Compara',
      'Mesma estrutura (pórtico e prédio de apoio); em 2027 inclui preparo e pintura.'],
-    ['CONTRATO — ORBITAL', ['FM SECURITY'], 'Dúvida',
-     'Orbital (sistemas de segurança) não segue em 2027 e entra o contrato FM Security (segurança eletrônica). Troca de fornecedor do mesmo serviço?'],
-    ['Provisão reparo sistemas de acesso', [], 'Dúvida', 'Ver a linha de cima: se o contrato FM Security cobre o acesso, esta provisão entra na mesma comparação.'],
-    ['Preventiva sistema de PPCI com teste NFPA', ['CONTRATO — FIRECAM'], 'Dúvida',
-     'Em 2027 entra o contrato Firecam (preventiva de PPCI). Ele substitui a preventiva NFPA de 2026?'],
+    // Gestor, 07/10/2026: "Orbital é PPCI e FM é Segurança Eletrônica… Orbital foi rescindido e entrou a
+    // Firecam para SDAI (PPCI). FM é contrato novo" e "NFPA tem todo o ano".
+    ['CONTRATO — ORBITAL', ['CONTRATO — FIRECAM'], 'Compara',
+     'Mesmo serviço (PPCI/SDAI): a Orbital foi rescindida e entrou a Firecam, desde jul/2026 (gestor). A FM Security é contrato novo.'],
+    ['Provisão reparo sistemas de acesso', [], 'Dúvida', 'Provisão de acesso de 2026. Em 2027 entra o contrato FM Security (segurança eletrônica, contrato novo) e a provisão de 3%.'],
+    ['Preventiva sistema de PPCI com teste NFPA', [], 'Não compara',
+     'Em 2027 a NFPA está dentro da Firecam o ano todo (gestor); em 2026 foi avulsa.'],
     ['Preventiva condicionadores de ar', ['AR CONDICIONADO CONFORME PMOC'], 'Dúvida',
      'Mesmo serviço, mas em 2027 virou contrato (PMOC) e o valor dobra. Comparar como o mesmo item?'],
     ['02 torniquetes digcon', ['COMPRA DE 3 TORNIQUETES TX1500'], 'Dúvida',
@@ -156,6 +166,46 @@ const PARES = {
   ]
 };
 
+// Ritmo 2026: item do orçado (trecho) → item(ns) do ritmo (trechos; [] = sem
+// gasto no ritmo), quando o nome mudou e o casamento automático não acha ou
+// acha errado. Com { ritmo, nota }, a nota vai para "O que mudou".
+const SEGURO_TROCADO = 'No ritmo o nome está como "%s" (mesmo valor e mês do orçado). Erro de digitação no sistema.';
+const APELIDOS_RITMO = {
+  curitiba: {
+    'Provisão gastos CFTV': ['Provisão gastos CFTV - LANÇADO']
+  },
+  itajai: {
+    // O ritmo traz "SEGURO MEGA …" com o valor e o mês exatos destes dois
+    // itens do orçado; os seguros do orçado não têm gasto no ritmo.
+    'SEGURO MEGA ITAJAÍ 2026': [],
+    'SEGURO MEGA ESTEIO': [],
+    'Provisão gastos com comunicação visual': { ritmo: ['SEGURO MEGA ITAJAÍ 2026'], nota: SEGURO_TROCADO.replace('%s', 'SEGURO MEGA ITAJAÍ 2026') },
+    'Instalação vídeo porteiro': { ritmo: ['SEGURO MEGA ESTEIO'], nota: SEGURO_TROCADO.replace('%s', 'SEGURO MEGA ESTEIO - ÁRMAZEM A') },
+    'Semáforo cancelas': [],
+    'CONTRATO — ORBITAL': ['CONTRATO — FIRECAM'],
+    'Preventiva sistema de PPCI com teste NFPA': ['NFPA 25 casa de bombas'],
+    'Preventiva condicionadores de ar': ['Contrato de condicionadores de ar'],
+    'Preventiva trator/tratorito': ['Preventiva trator']
+  },
+  esteio: {
+    'Preventiva tratores': ['Preventiva tratores (substituição'],
+    'Pintura total do reservatório 02': ['Reservatório 02: Prever tratamento'],
+    'Manutenção nas juntas de dilatação contenção': ['Juntas de contenção']
+  }
+};
+// Ritmo 2026: item que só existe no ritmo (trecho) → itens do Orç 2027 que
+// sobraram, com a leitura e o motivo.
+const PARES_RITMO = {
+  curitiba: [],
+  itajai: [
+    ['Preventiva Limpeza fossas', ['LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS'], 'Compara',
+     'Mesmo serviço: limpeza das fossas. Não estava no orçado 2026; o gestor marcou SIM no item de 2027.'],
+    ['Material de construção', ['MATERIAL DE CONSTRUÇÃO PARA USO PELO ZELADOR'], 'Compara',
+     'Mesma verba: material de construção para pequenos reparos.']
+  ],
+  esteio: []
+};
+
 if (!PARES[CIDADE]) throw new Error('Sem pares para ' + CIDADE);
 const usados27 = new Set();
 const achar27 = t => it27.map((x, j) => ({ x, j })).filter(o => N(o.x.desc).indexOf(N(t)) >= 0 && !usados27.has(o.j));
@@ -173,19 +223,117 @@ PARES[CIDADE].forEach(([t26, t27s, leitura, motivo]) => {
   });
   linhas.push({ tipo: /^CONTRATO/.test(a.x.desc) ? 'Contrato' : 'Avulso', d26: a.x.desc, v26: a.x.total,
                 d27: bs.map(b => b.desc).join(' + '), v27: bs.reduce((s, b) => s + b.total, 0), cat27: bs[0] ? bs[0].cat : '',
-                leitura, motivo });
+                leitura, motivo, i26: a.i });
 });
 it26.forEach((x, i) => {
   if (usados26.has(i)) return;
   linhas.push({ tipo: /^CONTRATO/.test(x.desc) ? 'Contrato' : 'Avulso', d26: x.desc, v26: x.total, d27: '', v27: 0, cat27: '', leitura: 'Só 2026',
-                motivo: 'Sem item parecido em 2027.' });
+                motivo: 'Sem item parecido em 2027.', i26: i });
 });
+
+let ritmo26 = null;
+if (RITMO) {
+  const R = carregar(D, CIDADE, 'ritmo').it26;
+  ritmo26 = R;
+  const usadosR = new Set();
+  const acharR = t => R.map((x, j) => ({ x, j })).filter(o => N(o.x.desc).indexOf(N(t)) >= 0 && !usadosR.has(o.j))[0];
+  const deOrc = {}, notas = {};
+  // 1) Apelidos à mão.
+  Object.keys(APELIDOS_RITMO[CIDADE]).forEach(tOrc => {
+    const i = it26.findIndex(x => N(x.desc).indexOf(N(tOrc)) >= 0);
+    if (i < 0) throw new Error('Orç 2026 não achado (apelido): ' + tOrc);
+    const ap = APELIDOS_RITMO[CIDADE][tOrc];
+    if (ap.nota) notas[i] = ap.nota;
+    deOrc[i] = (ap.ritmo || ap).map(t => {
+      const o = acharR(t);
+      if (!o) throw new Error('Ritmo 2026 não achado: ' + t);
+      usadosR.add(o.j); return o.j;
+    });
+  });
+  // 2) Contratos: todos os do mesmo fornecedor (um contrato pode ter dois cadastros no ano).
+  it26.forEach((x, i) => {
+    if (deOrc[i] || !x.contrato) return;
+    const k = G._orcChaveFornecedor_(x.forn);
+    deOrc[i] = R.map((y, j) => j).filter(j => !usadosR.has(j) && R[j].contrato && G._orcChaveFornecedor_(R[j].forn) === k);
+    deOrc[i].forEach(j => usadosR.add(j));
+  });
+  // 3) Avulsos: mesmo chamado, ou o nome mais parecido (Dice ≥ 0,6 nas palavras).
+  const PARE = new Set(('de da do das dos e em para no na nos nas com a o as os ao por sem ate fase ' +
+    'servico servicos manutencao manutencoes mao obra material materiais compra provisao preventiva').split(' '));
+  const toks = s => new Set(N(s).replace(/#\d+/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').split(' ')
+    .filter(t => t.length >= 3 && !PARE.has(t) && !/^\d+$/.test(t)).map(t => t.slice(0, 6)));
+  const chamados = s => (String(s).match(/[#*]\s*[#*]?\s*(\d{6,})/g) || []).map(x => x.replace(/\D/g, ''));
+  const parecido = (a, b) => {
+    if (chamados(a).some(c => chamados(b).indexOf(c) >= 0)) return 2;
+    const A = toks(a), B = toks(b), inter = [...A].filter(t => B.has(t)).length;
+    return A.size + B.size ? 2 * inter / (A.size + B.size) : 0;
+  };
+  const cand = [];
+  it26.forEach((x, i) => {
+    if (deOrc[i] || x.contrato) return;
+    R.forEach((y, j) => { if (!usadosR.has(j) && !y.contrato) { const s = parecido(x.desc, y.desc); if (s >= 0.6) cand.push({ i, j, s }); } });
+  });
+  cand.sort((a, b) => b.s - a.s).forEach(o => {
+    if (deOrc[o.i] || usadosR.has(o.j)) return;
+    deOrc[o.i] = [o.j]; usadosR.add(o.j);
+  });
+  linhas.forEach(l => {
+    const js = deOrc[l.i26] || [];
+    l.dOrc = l.d26; l.vOrc = l.v26; l.nota = notas[l.i26] || '';
+    l.d26 = js.map(j => R[j].desc).join(' + ');
+    l.v26 = js.reduce((s, j) => s + R[j].total, 0);
+    if (l.leitura === 'Só 2026' && !js.length) {
+      l.leitura = 'Não executado'; l.motivo = 'Orçado em 2026, sem gasto no ritmo 2026 e sem item parecido em 2027.';
+    }
+  });
+  // 4) Itens que só existem no ritmo.
+  PARES_RITMO[CIDADE].forEach(([tR, t27s, leitura, motivo]) => {
+    const o = acharR(tR);
+    if (!o) throw new Error('Ritmo 2026 não achado: ' + tR);
+    usadosR.add(o.j);
+    const bs = [];
+    t27s.forEach(t => { const b = achar27(t); if (!b.length) throw new Error('2027 não achado: ' + t); b.forEach(q => { usados27.add(q.j); bs.push(q.x); }); });
+    linhas.push({ tipo: o.x.contrato ? 'Contrato' : 'Avulso', d26: o.x.desc, v26: o.x.total, dOrc: '', vOrc: 0,
+                  d27: bs.map(b => b.desc).join(' + '), v27: bs.reduce((s, b) => s + b.total, 0), cat27: bs[0] ? bs[0].cat : '', leitura, motivo });
+  });
+  R.forEach((y, j) => {
+    if (usadosR.has(j)) return;
+    linhas.push({ tipo: y.contrato ? 'Contrato' : 'Avulso', d26: y.desc, v26: y.total, dOrc: '', vOrc: 0, d27: '', v27: 0, cat27: '',
+                  leitura: 'Só 2026', motivo: 'Sem item parecido em 2027.' });
+  });
+}
 it27.forEach((x, j) => {
   if (usados27.has(j)) return;
   linhas.push({ tipo: /contrato/i.test(x.desc) || x.cat === 'CONTRATO' ? 'Contrato' : 'Avulso', d26: '', v26: 0, d27: x.desc, v27: x.total, cat27: x.cat,
-                leitura: 'Só 2027', motivo: 'Item novo, sem par em 2026.' });
+                leitura: 'Só 2027', motivo: 'Item novo, sem par em 2026.', dOrc: '', vOrc: 0 });
 });
-const soma = k => linhas.reduce((s, l) => s + l[k], 0);
-console.log(CIDADE, 'linhas', linhas.length, 'tot26', Math.round(soma('v26')), 'tot27', Math.round(soma('v27')));
+// O que mudou do orçado para o ritmo, linha a linha.
+const moeda = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+// Os motivos foram escritos com a variação do orçado ("Cai 44%", "dobra"):
+// na base ritmo essas frases saem e entra a variação contra o ritmo.
+const semVariacaoDoOrcado = m => m
+  .replace(/ e o valor (mais que )?dobra/, '').replace(/; mais que dobra em 2027/, '').replace(/, mesmo valor/, '')
+  .replace(/ \([+−-]?\d+%\)/, '')
+  .split(/(?<=[.?!])\s+/).filter(f => !/\d+%|R\$ \d|Triplica|\bSobe\b|\bCai\b/.test(f)).join(' ');
+if (RITMO) linhas.forEach(l => {
+  delete l.i26;
+  if (l.d26 && l.d27) {
+    const p = l.v26 > 0.5 ? Math.round((l.v27 / l.v26 - 1) * 100) : null;
+    l.motivo = (semVariacaoDoOrcado(l.motivo) + (p === null ? '' : ' Ritmo 2026 → Orç 2027: ' + (p >= 0 ? '+' : '') + p + '%.')).trim();
+  }
+  const nota = l.nota || ''; delete l.nota;
+  if (nota) l.mudou = nota;
+  else if (l.dOrc && !l.d26) l.mudou = 'Sem gasto no ritmo 2026 (orçado ' + moeda(l.vOrc) + ').';
+  else if (!l.dOrc && l.d26) l.mudou = 'Novo: está no ritmo 2026, não estava no orçado.';
+  else if (l.dOrc && Math.abs(l.v26 - l.vOrc) > Math.max(1000, 0.1 * l.vOrc))
+    l.mudou = 'Ritmo ' + moeda(l.v26) + ' × orçado ' + moeda(l.vOrc) + ' (' + (l.v26 >= l.vOrc ? '+' : '') +
+              Math.round((l.v26 / l.vOrc - 1) * 100) + '%).';
+  else l.mudou = '';
+});
+else linhas.forEach(l => { delete l.i26; delete l.nota; });
+const soma = k => linhas.reduce((s, l) => s + (l[k] || 0), 0);
+console.log(CIDADE, RITMO ? 'base Ritmo 2026' : 'base Orç 2026', 'linhas', linhas.length, 'tot26', Math.round(soma('v26')),
+            RITMO ? 'totOrc26 ' + Math.round(soma('vOrc')) : '', 'tot27', Math.round(soma('v27')));
+if (ritmo26) console.log('ritmo 2026 itens', Math.round(ritmo26.reduce((s, x) => s + x.total, 0)), '× METRAGEM ritmo', Math.round(metragem.ritmo));
 const c = {}; linhas.forEach(l => { c[l.leitura] = (c[l.leitura] || 0) + 1; }); console.log(c);
-fs.writeFileSync(SAIDA, JSON.stringify(linhas, null, 1));
+fs.writeFileSync(SAIDA, JSON.stringify(RITMO ? { base26: 'Ritmo 2026', metragem, linhas } : linhas, null, 1));
