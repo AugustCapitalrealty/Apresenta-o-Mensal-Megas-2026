@@ -1158,6 +1158,30 @@ console.log('Degradê do véu');
   ok(r2.ancorado && r2.erroMax < 0.01, 'véu de baixo da capa: camadas presas embaixo e opacidade na reta (erro ' + r2.erroMax.toFixed(4) + ')');
 }
 
+console.log('Capa como imagem');
+// Com "CAPA - MEGA <X>.jpg" na pasta de imagens de slide (capas_imagem.py), a
+// capa é a imagem do slide inteiro e por cima só os logos e os números.
+{
+  const ESTEIO = G.ORC_CIDADES.ESTEIO;
+  const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
+  const pedidos = [];
+  const pasta = { getFilesByName: n => { pedidos.push(n); return iter(n === 'CAPA - MEGA ESTEIO.jpg' ? [{ getBlob: () => ({ nome: n, w: 1920, h: 1080 }) }] : []); } };
+  ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => iter(n === G.ORC_PASTA_IMAGENS ? [pasta] : []) });
+  decks = {};
+  G._orcGerar_(['ESTEIO']);
+  delete ctx.DriveApp.getFolderById;
+  const capa = decks[ESTEIO.deckId].getSlides()[0];
+  const img = capa.shapes.filter(s => s.tipo === 'IMAGE')[0];
+  const tc = textos(capa);
+  ok(img && img.nome === 'CAPA - MEGA ESTEIO.jpg' && img.x === 0 && img.y === 0 && Math.abs(img.w - W) < 0.01 && Math.abs(img.h - H) < 0.01,
+     'capa: imagem do slide inteiro');
+  ok(tc.indexOf('ORÇAMENTO 2027') < 0 && tc.indexOf('Mega Esteio') < 0 && tc.indexOf('Expandir Eficiência') < 0,
+     'capa em imagem: títulos e rodapé ficam na imagem, não repetidos em texto');
+  ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m² ao mês') >= 0 && tc.indexOf('vs. ritmo 2026') >= 0,
+     'capa em imagem: os números da METRAGEM por cima, em texto (' + tc.join(' | ') + ')');
+  G._ORC_BLOBS = {};
+}
+
 console.log('Foto da sub capa');
 // O branco que cobre a sobra da foto passa 2 pt da borda dela: borda com
 // borda, o Slides deixava um fio cinza contornando a foto (07/10/2026).

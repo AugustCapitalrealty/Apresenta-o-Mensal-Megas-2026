@@ -24,6 +24,7 @@ function gerarTodas()    { _orcGerar_(['CURITIBA', 'ITAJAI', 'ESTEIO']); }
 function _orcGerar_(chaves) {
   _orcTextosReiniciar_();
   _ORC_BLOBS = {};              // e baixa de novo logos e fotos (uma vez cada)
+  _ORC_PASTA_IMG = undefined;   // e procura de novo a pasta das imagens de slide
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
     _ORC_LINKS = { alvos: {}, origens: [] };   // sumário e trilhas → sub capas (10_Capa.gs)

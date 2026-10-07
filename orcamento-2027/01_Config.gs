@@ -249,6 +249,12 @@ const ORC_PENDENCIAS_GESTOR = {
   ]
 };
 
+// Pasta (dentro de APRESENTAÇÃO ORÇAMENTO) com slides desenhados como imagem
+// por ferramentas/capas_imagem.py: "CAPA - MEGA CURITIBA.jpg"… O gerador usa a
+// imagem como fundo do slide e escreve por cima só o que vem dos dados. Sem a
+// imagem, o slide é desenhado com formas, como antes.
+const ORC_PASTA_IMAGENS = 'IMAGENS - SLIDES';
+
 // Onde está o assunto em cada foto (fração da largura): a foto do bloco da
 // sub capa é centrada nesse ponto quando dá.
 const ORC_FOTO_FOCO = {

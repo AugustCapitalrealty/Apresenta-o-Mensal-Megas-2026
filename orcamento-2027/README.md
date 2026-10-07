@@ -281,6 +281,13 @@ Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
 Imagens e revisão visual (`python -m pip install pillow numpy`):
 
+- `python ferramentas/capas_imagem.py` — desenha a capa (K2b) de cada Mega
+  como imagem de slide inteiro, com as fontes do deck (`ferramentas/fontes/`,
+  Montserrat e Open Sans, licença OFL), em `APRESENTAÇÃO ORÇAMENTO\IMAGENS -
+  SLIDES\CAPA - MEGA <X>.jpg`. O gerador usa a imagem como fundo e escreve por
+  cima só os logos e os números da METRAGEM; sem a imagem, desenha a capa com
+  formas. Fotos de `_fotos-subcapas` (`zipFotosSubcapas()` no editor). Rodar de
+  novo se mudar foto, ano ou nome; `--previa` desenha uma com números.
 - `python ferramentas/decisoes_gestor.py` — lê as planilhas de comparação
   que o gestor preencheu (Itajaí e Esteio em .xlsx na pasta `01 - CONTROLE DA
   APRESENTAÇÃO`; Curitiba é Planilha Google: baixar como .xlsx para

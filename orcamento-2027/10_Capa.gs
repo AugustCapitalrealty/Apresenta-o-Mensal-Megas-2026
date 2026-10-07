@@ -89,6 +89,18 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, k = W / 720;
   slide.getBackground().setSolidFill('#FFFFFF');
 
+  // Capa desenhada como imagem (ferramentas/capas_imagem.py, teste de
+  // 07/10/2026: fica igual à simulação aprovada). A imagem traz a faixa, o
+  // degradê, o nome do Mega, os títulos e o rodapé; por cima vão os logos e
+  // os números, que vêm da METRAGEM a cada geração.
+  const fundo = _orcImagemDaPasta_('CAPA - ' + cid.nome.toUpperCase() + '.jpg');
+  if (fundo) {
+    slide.insertImage(fundo).setWidth(W).setHeight(H).setLeft(0).setTop(0);
+    _orcCapaLogos_(slide, W, k, cid);
+    if (rel) _orcCapaNumeros_(slide, k, rel);
+    return;
+  }
+
   // Faixa da foto: a foto primeiro (a sobra embaixo é coberta de branco),
   // depois o degradê e o filete.
   const fh = 210 * k;
@@ -98,17 +110,7 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
   _orcGradiente_(slide, 0, 0, W, fh, C.brandDark, C.brandDark, { alphaDe: 0.85, alphaAte: 0, passos: 24 });
   _orcRet_(slide, 0, fh, W, 4 * k, C.brandLight);
 
-  // Logo Capital Realty branco sobre o azul; sem a imagem, o nome em texto.
-  try {
-    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullNegativo));
-    const h = 24 * k, w = h * img.getWidth() / img.getHeight();
-    img.setWidth(w).setHeight(h).setLeft(48 * k).setTop(30 * k);
-  } catch (e) {
-    Logger.log('Capa: logo indisponível, usando texto. ' + e.message);
-    _orcUmaLinha_(slide, 48 * k, 30 * k, 260 * k, 24 * k, 'CAPITAL REALTY',
-      { align: 'L', fs: 13, bold: true, cor: '#FFFFFF', fonte: T.titles });
-  }
-  _orcLogoMega_(slide, W, cid.unitLogoId);
+  _orcCapaLogos_(slide, W, k, cid);
 
   // Título: o Mega é o herói (pedido do gestor, 29/09/2026).
   _orcUmaLinha_(slide, 48 * k, 226 * k, 300 * k, 16 * k, 'ORÇAMENTO ' + ORC_ANO,
@@ -119,24 +121,7 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
     'Despesas do condomínio · Ritmo ' + (ORC_ANO - 1) + ' → Orçamento ' + ORC_ANO,
     { align: 'L', fs: 11, cor: C.textBody, fonte: T.body, fsMin: 8 });
 
-  // Os três números do orçamento (dinheiro e m², como o diretor lê).
-  if (rel) {
-    const area = _orcAreaImplicita_(rel, 'orc');
-    const vT = _orcVariacao_(rel.total.ritmo, rel.total.orc);
-    _orcUmaLinha_(slide, 384 * k, 246 * k, 156 * k, 36 * k, _orcCompacto_(rel.total.orc),
-      { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
-    _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', todas as contas',
-      { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
-    const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m² ao mês'] : null,
-                  vT.texto !== '–' ? [vT.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
-    kpis.forEach((kp, i) => {
-      const x = (546 + i * 80) * k;
-      _orcUmaLinha_(slide, x, 252 * k, 76 * k, 22 * k, kp[0],
-        { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
-      _orcUmaLinha_(slide, x, 274 * k, 76 * k, 14 * k, kp[1],
-        { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
-    });
-  }
+  if (rel) _orcCapaNumeros_(slide, k, rel);
 
   _orcLinha_(slide, 48 * k, 372 * k, 684 * k, 372 * k, C.lines, 0.75);
   _orcUmaLinha_(slide, 48 * k, 376 * k, 400 * k, 16 * k, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
@@ -144,6 +129,70 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
   _orcRet_(slide, 584 * k, 381 * k, 5 * k, 5 * k, '#60A5FA');
   _orcUmaLinha_(slide, 592 * k, 376 * k, 100 * k, 16 * k, 'Expandir Eficiência',
     { align: 'L', fs: 8, bold: true, cor: C.brandDark, fonte: T.titles });
+}
+
+// Logo Capital Realty branco sobre o azul (sem a imagem, o nome em texto) e
+// o logo do Mega no chip branco.
+function _orcCapaLogos_(slide, W, k, cid) {
+  try {
+    const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullNegativo));
+    const h = 24 * k, w = h * img.getWidth() / img.getHeight();
+    img.setWidth(w).setHeight(h).setLeft(48 * k).setTop(30 * k);
+  } catch (e) {
+    Logger.log('Capa: logo indisponível, usando texto. ' + e.message);
+    _orcUmaLinha_(slide, 48 * k, 30 * k, 260 * k, 24 * k, 'CAPITAL REALTY',
+      { align: 'L', fs: 13, bold: true, cor: '#FFFFFF', fonte: CR_DESIGN_SYSTEM.typography.titles });
+  }
+  _orcLogoMega_(slide, W, cid.unitLogoId);
+}
+
+// Os três números do orçamento (dinheiro e m², como o diretor lê): o total, o
+// R$/m² ao mês e a variação contra o ritmo. As mesmas caixas de
+// ferramentas/capas_imagem.py (a prévia de lá desenha os números aqui).
+function _orcCapaNumeros_(slide, k, rel) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography;
+  const area = _orcAreaImplicita_(rel, 'orc');
+  const vT = _orcVariacao_(rel.total.ritmo, rel.total.orc);
+  _orcUmaLinha_(slide, 384 * k, 246 * k, 156 * k, 36 * k, _orcCompacto_(rel.total.orc),
+    { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
+  _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', todas as contas',
+    { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+  const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m² ao mês'] : null,
+                vT.texto !== '–' ? [vT.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
+  kpis.forEach((kp, i) => {
+    const x = (546 + i * 80) * k;
+    _orcUmaLinha_(slide, x, 252 * k, 76 * k, 22 * k, kp[0],
+      { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+    _orcUmaLinha_(slide, x, 274 * k, 76 * k, 14 * k, kp[1],
+      { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+  });
+}
+
+// Arquivo da pasta de imagens de slide (ORC_PASTA_IMAGENS) como blob, ou null.
+// A pasta é procurada uma vez por geração (_orcGerar_ zera _ORC_PASTA_IMG).
+let _ORC_PASTA_IMG;
+function _orcImagemDaPasta_(nome) {
+  if (_ORC_PASTA_IMG === undefined) {
+    _ORC_PASTA_IMG = null;
+    try {
+      const it = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID).getFoldersByName(ORC_PASTA_IMAGENS);
+      if (it.hasNext()) _ORC_PASTA_IMG = it.next();
+    } catch (e) {
+      Logger.log('Pasta de imagens de slide indisponível: ' + e.message);
+    }
+  }
+  if (!_ORC_PASTA_IMG) return null;
+  const k = 'pasta:' + nome;
+  if (!(k in _ORC_BLOBS)) {
+    try {
+      const f = _ORC_PASTA_IMG.getFilesByName(nome);
+      _ORC_BLOBS[k] = { blob: f.hasNext() ? f.next().getBlob() : null };
+    } catch (e) {
+      Logger.log('Imagem ' + nome + ' indisponível: ' + e.message);
+      _ORC_BLOBS[k] = { blob: null };
+    }
+  }
+  return _ORC_BLOBS[k].blob;
 }
 
 // ==========================================
