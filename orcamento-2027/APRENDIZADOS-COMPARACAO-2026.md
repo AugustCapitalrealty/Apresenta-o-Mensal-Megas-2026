@@ -134,3 +134,32 @@ serve de base de ritmo item a item, porque só tem contratos. Mas confirma comen
 deste cadastro, mantendo o orçado 2026 nas obras e provisões, com a marcação "orçado".
 **Falta para o ritmo item a item:** o realizado de 2026 das obras e compras (lançamentos ou notas da conta de
 manutenção de cada Mega). O Guilherme foi procurar o "módulo ritmo 2026".
+
+## 5. Ritmo 2026 item a item (exportado em 07/10/2026)
+
+Chegaram `ferramentas/bases_2026/RITMO 2026 - 090 DESPESAS GERAIS …xlsx` e `… 070 SERVICOS DE TERCEIROS …xlsx`. Têm
+o mesmo formato dos modelos 090/070, com os **itens avulsos** do ritmo 2026. Os contratos ficam no cadastro da
+seção 4. Primeira conferência das obras adiadas (seção 3, item 1):
+
+**Confirmado (não houve gasto em 2026):**
+- **Itajaí:** recalque das docas, torniquetes, impermeabilização das subestações e da casa de bombas.
+- **Curitiba:** guard-rail e 4º torniquete.
+- Esses itens somam a maior parte dos adiados: Itajaí R$ 559 mil dos R$ 611 mil do Orç 2027; Curitiba os R$ 233 mil.
+
+**Têm gasto no ritmo 2026: rever com o gestor.**
+| Obra (gestor disse adiada) | Ritmo 2026 | Orç 2027 |
+|---|---|---|
+| Itajaí: iluminação rua armazém 4/5 | R$ 17.250 em dez ("Iluminação rua armazém 1/4/5") | R$ 11.875 |
+| Itajaí: iluminação bolsão externo | R$ 1.800 em dez | R$ 5.938 |
+| Itajaí: organização quadro elétrico portaria | R$ 5.900 em dez | R$ 4.290 |
+
+Se forem feitas em dezembro de 2026, o Orç 2027 delas pode estar duplicado. Se o ritmo de dezembro for só
+projeção, elas continuam adiadas.
+
+**Responde perguntas em aberto:**
+- Itajaí, recalque paver de incêndio: **feito em 2026**, R$ 11.896 em agosto ("Preventivo/recalque paver
+  preventivo de incêndio"). Confirma o gestor.
+- Itajaí, NFPA: "NFPA 25 casa de bombas", R$ 8.890 em outubro de 2026. A NFPA foi feita em 2026; em 2027 ela
+  entra na Firecam?
+- Itajaí, totem: "Recuperação e manutenção do totem do bolsão externo", R$ 17.400 em dezembro de 2026. Conferir
+  se é o mesmo totem da "manutenção e pintura do totem Mega" de 2027 (R$ 11.500).
