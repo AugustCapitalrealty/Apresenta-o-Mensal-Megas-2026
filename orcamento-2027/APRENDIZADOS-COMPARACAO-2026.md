@@ -110,3 +110,27 @@ disciplina agora entra na conta dos 3% de manutenções não previstas"):
 - **Levar a coluna K e a coluna L do gestor para as planilhas novas, pelo item.** Os arquivos desta pasta são a
   referência.
 - Rodar `ferramentas/decisoes_gestor.py` e comparar o resultado com `decisoes_gestor_2026-10-07.js.txt`.
+
+## 4. Cadastro de contratos 2026 (exportado em 07/10/2026)
+
+O primeiro arquivo que chegou como "ritmo 2026" era o **cadastro de contratos de 2026**:
+`ferramentas/bases_2026/CONTRATOS 2026 - CADASTRO - exportado 2026-10-07.csv` (ver o LEIA-ME da pasta). Ele não
+serve de base de ritmo item a item, porque só tem contratos. Mas confirma comentários do gestor:
+- **Itajaí:**
+  - não há Orbital em 2026, e a **Firecam começa em 07/2026** (R$ 60 mil no ano). Bate com "Orbital foi rescindido
+    e entrou a Firecam";
+  - o contrato de **coberturas foi renovado em 09/2026** com valor maior: R$ 37 mil até agosto e R$ 61 mil de
+    setembro a dezembro;
+  - a manutenção em contratos dá R$ 221 mil no ano, contra R$ 430 mil na MESTRA - CONTRATOS 2026.
+- **Curitiba:** Miriad (cobertura, 03/2026), LCW (gerador, 04/2026), Equilíbrio (03/2026) e Firecam (02/2026 e
+  SDAI em 08/2026) renovaram em 2026 com valor novo. É o "contrato cheio em 2027" do gestor: em 2026 só parte do
+  ano já está no valor novo.
+- **Esteio:**
+  - ADS, Subestação, Gerador (Tecmax) e ARC (SDAI) seguem até 2029;
+  - a ARC aparece inteira em 2026, R$ 71 mil;
+  - em 2027 o orçamento traz "alteração do contrato SDAI (rescisão ARC)".
+
+**Uso possível (opção A, ainda não feita):** trocar o lado 2026 dos pares de **contrato** da comparação pelo valor
+deste cadastro, mantendo o orçado 2026 nas obras e provisões, com a marcação "orçado".
+**Falta para o ritmo item a item:** o realizado de 2026 das obras e compras (lançamentos ou notas da conta de
+manutenção de cada Mega). O Guilherme foi procurar o "módulo ritmo 2026".
