@@ -6,7 +6,7 @@
  *          (21_ContratosComparados.gs), agrupado por conta, em quantas
  *          páginas precisar.
  *
- * Ano anterior: cadastro "2025 - Contratos" (ORC_CONTRATOS_ANO_ANTERIOR_ID),
+ * Ano anterior: cadastro de contratos (_orcIdContratosAnoAnterior_, 21_ContratosComparados.gs),
  * todas as contas da unidade menos IPTU e Seguros (obrigações, não contratos).
  * Ano: linhas dos modelos 070/090 e das planilhas de contratos da cidade
  * (visao.modelos). Cada item do ano vai para o contrato do ano anterior da
@@ -88,7 +88,7 @@ function _orcNomeCurtoContrato_(nome, util) {
 let _ORC_CADASTRO_ANT = null;   // cache da leitura (uma por execução)
 function _orcCadastroAnoAnterior_() {
   if (!_ORC_CADASTRO_ANT) {
-    _ORC_CADASTRO_ANT = SpreadsheetApp.openById(ORC_CONTRATOS_ANO_ANTERIOR_ID).getSheets()[0].getDataRange().getValues();
+    _ORC_CADASTRO_ANT = SpreadsheetApp.openById(_orcIdContratosAnoAnterior_()).getSheets()[0].getDataRange().getValues();
   }
   return _ORC_CADASTRO_ANT;
 }

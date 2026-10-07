@@ -88,7 +88,7 @@ function exportarFixtures() {
   fontes['fixture_contratos_manutencao_curitiba.json'] = [cur['Manutenção de imóveis'], null];
   fontes['fixture_contratos_seguranca_curitiba.json'] = [cur['Segurança e vigilância'], null];
   fontes['fixture_contratos_limpeza_curitiba.json'] = [cur['Limpeza e conservação'], null];
-  fontes['fixture_contratos_ano_anterior.json'] = [ORC_CONTRATOS_ANO_ANTERIOR_ID, null];
+  fontes['fixture_contratos_2026_cadastro.json'] = [_orcIdContratosAnoAnterior_(), null];
   fontes['fixture_contratos_2027_completo.json'] = [ORC_CONTRATOS_ANO_IDS[0], null];
   fontes['fixture_modelos2026_megas.json'] = [ORC_MODELOS_ANO_ANTERIOR_ID, null];
   let ok = 0;
@@ -187,4 +187,52 @@ function _orcBuscarComEspera_(url, token) {
     if (resp.getResponseCode() !== 429) break;
   }
   return resp;
+}
+
+/**
+ * Cadastro de contratos de 2026 exportado do sistema (CSV) → Planilha Google
+ * que o gerador lê como "ano anterior" no lugar da "MESTRA - CONTRATOS 2026",
+ * que é de antes das renovações (decisão do Guilherme, 07/10/2026).
+ * Rodar uma vez depois de cada exportação: acha o CSV mais novo
+ * "CONTRATOS 2026 - CADASTRO….csv" no Drive (o projeto guarda em
+ * orcamento-2027/ferramentas/bases_2026), cria a planilha na pasta do
+ * orçamento e grava o ID na propriedade do script ORC_CONTRATOS_ANO_ANTERIOR_ID.
+ */
+function importarCadastroContratos2026() {
+  const it = DriveApp.searchFiles('title contains "CONTRATOS 2026 - CADASTRO" and trashed = false');
+  let csv = null;
+  while (it.hasNext()) {
+    const f = it.next();
+    if (/\.csv$/i.test(f.getName()) && (!csv || f.getLastUpdated() > csv.getLastUpdated())) csv = f;
+  }
+  if (!csv) throw new Error('Não achei "CONTRATOS 2026 - CADASTRO….csv" no Drive (orcamento-2027/ferramentas/bases_2026).');
+  const linhas = _orcCsvCadastro_(csv.getBlob().getDataAsString('ISO-8859-1'));
+  const larg = Math.max.apply(null, linhas.map(l => l.length));
+  const valores = linhas.map(l => l.concat(new Array(larg - l.length).fill('')));
+  const nome = 'MESTRA - CONTRATOS 2026 - SISTEMA (' + csv.getName().replace(/^.*exportado\s*/i, '').replace(/\.csv$/i, '') + ')';
+  const ss = SpreadsheetApp.create(nome);
+  const aba = ss.getSheets()[0];
+  aba.getRange(1, 1, 1, larg).setNumberFormat('@');          // "Jan/26" fica texto
+  aba.getRange(1, 1, valores.length, larg).setValues(valores);
+  DriveApp.getFileById(ss.getId()).moveTo(DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID));
+  PropertiesService.getScriptProperties().setProperty('ORC_CONTRATOS_ANO_ANTERIOR_ID', ss.getId());
+  Logger.log('Cadastro de contratos 2026 importado de "' + csv.getName() + '": ' + (valores.length - 1) +
+             ' contratos → "' + nome + '" ' + ss.getUrl() + '. O gerador passa a usar esta planilha (ID ' + ss.getId() + ').');
+}
+
+// CSV do cadastro (";", decimal com vírgula, códigos como ="…", datas
+// dd/mm/aaaa) → linhas como o Sheets devolveria: número como número, data
+// como Date, cabeçalho dos meses ("Jan/26") como texto.
+function _orcCsvCadastro_(texto) {
+  const rows = Utilities.parseCsv(texto, ';');
+  const cab = rows[0].map(h => String(h).trim());
+  const numerica = cab.map(h => /^valor$/i.test(h) || /^[a-zç]{3}\.?\/\d{2}$/i.test(h));
+  return [cab].concat(rows.slice(1).filter(r => r.some(x => String(x).trim())).map(r => r.map((v, c) => {
+    const s = String(v).trim();
+    const f = s.match(/^="(.*)"$/);
+    if (f) return f[1];
+    if (numerica[c]) return s === '' ? '' : Number(s.replace(/\./g, '').replace(',', '.'));
+    const d = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    return d ? new Date(+d[3], +d[2] - 1, +d[1]) : s;
+  })));
 }

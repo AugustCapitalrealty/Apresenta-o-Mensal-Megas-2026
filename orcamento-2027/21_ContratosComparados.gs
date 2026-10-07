@@ -21,8 +21,20 @@
  * ("avulsos") é o ritmo menos os contratos do cadastro.
  */
 
-// "2025 - Contratos": cadastro com os valores mês a mês do ano anterior.
+// Cadastro com os valores mês a mês do ano anterior: "MESTRA - CONTRATOS 2026"
+// (antes das renovações de 2026). Desde 07/10/2026 vale o cadastro exportado
+// do sistema, importado por importarCadastroContratos2026() (03_Exportar.gs),
+// que grava o ID na propriedade do script ORC_CONTRATOS_ANO_ANTERIOR_ID —
+// decisão do Guilherme: o slide mostra o contrato com o valor de hoje.
 const ORC_CONTRATOS_ANO_ANTERIOR_ID = '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A';
+
+function _orcIdContratosAnoAnterior_() {
+  try {
+    const p = PropertiesService.getScriptProperties().getProperty('ORC_CONTRATOS_ANO_ANTERIOR_ID');
+    if (p) return p;
+  } catch (e) { /* sem PropertiesService (teste): vale a constante */ }
+  return ORC_CONTRATOS_ANO_ANTERIOR_ID;
+}
 
 // Palavras que não identificam fornecedor (o casamento pula para a seguinte).
 // "PREVENTIVA E CORRETIVA DAS COBERTURAS" (Itajaí) casava com todo item de
@@ -36,8 +48,8 @@ const _ORC_PALAVRAS_GENERICAS = ['empresa', 'servico', 'servicos', 'contrato', '
  *         valor no ano. null sem a planilha.
  */
 function obterContratosAnoAnterior_(cid, conta) {
-  if (!ORC_CONTRATOS_ANO_ANTERIOR_ID) return null;
-  const dados = SpreadsheetApp.openById(ORC_CONTRATOS_ANO_ANTERIOR_ID).getSheets()[0].getDataRange().getValues();
+  if (!_orcIdContratosAnoAnterior_()) return null;
+  const dados = SpreadsheetApp.openById(_orcIdContratosAnoAnterior_()).getSheets()[0].getDataRange().getValues();
   return _orcLerCadastroContratos_(dados, cid.nome, conta, ORC_ANO - 1);
 }
 
@@ -86,10 +98,13 @@ function _orcLerCadastroContratos_(dados, unidade, conta, ano) {
                meses: m, total: total,
                reajuste: col.reajuste >= 0 ? String(r[col.reajuste] || '').trim() : '' });
   }
-  // O mesmo fornecedor pode ter duas linhas (contrato que trocou no ano).
+  // O mesmo fornecedor pode ter duas linhas (contrato que trocou no ano), às
+  // vezes com o nome escrito diferente: "WEISS - LCW" × "WEISS -LCW", "MG
+  // GERADORES" × "MG GERADORES EIRELI" (cadastro do sistema, 07/10/2026).
   const porForn = {};
   out.forEach(c => {
-    const k = _orcNorm_(c.fornecedor);
+    const k = _orcNorm_(c.fornecedor).replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\b(ltda|eireli|me|epp|s ?a)\b/g, ' ').replace(/\s+/g, ' ').trim();
     if (!porForn[k]) porForn[k] = c;
     else { porForn[k].total += c.total; c.meses.forEach((v, j) => { porForn[k].meses[j] += v; }); }
   });

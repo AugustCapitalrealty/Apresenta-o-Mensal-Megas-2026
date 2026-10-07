@@ -299,6 +299,12 @@ Imagens e revisão visual (`python -m pip install pillow numpy`):
   e áreas clicáveis sobre a trilha); sem a imagem, desenha com formas. Sub capa
   em imagem só no deck com as 8 seções (o número está desenhado nela). Fotos de `_fotos-subcapas` (`zipFotosSubcapas()` no editor). Rodar de
   novo se mudar foto, ano ou nome; `--previa` desenha uma com números.
+- `importarCadastroContratos2026()` (no editor, 03_Exportar.gs) — depois de
+  exportar o cadastro de contratos de 2026 do sistema (CSV em
+  `ferramentas/bases_2026/`), cria "MESTRA - CONTRATOS 2026 - SISTEMA (…)" na
+  pasta do orçamento e o gerador passa a usá-la como contratos de 2026
+  (propriedade do script `ORC_CONTRATOS_ANO_ANTERIOR_ID`; sem ela, vale a
+  constante de 21_ContratosComparados.gs, a MESTRA antiga). Desde 07/10/2026.
 - `python ferramentas/decisoes_gestor.py` — lê as planilhas de comparação
   que o gestor preencheu ("… RITMO 2026 x ORÇ 2027 - MEGA <X>.xlsx" na pasta
   `01 - CONTROLE DA APRESENTAÇÃO`; se ele editar como Planilha Google, baixar

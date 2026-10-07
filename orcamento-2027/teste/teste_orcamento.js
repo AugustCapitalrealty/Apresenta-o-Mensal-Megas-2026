@@ -194,6 +194,27 @@ function novaPlanilhaTextos() {
 }
 let PLANILHA_TEXTOS = novaPlanilhaTextos();
 
+// Utilities.parseCsv do dublê: campos entre aspas (com "" dentro) e separador.
+function _csv(texto, sep) {
+  const linhas = [];
+  let campo = '', linha = [], aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const ch = texto[i];
+    if (aspas) {
+      if (ch === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+      else if (ch === '"') aspas = false;
+      else campo += ch;
+    } else if (ch === '"' && campo === '') aspas = true;
+    else if (ch === sep) { linha.push(campo); campo = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && texto[i + 1] === '\n') i++;
+      linha.push(campo); linhas.push(linha); linha = []; campo = '';
+    } else campo += ch;
+  }
+  if (campo !== '' || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas;
+}
+
 const ctx = {
   Logger: { log: m => LOG.push(String(m)) },
   SpreadsheetApp: {
@@ -222,7 +243,7 @@ const ctx = {
   // Sem Drive no teste: força o caminho de reserva do logo (texto no lugar).
   // Guarda os IDs pedidos (fotos das sub capas) antes de recusar.
   DriveApp: { getFileById: id => { PEDIDOS_DRIVE.push(id); throw new Error('sem Drive no teste'); } },
-  Utilities: { sleep: () => {} },
+  Utilities: { sleep: () => {}, parseCsv: (t, sep) => _csv(t, sep || ',') },
   console: console
 };
 vm.createContext(ctx);
@@ -241,9 +262,13 @@ porId[CUR.relatorios.metragemId] = FIX_METRAGEM;
 porId[CUR.relatorios.mensalId] = FIX_MENSAL;
 // Planilha dos Megas: só a aba "Financeiro 2025" (exportada em 06/10/2026).
 porIdFinanceiro[CUR.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_curitiba.json');
-// Cadastro "2025 - Contratos" (exportado em 06/10/2026): contratos de todas as
-// unidades com os valores mês a mês de 2026.
-porId[G.ORC_CONTRATOS_ANO_ANTERIOR_ID] = fixture('fixture_contratos_ano_anterior.json');
+// Cadastro de contratos de 2026 exportado do sistema em 07/10/2026 (o que
+// importarCadastroContratos2026 grava; ferramentas/ritmo2026_fixtures.py):
+// contratos de todas as unidades com os valores mês a mês de 2026, já com as
+// renovações. A "MESTRA - CONTRATOS 2026" de antes está em
+// fixture_contratos_ano_anterior.json (base do orçado da comparação).
+const FIX_CAD_2026 = fixture('fixture_contratos_2026_cadastro.json');
+porId[G.ORC_CONTRATOS_ANO_ANTERIOR_ID] = FIX_CAD_2026;
 // Cadastro "CONTRATOS-2027-COMPLETO" (07/10/2026), no mesmo formato, com os
 // valores de 2027 dos três Megas e o cabeçalho em texto ("jan./27").
 porId[G.ORC_CONTRATOS_ANO_IDS[0]] = fixture('fixture_contratos_2027_completo.json');
@@ -648,7 +673,7 @@ const N_MANUT = N_POR_QUE + nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;  
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
-const cmpTodos = G._orcCompararTodosContratos_(rel, fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', modelos);
+const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
 const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3;
 ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 8 sub capas, premissas, resumo + ponte, ' +
@@ -701,7 +726,7 @@ ok(tel.length === 1 && tel[0].ant > 0 && tel[0].atual > 0 && !grupoDe('Telefone'
    'contratos: 4IP (telefone fixo) casa 2026 com 2027 numa linha só (' + tel.map(l => l.nome + ' ' + l.situacao).join(' | ') + ')');
 ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e seguros ficam de fora');
 perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
-  G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026),
+  G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026),
   G._orcClassificarManutencao_(d).grupos[0].itens).contratos.atual, 'contratos: manutenção igual ao slide da manutenção');
 const tTodos = textos(slides[iDRE + 3]);
 ok(/^Contratos — 2026 × Orçamento 2027 \(1\/\d\)$/.test(tTodos[0]) && tTodos.indexOf('TODOS OS CONTRATOS') >= 0,
@@ -754,10 +779,23 @@ ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 2 && slides.length === iS
    'Investimento e Custo por m² fecham o deck, cada um depois da sua sub capa');
 const iInv = iSub[6] + 1, iM2 = iSub[7] + 1;
 // Contratos de manutenção 2026 × 2027, fornecedor a fornecedor.
-const ant = G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026);
+const ant = G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026);
+
+// importarCadastroContratos2026: o CSV do sistema vira as mesmas linhas da
+// fixture (número, data, cabeçalho "Jan/26" que o leitor entende).
+{
+  const csvTxt = fs.readFileSync(path.join(__dirname, '..', 'ferramentas', 'bases_2026',
+    fs.readdirSync(path.join(__dirname, '..', 'ferramentas', 'bases_2026')).filter(n => /^CONTRATOS 2026 - CADASTRO.*\.csv$/.test(n)).sort().pop()), 'latin1');
+  const doCsv = G._orcCsvCadastro_(csvTxt);
+  const soma = (dados, uni, conta) => G._orcLerCadastroContratos_(dados, uni, conta, 2026).reduce((t, c) => t + c.total, 0);
+  const contas = [['Mega Curitiba', 'Manutenção de imóveis'], ['Mega Itajaí', 'Manutenção de imóveis'], ['Mega Esteio', 'Segurança e vigilância']];
+  ok(doCsv.length === FIX_CAD_2026.length && contas.every(([u, c]) => Math.abs(soma(doCsv, u, c) - soma(FIX_CAD_2026, u, c)) < 0.01) &&
+     Object.prototype.toString.call(doCsv[1][13]) === '[object Date]' && typeof doCsv[1][15] === 'number',
+     'importar cadastro 2026: o CSV do sistema dá os mesmos contratos da fixture (' + contas.map(([u, c]) => Math.round(soma(doCsv, u, c))).join(' / ') + ')');
+}
 ok(ant.map(c => c.fornecedor.split(' ')[0]).join(',') === 'FIRECAM,MIRIAD,LEANDRO,FILTROIL,EQUILIBRIO',
    'cadastro 2026: os 5 contratos de manutenção de Curitiba (o da Equilíbrio que acabou em jul/25 fica de fora)');
-perto(Math.round(ant.reduce((t, c) => t + c.total, 0)), 371718, 'cadastro 2026: R$ 371.718 em contratos de manutenção');
+perto(Math.round(ant.reduce((t, c) => t + c.total, 0)), 349470, 'cadastro 2026 (sistema, 07/10/2026): R$ 349.470 em contratos de manutenção (a MESTRA antiga dava R$ 371.718)');
 const clsM2 = G._orcClassificarManutencao_(d);
 const cmp = G._orcCompararContratos_(contasLL[0].v, ant, clsM2.grupos[0].itens);
 const linhaDe = k => cmp.linhas.filter(l => G._orcNorm_(l.itens.map(i => i.descricao).join(' ') + ' ' + l.nome).indexOf(k) >= 0)[0];
