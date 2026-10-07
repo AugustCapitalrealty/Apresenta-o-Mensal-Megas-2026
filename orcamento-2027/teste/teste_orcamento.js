@@ -807,7 +807,7 @@ slides.forEach((sl, i) => {
 ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf('Manutenção de Imóveis') < 0,
    'capa: título é a cidade, não a conta');
 const tCapa = textos(slides[0]);
-ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), 'CUSTO POR M² AO MÊS',
+ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m² ao mês', 'vs. ritmo 2026', 'Orçamento 2027, todas as contas',
     'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12), 'Expandir Eficiência'].every(t => tCapa.indexOf(t) >= 0),
    'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
 ok(slides.every(sl => textos(sl).indexOf('QUANDO O DINHEIRO SAI') < 0 && textos(sl).indexOf('QUANDO') < 0),
@@ -1081,7 +1081,7 @@ const ESTADO_CIDADES = {};
    'Custo por m² mês a mês — Orçamento 2027', 'Manutenção de Imóveis — Orçamento 2027', 'Distribuição mensal']
     .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
   ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
-  ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('CUSTO POR M² AO MÊS') >= 0, c + ': capa com o Mega e o R$/m²');
+  ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m² ao mês') >= 0, c + ': capa com o Mega e o R$/m²');
   // Os relatórios fecham entre si; o slide de revisão só traz as pendências
   // de dados (19_Revisar.gs, _orcPendencias_).
   const iRev = titulos.indexOf('Revisar antes da versão final');

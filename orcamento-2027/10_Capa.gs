@@ -57,22 +57,6 @@ function _orcGradienteAlpha_(slide, x, y, w, h, cor, aF, aT, n, vert) {
   }
 }
 
-// Foto cobrindo a página (sem distorcer; a sobra fica fora da borda) + véu.
-function _orcFotoFundo_(slide, W, H, fotoId, cor, alpha) {
-  if (!fotoId) return false;
-  try {
-    const img = slide.insertImage(_orcBlobDrive_(fotoId, true));
-    const ar = img.getWidth() / img.getHeight();
-    const w = ar > W / H ? H * ar : W, h = ar > W / H ? H : W / ar;
-    img.setWidth(w).setHeight(h).setLeft((W - w) / 2).setTop((H - h) / 2);
-    _orcRet_(slide, 0, 0, W, H, cor, { alpha: alpha });
-    return true;
-  } catch (e) {
-    Logger.log('Foto de fundo indisponível (' + fotoId + '). ' + e.message);
-    return false;
-  }
-}
-
 // Logo do Mega num chip branco no canto superior direito (contraste sobre a
 // foto). Sem logo, não desenha nada.
 function _orcLogoMega_(slide, W, id) {
@@ -92,90 +76,74 @@ function _orcLogoMega_(slide, W, id) {
 }
 
 /**
- * Capa da cidade: foto do Mega (a mesma da capa da apresentação mensal),
- * véu azul, o nome do Mega como herói e dois números do orçamento — em
- * dinheiro e em m², como o diretor lê (06/10/2026). Sem foto, fundo escuro
- * com o grafismo; sem relatório (rel null), sem os números.
+ * Capa da cidade — "K2b, foto em faixa com degradê azul" (escolhida em
+ * 07/10/2026 entre as capas no padrão das sub capas C1): a foto do Mega numa
+ * faixa larga em cima, com o azul-marinho forte à esquerda sumindo até a foto
+ * limpa à direita (logo da Capital em branco sobre o azul, logo do Mega no
+ * chip branco), filete azul e, embaixo em branco, o nome do Mega e os três
+ * números do orçamento — total, R$/m² ao mês e variação contra o ritmo, como
+ * o diretor lê. Sem foto, a faixa é azul-marinho; sem relatório (rel null),
+ * sem os números. Medidas em pt de uma página 720×405, escaladas.
  */
 function gerarSlideCapa_(slide, W, H, cid, rel) {
-  const DS = CR_DESIGN_SYSTEM, C = DS.colors;
-  slide.getBackground().setSolidFill(C.brandDark);
-  const AZUL = '#60A5FA';
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, k = W / 720;
+  slide.getBackground().setSolidFill('#FFFFFF');
 
-  if (_orcFotoFundo_(slide, W, H, cid.fotoFundoId, C.brandDark, 0.45)) {
-    // Scrim: escurece a esquerda para o texto ler e some rumo à direita.
-    _orcGradiente_(slide, 0, 0, W * 0.66, H, C.brandDark, C.brandDark, { alphaDe: 0.7, alphaAte: 0, passos: 24 });
-    _orcGradiente_(slide, 0, H - 90, W, 90, C.brandDark, C.brandDark, { vertical: true, alphaDe: 0, alphaAte: 0.6, passos: 12 });
-  } else {
-    const halo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 300, -220, 560, 560);
-    halo.getFill().setSolidFill(C.brandLight, 0.12); halo.getBorder().setTransparent();
-    const massa = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -220, H - 240, 500, 500);
-    massa.getFill().setSolidFill(C.brandMed, 0.22); massa.getBorder().setTransparent();
+  // Faixa da foto: a foto primeiro (a sobra embaixo é coberta de branco),
+  // depois o degradê e o filete.
+  const fh = 210 * k;
+  if (!_orcFotoEmBloco_(slide, W, H, cid.fotoFundoId, 0, 0, W, fh, ORC_FOTO_FOCO[cid.nome.toUpperCase()])) {
+    _orcRet_(slide, 0, 0, W, fh, C.brandDark);
   }
-  // Anéis e triângulo do brandbook, translúcidos, à direita.
-  [[W - 270, 40, 430, 1.25, 0.14], [W - 225, 85, 330, 1, 0.08]].forEach(r => {
-    const anel = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, r[0], r[1], r[2], r[2]);
-    anel.getFill().setTransparent();
-    anel.getBorder().getLineFill().setSolidFill('#FFFFFF', r[4]); anel.getBorder().setWeight(r[3]);
-  });
-  const tri = slide.insertShape(SlidesApp.ShapeType.TRIANGLE, W - 175, 160, 92, 83);
-  tri.getFill().setSolidFill('#FFFFFF', 0.08); tri.getBorder().setTransparent();
-  _orcGradiente_(slide, 0, 0, 6, H, C.brandLight, C.brandSoft, { vertical: true, passos: 24 });   // espinha
+  _orcGradiente_(slide, 0, 0, W, fh, C.brandDark, C.brandDark, { alphaDe: 0.85, alphaAte: 0, passos: 24 });
+  _orcRet_(slide, 0, fh, W, 4 * k, C.brandLight);
 
-  // Logo Capital Realty branco; sem a imagem, o nome em texto.
+  // Logo Capital Realty branco sobre o azul; sem a imagem, o nome em texto.
   try {
     const img = slide.insertImage(_orcBlobDrive_(LOGOS_CR.fullNegativo));
-    const h = 30, w = h * img.getWidth() / img.getHeight();
-    img.setWidth(w).setHeight(h).setLeft(44).setTop(32);
+    const h = 24 * k, w = h * img.getWidth() / img.getHeight();
+    img.setWidth(w).setHeight(h).setLeft(48 * k).setTop(30 * k);
   } catch (e) {
     Logger.log('Capa: logo indisponível, usando texto. ' + e.message);
-    _orcUmaLinha_(slide, 44, 32, 260, 26, 'CAPITAL REALTY',
-      { align: 'L', fs: 15, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles });
+    _orcUmaLinha_(slide, 48 * k, 30 * k, 260 * k, 24 * k, 'CAPITAL REALTY',
+      { align: 'L', fs: 13, bold: true, cor: '#FFFFFF', fonte: T.titles });
   }
   _orcLogoMega_(slide, W, cid.unitLogoId);
 
-  // Título: o Mega é o herói (pedido do gestor, 29/09/2026 — o deck cobre o
-  // orçamento do Mega, não só a manutenção).
-  const y0 = Math.round(H * 0.27);
-  _orcUmaLinha_(slide, 46, y0, W - 160, 18, ('Orçamento ' + ORC_ANO).toUpperCase().split('').join(' '),
-    { align: 'L', fs: 10, bold: true, cor: AZUL, fonte: DS.typography.titles });
-  _orcGradiente_(slide, 48, y0 + 24, 66, 4, C.brandLight, AZUL, { passos: 12 });
-  _orcUmaLinha_(slide, 44, y0 + 32, W - 160, 52, cid.nome,
-    { align: 'L', fs: 40, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 22 });
-  _orcUmaLinha_(slide, 46, y0 + 84, W - 160, 20, 'Despesas do condomínio · Ritmo ' + (ORC_ANO - 1) + ' → Orçamento ' + ORC_ANO,
-    { align: 'L', fs: 12, cor: '#CBD5E1', fonte: DS.typography.body, fsMin: 9 });
+  // Título: o Mega é o herói (pedido do gestor, 29/09/2026).
+  _orcUmaLinha_(slide, 48 * k, 226 * k, 300 * k, 16 * k, 'ORÇAMENTO ' + ORC_ANO,
+    { align: 'L', fs: 10, bold: true, cor: C.brandLight, fonte: T.titles });
+  _orcUmaLinha_(slide, 46 * k, 242 * k, 320 * k, 54 * k, cid.nome,
+    { align: 'L', fs: 40, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 24 });
+  _orcUmaLinha_(slide, 48 * k, 296 * k, 330 * k, 18 * k,
+    'Despesas do condomínio · Ritmo ' + (ORC_ANO - 1) + ' → Orçamento ' + ORC_ANO,
+    { align: 'L', fs: 11, cor: C.textBody, fonte: T.body, fsMin: 8 });
 
-  // Os dois números do orçamento, em vidro (dinheiro e m²).
+  // Os três números do orçamento (dinheiro e m², como o diretor lê).
   if (rel) {
     const area = _orcAreaImplicita_(rel, 'orc');
     const vT = _orcVariacao_(rel.total.ritmo, rel.total.orc);
-    const chips = [
-      ['ORÇAMENTO ' + ORC_ANO, _orcCompacto_(rel.total.orc), vT.texto !== '–' ? vT.texto + ' × ritmo' : ''],
-      ['CUSTO POR M² AO MÊS', area ? 'R$ ' + _orcM2_(rel.total.orc / area / 12) : '–',
-       area && _orcAreaImplicita_(rel, 'ritmo') ? _orcM2_(rel.total.ritmo / _orcAreaImplicita_(rel, 'ritmo') / 12) + ' no ritmo' : '']
-    ];
-    const cyChip = y0 + 118, ch = 50, cw = 168;
-    chips.forEach((c, k) => {
-      const x = 46 + k * (cw + 12);
-      _orcRet_(slide, x, cyChip, cw, ch, '#FFFFFF', { redondo: true, alpha: 0.1, borda: AZUL, peso: 0.75 });
-      _orcRet_(slide, x, cyChip + 10, 3, ch - 20, AZUL);
-      _orcUmaLinha_(slide, x + 12, cyChip + 5, cw - 20, 13, c[0],
-        { align: 'L', fs: 6.5, bold: true, cor: AZUL, fonte: DS.typography.titles, fsMin: 5.5 });
-      _orcUmaLinha_(slide, x + 12, cyChip + 17, cw - 20, 22, c[1],
-        { align: 'L', fs: 16, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 10 });
-      if (c[2]) {
-        _orcUmaLinha_(slide, x + 12, cyChip + 36, cw - 20, 12, c[2],
-          { align: 'L', fs: 6.5, cor: '#CBD5E1', fonte: DS.typography.body, fsMin: 5.5 });
-      }
+    _orcUmaLinha_(slide, 384 * k, 246 * k, 156 * k, 36 * k, _orcCompacto_(rel.total.orc),
+      { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
+    _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', todas as contas',
+      { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+    const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m² ao mês'] : null,
+                  vT.texto !== '–' ? [vT.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
+    kpis.forEach((kp, i) => {
+      const x = (546 + i * 80) * k;
+      _orcUmaLinha_(slide, x, 252 * k, 76 * k, 22 * k, kp[0],
+        { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+      _orcUmaLinha_(slide, x, 274 * k, 76 * k, 14 * k, kp[1],
+        { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
     });
   }
 
-  _orcLinha_(slide, 42, H - 40, W - 42, H - 40, '#475569', 0.75);
-  _orcUmaLinha_(slide, 42, H - 34, W - 280, 18, 'CAPITAL REALTY · FACILITIES · PLANEJAMENTO ' + ORC_ANO,
-    { align: 'L', fs: 7, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
-  _orcRet_(slide, W - 192, H - 29, 6, 6, AZUL, { redondo: true });
-  _orcUmaLinha_(slide, W - 180, H - 34, 140, 18, 'Expandir Eficiência',
-    { align: 'L', fs: 9, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles });
+  _orcLinha_(slide, 48 * k, 372 * k, 684 * k, 372 * k, C.lines, 0.75);
+  _orcUmaLinha_(slide, 48 * k, 376 * k, 400 * k, 16 * k, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
+    { align: 'L', fs: 7.5, cor: C.textMuted, fonte: T.body });
+  _orcRet_(slide, 584 * k, 381 * k, 5 * k, 5 * k, '#60A5FA');
+  _orcUmaLinha_(slide, 592 * k, 376 * k, 100 * k, 16 * k, 'Expandir Eficiência',
+    { align: 'L', fs: 8, bold: true, cor: C.brandDark, fonte: T.titles });
 }
 
 // ==========================================
