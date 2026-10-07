@@ -330,7 +330,7 @@ function _orcSpecMoldura_(m, W, H) {
   const r = v => Math.round(v * 10) / 10;
   return JSON.stringify({ v: 1, W: r(W), H: r(H), marca: CR_DESIGN_SYSTEM.marca.trilha.replace('TRILHA - ', ''),
     bg: CR_DESIGN_SYSTEM.colors.bgSlide, cor: CR_DESIGN_SYSTEM.colors.brandLight, linhas: CR_DESIGN_SYSTEM.colors.lines,
-    header: m.header ? 1 : 0, secao: m.header ? m.secao : 0,
+    header: m.header ? 1 : 0, secao: m.header ? m.secao : 0, nsec: Object.keys(ORC_SUBCAPAS).length,
     cards: m.cards.map(c => [r(c.x), r(c.y), r(c.w), r(c.h), c.cor, c.borda || '', c.peso]) });
 }
 

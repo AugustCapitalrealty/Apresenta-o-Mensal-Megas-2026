@@ -5,9 +5,9 @@ o que as formas do Slides não reproduzem bem. Vai na imagem tudo o que não mud
 degradê azul, o filete, "ORÇAMENTO <ano>", o nome do Mega, o subtítulo e o rodapé. Ficam como texto do Slides, por
 cima, os três números (total, R$/m² ao mês, variação), que vêm da METRAGEM a cada geração, e os logos.
 
-Sub capas (C1): vão na imagem a foto no bloco, o número e o título da seção, a frase, a trilha das 8 seções e o
+Sub capas (C1): vão na imagem a foto no bloco, o número e o título da seção, a frase, a trilha das seções e o
 rodapé; ficam como texto por cima os números da seção (valor, R$/m² ao mês, variação) e, sobre a trilha, áreas
-transparentes com o link para as outras sub capas. A imagem só vale para o deck com as 8 seções (o número da seção
+transparentes com o link para as outras sub capas. A imagem só vale para o deck com todas as seções (o número da seção
 está desenhado nela); deck com seção faltando volta às formas.
 
 Uso (de dentro de orcamento-2027; precisa de pillow e numpy):
@@ -59,7 +59,6 @@ SECOES = [('Premissas', 'DOCUMENTACAO', 'Como este orçamento foi construído'),
           ('Manutenção', 'CORRETIVA', 'O custo para manter o Mega rodando'),
           ('Segurança', 'PATRIMONIAL', 'Vigilância, portaria e monitoramento'),
           ('Limpeza e Conservação', 'INTERNOS', 'O Mega limpo e conservado o ano inteiro'),
-          ('Projetos × Recorrente', 'PREVENTIVA', 'O que é obra pontual e o que é rotina'),
           ('Custo por m²', 'CONTRATADOS', 'Quanto custa cada m² por mês')]
 # = ORC_FOTO_FOCO (onde está o assunto, fração da largura)
 FOCO_X = {'CORRETIVA': 0.40, 'PATRIMONIAL': 0.45, 'INTERNOS': 0.65, 'PREVENTIVA': 0.68, 'CONTRATADOS': 0.47,

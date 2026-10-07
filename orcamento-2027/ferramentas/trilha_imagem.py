@@ -18,7 +18,8 @@ FONTES = os.path.join(AQUI, 'fontes')
 W, H = 1920, 32
 K = W / 720
 # = ORC_SUBCAPAS (01_Config.gs), nomes curtos para caber
-SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza', 'Projetos', 'Custo por m²']
+# 7 seções desde 07/10/2026 ("Projetos × Recorrente" entrou na Manutenção)
+SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza', 'Custo por m²']
 # = ORC_MARCAS (01_Config.gs): cor de destaque, cor do título, texto, apagado, filete
 MARCAS = {
     'CAPITAL':   dict(light='#065CA9', dark='#151E49', body='#475569', muted='#94A3B8', linha='#E2E8F0'),

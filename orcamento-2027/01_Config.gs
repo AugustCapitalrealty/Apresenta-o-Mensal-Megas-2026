@@ -279,7 +279,6 @@ const ORC_SUBCAPAS = {
   'Manutenção':            { foto: 'CORRETIVA',    frase: 'O custo para manter o Mega rodando' },
   'Segurança':             { foto: 'PATRIMONIAL',  frase: 'Vigilância, portaria e monitoramento' },
   'Limpeza e Conservação': { foto: 'INTERNOS',     frase: 'O Mega limpo e conservado o ano inteiro' },
-  'Projetos × Recorrente': { foto: 'PREVENTIVA',   frase: 'O que é obra pontual e o que é rotina' },
   'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' }
 };
 // Perguntas em aberto com o gestor ou a controladoria, por Mega (nome em

@@ -189,7 +189,9 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
     { texto: it.descricao, aba: 'Composição' }, { texto: _orcMoeda_(it.total), bold: true }] }));
   if (corte.fora.length) {
     linhas.push({ celulas: [
-      { texto: '+ ' + corte.fora.length + ' itens menores' + (nPag > 1 ? ' (página 2/' + nPag + ')' : ''), cor: C.textBody },
+      // Manutenção (cls): os itens menores estão no item a item, adiante.
+      { texto: '+ ' + corte.fora.length + ' itens menores' + (nPag > 1 ? ' (página 2/' + nPag + ')' : (cls ? ' (item a item adiante)' : '')),
+        cor: C.textBody },
       { texto: _orcMoeda_(corte.fora.reduce((s, it) => s + it.total, 0)), bold: true }] });
   }
   if (comp.base) linhas.push({ celulas: [

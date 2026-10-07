@@ -7,7 +7,7 @@
 // Rodapé de fonte da seção de manutenção (resumo e mensal).
 function _orcFonteManutencao_(cid, dados) {
   return 'Fonte: 090-Despesas-Gerais — ' + cid.nome + ' — ' + ORC_ANO + ', aba "' + ORC_ABA_MODELO +
-    '", conta Manutenção de Imóveis' + (dados.nContratos ? ' + planilha de contratos de manutenção (' +
+    '", conta Manutenção de Imóveis' + (dados.nContratos ? ' + cadastro de contratos de ' + ORC_ANO + ' (' +
     dados.nContratos + ' contratos)' : '');
 }
 
@@ -62,9 +62,12 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
   if (cats.length > 9) {
     const resto = cats.slice(8);
     const soma = campo => resto.reduce((a, c) => a + c[campo], 0);
+    // A barra diz quais são (item 14): as duas maiores pelo nome e quantas mais.
+    const nomeCat = n => String(n).charAt(0) + String(n).slice(1).toLowerCase();
     linhas = cats.slice(0, 8).concat([{
       nome: 'DEMAIS (' + resto.length + ')', total: soma('total'), pct: soma('pct'),
-      totalContratos: soma('totalContratos'), totalAvulsos: soma('totalAvulsos'), demais: true
+      totalContratos: soma('totalContratos'), totalAvulsos: soma('totalAvulsos'), demais: true,
+      quais: resto.slice(0, 2).map(c => nomeCat(c.nome)).join(', ') + ' e mais ' + (resto.length - 2)
     }]);
   }
   const ly = by + 26, lh = bh - 34;
@@ -75,9 +78,13 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
   const mil = v => String(Math.round(v / 1000));
   linhas.forEach((c, i) => {
     const y = ly + i * rowH;
-    _orcUmaLinha_(slide, MX + 12, y, labW, rowH, c.nome,
+    _orcUmaLinha_(slide, MX + 12, y, labW, c.quais ? rowH * 0.6 : rowH, c.nome,
       { align: 'L', fs: 8, bold: true, cor: c.demais ? DS.colors.textBody : DS.colors.textMain,
         fonte: DS.typography.titles, fsMin: 6.5, cortar: true });
+    if (c.quais) {
+      _orcUmaLinha_(slide, MX + 12, y + rowH * 0.5, labW, rowH * 0.5, c.quais,
+        { align: 'L', fs: 6, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 5.5, cortar: true });
+    }
     const bh2 = Math.min(12, rowH * 0.5), byy = y + (rowH - bh2) / 2;
     const wC = bMax * c.totalContratos / maxT, wA = bMax * c.totalAvulsos / maxT;
     if (wC > 0.5) _orcRet_(slide, bx0, byy, wC, bh2, c.demais ? '#64748B' : COR_CONTR);

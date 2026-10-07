@@ -216,7 +216,8 @@ function gerarSlideContratosComparados_(slide, W, H, cid, rel, conta, contratosA
   const linhas = [{ tipo: 'secao', nome: 'CONTRATOS — ' + cmp.linhas.length, celulas: [] }];
   cmp.linhas.forEach(l => linhas.push(linhaTab('item', _orcNomeCurtoContrato_(l.nome), l.ant, l.atual, l.situacao, l.categoria)));
   linhas.push(linhaTab('grupo', 'TOTAL CONTRATOS', cmp.contratos.ant, cmp.contratos.atual, ''));
-  linhas.push(linhaTab('item', 'Avulsos (sem contrato)', cmp.avulsos.ant, cmp.avulsos.atual, 'ver nota abaixo'));
+  // Os avulsos abertos vêm no slide seguinte (roteiro dos itens 13 e 14).
+  linhas.push(linhaTab('item', 'Avulsos (sem contrato)', cmp.avulsos.ant, cmp.avulsos.atual, 'abertos a seguir'));
   linhas.push(linhaTab('total', 'TOTAL ' + conta.nome.toUpperCase(), cmp.total.ant, cmp.total.atual, ''));
 
   const lab = 178, cat = 104, nW = 56, dW = 46, pW = 36, mW = 30, sW = tw - lab - cat - nW * 2 - dW - pW - mW * 2;

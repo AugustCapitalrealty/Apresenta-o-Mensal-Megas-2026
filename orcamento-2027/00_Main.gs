@@ -148,7 +148,6 @@ function _orcGerarCidade_(deck, W, H, chave) {
     visao ? ['Resumo Executivo', 'DRE'] : [],
     contas || dados ? ['Manutenção'] : [],
     contas ? ['Segurança', 'Limpeza e Conservação'] : [],
-    visao && calc.cls ? ['Projetos × Recorrente'] : [],
     visao ? ['Custo por m²'] : []);
   // Pendências de dados (contratos que faltam, modelos acima da METRAGEM):
   // alerta no slide de revisão e selo nos slides da conta (19_Revisar.gs).
@@ -201,20 +200,30 @@ function _orcGerarCidade_(deck, W, H, chave) {
   // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança,
   // 2 limpeza): o slide da conta e, se a composição não couber, as páginas
   // com os itens menores ("(1/2)", "(2/2)"…).
+  // Manutenção com a classificação (cls): sem as páginas de itens menores — os
+  // mesmos itens vêm nas páginas "item a item" com o selinho, logo adiante
+  // (roteiro dos itens 13 e 14, 07/10/2026).
   const linhaALinha = i => {
     const c = contas[i];
     let fora = [];
     try { fora = _orcCorteComposicao_(c, visao.modelos, H).fora; }
     catch (e) { Logger.log('Itens menores de ' + c.nome + ' indisponíveis: ' + e.message); }
-    const paginas = _orcPaginasItens_(fora), nPag = 1 + paginas.length;
+    const semPaginas = i === 0 && calc && calc.cls;
+    const paginas = semPaginas ? [] : _orcPaginasItens_(fora), nPag = 1 + paginas.length;
     comSelo('Linha a linha — ' + c.nome, [c.chave],
       s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c, nPag, i === 0 && calc ? calc.cls : null));
     paginas.forEach((pag, k) => comSelo('Linha a linha — ' + c.nome + ' (' + (k + 2) + '/' + nPag + ')', [c.chave],
       s => gerarSlideItensMenores_(s, W, H, cid, visao.rel, c, pag, k, nPag, fora, i === 0 && calc ? calc.cls : null)));
   };
 
+  // Roteiro da Manutenção (itens 13 e 14 do gestor, 07/10/2026): a pergunta
+  // "e o que tem dentro disso?" é respondida no slide seguinte —
+  //   a conta → por que sobe → contratos e avulsos → os avulsos abertos
+  //   (projetos × recorrente) e o item a item com o selinho → por categoria →
+  //   Demais → categorias grandes → distribuição mensal.
   if (contas || dados) {
     secao('Manutenção');
+    if (contas) linhaALinha(0);
     // Por que a manutenção sobe: as obras de 2026 adiadas para 2027, segundo o
     // gestor (24_PorQueSobe.gs). Mega sem obra adiada não ganha o slide.
     if (contas && dados) {
@@ -224,11 +233,19 @@ function _orcGerarCidade_(deck, W, H, chave) {
       if (adi) comSelo('Por que a manutenção sobe', [contas[0].chave],
         s => gerarSlidePorQueSobe_(s, W, H, cid, visao.rel, contas[0], adi));
     }
-    if (contas) linhaALinha(0);
     // Ritmo × Orç item a item nos contratos (pedido do gestor, 06/10/2026).
     if (contas && calc && calc.cls && calc.contratosAnt && calc.contratosAnt.length) {
       comSelo('Contratos ' + (ORC_ANO - 1) + ' × ' + ORC_ANO, [contas[0].chave],
         s => gerarSlideContratosComparados_(s, W, H, cid, visao.rel, contas[0], calc.contratosAnt, calc.cls));
+    }
+    // Os avulsos abertos (era a seção 07, "Projetos × Recorrente") e o item a
+    // item com o selinho de cada grupo.
+    if (visao && calc && calc.cls) {
+      comSelo('Projetos × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
+        s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
+      const pagsG = _orcPaginasGrupos_(calc.cls);
+      pagsG.forEach((pag, i) => comSelo('Projetos × recorrente — itens (' + (i + 1) + '/' + pagsG.length + ')',
+        [_orcChaveConta_('Manutenção de imóveis')], s => gerarSlideGruposManut_(s, W, H, cid, visao.rel, calc.cls, pag, i, pagsG.length)));
     }
     if (dados) _orcGerarManutencao_(deck, W, H, cid, dados, visao ? _orcAreaImplicita_(visao.rel, 'orc') : null);
   }
@@ -239,18 +256,6 @@ function _orcGerarCidade_(deck, W, H, chave) {
     linhaALinha(2);
   }
 
-  // Aprovados entre as sugestões (05/10/2026). As demais estão pendentes em
-  // 90_Pendentes.gs e não são geradas.
-  if (visao && calc.cls) {
-    secao('Projetos × Recorrente');
-    comSelo('Projetos × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
-      s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
-    // Os itens de cada grupo, com o selinho (gestor, 07/10/2026: "abrir e
-    // sinalizar melhor o que é contrato, recorrente, projetos e pontual").
-    const pagsG = _orcPaginasGrupos_(calc.cls);
-    pagsG.forEach((pag, i) => comSelo('Projetos × recorrente — itens (' + (i + 1) + '/' + pagsG.length + ')',
-      [_orcChaveConta_('Manutenção de imóveis')], s => gerarSlideGruposManut_(s, W, H, cid, visao.rel, calc.cls, pag, i, pagsG.length)));
-  }
   if (visao) {
     secao('Custo por m²');
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
@@ -259,20 +264,22 @@ function _orcGerarCidade_(deck, W, H, chave) {
   gravar(false);   // a última seção; a remoção dos antigos fica em _orcGerar_
 }
 
-// Manutenção por categoria: resumo, distribuição mensal, um slide por
-// categoria grande e as páginas de Demais.
+// Manutenção por categoria: resumo, as páginas de Demais logo depois da barra
+// que as agrupa (item 14), um slide por categoria grande e, fechando, a
+// distribuição mensal.
 // area: área implícita do Orç (METRAGEM) para o R$/m² — null sem o relatório.
 function _orcGerarManutencao_(deck, W, H, cid, dados, area) {
   _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados, area));
-  _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados, area));
 
   const div = _orcDividirCategorias_(dados);
-  div.proprias.forEach(c =>
-    _orcPasso_(deck, W, H, 'Categoria ' + c.nome, s => gerarSlideCategoria_(s, W, H, cid, dados, c)));
-
   const paginas = _orcPaginasDemais_(div.demais);
   paginas.forEach((pag, i) =>
     _orcPasso_(deck, W, H, 'Demais categorias', s => gerarSlideDemais_(s, W, H, cid, dados, div.demais, pag, i, paginas.length)));
+
+  div.proprias.forEach(c =>
+    _orcPasso_(deck, W, H, 'Categoria ' + c.nome, s => gerarSlideCategoria_(s, W, H, cid, dados, c)));
+
+  _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados, area));
 }
 
 // Cálculos que o Resumo Executivo e o slide de investimento compartilham.
