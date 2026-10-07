@@ -61,7 +61,7 @@ function _orcQuando_(meses) {
   if (idx.length === 1) return ORC_MESES[idx[0]];
   const ult = idx[idx.length - 1];
   if (ult - idx[0] + 1 === idx.length) return ORC_MESES[idx[0]] + '–' + ORC_MESES[ult];
-  if (idx.length <= 3) return idx.map(i => ORC_MESES[i]).join(' · ');
+  if (idx.length === 2) return idx.map(i => ORC_MESES[i]).join(' · ');   // três salteados não cabem na coluna
   return idx.length + ' meses';
 }
 

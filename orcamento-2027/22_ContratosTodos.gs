@@ -35,8 +35,10 @@ function _orcPalavrasFornecedor_(nome) {
 // <cidade>" nem "SERVIÇO DE", ARMAZÉM vira AMZ; "FORNECEDOR - assunto" fica
 // "FORNECEDOR – assunto" se couber, senão só o fornecedor — e quando a parte
 // da frente é o nome da conta ("ENERGIA ELÉTRICA - HP FINANCIAL…"), vale a de trás.
-function _orcNomeCurtoContrato_(nome) {
-  const util = 166, fs = 7, f = CR_DESIGN_SYSTEM.typography.body;
+// util: largura útil da coluna em pt (186 pt de coluna − recuo − folga ≈ 150).
+function _orcNomeCurtoContrato_(nome, util) {
+  util = util || 150;
+  const fs = 7, f = CR_DESIGN_SYSTEM.typography.body;
   const cabe = t => _orcLarguraTexto_(t, fs, f, false) <= util;
   const limpa = x => String(x).replace(/\s+/g, ' ')
     .replace(/\s*-?\s*CONDOM[IÍ]NIO( MEGA)? (CURITIBA|ITAJA[IÍ]|ESTEIO)\.?/gi, '')
@@ -220,7 +222,7 @@ function gerarSlideContratosTodos_(slide, W, H, cid, rel, cmp, pagina, iPag, nPa
   const linhaTab = (tipo, nome, de, para, situacao, categoria) => {
     const d = para - de, v = _orcVariacao_(de, para);
     return { tipo: tipo, nome: nome, celulas: [
-      { texto: categoria || '' }, { texto: de > 0.5 ? _orcMilhar_(Math.round(de)) : '–' },
+      { texto: String(categoria || '').replace(/^CONTRATO\s+/i, '') }, { texto: de > 0.5 ? _orcMilhar_(Math.round(de)) : '–' },
       { texto: para > 0.5 ? _orcMilhar_(Math.round(para)) : '–', bold: true },
       { texto: Math.abs(d) < 0.5 ? '0' : (d > 0 ? '+' : '−') + _orcMilhar_(Math.round(Math.abs(d))), sentido: Math.abs(d) < 0.5 ? 0 : (d > 0 ? 1 : -1) },
       { texto: v.texto, sentido: v.sentido },
@@ -238,7 +240,7 @@ function gerarSlideContratosTodos_(slide, W, H, cid, rel, cmp, pagina, iPag, nPa
   });
   const ultima = iPag === nPag - 1;
   if (ultima) linhas.push(linhaTab('total', 'TOTAL DOS CONTRATOS', cmp.ant, cmp.atual, ''));
-  const lab = 190, cat = 90, nW = 54, dW = 44, pW = 34, mW = 28, sW = tw - lab - cat - nW * 2 - dW - pW - mW * 2;
+  const lab = 186, cat = 100, nW = 54, dW = 44, pW = 34, mW = 28, sW = tw - lab - cat - nW * 2 - dW - pW - mW * 2;
   const ty = ky + kh + 8;
   _orcTabelaNum_(slide, MX, ty, tw, Math.min(13 + 16 + 14.5 * linhas.length, H - 26 - ty), [
     { titulo: 'CONTRATO', w: lab }, { titulo: 'CATEGORIA', w: cat, align: 'L' },

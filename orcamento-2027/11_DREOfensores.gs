@@ -318,7 +318,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     const mR = m2(c.v.ritmo, areaRit), mO = m2(c.v.orc, areaOrc);
     const dM = mR === null || mO === null ? null : mO - mR;
     const sM = dM === null || Math.abs(dM) < 0.005 ? 0 : (dM > 0 ? 1 : -1);
-    return { tipo: tipo || 'item', nome: c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
+    // Nome de conta comprido ("Manutenção de maquinas e equipamentos") abrevia.
+    const nome = _orcLarguraTexto_(c.nome, 7, DS.typography.body) > 120 ? c.nome.replace(/^Manuten[çc][ãa]o /i, 'Manut. ') : c.nome;
+    return { tipo: tipo || 'item', nome: nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
       { texto: _orcMil_(c.v.orcAnt) }, { texto: _orcMil_(c.v.ritmo) }, { texto: _orcMil_(c.v.orc), bold: true },
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
@@ -336,8 +338,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const tw = W - MX * 2, labW = 140, numW = 44, m2W = 38, itemW = tw - labW - numW * 5 - m2W * 3;
   const colunas = [
     { titulo: 'CONTA', w: labW },
-    { titulo: 'ORÇ ' + a.orcAnt, w: numW }, { titulo: 'RITMO ' + a.ritmo, w: numW },
-    { titulo: 'ORÇ ' + a.orc, w: numW, destaque: true },
+    // Títulos curtos: a coluna tem 44 pt e "RITMO 2026" saía "RITMO 20…".
+    { titulo: 'ORÇ ' + String(a.orcAnt).slice(-2), w: numW }, { titulo: 'RITMO ' + String(a.ritmo).slice(-2), w: numW },
+    { titulo: 'ORÇ ' + String(a.orc).slice(-2), w: numW, destaque: true },
     { titulo: 'Δ R$', w: numW }, { titulo: 'Δ %', w: numW },
     { titulo: 'RIT. ' + String(a.ritmo).slice(-2), w: m2W }, { titulo: 'ORÇ ' + String(a.orc).slice(-2), w: m2W, destaque: true },
     { titulo: 'Δ', w: m2W },

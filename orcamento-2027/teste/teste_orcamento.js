@@ -938,5 +938,51 @@ const tP = textos(slP);
 ok(tP.indexOf('Contratos reajustados pelo IPCA em janeiro.') >= 0 && tP.filter(t => t === G.ORC_PREMISSAS_VAZIO).length === 2,
    'Premissas: texto da configuração no lugar do "Escreva aqui."');
 
+// ---------------- Geração — Itajaí e Esteio ----------------
+// Mesmo deck de Curitiba com os dados reais de cada cidade (fixtures de
+// 05–06/10/2026). Sem planilhas de CONTRATOS ainda: os contratos ficam nos
+// itens [CONTRATO] dos modelos e a diferença aparece como "Não detalhado".
+const ESTADO_CIDADES = {};
+['ITAJAI', 'ESTEIO'].forEach(chave => {
+  const c = chave === 'ITAJAI' ? 'itajai' : 'esteio';
+  const cid = G.ORC_CIDADES[chave];
+  console.log('Geração — ' + cid.nome);
+  porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '.json');
+  porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '.json');
+  porId[cid.despesasGeraisId] = fixture('fixture_090_' + c + '_2027.json');
+  porId[cid.servicosTerceirosId] = fixture('fixture_070_' + c + '_2027.json');
+  porIdFinanceiro[cid.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_' + c + '.json');
+  // Fluxo real: gera, aplica as propostas de texto curto, gera de novo.
+  decks = {};
+  G._orcGerar_([chave]);
+  G.aplicarPropostasTextos();
+  decks = {};
+  G._orcGerar_([chave]);
+  const sl = decks[cid.deckId].getSlides();
+  const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
+  ok(!comFalha.length, c + ': nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
+  const titulos = sl.map(titulo);
+  ['Resumo executivo — Orçamento 2027', 'DRE — Orçamento 2027', 'Ofensores — Orçamento 2027', 'Defensores — Orçamento 2027',
+   'Custo por m² mês a mês — Orçamento 2027', 'Manutenção de Imóveis — Orçamento 2027', 'Distribuição mensal']
+    .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
+  ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
+  ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('CUSTO POR M² AO MÊS') >= 0, c + ': capa com o Mega e o R$/m²');
+  ok(!sl.some(x => titulo(x) === 'Revisar antes da versão final'), c + ': relatórios fecham entre si (sem slide de revisão)');
+  ok(textos(sl[titulos.indexOf('Custo por m² mês a mês — Orçamento 2027')]).indexOf('Real 2025') >= 0, c + ': m² mês a mês com o Real 2025');
+  sl.forEach((x, i) => x.shapes.forEach(sh => {
+    if (sh.tipo === 'ELLIPSE') return;
+    const dentro = sh.x >= -0.5 && sh.y >= -0.5 && sh.x + sh.w <= W + 0.5 && sh.y + sh.h <= H + 0.5;
+    if (!dentro) ok(false, c + ' slide ' + (i + 1) + ': ' + sh.tipo + ' fora da página "' + (sh.texto || '') + '"');
+  }));
+  const cortados = [];
+  sl.forEach((x, i) => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push((i + 1) + ' ' + titulo(x) + ' :: ' + t); }));
+  ok(!cortados.length, c + ': nenhum texto cortado depois de aplicar as propostas (' + cortados.join(' | ') + ')');
+  ESTADO_CIDADES[c] = { slides: sl.length, cortados: cortados, titulos: titulos,
+                        naoDetalhado: sl.filter(x => textos(x).some(t => /^Não detalhado nos modelos/.test(t))).map(titulo) };
+  console.log('  ' + sl.length + ' slides · ' + cortados.length + ' textos cortados com "…" · "não detalhado" em: ' +
+              ESTADO_CIDADES[c].naoDetalhado.join(', '));
+});
+if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
 process.exit(falhas ? 1 : 0);

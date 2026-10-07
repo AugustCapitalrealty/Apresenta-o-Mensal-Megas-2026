@@ -186,7 +186,7 @@ function gerarSlideContratosComparados_(slide, W, H, cid, rel, conta, contratosA
       { texto: situacao || '' }] };
   };
   const linhas = [{ tipo: 'secao', nome: 'CONTRATOS — ' + cmp.linhas.length, celulas: [] }];
-  cmp.linhas.forEach(l => linhas.push(linhaTab('item', l.nome, l.ant, l.atual, l.situacao, l.categoria)));
+  cmp.linhas.forEach(l => linhas.push(linhaTab('item', _orcNomeCurtoContrato_(l.nome), l.ant, l.atual, l.situacao, l.categoria)));
   linhas.push(linhaTab('grupo', 'TOTAL CONTRATOS', cmp.contratos.ant, cmp.contratos.atual, ''));
   linhas.push(linhaTab('item', 'Avulsos (sem contrato)', cmp.avulsos.ant, cmp.avulsos.atual, 'ver nota abaixo'));
   linhas.push(linhaTab('total', 'TOTAL ' + conta.nome.toUpperCase(), cmp.total.ant, cmp.total.atual, ''));

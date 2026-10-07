@@ -29,7 +29,8 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
     ['Orçamento anual', _orcMoeda_(dados.total)],
     ['Média mensal', _orcMoeda_(dados.total / 12)],
     ['Mês de maior gasto', ORC_MESES[iPico] + ' · ' + _orcCompacto_(dados.meses[iPico])],
-    ['Maior categoria', cats.length ? cats[0].nome + ' · ' + _orcPct_(cats[0].pct) : '—']
+    // O percentual vai no rótulo: "ESTRUTURA METÁLICA · 18%" não cabia no card.
+    [cats.length ? 'Maior categoria · ' + _orcPct_(cats[0].pct) : 'Maior categoria', cats.length ? cats[0].nome : '—']
   ];
   if (area) kpis.splice(2, 0, ['R$/m² ao mês', 'R$ ' + _orcM2_(dados.total / area / 12)]);
   const ky = 76, kh = 54, gap = 10;
@@ -38,7 +39,7 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
     const x = MX + i * (kw + gap);
     _orcCard_(slide, x, ky, kw, kh, k[0]);
     _orcUmaLinha_(slide, x + 12, ky + 22, kw - 24, 26, k[1],
-      { align: 'L', fs: 16, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 9, cortar: true });
+      { align: 'L', fs: 16, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 7, cortar: true });
   });
 
   // ---- Corpo ----
@@ -69,14 +70,14 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
   const ly = by + 26, lh = bh - 34;
   const rowH = linhas.length ? Math.min(28, lh / linhas.length) : lh;
   const maxT = linhas.reduce((a, c) => Math.max(a, c.total), 0) || 1;
-  const labW = 112, valW = 116;
+  const labW = 124, valW = 116;
   const bx0 = MX + 12 + labW + 6, bMax = lw - 12 - labW - 6 - valW - 10;
   const mil = v => String(Math.round(v / 1000));
   linhas.forEach((c, i) => {
     const y = ly + i * rowH;
     _orcUmaLinha_(slide, MX + 12, y, labW, rowH, c.nome,
       { align: 'L', fs: 8, bold: true, cor: c.demais ? DS.colors.textBody : DS.colors.textMain,
-        fonte: DS.typography.titles, fsMin: 8, cortar: true });
+        fonte: DS.typography.titles, fsMin: 6.5, cortar: true });
     const bh2 = Math.min(12, rowH * 0.5), byy = y + (rowH - bh2) / 2;
     const wC = bMax * c.totalContratos / maxT, wA = bMax * c.totalAvulsos / maxT;
     if (wC > 0.5) _orcRet_(slide, bx0, byy, wC, bh2, c.demais ? '#64748B' : COR_CONTR);
