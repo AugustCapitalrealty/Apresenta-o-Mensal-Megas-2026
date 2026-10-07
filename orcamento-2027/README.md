@@ -120,7 +120,7 @@ O deck é dividido em seções, cada uma aberta por uma sub capa numerada
 | | Revisar antes da versão final | **só quando os relatórios divergem** — ver "Divergências entre relatórios" |
 | 01 | Premissas | três blocos para o gestor preencher: Premissas, O que foi analisado, Como ler o relatório |
 | 02 | Resumo Executivo | resumo de 30 segundos e ponte Ritmo → Orç |
-| 03 | DRE | DRE, Ofensores, Defensores |
+| 03 | DRE | DRE, Ofensores, Defensores, Contratos de todas as contas (ano anterior × ano) |
 | 04 | Manutenção | linha a linha (1/2 e 2/2 com os itens menores), contratos Ritmo × Orç item a item, resumo por categoria, distribuição mensal, categorias, Demais |
 | 05 | Segurança | linha a linha |
 | 06 | Limpeza e Conservação | linha a linha |
@@ -148,6 +148,7 @@ seguintes não pula.
 | `17_Investimento.gs` | Manutenção: projetos × custo recorrente, com a legenda de cada grupo |
 | `18_CustoM2.gs` | Custo por m² ao mês, top 10 contas |
 | `20_M2Mensal.gs` | Custo por m² mês a mês, custo do condomínio e área |
+| `22_ContratosTodos.gs` | Contratos de todas as contas, ano anterior × ano, agrupados por conta (depois dos Defensores, em quantas páginas precisar) |
 | `21_ContratosComparados.gs` | Contratos do ano anterior × do ano, fornecedor a fornecedor (cadastro `2025 - Contratos` × contratos e itens [CONTRATO] do ano) |
 | `19_Revisar.gs` | Slide "Revisar antes da versão final" e o selo ⚠ REVISAR (só com divergência) |
 | `90_Pendentes.gs` | **Não gerado.** Sugestões com pendência: Contratos (concentração e reajustes) e Contratos sem reajuste — custo de implantação lido como reajuste; Fluxo mensal — informações inconsistentes; Cenários — em revisão |
