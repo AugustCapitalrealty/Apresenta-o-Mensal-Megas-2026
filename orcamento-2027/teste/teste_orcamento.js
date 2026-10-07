@@ -1164,6 +1164,20 @@ console.log('Gravação no Slides');
      'Slides fora do ar: para com mensagem do que fazer (' + (erro && erro.message) + ')');
   ok(d2.getSlides().indexOf(antigo2) >= 0, 'sem gravar os novos, o slide antigo não é apagado');
 
+  // Apresentação com sobra de gerações que falharam: os antigos saem logo no
+  // começo (uma gravação), o primeiro sai no fim, e nada antigo fica.
+  decks = {};
+  const d4 = novoDeck();
+  decks[ESTEIO.deckId] = d4;
+  for (let i = 0; i < 4; i++) d4.appendSlide();
+  const antigos4 = d4.getSlides();
+  LOG.length = 0;
+  G._orcGerar_(['ESTEIO']);
+  const nSub4 = d4.getSlides().filter(x => /^0\d$/.test(textos(x)[0] || '')).length;
+  ok(antigos4.every(s => d4.getSlides().indexOf(s) < 0), 'apresentação com 5 slides antigos: nenhum sobra');
+  ok(d4.salvos === nSub4 + 2 && LOG.some(m => /4 slides antigos apagados antes de gerar/.test(m)),
+     'limpeza dos antigos é a primeira gravação (' + d4.salvos + ' gravações, ' + nSub4 + ' seções)');
+
   // "Service timed out" (Curitiba, 07/10/2026) também tenta de novo.
   decks = {};
   const d3 = novoDeck();

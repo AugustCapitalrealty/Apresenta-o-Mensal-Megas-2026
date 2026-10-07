@@ -10,9 +10,9 @@
  *   ▸ diagnosticarOrcamento()                          → só lê e mostra no log
  *
  * Toda geração SUBSTITUI o conteúdo da apresentação da cidade: os slides
- * novos são criados e gravados primeiro, uma gravação por seção; os antigos
- * só são apagados depois, numa gravação à parte. O log mostra o tempo de
- * cada parte. As três juntas chegam perto do limite de 6 min do Apps
+ * antigos são apagados logo no começo (menos o primeiro, porque a
+ * apresentação não pode ficar vazia, que sai no fim), e os novos são
+ * gravados uma seção por vez. O log mostra o tempo de cada parte. As três juntas chegam perto do limite de 6 min do Apps
  * Script: prefira uma por vez.
  */
 
@@ -28,19 +28,29 @@ function _orcGerar_(chaves) {
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
-    const deck = SlidesApp.openById(cid.deckId);
+    let deck = SlidesApp.openById(cid.deckId);
     const W = deck.getPageWidth(), H = deck.getPageHeight();
-    const antigos = new Set(deck.getSlides().map(s => s.getObjectId()));
-    // Grava os slides novos seção por seção (07/10/2026): com tudo numa
-    // gravação só, o Esteio falhava no fim com "Service unavailable" e
-    // Curitiba com "Service timed out". A remoção dos antigos é a última
-    // gravação; se ela falhar, o deck fica com os novos E os antigos — nada
-    // se perde, e a próxima geração apaga tudo o que havia antes.
+    // Apaga os antigos ANTES de desenhar (07/10/2026): quando uma geração
+    // falhava no meio, os antigos ficavam e cada nova tentativa somava mais
+    // slides, até a apresentação de Curitiba ficar pesada demais para abrir
+    // ("Service timed out" no openById). Fica só o primeiro, apagado no fim.
+    // Se a geração falhar, a próxima recria tudo; versões anteriores ficam
+    // no histórico do Slides.
+    const velhos = deck.getSlides();
+    const primeiro = velhos.length ? velhos[0].getObjectId() : null;
+    if (velhos.length > 1) {
+      velhos.slice(1).forEach(s => s.remove());
+      _orcSalvarDeck_(deck, 'a limpeza dos slides antigos de ' + cid.nome);
+      Logger.log(cid.nome + ': ' + (velhos.length - 1) + ' slides antigos apagados antes de gerar');
+      deck = SlidesApp.openById(cid.deckId);
+    }
+    // Grava os slides novos seção por seção (com tudo numa gravação só, o
+    // Esteio falhava com "Service unavailable" e Curitiba com "timed out").
     _orcGerarCidade_(deck, W, H, k);
     const final = SlidesApp.openById(cid.deckId);
-    final.getSlides().forEach(s => { if (antigos.has(s.getObjectId())) s.remove(); });
+    final.getSlides().forEach(s => { if (s.getObjectId() === primeiro) s.remove(); });
     const n = final.getSlides().length, url = final.getUrl();
-    _orcSalvarDeck_(final, 'a remoção dos slides antigos de ' + cid.nome);
+    _orcSalvarDeck_(final, 'a remoção do último slide antigo de ' + cid.nome);
     Logger.log('Pronto: ' + cid.nome + ', ' + n + ' slides — ' + url);
   });
   _orcSalvarTextos_();
