@@ -19,6 +19,7 @@ function _orcHexLerp_(a, b, t) {
 function _orcGradiente_(slide, x, y, w, h, c1, c2, op) {
   const o = op || {}, n = o.passos || 24, vert = !!o.vertical;
   const aF = o.alphaDe != null ? o.alphaDe : 1, aT = o.alphaAte != null ? o.alphaAte : aF;
+  if (c1 === c2 && aF !== aT) return _orcGradienteAlpha_(slide, x, y, w, h, c1, aF, aT, n, vert);
   for (let i = 0; i < n; i++) {
     const t = n === 1 ? 0 : i / (n - 1);
     // A sobreposição de 0,8pt não deixa fresta entre as faixas, mas a última
@@ -26,6 +27,33 @@ function _orcGradiente_(slide, x, y, w, h, c1, c2, op) {
     const sx = vert ? x : x + i * w / n, sy = vert ? y + i * h / n : y;
     const sw = vert ? w : Math.min(w / n + 0.8, x + w - sx), sh = vert ? Math.min(h / n + 0.8, y + h - sy) : h;
     _orcRet_(slide, sx, sy, sw, sh, _orcHexLerp_(c1, c2, t), { alpha: Math.max(0, Math.min(1, aF + (aT - aF) * t)) });
+  }
+}
+
+// Véu que some (mesma cor, transparência variando): faixas lado a lado deixam
+// LISTRAS onde duas semitransparentes se encostam (visto na sub capa em
+// 07/10/2026). Aqui são camadas empilhadas a partir do lado mais opaco, cada
+// uma mais curta que a anterior: a opacidade soma sem emenda nenhuma. A
+// camada j cobre do lado opaco até o fim da faixa j, e a sua transparência
+// faz o acumulado da faixa j bater com a reta de aF a aT:
+//   (1 − alpha_j) = (1 − alvo_j) / (1 − alvo_j+1).
+function _orcGradienteAlpha_(slide, x, y, w, h, cor, aF, aT, n, vert) {
+  const fim = aF < aT;   // o lado opaco é o fim (direita/baixo)
+  const alvo = j => {
+    const t = n === 1 ? 0 : j / (n - 1), de = fim ? aT : aF, ate = fim ? aF : aT;
+    return Math.max(0, Math.min(1, de + (ate - de) * t));
+  };
+  const L = vert ? h : w;
+  let transDepois = 1;   // transparência acumulada das faixas além da j
+  for (let j = n - 1; j >= 0; j--) {
+    const trans = 1 - alvo(j);
+    const a = transDepois > 0 ? 1 - trans / transDepois : 0;
+    transDepois = trans;
+    if (a < 0.004) continue;
+    const len = L * (j + 1) / n;
+    const ini = fim ? (vert ? y + h : x + w) - len : (vert ? y : x);
+    if (vert) _orcRet_(slide, x, ini, w, len, cor, { alpha: a });
+    else _orcRet_(slide, ini, y, len, h, cor, { alpha: a });
   }
 }
 

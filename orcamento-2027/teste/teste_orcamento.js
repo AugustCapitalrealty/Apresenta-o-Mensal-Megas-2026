@@ -76,7 +76,7 @@ function novoSlide(deck) {
       if (w <= 0 || h <= 0) throw new Error('Dimensão não positiva: ' + w + 'x' + h);
       const reg = { tipo, x, y, w, h, texto: null };
       slide.shapes.push(reg);
-      const fill = { setSolidFill: (c, a) => { cor(c, 'fill'); if (a !== undefined) num(a, 'alpha'); }, setTransparent: () => {} };
+      const fill = { setSolidFill: (c, a) => { cor(c, 'fill'); if (a !== undefined) { num(a, 'alpha'); reg.alpha = a; } }, setTransparent: () => {} };
       const lineFill = { setSolidFill: (c, a) => { cor(c, 'border'); } };
       return {
         getFill: () => fill,
@@ -1059,6 +1059,34 @@ const ESTADO_CIDADES = {};
               ESTADO_CIDADES[c].naoDetalhado.join(', '));
 });
 if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
+console.log('Degradê do véu');
+// Faixas lado a lado deixavam listras na sub capa (07/10/2026): agora são
+// camadas empilhadas a partir do lado opaco, e a opacidade acumulada segue a
+// reta de alphaDe a alphaAte.
+{
+  const conferir = (op, lado) => {
+    const sl = novoSlide(novoDeck());
+    G._orcGradiente_(sl, 0, 0, 600, 400, '#151E49', '#151E49', op);
+    const ret = sl.shapes;
+    const n = op.passos, vert = !!op.vertical, L = vert ? 400 : 600;
+    const ancorado = ret.every(r => lado === 'ini' ? (vert ? r.y : r.x) < 0.01 : Math.abs((vert ? r.y + r.h : r.x + r.w) - L) < 0.01);
+    let erroMax = 0;
+    for (let j = 0; j < n; j++) {
+      const meio = (j + 0.5) * L / n;   // a partir do início (esquerda/topo)
+      const cobre = ret.filter(r => { const a = vert ? r.y : r.x, b = a + (vert ? r.h : r.w); return a <= meio && meio <= b; });
+      const acum = 1 - cobre.reduce((t, r) => t * (1 - r.alpha), 1);
+      // a reta vai de alphaDe (primeira faixa) a alphaAte (última)
+      const esperado = op.alphaDe + (op.alphaAte - op.alphaDe) * (j / (n - 1));
+      erroMax = Math.max(erroMax, Math.abs(acum - esperado));
+    }
+    return { ancorado: ancorado, erroMax: erroMax, n: ret.length };
+  };
+  const r1 = conferir({ alphaDe: 0.55, alphaAte: 0, passos: 22 }, 'ini');
+  ok(r1.ancorado && r1.erroMax < 0.01, 'véu da sub capa: camadas presas na esquerda e opacidade na reta (erro ' + r1.erroMax.toFixed(4) + ', ' + r1.n + ' camadas)');
+  const r2 = conferir({ vertical: true, alphaDe: 0, alphaAte: 0.6, passos: 12 }, 'fim');
+  ok(r2.ancorado && r2.erroMax < 0.01, 'véu de baixo da capa: camadas presas embaixo e opacidade na reta (erro ' + r2.erroMax.toFixed(4) + ')');
+}
 
 console.log('Sub capa recorte');
 // Com as fotos tratadas na pasta "IMAGENS - SUBCAPAS" (07/10/2026): painel
