@@ -211,6 +211,25 @@ function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque, secoes) 
   slide.getBackground().setSolidFill('#FFFFFF');
   _ORC_LINKS.alvos[titulo] = slide.getObjectId();
 
+  // Sub capa desenhada como imagem (ferramentas/capas_imagem.py, 07/10/2026):
+  // foto, número, título, frase, trilha e rodapé vêm na imagem; por cima, os
+  // números da seção e as áreas clicáveis da trilha. Só para o deck com as 8
+  // seções — o número da seção está desenhado na imagem.
+  const padrao = Object.keys(ORC_SUBCAPAS);
+  const fundo = secoes && secoes.join('|') === padrao.join('|')
+    ? _orcImagemDaPasta_('SUBCAPA - ' + cid.nome.toUpperCase() + ' - ' + ('0' + numero).slice(-2) + '.jpg') : null;
+  if (fundo) {
+    slide.insertImage(fundo).setWidth(W).setHeight(H).setLeft(0).setTop(0);
+    if (destaque) _orcSubcapaNumeros_(slide, k, destaque);
+    secoes.forEach((t, i) => {
+      if (t === titulo) return;
+      const larg = 636 / secoes.length;
+      const area = _orcRet_(slide, (48 + i * larg) * k, 309 * k, (larg - 6) * k, 48 * k, '#FFFFFF', { alpha: 0.01 });
+      _ORC_LINKS.origens.push({ id: area.getObjectId(), titulo: t });
+    });
+    return;
+  }
+
   // A foto primeiro: o que passa do bloco é coberto, e o resto vem por cima.
   const chave = cfg.foto === 'MEGA' ? cid.nome.toUpperCase() : cfg.foto;
   const fotoId = cfg.foto === 'MEGA' ? cid.fotoFundoId : ORC_FOTOS_SECAO[cfg.foto];
@@ -230,23 +249,26 @@ function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque, secoes) 
   }
   _orcRet_(slide, 48 * k, 190 * k, 40 * k, 3 * k, C.brandLight);
 
-  // O número da seção: o valor grande e até dois números menores ao lado.
-  if (destaque) {
-    _orcUmaLinha_(slide, 48 * k, 200 * k, 170 * k, 40 * k, destaque.valor,
-      { align: 'L', fs: 28, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
-    _orcUmaLinha_(slide, 48 * k, 240 * k, 170 * k, 14 * k, destaque.rotulo,
-      { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 7 });
-    (destaque.kpis || []).slice(0, 2).forEach((kp, i) => {
-      const x = (222 + i * 90) * k;
-      _orcUmaLinha_(slide, x, 208 * k, 80 * k, 22 * k, kp[0],
-        { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
-      _orcUmaLinha_(slide, x, 230 * k, 80 * k, 14 * k, kp[1],
-        { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
-    });
-  }
-
+  if (destaque) _orcSubcapaNumeros_(slide, k, destaque);
   _orcTrilhaSecoes_(slide, k, secoes || [titulo], titulo);
   _orcRodapeClaro_(slide, k, cid);
+}
+
+// O número da seção: o valor grande e até dois números menores ao lado. As
+// mesmas caixas de ferramentas/capas_imagem.py (numeros_subcapa).
+function _orcSubcapaNumeros_(slide, k, destaque) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography;
+  _orcUmaLinha_(slide, 48 * k, 200 * k, 170 * k, 40 * k, destaque.valor,
+    { align: 'L', fs: 28, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
+  _orcUmaLinha_(slide, 48 * k, 240 * k, 170 * k, 14 * k, destaque.rotulo,
+    { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 7 });
+  (destaque.kpis || []).slice(0, 2).forEach((kp, i) => {
+    const x = (222 + i * 90) * k;
+    _orcUmaLinha_(slide, x, 208 * k, 80 * k, 22 * k, kp[0],
+      { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+    _orcUmaLinha_(slide, x, 230 * k, 80 * k, 14 * k, kp[1],
+      { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+  });
 }
 
 // Trilha das seções no pé da sub capa: uma coluna por seção, a atual com o

@@ -1165,7 +1165,8 @@ console.log('Capa como imagem');
   const ESTEIO = G.ORC_CIDADES.ESTEIO;
   const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
   const pedidos = [];
-  const pasta = { getFilesByName: n => { pedidos.push(n); return iter(n === 'CAPA - MEGA ESTEIO.jpg' ? [{ getBlob: () => ({ nome: n, w: 1920, h: 1080 }) }] : []); } };
+  const TEM = ['CAPA - MEGA ESTEIO.jpg', 'SUBCAPA - MEGA ESTEIO - 04.jpg'];
+  const pasta = { getFilesByName: n => { pedidos.push(n); return iter(TEM.indexOf(n) >= 0 ? [{ getBlob: () => ({ nome: n, w: 1920, h: 1080 }) }] : []); } };
   ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => iter(n === G.ORC_PASTA_IMAGENS ? [pasta] : []) });
   decks = {};
   G._orcGerar_(['ESTEIO']);
@@ -1179,6 +1180,15 @@ console.log('Capa como imagem');
      'capa em imagem: títulos e rodapé ficam na imagem, não repetidos em texto');
   ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m² ao mês') >= 0 && tc.indexOf('vs. ritmo 2026') >= 0,
      'capa em imagem: os números da METRAGEM por cima, em texto (' + tc.join(' | ') + ')');
+  // Sub capa em imagem: só a 04 tem imagem no dublê; as outras ficam com formas.
+  const slE = decks[ESTEIO.deckId].getSlides();
+  const sub4 = slE.filter(x => x.shapes.some(s => s.nome === 'SUBCAPA - MEGA ESTEIO - 04.jpg'))[0];
+  const ts4 = sub4 ? textos(sub4) : [];
+  ok(sub4 && ts4.indexOf('04') < 0 && ts4.indexOf('Manutenção') < 0 && ts4.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) &&
+     ts4.indexOf('/m² ao mês') >= 0, 'sub capa em imagem: só os números da seção por cima (' + ts4.join(' | ') + ')');
+  const areas = sub4 ? sub4.shapes.filter(s => s.link) : [];
+  ok(areas.length === 7 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 7 áreas clicáveis na trilha, com link');
+  ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Segurança'), 'sub capa sem imagem continua com formas');
   G._ORC_BLOBS = {};
 }
 
