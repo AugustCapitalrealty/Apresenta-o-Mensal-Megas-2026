@@ -116,6 +116,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
     if (nSecao > 0) gravar(true);
     parte = nSecao === 0 ? 'capa e ' + titulo : titulo;
     const n = ++nSecao;
+    _ORC_TRILHA = secoes.length === Object.keys(ORC_SUBCAPAS).length ? n : 0;
     let dest = null;
     try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
     catch (e) { Logger.log('Número da sub capa ' + titulo + ' indisponível: ' + e.message); }
@@ -154,6 +155,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
   Logger.log(cid.nome + ' · leitura das planilhas: ' + seg(Date.now() - t0) + ' s');
   tParte = Date.now();
 
+  _ORC_TRILHA = 0;   // capa, revisão e sumário ficam sem a trilha do topo
   _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid, visao ? visao.rel : null));
   if (visao && (visao.rel.avisos.length || visao.rel.pendencias.length)) {
     _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));

@@ -185,8 +185,9 @@ const CR_DESIGN_SYSTEM = {
     brandTint2:   '#DBEAFE'    // linha de total e coluna em destaque das tabelas
   },
   typography: {
-    titles: 'Montserrat',
-    body:   'Open Sans'
+    titles:  'Montserrat',
+    body:    'Open Sans',
+    heading: 'Montserrat'   // só o título do slide (cabeçalho); a Demercado usa serifa
   },
   layout: {
     marginX: 30,
@@ -212,7 +213,9 @@ const LOGOS_CR = {
 const ORC_MARCAS = {
   CAPITAL: {
     colors: JSON.parse(JSON.stringify(CR_DESIGN_SYSTEM.colors)),
+    typography: JSON.parse(JSON.stringify(CR_DESIGN_SYSTEM.typography)),
     marca: { nome: 'Capital Realty', slogan: 'Expandir Eficiência' },
+    trilha: 'TRILHA - CAPITAL',
     logos: { fullNegativo: LOGOS_CR.fullNegativo, fullPositivo: LOGOS_CR.fullPositivo }
   },
   DEMERCADO: {
@@ -231,7 +234,12 @@ const ORC_MARCAS = {
       brandTint:  '#EEF5F3',
       brandTint2: '#D7E8E4'
     },
+    // Título do slide em EB Garamond (a Garamond do manual, livre no Google
+    // Slides); números e tabelas seguem em Montserrat/Open Sans (legibilidade).
+    // Aprovado pelo Guilherme em 07/10/2026.
+    typography: { heading: 'EB Garamond' },
     marca: { nome: 'Demercado Investimentos', slogan: '' },
+    trilha: 'TRILHA - DEMERCADO',
     logos: { fullNegativo: 'pasta:LOGO - DEMERCADO - NEGATIVO.png', fullPositivo: 'pasta:LOGO - DEMERCADO - POSITIVO.png' }
   }
 };

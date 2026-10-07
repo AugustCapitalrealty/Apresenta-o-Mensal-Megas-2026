@@ -229,7 +229,8 @@ function _orcCard_(slide, x, y, w, h, rotulo) {
 function _orcAplicarMarca_(cid) {
   const base = ORC_MARCAS.CAPITAL, m = ORC_MARCAS[(cid && cid.marca) || 'CAPITAL'] || base;
   Object.assign(CR_DESIGN_SYSTEM.colors, base.colors, m.colors || {});
-  CR_DESIGN_SYSTEM.marca = Object.assign({}, base.marca, m.marca || {});
+  Object.assign(CR_DESIGN_SYSTEM.typography, base.typography, m.typography || {});
+  CR_DESIGN_SYSTEM.marca = Object.assign({}, base.marca, m.marca || {}, { trilha: m.trilha || base.trilha });
   Object.assign(LOGOS_CR, base.logos, m.logos || {});
 }
 
@@ -245,6 +246,17 @@ function _orcLogoBlob_(qual) {
   return _orcBlobDrive_(v);
 }
 
+// Trilha de progresso no topo do slide (07/10/2026): imagem "TRILHA -
+// <MARCA> - nn.png" da pasta ORC_PASTA_IMAGENS (ferramentas/trilha_imagem.py),
+// com as seções até a atual coloridas e as futuras em cinza. Só no deck com as
+// 8 seções e dentro de uma seção (_ORC_TRILHA = número da seção, 0 fora).
+let _ORC_TRILHA = 0;
+function _orcTrilhaTopo_(slide, W) {
+  if (!_ORC_TRILHA) return;
+  const b = _orcImagemDaPasta_(CR_DESIGN_SYSTEM.marca.trilha + ' - ' + ('0' + _ORC_TRILHA).slice(-2) + '.png');
+  if (b) slide.insertImage(b).setLeft(0).setTop(0).setWidth(W).setHeight(W * 32 / 1920);
+}
+
 function _orcNovoSlide_(deck) {
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
@@ -255,8 +267,10 @@ function _orcHeader_(slide, W, titulo, subtitulo) {
   const DS = CR_DESIGN_SYSTEM;
   const MX = DS.layout.marginX;
   _orcRet_(slide, MX, 16, 5, 36, DS.colors.brandLight);
+  const serifa = DS.typography.heading !== DS.typography.titles;   // a serifa é menor no mesmo corpo
   _orcUmaLinha_(slide, MX + 14, 12, W - MX * 2 - 150, 26, titulo,
-    { align: 'L', fs: 19, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 12, cortar: true });
+    { align: 'L', fs: serifa ? 22 : 19, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.heading, fsMin: 12, cortar: true });
+  _orcTrilhaTopo_(slide, W);
   if (subtitulo) {
     _orcUmaLinha_(slide, MX + 14, 36, W - MX * 2 - 150, 18, subtitulo,
       { align: 'L', fs: 9.5, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 7, cortar: true });

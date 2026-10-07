@@ -34,13 +34,13 @@ ANO = 2027
 W, H = 1920, 1080
 K = W / 720                                     # px por pt
 NAVY, LIGHT, AZUL, TXT, MUTED, LINHA = '#151E49', '#065CA9', '#60A5FA', '#475569', '#94A3B8', '#E2E8F0'
-MARCA, SLOGAN = 'Capital Realty', 'Expandir Eficiência'
+MARCA, SLOGAN, TF, TFP, TFE = 'Capital Realty', 'Expandir Eficiência', 'M', 'Bold', 1.0   # TF: fonte do título
 # = ORC_MARCAS (01_Config.gs): o Mega Curitiba é da Demercado (07/10/2026).
 MARCAS = {
     'CAPITAL':   dict(NAVY='#151E49', LIGHT='#065CA9', AZUL='#60A5FA', TXT='#475569', MUTED='#94A3B8', LINHA='#E2E8F0',
-                      MARCA='Capital Realty', SLOGAN='Expandir Eficiência'),
+                      MARCA='Capital Realty', SLOGAN='Expandir Eficiência', TF='M', TFP='Bold', TFE=1.0),
     'DEMERCADO': dict(NAVY='#00594F', LIGHT='#AF9800', AZUL='#C9B037', TXT='#4B5250', MUTED='#9AA19F', LINHA='#E3E8E6',
-                      MARCA='Demercado Investimentos', SLOGAN=''),
+                      MARCA='Demercado Investimentos', SLOGAN='', TF='G', TFP='SemiBold', TFE=1.18),   # título em EB Garamond
 }
 MARCA_DO_MEGA = {'MEGA CURITIBA': 'DEMERCADO'}
 
@@ -66,7 +66,8 @@ FOCO_X = {'CORRETIVA': 0.40, 'PATRIMONIAL': 0.45, 'INTERNOS': 0.65, 'PREVENTIVA'
 
 
 def fonte(fam, peso, pt):
-    f = ImageFont.truetype(os.path.join(FONTES, {'M': 'Montserrat[wght].ttf', 'O': 'OpenSans[wdth,wght].ttf'}[fam]), int(pt * K))
+    f = ImageFont.truetype(os.path.join(FONTES, {'M': 'Montserrat[wght].ttf', 'O': 'OpenSans[wdth,wght].ttf',
+                                                  'G': 'EBGaramond[wght].ttf'}[fam]), int(pt * K))
     f.set_variation_by_name(peso)
     return f
 
@@ -114,16 +115,17 @@ def subcapa(mega, nome_mega, n):
     d = ImageDraw.Draw(t)
     d.rectangle([bx * K, by * K, (bx + 4) * K, (by + bh) * K], fill=LIGHT)
     texto(d, (46, 26, 200, 66), '%02d' % n, 'M', 'Bold', 54, AZUL)
-    texto(d, (48, 116, 340, 44), titulo, 'M', 'Bold', 32, NAVY, pt_min=20)
+    texto(d, (48, 116, 340, 44), titulo, TF, TFP, 32 * TFE, NAVY, pt_min=20)
     texto(d, (48, 160, 340, 22), frase, 'O', 'Regular', 12.5, TXT, pt_min=9)
     d.rectangle([(48 + RECUO) * K, 190 * K, (88 + RECUO) * K, 193 * K], fill=LIGHT)   # alinhado com o texto
     larg = 636 / len(SECOES)
     for i, (nome, _, _) in enumerate(SECOES):
-        x, w, atual = 48 + i * larg, larg - 6, i == n - 1
+        # Progresso (07/10/2026): as seções até a atual com a cor da marca, as futuras em cinza.
+        x, w, atual, passou = 48 + i * larg, larg - 6, i == n - 1, i < n - 1
         if atual: d.rectangle([x * K, 311 * K, (x + w) * K, 314 * K], fill=LIGHT)
-        else: d.rectangle([x * K, 312 * K, (x + w) * K, 313 * K], fill=LINHA)
-        texto(d, (x, 318, w, 12), '%02d' % (i + 1), 'M', 'Bold', 8, LIGHT if atual else MUTED)
-        paragrafo(d, (x, 329, w, 26), nome, 'O', 'Bold' if atual else 'Regular', 7.5, NAVY if atual else MUTED)
+        else: d.rectangle([x * K, 312 * K, (x + w) * K, 313 * K], fill=LIGHT if passou else LINHA)
+        texto(d, (x, 318, w, 12), '%02d' % (i + 1), 'M', 'Bold', 8, LIGHT if (atual or passou) else MUTED)
+        paragrafo(d, (x, 329, w, 26), nome, 'O', 'Bold' if atual else 'Regular', 7.5, NAVY if atual else (TXT if passou else MUTED))
     d.line([(48 * K, 372 * K), (684 * K, 372 * K)], fill=LINHA, width=max(1, int(0.75 * K)))
     texto(d, (48, 376, 500, 16), '%s · Orçamento %d · %s · Facilities' % (nome_mega, ANO, MARCA), 'O', 'Regular', 7.5, MUTED)
     return t
@@ -160,7 +162,7 @@ def capa(mega, nome_exibido):
     d = ImageDraw.Draw(t)
     d.rectangle([0, fh, W, fh + int(4 * K)], fill=LIGHT)
     texto(d, (48, 226, 300, 16), 'ORÇAMENTO ' + str(ANO), 'M', 'Bold', 10, LIGHT)
-    texto(d, (46, 242, 320, 54), nome_exibido, 'M', 'Bold', 40, NAVY, pt_min=24)
+    texto(d, (46, 242, 320, 54), nome_exibido, TF, TFP, 40 * TFE, NAVY, pt_min=24)
     texto(d, (48, 296, 330, 18), 'Despesas do condomínio · do Ritmo %d ao Orçamento %d' % (ANO - 1, ANO), 'O', 'Regular', 11, TXT, pt_min=8)
     d.line([(48 * K, 372 * K), (684 * K, 372 * K)], fill=LINHA, width=max(1, int(0.75 * K)))
     texto(d, (48, 376, 400, 16), '%s · Facilities · Planejamento %d' % (MARCA, ANO), 'O', 'Regular', 7.5, MUTED)
