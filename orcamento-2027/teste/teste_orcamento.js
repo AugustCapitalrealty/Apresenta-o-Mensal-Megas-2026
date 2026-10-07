@@ -694,6 +694,11 @@ ok(vig && port && /^Ampliação/.test(vig.situacao) && /^Reajuste/.test(port.sit
 ok(grupoDe('Assistência em informática') && grupoDe('Assistência em informática').metragem &&
    grupoDe('Assistência em informática').linhas.some(l => l.nome === 'KEY ACCESS (CONTRATO)' && /^Reajuste IPCA/.test(l.situacao)),
    'contratos: informática casa com a conta da METRAGEM e é comparada contrato a contrato (Key Access reajuste IPCA)');
+// Gestor, 07/10/2026: "TELEFONE FIXO" (novo) e "4IP… – TELEFONE FIXO" (sem
+// item) eram o mesmo contrato — o "4" de 4IP saía como numeração.
+const tel = grupoDe('Telefone') ? grupoDe('Telefone').linhas.filter(l => /4IP/.test(l.nome)) : [];
+ok(tel.length === 1 && tel[0].ant > 0 && tel[0].atual > 0 && !grupoDe('Telefone').linhas.some(l => /^Novo/.test(l.situacao) && /TELEFONE FIXO/.test(l.nome)),
+   'contratos: 4IP (telefone fixo) casa 2026 com 2027 numa linha só (' + tel.map(l => l.nome + ' ' + l.situacao).join(' | ') + ')');
 ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e seguros ficam de fora');
 perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
   G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026),
@@ -763,7 +768,7 @@ ok(cmp.linhas.filter(l => /^Novo/.test(l.situacao)).length === 3 && cmp.linhas.e
 perto(cmp.contratos.atual, clsM2.grupos[0].total, 'comparação: contratos 2027 = grupo Contratos do slide de Projetos');
 perto(cmp.avulsos.ant + cmp.contratos.ant, contasLL[0].v.ritmo, 'comparação: avulsos 2026 + contratos 2026 = ritmo da conta');
 const tCmp = textos(slides[iCmp]);
-ok(tCmp[0] === 'Manutenção de imóveis — Ritmo 2026 × Orçamento 2027' && tCmp.indexOf('TOTAL CONTRATOS') >= 0 &&
+ok(tCmp[0] === 'Manutenção de imóveis — contratos e avulsos' && tCmp.indexOf('TOTAL CONTRATOS') >= 0 &&
    tCmp.indexOf('Avulsos (sem contrato)') >= 0 && tCmp.indexOf('R$/M²') >= 0, 'slide de contratos 2026 × 2027 depois do linha a linha');
 ok(!tCmp.some(t => /…$/.test(t)), 'contratos 2026 × 2027: nenhum texto cortado (' + tCmp.filter(t => /…$/.test(t)).join(' | ') + ')');
 // Em dinheiro e em m² (o diretor lê os dois — 06/10/2026).

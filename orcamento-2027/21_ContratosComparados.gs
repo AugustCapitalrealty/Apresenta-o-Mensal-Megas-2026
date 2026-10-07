@@ -160,8 +160,10 @@ function gerarSlideContratosComparados_(slide, W, H, cid, rel, conta, contratosA
   const aRit = _orcAreaImplicita_(rel, 'ritmo'), aOrc = _orcAreaImplicita_(rel, 'orc');
   const m2 = (v, area) => area ? v / area / 12 : null;
   const varTxt = (de, para) => _orcVariacao_(de, para);
-  _orcHeader_(slide, W, conta.nome + ' — Ritmo ' + a.ritmo + ' × Orçamento ' + a.orc,
-    'Contratos item a item e o que é avulso · ' + cid.nome + ' · em R$ e em R$/m² ao mês');
+  // Gestor, 07/10/2026: o título "<conta> — Ritmo 2026 × Orçamento 2027"
+  // quebrava em duas linhas; os anos vão para o subtítulo.
+  _orcHeader_(slide, W, conta.nome + ' — contratos e avulsos',
+    'Ritmo ' + a.ritmo + ' × Orç ' + a.orc + ' · contratos item a item · ' + cid.nome + ' · em R$ e em R$/m² ao mês');
 
   // ---- Três cards: contratos, avulsos, total — em R$ e em m² ----
   const ky = 72, kh = 56, gap = 10, kw = (tw - gap * 2) / 3;

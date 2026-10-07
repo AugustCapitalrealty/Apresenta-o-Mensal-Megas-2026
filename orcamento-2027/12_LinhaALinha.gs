@@ -135,11 +135,14 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
     _orcRet_(slide, x, ky, kw, kh, C.cardBg, { redondo: true, borda: C.brandLight, peso: 1 });
     _orcUmaLinha_(slide, x + 12, ky + 5, kw - 24, 14, 'R$/M² AO MÊS · ORÇ ' + String(a.orc).slice(-2),
       { align: 'L', fs: 7, bold: true, cor: C.brandLight, fonte: DS.typography.titles, fsMin: 6 });
-    _orcUmaLinha_(slide, x + 12, ky + 20, kw - 24, 24, 'R$ ' + _orcM2_(m2Orc),
+    // A variação embaixo do valor: ao lado dele ficava por cima do "R$ 1,10"
+    // (gestor, 07/10/2026).
+    const temVar = vm && vm.texto !== '–';
+    _orcUmaLinha_(slide, x + 12, ky + (temVar ? 16 : 20), kw - 24, 22, 'R$ ' + _orcM2_(m2Orc),
       { align: 'L', fs: 15, bold: true, cor: C.brandDark, fonte: DS.typography.titles, fsMin: 9 });
-    if (vm && vm.texto !== '–') {
-      _orcUmaLinha_(slide, x + kw - 12 - 62, ky + 26, 62, 14, vm.texto + ' × ritmo',
-        { align: 'R', fs: 6.5, bold: true, fonte: DS.typography.body, fsMin: 5.5,
+    if (temVar) {
+      _orcUmaLinha_(slide, x + 12, ky + 36, kw - 24, 11, vm.texto + ' × ritmo',
+        { align: 'L', fs: 6.5, bold: true, fonte: DS.typography.body, fsMin: 5.5,
           cor: vm.sentido === 1 ? _ORC_COR_VAR.sobe : (vm.sentido === -1 ? _ORC_COR_VAR.desce : C.textBody) });
     }
   }
@@ -149,11 +152,13 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
     _orcRet_(slide, x, ky, kw, kh, ultimo ? C.brandDark : C.cardBg, { redondo: true, borda: ultimo ? null : C.lines });
     _orcUmaLinha_(slide, x + 12, ky + 5, kw - 24, 14, k[0].toUpperCase(),
       { align: 'L', fs: 7, bold: true, cor: ultimo ? C.brandSoft : C.textBody, fonte: DS.typography.titles });
-    _orcUmaLinha_(slide, x + 12, ky + 20, kw - 24, 24, _orcMoeda_(k[1]),
+    const temVar = k[2] && k[2].texto !== '–';
+    _orcUmaLinha_(slide, x + 12, ky + (temVar ? 16 : 20), kw - 24, 22, _orcMoeda_(k[1]),
       { align: 'L', fs: 15, bold: true, cor: ultimo ? '#FFFFFF' : C.brandDark, fonte: DS.typography.titles, fsMin: 9 });
-    if (k[2] && k[2].texto !== '–') {
-      _orcUmaLinha_(slide, x + kw - 12 - 70, ky + 5, 70, 14, k[2].texto + ' × ritmo',
-        { align: 'R', fs: 7, bold: true, fonte: DS.typography.body,
+    if (temVar) {
+      // Embaixo do valor, como no card de R$/m²: no título encostava em "ORÇ 2027".
+      _orcUmaLinha_(slide, x + 12, ky + 36, kw - 24, 11, k[2].texto + ' × ritmo',
+        { align: 'L', fs: 6.5, bold: true, fonte: DS.typography.body, fsMin: 5.5,
           cor: k[2].sentido === 1 ? _ORC_COR_VAR.sobeClaro : (k[2].sentido === -1 ? _ORC_COR_VAR.desceClaro : '#FFFFFF') });
     }
   });

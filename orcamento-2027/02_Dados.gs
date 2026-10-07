@@ -157,7 +157,9 @@ function _orcMesCompetencia_(v) {
 // ou sem número), não quando é parte do nome do fornecedor.
 const _ORC_PREFIXOS_CONTA = ['manutencao', 'limpezaeconservacao'];
 function _orcFornecedorContrato_(nome) {
-  let s = String(nome).replace(/^[\d.\s]+/, '').replace(/^-\s*/, '').trim();
+  // Numeração só quando vem separada ("01 - X", "1.2 X"): "4IP TECNOLOGIA"
+  // perdia o 4 e não casava com o 4IP do ano anterior (Curitiba, 07/10/2026).
+  let s = String(nome).replace(/^\s*[\d.]+(?=[\s-])\s*/, '').replace(/^-\s*/, '').trim();
   const i = s.indexOf(' - ');
   if (i > 0 && _ORC_PREFIXOS_CONTA.indexOf(_orcNorm_(s.slice(0, i)).replace(/[^a-z]/g, '')) >= 0) {
     s = s.slice(i + 3).trim();

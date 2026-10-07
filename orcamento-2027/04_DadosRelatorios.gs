@@ -56,6 +56,16 @@ const ORC_DRE_GRUPOS = [
 ];
 const ORC_DRE_OUTRAS = 'Outras despesas';
 
+// Nome da conta como a METRAGEM escreve, com o acento que faltar
+// ("Manutenção de maquinas…" → "máquinas…", gestor 07/10/2026): vale o nome
+// de ORC_DRE_GRUPOS quando a diferença é só de acento.
+function _orcNomeContaExibido_(nome) {
+  const semAcento = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const n = semAcento(nome).trim();
+  for (const g of ORC_DRE_GRUPOS) for (const c of g.contas) if (semAcento(c) === n) return c;
+  return nome;
+}
+
 function _orcGrupoDaConta_(nome) {
   const ch = _orcChaveConta_(nome);
   const g = ORC_DRE_GRUPOS.filter(gr => gr.contas.some(c => _orcChaveConta_(c) === ch))[0];
@@ -133,7 +143,7 @@ function _orcLerMetragem_(dados) {
     else if (/^iptu$/.test(n)) out.iptu = valores(dados[i]);
     else if (/^seguros?$/.test(n) && depoisDoTotal) out.seguro = valores(dados[i]);
     else if (!depoisDoTotal) {
-      out.contas.push({ nome: nome, chave: _orcChaveConta_(nome), grupo: _orcGrupoDaConta_(nome),
+      out.contas.push({ nome: _orcNomeContaExibido_(nome), chave: _orcChaveConta_(nome), grupo: _orcGrupoDaConta_(nome),
                         v: valores(dados[i]) });
     }
   }

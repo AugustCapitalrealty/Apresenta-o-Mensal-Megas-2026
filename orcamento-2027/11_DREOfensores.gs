@@ -207,7 +207,7 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
   const a = rel.anos;
   _orcHeader_(slide, W, 'DRE — Orçamento ' + ORC_ANO,
     'Despesas do condomínio · ' + cid.nome + ' · valores em R$ mil · variação do Orç ' + a.orc +
-    ' contra o Ritmo e o Orç ' + a.ritmo);
+    ' vs Ritmo ' + a.ritmo + ' e vs Orç ' + a.orcAnt);
 
   const linhas = _orcLinhasDRE_(rel).map(l => {
     if (l.tipo === 'm2' || l.tipo === 'm2grupo') {
@@ -232,12 +232,14 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
     { titulo: 'R$ MIL', w: labW },
     { titulo: 'REAL ' + a.real, w: numW }, { titulo: 'ORÇ ' + a.orcAnt, w: numW },
     { titulo: 'RITMO ' + a.ritmo, w: numW }, { titulo: 'ORÇ ' + a.orc, w: numW, destaque: true },
-    { titulo: 'Δ R$ × RITMO', w: numW }, { titulo: 'Δ% × RITMO', w: numW }, { titulo: 'Δ% × ORÇ ' + a.orcAnt, w: numW }
+    { titulo: 'Δ R$', w: numW }, { titulo: 'Δ%', w: numW }, { titulo: 'Δ%', w: numW }
   ];
   const ty = 72, th = H - 26 - ty - (rel.avisos.length ? 10 : 0);
+  // Gestor, 07/10/2026: "Orç 2027 vs Ritmo 2026" no lugar de "Orç 2027 contra".
   _orcTabelaNum_(slide, MX, ty, tw, th, colunas, linhas, [
     { titulo: 'VALORES', c0: 1, n: 4 },
-    { titulo: 'ORÇ ' + a.orc + ' CONTRA', c0: 5, n: 3, cor: '#475569' }
+    { titulo: 'ORÇ ' + a.orc + ' VS RITMO ' + a.ritmo, c0: 5, n: 2, cor: '#475569' },
+    { titulo: 'VS ORÇ ' + a.orcAnt, c0: 7, n: 1, cor: '#475569' }
   ]);
 
   _orcAvisosRodape_(slide, W, H, rel.avisos);
@@ -318,9 +320,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     const mR = m2(c.v.ritmo, areaRit), mO = m2(c.v.orc, areaOrc);
     const dM = mR === null || mO === null ? null : mO - mR;
     const sM = dM === null || Math.abs(dM) < 0.005 ? 0 : (dM > 0 ? 1 : -1);
-    // Nome de conta comprido ("Manutenção de maquinas e equipamentos") abrevia.
-    const nome = _orcLarguraTexto_(c.nome, 7, DS.typography.body) > 120 ? c.nome.replace(/^Manuten[çc][ãa]o /i, 'Manut. ') : c.nome;
-    return { tipo: tipo || 'item', nome: nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
+    // Nome por extenso, como na DRE (gestor, 07/10/2026: "Manut. de maquinas…"
+    // destoava): a coluna CONTA se alarga para o nome mais comprido.
+    return { tipo: tipo || 'item', nome: c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
       { texto: _orcMil_(c.v.orcAnt) }, { texto: _orcMil_(c.v.ritmo) }, { texto: _orcMil_(c.v.orc), bold: true },
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
@@ -335,7 +337,13 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   linhas.push(linhaConta({ nome: b[2], v: b[1].total.v, delta: b[1].total.delta }, 'grupo'));
   linhas.push(linhaConta({ nome: 'DESPESAS OPERACIONAIS', v: q.total.v, delta: q.total.delta }, 'total'));
 
-  const tw = W - MX * 2, labW = 140, numW = 44, m2W = 38, itemW = tw - labW - numW * 5 - m2W * 3;
+  const recuo = _orcEstiloLinha_('item').recuo;
+  const maiorNome = Math.max.apply(null, linhas.filter(l => l.tipo === 'item')
+    .map(l => _orcLarguraTexto_(l.nome, 7, DS.typography.body)).concat([0]));
+  const tw = W - MX * 2, labW = Math.max(140, Math.min(176, Math.ceil(maiorNome + recuo + 12 + 10)));   // 12 = espaço do ⚠
+  // Os números cabem em 40/35 pt; o que a coluna CONTA ganha sai deles, não do detalhamento.
+  const folga = labW - 140, numW = 44 - Math.min(4, folga / 5), m2W = 38 - Math.min(3, Math.max(0, folga - 20) / 3);
+  const itemW = tw - labW - numW * 5 - m2W * 3;
   const colunas = [
     { titulo: 'CONTA', w: labW },
     // Títulos curtos: a coluna tem 44 pt e "RITMO 2026" saía "RITMO 20…".
@@ -344,13 +352,14 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     { titulo: 'Δ R$', w: numW }, { titulo: 'Δ %', w: numW },
     { titulo: 'RIT. ' + String(a.ritmo).slice(-2), w: m2W }, { titulo: 'ORÇ ' + String(a.orc).slice(-2), w: m2W, destaque: true },
     { titulo: 'Δ', w: m2W },
-    { titulo: 'MAIOR ITEM ORÇADO EM ' + a.orc, w: itemW, align: 'L' }
+    // Gestor, 07/10/2026: "Detalhamento" (era "MAIOR ITEM ORÇADO EM 2027").
+    { titulo: 'DETALHAMENTO', w: itemW, align: 'L' }
   ];
   _orcTabelaNum_(slide, MX, 72, tw, H - 26 - 72, colunas, linhas, [
     { titulo: 'R$ MIL', c0: 1, n: 5 },
     { titulo: 'R$/M² AO MÊS', c0: 6, n: 3, cor: '#475569' }
   ]);
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); maior item: modelos 070 e 090 de ' +
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); detalhamento: maior item dos modelos 070 e 090 de ' +
     a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) +
     ' fica só no total');
 }
