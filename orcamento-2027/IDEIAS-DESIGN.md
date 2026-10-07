@@ -25,6 +25,33 @@ terceiros. Estão descritas em palavras, e a regra é copiar a técnica, nunca a
 - Prévia sem abrir o Slides: `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e
   `python ferramentas/previa_slides.py ferramentas/saida/formas_itajai.json <índices>`.
 
+## Fila de melhorias (analista 3, 07/10/2026): guardada, ainda não aprovada
+
+O Guilherme pediu para guardar e fazer outras melhorias antes. Simulações em PNG, com os números reais de Itajaí,
+os 20 ícones prontos (`icones/`) e o detalhe de cada item (o que é imagem, o que é forma e texto nativo, de que dado
+depende) em `ferramentas/saida/propostas-analista-3/` (`PROPOSTAS.md`, `folha_analista_3.jpg`; fora do git).
+
+**Defeitos que a auditoria achou no deck atual**: corrigir antes de qualquer melhoria.
+- Slide 6 (Resumo Executivo): "+-0,2% de área" (sinal duplicado); "O Mega fica maior" quando a área diminui
+  (108.254 → 108.091 m² em Itajaí); "100% da alta vem das três contas" passa uma ideia errada.
+- Slides 16, 33 e 35 (linha a linha das contas): nos cartões "ORÇ 2027" e "R$/m²", a variação fica em cima do rótulo
+  e do valor (conferido no 16).
+- Categorias REVESTIMENTO e REVESTIMENTOS separadas.
+- Contratos: "Reajuste IPCA" com variação de 0%.
+- Slide 40 (m² mês a mês): as linhas saíram soltas na prévia; pode ser só a prévia, conferir no Slides.
+
+**Melhorias, na ordem sugerida**
+| # | O quê | Onde | Ideia | Simulação |
+|---|---|---|---|---|
+| P1 | Ofensores e defensores com barra e ícone | slides 10–11 | a variação em R$ vira barra proporcional, com o ícone do grupo da DRE; título com a conclusão ("a manutenção responde por 75% da alta") | `M2_ofensores_barras_icones.png` |
+| P2 | R$/m² na ponte e títulos com a conclusão | slide 7 e títulos | uma linha de R$/m² embaixo de cada degrau | — |
+| P3 | Resumo Executivo em infográfico | slide 6 | Ritmo 2026 e Orç 2027 em duas barras na mesma escala, por grupo da DRE, com R$ e R$/m²; faixa destaca a alta da manutenção; três achados com ícone | `M1_resumo_executivo_infografico.png` |
+| P4 | Calendário dos contratos 2027 | slide novo antes do 12 | régua jan–dez por contrato com reajustes e vencimentos; quanto custa cada 1% de reajuste não orçado. Depende de o leitor de contratos (`_orcContratosDoAno_`) guardar `Data início`, `Data fim` e `Rejuste` | `M3_contratos_calendario_2027.png` |
+| P5 | Sistema de ícones | DRE, trilha, sumário, cartões, selo PENDENTE | 20 ícones de traço, azul e branco; o ícone de alerta no lugar do caractere ⚠ | `M5_sistema_de_icones.png` |
+| P6 | Mapa da manutenção categoria × mês | slide 20 | mapa de calor com o total do mês em R$ e R$/m²: rotina × obras com mês marcado | `M4_mapa_manutencao_categoria_mes.png` |
+| P7 | Custo por m² em gráfico de pontos | slides 39–40 | uma linha por conta com 2025, 2026 e 2027 na mesma régua | — |
+| P8 | O Mega desenhado com os projetos no lugar | slide 37, capa | depende da planta de implantação ou foto aérea e dos nomes oficiais dos blocos | — |
+
 ---
 
 ## 1. Princípios que valem para qualquer slide

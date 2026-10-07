@@ -1120,6 +1120,28 @@ console.log('Degradê do véu');
   ok(r2.ancorado && r2.erroMax < 0.01, 'véu de baixo da capa: camadas presas embaixo e opacidade na reta (erro ' + r2.erroMax.toFixed(4) + ')');
 }
 
+console.log('Foto da sub capa');
+// O branco que cobre a sobra da foto passa 2 pt da borda dela: borda com
+// borda, o Slides deixava um fio cinza contornando a foto (07/10/2026).
+{
+  G._ORC_BLOBS = {};
+  G._ORC_BLOBS['FOTO-TESTE@1600'] = { blob: { nome: 'foto', w: 1600, h: 900 } };
+  const sl = novoSlide(novoDeck());
+  const k = W / 720, bx = 410 * k, by = 30 * k, bw = 274 * k, bh = 262 * k;
+  const pos = G._orcFotoEmBloco_(sl, W, H, 'FOTO-TESTE', bx, by, bw, bh, 0.4);
+  const img = sl.shapes.filter(s => s.tipo === 'IMAGE')[0];
+  const brancos = sl.shapes.filter(s => s.cor === '#FFFFFF');
+  const f2 = 2 * k;
+  const esq = brancos.filter(r => Math.abs(r.x + r.w - bx) < 0.01)[0];
+  const dir = brancos.filter(r => Math.abs(r.x - (bx + bw)) < 0.01)[0];
+  ok(pos && img && Math.abs(img.h - bh) < 0.01 && img.x < bx && img.x + img.w > bx + bw, 'foto cobre o bloco sem deformar (sobra dos dois lados)');
+  ok(esq && esq.x <= Math.max(0, img.x - f2) + 0.01 && esq.y <= img.y - f2 + 0.01 && esq.y + esq.h >= img.y + img.h + f2 - 0.01,
+     'branco da esquerda passa 2 pt da borda da foto');
+  ok(dir && dir.x + dir.w >= Math.min(W, img.x + img.w + f2) - 0.01, 'branco da direita passa 2 pt da borda da foto (ou vai até a borda da página)');
+  ok(brancos.every(r => r.x >= -0.01 && r.y >= -0.01 && r.x + r.w <= W + 0.01 && r.y + r.h <= H + 0.01), 'branco dentro da página');
+  G._ORC_BLOBS = {};
+}
+
 console.log('Gravação no Slides');
 // "Service unavailable: Slides" no fim da execução (Esteio, 07/10/2026):
 // grava os slides novos, depois a remoção dos antigos, com nova tentativa.

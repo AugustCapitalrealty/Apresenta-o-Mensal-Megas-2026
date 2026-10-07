@@ -258,7 +258,9 @@ function _orcRodapeClaro_(slide, k, cid) {
 // Foto colorida cobrindo o bloco (x, y, w, h) sem deformar, com o ponto de
 // interesse (foco, fração da largura) no centro quando dá. O Apps Script não
 // recorta imagem: o que passa do bloco é coberto de branco (o fundo da sub
-// capa) — por isso a foto entra antes de todo o resto. false se não carregou.
+// capa) — por isso a foto entra antes de todo o resto. O branco vai 2 pt além
+// da borda da foto: borda com borda, o Slides suaviza e sobra um fio cinza
+// contornando a foto (visto em 07/10/2026). false se não carregou.
 function _orcFotoEmBloco_(slide, W, H, fotoId, x, y, w, h, foco) {
   if (!fotoId) return false;
   try {
@@ -268,12 +270,17 @@ function _orcFotoEmBloco_(slide, W, H, fotoId, x, y, w, h, foco) {
     const f = foco == null ? 0.5 : foco;
     const ix = Math.min(x, Math.max(x + w - iw, x + w / 2 - f * iw)), iy = y + (h - ih) / 2;
     img.setWidth(iw).setHeight(ih).setLeft(ix).setTop(iy);
-    [[ix, iy, x - ix, ih], [x + w, iy, ix + iw - x - w, ih], [x, iy, w, y - iy], [x, y + h, w, iy + ih - y - h]]
-      .forEach(m => {
-        const x0 = Math.max(0, m[0]), y0 = Math.max(0, m[1]);
-        const x1 = Math.min(W, m[0] + m[2]), y1 = Math.min(H, m[1] + m[3]);
-        if (x1 - x0 > 0.5 && y1 - y0 > 0.5) _orcRet_(slide, x0, y0, x1 - x0, y1 - y0, '#FFFFFF');
-      });
+    const f2 = 2 * W / 720, sobra = 0.01;   // folga além da borda da foto
+    const mascaras = [];
+    if (x - ix > sobra) mascaras.push([ix - f2, iy - f2, x - ix + f2, ih + 2 * f2]);                       // esquerda
+    if (ix + iw - x - w > sobra) mascaras.push([x + w, iy - f2, ix + iw - x - w + f2, ih + 2 * f2]);       // direita
+    if (y - iy > sobra) mascaras.push([x, iy - f2, w, y - iy + f2]);                                       // em cima
+    if (iy + ih - y - h > sobra) mascaras.push([x, y + h, w, iy + ih - y - h + f2]);                       // embaixo
+    mascaras.forEach(m => {
+      const x0 = Math.max(0, m[0]), y0 = Math.max(0, m[1]);
+      const x1 = Math.min(W, m[0] + m[2]), y1 = Math.min(H, m[1] + m[3]);
+      if (x1 - x0 > 0.5 && y1 - y0 > 0.5) _orcRet_(slide, x0, y0, x1 - x0, y1 - y0, '#FFFFFF');
+    });
     return true;
   } catch (e) {
     Logger.log('Foto da sub capa indisponível (' + fotoId + '). ' + e.message);
