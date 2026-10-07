@@ -117,6 +117,43 @@ function exportarFixtures() {
  * É de lá que ferramentas/subcapas_youtube.py tira as fotos para tratar
  * (retícula, papel rasgado). Foto que falhar vai para o log.
  */
+/**
+ * As mesmas fotos de exportarFotosSubcapas(), num ZIP só no Meu Drive de
+ * quem roda ("FOTOS SUBCAPAS - ORÇAMENTO.zip"), já reduzidas a 1600 px (o
+ * tamanho que a ferramenta usa; o ZIP fica leve). O link sai no log: baixe,
+ * extraia em APRESENTAÇÃO ORÇAMENTO\_fotos-subcapas e rode
+ * ferramentas/subcapas_youtube.py. Criada em 07/10/2026, quando a pasta da
+ * exportação não apareceu no Drive compartilhado.
+ */
+function zipFotosSubcapas() {
+  const fotos = _orcFotosDasSubcapas_();
+  const blobs = [];
+  Object.keys(fotos).forEach(nome => {
+    try {
+      const b = _orcFotoReduzida_(fotos[nome]);
+      const ext = (b.getContentType() || 'image/jpeg').split('/')[1].replace('jpeg', 'jpg');
+      blobs.push(b.setName(nome + '.' + ext));
+      Logger.log('Ok ' + nome + '.' + ext);
+    } catch (e) {
+      Logger.log('FALHOU ' + nome + ': ' + e.message);
+    }
+  });
+  if (!blobs.length) throw new Error('Nenhuma foto baixada: veja as linhas FALHOU acima.');
+  const zip = DriveApp.createFile(Utilities.zip(blobs, 'FOTOS SUBCAPAS - ORÇAMENTO.zip'));
+  Logger.log('Pronto: ' + blobs.length + ' de ' + Object.keys(fotos).length + ' fotos. Baixe o ZIP: ' + zip.getUrl());
+}
+
+// { nome do arquivo: ID } — as fotos das sub capas e a da capa de cada Mega.
+function _orcFotosDasSubcapas_() {
+  const fotos = {};
+  Object.keys(ORC_FOTOS_SECAO).forEach(k => { fotos[k] = ORC_FOTOS_SECAO[k]; });
+  Object.keys(ORC_CIDADES).forEach(k => {
+    const cid = ORC_CIDADES[k];
+    if (cid.fotoFundoId) fotos[cid.nome.toUpperCase()] = cid.fotoFundoId;
+  });
+  return fotos;
+}
+
 function exportarFotosSubcapas() {
   const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
   const it = pai.getFoldersByName('_fotos-subcapas');
@@ -124,12 +161,7 @@ function exportarFotosSubcapas() {
   const velhos = pasta.getFiles();
   while (velhos.hasNext()) velhos.next().setTrashed(true);
 
-  const fotos = {};
-  Object.keys(ORC_FOTOS_SECAO).forEach(k => { fotos[k] = ORC_FOTOS_SECAO[k]; });
-  Object.keys(ORC_CIDADES).forEach(k => {
-    const cid = ORC_CIDADES[k];
-    if (cid.fotoFundoId) fotos[cid.nome.toUpperCase()] = cid.fotoFundoId;
-  });
+  const fotos = _orcFotosDasSubcapas_();
   let ok = 0;
   Object.keys(fotos).forEach(nome => {
     try {
