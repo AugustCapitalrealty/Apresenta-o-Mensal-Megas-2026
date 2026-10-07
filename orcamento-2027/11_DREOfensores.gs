@@ -340,7 +340,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const recuo = _orcEstiloLinha_('item').recuo;
   const maiorNome = Math.max.apply(null, linhas.filter(l => l.tipo === 'item')
     .map(l => _orcLarguraTexto_(l.nome, 7, DS.typography.body)).concat([0]));
-  const tw = W - MX * 2, labW = Math.max(140, Math.min(176, Math.ceil(maiorNome + recuo + 12 + 10)));   // 12 = espaço do ⚠
+  // 12 = espaço do ⚠; +10% e 14 pt de folga: o Slides mede o texto um pouco
+  // maior que a estimativa e quebrava "Manutenção de máquinas / e equipamentos".
+  const tw = W - MX * 2, labW = Math.max(140, Math.min(184, Math.ceil(maiorNome * 1.1 + recuo + 12 + 14)));
   // Os números cabem em 40/35 pt; o que a coluna CONTA ganha sai deles, não do detalhamento.
   const folga = labW - 140, numW = 44 - Math.min(4, folga / 5), m2W = 38 - Math.min(3, Math.max(0, folga - 20) / 3);
   const itemW = tw - labW - numW * 5 - m2W * 3;

@@ -103,7 +103,8 @@ function _orcBarrasAgrupadas_(slide, x, y, w, h, series) {
 
 // nPag: total de páginas da conta (esta + as dos itens menores); com mais de
 // uma, o título leva "(1/n)".
-function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, conta, nPag) {
+// cls (só na manutenção): marca de cada item com a cor do grupo.
+function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, conta, nPag, cls) {
   const DS = CR_DESIGN_SYSTEM;
   const C = DS.colors;
   const MX = DS.layout.marginX;
@@ -198,10 +199,13 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
                                : 'Sem abertura por item nos modelos 070/090', cor: C.brandMed, bold: true },
     { texto: _orcMoeda_(comp.base), bold: true, cor: C.brandMed }] });
   linhas.push({ total: true, celulas: [{ texto: 'TOTAL ' + conta.nome.toUpperCase() }, { texto: _orcMoeda_(v.orc) }] });
+  // Manutenção: a marca do grupo (contrato, recorrente, pontual, projeto) na
+  // frente de cada item — gestor, 07/10/2026.
+  const colunas = [{ titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'C' }];
+  if (cls) _orcMarcarGrupos_(linhas, corte.itens, cls, colunas);
   const rowH = Math.min(18, disp / Math.max(1, linhas.length));
-  _orcTabela_(slide, rx + 8, ty, rw - 16, [
-    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'C' }
-  ], linhas, rowH, { hCab: 16 });
+  _orcTabela_(slide, rx + 8, ty, rw - 16, colunas, linhas, rowH, { hCab: 16 });
+  if (cls) _orcLegendaGrupos_(slide, MX, H - 19, W - MX * 2);   // no rodapé, à direita: no card cobria o título
   if (comp.excesso) {
     _orcUmaLinha_(slide, rx + 8, by + bh - 20, rw - 16, 12,
       '⚠ Itens dos modelos somam ' + _orcMoeda_(comp.excesso) + ' a mais que o relatório',
@@ -219,7 +223,8 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
  * "+ N itens menores" do slide principal.
  * todosFora: os itens menores de todas as páginas (para o total).
  */
-function gerarSlideItensMenores_(slide, W, H, cid, rel, conta, pagina, iPag, nPag, todosFora) {
+// cls (só na manutenção): marca de cada item com a cor do grupo.
+function gerarSlideItensMenores_(slide, W, H, cid, rel, conta, pagina, iPag, nPag, todosFora, cls) {
   const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX;
   const a = rel.anos;
   const totalFora = todosFora.reduce((s, it) => s + it.total, 0);
@@ -236,10 +241,14 @@ function gerarSlideItensMenores_(slide, W, H, cid, rel, conta, pagina, iPag, nPa
   const rowH = Math.min(15, (H - 28 - ty - hCab) / Math.max(1, porCol));
   const fs = rowH >= 12 ? 7.5 : (rowH >= 10 ? 7 : 6.5);
   const colunas = [{ titulo: 'Item', w: null, align: 'L' }, { titulo: 'Valor ' + a.orc, w: 76, align: 'C' }];
+  if (cls) {
+    _orcMarcarGrupos_(linhas, pagina, cls, colunas);
+    _orcLegendaGrupos_(slide, MX, H - 19, W - MX * 2);
+  }
   const esq = linhas.slice(0, porCol), dir = linhas.slice(porCol);
   if (ultima) {
-    dir.push({ total: true, celulas: [{ texto: 'TOTAL DOS ' + todosFora.length + ' ITENS MENORES' },
-                                      { texto: _orcMoeda_(totalFora) }] });
+    dir.push({ total: true, celulas: (cls ? [null] : []).concat([{ texto: 'TOTAL DOS ' + todosFora.length + ' ITENS MENORES' },
+                                      { texto: _orcMoeda_(totalFora) }]) });
   }
   _orcTabela_(slide, MX, ty, cw, colunas, esq, rowH, { hCab: hCab, fs: fs });
   if (dir.length) _orcTabela_(slide, MX + cw + gap, ty, cw, colunas, dir, rowH, { hCab: hCab, fs: fs });

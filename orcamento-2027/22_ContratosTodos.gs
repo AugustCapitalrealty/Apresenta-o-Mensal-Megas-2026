@@ -85,6 +85,31 @@ function _orcNomeCurtoContrato_(nome, util) {
   return encurta(t, cabe);
 }
 
+// Modelos 070/090 do ano anterior, item a item ("MESTRA - ORÇAMENTO 2026 ITEM
+// A ITEM", ORC_MODELOS_ANO_ANTERIOR_ID): só para achar contrato que foi
+// lançado no modelo em vez do cadastro (o carro Barigui de Curitiba em 2026).
+let _ORC_MODELOS_ANT = null;
+function _orcModelosAnoAnterior_() {
+  if (!_ORC_MODELOS_ANT) _ORC_MODELOS_ANT = SpreadsheetApp.openById(ORC_MODELOS_ANO_ANTERIOR_ID).getSheets()[0].getDataRange().getValues();
+  return _ORC_MODELOS_ANT;
+}
+
+// Itens do modelo do ano anterior com "contrato" no texto, da unidade (centro
+// de custo do condomínio) e da conta, no formato de _orcLerCadastroContratos_.
+// Só vale para conta sem nenhum contrato no cadastro: é contrato que foi
+// preenchido no modelo por engano (decisão do Guilherme, 07/10/2026).
+function _orcContratosNoModeloAnt_(linhas, unidade, chaveConta) {
+  return (linhas || []).slice(1).filter(r =>
+    _orcNorm_(r[2]) === _orcNorm_(unidade) && /rateio/.test(_orcNorm_(r[4])) &&
+    _orcChaveConta_(r[0]) === chaveConta && /\bcontrato\b/.test(_orcNorm_(r[5])))
+    .map(r => {
+      const meses = r.slice(8, 20).map(v => Math.abs(_orcNum_(v)));
+      return { fornecedor: String(r[5]).replace(/\s*[*#]+\s*\d[\d\s\/*#]*/g, ' ').trim(), descricao: String(r[5]).trim(),
+               meses: meses, total: meses.reduce((t, v) => t + v, 0), reajuste: '', doModelo: true };
+    })
+    .filter(c => c.total > 0.5);
+}
+
 let _ORC_CADASTRO_ANT = null;   // cache da leitura (uma por execução)
 function _orcCadastroAnoAnterior_() {
   if (!_ORC_CADASTRO_ANT) {
@@ -108,10 +133,12 @@ function _orcContasDoCadastro_(dados, unidade) {
 }
 
 /**
+ * modelosAnt: linhas do modelo do ano anterior (opcional) — conta sem contrato
+ * no cadastro usa os itens "contrato" do modelo (_orcContratosNoModeloAnt_).
  * @return { grupos: [{ conta, chave, metragem: v|null, linhas: [{ nome, categoria, ant, atual, situacao }],
  *                      ant, atual }], ant, atual, semPar: { n, ant }, novos: { n, atual } }
  */
-function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
+function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, modelosAnt) {
   const contas = _orcContasDoCadastro_(cadDados, unidade);
   const doModelo = linhasModelo.filter(l => Math.abs(l.total) > 0.5);
   const chaves = {};
@@ -123,7 +150,8 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
   });
 
   const grupos = Object.keys(chaves).map(k => {
-    const ant = contas.indexOf(chaves[k]) >= 0 ? _orcLerCadastroContratos_(cadDados, unidade, chaves[k], ORC_ANO - 1) : [];
+    let ant = contas.indexOf(chaves[k]) >= 0 ? _orcLerCadastroContratos_(cadDados, unidade, chaves[k], ORC_ANO - 1) : [];
+    if (!ant.length && modelosAnt) ant = _orcContratosNoModeloAnt_(modelosAnt, unidade, k);
     const itens = doModelo.filter(l => _orcChaveConta_(l.conta) === k);
     // Só item de contrato casa ("CONTRATO — X" das planilhas e do cadastro,
     // [CONTRATO]/"contrato" do modelo): "IMPERMEABILIZAÇÃO DA LAJE DA
@@ -156,6 +184,7 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
         categoria: base ? _orcCategoriaItem_(base) : '',
         ant: c.total, atual: atual,
         situacao: !doAno.length ? (itens.length ? 'Sem item em ' + ORC_ANO : 'Fora do modelo ' + ORC_ANO) :
+          c.doModelo ? 'Era item do modelo ' + (ORC_ANO - 1) :
           ampl.length ? 'Ampliação ' + _orcCompacto_(ampl.reduce((t, it) => t + it.total, 0)) :
           pct > 0.08 ? 'Acima do ' + indice : pct < -0.005 ? 'Redução' : 'Reajuste' + (c.reajuste ? ' ' + c.reajuste : '')
       };

@@ -269,6 +269,10 @@ porIdFinanceiro[CUR.relatorios.financeiroMegasId] = fixture('fixture_financeiro2
 // fixture_contratos_ano_anterior.json (base do orçado da comparação).
 const FIX_CAD_2026 = fixture('fixture_contratos_2026_cadastro.json');
 porId[G.ORC_CONTRATOS_ANO_ANTERIOR_ID] = FIX_CAD_2026;
+// "MESTRA - ORÇAMENTO 2026 ITEM A ITEM": o deck só a lê para achar contrato
+// lançado no modelo de 2026 (o carro Barigui de Curitiba).
+const FIX_MOD_2026 = fixture('fixture_modelos2026_megas.json');
+porId[G.ORC_MODELOS_ANO_ANTERIOR_ID] = FIX_MOD_2026;
 // Cadastro "CONTRATOS-2027-COMPLETO" (07/10/2026), no mesmo formato, com os
 // valores de 2027 dos três Megas e o cabeçalho em texto ("jan./27").
 porId[G.ORC_CONTRATOS_ANO_IDS[0]] = fixture('fixture_contratos_2027_completo.json');
@@ -673,9 +677,11 @@ const N_MANUT = N_POR_QUE + nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;  
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
-const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos);
+const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos, FIX_MOD_2026);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
-const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3;
+// Projetos × recorrente: o slide e as páginas dos itens de cada grupo.
+const nGrupos = G._orcPaginasGrupos_(G._orcClassificarManutencao_(d)).length;
+const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3 + nGrupos;
 ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 8 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, investimento, custo por m² (veio ' +
    slides.length + ')');
@@ -724,6 +730,11 @@ ok(grupoDe('Assistência em informática') && grupoDe('Assistência em informát
 const tel = grupoDe('Telefone') ? grupoDe('Telefone').linhas.filter(l => /4IP/.test(l.nome)) : [];
 ok(tel.length === 1 && tel[0].ant > 0 && tel[0].atual > 0 && !grupoDe('Telefone').linhas.some(l => /^Novo/.test(l.situacao) && /TELEFONE FIXO/.test(l.nome)),
    'contratos: 4IP (telefone fixo) casa 2026 com 2027 numa linha só (' + tel.map(l => l.nome + ' ' + l.situacao).join(' | ') + ')');
+// Guilherme, 07/10/2026: o carro Barigui é contrato e em 2026 foi lançado no
+// modelo ("Contrato carro alugado"); conta sem contrato no cadastro usa o modelo.
+const carro = grupoDe('Despesa com veículos') ? grupoDe('Despesa com veículos').linhas : [];
+ok(carro.length === 1 && Math.round(carro[0].ant) === 27480 && Math.round(carro[0].atual) === 27480 && /modelo 2026/.test(carro[0].situacao),
+   'contratos: carro de Curitiba casa 2026 (modelo) × 2027 (' + carro.map(l => l.nome + ' ' + Math.round(l.ant) + '→' + Math.round(l.atual) + ' ' + l.situacao).join(' | ') + ')');
 ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e seguros ficam de fora');
 perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
   G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026),
@@ -775,8 +786,17 @@ const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
 const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');
 ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2),
    'Segurança e Limpeza: linha a linha depois da sub capa');
-ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 2 && slides.length === iSub[7] + 3,
-   'Investimento e Custo por m² fecham o deck, cada um depois da sua sub capa');
+ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 2 + nGrupos && slides.length === iSub[7] + 3,
+   'Investimento (+ itens de cada grupo) e Custo por m² fecham o deck, cada um depois da sua sub capa');
+// Itens de cada grupo: todos os itens da manutenção, cada um com o selinho.
+{
+  const clsT = G._orcClassificarManutencao_(d);
+  const pagsT = slides.slice(iSub[6] + 2, iSub[6] + 2 + nGrupos);
+  const selos = pagsT.reduce((t, s) => t.concat(textos(s).filter(x => G.ORC_GRUPOS_MANUT_SELO.indexOf(x) >= 0)), []);
+  const nIt = clsT.grupos.reduce((t, g) => t + g.itens.length, 0);
+  ok(nGrupos >= 1 && pagsT.every(s => /^Manutenção: os itens de cada grupo/.test(titulo(s))) && selos.length >= nIt,
+     'itens de cada grupo: ' + nIt + ' itens com selinho em ' + nGrupos + ' página(s) (selos: ' + selos.length + ')');
+}
 const iInv = iSub[6] + 1, iM2 = iSub[7] + 1;
 // Contratos de manutenção 2026 × 2027, fornecedor a fornecedor.
 const ant = G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026);

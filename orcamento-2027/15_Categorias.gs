@@ -60,7 +60,17 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
     cx = x;
     ln.celulas.forEach((cel, i) => {
       const c = colunas[i];
-      if (cel && cel.pill && cel.texto) {
+      if (cel && cel.ponto) {
+        // Marca do grupo na composição (onde o selo inteiro não cabe).
+        _orcRet_(slide, cx + (ws[i] - 6) / 2, ry + (rowH - 6) / 2, 6, 6, cel.ponto, { redondo: true });
+      } else if (cel && cel.selo) {
+        // Selinho do grupo (contrato, recorrente, pontual, projeto): pílula
+        // cheia na cor do grupo — gestor, 07/10/2026.
+        const sh = Math.min(10, rowH - 3), sw = Math.min(ws[i] - 6, 52);
+        _orcRet_(slide, cx + 3, ry + (rowH - sh) / 2, sw, sh, cel.selo.fundo, { redondo: true });
+        _orcUmaLinha_(slide, cx + 3, ry + (rowH - sh) / 2, sw, sh, cel.selo.texto,
+          { align: 'C', fs: 5, bold: true, cor: cel.selo.cor, fonte: DS.typography.titles, folga: 2, fsMin: 4.5, cortar: true });
+      } else if (cel && cel.pill && cel.texto) {
         const bloco = rowH * (cel.span || 1);
         const ph = Math.min(14, rowH - 4);
         _orcRet_(slide, cx + 4, ry + (bloco - ph) / 2, ws[i] - 8, ph, DS.colors.brandSoft, { redondo: true, alpha: 0.35 });

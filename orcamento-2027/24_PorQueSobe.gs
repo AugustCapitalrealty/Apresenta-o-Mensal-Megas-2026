@@ -58,7 +58,8 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   _orcCard_(slide, cx, cy, cw, ch, 'Do Ritmo ' + a.ritmo + ' ao Orçamento ' + a.orc);
   const colunas = [
     { nome: 'Ritmo ' + a.ritmo, de: 0, ate: v.ritmo, cor: C.brandDark, m2: m2(v.ritmo, aRit) },
-    { nome: 'Obras adiadas de ' + a.ritmo, de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight,
+    // "OBRAS ADIADAS DE 2026" ia para 3 linhas e o ano saía cortado (07/10/2026).
+    { nome: 'Obras adiadas', de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight,
       m2: area ? '+' + m2(adi.total, area) : '' },
     { nome: 'Demais variações', de: v.ritmo + adi.total, ate: v.orc,
       cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce,

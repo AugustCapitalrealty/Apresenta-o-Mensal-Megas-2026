@@ -178,7 +178,10 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('Defensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'defensores'));
     // Todos os contratos, ano anterior × ano (pedido do gestor, 07/10/2026).
     let cmpTodos = null;
-    try { cmpTodos = _orcCompararTodosContratos_(rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos); }
+    let modelosAnt = null;
+    try { modelosAnt = _orcModelosAnoAnterior_(); }
+    catch (e) { Logger.log('Modelos do ano anterior indisponíveis (contrato lançado no modelo fica sem par): ' + e.message); }
+    try { cmpTodos = _orcCompararTodosContratos_(rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos, modelosAnt); }
     catch (e) { Logger.log('Contratos de todas as contas indisponíveis: ' + e.message); }
     if (cmpTodos && cmpTodos.n) {
       const pags = _orcPaginasContratos_(cmpTodos);
@@ -197,9 +200,9 @@ function _orcGerarCidade_(deck, W, H, chave) {
     catch (e) { Logger.log('Itens menores de ' + c.nome + ' indisponíveis: ' + e.message); }
     const paginas = _orcPaginasItens_(fora), nPag = 1 + paginas.length;
     comSelo('Linha a linha — ' + c.nome, [c.chave],
-      s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c, nPag));
+      s => gerarSlideLinhaALinha_(s, W, H, cid, visao.rel, visao.mensal, visao.modelos, c, nPag, i === 0 && calc ? calc.cls : null));
     paginas.forEach((pag, k) => comSelo('Linha a linha — ' + c.nome + ' (' + (k + 2) + '/' + nPag + ')', [c.chave],
-      s => gerarSlideItensMenores_(s, W, H, cid, visao.rel, c, pag, k, nPag, fora)));
+      s => gerarSlideItensMenores_(s, W, H, cid, visao.rel, c, pag, k, nPag, fora, i === 0 && calc ? calc.cls : null)));
   };
 
   if (contas || dados) {
@@ -234,6 +237,11 @@ function _orcGerarCidade_(deck, W, H, chave) {
     secao('Projetos × Recorrente');
     comSelo('Projetos × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
       s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
+    // Os itens de cada grupo, com o selinho (gestor, 07/10/2026: "abrir e
+    // sinalizar melhor o que é contrato, recorrente, projetos e pontual").
+    const pagsG = _orcPaginasGrupos_(calc.cls);
+    pagsG.forEach((pag, i) => comSelo('Projetos × recorrente — itens (' + (i + 1) + '/' + pagsG.length + ')',
+      [_orcChaveConta_('Manutenção de imóveis')], s => gerarSlideGruposManut_(s, W, H, cid, visao.rel, calc.cls, pag, i, pagsG.length)));
   }
   if (visao) {
     secao('Custo por m²');
