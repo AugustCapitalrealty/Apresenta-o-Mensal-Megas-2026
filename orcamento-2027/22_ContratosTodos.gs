@@ -125,9 +125,13 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
   const grupos = Object.keys(chaves).map(k => {
     const ant = contas.indexOf(chaves[k]) >= 0 ? _orcLerCadastroContratos_(cadDados, unidade, chaves[k], ORC_ANO - 1) : [];
     const itens = doModelo.filter(l => _orcChaveConta_(l.conta) === k);
+    // Só item de contrato casa ("CONTRATO — X" das planilhas e do cadastro,
+    // [CONTRATO]/"contrato" do modelo): "IMPERMEABILIZAÇÃO DA LAJE DA
+    // SUBESTAÇÃO" não é parte do contrato da subestação (Esteio, 07/10/2026).
+    const deContrato = itens.filter(l => /\bcontrato\b/.test(_orcNorm_(l.item)));
     // Cada item do ano vai para o contrato com mais palavras em comum.
     const pal = ant.map(c => _orcPalavrasCasamento_(c.fornecedor));
-    const dono = itens.map(it => {
+    const dono = deContrato.map(it => {
       const t = ' ' + _orcNorm_(it.item).replace(/[^a-z0-9 ]+/g, ' ') + ' ';
       let melhor = -1, nota = 0;
       pal.forEach((ps, i) => {
@@ -140,7 +144,7 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
       return melhor;
     });
     const linhas = ant.map((c, i) => {
-      const doAno = itens.filter((it, j) => dono[j] === i);
+      const doAno = deContrato.filter((it, j) => dono[j] === i);
       const atual = doAno.reduce((t, it) => t + it.total, 0);
       // Ampliação: item a mais do mesmo fornecedor ("ampliação contrato…",
       // "posto adicional…").
@@ -156,8 +160,8 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
           pct > 0.08 ? 'Acima do ' + indice : pct < -0.005 ? 'Redução' : 'Reajuste' + (c.reajuste ? ' ' + c.reajuste : '')
       };
     });
-    itens.forEach((it, j) => {
-      if (dono[j] >= 0 || !/\bcontrato\b/.test(_orcNorm_(it.item))) return;
+    deContrato.forEach((it, j) => {
+      if (dono[j] >= 0) return;
       const sep = _orcSepararCategoria_(it.item);
       linhas.push({ nome: _orcNomeCurtoContrato_(_orcNomeContrato_(sep.descricao || it.item)), categoria: _orcCategoriaItem_(it),
                     ant: 0, atual: it.total, situacao: 'Novo em ' + ORC_ANO });

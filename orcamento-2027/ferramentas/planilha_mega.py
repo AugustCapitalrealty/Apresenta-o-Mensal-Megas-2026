@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 S = os.path.dirname(os.path.abspath(__file__))
 FIX = os.path.join(S, '..', 'teste')
 SAIDA = os.path.join(S, 'saida'); os.makedirs(SAIDA, exist_ok=True)
-c27 = json.load(open(os.path.join(FIX, 'fixture_contratos_2027.json'), encoding='utf-8'))   # "TESTE-2 - COMPLETO"
+c27 = json.load(open(os.path.join(FIX, 'fixture_contratos_2027_completo.json'), encoding='utf-8'))   # "CONTRATOS-2027-COMPLETO"
 c26 = json.load(open(os.path.join(FIX, 'fixture_contratos_ano_anterior.json'), encoding='utf-8'))
 mod26 = json.load(open(os.path.join(FIX, 'fixture_modelos2026_megas.json'), encoding='utf-8'))
 
@@ -122,12 +122,11 @@ def gerar(cidade, unidade, arquivos):
     aba_valores(wb, 'Contratos 2026', unidade + ' — contratos com os valores de 2026 (R$)',
                 'Fonte: "2025 - Contratos" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2026.',
                 ['Fornecedor', 'Descrição', 'Conta', 'Início', 'Fim', 'Reajuste'], [34, 50, 22, 11, 11, 9], contratos(c26, 2026), 6)
-    # O cadastro de 2027 ("TESTE-2") só tem valores preenchidos para Itajaí:
-    # sem contrato com valor, a aba não sai.
+    # Sem contrato com valor em 2027, a aba não sai.
     k27 = contratos(c27, 2027)
     if k27:
         aba_valores(wb, 'Contratos 2027', unidade + ' — contratos com os valores de 2027 (R$)',
-                    'Fonte: "TESTE-2 - COMPLETO" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2027.',
+                    'Fonte: "CONTRATOS-2027-COMPLETO" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2027.',
                     ['Fornecedor', 'Descrição', 'Conta', 'Início', 'Fim', 'Reajuste'], [34, 50, 22, 11, 11, 9], k27, 6)
 
     # Real 2025 mês a mês por conta (planilha mensal do Mega, aba Financeiro 2025).
@@ -153,7 +152,7 @@ MESTRAS = '00 - PLANILHAS MESTRAS'
 COMUNS = [
     ('Modelos 2025 Megas', 'Orçamento 2026 item a item de todos os Megas (mestra)', 'Não', MESTRAS, '1X39BzfFKwSo2v1wt0Lhe1kxjnSdnn4D74kvAxg41bOM', S_),
     ('2025 - Contratos', 'Cadastro de contratos com os valores de 2026, todos os Megas (mestra)', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
-    ('TESTE-2 - COMPLETO', 'Cadastro de contratos com os valores de 2027 (mestra) — fonte dos contratos de Itajaí e Esteio; em 07/10/2026 só Itajaí preenchido', 'Sim (Itajaí e Esteio)', MESTRAS, '1bLVRxt6AiLCErNQpgBDJoUiQYA2KJtHEN38yb0hwzI8', S_),
+    ('CONTRATOS-2027-COMPLETO', 'Cadastro de contratos com os valores de 2027, todos os Megas (mestra) — fonte dos contratos de Itajaí e Esteio', 'Sim (Itajaí e Esteio)', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
     ('2026', 'Totais planejados de 2026 por conta, todas as unidades somadas (mestra)', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
     ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '00 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
 ]

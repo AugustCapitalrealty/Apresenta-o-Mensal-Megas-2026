@@ -75,7 +75,7 @@ function exportarFixtures() {
     'fixture_contratos_seguranca_curitiba.json':  [cid.contratos['Segurança e vigilância'], null],
     'fixture_contratos_limpeza_curitiba.json':    [cid.contratos['Limpeza e conservação'], null],
     'fixture_contratos_ano_anterior.json':        [ORC_CONTRATOS_ANO_ANTERIOR_ID, null],
-    'fixture_contratos_2027.json':                [ORC_CONTRATOS_ANO_ID, null]
+    'fixture_contratos_2027_completo.json':       [ORC_CONTRATOS_ANO_IDS[0], null]
   };
   Object.keys(fontes).forEach(nome => {
     const ss = SpreadsheetApp.openById(fontes[nome][0]);

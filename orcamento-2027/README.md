@@ -33,7 +33,7 @@ está no **G:** (Drive compartilhado) e no **GitHub**. Na prática:
 
 | Pasta | O que tem |
 |---|---|
-| `00 - PLANILHAS MESTRAS` | consolidadas de todos os Megas — **guardar**: `Modelos 2025 Megas` (Orç 2026 item a item), `2025 - Contratos` (cadastro com os valores de 2026), `TESTE-2 - COMPLETO` (cadastro com os valores de 2027 — **fonte dos contratos de Itajaí e Esteio**; em 07/10/2026 só Itajaí preenchido), `2026` (totais por conta, todas as unidades somadas) |
+| `00 - PLANILHAS MESTRAS` | consolidadas de todos os Megas — **guardar**: `Modelos 2025 Megas` (Orç 2026 item a item), `2025 - Contratos` (cadastro com os valores de 2026), `CONTRATOS-2027-COMPLETO` (cadastro com os valores de 2027 dos três Megas — **fonte dos contratos de Itajaí e Esteio**), `2026` (totais por conta, todas as unidades somadas) |
 | `00 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027` (o gestor marca SIM/NÃO) |
 | `MEGA CURITIBA` / `MEGA ITAJAÍ` / `MEGA ESTEIO` | a apresentação da cidade, as planilhas que o gerador lê e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, com uma aba LEIA-ME explicando cada arquivo) |
 | `MEGA <X>/_ARQUIVO (não usado)` | o que tem dado mas a apresentação não lê (lançamentos de jan–jul/26, planilhas "SERVIÇOS", cópia com os apontamentos do gestor de 29/09) |
@@ -53,7 +53,7 @@ contratos do cadastro (R$ 371,7 mil) = R$ 1.266.241, igual à METRAGEM.
 | `despesasGeraisId` | `090-Despesas-Gerais - MEGA <CIDADE> - 2027`, aba `Valores do Modelo` | itens avulsos da manutenção |
 | `servicosTerceirosId` | `070-Servicos-de-Terceiros - MEGA <CIDADE> - 2027`, aba `Valores do Modelo` | itens de segurança e limpeza |
 | `contratos[<conta>]` | `MEGA <CIDADE> - <CONTA> - CONTRATOS` (Curitiba: manutenção, segurança, limpeza) | contratos recorrentes que os modelos não listam |
-| `contratosDoCadastro: true` | mestra `TESTE-2 - COMPLETO` (`ORC_CONTRATOS_ANO_ID`, 02_Dados.gs) | o mesmo, tirado do cadastro do ano, todas as contas da unidade (Itajaí e Esteio) |
+| `contratosDoCadastro: true` | mestra `CONTRATOS-2027-COMPLETO` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | o mesmo, tirado do cadastro do ano, todas as contas da unidade (Itajaí e Esteio). Cabeçalho do mês como data ou como texto "jan./27" |
 | `relatorios.metragemId` | `METRAGEM-COND-MEGA-<CIDADE>` | DRE, ofensores, totais por conta |
 | `relatorios.mensalId` | `Despesas-Mensal-2026-x-2027` | mês a mês da análise linha a linha |
 | `relatorios.financeiroMegasId` | planilha da apresentação mensal dos Megas, aba `Financeiro <ano retrasado>` | Real 2025 mês a mês (slide de custo por m² mês a mês) |
@@ -195,14 +195,16 @@ Cada pendência entra no slide **Revisar antes da versão final** (subtítulo
 
 Em 07/10/2026:
 
-- **Esteio** — o `TESTE-2` não tem os valores de 2027 do Mega Esteio:
-  manutenção R$ 156.007, segurança R$ 120.068 e limpeza R$ 216.848 em "Não
-  detalhado". Preenchido o cadastro, os contratos entram sozinhos.
+- Com o `CONTRATOS-2027-COMPLETO`, segurança, limpeza, telefone,
+  informática e cursos de Itajaí e Esteio fecham exato com o que os modelos
+  não abrem — nenhum "Não detalhado".
 - **Itajaí** — o 090 tem R$ 29.313 que a METRAGEM não tem: manutenção e
   pintura do totem (jan, R$ 11.500) e iluminação dos AMZ 4 e 5 e do bolsão
-  (fev, R$ 11.875 + R$ 5.938). Confirmar com a controladoria. Na segurança
-  (R$ 1.483.779), na limpeza (R$ 216.228), no telefone e em cursos o
-  cadastro fecha exato com o que os modelos não abrem.
+  (fev, R$ 11.875 + R$ 5.938).
+- **Esteio** — o 090 tem R$ 15.268 que a METRAGEM não tem: as duas linhas
+  de vida vertical das escadas marinheiro (AMZ A e B2, out, R$ 7.635 cada).
+- Nos dois: confirmar com a controladoria se o item fica (METRAGEM sobe) ou
+  sai do 090.
 
 ### Textos das tabelas (fonte única)
 

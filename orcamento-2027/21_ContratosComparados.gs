@@ -41,11 +41,17 @@ function obterContratosAnoAnterior_(cid, conta) {
   return _orcLerCadastroContratos_(dados, cid.nome, conta, ORC_ANO - 1);
 }
 
-// Data do cabeçalho: Date no Apps Script, texto ISO no teste.
+// Data do cabeçalho: Date no Apps Script, texto ISO no teste, ou o texto
+// "jan./27" quando o Sheets não o converteu em data (o dia devolvido é o
+// ano, como na conversão — ver _orcLerCadastroContratos_).
 function _orcDataCabecalho_(v) {
   if (v instanceof Date) return { ano: v.getFullYear(), mes: v.getMonth(), dia: v.getDate() };
-  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? { ano: +m[1], mes: +m[2] - 1, dia: +m[3] } : null;
+  const s = String(v || '').trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return { ano: +m[1], mes: +m[2] - 1, dia: +m[3] };
+  const t = _orcNorm_(s).match(/^([a-z]{3})\.?\/(\d{2})$/);
+  const mes = t ? _ORC_MES_ABREV.indexOf(t[1]) : -1;
+  return mes >= 0 ? { ano: 2000 + +t[2], mes: mes, dia: +t[2] } : null;
 }
 
 function _orcLerCadastroContratos_(dados, unidade, conta, ano) {

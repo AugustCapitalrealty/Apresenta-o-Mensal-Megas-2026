@@ -40,18 +40,21 @@ function obterManutencao_(chaveCidade) {
 // ==========================================
 // CONTRATOS RECORRENTES
 // ==========================================
-// Cadastro de contratos com os valores do ano do orçamento ("TESTE-2 -
-// COMPLETO", pasta 00 - PLANILHAS MESTRAS): o mesmo formato do "2025 -
-// Contratos" (21_ContratosComparados.gs), todas as unidades. Cidade com
-// `contratosDoCadastro` em ORC_CIDADES tira os contratos dele.
-const ORC_CONTRATOS_ANO_ID = '1bLVRxt6AiLCErNQpgBDJoUiQYA2KJtHEN38yb0hwzI8';
+// Cadastros de contratos com os valores do ano do orçamento (pasta 00 -
+// PLANILHAS MESTRAS), no formato do "2025 - Contratos"
+// (21_ContratosComparados.gs), todas as unidades. Cidade com
+// `contratosDoCadastro` usa o PRIMEIRO desta lista que tem valor para ela
+// (cadastro novo entra na frente; o anterior fica de reserva até sair).
+// 07/10/2026: "CONTRATOS-2027-COMPLETO" — os três Megas; Itajaí igual ao
+// "TESTE-2 - COMPLETO" e Curitiba igual às planilhas de contratos por conta.
+const ORC_CONTRATOS_ANO_IDS = [
+  '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY'    // CONTRATOS-2027-COMPLETO
+];
 
-let _ORC_CADASTRO_ANO = null;   // cache da leitura (uma por execução)
-function _orcCadastroAno_() {
-  if (!_ORC_CADASTRO_ANO) {
-    _ORC_CADASTRO_ANO = SpreadsheetApp.openById(ORC_CONTRATOS_ANO_ID).getSheets()[0].getDataRange().getValues();
-  }
-  return _ORC_CADASTRO_ANO;
+const _ORC_CADASTRO_ANO = {};   // cache da leitura por planilha (uma por execução)
+function _orcCadastroAno_(id) {
+  if (!_ORC_CADASTRO_ANO[id]) _ORC_CADASTRO_ANO[id] = SpreadsheetApp.openById(id).getSheets()[0].getDataRange().getValues();
+  return _ORC_CADASTRO_ANO[id];
 }
 
 /**
@@ -69,14 +72,18 @@ function _orcContratosDoAno_(cid) {
     try { out.push({ conta: conta, contratos: _orcLerContratos_(id) }); }
     catch (e) { Logger.log('Contratos de "' + conta + '" ignorados: ' + e.message); }
   });
-  if (cid.contratosDoCadastro && ORC_CONTRATOS_ANO_ID) {
-    try {
-      const dados = _orcCadastroAno_();
-      _orcContasDoCadastro_(dados, cid.nome).forEach(conta => {
-        const ks = _orcLerCadastroContratos_(dados, cid.nome, conta, ORC_ANO).map(k => _orcContratoItem_(k.fornecedor, k.meses));
-        if (ks.length) out.push({ conta: conta, contratos: ks });
-      });
-    } catch (e) { Logger.log('Cadastro de contratos de ' + ORC_ANO + ' ignorado: ' + e.message); }
+  if (cid.contratosDoCadastro) {
+    for (let i = 0; i < ORC_CONTRATOS_ANO_IDS.length; i++) {
+      const doCadastro = [];
+      try {
+        const dados = _orcCadastroAno_(ORC_CONTRATOS_ANO_IDS[i]);
+        _orcContasDoCadastro_(dados, cid.nome).forEach(conta => {
+          const ks = _orcLerCadastroContratos_(dados, cid.nome, conta, ORC_ANO).map(k => _orcContratoItem_(k.fornecedor, k.meses));
+          if (ks.length) doCadastro.push({ conta: conta, contratos: ks });
+        });
+      } catch (e) { Logger.log('Cadastro de contratos ' + ORC_CONTRATOS_ANO_IDS[i] + ' ignorado: ' + e.message); }
+      if (doCadastro.length) { Array.prototype.push.apply(out, doCadastro); break; }
+    }
   }
   return out;
 }

@@ -71,10 +71,10 @@ const ORC_CIDADES = {
   },
   // Itajaí e Esteio (05/10/2026): relatórios da controladoria nas pastas
   // "MEGA ITAJAÍ" / "MEGA ESTEIO", convertidos dos .xlsx. Os contratos vêm do
-  // cadastro do ano (`contratosDoCadastro`, ORC_CONTRATOS_ANO_ID em
-  // 02_Dados.gs) em vez de uma planilha por conta. Em 07/10/2026 só Itajaí
-  // tem os valores de 2027 lá: Esteio sai com o alerta de pendência
-  // (19_Revisar.gs) até o cadastro ser preenchido.
+  // cadastro do ano (`contratosDoCadastro`, ORC_CONTRATOS_ANO_IDS em
+  // 02_Dados.gs, "CONTRATOS-2027-COMPLETO") em vez de uma planilha por conta.
+  // Conta sem contrato no cadastro sai com o alerta de pendência
+  // (19_Revisar.gs).
   ITAJAI: {
     nome: 'Mega Itajaí',
     deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ
@@ -88,8 +88,9 @@ const ORC_CIDADES = {
       financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4'    // planilha dos Megas (Itajaí)
     },
     contratos: {},
-    // Conferido em 07/10/2026: na segurança, na limpeza, no telefone e em
-    // cursos o cadastro fecha exato com o "Não detalhado" da METRAGEM.
+    // Conferido em 07/10/2026 (Itajaí e Esteio): na segurança, na limpeza,
+    // no telefone, em informática e em cursos o cadastro fecha exato com o
+    // que os modelos não abrem na METRAGEM.
     contratosDoCadastro: true,
     premissas: { premissas: '', analisado: '', comoLer: '' }
   },
@@ -131,10 +132,12 @@ const ORC_CONTRATOS_CATEGORIA = [
   { termo: 'leandro carvalho weiss',   categoria: 'ELÉTRICA' },
   { termo: 'filtroil',                 categoria: 'ELÉTRICA' },
   { termo: 'equilibrio',               categoria: 'CONSULTORIA AMBIENTAL' },
-  // Itajaí (cadastro de 2027, 07/10/2026).
+  // Itajaí e Esteio (cadastro de 2027, 07/10/2026).
   { termo: 'rodrigo rohde',            categoria: 'ELÉTRICA' },
-  { termo: 'mg geradores',             categoria: 'ELÉTRICA' },
+  { termo: 'gerador',                  categoria: 'ELÉTRICA' },
+  { termo: 'subestacao',               categoria: 'ELÉTRICA' },
   { termo: 'arca agro',                categoria: 'ÁREA VERDE' },
+  { termo: 'ads manutencao',           categoria: 'COBERTURA' },
   { termo: 'cobertura',                categoria: 'COBERTURA' }
 ];
 const ORC_CONTRATO_SEM_CATEGORIA = 'CONTRATOS SEM CATEGORIA';
