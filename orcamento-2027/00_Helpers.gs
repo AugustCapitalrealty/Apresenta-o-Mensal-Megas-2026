@@ -70,7 +70,7 @@ function _orcQuando_(meses) {
 // ==========================================
 // A API do Slides não expõe métrica de fonte, então estimamos pela largura
 // média do caractere (mesmo método de megas-mensal/Farol_Guilherme.gs).
-const _ORC_FATOR_FONTE = { 'Montserrat': 0.58, 'Open Sans': 0.52, 'Playfair Display': 0.5 };
+const _ORC_FATOR_FONTE = { 'Montserrat': 0.58, 'Open Sans': 0.52 };
 
 // Recuo interno que toda TEXT_BOX tem e a API não deixa desligar (~7pt de
 // cada lado). É ele que faz texto curto quebrar dentro de caixa estreita.

@@ -8,6 +8,23 @@ terceiros. Estão descritas em palavras, e a regra é copiar a técnica, nunca a
 > **Status: nada aqui foi aprovado.** O padrão dos Megas continua valendo (HANDOFF §6). Toda mudança visual segue o
 > mesmo caminho: propor, mostrar o PNG, esperar o "sim" do gestor e só depois mexer no gerador.
 
+## Decisão de 07/10/2026: o visual é de Big Four, não de vídeo
+
+- **Reprovado:** a sub capa "jeito YouTube" (foto em retícula, papel rasgado, girada, traço de caneta, serifa
+  itálica). Nas palavras do Guilherme: "não ficou nada corporativo, ficou coisa de documentário; estamos em ambiente
+  corporativo, pense nas grandes empresas de auditoria do mundo". Daqui em diante, retícula, rasgo, caneta, carimbo
+  e textura de papel **não entram** no deck. As seções 2 a 5 abaixo valem só no que é conteúdo e estrutura (título com
+  a conclusão, número protagonista, trilha de navegação, encerramento, infográficos limpos).
+- **Aprovado:** sub capa **C1 "relatório claro"**: fundo branco, número da seção grande, título, frase, o número da
+  seção (R$, R$/m² ao mês, variação contra o ritmo), foto colorida sem efeito num bloco à direita e a trilha das
+  seções no pé. Mais um **Sumário** depois da capa, no mesmo estilo. Número e nome do sumário e da trilha são link para
+  a sub capa. Código em `10_Capa.gs` (`gerarSlideSubcapa_`, `gerarSlideSumario_`); fotos, foco e frases em
+  `ORC_SUBCAPAS` / `ORC_FOTO_FOCO` (`01_Config.gs`).
+- Como chegamos: 3 simulações (A painel, B caixa, C relatório claro) → favorita C → dois analistas fizeram mais 6
+  (C1–C3 refinando a C; D1–D3 direções novas). Simulações em `ferramentas/saida/` (fora do git).
+- Prévia sem abrir o Slides: `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e
+  `python ferramentas/previa_slides.py ferramentas/saida/formas_itajai.json <índices>`.
+
 ---
 
 ## 1. Princípios que valem para qualquer slide

@@ -210,30 +210,28 @@ const ORC_FOTOS_SECAO = {
   DOCUMENTACAO: '1fA13cXRur_UbMtLAjRYGbOyjaauNiOZ0'
 };
 
-// Sub capa de cada seção (gerarSlideSubcapa_, 10_Capa.gs), pelo título:
-//   foto   → chave de ORC_FOTOS_SECAO, ou 'MEGA' = a foto da capa do próprio
-//            Mega (cid.fotoFundoId). Sem foto, fundo azul-escuro.
-//   motivo → o desenho à direita no padrão da mensal (_orcMotivoSecao_); 'M2'
-//            (planta) e 'ANEIS' são só do orçamento.
-//   frase  → a linha em serifa itálica da sub capa "recorte" (jeito das capas
-//            de vídeo, 07/10/2026): diz do que a seção trata, sem número.
-// A sub capa "recorte" usa a foto já tratada (retícula + papel rasgado) da
-// pasta ORC_PASTA_IMAGENS_SUBCAPAS, feita por ferramentas/subcapas_youtube.py;
-// sem ela, a sub capa sai no padrão da mensal (foto + véu + motivo).
+// Sub capa (gerarSlideSubcapa_, 10_Capa.gs) e sumário de cada seção, pelo
+// título:
+//   foto  → chave de ORC_FOTOS_SECAO, ou 'MEGA' = a foto da capa do próprio
+//           Mega (cid.fotoFundoId). Escolhidas olhando as imagens (07/10/2026):
+//           a foto mostra o que a seção trata — técnicos nas plataformas na
+//           Manutenção, a doca com nivelador nos Projetos, o gramado
+//           conservado na Limpeza, o armazém no Custo por m².
+//   frase → a linha curta embaixo do título (sub capa e sumário). Textos
+//           propostos em 07/10/2026; o gestor pode trocar aqui.
 const ORC_SUBCAPAS = {
-  'Premissas':             { foto: 'DOCUMENTACAO', motivo: 'DOCUMENTACAO', frase: 'como este orçamento foi construído' },
-  'Resumo Executivo':      { foto: 'MEGA',         motivo: 'ANEIS',        frase: 'o orçamento do ano em uma página' },
-  'DRE':                   { foto: 'OPERACIONAL',  motivo: 'OPERACIONAL',  frase: 'conta a conta, do ritmo ao orçamento' },
-  'Manutenção':            { foto: 'CORRETIVA',    motivo: 'PREVENTIVA',   frase: 'o que custa manter o Mega rodando' },
-  'Segurança':             { foto: 'PATRIMONIAL',  motivo: 'PATRIMONIAL',  frase: 'vigilância, portaria e monitoramento' },
-  'Limpeza e Conservação': { foto: 'INTERNOS',     motivo: 'CONTRATADOS',  frase: 'o Mega limpo e conservado o ano inteiro' },
-  'Projetos × Recorrente': { foto: 'PREVENTIVA',   motivo: 'INTERNOS',     frase: 'o que é obra pontual e o que é rotina' },
-  'Custo por m²':          { foto: 'CONTRATADOS',  motivo: 'M2',           frase: 'quanto custa cada m² por mês' }
+  'Premissas':             { foto: 'DOCUMENTACAO', frase: 'Como este orçamento foi construído' },
+  'Resumo Executivo':      { foto: 'MEGA',         frase: 'O orçamento do ano em uma página' },
+  'DRE':                   { foto: 'OPERACIONAL',  frase: 'Conta a conta, do ritmo ao orçamento' },
+  'Manutenção':            { foto: 'CORRETIVA',    frase: 'O custo para manter o Mega rodando' },
+  'Segurança':             { foto: 'PATRIMONIAL',  frase: 'Vigilância, portaria e monitoramento' },
+  'Limpeza e Conservação': { foto: 'INTERNOS',     frase: 'O Mega limpo e conservado o ano inteiro' },
+  'Projetos × Recorrente': { foto: 'PREVENTIVA',   frase: 'O que é obra pontual e o que é rotina' },
+  'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' }
 };
-// Fotos escolhidas olhando as imagens (07/10/2026): a foto mostra o que a
-// seção trata — técnicos nas plataformas na Manutenção, a doca com nivelador
-// nos Projetos, o gramado conservado na Limpeza, o armazém no Custo por m².
-// Pasta (dentro de APRESENTAÇÃO ORÇAMENTO) com as fotos tratadas das sub
-// capas: "SUBCAPA - <chave da foto>.png" (MEGA → "SUBCAPA - MEGA CURITIBA.png")
-// e o traço de caneta "CANETA - SUBLINHADO.png".
-const ORC_PASTA_IMAGENS_SUBCAPAS = 'IMAGENS - SUBCAPAS';
+// Onde está o assunto em cada foto (fração da largura): a foto do bloco da
+// sub capa é centrada nesse ponto quando dá.
+const ORC_FOTO_FOCO = {
+  CORRETIVA: 0.40, PATRIMONIAL: 0.45, INTERNOS: 0.65, PREVENTIVA: 0.68, CONTRATADOS: 0.47,
+  DOCUMENTACAO: 0.58, OPERACIONAL: 0.47, 'MEGA CURITIBA': 0.26, 'MEGA ITAJAÍ': 0.30, 'MEGA ESTEIO': 0.52
+};

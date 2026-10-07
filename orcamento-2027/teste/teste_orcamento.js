@@ -46,9 +46,10 @@ function cor(c, onde) {
 }
 function estiloTexto(reg) {
   const s = {};
-  ['setBold', 'setItalic', 'setFontFamily'].forEach(m => { s[m] = () => s; });
+  ['setItalic', 'setFontFamily'].forEach(m => { s[m] = () => s; });
   s.setFontSize = v => { reg.fs = num(v, 'setFontSize'); if (v <= 0) throw new Error('fonte <= 0'); return s; };
-  s.setForegroundColor = c => { cor(c, 'setForegroundColor'); return s; };
+  s.setForegroundColor = c => { cor(c, 'setForegroundColor'); reg.corTexto = c; return s; };
+  s.setBold = v => { reg.negrito = !!v; return s; };
   return s;
 }
 function textRange(reg) {
@@ -65,24 +66,25 @@ function textRange(reg) {
   };
   return tr;
 }
-let idSlide = 0;
+let idSlide = 0, idForma = 0;
 function novoSlide(deck) {
   const slide = {
     shapes: [], removido: false, id: 'p' + (++idSlide),
     getObjectId: () => slide.id,
-    getBackground: () => ({ setSolidFill: c => cor(c, 'background') }),
+    getBackground: () => ({ setSolidFill: c => { cor(c, 'background'); slide.shapes.fundo = c; } }),
     insertShape: (tipo, x, y, w, h) => {
       [x, y, w, h].forEach((v, i) => num(v, 'insertShape[' + i + ']'));
       if (w <= 0 || h <= 0) throw new Error('Dimensão não positiva: ' + w + 'x' + h);
-      const reg = { tipo, x, y, w, h, texto: null };
+      const reg = { tipo, x, y, w, h, texto: null, id: 'e' + (++idForma) };
       slide.shapes.push(reg);
-      const fill = { setSolidFill: (c, a) => { cor(c, 'fill'); if (a !== undefined) { num(a, 'alpha'); reg.alpha = a; } }, setTransparent: () => {} };
+      const fill = { setSolidFill: (c, a) => { cor(c, 'fill'); reg.cor = c; if (a !== undefined) { num(a, 'alpha'); reg.alpha = a; } }, setTransparent: () => {} };
       const lineFill = { setSolidFill: (c, a) => { cor(c, 'border'); } };
       return {
         getFill: () => fill,
         getBorder: () => ({ setTransparent: () => {}, getLineFill: () => lineFill, setWeight: v => num(v, 'weight') }),
         setContentAlignment: () => {},
-        getText: () => textRange(reg)
+        getText: () => textRange(reg),
+        getObjectId: () => reg.id
       };
     },
     insertLine: (cat, x1, y1, x2, y2) => {
@@ -120,6 +122,13 @@ function novoDeck() {
   deck.getSlides = () => deck._slides.slice();
   deck.appendSlide = () => { const s = novoSlide(deck); deck._slides.push(s); return s; };
   deck.getUrl = () => 'https://docs.google.com/presentation/d/teste';
+  deck.getSlideById = id => deck._slides.filter(s => s.id === id)[0] || null;
+  deck.getPageElementById = id => {
+    for (const s of deck._slides) for (const reg of s.shapes) {
+      if (reg.id === id) return { asShape: () => ({ setLinkSlide: alvo => { reg.link = alvo.getObjectId(); } }) };
+    }
+    return null;
+  };
   // Gravação: falhasAoSalvar = quantas vezes seguidas o Slides responde
   // "Service unavailable" antes de aceitar.
   deck.salvos = 0; deck.falhasAoSalvar = 0;
@@ -595,15 +604,32 @@ const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Seguran
 const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
 ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
    'sub capas 01–08 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
-// Sub capas no padrão da mensal (07/10/2026): cada seção pede a sua foto e
-// desenha o motivo à direita (sem Drive no teste, cai no fundo escuro).
+// Sub capas C1 "relatório claro" (07/10/2026): cada seção pede a sua foto
+// (sem Drive no teste, o bloco fica cinza), tem a trilha com as 8 seções e,
+// nas seções com valor, o número em R$ e R$/m² ao mês.
 SECOES.forEach(nome => {
   const cfg = G.ORC_SUBCAPAS[nome];
   const id = cfg && (cfg.foto === 'MEGA' ? CUR.fotoFundoId : G.ORC_FOTOS_SECAO[cfg.foto]);
   ok(id && PEDIDOS_DRIVE.indexOf(id) >= 0, 'sub capa ' + nome + ': pede a foto ' + (cfg && cfg.foto) + ' (' + id + ')');
 });
-iSub.forEach((i, k) => ok(slides[i] && slides[i].shapes.some(sh => sh.x > W * 0.6 && sh.w < 200 && sh.y < H - 50),
-  'sub capa ' + SECOES[k] + ': desenho da seção à direita'));
+iSub.forEach((i, k) => ok(slides[i] && SECOES.every(n => textos(slides[i]).indexOf(n) >= 0),
+  'sub capa ' + SECOES[k] + ': trilha com as 8 seções'));
+const tMan = textos(slides[iSub[3]]);
+ok(tMan.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tMan.indexOf('Orçamento 2027 da conta') >= 0 &&
+   tMan.some(t => /^R\$ [\d,]+$/.test(t)) && tMan.indexOf('/m² ao mês') >= 0 && tMan.indexOf('vs. ritmo 2026') >= 0,
+   'sub capa Manutenção: valor da conta, R$/m² ao mês e variação contra o ritmo (' + tMan.slice(0, 9).join(' | ') + ')');
+ok(textos(slides[iSub[7]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[7]]).indexOf('por m² ao mês, todas as contas') >= 0,
+   'sub capa Custo por m²: abre com o R$/m² ao mês');
+ok(!textos(slides[iSub[0]]).some(t => /^R\$/.test(t)), 'sub capa Premissas: sem número');
+// Sumário logo depois da capa, com as 8 seções; número e nome são link para a sub capa.
+const tSum = textos(slides[1]);
+ok(titulo(slides[1]) === 'Sumário' && SECOES.every((n, k) => tSum.indexOf(n) >= 0 && tSum.indexOf('0' + (k + 1)) >= 0),
+   'Sumário depois da capa, com as 8 seções numeradas');
+const linkDe = (sl, txt) => (sl.shapes.filter(sh => sh.texto === txt)[0] || {}).link;
+ok(SECOES.every((n, k) => linkDe(slides[1], n) === slides[iSub[k]].id && linkDe(slides[1], '0' + (k + 1)) === slides[iSub[k]].id),
+   'Sumário: cada seção leva à sua sub capa');
+ok(linkDe(slides[iSub[3]], 'Segurança') === slides[iSub[4]].id && !linkDe(slides[iSub[3]], 'Manutenção'),
+   'trilha da sub capa: as outras seções são link, a atual não');
 const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // Páginas do linha a linha de cada conta: o slide da conta + as dos itens
 // menores que não couberam na composição.
@@ -615,14 +641,14 @@ const N_MANUT = nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;   // linha a 
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
 const cmpTodos = G._orcCompararTodosContratos_(rel, fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', modelos);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
-const N_ESPERADO = 1 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3;
-ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, 8 sub capas, premissas, resumo + ponte, ' +
+const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3;
+ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 8 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, investimento, custo por m² (veio ' +
    slides.length + ')');
 
 ok(!slides.some(sl => titulo(sl) === 'Revisar antes da versão final'), 'IPTU e Seguro em valeMetragem: sem slide de revisão');
-ok(iSub[0] === 1 && titulo(slides[2]) === 'Premissas — Orçamento 2027', 'Premissas logo depois da capa');
-const tPrem = textos(slides[2]);
+ok(iSub[0] === 2 && titulo(slides[3]) === 'Premissas — Orçamento 2027', 'Premissas logo depois do sumário');
+const tPrem = textos(slides[3]);
 ok(['Premissas', 'O que foi analisado', 'Como ler o relatório'].every(t => tPrem.indexOf(t) >= 0) &&
    tPrem.filter(t => t === G.ORC_PREMISSAS_VAZIO).length === 3,
    'Premissas: três blocos com o espaço para o gestor escrever');
@@ -950,10 +976,12 @@ decks = {};
 G._orcGerar_(['VAZIA']);
 ok(Object.keys(decks).join() === 'deck-vazia', 'cada cidade escreve só na sua apresentação (' + Object.keys(decks).join() + ')');
 const sI = decks['deck-vazia'].getSlides();
-ok(sI.length === 5, 'cidade vazia: capa, sub capa e slide de Premissas, aviso dos relatórios, aviso da manutenção (veio ' +
+ok(sI.length === 6, 'cidade vazia: capa, sumário, sub capa e slide de Premissas, aviso dos relatórios, aviso da manutenção (veio ' +
    sI.length + ')');
-ok(textos(sI[3]).some(t => t.indexOf('METRAGEM-COND ainda não foi') >= 0), 'aviso dos relatórios escrito no slide');
-ok(textos(sI[4]).some(t => t.indexOf('ainda não foi configurada') >= 0), 'aviso da manutenção escrito no slide');
+ok(titulo(sI[1]) === 'Sumário' && textos(sI[1]).indexOf('Premissas') >= 0 && textos(sI[1]).indexOf('DRE') < 0,
+   'cidade vazia: o sumário lista só as seções que o deck tem');
+ok(textos(sI[4]).some(t => t.indexOf('METRAGEM-COND ainda não foi') >= 0), 'aviso dos relatórios escrito no slide');
+ok(textos(sI[5]).some(t => t.indexOf('ainda não foi configurada') >= 0), 'aviso da manutenção escrito no slide');
 ok(!sI.some(sl => textos(sl)[0] === '02'), 'cidade vazia: seção sem dado não ganha sub capa');
 
 console.log('Pendentes (fora do deck, mas ainda desenham)');
@@ -1053,6 +1081,10 @@ const ESTADO_CIDADES = {};
   const cortados = [];
   sl.forEach((x, i) => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push((i + 1) + ' ' + titulo(x) + ' :: ' + t); }));
   ok(!cortados.length, c + ': nenhum texto cortado depois de aplicar as propostas (' + cortados.join(' | ') + ')');
+  // PREVIA=<pasta>: grava as formas de cada slide (posição, cor, texto) para
+  // ferramentas/previa_slides.py desenhar uma prévia sem abrir o Slides.
+  if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_' + c + '.json'),
+    JSON.stringify({ W: W, H: H, slides: sl.map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
   ESTADO_CIDADES[c] = { slides: sl.length, cortados: cortados, titulos: titulos,
                         naoDetalhado: sl.filter(x => textos(x).some(t => /^Não detalhado nos modelos/.test(t))).map(titulo) };
   console.log('  ' + sl.length + ' slides · ' + cortados.length + ' textos cortados com "…" · "não detalhado" em: ' +
@@ -1086,47 +1118,6 @@ console.log('Degradê do véu');
   ok(r1.ancorado && r1.erroMax < 0.01, 'véu da sub capa: camadas presas na esquerda e opacidade na reta (erro ' + r1.erroMax.toFixed(4) + ', ' + r1.n + ' camadas)');
   const r2 = conferir({ vertical: true, alphaDe: 0, alphaAte: 0.6, passos: 12 }, 'fim');
   ok(r2.ancorado && r2.erroMax < 0.01, 'véu de baixo da capa: camadas presas embaixo e opacidade na reta (erro ' + r2.erroMax.toFixed(4) + ')');
-}
-
-console.log('Sub capa recorte');
-// Com as fotos tratadas na pasta "IMAGENS - SUBCAPAS" (07/10/2026): painel
-// de cor, recorte, frase com caneta e o número da seção. Sem a foto de uma
-// seção, ela fica no padrão da mensal.
-{
-  const ESTEIO = G.ORC_CIDADES.ESTEIO;
-  const ARQ = { 'SUBCAPA - CORRETIVA.png': { w: 900, h: 1125 }, 'SUBCAPA - CONTRATADOS.png': { w: 900, h: 1125 },
-                'CANETA - SUBLINHADO.png': { w: 600, h: 120 } };
-  const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
-  const pedidosArq = [];
-  const pasta = { getFilesByName: n => { pedidosArq.push(n); return iter(ARQ[n] ? [{ getBlob: () => Object.assign({ nome: n }, ARQ[n]) }] : []); } };
-  const pastasPedidas = [];
-  ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => { pastasPedidas.push(n); return iter(n === G.ORC_PASTA_IMAGENS_SUBCAPAS ? [pasta] : []); } });
-  decks = {};
-  G._orcGerar_(['ESTEIO']);
-  delete ctx.DriveApp.getFolderById;
-  const sl = decks[ESTEIO.deckId].getSlides();
-  const sub = nome => sl.filter(x => textos(x)[1] === nome)[0];
-  const man = sub('Manutenção'), m2 = sub('Custo por m²'), prem = sub('Premissas');
-  ok(pastasPedidas.length === 1, 'pasta das imagens procurada uma vez por geração (' + pastasPedidas.length + ')');
-  ok(pedidosArq.filter(n => n === 'CANETA - SUBLINHADO.png').length === 1, 'traço de caneta baixado uma vez só');
-  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'SUBCAPA - CORRETIVA.png' && s.rot === -2.5),
-     'Manutenção: recorte da foto CORRETIVA (técnicos nas plataformas), girado');
-  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'CANETA - SUBLINHADO.png'), 'Manutenção: traço de caneta');
-  ok(man && textos(man).indexOf('o que custa manter o Mega rodando') >= 0, 'Manutenção: a frase da seção');
-  const tm = man ? textos(man) : [];
-  ok(tm.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tm.some(t => /orçamento 2027 da conta · R\$ [\d,]+\/m² ao mês/.test(t)),
-     'Manutenção: abre com o número da conta em R$ e R$/m² ao mês (' + tm.join(' | ') + ')');
-  ok(m2 && textos(m2).some(t => /^R\$ [\d,]+\/m²$/.test(t)), 'Custo por m²: abre com o R$/m² ao mês');
-  ok(prem && !prem.shapes.some(s => s.tipo === 'IMAGE') && !textos(prem).some(t => /^R\$/.test(t)),
-     'Premissas sem foto tratada: padrão da mensal, sem número');
-  sl.forEach((x, i) => x.shapes.forEach(sh => {
-    if (sh.tipo === 'ELLIPSE') return;
-    if (!(sh.x >= -0.5 && sh.y >= -0.5 && sh.x + sh.w <= W + 0.5 && sh.y + sh.h <= H + 0.5))
-      ok(false, 'sub capa recorte, slide ' + (i + 1) + ': ' + sh.tipo + ' fora da página');
-  }));
-  const cortados = [];
-  sl.forEach(x => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push(t); }));
-  ok(!cortados.length, 'sub capa recorte: nenhum texto cortado (' + cortados.join(' | ') + ')');
 }
 
 console.log('Gravação no Slides');

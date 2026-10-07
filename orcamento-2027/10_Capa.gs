@@ -179,258 +179,181 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
 }
 
 // ==========================================
-// SUB CAPA DE SEÇÃO
+// SUB CAPA DE SEÇÃO — "relatório claro" (C1, escolhida em 07/10/2026)
 // ==========================================
-// Abre cada seção do deck (Premissas, Resumo Executivo, DRE, Manutenção,
-// Segurança, Limpeza), como o gestor montou à mão na revisão de 30/09/2026.
-// Desde 07/10/2026 no padrão das capas de seção da apresentação mensal
-// (megas-mensal/10_Slide_Capas.gs, gerarCapaSecao): foto do tema com véu
-// azul, scrim que some para a direita, espinha em gradiente e o desenho da
-// seção à direita, no azul de destaque. A foto e o desenho de cada seção
-// estão em ORC_SUBCAPAS (01_Config.gs). Sem foto, fundo azul-escuro.
+// Divisória no padrão de relatório de auditoria/consultoria (IDEIAS-DESIGN.md,
+// "Decisão de 07/10/2026"): fundo branco, número da seção grande, título,
+// frase, o número da seção em destaque (R$, R$/m² ao mês e variação contra o
+// ritmo), a foto colorida num bloco à direita e, embaixo, a trilha com as
+// seções do deck — a atual destacada, as outras são link para a sub capa
+// delas. Medidas em pt de uma página 720×405, escaladas para a página real.
 // O número vem primeiro e o título logo depois (o teste procura assim).
-// Com a foto tratada na pasta das imagens, sai a sub capa "recorte"
-// (_orcSubcapaRecorte_); sem ela, a do padrão da mensal, abaixo.
-function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque) {
-  const DS = CR_DESIGN_SYSTEM, C = DS.colors, AZUL = '#60A5FA';
+function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque, secoes) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, k = W / 720;
   const cfg = ORC_SUBCAPAS[titulo] || {};
-  const peca = cfg.foto ? _orcImagemSubcapa_('SUBCAPA - ' + (cfg.foto === 'MEGA' ? cid.nome.toUpperCase() : cfg.foto) + '.png') : null;
-  if (peca) return _orcSubcapaRecorte_(slide, W, H, cid, numero, titulo, cfg, peca, destaque);
+  slide.getBackground().setSolidFill('#FFFFFF');
+  _ORC_LINKS.alvos[titulo] = slide.getObjectId();
+
+  // A foto primeiro: o que passa do bloco é coberto, e o resto vem por cima.
+  const chave = cfg.foto === 'MEGA' ? cid.nome.toUpperCase() : cfg.foto;
   const fotoId = cfg.foto === 'MEGA' ? cid.fotoFundoId : ORC_FOTOS_SECAO[cfg.foto];
-  slide.getBackground().setSolidFill(C.brandDark);
-
-  if (_orcFotoFundo_(slide, W, H, fotoId, C.brandDark, 0.5)) {
-    _orcGradiente_(slide, 0, 0, W * 0.62, H, C.brandDark, C.brandDark, { alphaDe: 0.55, alphaAte: 0, passos: 22 });
-  } else {
-    // Grafismo de fundo: a elipse SANGRA para fora da página de propósito.
-    const halo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 260, H - 250, 460, 460);
-    halo.getFill().setSolidFill(C.brandLight, 0.12); halo.getBorder().setTransparent();
+  const bx = 410 * k, by = 30 * k, bw = 274 * k, bh = 262 * k;
+  if (!_orcFotoEmBloco_(slide, W, H, fotoId, bx, by, bw, bh, ORC_FOTO_FOCO[chave])) {
+    _orcRet_(slide, bx, by, bw, bh, C.zebra);
   }
-  _orcGradiente_(slide, 0, 0, 6, H, C.brandLight, C.brandSoft, { vertical: true, passos: 24 });   // espinha
+  _orcRet_(slide, bx, by, 4 * k, bh, C.brandLight);
 
-  const y0 = Math.round(H * 0.28);
-  _orcUmaLinha_(slide, 48, y0, 160, 56, ('0' + numero).slice(-2),
-    { align: 'L', fs: 40, bold: true, cor: AZUL, fonte: DS.typography.titles });
-  _orcUmaLinha_(slide, 48, y0 + 58, W * 0.62, 44, titulo,
-    { align: 'L', fs: 30, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 18 });
-  _orcRet_(slide, 55, y0 + 108, 56, 3, AZUL);
-  _orcUmaLinha_(slide, 48, y0 + 118, W * 0.62, 18, cid.nome + ' · Orçamento ' + ORC_ANO,
-    { align: 'L', fs: 10, cor: '#CBD5E1', fonte: DS.typography.body });
-
-  _orcLinha_(slide, 42, H - 40, W - 42, H - 40, '#475569', 0.75);
-  _orcUmaLinha_(slide, 42, H - 34, W - 84, 18, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
-    { align: 'L', fs: 7.5, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
-
-  _orcMotivoSecao_(slide, cfg.motivo, W * 0.80, H * 0.42, AZUL);
-}
-
-// ==========================================
-// SUB CAPA "RECORTE" (jeito das capas de vídeo, 07/10/2026)
-// ==========================================
-// Receita das thumbs/cartazes (orcamento-2027/IDEIAS-DESIGN.md): fundo
-// escuro com UMA forma de cor (o painel azul à direita), a foto da seção como
-// um recorte de papel em retícula colado por cima (meio no painel, meio fora,
-// levemente girado), título grande, uma frase em serifa itálica com o traço
-// de caneta embaixo e o número da seção como protagonista.
-function _orcSubcapaRecorte_(slide, W, H, cid, numero, titulo, cfg, peca, destaque) {
-  const DS = CR_DESIGN_SYSTEM, C = DS.colors, AZUL = '#60A5FA';
-  slide.getBackground().setSolidFill(C.brandDark);
-  _orcRet_(slide, W * 0.64, 0, W * 0.36, H, C.brandLight);   // a forma de cor
-
-  // O recorte: já vem com papel, borda rasgada e sombra (PNG transparente).
-  const img = slide.insertImage(peca);
-  const ar = img.getWidth() / img.getHeight();
-  let h = H * 0.86, w = h * ar;
-  if (w > W * 0.44) { w = W * 0.44; h = w / ar; }
-  img.setWidth(w).setHeight(h).setLeft(W * 0.745 - w / 2).setTop(H * 0.47 - h / 2);
-  img.setRotation(-2.5);
-
-  const x = 48, tw = W * 0.5, y0 = Math.round(H * 0.2);
-  _orcUmaLinha_(slide, x, y0, 160, 40, ('0' + numero).slice(-2),
-    { align: 'L', fs: 28, bold: true, cor: AZUL, fonte: DS.typography.titles });
-  _orcUmaLinha_(slide, x, y0 + 36, tw, 48, titulo,
-    { align: 'L', fs: 34, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 20 });
+  _orcUmaLinha_(slide, 46 * k, 26 * k, 200 * k, 66 * k, ('0' + numero).slice(-2),
+    { align: 'L', fs: 54, bold: true, cor: '#60A5FA', fonte: T.titles });
+  _orcUmaLinha_(slide, 48 * k, 116 * k, 340 * k, 44 * k, titulo,
+    { align: 'L', fs: 32, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 20 });
   if (cfg.frase) {
-    _orcUmaLinha_(slide, x, y0 + 84, tw, 26, cfg.frase,
-      { align: 'L', fs: 15, italic: true, cor: AZUL, fonte: 'Playfair Display', fsMin: 10 });
-    const caneta = _orcImagemSubcapa_('CANETA - SUBLINHADO.png');
-    if (caneta) {
-      const c = slide.insertImage(caneta);
-      const cw = 150, ch = cw * c.getHeight() / c.getWidth();
-      c.setWidth(cw).setHeight(ch).setLeft(x + 2).setTop(y0 + 101);
-    }
+    _orcUmaLinha_(slide, 48 * k, 160 * k, 340 * k, 22 * k, cfg.frase,
+      { align: 'L', fs: 12.5, cor: C.textBody, fonte: T.body, fsMin: 9 });
   }
+  _orcRet_(slide, 48 * k, 190 * k, 40 * k, 3 * k, C.brandLight);
 
-  // O número da seção (R$ e R$/m² ao mês, como o diretor lê).
+  // O número da seção: o valor grande e até dois números menores ao lado.
   if (destaque) {
-    _orcUmaLinha_(slide, x, H * 0.6, tw, 42, destaque.valor,
-      { align: 'L', fs: 30, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 18 });
-    _orcUmaLinha_(slide, x, H * 0.6 + 40, tw, 16, destaque.linha,
-      { align: 'L', fs: 9, cor: '#CBD5E1', fonte: DS.typography.body, fsMin: 7 });
+    _orcUmaLinha_(slide, 48 * k, 200 * k, 170 * k, 40 * k, destaque.valor,
+      { align: 'L', fs: 28, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
+    _orcUmaLinha_(slide, 48 * k, 240 * k, 170 * k, 14 * k, destaque.rotulo,
+      { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 7 });
+    (destaque.kpis || []).slice(0, 2).forEach((kp, i) => {
+      const x = (222 + i * 90) * k;
+      _orcUmaLinha_(slide, x, 208 * k, 80 * k, 22 * k, kp[0],
+        { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+      _orcUmaLinha_(slide, x, 230 * k, 80 * k, 14 * k, kp[1],
+        { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+    });
   }
-  _orcUmaLinha_(slide, x, H - 62, tw, 16, cid.nome + ' · Orçamento ' + ORC_ANO,
-    { align: 'L', fs: 9, cor: '#94A3B8', fonte: DS.typography.body });
 
-  _orcLinha_(slide, 42, H - 40, W * 0.64 - 12, H - 40, '#475569', 0.75);
-  _orcUmaLinha_(slide, 42, H - 34, W * 0.6 - 42, 18, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
-    { align: 'L', fs: 7.5, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
+  _orcTrilhaSecoes_(slide, k, secoes || [titulo], titulo);
+  _orcRodapeClaro_(slide, k, cid);
 }
 
-// O número que abre a seção: { valor, linha } ou null (seção sem número).
-// Contas em foco: orçamento da conta; Resumo: o total; Custo por m²: o R$/m²
-// ao mês. A linha leva o R$/m² e a variação contra o ritmo do ano anterior.
+// Trilha das seções no pé da sub capa: uma coluna por seção, a atual com o
+// filete grosso e o nome em negrito; as outras viram link (_orcLigarSecoes_).
+function _orcTrilhaSecoes_(slide, k, secoes, atual) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, larg = 636 / secoes.length;
+  secoes.forEach((t, i) => {
+    const x = (48 + i * larg) * k, w = (larg - 6) * k, eh = t === atual;
+    _orcRet_(slide, x, (eh ? 311 : 312) * k, w, (eh ? 3 : 1) * k, eh ? C.brandLight : C.lines);
+    const num = _orcUmaLinha_(slide, x, 318 * k, w, 12 * k, ('0' + (i + 1)).slice(-2),
+      { align: 'L', fs: 8, bold: true, cor: eh ? C.brandLight : C.textMuted, fonte: DS.typography.titles });
+    const nome = _orcParagrafo_(slide, x, 329 * k, w, 26 * k, t,
+      { fs: 7.5, fsMin: 6, bold: eh, cor: eh ? C.brandDark : C.textMuted, fonte: DS.typography.body });
+    if (!eh) [num, nome].forEach(b => { if (b) _ORC_LINKS.origens.push({ id: b.getObjectId(), titulo: t }); });
+  });
+}
+
+function _orcRodapeClaro_(slide, k, cid) {
+  const DS = CR_DESIGN_SYSTEM;
+  _orcLinha_(slide, 48 * k, 372 * k, 684 * k, 372 * k, DS.colors.lines, 0.75);
+  _orcUmaLinha_(slide, 48 * k, 376 * k, 500 * k, 16 * k,
+    cid.nome + ' · Orçamento ' + ORC_ANO + ' · Capital Realty · Facilities',
+    { align: 'L', fs: 7.5, cor: DS.colors.textMuted, fonte: DS.typography.body });
+}
+
+// Foto colorida cobrindo o bloco (x, y, w, h) sem deformar, com o ponto de
+// interesse (foco, fração da largura) no centro quando dá. O Apps Script não
+// recorta imagem: o que passa do bloco é coberto de branco (o fundo da sub
+// capa) — por isso a foto entra antes de todo o resto. false se não carregou.
+function _orcFotoEmBloco_(slide, W, H, fotoId, x, y, w, h, foco) {
+  if (!fotoId) return false;
+  try {
+    const img = slide.insertImage(_orcBlobDrive_(fotoId, true));
+    const ar = img.getWidth() / img.getHeight();
+    const iw = ar > w / h ? h * ar : w, ih = ar > w / h ? h : w / ar;
+    const f = foco == null ? 0.5 : foco;
+    const ix = Math.min(x, Math.max(x + w - iw, x + w / 2 - f * iw)), iy = y + (h - ih) / 2;
+    img.setWidth(iw).setHeight(ih).setLeft(ix).setTop(iy);
+    [[ix, iy, x - ix, ih], [x + w, iy, ix + iw - x - w, ih], [x, iy, w, y - iy], [x, y + h, w, iy + ih - y - h]]
+      .forEach(m => {
+        const x0 = Math.max(0, m[0]), y0 = Math.max(0, m[1]);
+        const x1 = Math.min(W, m[0] + m[2]), y1 = Math.min(H, m[1] + m[3]);
+        if (x1 - x0 > 0.5 && y1 - y0 > 0.5) _orcRet_(slide, x0, y0, x1 - x0, y1 - y0, '#FFFFFF');
+      });
+    return true;
+  } catch (e) {
+    Logger.log('Foto da sub capa indisponível (' + fotoId + '). ' + e.message);
+    return false;
+  }
+}
+
+// O número que abre a seção: { valor, rotulo, kpis: [[número, rótulo], …] }
+// ou null (seção sem número). Contas em foco: orçamento da conta; Resumo: o
+// total; Custo por m²: o R$/m² ao mês. Ao lado, o R$/m² ao mês e a variação
+// contra o ritmo do ano anterior.
 function _orcDestaqueSecao_(titulo, rel, contas) {
   const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
-  const contra = vr => vr.texto !== '–' ? vr.texto + ' × ritmo ' + (ORC_ANO - 1) : null;
+  const contra = vr => vr.texto !== '–' ? [vr.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null;
   if (titulo === 'Custo por m²') {
     if (!area) return null;
     const m2 = rel.total.orc / area / 12;
-    const vr = aRit ? contra(_orcVariacao_(rel.total.ritmo / aRit / 12, m2, 0.005)) : null;
-    return { valor: 'R$ ' + _orcM2_(m2) + '/m²', linha: ['ao mês, todas as contas', vr].filter(Boolean).join(' · ') };
+    return { valor: 'R$ ' + _orcM2_(m2), rotulo: 'por m² ao mês, todas as contas',
+             kpis: [aRit ? contra(_orcVariacao_(rel.total.ritmo / aRit / 12, m2, 0.005)) : null].filter(Boolean) };
   }
   const iConta = { 'Manutenção': 0, 'Segurança': 1, 'Limpeza e Conservação': 2 }[titulo];
   let v, rotulo;
-  if (iConta !== undefined && contas) { v = contas[iConta].v; rotulo = 'orçamento ' + ORC_ANO + ' da conta'; }
-  else if (titulo === 'Resumo Executivo') { v = rel.total; rotulo = 'orçamento ' + ORC_ANO + ', todas as contas'; }
+  if (iConta !== undefined && contas) { v = contas[iConta].v; rotulo = 'Orçamento ' + ORC_ANO + ' da conta'; }
+  else if (titulo === 'Resumo Executivo') { v = rel.total; rotulo = 'Orçamento ' + ORC_ANO + ', todas as contas'; }
   else return null;
-  const m2 = area ? 'R$ ' + _orcM2_(v.orc / area / 12) + '/m² ao mês' : null;
-  return { valor: _orcCompacto_(v.orc), linha: [rotulo, m2, contra(_orcVariacao_(v.ritmo, v.orc))].filter(Boolean).join(' · ') };
-}
-
-// Arquivo da pasta das imagens das sub capas (blob) ou null. A pasta é
-// procurada uma vez por geração (_orcGerar_ zera _ORC_PASTA_IMG).
-let _ORC_PASTA_IMG;
-function _orcImagemSubcapa_(nome) {
-  if (_ORC_PASTA_IMG === undefined) {
-    _ORC_PASTA_IMG = null;
-    try {
-      const it = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID).getFoldersByName(ORC_PASTA_IMAGENS_SUBCAPAS);
-      if (it.hasNext()) _ORC_PASTA_IMG = it.next();
-    } catch (e) {
-      Logger.log('Imagens das sub capas indisponíveis: ' + e.message);
-    }
-  }
-  if (!_ORC_PASTA_IMG) return null;
-  const k = 'pasta:' + nome;   // no mesmo cache das imagens (a caneta vai em 8 sub capas)
-  if (!(k in _ORC_BLOBS)) {
-    try {
-      const f = _ORC_PASTA_IMG.getFilesByName(nome);
-      _ORC_BLOBS[k] = { blob: f.hasNext() ? f.next().getBlob() : null };
-    } catch (e) {
-      Logger.log('Imagem ' + nome + ' indisponível: ' + e.message);
-      _ORC_BLOBS[k] = { blob: null };
-    }
-  }
-  return _ORC_BLOBS[k].blob;
+  return { valor: _orcCompacto_(v.orc), rotulo: rotulo,
+           kpis: [area ? ['R$ ' + _orcM2_(v.orc / area / 12), '/m² ao mês'] : null,
+                  contra(_orcVariacao_(v.ritmo, v.orc))].filter(Boolean) };
 }
 
 // ==========================================
-// DESENHO DA SEÇÃO (sub capa)
+// SUMÁRIO (pedido do usuário em 07/10/2026)
 // ==========================================
-// Os mesmos motivos das capas de seção da mensal (megas-mensal/
-// 10_Slide_Capas.gs, _secMot*_), em formas nativas: branco translúcido (lê
-// sobre a foto) e UM realce na cor de destaque, centrados em (cx, cy).
-function _orcMotivoSecao_(s, chave, cx, cy, cor) {
-  switch (chave) {
-    case 'PREVENTIVA':   return _orcMotPreventiva_(s, cx, cy, cor);
-    case 'CONTRATADOS':  return _orcMotContratados_(s, cx, cy, cor);
-    case 'INTERNOS':     return _orcMotInternos_(s, cx, cy, cor);
-    case 'PATRIMONIAL':  return _orcMotPatrimonial_(s, cx, cy, cor);
-    case 'OPERACIONAL':  return _orcMotOperacional_(s, cx, cy, cor);
-    case 'DOCUMENTACAO': return _orcMotDocumentacao_(s, cx, cy, cor);
-    case 'M2':           return _orcMotM2_(s, cx, cy, cor);
-    default:   // ANEIS e qualquer chave sem desenho: os anéis da capa
-      _orcAnel_(s, cx - 75, cy - 75, 150, '#FFFFFF', 1.25, 0.14);
-      _orcAnel_(s, cx - 55, cy - 55, 110, cor, 1, 0.5);
-  }
-}
+// Logo depois da capa (e do "Revisar", quando ele existe), no mesmo estilo da
+// sub capa: as seções que este deck tem, em duas colunas, cada uma com o
+// número, o nome e a frase dela. Número e nome são link para a sub capa.
+function gerarSlideSumario_(slide, W, H, cid, secoes) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, k = W / 720;
+  slide.getBackground().setSolidFill('#FFFFFF');
+  _orcUmaLinha_(slide, 48 * k, 30 * k, 400 * k, 44 * k, 'Sumário',
+    { align: 'L', fs: 32, bold: true, cor: C.brandDark, fonte: T.titles });
+  _orcUmaLinha_(slide, 48 * k, 74 * k, 500 * k, 20 * k, cid.nome + ' · Orçamento ' + ORC_ANO,
+    { align: 'L', fs: 12.5, cor: C.textBody, fonte: T.body });
+  _orcRet_(slide, 48 * k, 102 * k, 40 * k, 3 * k, C.brandLight);
 
-function _orcAnel_(s, x, y, tam, cor, peso, alpha) {
-  const c = s.insertShape(SlidesApp.ShapeType.ELLIPSE, x, y, tam, tam);
-  c.getFill().setTransparent();
-  c.getBorder().getLineFill().setSolidFill(cor, alpha == null ? 1 : alpha);
-  c.getBorder().setWeight(peso || 1);
-  return c;
-}
-
-// Forma só com contorno translúcido.
-function _orcContorno_(s, tipo, x, y, w, h, cor, alpha, peso) {
-  const f = s.insertShape(tipo, x, y, w, h);
-  f.getFill().setTransparent();
-  f.getBorder().getLineFill().setSolidFill(cor, alpha);
-  f.getBorder().setWeight(peso);
-  return f;
-}
-
-// MANUTENÇÃO — grade 3×3 (plano/calendário), célula central em destaque.
-function _orcMotPreventiva_(s, cx, cy, cor) {
-  const cell = 22, gap = 9, n = 3, span = n * cell + (n - 1) * gap;
-  const x0 = cx - span / 2, y0 = cy - span / 2;
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-    const x = x0 + c * (cell + gap), y = y0 + r * (cell + gap);
-    if (r === 1 && c === 1) _orcRet_(s, x, y, cell, cell, cor, { redondo: true, alpha: 0.9 });
-    else _orcContorno_(s, SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cell, cell, '#FFFFFF', 0.5, 1.5);
-  }
-}
-
-// LIMPEZA (serviço contratado) — dois anéis entrelaçados, um em destaque.
-function _orcMotContratados_(s, cx, cy, cor) {
-  _orcAnel_(s, cx - 56, cy - 36, 72, '#FFFFFF', 2.5, 0.5);
-  _orcAnel_(s, cx - 16, cy - 36, 72, cor, 2.5, 0.85);
-}
-
-// PROJETOS — skyline de barras (predial), uma barra em destaque.
-function _orcMotInternos_(s, cx, cy, cor) {
-  const alt = [38, 64, 50, 78, 44], bw = 14, gap = 8;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 42;
-  alt.forEach((hh, i) => _orcRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, i === 3 ? cor : '#FFFFFF',
-    { redondo: true, alpha: i === 3 ? 0.85 : 0.28 }));
-  _orcRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', { alpha: 0.5 });
-}
-
-// SEGURANÇA — cadeado, a fechadura em destaque.
-function _orcMotPatrimonial_(s, cx, cy, cor) {
-  _orcAnel_(s, cx - 20, cy - 42, 40, '#FFFFFF', 3, 0.5);   // arco
-  const corpo = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 28, cy - 14, 56, 48);
-  corpo.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);   // cobre a base do arco
-  corpo.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6); corpo.getBorder().setWeight(2.5);
-  const fech = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 6, cy + 2, 12, 12);
-  fech.getFill().setSolidFill(cor, 0.95); fech.getBorder().setTransparent();
-  _orcRet_(s, cx - 2, cy + 11, 4, 12, cor, { alpha: 0.95 });
-}
-
-// DRE — barras crescentes + seta (resultado), a última em destaque.
-function _orcMotOperacional_(s, cx, cy, cor) {
-  const alt = [30, 48, 66, 86], bw = 16, gap = 10;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 44;
-  alt.forEach((hh, i) => {
-    const ult = i === alt.length - 1;
-    _orcRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, ult ? cor : '#FFFFFF', { redondo: true, alpha: ult ? 0.85 : 0.3 });
+  const porColuna = Math.max(1, Math.ceil(secoes.length / 2)), colW = 312;
+  secoes.forEach((t, i) => {
+    const x = (48 + Math.floor(i / porColuna) * 324) * k, y = (126 + (i % porColuna) * 58) * k;
+    _orcRet_(slide, x, y, colW * k, 1 * k, C.lines);
+    const num = _orcUmaLinha_(slide, x, y + 8 * k, 44 * k, 26 * k, ('0' + (i + 1)).slice(-2),
+      { align: 'L', fs: 20, bold: true, cor: '#60A5FA', fonte: T.titles });
+    const nome = _orcUmaLinha_(slide, x + 48 * k, y + 8 * k, (colW - 48) * k, 20 * k, t,
+      { align: 'L', fs: 13, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 9 });
+    const frase = (ORC_SUBCAPAS[t] || {}).frase;
+    if (frase) {
+      _orcUmaLinha_(slide, x + 48 * k, y + 29 * k, (colW - 48) * k, 14 * k, frase,
+        { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 7 });
+    }
+    [num, nome].forEach(b => { if (b) _ORC_LINKS.origens.push({ id: b.getObjectId(), titulo: t }); });
   });
-  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, x0 + span - bw - 4, base - alt[3] - 26, 24, 22);
-  tri.getFill().setSolidFill(cor, 0.9); tri.getBorder().setTransparent();
-  _orcRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', { alpha: 0.5 });
+  _orcRodapeClaro_(slide, k, cid);
 }
 
-// PREMISSAS — pilha de papéis, a faixa de cima em destaque.
-function _orcMotDocumentacao_(s, cx, cy, cor) {
-  _orcRet_(s, cx - 16, cy - 26, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.25 });
-  _orcRet_(s, cx - 23, cy - 33, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.4 });
-  _orcRet_(s, cx - 30, cy - 40, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.92 });
-  _orcRet_(s, cx - 30, cy - 40, 56, 9, cor, { alpha: 0.9 });
-  for (let i = 0; i < 4; i++) _orcRet_(s, cx - 22, cy - 18 + i * 12, i === 3 ? 24 : 40, 3, '#94A3B8', { alpha: 0.9 });
-}
-
-// CUSTO POR M² — planta de galpão vista de cima (só do orçamento): contorno,
-// dois módulos com um em destaque, e a régua de cota embaixo.
-function _orcMotM2_(s, cx, cy, cor) {
-  const w = 104, h = 70, x0 = cx - w / 2, y0 = cy - h / 2 - 6;
-  _orcContorno_(s, SlidesApp.ShapeType.RECTANGLE, x0, y0, w, h, '#FFFFFF', 0.55, 2);
-  _orcRet_(s, x0 + w / 2 - 1, y0, 2, h, '#FFFFFF', { alpha: 0.4 });              // parede entre os módulos
-  _orcRet_(s, x0 + w / 2 + 6, y0 + 6, w / 2 - 12, h - 12, cor, { alpha: 0.85 });   // módulo em destaque
-  const yr = y0 + h + 12;                                                         // régua
-  _orcRet_(s, x0, yr, w, 1.5, '#FFFFFF', { alpha: 0.6 });
-  [x0, x0 + w / 2 - 0.75, x0 + w - 1.5].forEach(x => _orcRet_(s, x, yr - 4, 1.5, 9, '#FFFFFF', { alpha: 0.6 }));
+// Links do sumário e das trilhas: cada origem aponta para a sub capa da sua
+// seção. Feito no fim, com a apresentação gravada e reaberta (as sub capas
+// das seções seguintes ainda não existem quando o sumário é desenhado).
+let _ORC_LINKS = { alvos: {}, origens: [] };
+function _orcLigarSecoes_(deck, cid) {
+  let n = 0;
+  _ORC_LINKS.origens.forEach(o => {
+    const alvoId = _ORC_LINKS.alvos[o.titulo];
+    if (!alvoId) return;
+    try {
+      const alvo = deck.getSlideById(alvoId), pe = deck.getPageElementById(o.id);
+      if (alvo && pe) { pe.asShape().setLinkSlide(alvo); n++; }
+    } catch (e) {
+      Logger.log('Link para ' + o.titulo + ' não criado: ' + e.message);
+    }
+  });
+  Logger.log(cid.nome + ': ' + n + ' links do sumário e das trilhas para as sub capas');
 }
 
 // ==========================================

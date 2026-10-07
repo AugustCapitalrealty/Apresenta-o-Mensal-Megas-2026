@@ -23,10 +23,10 @@ function gerarTodas()    { _orcGerar_(['CURITIBA', 'ITAJAI', 'ESTEIO']); }
 
 function _orcGerar_(chaves) {
   _orcTextosReiniciar_();
-  _ORC_PASTA_IMG = undefined;   // procura de novo a pasta das imagens das sub capas
   _ORC_BLOBS = {};              // e baixa de novo logos e fotos (uma vez cada)
   chaves.forEach(k => {
     const cid = ORC_CIDADES[k];
+    _ORC_LINKS = { alvos: {}, origens: [] };   // sumário e trilhas → sub capas (10_Capa.gs)
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
     let deck = SlidesApp.openById(cid.deckId);
     const W = deck.getPageWidth(), H = deck.getPageHeight();
@@ -49,6 +49,7 @@ function _orcGerar_(chaves) {
     _orcGerarCidade_(deck, W, H, k);
     const final = SlidesApp.openById(cid.deckId);
     final.getSlides().forEach(s => { if (s.getObjectId() === primeiro) s.remove(); });
+    _orcLigarSecoes_(final, cid);
     const n = final.getSlides().length, url = final.getUrl();
     _orcSalvarDeck_(final, 'a remoção do último slide antigo de ' + cid.nome);
     Logger.log('Pronto: ' + cid.nome + ', ' + n + ' slides — ' + url);
@@ -115,7 +116,8 @@ function _orcGerarCidade_(deck, W, H, chave) {
     let dest = null;
     try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
     catch (e) { Logger.log('Número da sub capa ' + titulo + ' indisponível: ' + e.message); }
-    _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo, dest));
+    if (secoes[n - 1] !== titulo) Logger.log('Sumário fora de ordem: seção ' + n + ' é "' + titulo + '", o sumário diz "' + secoes[n - 1] + '"');
+    _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo, dest, secoes));
   };
 
   // Leituras antes do desenho: o slide de revisão vem logo depois da capa, e
@@ -132,6 +134,14 @@ function _orcGerarCidade_(deck, W, H, chave) {
     catch (e) { falhas.push(['Linha a linha — ' + cid.nome, e]); }
   }
   const calc = visao ? _orcCalculosCompartilhados_(cid, visao, dados) : null;
+  // As seções que este deck vai ter, na ordem das chamadas secao() abaixo:
+  // o sumário e a trilha das sub capas listam só estas.
+  const secoes = ['Premissas'].concat(
+    visao ? ['Resumo Executivo', 'DRE'] : [],
+    contas || dados ? ['Manutenção'] : [],
+    contas ? ['Segurança', 'Limpeza e Conservação'] : [],
+    visao && calc.cls ? ['Projetos × Recorrente'] : [],
+    visao ? ['Custo por m²'] : []);
   // Pendências de dados (contratos que faltam, modelos acima da METRAGEM):
   // alerta no slide de revisão e selo nos slides da conta (19_Revisar.gs).
   if (visao) {
@@ -145,6 +155,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
   if (visao && (visao.rel.avisos.length || visao.rel.pendencias.length)) {
     _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
   }
+  _orcPasso_(deck, W, H, 'Sumário', s => gerarSlideSumario_(s, W, H, cid, secoes));
   secao('Premissas');
   _orcPasso_(deck, W, H, 'Premissas', s => gerarSlidePremissas_(s, W, H, cid));
   falhas.forEach(f => _orcSlideFalha_(_orcNovoSlide_(deck), W, H, f[0], f[1]));

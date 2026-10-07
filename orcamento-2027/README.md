@@ -281,6 +281,10 @@ Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
 Imagens e revisão visual (`python -m pip install pillow numpy`):
 
+- `python ferramentas/previa_slides.py ferramentas/saida/formas_<cidade>.json <índices>` —
+  prévia aproximada dos slides, a partir das formas que o teste grava com
+  `PREVIA=ferramentas/saida node teste/teste_orcamento.js` (conferir layout
+  sem abrir o Slides).
 - `python ferramentas/efeitos_imagem.py foto|carimbo|folha|miniatura …` —
   foto em retícula na cor da marca (com borda rasgada e sombra), carimbo
   PENDENTE, folha de contato dos PNG exportados e teste de miniatura. O que
