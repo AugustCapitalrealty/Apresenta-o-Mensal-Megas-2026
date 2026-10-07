@@ -64,9 +64,11 @@ function textRange(reg) {
   };
   return tr;
 }
+let idSlide = 0;
 function novoSlide(deck) {
   const slide = {
-    shapes: [], removido: false,
+    shapes: [], removido: false, id: 'p' + (++idSlide),
+    getObjectId: () => slide.id,
     getBackground: () => ({ setSolidFill: c => cor(c, 'background') }),
     insertShape: (tipo, x, y, w, h) => {
       [x, y, w, h].forEach((v, i) => num(v, 'insertShape[' + i + ']'));
@@ -105,6 +107,13 @@ function novoDeck() {
   deck.getSlides = () => deck._slides.slice();
   deck.appendSlide = () => { const s = novoSlide(deck); deck._slides.push(s); return s; };
   deck.getUrl = () => 'https://docs.google.com/presentation/d/teste';
+  // Gravação: falhasAoSalvar = quantas vezes seguidas o Slides responde
+  // "Service unavailable" antes de aceitar.
+  deck.salvos = 0; deck.falhasAoSalvar = 0;
+  deck.saveAndClose = () => {
+    if (deck.falhasAoSalvar > 0) { deck.falhasAoSalvar--; throw new Error('Service unavailable: Slides'); }
+    deck.salvos++;
+  };
   return deck;
 }
 
@@ -190,6 +199,7 @@ const ctx = {
   },
   // Sem Drive no teste: força o caminho de reserva do logo (texto no lugar).
   DriveApp: { getFileById: id => { throw new Error('sem Drive no teste'); } },
+  Utilities: { sleep: () => {} },
   console: console
 };
 vm.createContext(ctx);
@@ -1026,6 +1036,34 @@ const ESTADO_CIDADES = {};
               ESTADO_CIDADES[c].naoDetalhado.join(', '));
 });
 if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
+console.log('Gravação no Slides');
+// "Service unavailable: Slides" no fim da execução (Esteio, 07/10/2026):
+// grava os slides novos, depois a remoção dos antigos, com nova tentativa.
+{
+  const ESTEIO = G.ORC_CIDADES.ESTEIO;
+  decks = {};
+  const d = novoDeck();
+  decks[ESTEIO.deckId] = d;
+  const antigo = d.getSlides()[0];
+  d.falhasAoSalvar = 2;                       // duas recusas, a terceira passa
+  LOG.length = 0;
+  G._orcGerar_(['ESTEIO']);
+  ok(d.salvos === 2, 'Slides ocupado: grava em duas etapas depois de tentar de novo (' + d.salvos + ' gravações)');
+  ok(LOG.filter(m => /^Slides ocupado/.test(m)).length === 2, 'cada nova tentativa fica no log');
+  ok(d.getSlides().indexOf(antigo) < 0 && d.getSlides().length > 1, 'slide antigo apagado, novos ficam');
+
+  decks = {};
+  const d2 = novoDeck();
+  decks[ESTEIO.deckId] = d2;
+  const antigo2 = d2.getSlides()[0];
+  d2.falhasAoSalvar = 99;
+  let erro = null;
+  try { G._orcGerar_(['ESTEIO']); } catch (e) { erro = e; }
+  ok(erro && /O Slides não gravou os slides novos de Mega Esteio/.test(erro.message) && /Rode a geração de novo/.test(erro.message),
+     'Slides fora do ar: para com mensagem do que fazer (' + (erro && erro.message) + ')');
+  ok(d2.getSlides().indexOf(antigo2) >= 0, 'sem gravar os novos, o slide antigo não é apagado');
+}
 
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
 process.exit(falhas ? 1 : 0);

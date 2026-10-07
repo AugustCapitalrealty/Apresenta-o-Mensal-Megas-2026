@@ -10,8 +10,9 @@
  *   ▸ diagnosticarOrcamento()                          → só lê e mostra no log
  *
  * Toda geração SUBSTITUI o conteúdo da apresentação da cidade: os slides
- * novos são criados primeiro e os antigos só são apagados no fim. As três
- * juntas chegam perto do limite de 6 min do Apps Script: prefira uma por vez.
+ * novos são criados e gravados primeiro; os antigos só são apagados depois,
+ * numa segunda gravação. As três juntas chegam perto do limite de 6 min do
+ * Apps Script: prefira uma por vez.
  */
 
 function gerarCuritiba() { _orcGerar_(['CURITIBA']); }
@@ -26,12 +27,37 @@ function _orcGerar_(chaves) {
     if (!cid.deckId) throw new Error(cid.nome + ': falta a apresentação (deckId) em ORC_CIDADES (01_Config.gs).');
     const deck = SlidesApp.openById(cid.deckId);
     const W = deck.getPageWidth(), H = deck.getPageHeight();
-    const antigos = deck.getSlides();
+    const antigos = new Set(deck.getSlides().map(s => s.getObjectId()));
     _orcGerarCidade_(deck, W, H, k);
-    antigos.forEach(s => s.remove());
-    Logger.log('Pronto: ' + cid.nome + ', ' + deck.getSlides().length + ' slides — ' + deck.getUrl());
+    // Duas gravações (07/10/2026): com tudo numa só, a do Esteio falhava no
+    // fim da execução com "Service unavailable: Slides". Se a segunda falhar,
+    // o deck fica com os slides novos E os antigos — nada se perde, e a
+    // próxima geração apaga tudo o que havia antes.
+    _orcSalvarDeck_(deck, 'os slides novos de ' + cid.nome);
+    const final = SlidesApp.openById(cid.deckId);
+    final.getSlides().forEach(s => { if (antigos.has(s.getObjectId())) s.remove(); });
+    const n = final.getSlides().length, url = final.getUrl();
+    _orcSalvarDeck_(final, 'a remoção dos slides antigos de ' + cid.nome);
+    Logger.log('Pronto: ' + cid.nome + ', ' + n + ' slides — ' + url);
   });
   _orcSalvarTextos_();
+}
+
+// Grava o que está pendente no Slides. "Service unavailable" é o Slides
+// ocupado: espera e tenta de novo (3 tentativas, espera crescente). Outro
+// erro, ou a terceira falha, para a geração com o que fazer.
+function _orcSalvarDeck_(deck, etapa) {
+  for (let t = 1; ; t++) {
+    try { deck.saveAndClose(); return; }
+    catch (e) {
+      if (t >= 3 || !/unavailable/i.test(e.message)) {
+        throw new Error('O Slides não gravou ' + etapa + ' (' + e.message + '). Rode a geração de novo em alguns ' +
+                        'minutos: ela recria a apresentação inteira e apaga o que tiver sobrado.');
+      }
+      Logger.log('Slides ocupado ao gravar ' + etapa + ' (tentativa ' + t + ' de 3): ' + e.message);
+      Utilities.sleep(10000 * t);
+    }
+  }
 }
 
 /**
