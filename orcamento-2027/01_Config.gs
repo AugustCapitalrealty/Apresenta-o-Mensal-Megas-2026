@@ -328,6 +328,15 @@ const ORC_PASTA_IMAGENS = 'IMAGENS - SLIDES';
 // a imagem (ou com false aqui), o slide desenha tudo com formas, como antes.
 const ORC_USAR_MOLDURAS = true;
 
+// Formas pelo motor (07/10/2026, "o máximo de moldura possível"): em todo
+// slide com cabeçalho, as formas do conteúdo (fundos de tabela, faixas,
+// barras, linhas dos gráficos, bolinhas) viram UMA imagem "GRAFICO -
+// <assinatura>.png" na pasta de imagens, desenhada por
+// ferramentas/graficos_imagem.py, logo acima da moldura; os textos ficam no
+// slide, editáveis. A assinatura sai das próprias formas: a imagem só muda se
+// algum número (ou o layout) mudar. false = tudo em formas, como antes.
+const ORC_USAR_GRAFICOS_IMAGEM = true;
+
 // Onde está o assunto em cada foto (fração da largura): a foto do bloco da
 // sub capa é centrada nesse ponto quando dá.
 const ORC_FOTO_FOCO = {

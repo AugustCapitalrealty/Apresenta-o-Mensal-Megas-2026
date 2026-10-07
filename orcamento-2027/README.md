@@ -356,5 +356,11 @@ Pedidos do gestor (e-mail de 07/10/2026) e do Guilherme; detalhes em `REVISAO-GE
   fundo por slide (`MOLDURA - <assinatura>.png`). Depois de mudar layout ou cores:
   `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e `python ferramentas/molduras_imagem.py`. Moldura que falta
   não quebra nada: o slide sai com as formas de antes.
+- **Formas pelo motor** (`ORC_USAR_GRAFICOS_IMAGEM`): em todo slide com cabeçalho, as formas do conteúdo (fundos de
+  tabela, faixas, barras, linhas e bolinhas dos gráficos) numa imagem logo acima da moldura
+  (`GRAFICO - <assinatura>.png`); no slide ficam só textos e imagens. A assinatura sai das formas: a imagem só muda
+  quando um número muda. Faltou imagem? O log diz quais e a especificação vai para `GRAFICOS PENDENTES.json` na pasta
+  de imagens: `python ferramentas/graficos_imagem.py` desenha as do teste e as pendentes; espere o Drive subir e gere
+  de novo.
 - **Imagens**: `python ferramentas/capas_imagem.py` (capas e sub capas dos Megas, Curitiba na Demercado) e
   `python ferramentas/capas_imagem.py FACILITIES` (capa do deck único).

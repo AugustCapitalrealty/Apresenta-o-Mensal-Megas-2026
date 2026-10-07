@@ -90,11 +90,14 @@ function novoSlide(deck) {
     },
     insertLine: (cat, x1, y1, x2, y2) => {
       [x1, y1, x2, y2].forEach((v, i) => num(v, 'insertLine[' + i + ']'));
-      slide.shapes.push({ tipo: 'LINE', x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
+      // x1…y2: as pontas de verdade (a prévia desenha a linha inclinada certa)
+      const reg = { tipo: 'LINE', x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1), x1, y1, x2, y2 };
+      slide.shapes.push(reg);
       const l = {
-        getLineFill: () => ({ setSolidFill: c => cor(c, 'line') }),
-        setWeight: v => { num(v, 'line weight'); return l; },
-        setDashStyle: () => l
+        getLineFill: () => ({ setSolidFill: c => { cor(c, 'line'); reg.cor = c; } }),
+        setWeight: v => { num(v, 'line weight'); reg.peso = v; return l; },
+        setDashStyle: () => { reg.dash = true; return l; },
+        sendToBack: () => { slide.shapes.splice(slide.shapes.indexOf(reg), 1); slide.shapes.unshift(reg); }
       };
       return l;
     },
@@ -1320,7 +1323,9 @@ console.log('Capa como imagem');
   const pedidos = [];
   // Molduras (v2): as que a geração anterior do Esteio anotou (mesmas assinaturas) estão na pasta.
   const MOLDS = Object.keys(G._ORC_MOLDURAS_USADAS).map(h => 'MOLDURA - ' + h + '.png');
-  const TEM = ['CAPA - MEGA ESTEIO.jpg', 'SUBCAPA - MEGA ESTEIO - 04.jpg'].concat(MOLDS);
+  // Formas pelo motor: as imagens que a geração anterior anotou também estão na pasta.
+  const GRAFS = Object.keys(G._ORC_GRAFICOS_USADOS).map(h => 'GRAFICO - ' + h + '.png');
+  const TEM = ['CAPA - MEGA ESTEIO.jpg', 'SUBCAPA - MEGA ESTEIO - 04.jpg'].concat(MOLDS, GRAFS);
   const pasta = { getFilesByName: n => { pedidos.push(n); return iter(TEM.indexOf(n) >= 0 ? [{ getBlob: () => ({ nome: n, w: 1920, h: 1080 }) }] : []); } };
   ctx.DriveApp.getFolderById = id => ({ getFoldersByName: n => iter(n === G.ORC_PASTA_IMAGENS ? [pasta] : []) });
   decks = {};
@@ -1352,6 +1357,12 @@ console.log('Capa como imagem');
      !llM.shapes.some(f => f.tipo === 'LINE' && f.y === G.CR_DESIGN_SYSTEM.layout.headerH) &&
      Math.abs(llM.shapes[0].w - W) < 0.01 && Math.abs(llM.shapes[0].h - H) < 0.01,
      'moldura em imagem: ' + comMold.length + ' slides com a moldura no fundo; cards e cabeçalho não viram formas');
+  // Formas pelo motor: logo acima da moldura, a imagem das formas; no slide, só textos e imagens.
+  const comHeader = slE.filter(x => comMold.indexOf(x) >= 0);
+  const soTexto = x => x.shapes.every(f => f.tipo === 'TEXT_BOX' || f.tipo === 'IMAGE');
+  ok(llM && /^GRAFICO - /.test(llM.shapes[1].nome || '') && Math.abs(llM.shapes[1].w - W) < 0.01 && soTexto(llM) &&
+     comHeader.every(soTexto), 'formas pelo motor: ' + comHeader.filter(soTexto).length + ' de ' + comHeader.length +
+     ' slides só com textos e imagens (a imagem das formas logo acima da moldura)');
   G._ORC_BLOBS = {};
 }
 
@@ -1441,5 +1452,7 @@ console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'graficos.json'), JSON.stringify(G._ORC_GRAFICOS_USADOS, null, 1));
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'graficos_passos.json'), JSON.stringify(G._ORC_GRAFICOS_PASSOS, null, 1));
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras_passos.json'), JSON.stringify(G._ORC_MOLDURAS_PASSOS, null, 1));
 process.exit(falhas ? 1 : 0);

@@ -149,14 +149,21 @@ function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
     _orcRegistrarTexto_(o.aba, original, t, Math.max(0, Math.floor(livre / (fs * fator * _ORC_PESO_MAIUSCULA))));
   }
 
-  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bx, y, bw, h);
+  const q = { t: 'txt', x: bx, y: y, w: bw, h: h, texto: t, fs: fs, bold: !!o.bold, italic: !!o.italic,
+              cor: o.cor || CR_DESIGN_SYSTEM.colors.textMain, fonte: fonte, align: align };
+  return _orcCaixaTexto_(slide, q);
+}
+
+// A caixa de texto de uma linha já medida (q de _orcUmaLinha_).
+function _orcCaixaTexto_(slide, q) {
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, q.x, q.y, q.w, q.h);
   box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  box.getText().setText(t).getTextStyle()
-    .setFontSize(fs).setBold(!!o.bold).setItalic(!!o.italic)
-    .setForegroundColor(o.cor || CR_DESIGN_SYSTEM.colors.textMain).setFontFamily(fonte);
+  box.getText().setText(q.texto).getTextStyle()
+    .setFontSize(q.fs).setBold(q.bold).setItalic(q.italic)
+    .setForegroundColor(q.cor).setFontFamily(q.fonte);
   box.getText().getParagraphStyle().setParagraphAlignment(
-    align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
-      : align === 'R' ? SlidesApp.ParagraphAlignment.END
+    q.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
+      : q.align === 'R' ? SlidesApp.ParagraphAlignment.END
       : SlidesApp.ParagraphAlignment.START);
   return box;
 }
@@ -178,15 +185,21 @@ function _orcParagrafo_(slide, x, y, w, h, texto, op) {
   const alturaLinha = f => f * 1.2 * (espac / 100);
   while (fs > fsMin && _orcLinhasTexto_(t, w, fs, fonte, o.bold) * alturaLinha(fs) > h) fs -= 0.25;
 
-  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
-  if (o.meio) box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  box.getText().setText(t).getTextStyle()
-    .setFontSize(fs).setBold(!!o.bold).setItalic(!!o.italic)
-    .setForegroundColor(o.cor || CR_DESIGN_SYSTEM.colors.textBody).setFontFamily(fonte);
+  const q = { t: 'par', x: x, y: y, w: w, h: h, texto: t, fs: fs, bold: !!o.bold, italic: !!o.italic, meio: !!o.meio,
+              cor: o.cor || CR_DESIGN_SYSTEM.colors.textBody, fonte: fonte, align: o.align, espac: espac };
+  return _orcCaixaParagrafo_(slide, q);
+}
+
+function _orcCaixaParagrafo_(slide, q) {
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, q.x, q.y, q.w, q.h);
+  if (q.meio) box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  box.getText().setText(q.texto).getTextStyle()
+    .setFontSize(q.fs).setBold(q.bold).setItalic(q.italic)
+    .setForegroundColor(q.cor).setFontFamily(q.fonte);
   box.getText().getParagraphStyle()
-    .setParagraphAlignment(o.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
+    .setParagraphAlignment(q.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER
                                            : SlidesApp.ParagraphAlignment.START)
-    .setLineSpacing(espac);   // o Slides recusa espaçamento < 100
+    .setLineSpacing(q.espac);   // o Slides recusa espaçamento < 100
   return box;
 }
 
@@ -202,6 +215,12 @@ function _orcRet_(slide, x, y, w, h, cor, op) {
     _ORC_MOLD.cards.push({ x: x, y: y, w: w, h: h, cor: cor, borda: o.borda || null, peso: o.borda ? (o.peso || 0.75) : 0 });
     return null;
   }
+  // As outras formas do conteúdo: para a imagem do motor (_orcFecharGrafico_).
+  if (_ORC_GRAF && !o.semGrafico) {
+    _ORC_GRAF.prims.push({ t: 'r', x: x, y: y, w: w, h: h, cor: cor || '', redondo: !!o.redondo,
+                           borda: o.borda || '', peso: o.borda ? (o.peso || 0.75) : 0, alpha: o.alpha });
+    return null;
+  }
   const s = slide.insertShape(o.redondo ? SlidesApp.ShapeType.ROUND_RECTANGLE : SlidesApp.ShapeType.RECTANGLE,
                               x, y, Math.max(0.5, w), Math.max(0.5, h));
   if (cor) s.getFill().setSolidFill(cor, o.alpha === undefined ? 1 : o.alpha);
@@ -212,6 +231,11 @@ function _orcRet_(slide, x, y, w, h, cor, op) {
 }
 
 function _orcLinha_(slide, x1, y1, x2, y2, cor, peso) {
+  if (_ORC_GRAF) {
+    const q = { t: 'l', x1: x1, y1: y1, x2: x2, y2: y2, cor: cor, peso: peso || 0.75, dash: false };
+    _ORC_GRAF.prims.push(q);
+    return { setDashStyle: function () { q.dash = true; return this; } };
+  }
   const l = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, x1, y1, x2, y2);
   l.getLineFill().setSolidFill(cor);
   l.setWeight(peso || 0.75);
@@ -283,6 +307,8 @@ function _orcHeader_(slide, W, titulo, subtitulo) {
   const MX = DS.layout.marginX;
   // Com a moldura: barra, trilha e linha vão para a imagem do fundo.
   if (_ORC_MOLD) { _ORC_MOLD.header = true; _ORC_MOLD.secao = _ORC_TRILHA; }
+  // Slide com cabeçalho: daqui em diante as formas vão para a imagem do motor.
+  if (_ORC_EM_PASSO && !_ORC_GRAF) _orcAbrirGrafico_(slide, _ORC_EM_PASSO.W, _ORC_EM_PASSO.H);
   else _orcCabecalhoFundo_(slide, W, _ORC_TRILHA);
   const serifa = DS.typography.heading !== DS.typography.titles;   // a serifa é menor no mesmo corpo
   _orcUmaLinha_(slide, MX + 14, 12, W - MX * 2 - 150, 26, titulo,
@@ -329,6 +355,7 @@ function _orcLogMolduras_(quem) {
                faltam.map(h => 'MOLDURA - ' + h + '.png (' + _ORC_MOLD_CONTA.sem[h].join(', ') + ')').join('; ') +
                '. Rode o teste com PREVIA e ferramentas/molduras_imagem.py, ou espere o Drive subir a pasta.' : ''));
   _ORC_MOLD_CONTA = { com: 0, sem: {} };
+  _orcLogGraficos_(quem);
 }
 
 function _orcAbrirMoldura_() {
@@ -376,6 +403,115 @@ function _orcFecharMoldura_(slide, W, H) {
     s.sendToBack();
   });
   if (m.header) _orcCabecalhoFundo_(slide, W, m.secao);
+}
+
+// ==========================================
+// GRÁFICO PELO MOTOR (07/10/2026)
+// ==========================================
+// _orcPasso_ marca o slide (_ORC_EM_PASSO); o cabeçalho abre a coleta. Daí
+// em diante as formas (retângulos, linhas, bolinhas) que não são card da
+// moldura são anotadas em vez de criadas; os textos e imagens entram na hora.
+// No fim do slide as formas viram UMA imagem — "GRAFICO - <assinatura>.png"
+// na pasta de imagens, desenhada por ferramentas/graficos_imagem.py com
+// antialias e pontas redondas — mandada para trás de tudo (e a moldura, que
+// fecha depois, mais para trás ainda). Sem a imagem na pasta: as formas de
+// sempre, atrás dos textos, e a especificação vai para "GRAFICOS
+// PENDENTES.json" na pasta, que o mesmo script lê (dado real diferente do
+// teste). Capa, sumário e sub capas não têm cabeçalho: ficam como sempre.
+let _ORC_EM_PASSO = null;
+let _ORC_GRAF = null;
+let _ORC_GRAFICOS_USADOS = {};   // assinatura → especificação (o teste grava o manifesto)
+let _ORC_GRAFICOS_PASSOS = [];   // [marca, passo, assinatura], na ordem (conferência no teste)
+let _ORC_GRAF_CONTA = { com: 0, sem: {} };
+const ORC_GRAFICOS_PENDENTES = 'GRAFICOS PENDENTES.json';
+
+function _orcAbrirGrafico_(slide, W, H) {
+  _ORC_GRAF = ORC_USAR_GRAFICOS_IMAGEM ? { slide: slide, x: 0, y: 0, w: W, h: H, prims: [] } : null;
+}
+
+// Só as formas, em pt relativos à área, com uma casa.
+function _orcSpecGrafico_(g) {
+  const r = v => Math.round(v * 10) / 10;
+  const p = g.prims.filter(q => q.t === 'r' || q.t === 'l' || q.t === 'e').map(q => {
+    if (q.t === 'r') return ['r', r(q.x - g.x), r(q.y - g.y), r(q.w), r(q.h), q.cor, q.redondo ? 1 : 0, q.borda, r(q.peso),
+                             q.alpha === undefined ? 1 : r(q.alpha)];
+    if (q.t === 'l') return ['l', r(q.x1 - g.x), r(q.y1 - g.y), r(q.x2 - g.x), r(q.y2 - g.y), q.cor, r(q.peso), q.dash ? 1 : 0];
+    return ['e', r(q.x - g.x), r(q.y - g.y), r(q.w), r(q.h), q.fundo, q.borda, r(q.peso)];
+  });
+  return JSON.stringify({ v: 1, w: r(g.w), h: r(g.h), p: p });
+}
+
+function _orcFecharGrafico_() {
+  const g = _ORC_GRAF;
+  _ORC_GRAF = null;
+  if (!g) return;
+  if (!g || !g.prims.length) return;
+  let assin = null;
+  try {
+    const spec = _orcSpecGrafico_(g);
+    assin = _orcAssinatura_(spec);
+    _ORC_GRAFICOS_USADOS[assin] = spec;
+    _ORC_GRAFICOS_PASSOS.push([CR_DESIGN_SYSTEM.marca.nome, _ORC_SLIDE_ATUAL, assin]);
+    const img = _orcImagemDaPasta_('GRAFICO - ' + assin + '.png');
+    if (img) {
+      g.slide.insertImage(img).setLeft(g.x).setTop(g.y).setWidth(g.w).setHeight(g.h).sendToBack();
+      _ORC_GRAF_CONTA.com++;
+      return;
+    }
+  } catch (e) {
+    Logger.log('Formas em imagem não aplicadas (vão as formas): ' + e.message);
+  }
+  if (assin) (_ORC_GRAF_CONTA.sem[assin] = _ORC_GRAF_CONTA.sem[assin] || []).push(_ORC_SLIDE_ATUAL);
+  // Sem a imagem: as formas, atrás dos textos — de trás para a frente, para a
+  // primeira ficar no fundo, na mesma ordem em que foram desenhadas.
+  g.prims.slice().reverse().forEach(q => { const s = _orcDesenharForma_(g.slide, q); if (s) s.sendToBack(); });
+}
+
+function _orcDesenharForma_(slide, q) {
+  if (q.t === 'r') {
+    return _orcRet_(slide, q.x, q.y, q.w, q.h, q.cor || null,
+      { redondo: q.redondo, borda: q.borda || null, peso: q.peso || undefined, alpha: q.alpha, semMoldura: true, semGrafico: true });
+  }
+  if (q.t === 'l') {
+    const l = _orcLinha_(slide, q.x1, q.y1, q.x2, q.y2, q.cor, q.peso);
+    if (q.dash) l.setDashStyle(SlidesApp.DashStyle.DASH);
+    return l;
+  }
+  const s = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, q.x, q.y, q.w, q.h);
+  if (q.fundo) s.getFill().setSolidFill(q.fundo); else s.getFill().setTransparent();
+  if (q.borda) { s.getBorder().getLineFill().setSolidFill(q.borda); s.getBorder().setWeight(q.peso); }
+  else s.getBorder().setTransparent();
+  return s;
+}
+
+// No log do fim da geração (junto com as molduras). Os que faltaram vão para
+// GRAFICOS PENDENTES.json na pasta de imagens (somados aos que já estavam).
+function _orcLogGraficos_(quem) {
+  const faltam = Object.keys(_ORC_GRAF_CONTA.sem);
+  const n = faltam.reduce((t, h) => t + _ORC_GRAF_CONTA.sem[h].length, 0);
+  if (_ORC_GRAF_CONTA.com || n) {
+    Logger.log(quem + ' · formas pelo motor: ' + _ORC_GRAF_CONTA.com + ' slides em imagem, ' + n + ' em formas' +
+               (faltam.length ? ' — faltam na pasta ' + ORC_PASTA_IMAGENS + ': ' +
+                 faltam.map(h => 'GRAFICO - ' + h + '.png (' + _ORC_GRAF_CONTA.sem[h].join(', ') + ')').join('; ') +
+                 '. As especificações foram para ' + ORC_GRAFICOS_PENDENTES + ': rode ferramentas/graficos_imagem.py e gere de novo.' : ''));
+  }
+  if (faltam.length) {
+    try {
+      _orcImagemDaPasta_('');   // garante a pasta
+      if (_ORC_PASTA_IMG) {
+        const it = _ORC_PASTA_IMG.getFilesByName(ORC_GRAFICOS_PENDENTES);
+        const arq = it.hasNext() ? it.next() : null;
+        let pend = {};
+        try { pend = arq ? JSON.parse(arq.getBlob().getDataAsString()) : {}; } catch (e) { pend = {}; }
+        faltam.forEach(h => { pend[h] = _ORC_GRAFICOS_USADOS[h]; });
+        const txt = JSON.stringify(pend, null, 1);
+        if (arq) arq.setContent(txt); else _ORC_PASTA_IMG.createFile(ORC_GRAFICOS_PENDENTES, txt, MimeType.PLAIN_TEXT);
+      }
+    } catch (e) {
+      Logger.log('Não gravei ' + ORC_GRAFICOS_PENDENTES + ': ' + e.message);
+    }
+  }
+  _ORC_GRAF_CONTA = { com: 0, sem: {} };
 }
 
 // ==========================================

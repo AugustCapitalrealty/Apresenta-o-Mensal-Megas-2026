@@ -95,9 +95,9 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
   const m = _orcM2Mensagem_(S);
   const mas = m.saida && m.vAno.sentido && m.vSaida.sentido && m.vAno.sentido !== m.vSaida.sentido;
   _orcHeader_(slide, W, 'Custo por m² mês a mês — Orçamento ' + a.orc,
-    'Área comum (sem IPTU e seguro) · Orç ' + a.orc + ' R$ ' + _orcM2_(S.orc.media) + '/m²' +
+    'Área comum · Orç ' + a.orc + ' R$ ' + _orcM2_(S.orc.media) + '/m²' +
     (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') +
-    (m.saida ? (mas ? ', mas ' : ' · ') + m.vSaida.texto + ' × a saída de ' + a.ritmo + ' (out–dez)' : '') + ' · ' + cid.nome);
+    (m.saida ? (mas ? ', mas ' : ' · ') + m.vSaida.texto + ' × saída de ' + a.ritmo + ' (out–dez)' : '') + ' · ' + cid.nome);
 
   const cy = 70, ch = 126, labW = 76, mediaW = 52, colW = (tw - labW - mediaW) / 12;
   _orcCard_(slide, MX, cy, tw, ch, null);
@@ -181,6 +181,7 @@ function _orcCorSentido_(sentido) {
 
 // Bolinha branca com anel (marcador das linhas).
 function _orcBolinha_(slide, cx, cy, r, cor, peso) {
+  if (_ORC_GRAF) { _ORC_GRAF.prims.push({ t: 'e', x: cx - r, y: cy - r, w: r * 2, h: r * 2, fundo: '#FFFFFF', borda: cor, peso: peso }); return null; }
   const s = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - r, cy - r, r * 2, r * 2);
   s.getFill().setSolidFill('#FFFFFF');
   s.getBorder().getLineFill().setSolidFill(cor);
@@ -231,7 +232,7 @@ function _orcGraficoM2_(slide, S, a, g) {
     // (caixa da escala: y-9…y-1; rótulo de JAN: yJan-14,5…yJan-3,5)
     if (S.orc.meses[0] !== null && Math.abs(y(v) + 4 - y(S.orc.meses[0])) < 9.5) continue;
     _orcUmaLinha_(slide, g.x0 + 1, y(v) - 9, 24, 8, _orcM2_(v),
-      { align: 'L', fs: 6, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, folga: 0 });
+      { align: 'L', fs: 6, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, folga: 14 });
   }
 
   // Linhas: contexto atrás, Orç por cima.
@@ -273,9 +274,9 @@ function _orcGraficoM2_(slide, S, a, g) {
     const yy = Math.max(n.y, yAnt + 9); yAnt = yy;
     const l = _orcLinha_(slide, xb + 4, yy, xb + 11, yy, COR[n.s.k], Math.min(PESO[n.s.k], 2));
     if (n.s.k === 'real') l.setDashStyle(SlidesApp.DashStyle.DASH);
-    _orcUmaLinha_(slide, xb + 13, yy - 5.5, 40, 11, n.s.nome,
+    _orcUmaLinha_(slide, xb + 13, yy - 5.5, 46, 11, n.s.nome,
       { align: 'L', fs: 6.5, fsMin: 5.5, bold: true, cor: n.s.k === 'ritmo' ? C.brandDark : (n.s.k === 'orc' ? C.textMain : C.textBody),
-        fonte: DS.typography.body, folga: 4 });
+        fonte: DS.typography.body, folga: 10 });
   });
 }
 

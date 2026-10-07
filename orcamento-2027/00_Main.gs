@@ -317,13 +317,17 @@ function _orcPasso_(deck, W, H, nome, fn) {
   const slide = _orcNovoSlide_(deck);
   _ORC_SLIDE_ATUAL = nome;                     // coluna ONDE APARECE da planilha de textos
   _orcAbrirMoldura_();
+  _ORC_EM_PASSO = { W: W, H: H };              // o cabeçalho abre a coleta das formas (_orcHeader_)
   try {
     fn(slide);
   } catch (e) {
     _ORC_MOLD = null;
+    _ORC_GRAF = null;
     _orcSlideFalha_(slide, W, H, nome, e);
   }
-  _orcFecharMoldura_(slide, W, H);
+  _ORC_EM_PASSO = null;
+  _orcFecharGrafico_();                        // formas do conteúdo atrás dos textos…
+  _orcFecharMoldura_(slide, W, H);             // …e a moldura atrás de tudo
   return slide;
 }
 
