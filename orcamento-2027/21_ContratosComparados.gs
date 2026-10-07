@@ -25,7 +25,10 @@
 const ORC_CONTRATOS_ANO_ANTERIOR_ID = '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A';
 
 // Palavras que não identificam fornecedor (o casamento pula para a seguinte).
-const _ORC_PALAVRAS_GENERICAS = ['empresa', 'servico', 'servicos', 'contrato', 'mega', 'manutencao', 'de', 'e', 'da', 'do'];
+// "PREVENTIVA E CORRETIVA DAS COBERTURAS" (Itajaí) casava com todo item de
+// manutenção preventiva: o que identifica é "coberturas".
+const _ORC_PALAVRAS_GENERICAS = ['empresa', 'servico', 'servicos', 'contrato', 'mega', 'manutencao', 'de', 'e', 'da', 'do',
+  'das', 'dos', 'preventiva', 'corretiva'];
 
 /**
  * Contratos da conta na unidade, com os doze meses do ano anterior.
@@ -125,7 +128,7 @@ function _orcCompararContratos_(contaV, contratosAnt, itensContrato) {
     const situacao = !doAno.length ? 'Não renovado' :
       ampl.length ? 'Ampliação ' + _orcCompacto_(ampl.reduce((t, it) => t + it.total, 0)) :
       pct > 0.08 ? 'Acima do ' + indice :
-      pct < -0.005 ? 'Redução' : 'Reajuste ' + indice;
+      pct < -0.005 ? 'Redução' : 'Reajuste' + (c.reajuste ? ' ' + c.reajuste : '');
     // Nome: o do contrato do ano (texto curto escolhido na planilha de
     // textos, aba Composição), senão o fornecedor do cadastro.
     const base = doAno.filter(it => ampl.indexOf(it) < 0)[0] || doAno[0];

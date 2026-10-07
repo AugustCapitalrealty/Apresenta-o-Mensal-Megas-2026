@@ -30,22 +30,57 @@ function obterManutencao_(chaveCidade) {
     throw new Error(cid.nome + ': nenhuma linha da conta "manutenção imóveis" em "' + ORC_ABA_MODELO +
                     '". Contas encontradas: ' + (contas || '(nenhuma)'));
   }
-  const idContratos = _orcContratosId_(cid, 'Manutenção de imóveis');
-  const contratos = idContratos ? _orcLerContratos_(idContratos) : [];
+  const ch = _orcChaveConta_('Manutenção de imóveis');
+  const contratos = [];
+  _orcContratosDoAno_(cid).filter(g => _orcChaveConta_(g.conta) === ch)
+    .forEach(g => Array.prototype.push.apply(contratos, g.contratos));
   return _orcAgruparCategorias_(alvo, contratos);
-}
-
-// ID da planilha de contratos de uma conta em cid.contratos, comparando pela
-// chave da conta ("Manutenção de imóveis" = "manutenção imóveis"). '' se não houver.
-function _orcContratosId_(cid, nomeConta) {
-  const mapa = cid.contratos || {};
-  const k = Object.keys(mapa).filter(n => _orcChaveConta_(n) === _orcChaveConta_(nomeConta))[0];
-  return k ? mapa[k] : '';
 }
 
 // ==========================================
 // CONTRATOS RECORRENTES
 // ==========================================
+// Cadastro de contratos com os valores do ano do orçamento ("TESTE-2 -
+// COMPLETO", pasta 00 - PLANILHAS MESTRAS): o mesmo formato do "2025 -
+// Contratos" (21_ContratosComparados.gs), todas as unidades. Cidade com
+// `contratosDoCadastro` em ORC_CIDADES tira os contratos dele.
+const ORC_CONTRATOS_ANO_ID = '1bLVRxt6AiLCErNQpgBDJoUiQYA2KJtHEN38yb0hwzI8';
+
+let _ORC_CADASTRO_ANO = null;   // cache da leitura (uma por execução)
+function _orcCadastroAno_() {
+  if (!_ORC_CADASTRO_ANO) {
+    _ORC_CADASTRO_ANO = SpreadsheetApp.openById(ORC_CONTRATOS_ANO_ID).getSheets()[0].getDataRange().getValues();
+  }
+  return _ORC_CADASTRO_ANO;
+}
+
+/**
+ * Contratos recorrentes do ano da cidade, por conta: [{ conta, contratos }],
+ * cada contrato no formato de _orcLinhasContratos_. Duas fontes: uma
+ * planilha por conta (cid.contratos — Curitiba) e o cadastro do ano
+ * (cid.contratosDoCadastro — Itajaí e Esteio). Fonte que falhar vai para o
+ * log e a conta fica sem os contratos (aparece como "Não detalhado").
+ */
+function _orcContratosDoAno_(cid) {
+  const out = [];
+  Object.keys(cid.contratos || {}).forEach(conta => {
+    const id = cid.contratos[conta];
+    if (!id) return;
+    try { out.push({ conta: conta, contratos: _orcLerContratos_(id) }); }
+    catch (e) { Logger.log('Contratos de "' + conta + '" ignorados: ' + e.message); }
+  });
+  if (cid.contratosDoCadastro && ORC_CONTRATOS_ANO_ID) {
+    try {
+      const dados = _orcCadastroAno_();
+      _orcContasDoCadastro_(dados, cid.nome).forEach(conta => {
+        const ks = _orcLerCadastroContratos_(dados, cid.nome, conta, ORC_ANO).map(k => _orcContratoItem_(k.fornecedor, k.meses));
+        if (ks.length) out.push({ conta: conta, contratos: ks });
+      });
+    } catch (e) { Logger.log('Cadastro de contratos de ' + ORC_ANO + ' ignorado: ' + e.message); }
+  }
+  return out;
+}
+
 function _orcLerContratos_(planilhaId) {
   return _orcLinhasContratos_(SpreadsheetApp.openById(planilhaId).getSheets()[0].getDataRange().getValues());
 }
@@ -74,21 +109,24 @@ function _orcLinhasContratos_(dados) {
     const c = porNome[nome] || (porNome[nome] = { nome: nome, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
     c.meses[mes] += -_orcNum_(r[col.valor]);                 // despesa vem negativa
   }
-  return Object.keys(porNome).map(k => {
-    const c = porNome[k];
-    const fornecedor = _orcFornecedorContrato_(c.nome);
-    const n = _orcNorm_(c.nome);
-    const regra = ORC_CONTRATOS_CATEGORIA.filter(x => n.indexOf(_orcNorm_(x.termo)) >= 0)[0];
-    return {
-      descricao: 'CONTRATO — ' + fornecedor,
-      fornecedor: fornecedor,
-      categoria: regra ? regra.categoria : ORC_CONTRATO_SEM_CATEGORIA,
-      semCategoria: !regra,
-      meses: c.meses,
-      total: c.meses.reduce((a, v) => a + v, 0),
-      contrato: true
-    };
-  }).filter(c => Math.abs(c.total) > 0.005);
+  return Object.keys(porNome).map(k => _orcContratoItem_(porNome[k].nome, porNome[k].meses))
+    .filter(c => Math.abs(c.total) > 0.005);
+}
+
+// Um contrato como item da conta, na categoria de ORC_CONTRATOS_CATEGORIA.
+function _orcContratoItem_(nome, meses) {
+  const fornecedor = _orcFornecedorContrato_(nome);
+  const n = _orcNorm_(nome);
+  const regra = ORC_CONTRATOS_CATEGORIA.filter(x => n.indexOf(_orcNorm_(x.termo)) >= 0)[0];
+  return {
+    descricao: 'CONTRATO — ' + fornecedor,
+    fornecedor: fornecedor,
+    categoria: regra ? regra.categoria : ORC_CONTRATO_SEM_CATEGORIA,
+    semCategoria: !regra,
+    meses: meses,
+    total: meses.reduce((a, v) => a + v, 0),
+    contrato: true
+  };
 }
 
 // "01/2027" (texto) ou uma data → índice do mês (0..11) se for do ano do

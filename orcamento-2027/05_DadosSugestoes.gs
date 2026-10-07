@@ -243,16 +243,10 @@ function _orcRotuloContrato_(c) {
  */
 function _orcContratosCidade_(cid, linhasModelo) {
   const out = [];
-  Object.keys(cid.contratos || {}).forEach(conta => {
-    const id = cid.contratos[conta];
-    if (!id) return;
-    try {
-      _orcLerContratos_(id).forEach(k => out.push({
-        fornecedor: k.fornecedor, grupo: _orcGrupoFornecedor_(k.fornecedor), conta: conta,
-        descricao: k.fornecedor, meses: k.meses, total: k.total
-      }));
-    } catch (e) { Logger.log('Contratos de "' + conta + '" fora da análise de fornecedores: ' + e.message); }
-  });
+  _orcContratosDoAno_(cid).forEach(g => g.contratos.forEach(k => out.push({
+    fornecedor: k.fornecedor, grupo: _orcGrupoFornecedor_(k.fornecedor), conta: g.conta,
+    descricao: k.fornecedor, meses: k.meses, total: k.total
+  })));
   const foco = ORC_CONTAS_DETALHE.map(_orcChaveConta_);
   (linhasModelo || []).forEach(l => {
     if (!l.item || Math.abs(l.total) < 0.5 || foco.indexOf(_orcChaveConta_(l.conta)) < 0) return;

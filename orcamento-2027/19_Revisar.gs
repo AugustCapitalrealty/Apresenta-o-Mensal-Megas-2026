@@ -9,6 +9,11 @@
  * geração seguinte não acha divergência e o slide e os selos somem sozinhos.
  * Se a contabilidade disser que vale a METRAGEM, a conta entra em
  * relatorios.valeMetragem (01_Config.gs) e deixa de ser cobrada.
+ *
+ * Pendências de dados (rel.pendencias, _orcPendencias_) entram no mesmo
+ * slide e põem o selo ⚠ PENDENTE nos slides da conta — pedido do gestor,
+ * 07/10/2026: "sempre ligue o alerta que está pendente". Somem quando a
+ * fonte for preenchida.
  */
 
 const _ORC_COR_REVISAR = { fundo: '#FFEDD5', borda: '#F97316', texto: '#9A3412', card: '#FFF7ED' };
@@ -21,15 +26,61 @@ function _orcRevisarDe_(rel, chaves) {
   return lista.filter(r => chaves.indexOf(r.chave) >= 0);
 }
 
+// Pendências de dados da conta. Sem chaves, nenhuma: a pendência é de uma
+// conta e não marca os slides do total geral.
+function _orcPendenciasDe_(rel, chaves) {
+  if (!chaves) return [];
+  return ((rel && rel.pendencias) || []).filter(p => chaves.indexOf(p.chave) >= 0);
+}
+
 // Selo laranja abaixo do logo, à direita do subtítulo (que termina 136 pt
-// antes da margem — ver _orcHeader_).
+// antes da margem — ver _orcHeader_). REVISAR (relatórios divergem) vale
+// mais que PENDENTE (falta dado).
 function _orcSeloRevisar_(slide, W, rel, chaves) {
-  const lista = _orcRevisarDe_(rel, chaves);
-  if (!lista.length) return;
+  const lista = _orcRevisarDe_(rel, chaves), pend = _orcPendenciasDe_(rel, chaves);
+  if (!lista.length && !pend.length) return;
+  const nomes = [];
+  lista.concat(pend).forEach(r => { if (nomes.indexOf(r.nome) < 0) nomes.push(r.nome); });
   const DS = CR_DESIGN_SYSTEM, w = 130, x = W - DS.layout.marginX - w, y = 47;
   _orcRet_(slide, x, y, w, 14, _ORC_COR_REVISAR.borda, { redondo: true });
-  _orcUmaLinha_(slide, x, y, w, 14, '⚠ REVISAR · ' + lista.map(r => r.nome).join(', '),
+  _orcUmaLinha_(slide, x, y, w, 14, (lista.length ? '⚠ REVISAR · ' : '⚠ PENDENTE · ') + nomes.join(', '),
     { align: 'C', fs: 6.5, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, folga: 6, fsMin: 5, cortar: true });
+}
+
+/**
+ * O que falta nas fontes, por conta detalhada (ORC_CONTAS_DETALHE):
+ *   ▸ contratos do ano não informados — conta sem planilha de contratos e
+ *     sem contrato no cadastro do ano, com parte do total "Não detalhado";
+ *   ▸ modelos acima da METRAGEM — itens dos modelos + contratos somam mais
+ *     que o relatório (item que a controladoria não pôs na METRAGEM), com os
+ *     meses em que isso acontece, pelo relatório mensal.
+ * @return [{ nome, chave, tipo, texto }]
+ */
+function _orcPendencias_(cid, rel, mensal, modelos) {
+  const comContrato = {};
+  _orcContratosDoAno_(cid).forEach(g => { if (g.contratos.length) comContrato[_orcChaveConta_(g.conta)] = true; });
+  const out = [];
+  ORC_CONTAS_DETALHE.forEach(nome => {
+    const c = rel.contas.filter(x => x.chave === _orcChaveConta_(nome))[0];
+    if (!c) return;
+    const comp = _orcComposicaoConta_(c, modelos);
+    if (comp.base > 1 && !comContrato[c.chave]) {
+      out.push({ nome: c.nome, chave: c.chave, tipo: 'Contratos ' + ORC_ANO + ' não informados',
+                 texto: _orcMoeda_(comp.base) + ' em "Não detalhado" — sem os contratos de ' + ORC_ANO + ' no cadastro' });
+    }
+    if (comp.excesso > 1) {
+      const m = mensal && mensal.contas[c.chave], meses = [];
+      if (m) {
+        for (let i = 0; i < 12; i++) {
+          const d = comp.itens.reduce((t, it) => t + ((it.meses && it.meses[i]) || 0), 0) - m.orc[i];
+          if (d > 1) meses.push(ORC_MESES[i] + ' ' + _orcMoeda_(d));
+        }
+      }
+      out.push({ nome: c.nome, chave: c.chave, tipo: 'Modelos acima da METRAGEM',
+                 texto: 'itens somam ' + _orcMoeda_(comp.excesso) + ' a mais' + (meses.length ? ' · ' + meses.join(' · ') : '') });
+    }
+  });
+  return out;
 }
 
 // Em que slides a conta aparece pelo nome (o total geral está em quase todos).
@@ -48,19 +99,30 @@ function _orcOndeAparece_(rel, r) {
 function gerarSlideRevisar_(slide, W, H, cid, rel) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
   const tw = W - MX * 2;
+  const pend = rel.pendencias || [], divergem = rel.avisos.length > 0;
   _orcHeader_(slide, W, 'Revisar antes da versão final',
-    cid.nome + ' · os relatórios da controladoria não fecham entre si · este slide não vai para a reunião');
+    cid.nome + ' · ' + (divergem ? 'os relatórios da controladoria não fecham entre si' : 'dados pendentes') +
+    ' · este slide não vai para a reunião');
 
   // Card com o que fazer.
   const ky = 74, kh = 42;
   _orcRet_(slide, MX, ky, tw, kh, _ORC_COR_REVISAR.card, { redondo: true, borda: _ORC_COR_REVISAR.borda });
   _orcRet_(slide, MX, ky, 4, kh, _ORC_COR_REVISAR.borda);
   _orcParagrafo_(slide, MX + 14, ky + 4, tw - 24, kh - 8,
-    'O deck usa a METRAGEM-COND. Os slides com estes números levam o selo ⚠ REVISAR e a linha da conta em laranja. ' +
-    'Confirmar com a controladoria qual relatório está certo; corrigida a planilha, gere de novo — o selo e este slide somem.',
+    (divergem ? 'O deck usa a METRAGEM-COND. Os slides com estes números levam o selo ⚠ REVISAR e a linha da conta em laranja. ' +
+                'Confirmar com a controladoria qual relatório está certo; corrigida a planilha, gere de novo — o selo e este slide somem.'
+              : 'Falta dado nas fontes: os slides da conta levam o selo ⚠ PENDENTE. Preenchida a fonte, gere de novo — ' +
+                'o selo e este slide somem.'),
     { fs: 8.5, fsMin: 6.5, cor: _ORC_COR_REVISAR.texto, meio: true });
 
   let y = ky + kh + 14;
+  if (pend.length) {
+    const linhas = pend.map(p => ({ tipo: 'item', nome: p.nome, celulas: [{ texto: p.tipo }, { texto: p.texto }] }));
+    y = _orcTabelaNum_(slide, MX, y, tw, 16 + 15 * linhas.length, [
+      { titulo: 'PENDÊNCIA — CONTA', w: 130 }, { titulo: 'O QUE FALTA', w: 150, align: 'L' },
+      { titulo: 'DETALHE', w: tw - 280, align: 'L' }
+    ], linhas, null) + 14;
+  }
   if (rel.revisar.length) {
     const linhas = rel.revisar.map(r => {
       const d = r.mensal - r.metragem;
@@ -86,6 +148,8 @@ function gerarSlideRevisar_(slide, W, H, cid, rel) {
       { align: 'L', fs: 7.5, bold: true, cor: C.accentRed, fonte: DS.typography.body, fsMin: 6, cortar: true });
   });
 
-  _orcRodape_(slide, W, H, 'Conferência: soma dos 12 meses do Orç ' + rel.anos.orc + ' na Despesas-Mensal × Orç ' +
-    rel.anos.orc + ' da METRAGEM-COND, conta a conta (_orcConferirMensal_) · ' + cid.nome);
+  _orcRodape_(slide, W, H, (divergem ? 'Conferência: soma dos 12 meses do Orç ' + rel.anos.orc + ' na Despesas-Mensal × Orç ' +
+    rel.anos.orc + ' da METRAGEM-COND, conta a conta (_orcConferirMensal_)' :
+    'Conferência: modelos 070/090 + contratos de ' + rel.anos.orc + ' × METRAGEM-COND, conta a conta (_orcPendencias_)') +
+    ' · ' + cid.nome);
 }

@@ -25,7 +25,7 @@ function _orcChaveConta_(s) {
     .replace(/\bc\/\s*/g, 'com ')
     .replace(/[^a-z0-9 ]+/g, ' ')
     .split(' ')
-    .filter(p => p && ['de', 'da', 'do', 'e', 'com', 'a', 'o'].indexOf(p) < 0)
+    .filter(p => p && ['de', 'da', 'do', 'e', 'em', 'com', 'a', 'o'].indexOf(p) < 0)   // "Assistência em informática" = "ASSISTÊNCIA INFORMÁTICA"
     .map(p => p.length > 3 ? p.replace(/s$/, '') : p)
     .join(' ');
 }
@@ -318,14 +318,11 @@ function _orcLinhasModelosCidade_(chaveCidade) {
   });
   // Contratos recorrentes entram como linhas da sua conta: sem eles a
   // composição não fecha com a METRAGEM (sobraria "Não detalhado").
-  Object.keys(cid.contratos || {}).forEach(conta => {
-    const id = cid.contratos[conta];
-    if (!id) return;
-    try {
-      _orcLerContratos_(id).forEach(k => out.push({
-        linha: 0, conta: conta, contaNorm: _orcNorm_(conta), item: k.descricao, meses: k.meses, total: k.total
-      }));
-    } catch (e) { Logger.log('Contratos de "' + conta + '" ignorados na análise por conta: ' + e.message); }
-  });
+  // catContrato: a categoria do contrato (ORC_CONTRATOS_CATEGORIA) para a
+  // tabela de contratos — o texto "CONTRATO — X" não traz tag.
+  _orcContratosDoAno_(cid).forEach(g => g.contratos.forEach(k => out.push({
+    linha: 0, conta: g.conta, contaNorm: _orcNorm_(g.conta), item: k.descricao, meses: k.meses, total: k.total,
+    catContrato: k.semCategoria ? '' : k.categoria
+  })));
   return out;
 }

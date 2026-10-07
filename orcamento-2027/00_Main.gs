@@ -68,9 +68,15 @@ function _orcGerarCidade_(deck, W, H, chave) {
     catch (e) { falhas.push(['Linha a linha — ' + cid.nome, e]); }
   }
   const calc = visao ? _orcCalculosCompartilhados_(cid, visao, dados) : null;
+  // Pendências de dados (contratos que faltam, modelos acima da METRAGEM):
+  // alerta no slide de revisão e selo nos slides da conta (19_Revisar.gs).
+  if (visao) {
+    try { visao.rel.pendencias = _orcPendencias_(cid, visao.rel, visao.mensal, visao.modelos); }
+    catch (e) { Logger.log('Pendências não conferidas: ' + e.message); visao.rel.pendencias = []; }
+  }
 
   _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid, visao ? visao.rel : null));
-  if (visao && visao.rel.avisos.length) {
+  if (visao && (visao.rel.avisos.length || visao.rel.pendencias.length)) {
     _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
   }
   secao('Premissas');

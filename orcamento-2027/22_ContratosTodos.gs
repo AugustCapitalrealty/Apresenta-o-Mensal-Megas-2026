@@ -26,9 +26,25 @@ const _ORC_PALAVRAS_NAO_FORNECEDOR = ['empresa', 'servico', 'servicos', 'contrat
   'eireli', 'curitiba', 'itajai', 'esteio', 'energia', 'eletrica', 'telefone', 'internet', 'sistema', 'licenca',
   'mensal', 'celular', 'fixo', 'tecnologia', 'referente', 'condominio'];
 
+// Número conta mesmo curto: "ARMAZÉM 01" … "ARMAZÉM 09" são contratos
+// diferentes do mesmo fornecedor.
 function _orcPalavrasFornecedor_(nome) {
   return _orcNorm_(nome).replace(/[^a-z0-9 ]+/g, ' ').split(' ')
-    .filter(p => p.length >= 3 && _ORC_PALAVRAS_GENERICAS.indexOf(p) < 0 && _ORC_PALAVRAS_NAO_FORNECEDOR.indexOf(p) < 0);
+    .filter(p => (p.length >= 3 || /^\d+$/.test(p)) && _ORC_PALAVRAS_GENERICAS.indexOf(p) < 0 && _ORC_PALAVRAS_NAO_FORNECEDOR.indexOf(p) < 0);
+}
+
+// Palavras para o casamento: as do fornecedor; nome só de palavras genéricas
+// ("Telefone fixo") casa pelo nome inteiro.
+function _orcPalavrasCasamento_(nome) {
+  const ps = _orcPalavrasFornecedor_(nome);
+  return ps.length ? ps : _orcNorm_(nome).replace(/[^a-z0-9 ]+/g, ' ').split(' ').filter(p => p.length >= 3);
+}
+
+// Categoria da linha: a do contrato (planilha ou cadastro) ou a tag do item.
+// "CONSULTORIA AMBIENTAL" não cabe na coluna (100 pt).
+function _orcCategoriaItem_(l) {
+  const c = l.catContrato !== undefined ? l.catContrato : (_orcSepararCategoria_(l.item).categoria || '');
+  return c.replace(/^CONSULTORIA\b/, 'CONSULT.');
 }
 
 // Nome que cabe na coluna CONTRATO (util ≈ 166 pt a 7 pt): sem "CONDOMÍNIO
@@ -110,7 +126,7 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
     const ant = contas.indexOf(chaves[k]) >= 0 ? _orcLerCadastroContratos_(cadDados, unidade, chaves[k], ORC_ANO - 1) : [];
     const itens = doModelo.filter(l => _orcChaveConta_(l.conta) === k);
     // Cada item do ano vai para o contrato com mais palavras em comum.
-    const pal = ant.map(c => _orcPalavrasFornecedor_(c.fornecedor));
+    const pal = ant.map(c => _orcPalavrasCasamento_(c.fornecedor));
     const dono = itens.map(it => {
       const t = ' ' + _orcNorm_(it.item).replace(/[^a-z0-9 ]+/g, ' ') + ' ';
       let melhor = -1, nota = 0;
@@ -133,17 +149,17 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo) {
       const base = doAno.filter(it => ampl.indexOf(it) < 0).sort((a, b) => b.total - a.total)[0] || doAno[0];
       return {
         nome: _orcNomeCurtoContrato_(base ? _orcNomeContrato_(_orcSepararCategoria_(base.item).descricao || base.item) : c.fornecedor),
-        categoria: base ? _orcSepararCategoria_(base.item).categoria || '' : '',
+        categoria: base ? _orcCategoriaItem_(base) : '',
         ant: c.total, atual: atual,
         situacao: !doAno.length ? (itens.length ? 'Sem item em ' + ORC_ANO : 'Fora do modelo ' + ORC_ANO) :
           ampl.length ? 'Ampliação ' + _orcCompacto_(ampl.reduce((t, it) => t + it.total, 0)) :
-          pct > 0.08 ? 'Acima do ' + indice : pct < -0.005 ? 'Redução' : 'Reajuste ' + indice
+          pct > 0.08 ? 'Acima do ' + indice : pct < -0.005 ? 'Redução' : 'Reajuste' + (c.reajuste ? ' ' + c.reajuste : '')
       };
     });
     itens.forEach((it, j) => {
       if (dono[j] >= 0 || !/\bcontrato\b/.test(_orcNorm_(it.item))) return;
       const sep = _orcSepararCategoria_(it.item);
-      linhas.push({ nome: _orcNomeCurtoContrato_(_orcNomeContrato_(sep.descricao || it.item)), categoria: sep.categoria || '',
+      linhas.push({ nome: _orcNomeCurtoContrato_(_orcNomeContrato_(sep.descricao || it.item)), categoria: _orcCategoriaItem_(it),
                     ant: 0, atual: it.total, situacao: 'Novo em ' + ORC_ANO });
     });
     linhas.sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual));

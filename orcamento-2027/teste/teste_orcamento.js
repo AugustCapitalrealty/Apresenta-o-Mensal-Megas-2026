@@ -211,6 +211,9 @@ porIdFinanceiro[CUR.relatorios.financeiroMegasId] = fixture('fixture_financeiro2
 // Cadastro "2025 - Contratos" (exportado em 06/10/2026): contratos de todas as
 // unidades com os valores mês a mês de 2026.
 porId[G.ORC_CONTRATOS_ANO_ANTERIOR_ID] = fixture('fixture_contratos_ano_anterior.json');
+// Cadastro "TESTE-2 - COMPLETO" (exportado em 06/10/2026): o mesmo formato,
+// com os valores de 2027 — por enquanto só Itajaí preenchido.
+porId[G.ORC_CONTRATOS_ANO_ID] = fixture('fixture_contratos_2027.json');
 porId[CUR.servicosTerceirosId] = FIX_070;
 // Geradas da leitura das planilhas de contratos em 30/09/2026 (manutenção:
 // 5 contratos, segurança: 4, × 12 meses); exportarFixtures() as substitui
@@ -967,7 +970,34 @@ const ESTADO_CIDADES = {};
     .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
   ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
   ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('CUSTO POR M² AO MÊS') >= 0, c + ': capa com o Mega e o R$/m²');
-  ok(!sl.some(x => titulo(x) === 'Revisar antes da versão final'), c + ': relatórios fecham entre si (sem slide de revisão)');
+  // Os relatórios fecham entre si; o slide de revisão só traz as pendências
+  // de dados (19_Revisar.gs, _orcPendencias_).
+  const iRev = titulos.indexOf('Revisar antes da versão final');
+  ok(iRev === 1, c + ': slide de revisão logo depois da capa (pendências de dados)');
+  const tRev = iRev >= 0 ? textos(sl[iRev]) : [];
+  ok(tRev.some(t => /dados pendentes/.test(t)) && !tRev.some(t => /não fecham entre si/.test(t)),
+     c + ': revisão só com pendências — os relatórios fecham entre si');
+  const iSegC = titulos.indexOf('Segurança e vigilância');
+  if (chave === 'ITAJAI') {
+    // Cadastro "TESTE-2" fecha exato com o que os modelos não abrem na
+    // segurança e na limpeza; na manutenção o 090 tem R$ 29.313 que a
+    // METRAGEM não tem (totem em jan, iluminação em fev).
+    ok(tRev.indexOf('Modelos acima da METRAGEM') >= 0 && tRev.indexOf('Contratos 2027 não informados') < 0,
+       c + ': pendência só da manutenção acima da METRAGEM');
+    ok(tRev.indexOf('itens somam R$ 29.313 a mais · JAN R$ 11.500 · FEV R$ 17.813') >= 0,
+       c + ': pendência com o valor e os meses (' + tRev.filter(t => /^itens somam/.test(t)).join() + ')');
+    ok(!sl.some(x => textos(x).some(t => /^Não detalhado nos modelos/.test(t))), c + ': nenhuma conta com "Não detalhado"');
+    ok(textos(sl[iSegC]).indexOf('CONTRATO — PORTOVIG (VIGILÂNCIA)') >= 0, c + ': segurança com os contratos do cadastro');
+    ok(!textos(sl[iSegC]).some(t => /^⚠/.test(t)), c + ': segurança sem selo');
+    ok(textos(sl[titulos.indexOf('Manutenção de imóveis (1/2)')]).indexOf('⚠ PENDENTE · Manutenção de imóveis') >= 0,
+       c + ': manutenção com o selo ⚠ PENDENTE');
+  } else {
+    // Cadastro sem os valores de 2027 do Esteio: as três contas pendentes.
+    ok(tRev.filter(t => t === 'Contratos 2027 não informados').length === 3, c + ': três contas sem contratos de 2027');
+    ok(tRev.indexOf('R$ 120.068 em "Não detalhado" — sem os contratos de 2027 no cadastro') >= 0, c + ': pendência da segurança com o valor');
+    ok(textos(sl[iSegC]).indexOf('⚠ PENDENTE · Segurança e vigilância') >= 0, c + ': segurança com o selo ⚠ PENDENTE');
+    ok(!textos(sl[titulos.indexOf('DRE — Orçamento 2027')]).some(t => /^⚠ PENDENTE/.test(t)), c + ': DRE sem o selo (pendência é da conta)');
+  }
   ok(textos(sl[titulos.indexOf('Custo por m² mês a mês — Orçamento 2027')]).indexOf('Real 2025') >= 0, c + ': m² mês a mês com o Real 2025');
   sl.forEach((x, i) => x.shapes.forEach(sh => {
     if (sh.tipo === 'ELLIPSE') return;

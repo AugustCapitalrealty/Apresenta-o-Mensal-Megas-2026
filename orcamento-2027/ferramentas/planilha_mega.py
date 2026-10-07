@@ -153,7 +153,7 @@ MESTRAS = '00 - PLANILHAS MESTRAS'
 COMUNS = [
     ('Modelos 2025 Megas', 'Orçamento 2026 item a item de todos os Megas (mestra)', 'Não', MESTRAS, '1X39BzfFKwSo2v1wt0Lhe1kxjnSdnn4D74kvAxg41bOM', S_),
     ('2025 - Contratos', 'Cadastro de contratos com os valores de 2026, todos os Megas (mestra)', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
-    ('TESTE-2 - COMPLETO', 'Cadastro de contratos com os valores de 2027 (mestra) — por enquanto só Itajaí tem valores preenchidos', 'Não', MESTRAS, '1bLVRxt6AiLCErNQpgBDJoUiQYA2KJtHEN38yb0hwzI8', S_),
+    ('TESTE-2 - COMPLETO', 'Cadastro de contratos com os valores de 2027 (mestra) — fonte dos contratos de Itajaí e Esteio; em 07/10/2026 só Itajaí preenchido', 'Sim (Itajaí e Esteio)', MESTRAS, '1bLVRxt6AiLCErNQpgBDJoUiQYA2KJtHEN38yb0hwzI8', S_),
     ('2026', 'Totais planejados de 2026 por conta, todas as unidades somadas (mestra)', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
     ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '00 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
 ]
