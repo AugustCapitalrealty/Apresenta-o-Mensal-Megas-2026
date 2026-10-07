@@ -9,11 +9,14 @@ Uso (precisa de `python -m pip install pillow numpy`; o Deep Freeze apaga a inst
   python efeitos_imagem.py carimbo "PENDENTE" <saida.png> [--cor #B91C1C] [--angulo -6]
   python efeitos_imagem.py folha   <pasta_com_png> <saida.jpg> [--colunas 5]
   python efeitos_imagem.py miniatura <slide.png> <saida.png>
+  python efeitos_imagem.py caneta  circulo|seta|sublinhado <saida.png> [--cor #EF4444] [--largura 600] [--altura 200]
 
 - foto:      foto em retícula (pontos) na cor da marca sobre papel claro; --rasgado recorta com borda de papel rasgado.
 - carimbo:   carimbo de borracha (moldura dupla, letra de máquina, tinta falhada, levemente girado), PNG transparente.
 - folha:     folha de contato com todos os PNG de uma pasta (ex.: os de exportarSlidesCuritiba()), numerados, para
              conferir o deck inteiro de uma vez: hierarquia, consistência entre slides, o que destoa.
+- caneta:    traço de caneta feito à mão, PNG transparente, para pôr por cima do número que importa: círculo que não
+             fecha certinho, seta curva com ponta em V, sublinhado. Um por slide (se tudo é destaque, nada é).
 - miniatura: o slide em tamanho de tela, em miniatura da grade do Slides (240 px) e em 160 px: se a mensagem não
              sobrevive à redução, o slide tem destaque demais ou letra pequena demais.
 """
@@ -130,6 +133,44 @@ def carimbo(texto, cor='#B91C1C', angulo=-6, tam=120, seed=3):
     return out.rotate(angulo, Image.BICUBIC, expand=True)
 
 
+# ---------- caneta (anotação à mão) ----------
+def _traco(d, pts, cor, larg):
+    d.line(pts, fill=cor, width=larg, joint='curve')
+    r = larg / 2
+    for x, y in (pts[0], pts[-1]): d.ellipse([x - r, y - r, x + r, y + r], fill=cor)
+
+
+def caneta(tipo, largura=600, altura=200, cor='#EF4444', espessura=None, seed=2):
+    """Traço à mão em 2x e reduzido. circulo: elipse que passa do ponto de partida; seta: curva com ponta em V;
+    sublinhado: linha levemente torta que sobe no fim."""
+    rng = np.random.default_rng(seed); S = 2
+    w, h = largura * S, altura * S; larg = int((espessura or max(4, altura // 28)) * S)
+    lay = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(lay); c = hexrgb(cor) + (255,)
+    m = larg * 2
+    if tipo == 'circulo':
+        cx, cy, rx, ry = w / 2, h / 2, w / 2 - m, h / 2 - m
+        t0 = rng.uniform(.6, 1.2) * math.pi; voltas = 1.12
+        ts = np.linspace(t0, t0 + voltas * 2 * math.pi, 160)
+        drift = np.linspace(0, 1, len(ts))
+        pts = [(cx + rx * (1 - .06 * k) * math.cos(t), cy + ry * (1 + .05 * k) * math.sin(t) - k * ry * .08)
+               for t, k in zip(ts, drift)]
+        _traco(d, pts, c, larg)
+    elif tipo == 'seta':
+        a, b = (m, h - m), (w - m * 2, m * 2)
+        mx, my = (a[0] + b[0]) / 2, min(a[1], b[1]) + (h - 2 * m) * .05
+        pts = [((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * mx + t * t * b[0], (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * my + t * t * b[1])
+               for t in np.linspace(0, 1, 40)]
+        _traco(d, pts, c, larg)
+        ang = math.atan2(b[1] - pts[-5][1], b[0] - pts[-5][0]); ponta = min(w, h) * .22
+        for sg in (-1, 1):
+            _traco(d, [b, (b[0] - ponta * math.cos(ang + sg * .55), b[1] - ponta * math.sin(ang + sg * .55))], c, larg)
+    else:  # sublinhado
+        xs = np.linspace(m, w - m, 50)
+        pts = [(x, h / 2 + math.sin(x / w * math.pi * 1.3) * h * .08 - (x / w) ** 3 * h * .18) for x in xs]
+        _traco(d, pts, c, larg)
+    return lay.resize((largura, altura), Image.LANCZOS)
+
+
 # ---------- revisão ----------
 def opaca(caminho, fundo='#FFFFFF'):
     """Abre a imagem sem transparência (o fundo transparente vira branco, não preto)."""
@@ -178,6 +219,9 @@ def main():
     a.add_argument('--cor', default='#B91C1C'); a.add_argument('--angulo', type=float, default=-6)
     a = sub.add_parser('folha'); a.add_argument('pasta'); a.add_argument('saida'); a.add_argument('--colunas', type=int, default=5)
     a = sub.add_parser('miniatura'); a.add_argument('entrada'); a.add_argument('saida')
+    a = sub.add_parser('caneta'); a.add_argument('tipo', choices=['circulo', 'seta', 'sublinhado']); a.add_argument('saida')
+    a.add_argument('--cor', default='#EF4444'); a.add_argument('--largura', type=int, default=600)
+    a.add_argument('--altura', type=int, default=200)
     o = p.parse_args()
 
     if o.cmd == 'foto':
@@ -186,6 +230,8 @@ def main():
         im.save(o.saida)
     elif o.cmd == 'carimbo':
         carimbo(o.texto, o.cor, o.angulo).save(o.saida)
+    elif o.cmd == 'caneta':
+        caneta(o.tipo, o.largura, o.altura, o.cor).save(o.saida)
     elif o.cmd == 'folha':
         folha_contato(o.pasta, o.colunas).save(o.saida, quality=90)
     else:

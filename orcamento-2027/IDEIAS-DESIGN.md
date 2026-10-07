@@ -84,7 +84,75 @@ slides, é o que impede o diretor de se perder.
 | **Carimbo que bate** | moldura dupla, letra de máquina, tinta falhada, levemente girado | o selo ⚠ PENDENTE / REVISAR com mais presença. PNG pronto: `efeitos_imagem.py carimbo "PENDENTE"` |
 | **Gráfico que se explica sozinho** | título = conclusão, a série principal na cor de acento, o resto em cinza, rótulo direto em vez de legenda | todos os gráficos de barras e linhas |
 
-## 4. Tipografia
+## 4. Ilustrações
+
+A regra que mais valeu nos vídeos: **o efeito fala a língua do material**. Num deck, isso quer dizer **um estilo de
+desenho para o deck inteiro**, com o mesmo traço, a mesma espessura e as mesmas cores. Ícone de um estilo, mapa de
+outro e foto de um terceiro parecem três apresentações coladas.
+
+**1. Ícones de conta e de seção: o vocabulário do deck.** Um ícone por grupo da DRE, sempre o mesmo onde o grupo
+aparece: trilha de navegação, subcapa, DRE, mapa de "para onde vai cada R$ 1" e cartões de achado.
+
+| Grupo | Ícone sugerido |
+|---|---|
+| Manutenção | chave inglesa |
+| Segurança | escudo ou câmera |
+| Limpeza e conservação | vassoura ou gota |
+| Utilities | raio + gota |
+| IPTU | documento com prédio |
+| Seguro | guarda-chuva |
+| Projetos | capacete de obra |
+| Custo por m² | planta com régua |
+
+Regras dos ícones:
+- de traço (contorno), na espessura do texto, em `brandMed`, nunca coloridos um a um;
+- tirados de uma biblioteca de licença aberta (Material Symbols, Apache 2.0, ou Lucide, ISC), todos da mesma
+  família;
+- exportados em PNG e inseridos pelo ID.
+
+**2. O Mega desenhado: a ilustração que só este deck pode ter.** Os longos de mapa e documentos funcionam porque o
+lugar da história aparece desenhado, com alfinete e caneta marcando onde as coisas acontecem. No deck: a planta de
+implantação do Mega simplificada (galpões, portaria, pátio, bolsão), com alfinetes nos gastos que têm lugar. Exemplos:
+o totem na entrada, a iluminação do bolsão, a linha de vida no telhado, o CFTV na portaria.
+- **Projetos 2027 no mapa:** cada projeto alfinetado onde acontece, com o valor. O diretor entende o "onde" e o
+  "quanto" num olhar.
+- **Área do Esteio (24 mil → 53 mil m²):** a planta com os blocos novos destacados explica o aumento melhor que o
+  número sozinho.
+- ⚠ **Não inventar a forma do Mega.** O desenho sai da planta real, que o gestor precisa mandar. Sem a planta, leva o
+  aviso "esquema, fora de escala", como nos vídeos.
+- Como fazer: desenhar uma vez em PNG (traço fino na cor da marca, fundo transparente) e o gerador põe os alfinetes
+  e valores por cima, em formas do Slides. Assim os números continuam vindo das fontes a cada geração.
+
+**3. Anotação de caneta: uma por slide.** Nas capas de referência, o círculo vermelho feito à mão em volta da palavra
+principal, a seta curva e o sublinhado guiam o olho mais do que qualquer cor. No deck, serve para marcar **o** número
+que importa numa tabela ou num gráfico: a linha que mais subiu, o item pendente.
+- PNG transparente: `python ferramentas/efeitos_imagem.py caneta circulo|seta|sublinhado saida.png`.
+- Vermelho só quando é aumento ou problema; azul da marca quando é só "olhe aqui".
+
+**4. Pictograma de quantidade.** Um ícone = uma unidade. Nas referências, uma grade de 220 "chips" mostrava o
+tamanho de um número melhor que o próprio número. No deck: a área em blocos de 1 mil m², ou os contratos como uma
+grade de cartões (um por contrato) com os que reajustaram acima do índice destacados.
+
+**5. Desenho técnico para obra.** Para projeto de engenharia (linha de vida, telhado, iluminação): esquema em traço
+de planta, com cotas e "FIG. 1". Desenha na ordem do engenheiro (contorno → detalhe → cotas → rótulos) e leva
+"esquema, fora de escala".
+
+**6. Imagem gerada por IA, se for usar.** Vale o que se aprendeu nas capas:
+- gerar a base **sem texto** ("NO text, NO letters, NO numbers, NO logos"); o texto entra depois, na fonte da marca;
+- tem que parecer ilustração ("isometric illustration", "clearly a scale model"), **nunca foto do Mega**;
+- nada de pessoas reconhecíveis nem marca de terceiros;
+- conferir o resultado na miniatura antes de usar.
+
+Uso possível: uma ilustração isométrica de galpão logístico genérico, no estilo da marca, como fundo de subcapa
+quando não houver foto boa do Mega.
+
+**O que não usar no deck da diretoria:**
+- **Mascote ou personagem.** Nos vídeos, a pesquisa mostrou que mascote sozinho não segura atenção, e no deck
+  ainda tira a seriedade.
+- **Papel recortado e caderno rabiscado.** São linguagens de vídeo leve.
+- **Gravuras antigas.** Não têm relação com o assunto.
+
+## 5. Tipografia
 
 - O par da marca é **Montserrat + Open Sans**: fica.
 - **Destaque das referências:** sans pesada com UMA palavra em serifa itálica ("Become *Premium*", "Changed
@@ -97,7 +165,7 @@ slides, é o que impede o diretor de se perder.
 - **Escala fixa**, como nos design systems de vídeo (gigante · xl · l · m · s · corpo · rótulo · canto). Para o deck:
   herói 40 · título de seção 30 · título de slide 19 · corpo 9 a 12 · rodapé 7. Fora da escala, só com motivo.
 
-## 5. O que o Google Slides não faz, e o contorno
+## 6. O que o Google Slides não faz, e o contorno
 
 | Não faz pelo Apps Script | Contorno |
 |---|---|
@@ -107,7 +175,7 @@ slides, é o que impede o diretor de se perder.
 | Carimbo, textura de papel | PNG transparente gerado em Python e inserido por cima |
 | Rotação | `setRotation` funciona em forma e imagem: cartões e carimbos levemente girados (−2° a −6°) |
 
-## 6. Processo (o que mais rendeu na produção de vídeo)
+## 7. Processo (o que mais rendeu na produção de vídeo)
 
 1. **Estratégia antes da produção.** Ideia nova vira proposta (texto e rascunho) e espera o "sim". Só depois mexe
    no gerador.
@@ -130,7 +198,7 @@ slides, é o que impede o diretor de se perder.
 7. **Registrar o veredito** (aprovado ou reprovado, e o porquê) no HANDOFF §6, para não propor de novo o que já
    foi recusado.
 
-## 7. Ordem sugerida (proposta, não aprovada)
+## 8. Ordem sugerida (proposta, não aprovada)
 
 | # | O quê | Custo | Depende de |
 |---|---|---|---|
@@ -140,10 +208,12 @@ slides, é o que impede o diretor de se perder.
 | 4 | Subcapas com foto do Mega em retícula + número da seção | médio | fotos de cada Mega por seção |
 | 5 | Infográficos novos: para onde vai cada R$ 1; o ano em linha do tempo | médio | sim do gestor |
 | 6 | Carimbo de pendência; serifa itálica na capa | baixo | gosto do gestor |
+| 7 | Ícones por grupo da DRE (trilha, subcapa, DRE, achados) | baixo | sim do gestor |
+| 8 | O Mega desenhado com os projetos alfinetados | médio | planta de implantação de cada Mega |
 
-## 8. Ferramenta: `ferramentas/efeitos_imagem.py`
+## 9. Ferramenta: `ferramentas/efeitos_imagem.py`
 
 Trazida da produção de capas e adaptada à paleta Capital Realty. Precisa de `python -m pip install pillow numpy`
 (o Deep Freeze apaga a instalação no reinício). Comandos: `foto` (retícula na cor da marca, `--rasgado` com borda
-e sombra), `carimbo`, `folha` (folha de contato) e `miniatura`. Detalhes no cabeçalho do arquivo. Foi testada em
+e sombra), `carimbo`, `caneta` (círculo, seta e sublinhado à mão), `folha` (folha de contato) e `miniatura`. Detalhes no cabeçalho do arquivo. Foi testada em
 07/10/2026 com a imagem de `design/`.
