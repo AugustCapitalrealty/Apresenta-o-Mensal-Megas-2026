@@ -446,6 +446,17 @@ ok(q.ofensores.contas[0].delta >= q.ofensores.contas[q.ofensores.contas.length -
 ok(q.defensores.contas.every(c => c.delta <= -G.ORC_OFENSOR_MINIMO), 'defensores listados abaixo do −mínimo');
 
 const mensal = G.obterRelatorioMensal_('CURITIBA');
+// PREVIA: números de Curitiba para os rascunhos de gráfico (ferramentas/rascunhos).
+if (process.env.PREVIA) {
+  const contr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], avul = contr.slice();
+  d.categorias.forEach(c => c.itens.forEach(it => it.meses.forEach((v, i) => { (it.contrato ? contr : avul)[i] += v; })));
+  const conta = n => mensal.contas[G._orcChaveConta_(n)];
+  fs.writeFileSync(path.join(process.env.PREVIA, 'dados_rascunhos_curitiba.json'), JSON.stringify({
+    manutencao: { contratos: contr, avulsos: avul },
+    mensal: ['Manutenção de imóveis', 'Segurança e vigilância', 'Limpeza e conservação'].reduce((o, n) => {
+      const c = conta(n); if (c) o[n] = { orcAnt: c.orcAnt, ritmo: c.real, orc: c.orc }; return o; }, {})
+  }, null, 1));
+}
 const mSeg = mensal.contas[G._orcChaveConta_('Segurança e vigilância')];
 ok(!!mSeg, 'mensal: segurança');
 pertoReal(mSeg.orc.reduce((a, v) => a + v, 0), 2306916.51, 'mensal: soma dos meses da segurança 2027 = metragem');
