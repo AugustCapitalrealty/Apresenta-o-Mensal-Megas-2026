@@ -185,11 +185,20 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     _orcUmaLinha_(slide, 48 * k, 296 * k, 330 * k, 18 * k, 'Mega Curitiba · Mega Itajaí · Mega Esteio',
       { align: 'L', fs: 11, cor: C.textBody, fonte: T.body, fsMin: 8 });
   }
-  try {
-    const img = slide.insertImage(_orcLogoBlob_('fullNegativo'));
-    const h = 24 * k, w = h * img.getWidth() / img.getHeight();
-    img.setWidth(w).setHeight(h).setLeft(48 * k).setTop(30 * k);
-  } catch (e) { Logger.log('Capa de Facilities: logo indisponível. ' + e.message); }
+  // Os donos dos Megas, lado a lado sobre a foto: Capital Realty e Demercado (Curitiba) — Guilherme, 07/10/2026.
+  let x = 48 * k;
+  ['CAPITAL', 'DEMERCADO'].forEach((m, i) => {
+    try {
+      const id = ORC_MARCAS[m].logos.fullNegativo;
+      const b = /^pasta:/.test(id) ? _orcImagemDaPasta_(id.slice(6)) : _orcBlobDrive_(id);
+      if (!b) return;
+      if (i) { _orcRet_(slide, x, 30 * k, 1 * k, 24 * k, '#FFFFFF', { alpha: 0.6 }); x += 14 * k; }
+      const img = slide.insertImage(b);
+      const h = (m === 'DEMERCADO' ? 22 : 24) * k, w = h * img.getWidth() / img.getHeight();
+      img.setWidth(w).setHeight(h).setLeft(x).setTop((m === 'DEMERCADO' ? 31 : 30) * k);
+      x += w + 14 * k;
+    } catch (e) { Logger.log('Capa de Facilities: logo ' + m + ' indisponível. ' + e.message); }
+  });
   if (!Object.keys(rels).length) return;
   const t = _orcTotaisFacilities_(rels);
   const v = _orcVariacao_(t.ritmo, t.orc);
