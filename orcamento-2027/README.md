@@ -281,6 +281,12 @@ Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
 Imagens e revisão visual (`python -m pip install pillow numpy`):
 
+- `python ferramentas/decisoes_gestor.py` — lê as planilhas de comparação
+  que o gestor preencheu (Itajaí e Esteio em .xlsx na pasta `01 - CONTROLE DA
+  APRESENTAÇÃO`; Curitiba é Planilha Google: baixar como .xlsx para
+  Downloads) e grava `23_DecisoesGestor.gs` (obras adiadas de 2026 e pares
+  SIM). Rodar de novo sempre que ele mudar uma planilha; depois teste, commit e
+  `clasp push`. Alimenta o slide "Por que a manutenção sobe" (`24_PorQueSobe.gs`).
 - `python ferramentas/previa_slides.py ferramentas/saida/formas_<cidade>.json <índices>` —
   prévia aproximada dos slides, a partir das formas que o teste grava com
   `PREVIA=ferramentas/saida node teste/teste_orcamento.js` (conferir layout

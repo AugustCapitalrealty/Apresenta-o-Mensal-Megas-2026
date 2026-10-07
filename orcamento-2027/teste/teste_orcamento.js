@@ -640,7 +640,9 @@ const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // menores que não couberam na composição.
 const nLL = contasLL.map(c => 1 + G._orcPaginasItens_(G._orcCorteComposicao_(c, modelos, H).fora).length);
 ok(nLL[0] === 2, 'manutenção: linha a linha em 2 páginas (os itens menores na 2/2) (veio ' + nLL.join(',') + ')');
-const N_MANUT = nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;   // linha a linha, contratos 26×27, resumo, mensal, categorias, demais
+// "Por que a manutenção sobe" abre a seção (Curitiba tem 2 obras adiadas na planilha do gestor).
+const N_POR_QUE = G.ORC_DECISOES_GESTOR['Mega Curitiba'].adiados.length ? 1 : 0;
+const N_MANUT = N_POR_QUE + nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;   // por que sobe, linha a linha, contratos 26×27, resumo, mensal, categorias, demais
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
@@ -700,7 +702,27 @@ for (let k = 0; k < nTodos; k++) {
   const tt = textos(slides[iDRE + 3 + k]);
   ok(!tt.some(t => /…$/.test(t)), 'contratos ' + (k + 1) + '/' + nTodos + ': nenhum texto cortado (' + tt.filter(t => /…$/.test(t)).join(' | ') + ')');
 }
-const iLLManut = iSub[3] + 1, iCmp = iSub[3] + nLL[0] + 1, iResManut = iCmp + 1, iCat0 = iCmp + 3;
+const iPorQue = iSub[3] + 1;
+const iLLManut = iSub[3] + 1 + N_POR_QUE, iCmp = iLLManut + nLL[0], iResManut = iCmp + 1, iCat0 = iCmp + 3;
+// Por que a manutenção sobe: ponte Ritmo → Orç com o degrau das obras adiadas
+// e a tabela das obras, com o valor de hoje no modelo 090.
+{
+  const tPQ = textos(slides[iPorQue]);
+  const adiC = G._orcAdiados2026_(CUR, G.obterManutencao_('CURITIBA'));
+  const vM = contasLL[0].v;
+  ok(N_POR_QUE === 1 && titulo(slides[iPorQue]) === 'Por que a manutenção sobe — Orçamento 2027',
+     'Manutenção abre com "Por que a manutenção sobe"');
+  ok(adiC && adiC.itens.length === 2 && adiC.itens.every(it => it.doModelo) && Math.abs(adiC.total - 232580.29) < 1,
+     'obras adiadas de Curitiba achadas no modelo 090 pelo nome (R$ ' + (adiC && Math.round(adiC.total)) + ')');
+  ok(adiC.itens[0].nome === 'Guard-rail fase 2' && tPQ.indexOf('Guard-rail fase 2') >= 0 && tPQ.indexOf('Torniquete 4 (instalação, corte vidro, periféricos)') >= 0,
+     'tabela com as obras sem o número do chamado');
+  const semAd = vM.orc - adiC.total;
+  ok(tPQ.some(t => t.indexOf('sem as obras adiadas de 2026: +' + G._orcPct_((semAd - vM.ritmo) / vM.ritmo)) >= 0),
+     'subtítulo com a alta sem as obras adiadas (' + tPQ[1] + ')');
+  ok(tPQ.some(t => /^Sem as obras adiadas: R\$ [\d,]+ (mil|mi) · R\$ [\d,]+\/m² ao mês/.test(t)),
+     'leitura sem as obras adiadas em R$ e R$/m² ao mês');
+  ok(G._orcAdiados2026_(G.ORC_CIDADES.ESTEIO, G.obterManutencao_('CURITIBA')) === null, 'Mega sem obra adiada: sem o slide');
+}
 const iDemais = iCat0 + div.proprias.length;                  // primeira página de Demais
 ok(titulo(slides[iLLManut]) === contasLL[0].nome + ' (1/2)', 'Manutenção abre com o linha a linha (1/2)');
 // Página 2/2: os itens menores que a composição não mostrava, fechando com o

@@ -203,6 +203,15 @@ function _orcGerarCidade_(deck, W, H, chave) {
 
   if (contas || dados) {
     secao('Manutenção');
+    // Por que a manutenção sobe: as obras de 2026 adiadas para 2027, segundo o
+    // gestor (24_PorQueSobe.gs). Mega sem obra adiada não ganha o slide.
+    if (contas && dados) {
+      let adi = null;
+      try { adi = _orcAdiados2026_(cid, dados); }
+      catch (e) { Logger.log('Obras adiadas de ' + cid.nome + ' indisponíveis: ' + e.message); }
+      if (adi) comSelo('Por que a manutenção sobe', [contas[0].chave],
+        s => gerarSlidePorQueSobe_(s, W, H, cid, visao.rel, contas[0], adi));
+    }
     if (contas) linhaALinha(0);
     // Ritmo × Orç item a item nos contratos (pedido do gestor, 06/10/2026).
     if (contas && calc && calc.cls && calc.contratosAnt && calc.contratosAnt.length) {

@@ -149,10 +149,14 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
    - Pedido dele: **comparar também por disciplina** ("em 2026 gastamos X com
      pintura, em 2027 projetamos X").
    Perguntas em aberto estão em `ORC_PENDENCIAS_GESTOR` (01_Config.gs) e saem
-   no slide de revisão. Proposta ao usuário (não aprovada ainda): slide "Por
-   que a manutenção sobe" (ponte ritmo → Orç com os degraus adiados, contratos
-   cheios/ampliados, obras novas, 3%, mudança de conta), comparação por
-   disciplina e a item a item só com os SIM. As planilhas são do
+   no slide de revisão. As decisões dele viram código por
+   `ferramentas/decisoes_gestor.py` → `23_DecisoesGestor.gs`.
+   **Feito (07/10/2026):** slide "Por que a manutenção sobe"
+   (`24_PorQueSobe.gs`, abre a seção Manutenção de Curitiba e Itajaí): ponte
+   Ritmo → obras adiadas de 2026 → demais variações → Orç, em R$ e R$/m², e a
+   tabela das obras (valor de 2027 vindo do modelo 090 pelo nome). Itajaí:
+   +77,1% → +29,4% sem as adiadas. **Falta:** comparação por disciplina e a
+   item a item só com os pares SIM (os pares já estão em `ORC_DECISOES_GESTOR`). As planilhas são do
    Drive: peça ao usuário para baixá-las como .xlsx para uma pasta do G: (ou
    rodar uma exportação). As linhas de origem estão em
    `ferramentas/comparacao_linhas_<cidade>.json` (gerado por
