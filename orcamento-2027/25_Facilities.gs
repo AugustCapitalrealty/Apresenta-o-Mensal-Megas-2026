@@ -119,6 +119,7 @@ function _orcGerarFacilities_(parte) {
   _orcLigarSecoes_(final, parte === 'ABERTURA' ? { nome: 'Facilities' } : ORC_CIDADES[parte]);
   _orcLigarFacilities_(final);
   const n = final.getSlides().length, url = final.getUrl();
+  _orcLogMolduras_(parte);
   _orcSalvarDeck_(final, 'os links do deck de Facilities');
   _orcSalvarTextos_();
   Logger.log('Pronto: ' + parte + ' no deck de Facilities (' + n + ' slides no total) — ' + url);

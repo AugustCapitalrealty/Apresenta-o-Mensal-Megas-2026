@@ -319,6 +319,17 @@ function _orcCabecalhoFundo_(slide, W, secao) {
 let _ORC_MOLD = null;
 let _ORC_MOLDURAS_USADAS = {};   // assinatura → especificação (o teste grava o manifesto)
 let _ORC_MOLDURAS_PASSOS = [];   // [marca, passo, assinatura], na ordem (conferência no teste)
+// Conta da geração: quantos slides receberam a moldura e quais assinaturas faltaram na pasta (vai para o log no fim).
+let _ORC_MOLD_CONTA = { com: 0, sem: {} };
+function _orcLogMolduras_(quem) {
+  const faltam = Object.keys(_ORC_MOLD_CONTA.sem);
+  const n = faltam.reduce((t, h) => t + _ORC_MOLD_CONTA.sem[h].length, 0);
+  Logger.log(quem + ' · molduras: ' + _ORC_MOLD_CONTA.com + ' slides com a moldura em imagem, ' + n + ' com as formas de antes' +
+             (faltam.length ? ' — faltam na pasta ' + ORC_PASTA_IMAGENS + ': ' +
+               faltam.map(h => 'MOLDURA - ' + h + '.png (' + _ORC_MOLD_CONTA.sem[h].join(', ') + ')').join('; ') +
+               '. Rode o teste com PREVIA e ferramentas/molduras_imagem.py, ou espere o Drive subir a pasta.' : ''));
+  _ORC_MOLD_CONTA = { com: 0, sem: {} };
+}
 
 function _orcAbrirMoldura_() {
   _ORC_MOLD = ORC_USAR_MOLDURAS ? { cards: [], header: false, secao: 0 } : null;
@@ -350,8 +361,10 @@ function _orcFecharMoldura_(slide, W, H) {
     const img = _orcImagemDaPasta_('MOLDURA - ' + assin + '.png');
     if (img) {
       slide.insertImage(img).setLeft(0).setTop(0).setWidth(W).setHeight(H).sendToBack();
+      _ORC_MOLD_CONTA.com++;
       return;
     }
+    (_ORC_MOLD_CONTA.sem[assin] = _ORC_MOLD_CONTA.sem[assin] || []).push(_ORC_SLIDE_ATUAL);
   } catch (e) {
     Logger.log('Moldura não aplicada (vão as formas): ' + e.message);
   }

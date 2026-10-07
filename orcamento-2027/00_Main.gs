@@ -54,6 +54,7 @@ function _orcGerar_(chaves) {
     _orcLigarSecoes_(final, cid);
     const n = final.getSlides().length, url = final.getUrl();
     _orcSalvarDeck_(final, 'a remoção do último slide antigo de ' + cid.nome);
+    _orcLogMolduras_(cid.nome);
     Logger.log('Pronto: ' + cid.nome + ', ' + n + ' slides — ' + url);
   });
   _orcAplicarMarca_(null);
