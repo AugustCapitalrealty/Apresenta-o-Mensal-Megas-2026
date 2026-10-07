@@ -97,20 +97,23 @@ fica fora. Por isso, **não edite no editor do Apps Script**: o próximo
 
 No editor do Apps Script, escolha a função e clique em Executar:
 
+Roteiro completo da primeira checagem: [`PASSO-A-PASSO.md`](PASSO-A-PASSO.md).
+
 - `gerarCuritiba()` / `gerarItajai()` / `gerarEsteio()` — substitui o
-  conteúdo da apresentação **da cidade** (`deckId` em `ORC_CIDADES`). Itajaí e
-  Esteio ainda sem as planilhas de CONTRATOS: a diferença aparece como "Não
-  detalhado"
+  conteúdo da apresentação **da cidade** (`deckId` em `ORC_CIDADES`)
 - `gerarTodas()` — as três em sequência, cada uma na sua apresentação. Chega
   perto do limite de 6 min do Apps Script: prefira uma cidade por vez
 - `aplicarPropostasTextos()` — copia as propostas de texto curto para a
   planilha de textos (ver "Textos das tabelas")
 - `diagnosticarOrcamento()` — só lê e mostra no log contas, categorias e a
   conferência das somas
-- `exportarSlidesGerados()` — salva cada slide gerado como PNG em
-  `_slides-gerados` (pasta APRESENTAÇÃO ORÇAMENTO), para revisar fora do Slides
-- `exportarFixtures()` — salva as planilhas como JSON em `_fixtures`; copie
-  para `teste/` quando os dados mudarem
+- `exportarSlidesCuritiba()` / `exportarSlidesItajai()` /
+  `exportarSlidesEsteio()` — salva cada slide gerado como PNG em
+  `_slides-gerados - MEGA <X>` (pasta APRESENTAÇÃO ORÇAMENTO), para revisar
+  fora do Slides — inclusive numa sessão do Claude sem acesso ao Drive
+- `exportarFixtures()` — salva **todas** as planilhas que o gerador lê, dos
+  três Megas, como JSON em `_fixtures`; copie por cima de `teste/` quando os
+  dados mudarem (ver [`HANDOFF.md`](HANDOFF.md))
 
 Os slides novos são criados primeiro e os antigos só são apagados no fim.
 

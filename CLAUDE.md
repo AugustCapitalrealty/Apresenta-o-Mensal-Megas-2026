@@ -21,6 +21,15 @@ Script mensais e não entram nas regras de namespace abaixo do mesmo jeito:
 | `tabelas/` | Cinco geradores das apresentações **semanais**, cada um vinculado à sua própria apresentação (`mega-curitiba`, `mega-itajai`, `previsao-tempo`, `propriedades-semanal`, `template`). Tem [`README`](tabelas/README.md) próprio |
 | `design/` | Peça de design (texto, script Python, PDF/PNG). Nada a ver com os geradores de slides |
 
+## Orçamento 2027 (`orcamento-2027/`) — comece pelo HANDOFF
+
+Projeto Apps Script do Orçamento 2027 dos Megas (Curitiba, Itajaí, Esteio),
+publicado com `clasp`. **Antes de qualquer coisa nele, leia
+[`orcamento-2027/HANDOFF.md`](orcamento-2027/HANDOFF.md)**: estado atual,
+decisões já tomadas, próximos passos e como trabalhar sem acesso ao Google
+Drive. O roteiro que o usuário roda no editor está em
+[`orcamento-2027/PASSO-A-PASSO.md`](orcamento-2027/PASSO-A-PASSO.md).
+
 ## Deep Freeze: o disco C: se perde a cada reinício
 
 O computador de trabalho tem Deep Freeze. Só sobrevive o que está no G: (Drive
