@@ -194,3 +194,35 @@ const LOGOS_CR = {
   fullNegativo: '1Tx9cwk1-1_P1TSGoXLZ828JNQ-rY-w6p',
   fullPositivo: '1XqFtIobiEq7VC2H41sKnFNUuOluw_J4V'
 };
+
+// Fotos das sub capas: os MESMOS arquivos das capas de seção da apresentação
+// mensal dos Megas (megas-mensal/01_Config.gs, FOTOS_SECAO). Trocar uma foto
+// lá não troca aqui: atualize os dois.
+const ORC_FOTOS_SECAO = {
+  PREVENTIVA:   '1iC0svCXk7jSddAc65Eg0VMjjPtEHJErW',
+  CORRETIVA:    '1e1nddV6U0KDrAYRMT16s54LAuKRBCC2g',
+  CONTRATADOS:  '1SyVowumHac9e3PxDcmHhwFnfVU4K0hph',
+  INTERNOS:     '1mP_ousYFrNSDV8rwPhPtXdYoOEYaW_3Z',
+  PATRIMONIAL:  '1kua0uho-3-yzLtE4IR2y_epaBYtKttsx',
+  OPERACIONAL:  '1kXwwPWzU6pimR9vSXY6I5M7eNgNjDC_h',
+  UTILITIES:    '16DLJAVLl8xOsRr8Nhi_OTmnXcEx-URVB',   // energia de Curitiba: não serve aos três Megas
+  SUSTENTAVEL:  '1Sq519lQhsvqVgC1V9w4yVMbIjSDqIVu1',
+  DOCUMENTACAO: '1fA13cXRur_UbMtLAjRYGbOyjaauNiOZ0'
+};
+
+// Sub capa de cada seção (gerarSlideSubcapa_, 10_Capa.gs), pelo título:
+//   foto   → chave de ORC_FOTOS_SECAO, ou 'MEGA' = a foto da capa do próprio
+//            Mega (cid.fotoFundoId). Sem foto, fundo azul-escuro.
+//   motivo → o desenho à direita (_orcMotivoSecao_), o mesmo da mensal quando
+//            a chave existe lá; 'M2' (planta) e 'ANEIS' são só do orçamento.
+// Primeira escolha em 07/10/2026, sem ver as fotos: troque à vontade.
+const ORC_SUBCAPAS = {
+  'Premissas':             { foto: 'DOCUMENTACAO', motivo: 'DOCUMENTACAO' },
+  'Resumo Executivo':      { foto: 'MEGA',         motivo: 'ANEIS' },
+  'DRE':                   { foto: 'OPERACIONAL',  motivo: 'OPERACIONAL' },
+  'Manutenção':            { foto: 'PREVENTIVA',   motivo: 'PREVENTIVA' },
+  'Segurança':             { foto: 'PATRIMONIAL',  motivo: 'PATRIMONIAL' },
+  'Limpeza e Conservação': { foto: 'CONTRATADOS',  motivo: 'CONTRATADOS' },
+  'Projetos × Recorrente': { foto: 'CORRETIVA',    motivo: 'INTERNOS' },
+  'Custo por m²':          { foto: 'INTERNOS',     motivo: 'M2' }
+};

@@ -40,7 +40,7 @@ function _orcFotoFundo_(slide, W, H, fotoId, cor, alpha) {
     _orcRet_(slide, 0, 0, W, H, cor, { alpha: alpha });
     return true;
   } catch (e) {
-    Logger.log('Capa: foto do Mega indisponível (' + fotoId + '). ' + e.message);
+    Logger.log('Foto de fundo indisponível (' + fotoId + '). ' + e.message);
     return false;
   }
 }
@@ -155,28 +155,150 @@ function gerarSlideCapa_(slide, W, H, cid, rel) {
 // ==========================================
 // Abre cada seção do deck (Premissas, Resumo Executivo, DRE, Manutenção,
 // Segurança, Limpeza), como o gestor montou à mão na revisão de 30/09/2026.
-// Mesma linguagem da capa, com o número da seção no lugar do logo.
+// Desde 07/10/2026 no padrão das capas de seção da apresentação mensal
+// (megas-mensal/10_Slide_Capas.gs, gerarCapaSecao): foto do tema com véu
+// azul, scrim que some para a direita, espinha em gradiente e o desenho da
+// seção à direita, no azul de destaque. A foto e o desenho de cada seção
+// estão em ORC_SUBCAPAS (01_Config.gs). Sem foto, fundo azul-escuro.
+// O número vem primeiro e o título logo depois (o teste procura assim).
 function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo) {
-  const DS = CR_DESIGN_SYSTEM;
-  slide.getBackground().setSolidFill(DS.colors.brandDark);
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, AZUL = '#60A5FA';
+  const cfg = ORC_SUBCAPAS[titulo] || {};
+  const fotoId = cfg.foto === 'MEGA' ? cid.fotoFundoId : ORC_FOTOS_SECAO[cfg.foto];
+  slide.getBackground().setSolidFill(C.brandDark);
 
-  // Grafismo de fundo: a elipse SANGRA para fora da página de propósito.
-  const halo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 260, H - 250, 460, 460);
-  halo.getFill().setSolidFill(DS.colors.brandLight, 0.12); halo.getBorder().setTransparent();
-  _orcRet_(slide, 0, 0, 6, H, DS.colors.brandLight);   // espinha lateral
+  if (_orcFotoFundo_(slide, W, H, fotoId, C.brandDark, 0.5)) {
+    _orcGradiente_(slide, 0, 0, W * 0.62, H, C.brandDark, C.brandDark, { alphaDe: 0.55, alphaAte: 0, passos: 22 });
+  } else {
+    // Grafismo de fundo: a elipse SANGRA para fora da página de propósito.
+    const halo = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, W - 260, H - 250, 460, 460);
+    halo.getFill().setSolidFill(C.brandLight, 0.12); halo.getBorder().setTransparent();
+  }
+  _orcGradiente_(slide, 0, 0, 6, H, C.brandLight, C.brandSoft, { vertical: true, passos: 24 });   // espinha
 
   const y0 = Math.round(H * 0.28);
   _orcUmaLinha_(slide, 48, y0, 160, 56, ('0' + numero).slice(-2),
-    { align: 'L', fs: 40, bold: true, cor: DS.colors.brandLight, fonte: DS.typography.titles });
-  _orcUmaLinha_(slide, 48, y0 + 58, W - 140, 44, titulo,
+    { align: 'L', fs: 40, bold: true, cor: AZUL, fonte: DS.typography.titles });
+  _orcUmaLinha_(slide, 48, y0 + 58, W * 0.62, 44, titulo,
     { align: 'L', fs: 30, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, fsMin: 18 });
-  _orcRet_(slide, 55, y0 + 108, 56, 3, DS.colors.brandLight);
-  _orcUmaLinha_(slide, 48, y0 + 118, W - 140, 18, cid.nome + ' · Orçamento ' + ORC_ANO,
+  _orcRet_(slide, 55, y0 + 108, 56, 3, AZUL);
+  _orcUmaLinha_(slide, 48, y0 + 118, W * 0.62, 18, cid.nome + ' · Orçamento ' + ORC_ANO,
     { align: 'L', fs: 10, cor: '#CBD5E1', fonte: DS.typography.body });
 
-  _orcLinha_(slide, 42, H - 40, W - 42, H - 40, '#334155', 1);
+  _orcLinha_(slide, 42, H - 40, W - 42, H - 40, '#475569', 0.75);
   _orcUmaLinha_(slide, 42, H - 34, W - 84, 18, 'Capital Realty · Facilities · Planejamento ' + ORC_ANO,
-    { align: 'L', fs: 7.5, bold: true, cor: DS.colors.textMuted, fonte: DS.typography.body });
+    { align: 'L', fs: 7.5, bold: true, cor: '#94A3B8', fonte: DS.typography.body });
+
+  _orcMotivoSecao_(slide, cfg.motivo, W * 0.80, H * 0.42, AZUL);
+}
+
+// ==========================================
+// DESENHO DA SEÇÃO (sub capa)
+// ==========================================
+// Os mesmos motivos das capas de seção da mensal (megas-mensal/
+// 10_Slide_Capas.gs, _secMot*_), em formas nativas: branco translúcido (lê
+// sobre a foto) e UM realce na cor de destaque, centrados em (cx, cy).
+function _orcMotivoSecao_(s, chave, cx, cy, cor) {
+  switch (chave) {
+    case 'PREVENTIVA':   return _orcMotPreventiva_(s, cx, cy, cor);
+    case 'CONTRATADOS':  return _orcMotContratados_(s, cx, cy, cor);
+    case 'INTERNOS':     return _orcMotInternos_(s, cx, cy, cor);
+    case 'PATRIMONIAL':  return _orcMotPatrimonial_(s, cx, cy, cor);
+    case 'OPERACIONAL':  return _orcMotOperacional_(s, cx, cy, cor);
+    case 'DOCUMENTACAO': return _orcMotDocumentacao_(s, cx, cy, cor);
+    case 'M2':           return _orcMotM2_(s, cx, cy, cor);
+    default:   // ANEIS e qualquer chave sem desenho: os anéis da capa
+      _orcAnel_(s, cx - 75, cy - 75, 150, '#FFFFFF', 1.25, 0.14);
+      _orcAnel_(s, cx - 55, cy - 55, 110, cor, 1, 0.5);
+  }
+}
+
+function _orcAnel_(s, x, y, tam, cor, peso, alpha) {
+  const c = s.insertShape(SlidesApp.ShapeType.ELLIPSE, x, y, tam, tam);
+  c.getFill().setTransparent();
+  c.getBorder().getLineFill().setSolidFill(cor, alpha == null ? 1 : alpha);
+  c.getBorder().setWeight(peso || 1);
+  return c;
+}
+
+// Forma só com contorno translúcido.
+function _orcContorno_(s, tipo, x, y, w, h, cor, alpha, peso) {
+  const f = s.insertShape(tipo, x, y, w, h);
+  f.getFill().setTransparent();
+  f.getBorder().getLineFill().setSolidFill(cor, alpha);
+  f.getBorder().setWeight(peso);
+  return f;
+}
+
+// MANUTENÇÃO — grade 3×3 (plano/calendário), célula central em destaque.
+function _orcMotPreventiva_(s, cx, cy, cor) {
+  const cell = 22, gap = 9, n = 3, span = n * cell + (n - 1) * gap;
+  const x0 = cx - span / 2, y0 = cy - span / 2;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    const x = x0 + c * (cell + gap), y = y0 + r * (cell + gap);
+    if (r === 1 && c === 1) _orcRet_(s, x, y, cell, cell, cor, { redondo: true, alpha: 0.9 });
+    else _orcContorno_(s, SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cell, cell, '#FFFFFF', 0.5, 1.5);
+  }
+}
+
+// LIMPEZA (serviço contratado) — dois anéis entrelaçados, um em destaque.
+function _orcMotContratados_(s, cx, cy, cor) {
+  _orcAnel_(s, cx - 56, cy - 36, 72, '#FFFFFF', 2.5, 0.5);
+  _orcAnel_(s, cx - 16, cy - 36, 72, cor, 2.5, 0.85);
+}
+
+// PROJETOS — skyline de barras (predial), uma barra em destaque.
+function _orcMotInternos_(s, cx, cy, cor) {
+  const alt = [38, 64, 50, 78, 44], bw = 14, gap = 8;
+  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 42;
+  alt.forEach((hh, i) => _orcRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, i === 3 ? cor : '#FFFFFF',
+    { redondo: true, alpha: i === 3 ? 0.85 : 0.28 }));
+  _orcRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', { alpha: 0.5 });
+}
+
+// SEGURANÇA — cadeado, a fechadura em destaque.
+function _orcMotPatrimonial_(s, cx, cy, cor) {
+  _orcAnel_(s, cx - 20, cy - 42, 40, '#FFFFFF', 3, 0.5);   // arco
+  const corpo = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 28, cy - 14, 56, 48);
+  corpo.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);   // cobre a base do arco
+  corpo.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6); corpo.getBorder().setWeight(2.5);
+  const fech = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 6, cy + 2, 12, 12);
+  fech.getFill().setSolidFill(cor, 0.95); fech.getBorder().setTransparent();
+  _orcRet_(s, cx - 2, cy + 11, 4, 12, cor, { alpha: 0.95 });
+}
+
+// DRE — barras crescentes + seta (resultado), a última em destaque.
+function _orcMotOperacional_(s, cx, cy, cor) {
+  const alt = [30, 48, 66, 86], bw = 16, gap = 10;
+  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 44;
+  alt.forEach((hh, i) => {
+    const ult = i === alt.length - 1;
+    _orcRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, ult ? cor : '#FFFFFF', { redondo: true, alpha: ult ? 0.85 : 0.3 });
+  });
+  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, x0 + span - bw - 4, base - alt[3] - 26, 24, 22);
+  tri.getFill().setSolidFill(cor, 0.9); tri.getBorder().setTransparent();
+  _orcRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', { alpha: 0.5 });
+}
+
+// PREMISSAS — pilha de papéis, a faixa de cima em destaque.
+function _orcMotDocumentacao_(s, cx, cy, cor) {
+  _orcRet_(s, cx - 16, cy - 26, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.25 });
+  _orcRet_(s, cx - 23, cy - 33, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.4 });
+  _orcRet_(s, cx - 30, cy - 40, 56, 74, '#FFFFFF', { redondo: true, alpha: 0.92 });
+  _orcRet_(s, cx - 30, cy - 40, 56, 9, cor, { alpha: 0.9 });
+  for (let i = 0; i < 4; i++) _orcRet_(s, cx - 22, cy - 18 + i * 12, i === 3 ? 24 : 40, 3, '#94A3B8', { alpha: 0.9 });
+}
+
+// CUSTO POR M² — planta de galpão vista de cima (só do orçamento): contorno,
+// dois módulos com um em destaque, e a régua de cota embaixo.
+function _orcMotM2_(s, cx, cy, cor) {
+  const w = 104, h = 70, x0 = cx - w / 2, y0 = cy - h / 2 - 6;
+  _orcContorno_(s, SlidesApp.ShapeType.RECTANGLE, x0, y0, w, h, '#FFFFFF', 0.55, 2);
+  _orcRet_(s, x0 + w / 2 - 1, y0, 2, h, '#FFFFFF', { alpha: 0.4 });              // parede entre os módulos
+  _orcRet_(s, x0 + w / 2 + 6, y0 + 6, w / 2 - 12, h - 12, cor, { alpha: 0.85 });   // módulo em destaque
+  const yr = y0 + h + 12;                                                         // régua
+  _orcRet_(s, x0, yr, w, 1.5, '#FFFFFF', { alpha: 0.6 });
+  [x0, x0 + w / 2 - 0.75, x0 + w - 1.5].forEach(x => _orcRet_(s, x, yr - 4, 1.5, 9, '#FFFFFF', { alpha: 0.6 }));
 }
 
 // ==========================================

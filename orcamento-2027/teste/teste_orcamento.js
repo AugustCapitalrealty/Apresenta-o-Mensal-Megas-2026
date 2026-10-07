@@ -31,6 +31,7 @@ function lanca(fn, trecho, msg) {
 
 // ---------------- Dublês ----------------
 const LOG = [];
+const PEDIDOS_DRIVE = [];
 const W = 720, H = 405;
 let matrizAtual = FIXTURE;
 let decks = {};
@@ -198,7 +199,8 @@ const ctx = {
     openById: id => decks[id] || (decks[id] = novoDeck())
   },
   // Sem Drive no teste: força o caminho de reserva do logo (texto no lugar).
-  DriveApp: { getFileById: id => { throw new Error('sem Drive no teste'); } },
+  // Guarda os IDs pedidos (fotos das sub capas) antes de recusar.
+  DriveApp: { getFileById: id => { PEDIDOS_DRIVE.push(id); throw new Error('sem Drive no teste'); } },
   Utilities: { sleep: () => {} },
   console: console
 };
@@ -581,6 +583,15 @@ const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Seguran
 const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
 ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
    'sub capas 01–08 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
+// Sub capas no padrão da mensal (07/10/2026): cada seção pede a sua foto e
+// desenha o motivo à direita (sem Drive no teste, cai no fundo escuro).
+SECOES.forEach(nome => {
+  const cfg = G.ORC_SUBCAPAS[nome];
+  const id = cfg && (cfg.foto === 'MEGA' ? CUR.fotoFundoId : G.ORC_FOTOS_SECAO[cfg.foto]);
+  ok(id && PEDIDOS_DRIVE.indexOf(id) >= 0, 'sub capa ' + nome + ': pede a foto ' + (cfg && cfg.foto) + ' (' + id + ')');
+});
+iSub.forEach((i, k) => ok(slides[i] && slides[i].shapes.some(sh => sh.x > W * 0.6 && sh.w < 200 && sh.y < H - 50),
+  'sub capa ' + SECOES[k] + ': desenho da seção à direita'));
 const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // Páginas do linha a linha de cada conta: o slide da conta + as dos itens
 // menores que não couberam na composição.
