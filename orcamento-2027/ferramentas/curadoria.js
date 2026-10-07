@@ -95,7 +95,7 @@ const PARES = {
     ['Limpeza vertical fase 3', ['LIMPEZA DAS ESTRUTURAS METÁLICAS DO ARMAZÉM 1, 2 E 3'], 'Dúvida',
      'Limpeza das estruturas nos dois anos: 2026 fase 3; 2027 armazéns 1, 2 e 3. Mesma frente de serviço em outra área?'],
     ['SEGURO MEGA ITAJAÍ 2026', [], 'Não compara', 'Seguro lançado na manutenção em 2026. Em 2027 o seguro está na conta Seguro.'],
-    ['SEGURO MEGA ESTEIO', [], 'Não compara', 'Seguro do Mega Esteio lançado na manutenção de Itajaí em 2026. Não é despesa de Itajaí.'],
+    ['SEGURO MEGA ESTEIO', [], 'Não compara', 'Erro de digitação no Orç 2026 (confirmado pelo Guilherme em 07/10/2026): seguro do Mega Esteio lançado na manutenção de Itajaí. Não é despesa de Itajaí.'],
     ['Obra cancelas 2/2', [], 'Não compara', 'Obra pontual de 2026.'],
     ['Forro lambril galvanizado', [], 'Não compara', 'Obra pontual de 2026.'],
     ['Aquisição dilacerador cancela 4', [], 'Não compara', 'Compra pontual de 2026.'],

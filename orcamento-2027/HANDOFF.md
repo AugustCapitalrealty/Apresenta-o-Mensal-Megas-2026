@@ -136,8 +136,11 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
 3. Pendências com a controladoria (aparecem sozinhas no slide de revisão):
    Itajaí R$ 29.313 (totem, iluminação do AMZ 4/5 e do bolsão — todos com par
    em 2026, provavelmente já feitos); Esteio R$ 15.268 (linhas de vida).
-4. Achados para o gestor (estão nas planilhas de comparação): seguro lançado
-   na manutenção de Itajaí em 2026 (R$ 13.377 dele é do Esteio); Esteio sem
+4. Achados para o gestor (estão nas planilhas de comparação): a linha
+   "SEGURO MEGA ESTEIO - ÁRMAZEM A" (R$ 13.376,81, nov) na manutenção de
+   Itajaí do Orç 2026 item a item foi **erro de digitação** (confirmado pelo
+   Guilherme em 07/10/2026) — fica fora da comparação; o seguro do próprio
+   Itajaí na manutenção (R$ 66.780) segue como "Não compara"; Esteio sem
    verba de acesso/CFTV em 2027; tratores do Esteio saíram da manutenção;
    Orç 2026 item a item do Esteio R$ 4.500 acima da METRAGEM.
 5. **Melhorias visuais (capas, subcapas, infográficos):** propostas em
