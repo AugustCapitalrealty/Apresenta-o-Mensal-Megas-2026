@@ -12,6 +12,40 @@ categoria, com os contratos distribuídos nas categorias.
 | Apresentação — Esteio | [`MEGA ESTEIO`](https://docs.google.com/presentation/d/1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0/edit) |
 | Projeto Apps Script | [`13j2b0md…Cup3`](https://script.google.com/home/projects/13j2b0mdjYO2wbag2d5qOQwyBMDEKrIhd-_H7ZQqHUoEBEVfYJLx7Cup3/edit) |
 
+## Este computador tem Deep Freeze — o que se perde
+
+O disco **C: volta ao estado congelado a cada reinício**. Só sobrevive o que
+está no **G:** (Drive compartilhado) e no **GitHub**. Na prática:
+
+- **Fim de toda sessão: `git commit` + `git push`.** O repositório está no G:,
+  mas commit que não subiu para o GitHub não tem cópia fora daquela pasta.
+- **`clasp login` de novo depois de reiniciar** — a credencial fica em
+  `C:\Users\<usuário>\.clasprc.json`. Sem ela, `clasp push` falha.
+- **`pip install openpyxl`** de novo, se for rodar as `ferramentas/` em Python.
+- A memória do Claude Code (`C:\Users\<usuário>\.claude\…`) também se
+  perde: **o que importa sobre o projeto fica neste README**, não lá.
+- Script ou planilha feita "de passagem" (scratchpad, Downloads, Área de
+  Trabalho) some. Ferramenta que vale guardar vai para `ferramentas/`.
+
+## Pasta no Drive (organizada em 07/10/2026)
+
+`08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`:
+
+| Pasta | O que tem |
+|---|---|
+| `00 - PLANILHAS MESTRAS` | consolidadas de todos os Megas — **guardar**: `Modelos 2025 Megas` (Orç 2026 item a item), `2025 - Contratos` (cadastro com os valores de 2026), `TESTE-2 - COMPLETO` (cadastro com os valores de 2027; por enquanto só Itajaí preenchido), `2026` (totais por conta, todas as unidades somadas) |
+| `00 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027` (o gestor marca SIM/NÃO) |
+| `MEGA CURITIBA` / `MEGA ITAJAÍ` / `MEGA ESTEIO` | a apresentação da cidade, as planilhas que o gerador lê e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, com uma aba LEIA-ME explicando cada arquivo) |
+| `MEGA <X>/_ARQUIVO (não usado)` | o que tem dado mas a apresentação não lê (lançamentos de jan–jul/26, planilhas "SERVIÇOS", cópia com os apontamentos do gestor de 29/09) |
+| `Apresenta-o-Mensal-Megas-2026` | este repositório |
+
+Mudar arquivo de pasta não quebra o gerador (ele usa o ID). O conector do
+Drive do Claude não consegue mover arquivos neste Drive compartilhado; mover
+pela pasta sincronizada (`G:\Drives compartilhados\…`) funciona.
+
+Orç 2026 de Curitiba confere: modelo 2026 da manutenção (R$ 894,5 mil) +
+contratos do cadastro (R$ 371,7 mil) = R$ 1.266.241, igual à METRAGEM.
+
 ## Planilhas lidas (por cidade, em `ORC_CIDADES`)
 
 | Chave | Planilha | Para quê |
@@ -21,6 +55,13 @@ categoria, com os contratos distribuídos nas categorias.
 | `contratos[<conta>]` | `MEGA <CIDADE> - <CONTA> - CONTRATOS` (manutenção, segurança; limpeza pendente) | contratos recorrentes que os modelos não listam |
 | `relatorios.metragemId` | `METRAGEM-COND-MEGA-<CIDADE>` | DRE, ofensores, totais por conta |
 | `relatorios.mensalId` | `Despesas-Mensal-2026-x-2027` | mês a mês da análise linha a linha |
+| `relatorios.financeiroMegasId` | planilha da apresentação mensal dos Megas, aba `Financeiro <ano retrasado>` | Real 2025 mês a mês (slide de custo por m² mês a mês) |
+| `relatorios.valeMetragem` | — | contas em que o mensal não fecha com a METRAGEM e a contabilidade mandou usar a METRAGEM (Curitiba: IPTU e Seguro, 06/10/2026) |
+| `fotoFundoId`, `unitLogoId` | foto e logo do Mega (os mesmos da capa dos Megas) | capa |
+| `ORC_CONTRATOS_ANO_ANTERIOR_ID` (21_ContratosComparados.gs) | mestra `2025 - Contratos` | contratos do ano anterior, para comparar com os do ano |
+
+Cabeçalho de mês "jan./26" vindo de CSV vira a data 26/01/<ano corrente> no
+Sheets: **o ano está no dia**. Os leitores dos cadastros tratam isso.
 
 **Modelo 090 + contratos = total da manutenção na METRAGEM** (Curitiba:
 1.417.219 + 343.189 = 1.760.408). O teste confere essa identidade.
@@ -75,16 +116,22 @@ O deck é dividido em seções, cada uma aberta por uma sub capa numerada
 
 | # | Seção | Slides |
 |---|---|---|
-| | Capa | nome do Mega |
+| | Capa | foto do Mega com véu, logo do Mega, total do orçamento em R$ e em R$/m² |
 | | Revisar antes da versão final | **só quando os relatórios divergem** — ver "Divergências entre relatórios" |
 | 01 | Premissas | três blocos para o gestor preencher: Premissas, O que foi analisado, Como ler o relatório |
 | 02 | Resumo Executivo | resumo de 30 segundos e ponte Ritmo → Orç |
 | 03 | DRE | DRE, Ofensores, Defensores |
-| 04 | Manutenção | linha a linha, resumo por categoria, distribuição mensal, categorias, Demais |
+| 04 | Manutenção | linha a linha (1/2 e 2/2 com os itens menores), contratos Ritmo × Orç item a item, resumo por categoria, distribuição mensal, categorias, Demais |
 | 05 | Segurança | linha a linha |
 | 06 | Limpeza e Conservação | linha a linha |
-| 07 | Investimento × Recorrente | manutenção: projetos pontuais × custo de manter |
-| 08 | Custo por m² | R$/m² ao mês das 10 maiores contas e área implícita |
+| 07 | Projetos × Recorrente | manutenção: projetos × custo para manter o Mega rodando, com legenda de cada grupo |
+| 08 | Custo por m² | R$/m² das 10 maiores contas; mês a mês (Real 2025, Ritmo 2026, Orç 2027) com custo do condomínio e área |
+
+**O diretor lê tudo em dinheiro e em R$/m² ao mês** (área implícita da
+METRAGEM = total ÷ R$/m² ÷ 12): todo slide de valores traz os dois. DRE,
+Ofensores e Defensores seguem o padrão da DRE dos Megas — um total
+(Despesas Operacionais), IPTU e Seguro em Utilities, R$/m² por grupo, todas
+as contas com valor visível (sem "Demais contas").
 
 Seção sem dado (cidade sem planilha) não ganha sub capa, e a numeração das
 seguintes não pula.
@@ -98,8 +145,10 @@ seguintes não pula.
 | `13_Resumo.gs` | Manutenção: KPIs, ranking por categoria em barra combinada (contratos + avulsos), maiores itens |
 | `14_Mensal.gs` | Previsão de entrega mês a mês e o item que puxa os 3 meses mais pesados |
 | `15_Categorias.gs` | Um slide por categoria com ≥ 5% do total (com coluna FONTE em branco); as menores em "Demais categorias" |
-| `17_Investimento.gs` | Manutenção: investimento × custo recorrente (aprovado das sugestões) |
-| `18_CustoM2.gs` | Custo por m² ao mês, top 10 contas (aprovado das sugestões) |
+| `17_Investimento.gs` | Manutenção: projetos × custo recorrente, com a legenda de cada grupo |
+| `18_CustoM2.gs` | Custo por m² ao mês, top 10 contas |
+| `20_M2Mensal.gs` | Custo por m² mês a mês, custo do condomínio e área |
+| `21_ContratosComparados.gs` | Contratos do ano anterior × do ano, fornecedor a fornecedor (cadastro `2025 - Contratos` × contratos e itens [CONTRATO] do ano) |
 | `19_Revisar.gs` | Slide "Revisar antes da versão final" e o selo ⚠ REVISAR (só com divergência) |
 | `90_Pendentes.gs` | **Não gerado.** Sugestões com pendência: Contratos (concentração e reajustes) e Contratos sem reajuste — custo de implantação lido como reajuste; Fluxo mensal — informações inconsistentes; Cenários — em revisão |
 
@@ -169,6 +218,21 @@ O gestor escreve direto no slide de Premissas. Como cada geração recria o
 deck, **copie o texto dele para `premissas` da cidade em `ORC_CIDADES`**
 (`01_Config.gs`) antes de gerar de novo — senão ele se perde. Com o texto
 lá, o slide passa a sair preenchido.
+
+## Ferramentas (`ferramentas/`)
+
+Scripts que montam planilhas de apoio no Drive a partir das cópias em
+`teste/` (rodar de dentro de `orcamento-2027`; a saída vai para
+`ferramentas/saida/`, fora do git):
+
+- `python ferramentas/planilha_mega.py` — `MEGA <X> - BASE DO ORÇAMENTO 2027`
+  de cada cidade.
+- `node ferramentas/parear.js . <saida.json>` — sugestão automática de pares
+  item 2026 × 2027; `curadoria.js` tem os pares revisados à mão e gera
+  `comparacao_linhas_curitiba.json`; `python ferramentas/planilha_comparacao.py`
+  monta a planilha de decisão do gestor.
+
+Suba o .xlsx gerado pela pasta sincronizada do Drive (ou pelo navegador).
 
 ## Para incluir outro Mega
 

@@ -208,6 +208,9 @@ porId[CUR.relatorios.metragemId] = FIX_METRAGEM;
 porId[CUR.relatorios.mensalId] = FIX_MENSAL;
 // Planilha dos Megas: só a aba "Financeiro 2025" (exportada em 06/10/2026).
 porIdFinanceiro[CUR.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_curitiba.json');
+// Cadastro "2025 - Contratos" (exportado em 06/10/2026): contratos de todas as
+// unidades com os valores mês a mês de 2026.
+porId[G.ORC_CONTRATOS_ANO_ANTERIOR_ID] = fixture('fixture_contratos_ano_anterior.json');
 porId[CUR.servicosTerceirosId] = FIX_070;
 // Geradas da leitura das planilhas de contratos em 30/09/2026 (manutenção:
 // 5 contratos, segurança: 4, × 12 meses); exportarFixtures() as substitui
@@ -570,7 +573,7 @@ const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // menores que não couberam na composição.
 const nLL = contasLL.map(c => 1 + G._orcPaginasItens_(G._orcCorteComposicao_(c, modelos, H).fora).length);
 ok(nLL[0] === 2, 'manutenção: linha a linha em 2 páginas (os itens menores na 2/2) (veio ' + nLL.join(',') + ')');
-const N_MANUT = nLL[0] + 2 + div.proprias.length + nPagDemais;   // linha a linha, resumo, mensal, categorias, demais
+const N_MANUT = nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;   // linha a linha, contratos 26×27, resumo, mensal, categorias, demais
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 const N_ESPERADO = 1 + SECOES.length + 1 + 2 + 3 + N_MANUT + nLL[1] + nLL[2] + 3;
@@ -606,7 +609,7 @@ ok(['Material de consumo', 'Representação e refeição', 'Cursos e seminários
    'ofensores: conta com variação visível tem linha própria (cursos, refeição, consumo, combustíveis)');
 
 ok(iSub[3] === iDRE + 3, 'Manutenção logo depois dos defensores');
-const iLLManut = iSub[3] + 1, iResManut = iSub[3] + nLL[0] + 1, iCat0 = iSub[3] + nLL[0] + 3;
+const iLLManut = iSub[3] + 1, iCmp = iSub[3] + nLL[0] + 1, iResManut = iCmp + 1, iCat0 = iCmp + 3;
 const iDemais = iCat0 + div.proprias.length;                  // primeira página de Demais
 ok(titulo(slides[iLLManut]) === contasLL[0].nome + ' (1/2)', 'Manutenção abre com o linha a linha (1/2)');
 // Página 2/2: os itens menores que a composição não mostrava, fechando com o
@@ -628,6 +631,38 @@ ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2)
 ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 2 && slides.length === iSub[7] + 3,
    'Investimento e Custo por m² fecham o deck, cada um depois da sua sub capa');
 const iInv = iSub[6] + 1, iM2 = iSub[7] + 1;
+// Contratos de manutenção 2026 × 2027, fornecedor a fornecedor.
+const ant = G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026);
+ok(ant.map(c => c.fornecedor.split(' ')[0]).join(',') === 'FIRECAM,MIRIAD,LEANDRO,FILTROIL,EQUILIBRIO',
+   'cadastro 2026: os 5 contratos de manutenção de Curitiba (o da Equilíbrio que acabou em jul/25 fica de fora)');
+perto(Math.round(ant.reduce((t, c) => t + c.total, 0)), 371718, 'cadastro 2026: R$ 371.718 em contratos de manutenção');
+const clsM2 = G._orcClassificarManutencao_(d);
+const cmp = G._orcCompararContratos_(contasLL[0].v, ant, clsM2.grupos[0].itens);
+const linhaDe = k => cmp.linhas.filter(l => G._orcNorm_(l.itens.map(i => i.descricao).join(' ') + ' ' + l.nome).indexOf(k) >= 0)[0];
+ok(linhaDe('miriad').itens.length === 2 && /^Ampliação/.test(linhaDe('miriad').situacao),
+   'comparação: a ampliação da Miriad soma no contrato da Miriad (' + linhaDe('miriad').situacao + ')');
+ok(cmp.linhas.filter(l => /^Novo/.test(l.situacao)).length === 3 && cmp.linhas.every(l => l.atual > 0),
+   'comparação: 3 contratos novos em 2027 (FM Security, quadro BT, AVAC) e nenhum não renovado');
+perto(cmp.contratos.atual, clsM2.grupos[0].total, 'comparação: contratos 2027 = grupo Contratos do slide de Projetos');
+perto(cmp.avulsos.ant + cmp.contratos.ant, contasLL[0].v.ritmo, 'comparação: avulsos 2026 + contratos 2026 = ritmo da conta');
+const tCmp = textos(slides[iCmp]);
+ok(tCmp[0] === 'Manutenção de imóveis — Ritmo 2026 × Orçamento 2027' && tCmp.indexOf('TOTAL CONTRATOS') >= 0 &&
+   tCmp.indexOf('Avulsos (sem contrato)') >= 0 && tCmp.indexOf('R$/M²') >= 0, 'slide de contratos 2026 × 2027 depois do linha a linha');
+ok(!tCmp.some(t => /…$/.test(t)), 'contratos 2026 × 2027: nenhum texto cortado (' + tCmp.filter(t => /…$/.test(t)).join(' | ') + ')');
+// Em dinheiro e em m² (o diretor lê os dois — 06/10/2026).
+const areaOrc = G._orcAreaImplicita_(rel, 'orc');
+const m2Manut = 'R$ ' + G._orcM2_(contasLL[0].v.orc / areaOrc / 12);
+ok(tOf.indexOf('R$/M² AO MÊS') >= 0 && tDf.indexOf('R$/M² AO MÊS') >= 0 && tOf.indexOf('R$ MIL') >= 0,
+   'ofensores e defensores: colunas de R$ mil e de R$/m² ao mês');
+ok(tOf.indexOf(G._orcM2_(rel.total.orc / areaOrc / 12)) >= 0, 'ofensores: R$/m² do total (Despesas Operacionais)');
+const tLL = textos(slides[iLLManut]);
+ok(tLL.indexOf('R$/M² AO MÊS · ORÇ 27') >= 0 && tLL.indexOf(m2Manut) >= 0, 'linha a linha: 5º card com o R$/m² da conta (' + m2Manut + ')');
+const tRes = textos(slides[iResManut]);
+ok(tRes.indexOf('R$/M² AO MÊS') >= 0 && tRes.indexOf(G._orcMoeda_(d.total).replace(/^R\$ /, 'R$ ') ) >= 0 &&
+   tRes.indexOf('R$ ' + G._orcM2_(d.total / areaOrc / 12)) >= 0, 'resumo da manutenção: card com o R$/m² ao mês');
+const tMes = textos(slides[iResManut + 1]);
+ok(tMes[0] === 'Distribuição mensal' && tMes.filter(t => /^\d+,\d{2}\/m²$/.test(t)).length === d.meses.filter(v => v > 0.005).length,
+   'distribuição mensal: cada mês com o R$/m² embaixo do valor');
 const tM2m = textos(slides[iM2 + 1]);
 ok(tM2m[0] === 'Custo por m² mês a mês — Orçamento 2027', 'custo por m² mês a mês depois do custo por m²');
 ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU', 'Seguro',
@@ -658,6 +693,10 @@ slides.forEach((sl, i) => {
 });
 ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf('Manutenção de Imóveis') < 0,
    'capa: título é a cidade, não a conta');
+const tCapa = textos(slides[0]);
+ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), 'CUSTO POR M² AO MÊS',
+    'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12), 'Expandir Eficiência'].every(t => tCapa.indexOf(t) >= 0),
+   'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
 ok(slides.every(sl => textos(sl).indexOf('QUANDO O DINHEIRO SAI') < 0 && textos(sl).indexOf('QUANDO') < 0),
    'nenhum slide fala em "quando o dinheiro sai" — é previsão de entrega');
 ok(textos(slides[iCat0]).indexOf('PREVISÃO DE ENTREGA') >= 0 && textos(slides[iCat0]).indexOf('ENTREGA') >= 0,

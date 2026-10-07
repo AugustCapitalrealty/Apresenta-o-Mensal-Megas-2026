@@ -69,7 +69,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
   }
   const calc = visao ? _orcCalculosCompartilhados_(cid, visao, dados) : null;
 
-  _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid));
+  _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid, visao ? visao.rel : null));
   if (visao && visao.rel.avisos.length) {
     _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
   }
@@ -112,7 +112,12 @@ function _orcGerarCidade_(deck, W, H, chave) {
   if (contas || dados) {
     secao('Manutenção');
     if (contas) linhaALinha(0);
-    if (dados) _orcGerarManutencao_(deck, W, H, cid, dados);
+    // Ritmo × Orç item a item nos contratos (pedido do gestor, 06/10/2026).
+    if (contas && calc && calc.cls && calc.contratosAnt && calc.contratosAnt.length) {
+      comSelo('Contratos ' + (ORC_ANO - 1) + ' × ' + ORC_ANO, [contas[0].chave],
+        s => gerarSlideContratosComparados_(s, W, H, cid, visao.rel, contas[0], calc.contratosAnt, calc.cls));
+    }
+    if (dados) _orcGerarManutencao_(deck, W, H, cid, dados, visao ? _orcAreaImplicita_(visao.rel, 'orc') : null);
   }
   if (contas) {
     secao('Segurança');
@@ -137,9 +142,10 @@ function _orcGerarCidade_(deck, W, H, chave) {
 
 // Manutenção por categoria: resumo, distribuição mensal, um slide por
 // categoria grande e as páginas de Demais.
-function _orcGerarManutencao_(deck, W, H, cid, dados) {
-  _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados));
-  _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados));
+// area: área implícita do Orç (METRAGEM) para o R$/m² — null sem o relatório.
+function _orcGerarManutencao_(deck, W, H, cid, dados, area) {
+  _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados, area));
+  _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados, area));
 
   const div = _orcDividirCategorias_(dados);
   div.proprias.forEach(c =>
@@ -155,8 +161,13 @@ function _orcGerarManutencao_(deck, W, H, cid, dados) {
 // mensagem de projetos e o slide de investimento não sai.
 function _orcCalculosCompartilhados_(cid, visao, dados) {
   const contratos = _orcContratosCidade_(cid, visao.modelos);
+  // Contratos de manutenção do ano anterior (cadastro "2025 - Contratos"):
+  // sem a planilha, o slide de comparação não sai.
+  let contratosAnt = null;
+  try { contratosAnt = obterContratosAnoAnterior_(cid, 'Manutenção de imóveis'); }
+  catch (e) { Logger.log('Contratos de ' + (ORC_ANO - 1) + ' indisponíveis — sem a comparação item a item: ' + e.message); }
   return { cls: dados ? _orcClassificarManutencao_(dados) : null, contratos: contratos,
-           reaj: _orcReajustes_(contratos) };
+           reaj: _orcReajustes_(contratos), contratosAnt: contratosAnt };
 }
 
 // Relatórios da controladoria + linhas dos modelos: { rel, mensal, realAnt, modelos }.

@@ -21,6 +21,15 @@ Script mensais e não entram nas regras de namespace abaixo do mesmo jeito:
 | `tabelas/` | Cinco geradores das apresentações **semanais**, cada um vinculado à sua própria apresentação (`mega-curitiba`, `mega-itajai`, `previsao-tempo`, `propriedades-semanal`, `template`). Tem [`README`](tabelas/README.md) próprio |
 | `design/` | Peça de design (texto, script Python, PDF/PNG). Nada a ver com os geradores de slides |
 
+## Deep Freeze: o disco C: se perde a cada reinício
+
+O computador de trabalho tem Deep Freeze. Só sobrevive o que está no G: (Drive
+compartilhado, onde fica este repositório) e no GitHub. Toda sessão termina com
+`git commit` + `git push`; o login do `clasp` e a memória do Claude Code (em C:)
+somem — o que importa saber sobre cada projeto fica no README da pasta dele
+(ex.: `orcamento-2027/README.md`). Script de apoio que vale guardar vai para o
+repositório, nunca só para o scratchpad.
+
 ## Este repositório é a fonte única
 
 Alguns destes projetos nasceram em repositórios próprios (o `gestao-tvs`

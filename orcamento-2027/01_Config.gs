@@ -25,6 +25,10 @@ const ORC_CIDADES = {
   CURITIBA: {
     nome: 'Mega Curitiba',
     deckId: '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI',            // MEGA CURITIBA
+    // Capa (10_Capa.gs): foto do Mega e logo do Mega — os mesmos da capa da
+    // apresentação mensal dos Megas (megas-mensal/01_Config.gs, PROJETOS).
+    fotoFundoId: '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
+    unitLogoId:  '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',
     despesasGeraisId:    '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA',  // 090-Despesas-Gerais - MEGA CURITIBA - 2027
     servicosTerceirosId: '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw',  // 070-Servicos-de-Terceiros - MEGA CURITIBA - 2027
     // Relatórios da controladoria (pasta "MEGA CURITIBA"), uma aba cada:
@@ -72,6 +76,8 @@ const ORC_CIDADES = {
   ITAJAI: {
     nome: 'Mega Itajaí',
     deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ
+    fotoFundoId: '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
+    unitLogoId:  '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',
     despesasGeraisId:    '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg',  // 090-Despesas-Gerais-MEGA-ITAJAI-2027
     servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // 070-Servicos-de-Terceiros - MEGA ITAJAÍ 2027
     relatorios: {
@@ -85,6 +91,8 @@ const ORC_CIDADES = {
   ESTEIO: {
     nome: 'Mega Esteio',
     deckId: '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0',            // MEGA ESTEIO
+    fotoFundoId: '1ed2NujxpCBkk6tMDBC0h3LwB9wu6NEVA',
+    unitLogoId:  '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',
     despesasGeraisId:    '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ',  // 090-Despesas-Gerais-MEGA-ESTEIO - 2027
     servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // 070-Servicos-de-Terceiros- MEGA ESTEIO 2027
     relatorios: {

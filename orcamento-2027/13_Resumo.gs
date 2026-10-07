@@ -11,7 +11,8 @@ function _orcFonteManutencao_(cid, dados) {
     dados.nContratos + ' contratos)' : '');
 }
 
-function gerarSlideResumo_(slide, W, H, cid, dados) {
+// area: área implícita do Orç; com ela, um card a mais com o R$/m² ao mês.
+function gerarSlideResumo_(slide, W, H, cid, dados, area) {
   const DS = CR_DESIGN_SYSTEM;
   const MX = DS.layout.marginX;
   const cats = dados.categorias;
@@ -30,6 +31,7 @@ function gerarSlideResumo_(slide, W, H, cid, dados) {
     ['Mês de maior gasto', ORC_MESES[iPico] + ' · ' + _orcCompacto_(dados.meses[iPico])],
     ['Maior categoria', cats.length ? cats[0].nome + ' · ' + _orcPct_(cats[0].pct) : '—']
   ];
+  if (area) kpis.splice(2, 0, ['R$/m² ao mês', 'R$ ' + _orcM2_(dados.total / area / 12)]);
   const ky = 76, kh = 54, gap = 10;
   const kw = (W - MX * 2 - gap * (kpis.length - 1)) / kpis.length;
   kpis.forEach((k, i) => {

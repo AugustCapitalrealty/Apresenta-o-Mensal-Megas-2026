@@ -5,27 +5,32 @@
  *          O mês do modelo é o da ENTREGA do serviço, não o do pagamento.
  */
 
-function gerarSlideMensal_(slide, W, H, cid, dados) {
+// area: área implícita do Orç. Com ela cada mês mostra também o R$/m² — o
+// diretor lê em dinheiro e em m² (06/10/2026).
+function gerarSlideMensal_(slide, W, H, cid, dados, area) {
   const DS = CR_DESIGN_SYSTEM;
   const MX = DS.layout.marginX;
   const media = dados.total / 12;
+  const m2 = v => area ? 'R$ ' + _orcM2_(v / area) + '/m²' : '';
 
   _orcHeader_(slide, W, 'Distribuição mensal',
-    'Previsão de entrega do orçamento de manutenção · ' + cid.nome + ' · média de ' + _orcCompacto_(media) + ' por mês');
+    'Previsão de entrega do orçamento de manutenção · ' + cid.nome + ' · média de ' + _orcCompacto_(media) + ' por mês' +
+    (area ? ' (' + m2(media) + ')' : ''));
 
   // ---- Gráfico de colunas ----
   const cx = MX, cy = 76, cw = W - MX * 2, ch = H - cy - 28 - 76;
   _orcCard_(slide, cx, cy, cw, ch, 'Orçamento por mês');
 
   // Legenda da linha de média, no canto do card.
-  const lgW = 150;
+  const lgW = area ? 210 : 150;
   const lg = _orcLinha_(slide, cx + cw - 12 - lgW, cy + 14, cx + cw - 12 - lgW + 18, cy + 14, DS.colors.accentOrange, 1.25);
   lg.setDashStyle(SlidesApp.DashStyle.DASH);
-  _orcUmaLinha_(slide, cx + cw - 12 - lgW + 22, cy + 6, lgW - 22, 16, 'média mensal ' + _orcCompacto_(media),
+  _orcUmaLinha_(slide, cx + cw - 12 - lgW + 22, cy + 6, lgW - 22, 16, 'média mensal ' + _orcCompacto_(media) +
+    (area ? ' · ' + m2(media) : ''),
     { align: 'L', fs: 7, cor: DS.colors.textBody, fonte: DS.typography.body });
 
   const px = cx + 16, pw = cw - 32;
-  const pTop = cy + 40, base = cy + ch - 24, ph = base - pTop;
+  const pTop = cy + (area ? 50 : 40), base = cy + ch - 24, ph = base - pTop;
   const max = Math.max.apply(null, dados.meses.concat([media])) || 1;
   const colW = pw / 12, barW = colW * 0.56;
   let iPico = 0;
@@ -37,8 +42,14 @@ function gerarSlideMensal_(slide, W, H, cid, dados) {
     if (v > 0.005) {
       const h = Math.max(1.5, ph * v / max);
       _orcRet_(slide, x + (colW - barW) / 2, base - h, barW, h, i === iPico ? DS.colors.brandDark : DS.colors.brandLight);
-      _orcUmaLinha_(slide, x, base - h - 15, colW, 13, _orcCompacto_(v).replace('R$ ', ''),
+      // Valor em R$ e, embaixo dele, o R$/m² do mês (menor, cinza).
+      const dy = area ? 11 : 0;
+      _orcUmaLinha_(slide, x, base - h - 15 - dy, colW, 13, _orcCompacto_(v).replace('R$ ', ''),
         { align: 'C', fs: 7, bold: i === iPico, cor: DS.colors.textMain, fonte: DS.typography.body, fsMin: 5.5 });
+      if (area) {
+        _orcUmaLinha_(slide, x, base - h - 15, colW, 12, _orcM2_(v / area) + '/m²',
+          { align: 'C', fs: 6, cor: DS.colors.textBody, fonte: DS.typography.body, fsMin: 5, folga: 6 });
+      }
     } else {
       _orcUmaLinha_(slide, x, base - 15, colW, 13, '—', { align: 'C', fs: 7, cor: DS.colors.textMuted });
     }
@@ -60,8 +71,9 @@ function gerarSlideMensal_(slide, W, H, cid, dados) {
     itens.forEach(it => { if (!driver || it.meses[m.i] > driver.meses[m.i]) driver = it; });
     _orcRet_(slide, x, hy, hw, hh, DS.colors.cardBg, { redondo: true, borda: DS.colors.lines });
     _orcRet_(slide, x, hy, 4, hh, k === 0 ? DS.colors.brandDark : DS.colors.brandLight);
-    _orcUmaLinha_(slide, x + 12, hy + 5, hw - 24, 18, ORC_MESES[m.i] + ' · ' + _orcCompacto_(m.v),
-      { align: 'L', fs: 11, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles });
+    _orcUmaLinha_(slide, x + 12, hy + 5, hw - 24, 18, ORC_MESES[m.i] + ' · ' + _orcCompacto_(m.v) +
+      (area ? ' · ' + m2(m.v) : ''),
+      { align: 'L', fs: 11, bold: true, cor: DS.colors.brandDark, fonte: DS.typography.titles, fsMin: 8 });
     if (driver) {
       _orcParagrafo_(slide, x + 12, hy + 23, hw - 20, hh - 27,
         'Principal: [' + driver.categoria + '] ' + _orcTextoEscolhido_('Maiores itens', driver.descricao) + ' — ' + _orcCompacto_(driver.meses[m.i]),

@@ -118,11 +118,31 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
   const ky = _ORC_LL.ky, kh = _ORC_LL.kh, gap = _ORC_LL.gap;
   const kpis = [
     ['Real ' + a.real, v.real, null],
-    ['Orçado ' + a.orcAnt, v.orcAnt, null],
+    ['Orç ' + a.orcAnt, v.orcAnt, null],
     ['Ritmo ' + a.ritmo, v.ritmo, null],
-    ['Orçado ' + a.orc, v.orc, varR]
+    ['Orç ' + a.orc, v.orc, varR]
   ];
-  const kw = (W - MX * 2 - gap * 3) / 4;
+  // 5º card: o R$/m² ao mês da conta no Orç, pela área implícita de cada ano —
+  // o diretor lê em dinheiro e em m² (pedido de 06/10/2026). A variação em m²
+  // difere da em R$ quando a área muda.
+  const aRit = _orcAreaImplicita_(rel, 'ritmo'), aOrc = _orcAreaImplicita_(rel, 'orc');
+  const m2Rit = aRit ? v.ritmo / aRit / 12 : null, m2Orc = aOrc ? v.orc / aOrc / 12 : null;
+  const nCards = kpis.length + (m2Orc !== null ? 1 : 0);
+  const kw = (W - MX * 2 - gap * (nCards - 1)) / nCards;
+  if (m2Orc !== null) {
+    const x = MX + kpis.length * (kw + gap);
+    const vm = m2Rit !== null ? _orcVariacao_(m2Rit, m2Orc, 0.005) : null;
+    _orcRet_(slide, x, ky, kw, kh, C.cardBg, { redondo: true, borda: C.brandLight, peso: 1 });
+    _orcUmaLinha_(slide, x + 12, ky + 5, kw - 24, 14, 'R$/M² AO MÊS · ORÇ ' + String(a.orc).slice(-2),
+      { align: 'L', fs: 7, bold: true, cor: C.brandLight, fonte: DS.typography.titles, fsMin: 6 });
+    _orcUmaLinha_(slide, x + 12, ky + 20, kw - 24, 24, 'R$ ' + _orcM2_(m2Orc),
+      { align: 'L', fs: 15, bold: true, cor: C.brandDark, fonte: DS.typography.titles, fsMin: 9 });
+    if (vm && vm.texto !== '–') {
+      _orcUmaLinha_(slide, x + kw - 12 - 62, ky + 26, 62, 14, vm.texto + ' × ritmo',
+        { align: 'R', fs: 6.5, bold: true, fonte: DS.typography.body, fsMin: 5.5,
+          cor: vm.sentido === 1 ? _ORC_COR_VAR.sobe : (vm.sentido === -1 ? _ORC_COR_VAR.desce : C.textBody) });
+    }
+  }
   kpis.forEach((k, i) => {
     const x = MX + i * (kw + gap);
     const ultimo = i === kpis.length - 1;
