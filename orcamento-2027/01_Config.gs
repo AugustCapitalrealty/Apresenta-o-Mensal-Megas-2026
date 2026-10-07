@@ -52,14 +52,14 @@ const ORC_CIDADES = {
       // revisão; a divergência só vai para o log.
       valeMetragem: ['IPTU', 'Seguro']
     },
-    // Contratos recorrentes por conta — o que os modelos 070/090 NÃO listam.
-    // Modelo + contratos = total da conta na METRAGEM. Conta sem planilha
-    // aparece na linha a linha com o "Não detalhado nos modelos".
-    contratos: {
-      'Manutenção de imóveis':  '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA',  // MEGA CURITIBA - CONTRATOS 2027 - MANUTENÇÃO DE IMÓVEIS
-      'Segurança e vigilância': '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8',  // MEGA CURITIBA - CONTRATOS 2027 - SEGURANÇA E VIGILÂNCIA
-      'Limpeza e conservação':  '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI'   // MEGA CURITIBA - CONTRATOS 2027 - LIMPEZA E CONSERVAÇÃO
-    },
+    // Contratos: do cadastro mestre do ano, como Itajaí e Esteio (pedido do
+    // usuário em 07/10/2026: "padronizar os 3, usar as planilhas mestres").
+    // As planilhas individuais "MEGA CURITIBA - CONTRATOS 2027 - <CONTA>"
+    // deixaram de ser lidas — os totais batiam centavo por centavo com o
+    // cadastro (manutenção R$ 343.189,40; segurança R$ 1.647.520,43; limpeza
+    // R$ 348.423,60).
+    contratos: {},
+    contratosDoCadastro: true,
     // Texto do slide de Premissas (10_Capa.gs). Vazio = espaço para o gestor
     // escrever no próprio slide. Depois que ele escrever, copie o texto para
     // cá: cada geração recria o deck e apagaria o que foi escrito lá.
@@ -72,7 +72,7 @@ const ORC_CIDADES = {
   // Itajaí e Esteio (05/10/2026): relatórios da controladoria nas pastas
   // "03 - MEGA ITAJAÍ" / "04 - MEGA ESTEIO", convertidos dos .xlsx. Os contratos vêm do
   // cadastro do ano (`contratosDoCadastro`, ORC_CONTRATOS_ANO_IDS em
-  // 02_Dados.gs, "CONTRATOS-2027-COMPLETO") em vez de uma planilha por conta.
+  // 02_Dados.gs, "CONTRATOS-2027-COMPLETO"), como em Curitiba.
   // Conta sem contrato no cadastro sai com o alerta de pendência
   // (19_Revisar.gs).
   ITAJAI: {

@@ -506,9 +506,11 @@ ok(conc[0].grupo === 'EMPRESA AUXILIAR' && conc[0].pct > 0.31 && conc[0].pct < 0
 ok(conc[0].contas.length === 2, 'contratos: Auxiliar em segurança e limpeza, sem conta repetida por maiúscula (' + conc[0].contas.join('/') + ')');
 ok(conc.some(g => g.grupo === 'MIRIAD') && conc.some(g => g.grupo === 'FIRECAM'), 'contratos: ampliações do 090 no grupo do fornecedor');
 const rj = G._orcReajustes_(ctr);
+// Curitiba lê os contratos do cadastro mestre desde 07/10/2026 (como Itajaí e
+// Esteio): entram também os das outras contas (informática, telefone…).
 ok(rj.reajustes.map(x => x.contrato.fornecedor.split(' ')[0] + '@' + (x.mes + 1)).join(',') ===
-   'SERVIÇO@2,FILTROIL@3,TRANSRESÍDUOS@8,EQUILIBRIO@9,SUINO@9',
-   'reajustes previstos: portaria fev, Filtroil mar, Transresíduos ago, Equilíbrio e Suíno Vivo set (' +
+   'EMPRESA@2,FILTROIL@3,INNON@3,RENTBRELLA@7,LIGGA@7,INFRASPEAK@8,TRANSRESÍDUOS@8,SISTEMA@9,EQUILIBRIO@9,SUINO@9,KEY@12',
+   'reajustes previstos: Empresa Auxiliar fev, Filtroil mar, Transresíduos ago, Equilíbrio e Suíno Vivo set, e os das outras contas (' +
    rj.reajustes.map(x => x.contrato.fornecedor.split(' ')[0] + '@' + (x.mes + 1)).join(',') + ')');
 perto(rj.umPorCento, rj.baseSemReajuste / 100, 'dissídio: 1% da base sem reajuste');
 ok(rj.parcelasFixas.length === 1 && rj.parcelasFixas[0].grupo === 'ITAÚ (FINANCIAMENTO)' &&
@@ -518,7 +520,7 @@ ok(!conc.some(g => /ALTERAÇÃO DE ESCALA|^LPU$|^CONTRATO DE/.test(g.grupo)),
 const semF = conc.filter(g => g.grupo === G.ORC_SEM_FORNECEDOR)[0];
 ok(semF && semF.n === 7, '5 itens LPU, quadro BT e ar-condicionado como [IDENTIFICAR EMPRESA] (veio ' + (semF && semF.n) + ')');
 const rot = t => G._orcRotuloContrato_(ctr.filter(c => c.descricao.indexOf(t) === 0)[0]);
-ok(rot('SERVIÇO DE PORTARIA') === 'EMPRESA AUXILIAR · PORTARIA', 'rótulo: ' + rot('SERVIÇO DE PORTARIA'));
+ok(rot('EMPRESA AUXILIAR DE SERVIÇOS GERAIS') === 'EMPRESA AUXILIAR', 'rótulo: ' + rot('EMPRESA AUXILIAR DE SERVIÇOS GERAIS'));
 ok(rot('COLETA DE REJEITOS') === 'TRANSRESÍDUOS · COLETA DE REJEITOS DO RESTAURANTE', 'rótulo: ' + rot('COLETA DE REJEITOS'));
 ok(rot('MIRIAD SERVIÇOS') === 'MIRIAD', 'rótulo: ' + rot('MIRIAD SERVIÇOS'));
 ok(rot('AMPLIAÇÃO CONTRATO MANUTENÇÃO COBERTURA') === 'MIRIAD · AMPLIAÇÃO CONTRATO MANUTENÇÃO COBERTURA MIRIAD 6, 7A E 7B',
@@ -687,9 +689,11 @@ const port = grupoDe('Segurança e vigilância').linhas.filter(l => /PORTARIA/.t
 ok(vig && port && /^Ampliação/.test(vig.situacao) && /^Reajuste/.test(port.situacao),
    'contratos: os dois "Empresa Auxiliar" não se misturam; posto adicional é ampliação da vigilância (' +
    (vig && vig.situacao) + ' / ' + (port && port.situacao) + ')');
+// Com o cadastro mestre (07/10/2026) Curitiba tem os contratos de 2027 de
+// todas as contas: informática é comparada contrato a contrato.
 ok(grupoDe('Assistência em informática') && grupoDe('Assistência em informática').metragem &&
-   grupoDe('Assistência em informática').linhas.every(l => /^Fora do modelo/.test(l.situacao)),
-   'contratos: informática casa com a conta da METRAGEM e sai "fora do modelo"');
+   grupoDe('Assistência em informática').linhas.some(l => l.nome === 'KEY ACCESS (CONTRATO)' && /^Reajuste IPCA/.test(l.situacao)),
+   'contratos: informática casa com a conta da METRAGEM e é comparada contrato a contrato (Key Access reajuste IPCA)');
 ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e seguros ficam de fora');
 perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
   G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026),
@@ -784,7 +788,7 @@ ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOM
    'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
 ok(!tM2m.some(t => /…$/.test(t)), 'm² mês a mês: nenhum texto cortado (' + tM2m.filter(t => /…$/.test(t)).join(' | ') + ')');
 ok(!textos(slides[iSeg]).some(t => /^Não detalhado nos modelos/.test(t)) &&
-   textos(slides[iSeg]).some(t => /^CONTRATO — SERVIÇO DE VIGILANCIA/.test(t)),
+   textos(slides[iSeg]).some(t => /^CONTRATO — EMPRESA AUXILIAR DE SEGURANÇA/.test(t)),
    'linha a linha da segurança lista os contratos, sem "não detalhado"');
 ok(!textos(slides[iLimp]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    textos(slides[iLimp]).some(t => /^CONTRATO — EMPRESA AUXILIAR/.test(t)),

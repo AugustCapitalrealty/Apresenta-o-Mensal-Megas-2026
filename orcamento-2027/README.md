@@ -38,7 +38,7 @@ não exclui neste Drive compartilhado; quem exclui é o usuário).
 |---|---|
 | `00 - PLANILHAS MESTRAS` | **guardar**: `MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS` (era "Modelos 2025 Megas"), `MESTRA - CONTRATOS 2026 - TODOS OS MEGAS` (era "2025 - Contratos"), `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (era "CONTRATOS-2027-COMPLETO" — **fonte dos contratos de Itajaí e Esteio**), `MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES` (era "2026") |
 | `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>` (uma por Mega; o gestor marca SIM/NÃO) |
-| `02 - MEGA CURITIBA` / `03 - MEGA ITAJAÍ` / `04 - MEGA ESTEIO` | `MEGA <X> - APRESENTAÇÃO ORÇAMENTO 2027`, `- METRAGEM-COND 2027`, `- DESPESAS MENSAL 2026 x 2027`, `- 090 DESPESAS GERAIS 2027`, `- 070 SERVIÇOS DE TERCEIROS 2027`, (Curitiba) `- CONTRATOS 2027 - <CONTA>` e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, aba LEIA-ME com cada arquivo) |
+| `02 - MEGA CURITIBA` / `03 - MEGA ITAJAÍ` / `04 - MEGA ESTEIO` | `MEGA <X> - APRESENTAÇÃO ORÇAMENTO 2027`, `- METRAGEM-COND 2027`, `- DESPESAS MENSAL 2026 x 2027`, `- 090 DESPESAS GERAIS 2027`, `- 070 SERVIÇOS DE TERCEIROS 2027`, `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, aba LEIA-ME com cada arquivo) |
 | `02 - MEGA CURITIBA/99 - ARQUIVO (não usado pela apresentação)` | lançamentos de jan–jul/26 (090, 070, manutenção de máquinas) e a cópia com os apontamentos do gestor de 29/09 (`exportarSlidesRevisao()` lê ela) |
 | `PODE EXCLUIR - …` | cópias e testes: `_fixtures` e `_slides-exportados` (o código recria se precisar), `TESTE-2 - COMPLETO` e `CONTRATOS 2027` (substituídas pela mestra 2027), planilhas "SERVIÇOS" de Curitiba e "MODELOS" de Itajaí (repetem o 070/090) |
 | `Apresenta-o-Mensal-Megas-2026` | este repositório (**não renomear**: é o caminho do git e do clasp) |
@@ -56,8 +56,8 @@ contratos do cadastro (R$ 371,7 mil) = R$ 1.266.241, igual à METRAGEM.
 |---|---|---|
 | `despesasGeraisId` | `MEGA <X> - 090 DESPESAS GERAIS 2027`, aba `Valores do Modelo` | itens avulsos da manutenção |
 | `servicosTerceirosId` | `MEGA <X> - 070 SERVIÇOS DE TERCEIROS 2027`, aba `Valores do Modelo` | itens de segurança e limpeza |
-| `contratos[<conta>]` | `MEGA CURITIBA - CONTRATOS 2027 - <CONTA>` (manutenção, segurança, limpeza) | contratos recorrentes que os modelos não listam |
-| `contratosDoCadastro: true` | `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | o mesmo, tirado do cadastro do ano, todas as contas da unidade (Itajaí e Esteio). Cabeçalho do mês como data ou como texto "jan./27" |
+| `contratosDoCadastro: true` | `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | contratos recorrentes que os modelos não listam, tirados do cadastro do ano, todas as contas da unidade — **os três Megas** desde 07/10/2026 (padronizado nas planilhas mestras). Cabeçalho do mês como data ou como texto "jan./27" |
+| `contratos[<conta>]` | uma planilha de contratos por conta | formato antigo de Curitiba (até 07/10/2026); fica vazio (`{}`). O leitor continua no código |
 | `relatorios.metragemId` | `MEGA <X> - METRAGEM-COND 2027` | DRE, ofensores, totais por conta |
 | `relatorios.mensalId` | `MEGA <X> - DESPESAS MENSAL 2026 x 2027` | mês a mês da análise linha a linha |
 | `relatorios.financeiroMegasId` | planilha da apresentação mensal dos Megas, aba `Financeiro <ano retrasado>` | Real 2025 mês a mês (slide de custo por m² mês a mês) |

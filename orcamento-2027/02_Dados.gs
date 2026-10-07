@@ -46,7 +46,8 @@ function obterManutencao_(chaveCidade) {
 // `contratosDoCadastro` usa o PRIMEIRO desta lista que tem valor para ela
 // (cadastro novo entra na frente; o anterior fica de reserva até sair).
 // 07/10/2026: "CONTRATOS-2027-COMPLETO" — os três Megas; Itajaí igual ao
-// "TESTE-2 - COMPLETO" e Curitiba igual às planilhas de contratos por conta.
+// "TESTE-2 - COMPLETO" e Curitiba igual às planilhas de contratos por conta
+// — que o gerador deixou de ler (os três Megas no cadastro, 07/10/2026).
 const ORC_CONTRATOS_ANO_IDS = [
   '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY'    // CONTRATOS-2027-COMPLETO
 ];
@@ -59,9 +60,9 @@ function _orcCadastroAno_(id) {
 
 /**
  * Contratos recorrentes do ano da cidade, por conta: [{ conta, contratos }],
- * cada contrato no formato de _orcLinhasContratos_. Duas fontes: uma
- * planilha por conta (cid.contratos — Curitiba) e o cadastro do ano
- * (cid.contratosDoCadastro — Itajaí e Esteio). Fonte que falhar vai para o
+ * cada contrato no formato de _orcLinhasContratos_. Duas fontes: o cadastro
+ * do ano (cid.contratosDoCadastro — os três Megas desde 07/10/2026) e, no
+ * formato antigo, uma planilha por conta (cid.contratos, hoje vazio). Fonte que falhar vai para o
  * log e a conta fica sem os contratos (aparece como "Não detalhado").
  */
 function _orcContratosDoAno_(cid) {

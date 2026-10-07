@@ -34,9 +34,13 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   METRAGEM). Teste: `node teste/teste_orcamento.js` → **4057/4057**.
 - Código publicado (`clasp push`) e no GitHub. A **V1** está pronta para o
   usuário gerar (roteiro em `PASSO-A-PASSO.md`).
-- Contratos: Curitiba lê uma planilha de contratos por conta; Itajaí e
-  Esteio leem o cadastro `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS`
-  (`contratosDoCadastro: true`, `ORC_CONTRATOS_ANO_IDS` em `02_Dados.gs`).
+- Contratos: **os três Megas leem o cadastro mestre** `MESTRA - CONTRATOS
+  2027 - TODOS OS MEGAS` (`contratosDoCadastro: true`, `ORC_CONTRATOS_ANO_IDS`
+  em `02_Dados.gs`). Curitiba deixou as planilhas individuais "MEGA CURITIBA -
+  CONTRATOS 2027 - <CONTA>" em 07/10/2026 (pedido do usuário: padronizar os
+  três nas planilhas mestras). Os totais batiam centavo por centavo; agora
+  Curitiba também traz os contratos das outras contas (informática, telefone,
+  energia), como Itajaí e Esteio.
 - Alerta de pendências ligado (`_orcPendencias_`, `19_Revisar.gs`): Itajaí e
   Esteio saem com o slide "Revisar antes da versão final" e o selo
   ⚠ PENDENTE na manutenção, porque o modelo 090 tem itens que a METRAGEM
@@ -92,7 +96,7 @@ Pasta no Drive: `08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`
 |---|---|
 | `00 - PLANILHAS MESTRAS` | `MESTRA - ORÇAMENTO 2026 ITEM A ITEM` (`1X39Bz…`), `MESTRA - CONTRATOS 2026` (`11bcQ0…`, `ORC_CONTRATOS_ANO_ANTERIOR_ID`), `MESTRA - CONTRATOS 2027` (`1cwbW249…`, `ORC_CONTRATOS_ANO_IDS[0]`), `MESTRA - TOTAIS 2026 POR CONTA` |
 | `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` (`ORC_TEXTOS_ID`), `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>` (três; Curitiba é Google Planilha, Itajaí e Esteio são .xlsx) |
-| `02 - MEGA CURITIBA`, `03 - MEGA ITAJAÍ`, `04 - MEGA ESTEIO` | apresentação, `METRAGEM-COND 2027`, `DESPESAS MENSAL 2026 x 2027`, `090 DESPESAS GERAIS 2027`, `070 SERVIÇOS DE TERCEIROS 2027`, (Curitiba) `CONTRATOS 2027 - <CONTA>`, `BASE DO ORÇAMENTO 2027.xlsx` |
+| `02 - MEGA CURITIBA`, `03 - MEGA ITAJAÍ`, `04 - MEGA ESTEIO` | apresentação, `METRAGEM-COND 2027`, `DESPESAS MENSAL 2026 x 2027`, `090 DESPESAS GERAIS 2027`, `070 SERVIÇOS DE TERCEIROS 2027`, `BASE DO ORÇAMENTO 2027.xlsx` (Curitiba ainda tem `CONTRATOS 2027 - <CONTA>`, que o gerador não lê mais) |
 
 Todos os IDs que o gerador usa estão em `ORC_CIDADES` (`01_Config.gs`), com
 o nome do arquivo em comentário. O mapa fonte → slide está no README
