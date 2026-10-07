@@ -224,12 +224,15 @@ const ORC_SUBCAPAS = {
   'Premissas':             { foto: 'DOCUMENTACAO', motivo: 'DOCUMENTACAO', frase: 'como este orçamento foi construído' },
   'Resumo Executivo':      { foto: 'MEGA',         motivo: 'ANEIS',        frase: 'o orçamento do ano em uma página' },
   'DRE':                   { foto: 'OPERACIONAL',  motivo: 'OPERACIONAL',  frase: 'conta a conta, do ritmo ao orçamento' },
-  'Manutenção':            { foto: 'PREVENTIVA',   motivo: 'PREVENTIVA',   frase: 'o que custa manter o Mega rodando' },
+  'Manutenção':            { foto: 'CORRETIVA',    motivo: 'PREVENTIVA',   frase: 'o que custa manter o Mega rodando' },
   'Segurança':             { foto: 'PATRIMONIAL',  motivo: 'PATRIMONIAL',  frase: 'vigilância, portaria e monitoramento' },
-  'Limpeza e Conservação': { foto: 'CONTRATADOS',  motivo: 'CONTRATADOS',  frase: 'o Mega limpo e conservado o ano inteiro' },
-  'Projetos × Recorrente': { foto: 'CORRETIVA',    motivo: 'INTERNOS',     frase: 'o que é obra pontual e o que é rotina' },
-  'Custo por m²':          { foto: 'INTERNOS',     motivo: 'M2',           frase: 'quanto custa cada m² por mês' }
+  'Limpeza e Conservação': { foto: 'INTERNOS',     motivo: 'CONTRATADOS',  frase: 'o Mega limpo e conservado o ano inteiro' },
+  'Projetos × Recorrente': { foto: 'PREVENTIVA',   motivo: 'INTERNOS',     frase: 'o que é obra pontual e o que é rotina' },
+  'Custo por m²':          { foto: 'CONTRATADOS',  motivo: 'M2',           frase: 'quanto custa cada m² por mês' }
 };
+// Fotos escolhidas olhando as imagens (07/10/2026): a foto mostra o que a
+// seção trata — técnicos nas plataformas na Manutenção, a doca com nivelador
+// nos Projetos, o gramado conservado na Limpeza, o armazém no Custo por m².
 // Pasta (dentro de APRESENTAÇÃO ORÇAMENTO) com as fotos tratadas das sub
 // capas: "SUBCAPA - <chave da foto>.png" (MEGA → "SUBCAPA - MEGA CURITIBA.png")
 // e o traço de caneta "CANETA - SUBLINHADO.png".

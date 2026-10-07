@@ -184,7 +184,8 @@ def folha_contato(pasta, colunas=5, largura=360):
     arqs = sorted(a for a in os.listdir(pasta) if a.lower().endswith(('.png', '.jpg', '.jpeg')))
     if not arqs: raise SystemExit('Nenhuma imagem em ' + pasta)
     ims = [opaca(os.path.join(pasta, a)) for a in arqs]
-    alt = int(largura * ims[0].height / ims[0].width)
+    # Célula na proporção mais alta do lote (até 1,5): cada imagem cabe inteira, sem deformar.
+    alt = int(largura * min(1.5, max(im.height / im.width for im in ims)))
     gap, rot = 16, 22
     linhas = math.ceil(len(ims) / colunas)
     tela = Image.new('RGB', (gap + colunas * (largura + gap), gap + linhas * (alt + rot + gap)), '#E2E8F0')
@@ -192,7 +193,9 @@ def folha_contato(pasta, colunas=5, largura=360):
     for k, (a, im) in enumerate(zip(arqs, ims)):
         x = gap + (k % colunas) * (largura + gap); y = gap + (k // colunas) * (alt + rot + gap)
         d.text((x, y), f'{k + 1:02d}  {os.path.splitext(a)[0][:38]}', font=fr, fill='#151E49')
-        tela.paste(im.resize((largura, alt), Image.LANCZOS), (x, y + rot))
+        f = min(largura / im.width, alt / im.height)
+        r = im.resize((max(1, int(im.width * f)), max(1, int(im.height * f))), Image.LANCZOS)
+        tela.paste(r, (x + (largura - r.width) // 2, y + rot + (alt - r.height) // 2))
     return tela
 
 

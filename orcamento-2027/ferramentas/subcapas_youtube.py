@@ -30,8 +30,19 @@ MARINHO, PAPEL, AZUL = '#151E49', '#F8FAFC', '#60A5FA'   # brandDark, bgSlide e 
 PROPORCAO = 4 / 5     # recorte em pé: cabe ao lado do título
 CELULA = 6            # tamanho do ponto da retícula (px na largura de 900)
 
-# Pedaço de cada foto (x0, y0, x1, y1 em frações). Escolhido olhando as fotos; sem entrada, corte central.
+# Pedaço de cada foto (x0, y0, x1, y1 em frações), em pé 4:5 (0,45 da largura nas fotos 16:9). Escolhido
+# olhando as fotos em 07/10/2026: o recorte mostra o que a seção trata. Sem entrada, corte central.
 CAIXAS = {
+    'CORRETIVA':     (0.18, 0, 0.63, 1),   # Manutenção: as duas plataformas com os técnicos no telhado
+    'PATRIMONIAL':   (0.22, 0, 0.67, 1),   # Segurança: o totem da portaria e o motorista
+    'INTERNOS':      (0.42, 0, 0.87, 1),   # Limpeza e Conservação: o gramado e a placa "proibido pisar"
+    'PREVENTIVA':    (0.45, 0, 0.90, 1),   # Projetos: a doca com o nivelador
+    'CONTRATADOS':   (0.25, 0, 0.70, 1),   # Custo por m²: o armazém por fora, com a placa
+    'DOCUMENTACAO':  (0.35, 0, 0.80, 1),   # Premissas: o balcão e os quadros do escritório
+    'OPERACIONAL':   (0.25, 0, 0.70, 1),   # DRE: o escritório com o painel do logo
+    'MEGA CURITIBA': (0.03, 0, 0.48, 1),   # Resumo: o pórtico "MEGA CENTRO LOGÍSTICO"
+    'MEGA ITAJAÍ':   (0.08, 0, 0.53, 1),   # Resumo: o pórtico com a placa
+    'MEGA ESTEIO':   (0.30, 0, 0.75, 1),   # Resumo: a vista aérea dos galpões
 }
 
 

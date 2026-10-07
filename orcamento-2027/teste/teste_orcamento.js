@@ -1094,7 +1094,7 @@ console.log('Sub capa recorte');
 // seção, ela fica no padrão da mensal.
 {
   const ESTEIO = G.ORC_CIDADES.ESTEIO;
-  const ARQ = { 'SUBCAPA - PREVENTIVA.png': { w: 900, h: 1125 }, 'SUBCAPA - INTERNOS.png': { w: 900, h: 1125 },
+  const ARQ = { 'SUBCAPA - CORRETIVA.png': { w: 900, h: 1125 }, 'SUBCAPA - CONTRATADOS.png': { w: 900, h: 1125 },
                 'CANETA - SUBLINHADO.png': { w: 600, h: 120 } };
   const iter = arr => { let i = 0; return { hasNext: () => i < arr.length, next: () => arr[i++] }; };
   const pedidosArq = [];
@@ -1109,8 +1109,8 @@ console.log('Sub capa recorte');
   const man = sub('Manutenção'), m2 = sub('Custo por m²'), prem = sub('Premissas');
   ok(pastasPedidas.length === 1, 'pasta das imagens procurada uma vez por geração (' + pastasPedidas.length + ')');
   ok(pedidosArq.filter(n => n === 'CANETA - SUBLINHADO.png').length === 1, 'traço de caneta baixado uma vez só');
-  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'SUBCAPA - PREVENTIVA.png' && s.rot === -2.5),
-     'Manutenção: recorte da foto PREVENTIVA, girado');
+  ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'SUBCAPA - CORRETIVA.png' && s.rot === -2.5),
+     'Manutenção: recorte da foto CORRETIVA (técnicos nas plataformas), girado');
   ok(man && man.shapes.some(s => s.tipo === 'IMAGE' && s.nome === 'CANETA - SUBLINHADO.png'), 'Manutenção: traço de caneta');
   ok(man && textos(man).indexOf('o que custa manter o Mega rodando') >= 0, 'Manutenção: a frase da seção');
   const tm = man ? textos(man) : [];
