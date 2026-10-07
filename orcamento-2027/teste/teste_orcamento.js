@@ -884,7 +884,7 @@ ok(!textos(slides[iLimp]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    'linha a linha da limpeza lista os contratos, sem "não detalhado"');
 ok(slides.every(sl => !textos(sl).some(t => /^Não detalhado nos modelos/.test(t))),
    'nenhuma das três contas em foco sobra com "não detalhado"');
-ok(textos(slides[iSeg]).indexOf('MÊS A MÊS') >= 0 && textos(slides[iSeg]).indexOf('Orç 2027') >= 0,
+ok(textos(slides[iSeg]).indexOf('MÊS A MÊS · R$ MIL') >= 0 && textos(slides[iSeg]).indexOf('Orç 2027') >= 0,
    'linha a linha da segurança com o gráfico mês a mês');
 ok(slides.every(sl => !sl.removido), 'slide em branco inicial removido, novos mantidos');
 slides.forEach((sl, i) => {

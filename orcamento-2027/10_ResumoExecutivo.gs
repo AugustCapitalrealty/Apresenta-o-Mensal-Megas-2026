@@ -86,7 +86,9 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
 
   const cx = MX, cy = 72, cw = W - MX * 2, ch = H - 28 - cy;
   _orcCard_(slide, cx, cy, cw, ch, null);
-  const COR = { total: C.brandMed, saida: '#94A3B8', novo: C.brandLight, reducao: _ORC_COR_VAR.desce };
+  // Alta em vermelho e redução em verde, como as setas ▲▼ do resto do deck
+  // (rascunho de 07/10/2026: as duas eram verdes).
+  const COR = { total: _ORC_COR_VAR.sobe, saida: '#94A3B8', novo: C.brandLight, reducao: _ORC_COR_VAR.desce };
 
   // Chips no topo do card, como no bridge dos Megas: a mensagem do slide
   // antes do gráfico. O segundo só sai quando alguma conta separa o que já
@@ -173,6 +175,11 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     _orcLinha_(slide, bx - (colW - barW), y(ini), bx, y(ini), C.lines, 0.75);
     const corV = d.delta < 0 ? COR.reducao : COR.total;
     valor(i, d.delta >= 0 ? Math.min(y(ini), y(run)) - 13 : Math.max(y(ini), y(run)) + 1, _orcDeltaMil_(d.delta), corV);
+    // O degrau em % do ritmo, do lado oposto ao valor.
+    if (p.inicio) {
+      _orcUmaLinha_(slide, px + i * colW, d.delta >= 0 ? Math.max(y(ini), y(run)) + 1.5 : Math.min(y(ini), y(run)) - 12, colW, 10,
+        _orcPct_(Math.abs(d.delta / p.inicio)), { align: 'C', fs: 6, fsMin: 5.5, cor: C.textBody, fonte: DS.typography.body, folga: 4 });
+    }
     rotulo(i, d.nome, { revisar: !!d.chave && _orcRevisarDe_(rel, [d.chave]).length > 0 });
   });
   barraTotal(n - 1, p.fim, 'Orç ' + a.orc);
@@ -195,6 +202,6 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     lx += larg[k] + gapL;
   });
 
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (totais por conta)' +
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (totais por conta) · % = degrau sobre o ritmo ' + a.ritmo +
     (notas.length ? ' e Despesas-Mensal (dezembro do ritmo)' : '') + ' · ' + cid.nome);
 }

@@ -157,7 +157,8 @@ function _orcGerarAbertura_(deck, W, H) {
   _ORC_TRILHA = 0;
   _orcPasso_(deck, W, H, 'Capa — Facilities', s => gerarSlideCapaFacilities_(s, W, H, rels));
   _orcPasso_(deck, W, H, 'Sumário — Facilities', s => gerarSlideSumarioFacilities_(s, W, H, rels));
-  _ORC_UNICO.alvo = 'COMPARATIVO';
+  _ORC_UNICO.alvo = 'COMPARATIVO';   // o link do sumário vai para o gráfico; a tabela vem logo depois
+  _orcPasso_(deck, W, H, 'Os Megas lado a lado — gráfico', s => gerarSlideMegasGrafico_(s, W, H, rels));
   _orcPasso_(deck, W, H, 'Comparativo de R$/m² entre os Megas', s => gerarSlideComparativoM2_(s, W, H, rels));
 }
 
@@ -293,8 +294,8 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
   const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX;
   const cmp = _orcComparativoM2_(rels);
   const cols = cmp.megas.concat(['FACILITIES']);
-  _orcHeader_(slide, W, 'Os Megas lado a lado — R$/m² ao mês',
-    'Orçamento ' + ORC_ANO + ' por m², conta a conta, e a variação contra o Ritmo ' + (ORC_ANO - 1) + ' · em negrito, o Mega mais caro da linha');
+  _orcHeader_(slide, W, 'Os Megas lado a lado — conta a conta',
+    'Orçamento ' + ORC_ANO + ' em R$/m² ao mês e a variação contra o Ritmo ' + (ORC_ANO - 1) + ' · em negrito, o Mega mais caro da linha');
   const linhas = cmp.linhas.map(l => {
     const vals = cmp.megas.map(k => l.m[k].orc || 0);
     const maior = l.tipo === 'item' ? Math.max.apply(null, vals) : null;
@@ -318,8 +319,102 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
   const grupos = cols.map((k, i) => ({ titulo: k === 'FACILITIES' ? 'FACILITIES' : ORC_CIDADES[k].nome.toUpperCase(), c0: 1 + i * 2, n: 2,
                                         cor: k === 'FACILITIES' ? '#475569' : undefined }));
   _orcTabelaNum_(slide, MX, 72, tw, H - 30 - 72, colunas, linhas, grupos);
-  const notaArea = cmp.megas.filter(k => cmp.area[k] && cmp.areaRit[k] && Math.abs(cmp.area[k] / cmp.areaRit[k] - 1) > 0.1)
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano' + _orcNotaAreaMegas_(cmp));
+}
+
+// Mega com a área mudando mais de 10% do ritmo para o Orç: o R$/m² cai mesmo com a despesa subindo.
+function _orcNotaAreaMegas_(cmp) {
+  const r1 = v => (Math.round(v / 100) / 10).toLocaleString('pt-BR');
+  const nota = cmp.megas.filter(k => cmp.area[k] && cmp.areaRit[k] && Math.abs(cmp.area[k] / cmp.areaRit[k] - 1) > 0.1)
     .map(k => ORC_CIDADES[k].nome.replace('Mega ', '') + ' ' + r1(cmp.areaRit[k]) + ' → ' + r1(cmp.area[k]));
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano' +
-    (notaArea.length ? ' · área mudou (mil m², ritmo → orç.): ' + notaArea.join(', ') + ' — o R$/m² cai mesmo com a despesa subindo' : ''));
+  return nota.length ? ' · área mudou (mil m², ritmo → orç.): ' + nota.join(', ') + ' — o R$/m² cai mesmo com a despesa subindo' : '';
+}
+
+// ==========================================
+// OS MEGAS LADO A LADO — GRÁFICO (rascunho aprovado em 07/10/2026)
+// ==========================================
+// As linhas que o diretor compara entre os Megas: conta (nome) ou grupo da DRE.
+const ORC_FAC_PAINEIS = [
+  { nome: 'Segurança e vigilância' },
+  { nome: 'Manutenção de imóveis' },
+  { grupo: 'Utilities, Taxas e Consumo', titulo: 'Utilities, taxas e consumo' },
+  { nome: 'Limpeza e conservação' },
+  { grupo: 'Despesas com Pessoal e Administrativas', titulo: 'Pessoal e administrativo' }
+];
+
+/**
+ * Antes da tabela conta a conta: um card por Mega (e Facilities) com o R$/m²
+ * das despesas operacionais, e um painel por linha de ORC_FAC_PAINEIS com uma
+ * barra por Mega (o mais caro no tom escuro), o traço do ritmo, o tracejado de
+ * Facilities e, no pé, quem é o mais caro e quanto acima de Facilities.
+ */
+function gerarSlideMegasGrafico_(slide, W, H, rels) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
+  const cmp = _orcComparativoM2_(rels);
+  _orcHeader_(slide, W, 'Os Megas lado a lado — R$/m² ao mês',
+    'Orçamento ' + ORC_ANO + ' por m² nas principais linhas · traço = Ritmo ' + (ORC_ANO - 1) + ' · tracejado = Facilities');
+  const variacao = c => _orcVariacao_(c.ritmo, c.orc, 0.005);
+
+  // ---- Cards: despesas operacionais por m² ----
+  const cols = cmp.megas.concat(['FACILITIES']), tot = cmp.linhas[0].m;
+  const gap = 10, cw = (W - MX * 2 - gap * (cols.length - 1)) / cols.length, ky = 80, kh = 50;
+  cols.forEach((k, i) => {
+    const x = MX + i * (cw + gap), fac = k === 'FACILITIES', c = tot[k], v = variacao(c);
+    _orcRet_(slide, x, ky, cw, kh, fac ? C.brandDark : C.cardBg, { redondo: true, borda: fac ? null : C.lines });
+    _orcUmaLinha_(slide, x + 12, ky + 5, cw - 24, 12, fac ? 'FACILITIES' : ORC_CIDADES[k].nome.toUpperCase(),
+      { align: 'L', fs: 7, bold: true, cor: fac ? C.brandSoft : C.textBody, fonte: T.titles });
+    _orcUmaLinha_(slide, x + 12, ky + 16, cw - 24, 20, c.orc === null ? '–' : 'R$ ' + _orcM2_(c.orc) + '/m²',
+      { align: 'L', fs: 15, fsMin: 10, bold: true, cor: fac ? '#FFFFFF' : C.brandDark, fonte: T.titles });
+    _orcUmaLinha_(slide, x + 12, ky + 36, cw - 24, 11, v.texto + ' × ritmo ' + (ORC_ANO - 1) + ' · despesas operacionais',
+      { align: 'L', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.body, cortar: true,
+        cor: fac ? (v.sentido > 0 ? _ORC_COR_VAR.sobeClaro : (v.sentido < 0 ? _ORC_COR_VAR.desceClaro : '#FFFFFF')) : _orcCorSentido_(v.sentido) });
+  });
+
+  // ---- Painéis ----
+  const achar = p => cmp.linhas.filter(l => p.grupo ? l.tipo === 'grupo' && l.nome === p.grupo.toUpperCase()
+                                                    : l.tipo === 'item' && _orcChaveConta_(l.nome) === _orcChaveConta_(p.nome))[0];
+  const paineis = ORC_FAC_PAINEIS.map(p => ({ p: p, l: achar(p) })).filter(x => x.l);
+  const pg = 8, pw = (W - MX * 2 - pg * (paineis.length - 1)) / Math.max(1, paineis.length);
+  const py = ky + kh + 10, ph = H - 26 - py;
+  const rowH = (ph - 26 - 40) / Math.max(1, cmp.megas.length);
+  paineis.forEach((pn, j) => {
+    const x = MX + j * (pw + pg), l = pn.l, fac = l.m.FACILITIES.orc;
+    _orcRet_(slide, x, py, pw, ph, C.cardBg, { redondo: true, borda: C.lines });
+    _orcUmaLinha_(slide, x + 9, py + 6, pw - 18, 12, (pn.p.titulo || l.nome).toUpperCase(),
+      { align: 'L', fs: 5.8, fsMin: 5, bold: true, cor: C.textBody, fonte: T.titles, cortar: true });
+    const vals = cmp.megas.map(k => l.m[k].orc || 0), rits = cmp.megas.map(k => l.m[k].ritmo || 0);
+    const mx = Math.max.apply(null, vals.concat(rits, [fac || 0])) * 1.12 || 1;
+    const bx = x + 9, bw = pw - 18, X = v => bx + bw * Math.max(0, v) / mx;
+    const iMax = vals.indexOf(Math.max.apply(null, vals));
+    cmp.megas.forEach((k, i) => {
+      const yy = py + 24 + i * rowH, c = l.m[k], v = variacao(c);
+      _orcUmaLinha_(slide, bx, yy, bw, 11, ORC_CIDADES[k].nome.replace('Mega ', ''),
+        { align: 'L', fs: 7, bold: true, cor: C.textMain, fonte: T.body, folga: 4 });
+      _orcRet_(slide, bx, yy + 12, bw, 11, C.brandTint);
+      if (vals[i] > 0) _orcRet_(slide, bx, yy + 12, Math.max(0.8, X(vals[i]) - bx), 11, i === iMax ? C.brandDark : C.brandLight);
+      if (rits[i] > 0) _orcLinha_(slide, X(rits[i]), yy + 9.5, X(rits[i]), yy + 25.5, C.textMain, 1.3);
+      const tv = c.orc === null ? '–' : 'R$ ' + _orcM2_(c.orc);
+      const lv = _orcLarguraTexto_(tv, 7.5, T.titles, true);
+      _orcUmaLinha_(slide, bx - _ORC_RECUO_TEXTBOX / 2, yy + 26, lv + _ORC_RECUO_TEXTBOX, 11, tv,
+        { align: 'L', fs: 7.5, fsMin: 7.5, bold: true, cor: C.brandDark, fonte: T.titles, folga: 6 });
+      _orcUmaLinha_(slide, bx + lv + 4, yy + 26, bw - lv - 4, 11, v.texto,
+        { align: 'L', fs: 6.5, fsMin: 5.5, bold: true, cor: _orcCorSentido_(v.sentido), fonte: T.body, folga: 4 });
+    });
+    if (fac) {
+      const yb = py + 24 + cmp.megas.length * rowH;
+      _orcLinha_(slide, X(fac), py + 34, X(fac), yb - 2, C.textBody, 0.7).setDashStyle(SlidesApp.DashStyle.DASH);
+      _orcUmaLinha_(slide, X(fac) - 30, yb - 1, 60, 10, 'Facilities ' + _orcM2_(fac),
+        { align: 'C', fs: 6, fsMin: 5.5, cor: C.textBody, fonte: T.body, folga: 6 });
+    }
+    _orcLinha_(slide, x + 9, py + ph - 32, x + pw - 9, py + ph - 32, C.lines, 0.6);
+    _orcUmaLinha_(slide, x + 9, py + ph - 29, pw - 18, 11, 'Mais caro: ' + ORC_CIDADES[cmp.megas[iMax]].nome.replace('Mega ', ''),
+      { align: 'L', fs: 7, fsMin: 6, bold: true, cor: C.brandDark, fonte: T.body, folga: 4 });
+    if (fac) {
+      const acima = vals[iMax] / fac - 1;
+      _orcUmaLinha_(slide, x + 9, py + ph - 18, pw - 18, 11, Math.round(Math.abs(acima) * 100) + '%' + (acima >= 0 ? ' acima' : ' abaixo') + ' de Facilities',
+        { align: 'L', fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body, folga: 4 });
+    }
+  });
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano · a tabela conta a conta vem a seguir' +
+    _orcNotaAreaMegas_(cmp));
 }

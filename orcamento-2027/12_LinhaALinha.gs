@@ -69,35 +69,79 @@ function _orcPaginasItens_(fora) {
   return paginas;
 }
 
-// Colunas agrupadas por mês, uma cor por série, com legenda no topo.
-function _orcBarrasAgrupadas_(slide, x, y, w, h, series) {
-  const DS = CR_DESIGN_SYSTEM;
-  const base = y + h - 14, topo = y + 16, ph = base - topo;
-  const max = series.reduce((m, s) => Math.max(m, Math.max.apply(null, s.valores)), 0) || 1;
-  const colW = w / 12, grupoW = colW * 0.78, barW = grupoW / series.length;
+// Mês a mês da conta (rascunho aprovado em 07/10/2026): o Orç do ano em
+// barras com o valor (R$ mil), o ritmo do ano anterior em linha — contínua
+// até o último mês fechado e tracejada na projeção, com a faixa "projeção do
+// ritmo" — e o Orç do ano anterior como um traço cinza em cada mês. No topo,
+// a leitura: o Orç por mês contra o ritmo antes e depois do fechamento.
+// m: { orcAnt, real (ritmo), orc } do Despesas-Mensal; (cx, cy, cw, ch) = card.
+function _orcMesAMesConta_(slide, cx, cy, cw, ch, m, a) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors;
+  const fech = ORC_RITMO_ULTIMO_MES_FECHADO;
+  const mil = v => v < 9950 ? (v / 1000).toFixed(1).replace('.', ',') : _orcMilhar_(Math.round(v / 1000));
+  const media = arr => arr.length ? arr.reduce((t, v) => t + v, 0) / arr.length : 0;
+  const CINZA = '#9AA19F';
 
-  // Legenda
-  let lx = x + w;
-  series.slice().reverse().forEach(s => {
-    const tw = _orcLarguraTexto_(s.nome, 6.5, DS.typography.body) + 22;
-    lx -= tw;
-    _orcRet_(slide, lx, y + 3, 7, 7, s.cor);
-    _orcUmaLinha_(slide, lx + 9, y - 1, tw - 9, 14, s.nome,
-      { align: 'L', fs: 6.5, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 4 });
+  // Legenda no canto do card, na altura do rótulo.
+  const leg = [['Orç ' + a.orc, 'barra'], ['Ritmo ' + a.ritmo, 'linha'], ['Orç ' + a.orcAnt, 'traco']];
+  const fsL = 6.5, larg = leg.map(l => 15 + _orcLarguraTexto_(l[0], fsL, DS.typography.body));
+  let lx = cx + cw - 12 - larg.reduce((t, w) => t + w, 0) - 10 * (leg.length - 1);
+  leg.forEach((l, k) => {
+    if (l[1] === 'barra') _orcRet_(slide, lx, cy + 10, 8, 6, C.brandLight);
+    else if (l[1] === 'linha') { _orcLinha_(slide, lx, cy + 13, lx + 10, cy + 13, C.brandDark, 1.5); _orcBolinha_(slide, lx + 5, cy + 13, 1.6, C.brandDark, 1); }
+    else _orcLinha_(slide, lx, cy + 13, lx + 10, cy + 13, CINZA, 1.2);
+    _orcUmaLinha_(slide, lx + 13 - _ORC_RECUO_TEXTBOX / 2, cy + 6.5, larg[k] - 13 + _ORC_RECUO_TEXTBOX, 13, l[0],
+      { align: 'L', fs: fsL, fsMin: fsL, cor: C.textBody, fonte: DS.typography.body, folga: 8 });
+    lx += larg[k] + 10;
   });
 
-  _orcLinha_(slide, x, base, x + w, base, DS.colors.lines, 0.75);
+  // A leitura.
+  const rit = m.real, proj = fech < 12;
+  _orcUmaLinha_(slide, cx + 12, cy + 20, cw - 24, 11,
+    'Orç ' + a.orc + ': ' + _orcCompacto_(media(m.orc)) + '/mês · ritmo ' + a.ritmo + ': ' +
+    (proj ? _orcCompacto_(media(rit.slice(0, fech))) + '/mês em jan–' + ORC_MESES[fech - 1].toLowerCase() + ' e ' +
+            _orcCompacto_(media(rit.slice(fech))) + ' em ' + ORC_MESES[fech].toLowerCase() + '–dez (projeção)'
+          : _orcCompacto_(media(rit)) + '/mês'),
+    { align: 'L', fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: DS.typography.body, cortar: true });
+
+  const x0 = cx + 12, x1 = cx + cw - 12, top = cy + 44, base = cy + ch - 16;
+  const col = (x1 - x0) / 12, barW = col * 0.56;
+  const max = Math.max.apply(null, m.orc.concat(rit, m.orcAnt)) * 1.08 || 1;
+  const y = v => base - (base - top) * Math.max(0, v) / max;
+  const xm = i => x0 + col * (i + 0.5);
+
+  if (proj) {
+    _orcRet_(slide, x0 + col * fech, top - 10, col * (12 - fech), base - top + 10, C.brandTint);
+    _orcUmaLinha_(slide, x0 + col * fech, top - 10, col * (12 - fech), 10, 'projeção do ritmo',
+      { align: 'C', fs: 6, fsMin: 5, bold: true, cor: C.brandDark, fonte: DS.typography.body, folga: 4 });
+  }
+  _orcLinha_(slide, x0, base, x1, base, C.lines, 0.75);
   for (let i = 0; i < 12; i++) {
-    const gx = x + i * colW + (colW - grupoW) / 2;
-    series.forEach((s, k) => {
-      const v = s.valores[i];
-      if (v > 0.5) {
-        const bh = Math.max(1, ph * v / max);
-        _orcRet_(slide, gx + k * barW, base - bh, Math.max(0.5, barW - 0.8), bh, s.cor);
-      }
-    });
-    _orcUmaLinha_(slide, x + i * colW, base + 1, colW, 12, ORC_MESES[i],
-      { align: 'C', fs: 6, cor: DS.colors.textBody, fonte: DS.typography.titles, folga: 4 });
+    const v = m.orc[i], bx = xm(i) - barW / 2;
+    if (v > 0.5) {
+      const bh = Math.max(1, base - y(v));
+      _orcRet_(slide, bx, base - bh, barW, bh, C.brandLight);
+      const dentro = bh >= 12;
+      _orcUmaLinha_(slide, xm(i) - col / 2, dentro ? base - bh + 1 : base - bh - 11, col, 10, mil(v),
+        { align: 'C', fs: 6, fsMin: 5, bold: true, cor: dentro ? '#FFFFFF' : C.textMain, fonte: DS.typography.titles, folga: 4 });
+    }
+    if (m.orcAnt[i] > 0.5) _orcLinha_(slide, bx - 1.5, y(m.orcAnt[i]), bx + barW + 1.5, y(m.orcAnt[i]), CINZA, 1.2);
+    _orcUmaLinha_(slide, xm(i) - col / 2, base + 1, col, 11, ORC_MESES[i],
+      { align: 'C', fs: 6, cor: C.textBody, fonte: DS.typography.titles, folga: 4 });
+  }
+  for (let i = 0; i < 11; i++) {
+    const l = _orcLinha_(slide, xm(i), y(rit[i]), xm(i + 1), y(rit[i + 1]), C.brandDark, 1.5);
+    if (i + 1 >= fech) l.setDashStyle(SlidesApp.DashStyle.DASH);
+  }
+  for (let i = 0; i < 12; i++) {
+    _orcBolinha_(slide, xm(i), y(rit[i]), 1.6, C.brandDark, 1);
+    if (proj && i >= fech) {
+      // Valor da projeção numa etiqueta branca: legível em cima da barra.
+      const t = mil(rit[i]), ew = Math.max(14, _orcLarguraTexto_(t, 6, DS.typography.titles, true) + 5);
+      _orcRet_(slide, xm(i) - ew / 2, y(rit[i]) - 13, ew, 9, '#FFFFFF', { redondo: true, borda: C.brandDark, peso: 0.6 });
+      _orcUmaLinha_(slide, xm(i) - ew / 2, y(rit[i]) - 13, ew, 9, t,
+        { align: 'C', fs: 6, fsMin: 5, bold: true, cor: C.brandDark, fonte: DS.typography.titles, folga: 4 });
+    }
   }
 }
 
@@ -167,14 +211,10 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
   // ---- Mês a mês ----
   const by = ky + kh + gap, bh = H - 26 - by;
   const lw = Math.round((W - MX * 2 - gap) * 0.54), rx = MX + lw + gap, rw = W - MX - rx;
-  _orcCard_(slide, MX, by, lw, bh, 'Mês a mês');
+  _orcCard_(slide, MX, by, lw, bh, 'Mês a mês · R$ mil');
   const m = mensal && mensal.contas[conta.chave];
   if (m) {
-    _orcBarrasAgrupadas_(slide, MX + 12, by + 22, lw - 24, bh - 30, [
-      { nome: 'Orç ' + a.orcAnt, cor: '#CBD5E1', valores: m.orcAnt },
-      { nome: 'Real/ritmo ' + a.ritmo, cor: C.brandSoft, valores: m.real },
-      { nome: 'Orç ' + a.orc, cor: C.brandDark, valores: m.orc }
-    ]);
+    _orcMesAMesConta_(slide, MX, by, lw, bh, m, a);
   } else {
     _orcParagrafo_(slide, MX + 16, by + 40, lw - 32, 40,
       'Conta sem abertura mês a mês no relatório Despesas-Mensal ' + a.ritmo + ' x ' + a.orc + '.',
