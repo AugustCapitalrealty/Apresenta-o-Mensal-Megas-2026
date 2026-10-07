@@ -26,7 +26,9 @@
 // do sistema, importado por importarCadastroContratos2026() (03_Exportar.gs),
 // que grava o ID na propriedade do script ORC_CONTRATOS_ANO_ANTERIOR_ID —
 // decisão do Guilherme: o slide mostra o contrato com o valor de hoje.
-const ORC_CONTRATOS_ANO_ANTERIOR_ID = '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A';
+// "MESTRA - CONTRATOS 2026 - SISTEMA (2026-10-07)", importada em 07/10/2026
+// (a MESTRA antiga era 11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A).
+const ORC_CONTRATOS_ANO_ANTERIOR_ID = '1A_JmqjYIvJ2T5AIC6ttQVQxIh_eXzDci82EhzWKtzAw';
 
 function _orcIdContratosAnoAnterior_() {
   try {
