@@ -238,10 +238,17 @@ const ORC_PENDENCIAS_GESTOR = {
   'Mega Itajaí': [
     { conta: 'Manutenção de imóveis', tipo: 'Sem provisão de 3%',
       texto: 'O 090 de 2027 não tem a linha de 3% para não previstos (Curitiba e Esteio têm). Esquecida?' },
-    { conta: 'Manutenção de imóveis', tipo: 'Par a confirmar',
-      texto: 'Orbital (PPCI) → Firecam? E a preventiva NFPA de 2026 (R$ 8.465) compara com qual linha?' },
-    { conta: 'Manutenção de imóveis', tipo: 'Reconferir (controladoria)',
-      texto: 'Recalque paver de incêndio, R$ 14.000 no Orç 2026: o gestor diz que foi feito em 2026' }
+    // Ritmo 2026 (07/10/2026): no ritmo em dez/2026 e no Orç 2027 em jan–fev.
+    // Respondidas pelo ritmo e retiradas: recalque paver (feito em ago/2026) e
+    // Orbital → Firecam / NFPA (NFPA feita em out/2026; em 2027 só a Firecam).
+    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
+      texto: 'Iluminação rua armazém 4/5: R$ 17.250 no ritmo de dez/2026 e R$ 11.875 no Orç 2027 (fev)' },
+    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
+      texto: 'Iluminação do bolsão: R$ 1.800 no ritmo de dez/2026 e R$ 5.938 no Orç 2027 (fev)' },
+    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
+      texto: 'Quadro elétrico da portaria: R$ 5.900 no ritmo de dez/2026 e R$ 4.290 no Orç 2027 (jan)' },
+    { conta: 'Manutenção de imóveis', tipo: 'Duplicada em 2026 e 2027?',
+      texto: 'Totem do bolsão: R$ 17.400 no ritmo de dez/2026 e totem Mega R$ 11.500 no Orç 2027 (jan)' }
   ],
   'Mega Curitiba': [
     { conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar',

@@ -1091,7 +1091,8 @@ const ESTADO_CIDADES = {};
   const iRev = titulos.indexOf('Revisar antes da versão final');
   ok(iRev === 1, c + ': slide de revisão logo depois da capa (pendências de dados)');
   if (chave === 'ITAJAI') {
-    ok(['Sem provisão de 3%', 'Par a confirmar', 'Reconferir (controladoria)'].every(t => textos(sl[iRev]).indexOf(t) >= 0),
+    ok(['Sem provisão de 3%', 'Duplicada em 2026 e 2027?'].every(t => textos(sl[iRev]).indexOf(t) >= 0) &&
+       textos(sl[iRev]).indexOf('Reconferir (controladoria)') < 0,
        'Itajaí: as perguntas em aberto com o gestor no slide de revisão');
   }
   const tRev = iRev >= 0 ? textos(sl[iRev]) : [];

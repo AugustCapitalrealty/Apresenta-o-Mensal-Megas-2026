@@ -156,10 +156,18 @@ seção 4. Primeira conferência das obras adiadas (seção 3, item 1):
 Se forem feitas em dezembro de 2026, o Orç 2027 delas pode estar duplicado. Se o ritmo de dezembro for só
 projeção, elas continuam adiadas.
 
+**Conferido em 07/10/2026: as três estão no ritmo (dez/2026) e no Orç 2027 (quadro em jan; as duas iluminações em
+fev), e o totem também (ritmo dez/2026 R$ 17.400; Orç 2027 jan R$ 11.500).** Regra combinada com o Guilherme: o que
+está só no ritmo é ritmo; o que está no ritmo e no Orç 2027 é pergunta ao gestor. As quatro foram para
+`ORC_PENDENCIAS_GESTOR` ("Duplicada em 2026 e 2027?"). Indício: o slide de revisão já mostrava "Modelos acima da
+METRAGEM: JAN R$ 11.500 · FEV R$ 17.813", exatamente o totem e as duas iluminações, que a METRAGEM 2027 não tem.
+Retiradas das pendências: recalque paver e Orbital → Firecam/NFPA (respondidas abaixo).
+
 **Responde perguntas em aberto:**
 - Itajaí, recalque paver de incêndio: **feito em 2026**, R$ 11.896 em agosto ("Preventivo/recalque paver
   preventivo de incêndio"). Confirma o gestor.
-- Itajaí, NFPA: "NFPA 25 casa de bombas", R$ 8.890 em outubro de 2026. A NFPA foi feita em 2026; em 2027 ela
-  entra na Firecam?
+- Itajaí, NFPA: "NFPA 25 casa de bombas", R$ 8.890 em outubro de 2026. A NFPA foi feita em 2026; o 090 de 2027 não
+  tem linha de NFPA, e a Firecam (preventiva do sistema de incêndio, R$ 10.000/mês de 07/2026 a 12/2029) cobre
+  2027 inteiro. Bate com o gestor ("a NFPA tem todo o ano"): Orbital → Firecam é o par; a NFPA de 2026 é "Só 2026".
 - Itajaí, totem: "Recuperação e manutenção do totem do bolsão externo", R$ 17.400 em dezembro de 2026. Conferir
   se é o mesmo totem da "manutenção e pintura do totem Mega" de 2027 (R$ 11.500).
