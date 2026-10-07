@@ -92,6 +92,15 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('DRE', null, s => gerarSlideDRE_(s, W, H, cid, rel));
     comSelo('Ofensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'ofensores'));
     comSelo('Defensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'defensores'));
+    // Todos os contratos, ano anterior × ano (pedido do gestor, 07/10/2026).
+    let cmpTodos = null;
+    try { cmpTodos = _orcCompararTodosContratos_(rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos); }
+    catch (e) { Logger.log('Contratos de todas as contas indisponíveis: ' + e.message); }
+    if (cmpTodos && cmpTodos.n) {
+      const pags = _orcPaginasContratos_(cmpTodos);
+      pags.forEach((pag, i) => comSelo('Contratos — todas as contas', null,
+        s => gerarSlideContratosTodos_(s, W, H, cid, rel, cmpTodos, pag, i, pags.length)));
+    }
   }
 
   // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança,

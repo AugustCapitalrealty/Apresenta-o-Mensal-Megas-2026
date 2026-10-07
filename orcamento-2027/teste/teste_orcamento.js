@@ -576,7 +576,10 @@ ok(nLL[0] === 2, 'manutenção: linha a linha em 2 páginas (os itens menores na
 const N_MANUT = nLL[0] + 1 + 2 + div.proprias.length + nPagDemais;   // linha a linha, contratos 26×27, resumo, mensal, categorias, demais
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
-const N_ESPERADO = 1 + SECOES.length + 1 + 2 + 3 + N_MANUT + nLL[1] + nLL[2] + 3;
+// Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
+const cmpTodos = G._orcCompararTodosContratos_(rel, fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', modelos);
+const nTodos = G._orcPaginasContratos_(cmpTodos).length;
+const N_ESPERADO = 1 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3;
 ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, 8 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, investimento, custo por m² (veio ' +
    slides.length + ')');
@@ -608,7 +611,28 @@ ok(!tOf.concat(tDf).some(t => /^Demais contas/.test(t)), 'ofensores/defensores: 
 ok(['Material de consumo', 'Representação e refeição', 'Cursos e seminários', 'Despesa com combustíveis'].every(n => tOf.indexOf(n) >= 0),
    'ofensores: conta com variação visível tem linha própria (cursos, refeição, consumo, combustíveis)');
 
-ok(iSub[3] === iDRE + 3, 'Manutenção logo depois dos defensores');
+ok(iSub[3] === iDRE + 3 + nTodos, 'Manutenção logo depois dos defensores e dos contratos');
+const grupoDe = n => cmpTodos.grupos.filter(g => G._orcChaveConta_(g.conta) === G._orcChaveConta_(n))[0];
+const vig = grupoDe('Segurança e vigilância').linhas.filter(l => /VIGILÂNCIA \(EMPRESA AUXILIAR\)/.test(l.nome))[0];
+const port = grupoDe('Segurança e vigilância').linhas.filter(l => /PORTARIA/.test(l.nome))[0];
+ok(vig && port && /^Ampliação/.test(vig.situacao) && /^Reajuste/.test(port.situacao),
+   'contratos: os dois "Empresa Auxiliar" não se misturam; posto adicional é ampliação da vigilância (' +
+   (vig && vig.situacao) + ' / ' + (port && port.situacao) + ')');
+ok(grupoDe('Assistência em informática') && grupoDe('Assistência em informática').metragem &&
+   grupoDe('Assistência em informática').linhas.every(l => /^Fora do modelo/.test(l.situacao)),
+   'contratos: informática casa com a conta da METRAGEM e sai "fora do modelo"');
+ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e seguros ficam de fora');
+perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
+  G._orcLerCadastroContratos_(fixture('fixture_contratos_ano_anterior.json'), 'Mega Curitiba', 'Manutenção de imóveis', 2026),
+  G._orcClassificarManutencao_(d).grupos[0].itens).contratos.atual, 'contratos: manutenção igual ao slide da manutenção');
+const tTodos = textos(slides[iDRE + 3]);
+ok(/^Contratos — 2026 × Orçamento 2027 \(1\/\d\)$/.test(tTodos[0]) && tTodos.indexOf('TODOS OS CONTRATOS') >= 0,
+   'contratos de todas as contas depois dos defensores (' + tTodos[0] + ')');
+ok(textos(slides[iDRE + 2 + nTodos]).indexOf('TOTAL DOS CONTRATOS') >= 0, 'última página fecha com o total dos contratos');
+for (let k = 0; k < nTodos; k++) {
+  const tt = textos(slides[iDRE + 3 + k]);
+  ok(!tt.some(t => /…$/.test(t)), 'contratos ' + (k + 1) + '/' + nTodos + ': nenhum texto cortado (' + tt.filter(t => /…$/.test(t)).join(' | ') + ')');
+}
 const iLLManut = iSub[3] + 1, iCmp = iSub[3] + nLL[0] + 1, iResManut = iCmp + 1, iCat0 = iCmp + 3;
 const iDemais = iCat0 + div.proprias.length;                  // primeira página de Demais
 ok(titulo(slides[iLLManut]) === contasLL[0].nome + ' (1/2)', 'Manutenção abre com o linha a linha (1/2)');
@@ -806,7 +830,8 @@ ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t))
    tRev.filter(t => /^DRE/.test(t)).join(' | ') + ')');
 ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
 const SELO = '⚠ REVISAR · IPTU, Seguro';
-const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1].map(iR);
+const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1]
+  .concat(Array.from({ length: nTodos }, (_, k) => iDRE + 3 + k)).map(iR);
 ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e os dois de custo por m²');
 ok(slidesRev.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
    'selo só nesses (linha a linha, investimento e manutenção não passam por IPTU/Seguro)');
