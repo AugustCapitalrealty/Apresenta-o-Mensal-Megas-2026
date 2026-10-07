@@ -270,6 +270,6 @@ function gerarSlideContratosTodos_(slide, W, H, cid, rel, cmp, pagina, iPag, nPa
     { titulo: 'SITUAÇÃO', w: sW, align: 'L' }
   ], linhas, [{ titulo: 'R$', c0: 2, n: 4 }, { titulo: 'R$/M²', c0: 6, n: 2, cor: '#475569' }]);
 
-  _orcRodape_(slide, W, H, 'Fontes: "' + (ORC_ANO - 2) + ' - Contratos" (valores de ' + a.ritmo + '), modelos 070/090 e contratos de ' +
+  _orcRodape_(slide, W, H, 'Fontes: cadastro de contratos ' + a.ritmo + ', modelos 070/090 e contratos de ' +
     a.orc + ' · IPTU e seguros fora · "fora do modelo": a conta não é aberta por item no modelo de ' + a.orc + ' · ' + cid.nome);
 }

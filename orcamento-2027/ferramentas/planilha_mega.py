@@ -87,7 +87,7 @@ def gerar(cidade, unidade, arquivos):
     lin = [l for l in lin if any(abs(v) > 0.005 for v in l[3:])]
     lin.sort(key=lambda l: (l[0].lower(), -sum(l[3:])))
     aba_valores(wb, 'Orç 2026 por item', unidade + ' — Orçamento 2026 item a item (R$)',
-                'Fonte: "Modelos 2025 Megas" (00 - PLANILHAS MESTRAS). Valores positivos = despesa.',
+                'Fonte: "MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS" (00 - PLANILHAS MESTRAS). Valores positivos = despesa.',
                 ['Conta', 'Centro de custo', 'Item'], [24, 30, 60], lin, 3)
 
     def contratos(dados, ano):
@@ -120,13 +120,13 @@ def gerar(cidade, unidade, arquivos):
         out.sort(key=lambda l: (l[2], -sum(l[6:])))
         return out
     aba_valores(wb, 'Contratos 2026', unidade + ' — contratos com os valores de 2026 (R$)',
-                'Fonte: "2025 - Contratos" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2026.',
+                'Fonte: "MESTRA - CONTRATOS 2026 - TODOS OS MEGAS" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2026.',
                 ['Fornecedor', 'Descrição', 'Conta', 'Início', 'Fim', 'Reajuste'], [34, 50, 22, 11, 11, 9], contratos(c26, 2026), 6)
     # Sem contrato com valor em 2027, a aba não sai.
     k27 = contratos(c27, 2027)
     if k27:
         aba_valores(wb, 'Contratos 2027', unidade + ' — contratos com os valores de 2027 (R$)',
-                    'Fonte: "CONTRATOS-2027-COMPLETO" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2027.',
+                    'Fonte: "MESTRA - CONTRATOS 2027 - TODOS OS MEGAS" (00 - PLANILHAS MESTRAS). Só contratos com valor em 2027.',
                     ['Fornecedor', 'Descrição', 'Conta', 'Início', 'Fim', 'Reajuste'], [34, 50, 22, 11, 11, 9], k27, 6)
 
     # Real 2025 mês a mês por conta (planilha mensal do Mega, aba Financeiro 2025).
@@ -148,40 +148,42 @@ def gerar(cidade, unidade, arquivos):
     print(cidade, os.path.getsize(out), 'bytes;', {ws.title: ws.max_row for ws in wb.worksheets})
 
 S_ = 'spreadsheets'; P_ = 'presentation'
+# Nomes e pastas padronizados em 07/10/2026 (ver README, "Pasta no Drive").
 MESTRAS = '00 - PLANILHAS MESTRAS'
 COMUNS = [
-    ('Modelos 2025 Megas', 'Orçamento 2026 item a item de todos os Megas (mestra)', 'Não', MESTRAS, '1X39BzfFKwSo2v1wt0Lhe1kxjnSdnn4D74kvAxg41bOM', S_),
-    ('2025 - Contratos', 'Cadastro de contratos com os valores de 2026, todos os Megas (mestra)', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
-    ('CONTRATOS-2027-COMPLETO', 'Cadastro de contratos com os valores de 2027, todos os Megas (mestra) — fonte dos contratos de Itajaí e Esteio', 'Sim (Itajaí e Esteio)', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
-    ('2026', 'Totais planejados de 2026 por conta, todas as unidades somadas (mestra)', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
-    ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '00 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
+    ('MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS', 'Orçamento 2026 item a item de todos os Megas (era "Modelos 2025 Megas")', 'Não', MESTRAS, '1X39BzfFKwSo2v1wt0Lhe1kxjnSdnn4D74kvAxg41bOM', S_),
+    ('MESTRA - CONTRATOS 2026 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2026 (era "2025 - Contratos")', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
+    ('MESTRA - CONTRATOS 2027 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2027 (era "CONTRATOS-2027-COMPLETO") — fonte dos contratos de Itajaí e Esteio', 'Sim (Itajaí e Esteio)', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
+    ('MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES', 'Totais planejados de 2026 por conta, todas as unidades somadas (era "2026")', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
+    ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '01 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
 ]
+CUR, ITA, EST = '02 - MEGA CURITIBA', '03 - MEGA ITAJAÍ', '04 - MEGA ESTEIO'
+ARQ = ' / 99 - ARQUIVO (não usado pela apresentação)'
 gerar('curitiba', 'Mega Curitiba', [
-    ('MEGA CURITIBA (apresentação)', 'Apresentação do orçamento que o gerador escreve', 'É ela', 'MEGA CURITIBA', '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI', P_),
-    ('METRAGEM-COND-MEGA-CURITIBA', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m² (Real 25, Orç 26, Ritmo 26, Orç 27)', 'Sim', 'MEGA CURITIBA', '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c', S_),
-    ('Despesas-Mensal-2026-x-2027', 'Relatório da controladoria: mês a mês por conta (Orç 26, Real 26, Orç 27)', 'Sim', 'MEGA CURITIBA', '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM', S_),
-    ('090-Despesas-Gerais - MEGA CURITIBA - 2027', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção)', 'Sim', 'MEGA CURITIBA', '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA', S_),
-    ('070-Servicos-de-Terceiros - MEGA CURITIBA - 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', 'MEGA CURITIBA', '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw', S_),
-    ('MEGA CURITIBA - MANUTENÇÕES DE IMOVEIS - CONTRATOS', 'Contratos de manutenção de 2027 mês a mês', 'Sim', 'MEGA CURITIBA', '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA', S_),
-    ('MEGA CURITIBA - SEGURANÇA E VIGILANCIA - CONTRATOS', 'Contratos de segurança de 2027 mês a mês', 'Sim', 'MEGA CURITIBA', '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8', S_),
-    ('MEGA CURITIBA - LIMPEZA E CONSERVAÇÃO - CONTRATOS', 'Contratos de limpeza de 2027 mês a mês', 'Sim', 'MEGA CURITIBA', '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI', S_),
-    ('MEGA CURITIBA ORÇAMENTO', 'Cópia da apresentação com os apontamentos do gestor (29/09)', 'Não', 'MEGA CURITIBA / _ARQUIVO', '1O8IyowBGoowenOFxOSXbcrsoZMzCPzLxBkp2xuCFDf0', P_),
-    ('090 / 070 - MEGA CURITIBA - 2026', 'Lançamentos (notas) de jan a jul/2026 de manutenção e segurança — podem abrir os avulsos de 2026', 'Não', 'MEGA CURITIBA / _ARQUIVO', '1nFlC5k98r8Src8hzKly98-Z7WdMkZPvWi3fD7FwESJQ', S_),
-    ('Documentos', 'Lançamentos de 2026 (manutenção de máquinas) de Curitiba que estavam na pasta de Itajaí', 'Não', 'MEGA CURITIBA / _ARQUIVO', '1kYE88H_oWkffPeTvHXkyju9rqF1djEKkW0gllqkkg5w', S_),
-    ('MEGA CURITIBA - ... - SERVIÇOS (3)', 'Itens do modelo 2027 por conta; repetem o 090/070', 'Não', 'MEGA CURITIBA / _ARQUIVO', '1IdMCRuBOXbpJurfGTA1wm28rFh_Nvq1CioNkAJYHtsQ', S_),
+    ('MEGA CURITIBA - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', CUR, '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI', P_),
+    ('MEGA CURITIBA - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m² (Real 25, Orç 26, Ritmo 26, Orç 27)', 'Sim', CUR, '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c', S_),
+    ('MEGA CURITIBA - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta (Orç 26, Real 26, Orç 27)', 'Sim', CUR, '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM', S_),
+    ('MEGA CURITIBA - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção)', 'Sim', CUR, '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA', S_),
+    ('MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', CUR, '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw', S_),
+    ('MEGA CURITIBA - CONTRATOS 2027 - MANUTENÇÃO DE IMÓVEIS', 'Contratos de manutenção de 2027 mês a mês', 'Sim', CUR, '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA', S_),
+    ('MEGA CURITIBA - CONTRATOS 2027 - SEGURANÇA E VIGILÂNCIA', 'Contratos de segurança de 2027 mês a mês', 'Sim', CUR, '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8', S_),
+    ('MEGA CURITIBA - CONTRATOS 2027 - LIMPEZA E CONSERVAÇÃO', 'Contratos de limpeza de 2027 mês a mês', 'Sim', CUR, '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI', S_),
+    ('MEGA CURITIBA - APRESENTAÇÃO COM APONTAMENTOS DO GESTOR (29-09)', 'Cópia da apresentação com os apontamentos do gestor', 'Não', CUR + ARQ, '1O8IyowBGoowenOFxOSXbcrsoZMzCPzLxBkp2xuCFDf0', P_),
+    ('MEGA CURITIBA - 090 DESPESAS GERAIS 2026 - LANÇAMENTOS JAN-JUL', 'Lançamentos (notas) de jan a jul/2026 — podem abrir os avulsos de 2026', 'Não', CUR + ARQ, '1nFlC5k98r8Src8hzKly98-Z7WdMkZPvWi3fD7FwESJQ', S_),
+    ('MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2026 - LANÇAMENTOS JAN-JUL', 'Lançamentos (notas) de jan a jul/2026 de segurança e limpeza', 'Não', CUR + ARQ, '1FBdwggtgK10R61pz-uPHTOXDZdo7YkTQr7VltH8yv0A', S_),
+    ('MEGA CURITIBA - LANÇAMENTOS 2026 - MANUTENÇÃO DE MÁQUINAS', 'Lançamentos de 2026 de manutenção de máquinas', 'Não', CUR + ARQ, '1kYE88H_oWkffPeTvHXkyju9rqF1djEKkW0gllqkkg5w', S_),
 ] + COMUNS)
 gerar('itajai', 'Mega Itajaí', [
-    ('MEGA ITAJAÍ (apresentação)', 'Apresentação do orçamento que o gerador escreve', 'É ela', 'MEGA ITAJAÍ', '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E', P_),
-    ('METRAGEM-COND-MEGA-ITAJAI', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', 'MEGA ITAJAÍ', '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw', S_),
-    ('Despesas-Mensal-2026-x-2027 - MEGA ITAJAI', 'Relatório da controladoria: mês a mês por conta', 'Sim', 'MEGA ITAJAÍ', '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA', S_),
-    ('090-Despesas-Gerais-MEGA-ITAJAI-2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', 'MEGA ITAJAÍ', '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg', S_),
-    ('070-Servicos-de-Terceiros - MEGA ITAJAÍ 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', 'MEGA ITAJAÍ', '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY', S_),
-    ('MODELOS-ITAJAI', 'Itens de segurança do modelo 2027 (Alfa Sense); repetem o 070', 'Não', 'MEGA ITAJAÍ / _ARQUIVO', '1AzjCzYKSp5tRR99qnOALQdi1HF_7kEHZ0tz3B6PpKGM', S_),
+    ('MEGA ITAJAÍ - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', ITA, '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E', P_),
+    ('MEGA ITAJAÍ - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', ITA, '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw', S_),
+    ('MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta', 'Sim', ITA, '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA', S_),
+    ('MEGA ITAJAÍ - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', ITA, '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg', S_),
+    ('MEGA ITAJAÍ - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', ITA, '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY', S_),
 ] + COMUNS)
 gerar('esteio', 'Mega Esteio', [
-    ('MEGA ESTEIO (apresentação)', 'Apresentação do orçamento que o gerador escreve', 'É ela', 'MEGA ESTEIO', '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0', P_),
-    ('METRAGEM-COND-MEGA-ESTEIO', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', 'MEGA ESTEIO', '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE', S_),
-    ('Despesas-Mensal-2026-x-2027 - MEGA ESTEIO', 'Relatório da controladoria: mês a mês por conta', 'Sim', 'MEGA ESTEIO', '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg', S_),
-    ('090-Despesas-Gerais-MEGA-ESTEIO - 2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', 'MEGA ESTEIO', '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ', S_),
-    ('070-Servicos-de-Terceiros- MEGA ESTEIO 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', 'MEGA ESTEIO', '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk', S_),
+    ('MEGA ESTEIO - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', EST, '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0', P_),
+    ('MEGA ESTEIO - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', EST, '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE', S_),
+    ('MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta', 'Sim', EST, '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg', S_),
+    ('MEGA ESTEIO - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', EST, '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ', S_),
+    ('MEGA ESTEIO - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', EST, '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk', S_),
 ] + COMUNS)

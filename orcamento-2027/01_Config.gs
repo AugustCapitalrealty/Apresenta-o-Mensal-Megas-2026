@@ -24,14 +24,14 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 const ORC_CIDADES = {
   CURITIBA: {
     nome: 'Mega Curitiba',
-    deckId: '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI',            // MEGA CURITIBA
+    deckId: '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI',            // MEGA CURITIBA - APRESENTAÇÃO ORÇAMENTO 2027
     // Capa (10_Capa.gs): foto do Mega e logo do Mega — os mesmos da capa da
     // apresentação mensal dos Megas (megas-mensal/01_Config.gs, PROJETOS).
     fotoFundoId: '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
     unitLogoId:  '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',
-    despesasGeraisId:    '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA',  // 090-Despesas-Gerais - MEGA CURITIBA - 2027
-    servicosTerceirosId: '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw',  // 070-Servicos-de-Terceiros - MEGA CURITIBA - 2027
-    // Relatórios da controladoria (pasta "MEGA CURITIBA"), uma aba cada:
+    despesasGeraisId:    '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA',  // MEGA CURITIBA - 090 DESPESAS GERAIS 2027
+    servicosTerceirosId: '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw',  // MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2027
+    // Relatórios da controladoria (pasta "02 - MEGA CURITIBA"), uma aba cada:
     //   metragem → conta × Real 2025 | Orça 2026 | Ritmo 2026 | Orça 2027, com
     //              IPTU, Seguro e R$/m² — base da DRE e dos ofensores.
     //   mensal   → conta × (Orç 26 | Real 26 | Orça 27 | Variação) por mês —
@@ -40,8 +40,8 @@ const ORC_CIDADES = {
     // dela repete a variação de janeiro (-58.471 em vez de -425.122 na
     // segurança).
     relatorios: {
-      metragemId: '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c',   // METRAGEM-COND-MEGA-CURITIBA
-      mensalId:   '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM',   // Despesas-Mensal-2026-x-2027
+      metragemId: '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c',   // MEGA CURITIBA - METRAGEM-COND 2027
+      mensalId:   '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM',   // MEGA CURITIBA - DESPESAS MENSAL 2026 x 2027
       // Planilha da apresentação mensal dos Megas (megas-mensal/01_Config.gs,
       // PROJETOS.<cidade>.spreadsheetId): a aba "Financeiro <ano retrasado>"
       // dá o Real mês a mês do slide de custo por m² (20_M2Mensal.gs).
@@ -56,9 +56,9 @@ const ORC_CIDADES = {
     // Modelo + contratos = total da conta na METRAGEM. Conta sem planilha
     // aparece na linha a linha com o "Não detalhado nos modelos".
     contratos: {
-      'Manutenção de imóveis':  '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA',  // MEGA CURITIBA - MANUTENÇÕES DE IMOVEIS - CONTRATOS
-      'Segurança e vigilância': '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8',  // MEGA CURITIBA - SEGURANÇA E VIGILANCIA - CONTRATOS
-      'Limpeza e conservação':  '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI'   // MEGA CURITIBA - LIMPEZA E CONSERVAÇÃO - CONTRATOS
+      'Manutenção de imóveis':  '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA',  // MEGA CURITIBA - CONTRATOS 2027 - MANUTENÇÃO DE IMÓVEIS
+      'Segurança e vigilância': '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8',  // MEGA CURITIBA - CONTRATOS 2027 - SEGURANÇA E VIGILÂNCIA
+      'Limpeza e conservação':  '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI'   // MEGA CURITIBA - CONTRATOS 2027 - LIMPEZA E CONSERVAÇÃO
     },
     // Texto do slide de Premissas (10_Capa.gs). Vazio = espaço para o gestor
     // escrever no próprio slide. Depois que ele escrever, copie o texto para
@@ -70,21 +70,21 @@ const ORC_CIDADES = {
     }
   },
   // Itajaí e Esteio (05/10/2026): relatórios da controladoria nas pastas
-  // "MEGA ITAJAÍ" / "MEGA ESTEIO", convertidos dos .xlsx. Os contratos vêm do
+  // "03 - MEGA ITAJAÍ" / "04 - MEGA ESTEIO", convertidos dos .xlsx. Os contratos vêm do
   // cadastro do ano (`contratosDoCadastro`, ORC_CONTRATOS_ANO_IDS em
   // 02_Dados.gs, "CONTRATOS-2027-COMPLETO") em vez de uma planilha por conta.
   // Conta sem contrato no cadastro sai com o alerta de pendência
   // (19_Revisar.gs).
   ITAJAI: {
     nome: 'Mega Itajaí',
-    deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ
+    deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ - APRESENTAÇÃO ORÇAMENTO 2027
     fotoFundoId: '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
     unitLogoId:  '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',
-    despesasGeraisId:    '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg',  // 090-Despesas-Gerais-MEGA-ITAJAI-2027
-    servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // 070-Servicos-de-Terceiros - MEGA ITAJAÍ 2027
+    despesasGeraisId:    '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg',  // MEGA ITAJAÍ - 090 DESPESAS GERAIS 2027
+    servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // MEGA ITAJAÍ - 070 SERVIÇOS DE TERCEIROS 2027
     relatorios: {
-      metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // METRAGEM-COND-MEGA-ITAJAI
-      mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // Despesas-Mensal-2026-x-2027 - MEGA ITAJAI
+      metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // MEGA ITAJAÍ - METRAGEM-COND 2027
+      mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027
       financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4'    // planilha dos Megas (Itajaí)
     },
     contratos: {},
@@ -96,14 +96,14 @@ const ORC_CIDADES = {
   },
   ESTEIO: {
     nome: 'Mega Esteio',
-    deckId: '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0',            // MEGA ESTEIO
+    deckId: '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0',            // MEGA ESTEIO - APRESENTAÇÃO ORÇAMENTO 2027
     fotoFundoId: '1ed2NujxpCBkk6tMDBC0h3LwB9wu6NEVA',
     unitLogoId:  '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',
-    despesasGeraisId:    '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ',  // 090-Despesas-Gerais-MEGA-ESTEIO - 2027
-    servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // 070-Servicos-de-Terceiros- MEGA ESTEIO 2027
+    despesasGeraisId:    '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ',  // MEGA ESTEIO - 090 DESPESAS GERAIS 2027
+    servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // MEGA ESTEIO - 070 SERVIÇOS DE TERCEIROS 2027
     relatorios: {
-      metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // METRAGEM-COND-MEGA-ESTEIO
-      mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // Despesas-Mensal-2026-x-2027 - MEGA ESTEIO
+      metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // MEGA ESTEIO - METRAGEM-COND 2027
+      mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027
       financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY'    // planilha dos Megas (Esteio)
     },
     contratos: {},

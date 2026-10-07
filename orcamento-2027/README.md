@@ -27,17 +27,21 @@ está no **G:** (Drive compartilhado) e no **GitHub**. Na prática:
 - Script ou planilha feita "de passagem" (scratchpad, Downloads, Área de
   Trabalho) some. Ferramenta que vale guardar vai para `ferramentas/`.
 
-## Pasta no Drive (organizada em 07/10/2026)
+## Pasta no Drive (nomes padronizados em 07/10/2026)
 
-`08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`:
+`08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`. Padrão dos nomes:
+**`MEGA <X> - <o que é> <ano>`** nos arquivos de cada Mega, **`MESTRA - …`**
+nas consolidadas e **`PODE EXCLUIR - …`** no que já não serve (o conector
+não exclui neste Drive compartilhado; quem exclui é o usuário).
 
 | Pasta | O que tem |
 |---|---|
-| `00 - PLANILHAS MESTRAS` | consolidadas de todos os Megas — **guardar**: `Modelos 2025 Megas` (Orç 2026 item a item), `2025 - Contratos` (cadastro com os valores de 2026), `CONTRATOS-2027-COMPLETO` (cadastro com os valores de 2027 dos três Megas — **fonte dos contratos de Itajaí e Esteio**), `2026` (totais por conta, todas as unidades somadas) |
-| `00 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027` (o gestor marca SIM/NÃO) |
-| `MEGA CURITIBA` / `MEGA ITAJAÍ` / `MEGA ESTEIO` | a apresentação da cidade, as planilhas que o gerador lê e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, com uma aba LEIA-ME explicando cada arquivo) |
-| `MEGA <X>/_ARQUIVO (não usado)` | o que tem dado mas a apresentação não lê (lançamentos de jan–jul/26, planilhas "SERVIÇOS", cópia com os apontamentos do gestor de 29/09) |
-| `Apresenta-o-Mensal-Megas-2026` | este repositório |
+| `00 - PLANILHAS MESTRAS` | **guardar**: `MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS` (era "Modelos 2025 Megas"), `MESTRA - CONTRATOS 2026 - TODOS OS MEGAS` (era "2025 - Contratos"), `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (era "CONTRATOS-2027-COMPLETO" — **fonte dos contratos de Itajaí e Esteio**), `MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES` (era "2026") |
+| `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` e `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027` (o gestor marca SIM/NÃO) |
+| `02 - MEGA CURITIBA` / `03 - MEGA ITAJAÍ` / `04 - MEGA ESTEIO` | `MEGA <X> - APRESENTAÇÃO ORÇAMENTO 2027`, `- METRAGEM-COND 2027`, `- DESPESAS MENSAL 2026 x 2027`, `- 090 DESPESAS GERAIS 2027`, `- 070 SERVIÇOS DE TERCEIROS 2027`, (Curitiba) `- CONTRATOS 2027 - <CONTA>` e `MEGA <X> - BASE DO ORÇAMENTO 2027.xlsx` (recorte do Mega tirado das mestras, aba LEIA-ME com cada arquivo) |
+| `02 - MEGA CURITIBA/99 - ARQUIVO (não usado pela apresentação)` | lançamentos de jan–jul/26 (090, 070, manutenção de máquinas) e a cópia com os apontamentos do gestor de 29/09 (`exportarSlidesRevisao()` lê ela) |
+| `PODE EXCLUIR - …` | cópias e testes: `_fixtures` e `_slides-exportados` (o código recria se precisar), `TESTE-2 - COMPLETO` e `CONTRATOS 2027` (substituídas pela mestra 2027), planilhas "SERVIÇOS" de Curitiba e "MODELOS" de Itajaí (repetem o 070/090) |
+| `Apresenta-o-Mensal-Megas-2026` | este repositório (**não renomear**: é o caminho do git e do clasp) |
 
 Mudar arquivo de pasta não quebra o gerador (ele usa o ID). O conector do
 Drive do Claude não consegue mover arquivos neste Drive compartilhado; mover
@@ -50,16 +54,16 @@ contratos do cadastro (R$ 371,7 mil) = R$ 1.266.241, igual à METRAGEM.
 
 | Chave | Planilha | Para quê |
 |---|---|---|
-| `despesasGeraisId` | `090-Despesas-Gerais - MEGA <CIDADE> - 2027`, aba `Valores do Modelo` | itens avulsos da manutenção |
-| `servicosTerceirosId` | `070-Servicos-de-Terceiros - MEGA <CIDADE> - 2027`, aba `Valores do Modelo` | itens de segurança e limpeza |
-| `contratos[<conta>]` | `MEGA <CIDADE> - <CONTA> - CONTRATOS` (Curitiba: manutenção, segurança, limpeza) | contratos recorrentes que os modelos não listam |
-| `contratosDoCadastro: true` | mestra `CONTRATOS-2027-COMPLETO` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | o mesmo, tirado do cadastro do ano, todas as contas da unidade (Itajaí e Esteio). Cabeçalho do mês como data ou como texto "jan./27" |
-| `relatorios.metragemId` | `METRAGEM-COND-MEGA-<CIDADE>` | DRE, ofensores, totais por conta |
-| `relatorios.mensalId` | `Despesas-Mensal-2026-x-2027` | mês a mês da análise linha a linha |
+| `despesasGeraisId` | `MEGA <X> - 090 DESPESAS GERAIS 2027`, aba `Valores do Modelo` | itens avulsos da manutenção |
+| `servicosTerceirosId` | `MEGA <X> - 070 SERVIÇOS DE TERCEIROS 2027`, aba `Valores do Modelo` | itens de segurança e limpeza |
+| `contratos[<conta>]` | `MEGA CURITIBA - CONTRATOS 2027 - <CONTA>` (manutenção, segurança, limpeza) | contratos recorrentes que os modelos não listam |
+| `contratosDoCadastro: true` | `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | o mesmo, tirado do cadastro do ano, todas as contas da unidade (Itajaí e Esteio). Cabeçalho do mês como data ou como texto "jan./27" |
+| `relatorios.metragemId` | `MEGA <X> - METRAGEM-COND 2027` | DRE, ofensores, totais por conta |
+| `relatorios.mensalId` | `MEGA <X> - DESPESAS MENSAL 2026 x 2027` | mês a mês da análise linha a linha |
 | `relatorios.financeiroMegasId` | planilha da apresentação mensal dos Megas, aba `Financeiro <ano retrasado>` | Real 2025 mês a mês (slide de custo por m² mês a mês) |
 | `relatorios.valeMetragem` | — | contas em que o mensal não fecha com a METRAGEM e a contabilidade mandou usar a METRAGEM (Curitiba: IPTU e Seguro, 06/10/2026) |
 | `fotoFundoId`, `unitLogoId` | foto e logo do Mega (os mesmos da capa dos Megas) | capa |
-| `ORC_CONTRATOS_ANO_ANTERIOR_ID` (21_ContratosComparados.gs) | mestra `2025 - Contratos` | contratos do ano anterior, para comparar com os do ano |
+| `ORC_CONTRATOS_ANO_ANTERIOR_ID` (21_ContratosComparados.gs) | `MESTRA - CONTRATOS 2026 - TODOS OS MEGAS` | contratos do ano anterior, para comparar com os do ano |
 
 Cabeçalho de mês "jan./26" vindo de CSV vira a data 26/01/<ano corrente> no
 Sheets: **o ano está no dia**. Os leitores dos cadastros tratam isso.
@@ -150,7 +154,7 @@ seguintes não pula.
 | `18_CustoM2.gs` | Custo por m² ao mês, top 10 contas |
 | `20_M2Mensal.gs` | Custo por m² mês a mês, custo do condomínio e área |
 | `22_ContratosTodos.gs` | Contratos de todas as contas, ano anterior × ano, agrupados por conta (depois dos Defensores, em quantas páginas precisar) |
-| `21_ContratosComparados.gs` | Contratos do ano anterior × do ano, fornecedor a fornecedor (cadastro `2025 - Contratos` × contratos e itens [CONTRATO] do ano) |
+| `21_ContratosComparados.gs` | Contratos do ano anterior × do ano, fornecedor a fornecedor (`MESTRA - CONTRATOS 2026` × contratos e itens [CONTRATO] do ano) |
 | `19_Revisar.gs` | Slide "Revisar antes da versão final", selo ⚠ REVISAR (divergência entre relatórios) e ⚠ PENDENTE (pendência de dados) |
 | `90_Pendentes.gs` | **Não gerado.** Sugestões com pendência: Contratos (concentração e reajustes) e Contratos sem reajuste — custo de implantação lido como reajuste; Fluxo mensal — informações inconsistentes; Cenários — em revisão |
 
@@ -195,7 +199,7 @@ Cada pendência entra no slide **Revisar antes da versão final** (subtítulo
 
 Em 07/10/2026:
 
-- Com o `CONTRATOS-2027-COMPLETO`, segurança, limpeza, telefone,
+- Com o `MESTRA - CONTRATOS 2027`, segurança, limpeza, telefone,
   informática e cursos de Itajaí e Esteio fecham exato com o que os modelos
   não abrem — nenhum "Não detalhado".
 - **Itajaí** — o 090 tem R$ 29.313 que a METRAGEM não tem: manutenção e

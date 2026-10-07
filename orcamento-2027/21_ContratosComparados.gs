@@ -217,6 +217,6 @@ function gerarSlideContratosComparados_(slide, W, H, cid, rel, conta, contratosA
     ' · avulsos ' + a.ritmo + ' = ritmo da conta − contratos do cadastro (o ritmo não abre item por item)',
     { align: 'L', fs: 6.5, cor: C.textBody, fonte: DS.typography.body, fsMin: 5.5, cortar: true });
 
-  _orcRodape_(slide, W, H, 'Fontes: "' + (ORC_ANO - 2) + ' - Contratos" (cadastro, valores de ' + a.ritmo + '), contratos e modelo 090 de ' +
+  _orcRodape_(slide, W, H, 'Fontes: cadastro de contratos ' + a.ritmo + ', contratos e modelo 090 de ' +
     a.orc + ', METRAGEM-COND · R$/m² ao mês pela área implícita de cada ano · ' + cid.nome);
 }
