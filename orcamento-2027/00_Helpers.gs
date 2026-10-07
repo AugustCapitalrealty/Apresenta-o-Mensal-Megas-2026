@@ -265,7 +265,15 @@ function _orcTrilhaTopo_(slide, W, secao) {
 }
 
 function _orcNovoSlide_(deck) {
-  const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  // No deck único de Facilities (25_Facilities.gs) o slide entra na posição da
+  // parte que está sendo gerada e o ID vai para a lista dela.
+  const slide = _ORC_UNICO ? deck.insertSlide(_ORC_UNICO.indice++, SlidesApp.PredefinedLayout.BLANK)
+                           : deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  if (_ORC_UNICO) {
+    const id = slide.getObjectId();
+    _ORC_UNICO.ids.push(id);
+    if (_ORC_UNICO.alvo) { _ORC_LINKS.alvos[_ORC_UNICO.alvo] = id; _ORC_UNICO.alvo = null; }
+  }
   slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
   return slide;
 }

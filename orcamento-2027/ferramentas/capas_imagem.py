@@ -13,6 +13,7 @@ está desenhado nela); deck com seção faltando volta às formas.
 Uso (de dentro de orcamento-2027; precisa de pillow e numpy):
   python ferramentas/capas_imagem.py                      (capa e 8 sub capas dos três Megas)
   python ferramentas/capas_imagem.py "MEGA CURITIBA"      (só um Mega; Curitiba sai com as cores da Demercado)
+  python ferramentas/capas_imagem.py FACILITIES           (só a capa do deck único de Facilities)
   python ferramentas/capas_imagem.py --previa-subcapa     (prévia da sub capa 04 de Itajaí, com números)
   python ferramentas/capas_imagem.py --previa "R$ 6,58 mi" "R$ 5,07" "▲ 22%" "MEGA ITAJAÍ"
      (só a prévia de um Mega, com os números desenhados, em ferramentas/saida/; não vai para o Drive)
@@ -172,6 +173,33 @@ def capa(mega, nome_exibido):
     return t
 
 
+def capa_facilities():
+    """Capa do deck único de Facilities (v2): a faixa com as fotos dos três Megas lado a lado, na marca Capital."""
+    usar_marca('FACILITIES')
+    t = Image.new('RGB', (W, H), 'white')
+    fh = int(210 * K)
+    megas = ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO']
+    larg = W // len(megas)
+    for i, mega in enumerate(megas):
+        t.paste(faixa_foto(mega, larg + (W - larg * len(megas) if i == len(megas) - 1 else 0), fh), (i * larg, 0))
+    alfa = (np.linspace(0.88, 0.25, W)[None, :].repeat(fh, 0) * 255).astype(np.uint8)
+    camada = Image.new('RGBA', (W, fh), NAVY); camada.putalpha(Image.fromarray(alfa))
+    t.paste(camada, (0, 0), camada)
+    d = ImageDraw.Draw(t)
+    for i in range(1, len(megas)):                       # filete branco entre as fotos
+        d.rectangle([i * larg - 2, 0, i * larg + 1, fh], fill='white')
+    d.rectangle([0, fh, W, fh + int(4 * K)], fill=LIGHT)
+    texto(d, (48, 226, 300, 16), 'ORÇAMENTO ' + str(ANO), 'M', 'Bold', 10, LIGHT)
+    texto(d, (46, 242, 320, 54), 'Facilities', TF, TFP, 40 * TFE, NAVY, pt_min=24)
+    texto(d, (48, 296, 330, 18), 'Mega Curitiba · Mega Itajaí · Mega Esteio', 'O', 'Regular', 11, TXT, pt_min=8)
+    d.line([(48 * K, 372 * K), (684 * K, 372 * K)], fill=LINHA, width=max(1, int(0.75 * K)))
+    texto(d, (48, 376, 400, 16), '%s · Facilities · Planejamento %d' % (MARCA, ANO), 'O', 'Regular', 7.5, MUTED)
+    if SLOGAN:
+        d.rectangle([584 * K, 381 * K, 589 * K, 386 * K], fill=AZUL)
+        texto(d, (592, 376, 100, 16), SLOGAN, 'M', 'Bold', 8, NAVY)
+    return t
+
+
 def numeros(t, total, m2, var):
     """Só para a prévia: os números como o gerador põe por cima (mesmas caixas de gerarSlideCapa_)."""
     d = ImageDraw.Draw(t)
@@ -201,7 +229,11 @@ def main(args):
         numeros(capa(mega, mega.title()), total, m2, var).save(destino, quality=90)
         print('prévia ->', destino); return
     os.makedirs(SAIDA, exist_ok=True)
-    so = [a.upper() for a in args]   # ex.: "MEGA CURITIBA" refaz só um Mega
+    so = [a.upper() for a in args]   # ex.: "MEGA CURITIBA" refaz só um Mega; "FACILITIES" só a capa do deck único
+    if not so or 'FACILITIES' in so:
+        destino = os.path.join(SAIDA, 'CAPA - FACILITIES.jpg')
+        capa_facilities().save(destino, quality=90, optimize=True)
+        print('ok ->', os.path.relpath(destino, RAIZ))
     for mega in ('MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO'):
         if so and mega not in so: continue
         usar_marca(mega)

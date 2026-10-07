@@ -357,6 +357,19 @@ function _orcFluxoMensal_(mensal, rel) {
 // (pedido do gestor, 30/09/2026); as outras somam em "Demais contas".
 const ORC_M2_TOP = 10;
 
+// Área implícita que muda mais de 10% do Ritmo para o Orç: o texto para o
+// rodapé dos slides com R$/m² ("área de 24,3 mil m² → 53,4 mil m², entram os
+// Armazéns B1 e B2"); '' quando a área quase não muda.
+function _orcNotaArea_(rel, cid) {
+  const ar = _orcAreaImplicita_(rel, 'ritmo'), ao = _orcAreaImplicita_(rel, 'orc');
+  if (!ar || !ao || Math.abs(ao / ar - 1) <= 0.1) return '';
+  const mil = v => (Math.round(v / 100) / 10).toLocaleString('pt-BR');
+  // A frase só quando é o caso: despesa sobe e R$/m² cai (Esteio); senão, só a área.
+  const caiM2 = rel.total.orc > rel.total.ritmo && rel.total.orc / ao < rel.total.ritmo / ar;
+  return 'área ' + mil(ar) + ' → ' + mil(ao) + ' mil m²' + (cid && cid.motivoArea ? ' (' + cid.motivoArea + ')' : '') +
+         (caiM2 ? ': o R$/m² cai mesmo com a despesa subindo' : ' no R$/m² de cada ano');
+}
+
 function _orcM2PorConta_(rel) {
   const ks = ['real', 'orcAnt', 'ritmo', 'orc'];
   const area = {};

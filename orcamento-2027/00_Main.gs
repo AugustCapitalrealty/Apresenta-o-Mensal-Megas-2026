@@ -107,7 +107,8 @@ function _orcGerarCidade_(deck, W, H, chave) {
     const t2 = Date.now();
     Logger.log(cid.nome + ' · ' + parte + ': ' + seg(t1 - tParte) + ' s desenhando + ' + seg(t2 - t1) +
                ' s gravando (total ' + seg(t2 - t0) + ' s)');
-    if (reabrir) deck = SlidesApp.openById(cid.deckId);
+    if (_ORC_UNICO) _orcFacilitiesGuardarIds_();      // a lista da parte, a cada gravação
+    if (reabrir) deck = SlidesApp.openById(_ORC_UNICO ? _ORC_UNICO.deckId : cid.deckId);
     tParte = Date.now();
   };
   // A sub capa abre com o número da seção (_orcDestaqueSecao_, 10_Capa.gs);
@@ -121,6 +122,9 @@ function _orcGerarCidade_(deck, W, H, chave) {
     try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
     catch (e) { Logger.log('Número da sub capa ' + titulo + ' indisponível: ' + e.message); }
     if (secoes[n - 1] !== titulo) Logger.log('Sumário fora de ordem: seção ' + n + ' é "' + titulo + '", o sumário diz "' + secoes[n - 1] + '"');
+    // Deck único (v2): sem sub capa — a trilha do topo marca a seção, e o link
+    // do sumário vai para o primeiro slide dela (_orcNovoSlide_).
+    if (_ORC_UNICO) { _ORC_UNICO.alvo = titulo; return; }
     _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo, dest, secoes));
   };
 

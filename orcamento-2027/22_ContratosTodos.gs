@@ -19,6 +19,15 @@
  */
 
 const ORC_CONTRATOS_FORA = ['IPTU', 'Seguros', 'Seguro'];
+
+// Itens de contrato do ano que entram numa linha só no slide de contratos.
+// Roçada do Esteio (orientação do financeiro, 07/10/2026: "somar todas as
+// linhas e transformar em Roçada"): em 2027 virou contrato LPU, 22 linhas com
+// grama e adubo; em 2026 era avulsa — o lado de 2026 é o avulso da conta
+// (ritmo da METRAGEM menos os contratos do cadastro).
+const ORC_CONTRATOS_JUNTAR = [
+  { unidade: 'Mega Esteio', conta: 'Limpeza e conservação', termo: 'contrato lpu', nome: 'ROÇADA (LPU)', categoria: 'LPU' }
+];
 const ORC_CONTRATOS_POR_PAGINA = 16;
 
 // Palavras que não identificam fornecedor no casamento por conjunto.
@@ -156,7 +165,12 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
     // Só item de contrato casa ("CONTRATO — X" das planilhas e do cadastro,
     // [CONTRATO]/"contrato" do modelo): "IMPERMEABILIZAÇÃO DA LAJE DA
     // SUBESTAÇÃO" não é parte do contrato da subestação (Esteio, 07/10/2026).
-    const deContrato = itens.filter(l => /\bcontrato\b/.test(_orcNorm_(l.item)));
+    // "Assistência informática" (cadastro) = "Assistência em informática" (METRAGEM).
+    const semEm = x => x.replace(/\bem\b/g, ' ').replace(/\s+/g, ' ').trim();
+    const contaRel = rel.contas.filter(c => semEm(c.chave) === semEm(k))[0];
+    const juntar = ORC_CONTRATOS_JUNTAR.filter(j => _orcNorm_(j.unidade) === _orcNorm_(unidade) && _orcChaveConta_(j.conta) === k)[0];
+    const juntos = juntar ? itens.filter(l => _orcNorm_(l.item).indexOf(juntar.termo) >= 0) : [];
+    const deContrato = itens.filter(l => /\bcontrato\b/.test(_orcNorm_(l.item)) && juntos.indexOf(l) < 0);
     // Cada item do ano vai para o contrato com mais palavras em comum.
     const pal = ant.map(c => _orcPalavrasCasamento_(c.fornecedor));
     const dono = deContrato.map(it => {
@@ -195,10 +209,13 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
       linhas.push({ nome: _orcNomeCurtoContrato_(_orcNomeContrato_(sep.descricao || it.item)), categoria: _orcCategoriaItem_(it),
                     ant: 0, atual: it.total, situacao: 'Novo em ' + ORC_ANO });
     });
+    if (juntos.length) {
+      const antContratos = ant.reduce((t, c) => t + c.total, 0);
+      linhas.push({ nome: juntar.nome, categoria: juntar.categoria,
+                    ant: contaRel ? Math.max(0, contaRel.v.ritmo - antContratos) : 0, atual: juntos.reduce((t, it) => t + it.total, 0),
+                    situacao: 'Era avulso em ' + (ORC_ANO - 1) + ' (' + juntos.length + ' itens)' });
+    }
     linhas.sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual));
-    // "Assistência informática" (cadastro) = "Assistência em informática" (METRAGEM).
-    const semEm = x => x.replace(/\bem\b/g, ' ').replace(/\s+/g, ' ').trim();
-    const contaRel = rel.contas.filter(c => semEm(c.chave) === semEm(k))[0];
     return { conta: contaRel ? contaRel.nome : chaves[k], chave: k, metragem: contaRel ? contaRel.v : null, linhas: linhas,
              ant: linhas.reduce((t, l) => t + l.ant, 0), atual: linhas.reduce((t, l) => t + l.atual, 0) };
   }).filter(g => g.linhas.length).sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual));

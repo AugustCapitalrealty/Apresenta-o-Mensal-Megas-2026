@@ -243,8 +243,9 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
   ]);
 
   _orcAvisosRodape_(slide, W, H, rel.avisos);
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria) · despesa em R$ mil, ' +
-    '▲ vermelho gasta mais, ▼ verde gasta menos');
+  const nota = _orcNotaArea_(rel, cid);
+  _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + ' · R$ mil, ▲ gasta mais, ▼ gasta menos · ' + nota
+    : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria) · despesa em R$ mil, ▲ vermelho gasta mais, ▼ verde gasta menos');
 }
 
 // Divergência de soma do relatório vai escrita no slide, acima do rodapé —
@@ -361,7 +362,8 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     { titulo: 'R$ MIL', c0: 1, n: 5 },
     { titulo: 'R$/M² AO MÊS', c0: 6, n: 3, cor: '#475569' }
   ]);
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); detalhamento: maior item dos modelos 070 e 090 de ' +
-    a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) +
-    ' fica só no total');
+  const nota = _orcNotaArea_(rel, cid);
+  _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; detalhamento: maior item dos modelos de ' + a.orc + ' · ' + nota
+    : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); detalhamento: maior item dos modelos 070 e 090 de ' +
+      a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' fica só no total');
 }

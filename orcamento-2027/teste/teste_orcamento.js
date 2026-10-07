@@ -123,6 +123,7 @@ function novoDeck() {
   deck.getPageHeight = () => H;
   deck.getSlides = () => deck._slides.slice();
   deck.appendSlide = () => { const s = novoSlide(deck); deck._slides.push(s); return s; };
+  deck.insertSlide = (i, layout) => { const s = novoSlide(deck); deck._slides.splice(i, 0, s); return s; };
   deck.getUrl = () => 'https://docs.google.com/presentation/d/teste';
   deck.getSlideById = id => deck._slides.filter(s => s.id === id)[0] || null;
   deck.getPageElementById = id => {
@@ -195,6 +196,10 @@ function novaPlanilhaTextos() {
   };
 }
 let PLANILHA_TEXTOS = novaPlanilhaTextos();
+// Propriedades do script (deck único de Facilities: listas de slides por parte).
+const PROPS_DADOS = {};
+const PROPS = { getProperty: k => (k in PROPS_DADOS ? PROPS_DADOS[k] : null), setProperty: (k, v) => { PROPS_DADOS[k] = String(v); },
+                deleteProperty: k => { delete PROPS_DADOS[k]; } };
 
 // Utilities.parseCsv do dublê: campos entre aspas (com "" dentro) e separador.
 function _csv(texto, sep) {
@@ -233,6 +238,7 @@ const ctx = {
       }
     })
   },
+  PropertiesService: { getScriptProperties: () => PROPS },
   SlidesApp: {
     ShapeType: { TEXT_BOX: 'TEXT_BOX', RECTANGLE: 'RECTANGLE', ROUND_RECTANGLE: 'ROUND_RECTANGLE', ELLIPSE: 'ELLIPSE' },
     ContentAlignment: { MIDDLE: 'MIDDLE' },
@@ -1241,6 +1247,55 @@ console.log('Degradê do véu');
   ok(r1.ancorado && r1.erroMax < 0.01, 'véu da sub capa: camadas presas na esquerda e opacidade na reta (erro ' + r1.erroMax.toFixed(4) + ', ' + r1.n + ' camadas)');
   const r2 = conferir({ vertical: true, alphaDe: 0, alphaAte: 0.6, passos: 12 }, 'fim');
   ok(r2.ancorado && r2.erroMax < 0.01, 'véu de baixo da capa: camadas presas embaixo e opacidade na reta (erro ' + r2.erroMax.toFixed(4) + ')');
+}
+
+console.log('Deck único de Facilities');
+// v2 (07/10/2026): uma apresentação, a abertura e uma seção por Mega, cada parte gerada numa execução e trocando só
+// os slides dela, na posição dela.
+{
+  G.ORC_FACILITIES.deckId = 'FACILITIES';
+  decks = {};
+  const fac = G.SlidesApp.openById('FACILITIES');                 // o deck novo: um slide em branco
+  PROPS_DADOS.ORC_FAC_INICIAL = JSON.stringify([fac.getSlides()[0].getObjectId()]);
+  // Fora de ordem de propósito: Itajaí antes da abertura e de Curitiba.
+  ['ITAJAI', 'ABERTURA', 'CURITIBA', 'ESTEIO'].forEach(p => G._orcGerarFacilities_(p));
+  const sl = fac.getSlides(), ids = sl.map(x => x.getObjectId());
+  const lista = p => JSON.parse(PROPS_DADOS['ORC_FAC_' + p] || '[]');
+  const pos = p => lista(p).map(id => ids.indexOf(id));
+  const ordemOk = ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].every((p, i, a) => i === 0 || Math.min.apply(null, pos(p)) > Math.max.apply(null, pos(a[i - 1])));
+  ok(sl.length === ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].reduce((t, p) => t + lista(p).length, 0) && ordemOk && pos('ABERTURA')[0] === 0,
+     'Facilities: abertura, Curitiba, Itajaí e Esteio em ordem, sem slide sobrando (' + sl.length + ' slides)');
+  ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
+     textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
+     'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
+  const capaCur = fac.getSlideById(lista('CURITIBA')[0]);
+  ok(capaCur && textos(capaCur).indexOf('Mega Curitiba') >= 0 && !lista('CURITIBA').some(id => textos(fac.getSlideById(id)).indexOf('Manutenção') >= 0 &&
+     textos(fac.getSlideById(id))[0] === '04'), 'Facilities: cada Mega abre com a capa dele e não tem sub capas');
+  const linksCapa = sl[1].shapes.filter(f => f.link).map(f => f.link);
+  ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(p => linksCapa.indexOf(lista(p)[0]) >= 0) && linksCapa.indexOf(ids[2]) >= 0,
+     'Facilities: sumário com link para o comparativo e para a capa de cada Mega');
+  // Gerar de novo um Mega troca só os slides dele, no mesmo lugar.
+  const antesIt = pos('ITAJAI')[0], nAntes = sl.length, curAntes = lista('CURITIBA').join(), esAntes = lista('ESTEIO').join();
+  G._orcGerarFacilities_('ITAJAI');
+  const ids2 = fac.getSlides().map(x => x.getObjectId());
+  ok(fac.getSlides().length === nAntes && lista('CURITIBA').join() === curAntes && lista('ESTEIO').join() === esAntes &&
+     ids2.indexOf(lista('ITAJAI')[0]) === antesIt && fac.getSlides()[1].shapes.filter(f => f.link).map(f => f.link).indexOf(lista('ITAJAI')[0]) >= 0,
+     'Facilities: gerar Itajaí de novo troca só os slides dele, no mesmo lugar, e refaz o link do sumário');
+  if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_facilities.json'),
+    JSON.stringify({ W: W, H: H, slides: fac.getSlides().map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
+  G.ORC_FACILITIES.deckId = '';
+  decks = {};
+}
+
+console.log('Roçada do Esteio numa linha');
+{
+  const vE = G._orcLerVisaoGeral_('ESTEIO');
+  const cmpE = G._orcCompararTodosContratos_(vE.rel, FIX_CAD_2026, 'Mega Esteio', vE.modelos, FIX_MOD_2026);
+  const limp = cmpE.grupos.filter(g => G._orcChaveConta_(g.conta) === G._orcChaveConta_('Limpeza e conservação'))[0];
+  const roc = limp ? limp.linhas.filter(l => l.nome === 'ROÇADA (LPU)') : [];
+  ok(roc.length === 1 && Math.abs(roc[0].atual - 138626) < 2 && roc[0].ant > 30000 && !limp.linhas.some(l => /^ROÇADA –/.test(l.nome)) &&
+     /^Era avulso em 2026 \(22 itens\)$/.test(roc[0].situacao),
+     'contratos do Esteio: a roçada LPU numa linha só, 2026 = avulso da limpeza (' + roc.map(l => Math.round(l.ant) + ' → ' + Math.round(l.atual)).join() + ')');
 }
 
 console.log('Capa como imagem');

@@ -338,3 +338,23 @@ que ter a mesma aba e as mesmas colunas — o cabeçalho é conferido na leitura
 - A linha `RATEIO` vem zerada nos doze meses e é ignorada.
 - Conta não encontrada ou coluna deslocada **param a geração** com o aviso no
   slide, em vez de desenhar R$ 0.
+
+## v2 — deck único de Facilities, molduras e marcas (07/10/2026)
+
+Pedidos do gestor (e-mail de 07/10/2026) e do Guilherme; detalhes em `REVISAO-GESTOR.md`.
+
+- **Deck único** (`25_Facilities.gs`): uma apresentação "FACILITIES - APRESENTAÇÃO ORÇAMENTO 2027" com a abertura
+  (capa de Facilities, sumário, "Os Megas lado a lado — R$/m² ao mês") e uma seção por Mega (capa do Mega, revisão,
+  sumário do Mega e as seções, sem sub capas). Rodar uma vez `criarDeckFacilities()`; depois, cada parte numa
+  execução: `gerarFacilitiesAbertura`, `gerarFacilitiesCuritiba`, `gerarFacilitiesItajai`, `gerarFacilitiesEsteio`.
+  Cada parte troca só os slides dela (lista de IDs nas propriedades do script `ORC_FAC_<PARTE>`), na posição dela.
+  As três apresentações por Mega (`gerarCuritiba`…) continuam funcionando.
+- **Marcas por Mega** (`ORC_MARCAS`, `cid.marca`): Curitiba é **Demercado** (verde #00594F, ouro #AF9800, título em
+  EB Garamond, logos em `IMAGENS - SLIDES\LOGO - DEMERCADO - …png`); Itajaí e Esteio, Capital Realty.
+- **Trilha de progresso** no topo de todo slide de seção (`ferramentas/trilha_imagem.py` → `TRILHA - <MARCA> - nn.png`).
+- **Molduras em imagem** (`ORC_USAR_MOLDURAS`): cards com sombra, barra, linha e trilha do cabeçalho numa imagem de
+  fundo por slide (`MOLDURA - <assinatura>.png`). Depois de mudar layout ou cores:
+  `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e `python ferramentas/molduras_imagem.py`. Moldura que falta
+  não quebra nada: o slide sai com as formas de antes.
+- **Imagens**: `python ferramentas/capas_imagem.py` (capas e sub capas dos Megas, Curitiba na Demercado) e
+  `python ferramentas/capas_imagem.py FACILITIES` (capa do deck único).

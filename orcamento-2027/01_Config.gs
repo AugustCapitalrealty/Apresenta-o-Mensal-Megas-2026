@@ -111,6 +111,10 @@ const ORC_CIDADES = {
     },
     contratos: {},
     contratosDoCadastro: true,
+    // Por que a área muda do ritmo para o orçamento (rodapé dos slides com
+    // R$/m², _orcNotaArea_): sem isso, "+95% em R$ e −0,85 em R$/m²" parecia
+    // erro (gestor, 07/10/2026).
+    motivoArea: 'entram os Armazéns B1 e B2',
     premissas: { premissas: '', analisado: '', comoLer: '' }
   }
 };
