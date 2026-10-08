@@ -821,6 +821,8 @@ ok(!slides.some(sl => titulo(sl) === 'Manutenção de imóveis — contratos e a
 ok(/^Manutenção de Imóveis — Orçamento 2027/.test(titulo(slides[iResManut])) && iResManut === iSub[3] + 1 &&
    /^Demais categorias/.test(titulo(slides[iDemais])) && textos(slides[iResManut]).some(t => / e mais \d+$/.test(t)),
    'o resumo da manutenção abre a seção (gestor, 08/10/2026) e a barra DEMAIS diz quais são');
+ok(textos(slides[iResManut]).indexOf('DEMAIS (' + div.demais.length + ')') >= 0,
+   'barra DEMAIS do resumo = as ' + div.demais.length + ' categorias do slide de Demais (mesmo corte — gestor, 08/10/2026)');
 ok(titulo(slides[iMensal]) === 'Distribuição mensal' && iSub[4] === iMensal + 1, 'distribuição mensal fecha a Manutenção');
 const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
 const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');

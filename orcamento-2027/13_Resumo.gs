@@ -59,15 +59,21 @@ function gerarSlideResumo_(slide, W, H, cid, dados, area) {
       { align: 'L', fs: 6.5, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 4 });
   });
   let linhas = cats.slice();
-  if (cats.length > 9) {
-    const resto = cats.slice(8);
+  // "Demais" com o MESMO corte do slide de Demais (_orcDividirCategorias_: abaixo
+  // de ORC_FATIA_SLIDE_PROPRIO) — antes a barra juntava da 9ª em diante e não
+  // fechava com o slide (gestor, 08/10/2026: "valor não fecha na estratificação";
+  // erro 3 da analista 4: Comunicação horizontal fora num, dentro no outro).
+  const div = _orcDividirCategorias_(dados);
+  if (div.demais.length > 1) {
+    const resto = cats.filter(c => div.demais.some(d => d.nome === c.nome));
     const soma = campo => resto.reduce((a, c) => a + c[campo], 0);
-    // A barra diz quais são (item 14): as duas maiores pelo nome e quantas mais.
+    // A barra diz quais são (item 14): a maior pelo nome e quantas mais (duas
+    // pelo nome quebravam em duas linhas).
     const nomeCat = n => String(n).charAt(0) + String(n).slice(1).toLowerCase();
-    linhas = cats.slice(0, 8).concat([{
+    linhas = cats.filter(c => resto.indexOf(c) < 0).concat([{
       nome: 'DEMAIS (' + resto.length + ')', total: soma('total'), pct: soma('pct'),
       totalContratos: soma('totalContratos'), totalAvulsos: soma('totalAvulsos'), demais: true,
-      quais: resto.slice(0, 2).map(c => nomeCat(c.nome)).join(', ') + ' e mais ' + (resto.length - 2)
+      quais: nomeCat(resto[0].nome) + ' e mais ' + (resto.length - 1)
     }]);
   }
   const ly = by + 26, lh = bh - 34;
