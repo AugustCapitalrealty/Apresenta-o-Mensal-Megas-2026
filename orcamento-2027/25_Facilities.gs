@@ -9,7 +9,7 @@
  *
  * Cada parte é gerada numa execução (o limite de 6 min do Apps Script não cabe os três Megas juntos) e troca só os
  * slides dela: a lista de IDs de cada parte fica nas propriedades do script (ORC_FAC_<PARTE>), e a geração nova entra
- * na mesma posição. Ordem do deck: abertura, Curitiba, Itajaí, Esteio — qualquer parte pode ser gerada antes das
+ * na mesma posição. Ordem do deck: abertura, Esteio, Itajaí, Curitiba — qualquer parte pode ser gerada antes das
  * outras. Dentro de cada Mega: capa do Mega, revisão (interna), sumário do Mega e as seções, sem sub capas — a trilha
  * de progresso no topo marca a seção, e o link do sumário vai para o primeiro slide dela.
  * As três apresentações por Mega (gerarCuritiba…) continuam funcionando até a validação do deck único.
@@ -18,7 +18,8 @@
 const ORC_FACILITIES = {
   nome: 'FACILITIES - APRESENTAÇÃO ORÇAMENTO ' + ORC_ANO,
   deckId: '1w_diCsSIpuuryXliPRBcW4YWoMmM8RyuT7O7307DsqQ',   // criado em 07/10/2026 por criarDeckFacilities()
-  partes: ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO']
+  // Ordem do sumário e das seções: Esteio, Itajaí, Curitiba (Guilherme, 08/10/2026).
+  partes: ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA']
 };
 
 // Durante a geração no deck único: { deckId, parte, ids, indice, alvo } (00_Helpers.gs, _orcNovoSlide_).
@@ -56,15 +57,16 @@ function _orcFacilitiesGuardarIds_() {
   if (_ORC_UNICO) PropertiesService.getScriptProperties().setProperty('ORC_FAC_' + _ORC_UNICO.parte, JSON.stringify(_ORC_UNICO.ids));
 }
 
-// Posição da parte no deck: onde estava (o primeiro slide dela) ou logo depois da parte anterior que já existe; sem
-// nenhuma antes, antes da primeira que vem depois; sem nada, no fim.
+// Posição da parte no deck: logo depois da parte anterior (na ordem de ORC_FACILITIES.partes) que já existe; sem
+// nenhuma antes, antes da primeira que vem depois; sem as outras, onde ela estava; sem nada, no fim. Seguir a ordem
+// (e não o lugar antigo) faz a troca de ordem de 08/10/2026 se arrumar sozinha ao gerar as partes de novo.
 function _orcPosicaoFacilities_(idsDeck, parte) {
   const ordem = ORC_FACILITIES.partes, i = ordem.indexOf(parte);
   const pos = p => _orcListaFacilities_(p).map(id => idsDeck.indexOf(id)).filter(x => x >= 0);
-  const minha = pos(parte);
-  if (minha.length) return Math.min.apply(null, minha);
   for (let j = i - 1; j >= 0; j--) { const a = pos(ordem[j]); if (a.length) return Math.max.apply(null, a) + 1; }
   for (let j = i + 1; j < ordem.length; j++) { const d = pos(ordem[j]); if (d.length) return Math.min.apply(null, d); }
+  const minha = pos(parte);
+  if (minha.length) return Math.min.apply(null, minha);
   return idsDeck.length;
 }
 
@@ -146,7 +148,7 @@ function _orcLigarFacilities_(deck) {
 // ==========================================
 // ABERTURA: capa, sumário e comparativo
 // ==========================================
-const ORC_FAC_MEGAS = ['CURITIBA', 'ITAJAI', 'ESTEIO'];
+const ORC_FAC_MEGAS = ['ESTEIO', 'ITAJAI', 'CURITIBA'];
 
 function _orcGerarAbertura_(deck, W, H) {
   const rels = {};
@@ -184,7 +186,7 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     _orcUmaLinha_(slide, 48 * k, 226 * k, 300 * k, 16 * k, 'ORÇAMENTO ' + ORC_ANO,
       { align: 'L', fs: 10, bold: true, cor: C.brandLight, fonte: T.titles });
     _orcUmaLinha_(slide, 46 * k, 242 * k, 320 * k, 54 * k, 'Facilities', { align: 'L', fs: 40, bold: true, cor: C.brandDark, fonte: T.titles });
-    _orcUmaLinha_(slide, 48 * k, 296 * k, 330 * k, 18 * k, 'Mega Curitiba · Mega Itajaí · Mega Esteio',
+    _orcUmaLinha_(slide, 48 * k, 296 * k, 330 * k, 18 * k, 'Mega Esteio · Mega Itajaí · Mega Curitiba',
       { align: 'L', fs: 11, cor: C.textBody, fonte: T.body, fsMin: 8 });
   }
   // Os donos dos Megas, lado a lado sobre a foto: Capital Realty e Demercado (Curitiba) — Guilherme, 07/10/2026.
@@ -244,7 +246,7 @@ function gerarSlideSumarioFacilities_(slide, W, H, rels) {
     else links[it[0]] = [num, nome].filter(Boolean).map(b => b.getObjectId());
   });
   PropertiesService.getScriptProperties().setProperty('ORC_FAC_LINKS', JSON.stringify(links));
-  _orcRodapeClaro_(slide, k, { nome: 'Mega Curitiba, Itajaí e Esteio' });
+  _orcRodapeClaro_(slide, k, { nome: 'Mega Esteio, Itajaí e Curitiba' });
 }
 
 /**

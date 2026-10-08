@@ -1279,9 +1279,9 @@ console.log('Deck único de Facilities');
   const sl = fac.getSlides(), ids = sl.map(x => x.getObjectId());
   const lista = p => JSON.parse(PROPS_DADOS['ORC_FAC_' + p] || '[]');
   const pos = p => lista(p).map(id => ids.indexOf(id));
-  const ordemOk = ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].every((p, i, a) => i === 0 || Math.min.apply(null, pos(p)) > Math.max.apply(null, pos(a[i - 1])));
+  const ordemOk = ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].every((p, i, a) => i === 0 || Math.min.apply(null, pos(p)) > Math.max.apply(null, pos(a[i - 1])));
   ok(sl.length === ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].reduce((t, p) => t + lista(p).length, 0) && ordemOk && pos('ABERTURA')[0] === 0,
-     'Facilities: abertura, Curitiba, Itajaí e Esteio em ordem, sem slide sobrando (' + sl.length + ' slides)');
+     'Facilities: abertura, Esteio, Itajaí e Curitiba em ordem, sem slide sobrando (' + sl.length + ' slides)');
   ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
      textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
      'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
@@ -1298,6 +1298,21 @@ console.log('Deck único de Facilities');
   ok(fac.getSlides().length === nAntes && lista('CURITIBA').join() === curAntes && lista('ESTEIO').join() === esAntes &&
      ids2.indexOf(lista('ITAJAI')[0]) === antesIt && fac.getSlides()[1].shapes.filter(f => f.link).map(f => f.link).indexOf(lista('ITAJAI')[0]) >= 0,
      'Facilities: gerar Itajaí de novo troca só os slides dele, no mesmo lugar, e refaz o link do sumário');
+  // Troca de ordem (08/10/2026): um deck na ordem antiga (Curitiba antes de Esteio) se arruma ao gerar as partes de novo.
+  {
+    const ord = G.ORC_FACILITIES.partes.slice();
+    G.ORC_FACILITIES.partes = ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'];
+    ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(p => G._orcGerarFacilities_(p));
+    const velha = fac.getSlides().map(x => x.getObjectId());
+    const pv = p => lista(p).map(id => velha.indexOf(id));
+    const antigaOk = Math.min.apply(null, pv('ESTEIO')) > Math.max.apply(null, pv('CURITIBA'));
+    G.ORC_FACILITIES.partes = ord;
+    ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].forEach(p => G._orcGerarFacilities_(p));
+    const nova = fac.getSlides().map(x => x.getObjectId());
+    const pn = p => lista(p).map(id => nova.indexOf(id));
+    const novaOk = ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].every((p, i, a) => i === 0 || Math.min.apply(null, pn(p)) > Math.max.apply(null, pn(a[i - 1])));
+    ok(antigaOk && novaOk && nova.length === nAntes, 'Facilities: deck na ordem antiga passa para Esteio → Itajaí → Curitiba ao gerar as partes de novo');
+  }
   if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_facilities.json'),
     JSON.stringify({ W: W, H: H, slides: fac.getSlides().map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
   G.ORC_FACILITIES.deckId = '';
