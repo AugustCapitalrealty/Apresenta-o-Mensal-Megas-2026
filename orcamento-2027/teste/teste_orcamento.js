@@ -1355,6 +1355,10 @@ console.log('Grupo da manutenção decidido pelo gestor');
      (faltam.length ? ' — sem item: ' + faltam.join(' | ') : '') + (errados.length ? ' — grupo errado: ' + errados.join(' | ') : ''));
 }
 
+console.log('Cor da variação nos destaques');
+ok(G._orcCorKpi_('▲ 21%', '#00594F') === G._ORC_COR_VAR.sobe && G._orcCorKpi_('▼ 3%', '#00594F') === G._ORC_COR_VAR.desce &&
+   G._orcCorKpi_('R$ 4,49', '#00594F') === '#00594F', 'destaques: ▲ vermelho, ▼ verde, número na cor da marca (erro 1 da analista 4)');
+
 console.log('Contratos: junções e renovações (08/10/2026)');
 {
   const linhasDe = k => {

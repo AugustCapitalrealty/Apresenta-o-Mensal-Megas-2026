@@ -212,7 +212,7 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
   [[t.areaOrc ? 'R$ ' + _orcM2_(t.orc / t.areaOrc / 12) : '–', '/m²'], [v.texto, 'vs. ritmo ' + (ORC_ANO - 1)]].forEach((n, i) => {
     _orcUmaLinha_(slide, (546 + i * 80) * k, 252 * k, 76 * k, 22 * k, n[0],
-      { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+      { align: 'L', fs: 16, bold: true, cor: _orcCorKpi_(n[0], C.brandDark), fonte: T.titles, fsMin: 10 });
     _orcUmaLinha_(slide, (546 + i * 80) * k, 274 * k, 76 * k, 14 * k, n[1],
       { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
   });

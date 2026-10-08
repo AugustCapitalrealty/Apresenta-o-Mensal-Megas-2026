@@ -164,10 +164,18 @@ function _orcCapaNumeros_(slide, k, rel) {
   kpis.forEach((kp, i) => {
     const x = (546 + i * 80) * k;
     _orcUmaLinha_(slide, x, 252 * k, 76 * k, 22 * k, kp[0],
-      { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+      { align: 'L', fs: 16, bold: true, cor: _orcCorKpi_(kp[0], C.brandDark), fonte: T.titles, fsMin: 10 });
     _orcUmaLinha_(slide, x, 274 * k, 76 * k, 14 * k, kp[1],
       { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
   });
+}
+
+// Cor do número de destaque: variação de gasto segue a convenção ▲ vermelho
+// (sobe) / ▼ verde (cai), nunca a cor da marca — no verde da Demercado o ▲
+// parecia boa notícia (erro 1 da analista 4, 07/10/2026).
+function _orcCorKpi_(texto, padrao) {
+  const t = String(texto || '');
+  return /^▲/.test(t) ? _ORC_COR_VAR.sobe : /^▼/.test(t) ? _ORC_COR_VAR.desce : padrao;
 }
 
 // Arquivo da pasta de imagens de slide (ORC_PASTA_IMAGENS) como blob, ou null.
@@ -267,7 +275,7 @@ function _orcSubcapaNumeros_(slide, k, destaque) {
   (destaque.kpis || []).slice(0, 2).forEach((kp, i) => {
     const x = (222 + i * 90) * k;
     _orcUmaLinha_(slide, x, 208 * k, 80 * k, 22 * k, kp[0],
-      { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
+      { align: 'L', fs: 16, bold: true, cor: _orcCorKpi_(kp[0], C.brandDark), fonte: T.titles, fsMin: 10 });
     _orcUmaLinha_(slide, x, 230 * k, 80 * k, 14 * k, kp[1],
       { align: 'L', fs: 9, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
   });

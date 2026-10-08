@@ -30,7 +30,9 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
     _orcUmaLinha_(slide, x + 12, ky + 5, kw - 24, 13, k[0].toUpperCase(),
       { align: 'L', fs: 7, bold: true, cor: claro ? C.brandSoft : C.textBody, fonte: DS.typography.titles });
     _orcUmaLinha_(slide, x + 12, ky + 18, kw - 24, 22, k[1],
-      { align: 'L', fs: 15, bold: true, cor: claro ? '#FFFFFF' : C.brandDark, fonte: DS.typography.titles, fsMin: 9 });
+      // A variação em R$ segue ▲ vermelho / ▼ verde, não a cor da marca (erro 1 da analista 4).
+      { align: 'L', fs: 15, bold: true, fonte: DS.typography.titles, fsMin: 9,
+        cor: claro ? '#FFFFFF' : i === 1 ? (r.delta > 0.5 ? _ORC_COR_VAR.sobe : r.delta < -0.5 ? _ORC_COR_VAR.desce : C.brandDark) : C.brandDark });
     _orcUmaLinha_(slide, x + 12, ky + 39, kw - 24, 13, k[2],
       { align: 'L', fs: 7, cor: claro ? '#CBD5E1' : C.textBody, fonte: DS.typography.body, cortar: true });
   });
@@ -45,8 +47,10 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
   }
   if (r.efeitoArea != null) {
     const pctArea = r.areaRit ? (r.areaOrc / r.areaRit - 1) : 0;
-    msgs.push(['+' + _orcPct_(pctArea) + ' de área',
-      'O Mega fica maior: ' + _orcMilhar_(r.areaRit) + ' → ' + _orcMilhar_(r.areaOrc) + ' m² (área implícita). ' +
+    // Sinal certo e frase que segue o sinal (analista 3: "+-0,2% de área" e "fica maior" com a área caindo).
+    msgs.push([(pctArea >= 0 ? '+' : '−') + _orcPct_(Math.abs(pctArea)) + ' de área',
+      (Math.abs(pctArea) < 0.005 ? 'A área fica praticamente igual: ' : pctArea > 0 ? 'O Mega fica maior: ' : 'O Mega fica menor: ') +
+      _orcMilhar_(r.areaRit) + ' → ' + _orcMilhar_(r.areaOrc) + ' m² (área implícita). ' +
       'Efeito área ' + _orcCompacto_(r.efeitoArea) + '; efeito custo por m² ' + _orcCompacto_(r.efeitoCusto) + '.']);
   }
   if (classManut && manut) {
