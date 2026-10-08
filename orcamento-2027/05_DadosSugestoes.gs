@@ -150,6 +150,60 @@ function _orcPonte_(rel, mensal) {
  *   projetos   → palavra de ORC_PALAVRAS_PROJETO na descrição
  *   pontual    → o resto (pinturas, revisões, lavagens, demarcações…)
  */
+// Grupo decidido item a item pelo gestor (revisão de 08/10/2026, repassada
+// pelo Guilherme): vale sobre a regra (contrato → 6+ meses → palavra de
+// projeto → pontual). Só os itens que ele listou — "segue o que eu coloquei
+// de ajuste e deixa o que ficou": nada de regra nova. Chave: a descrição do
+// modelo 090 sem o prefixo [TAG].
+const ORC_GRUPO_MANUT_GESTOR = [
+  ["REVISÃO E MANUTENÇÃO DOS ARES CONDICIONADOS CONFORME PMOC", "contratos"],   // Esteio: REVISÃO DOS AR-CONDICIONADOS (PMOC)
+  ["MANUTENÇÃO PREVENTIVA DA DEMARCAÇÃO BOLSÃO DE PESADOS (R$ 39M2 X 300M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO – BOLSÃO DE PESADOS (300 M²)
+  ["MANUTENÇÃO PREVENTIVA ÁREA DE ACESSOS (122,36 M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – ÁREA DE ACESSOS (122 M²)
+  ["MANUTENÇÃO PREVENTIVA DE DEMARCAÇÃO SEMESTRAL DESCIDA (113,65 M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – DESCIDA (114 M²)
+  ["MANUTENÇÃO PREVENTIVA ROTATÓRIA (33,96 M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – ROTATÓRIA (34 M²)
+  ["MANUTENÇÃO PREVENTIVA DA DEMARCAÇÃO DAS LOMBADAS SEMESTRALMENTE (27,6M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – LOMBADAS (28 M²)
+  ["MANUTENÇÃO PREVENTIVA RUA LATERAL AMZ 1 E 2 (27,40 M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – RUA LATERAL AMZ 1 E 2
+  ["MANUTENÇÃO PREVENTIVA ÁREA DE EMBARQUE E DESEMBARQUE (15M2)", "recorrente"],   // Curitiba: DEMARCAÇÃO SEMESTRAL – EMBARQUE/DESEMBARQUE
+  ["MANUTENÇÃO PREVENTIVA ANUAL FRENTE DE ARMAZÉNS 1 A 7 (R$ 39/M2 X 539,5)", "recorrente"],   // Curitiba: DEMARCAÇÃO ANUAL – FRENTE DOS AMZ 1 A 7 (540 M²)
+  ["MANUTENÇÃO PREVENTIVA ANUAL DA DEMARCAÇÃO DA CALÇADA (", "recorrente"],   // Itajaí: DEMARCAÇÃO ANUAL – CALÇADA
+  ["SERVIÇO DE ANÁLISE LABORATORIAL SEMESTRAL DOS 20 STE (ENTRADA E SAÍDA)", "recorrente"],   // Itajaí: ANÁLISE LABORATORIAL SEMESTRAL – 20 STE
+  ["MANUTENÇAÕ PREVENTIVA ANUAL DA DEMARCAÇÃO DO BOLSÃO (300m2)", "recorrente"],   // Itajaí: DEMARCAÇÃO ANUAL – BOLSÃO (300 M²)
+  ["MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (ÁREA DE ACESSOS (100M2)", "recorrente"],   // Itajaí: DEMARCAÇÃO SEMESTRAL – ÁREA DE ACESSOS (100 M²)
+  ["REPOSIÇÃO DE TACHINHAS DE SINALIZAÇÃO (100 UND X R$ 55,00)", "recorrente"],   // Itajaí: REPOSIÇÃO DE 100 TACHINHAS DE SINALIZAÇÃO
+  ["MANUTENÇÃO PREVENTIVA ANUAL DAS VIAS DE CARRO (1.059,86 M2 X R$ 39)", "recorrente"],   // Itajaí: DEMARCAÇÃO ANUAL – VIAS DE CARRO (1.060 M²)
+  ["MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (PONTE - 22,2 m2 x R$ 39)", "recorrente"],   // Itajaí: DEMARCAÇÃO SEMESTRAL – PONTE (22 M²)
+  ["MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMERCAÇÃO EMB, E DESEMBARQUE (20M2)", "recorrente"],   // Itajaí: DEMARCAÇÃO SEMESTRAL – EMBARQUE/DESEMBARQUE
+  ["SERVIÇO DE LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS (R$ 80 M3 X 450M3)", "recorrente"],   // Itajaí: LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS (450 M³)
+  ["SUCÇÃO E LIMPEZA DO STE (SEMESTRAL) - FOSSA E FILTRO - ARMAZÉM B", "recorrente"],   // Esteio: SUCÇÃO SEMESTRAL DO STE (FOSSA E FILTRO) – AMZ B
+  ["REVISÃO SEMESTRAL DOS BEBEDOUROS (AMZ A E B)", "recorrente"],   // Esteio: REVISÃO SEMESTRAL DOS BEBEDOUROS (AMZ A E B)
+  ["RENOVAÇÃO DE DEMARCAÇÃO SEMESTRAL ENTRADA (PORTARIA A E B) - SOMENTE MATERIAL", "recorrente"],   // Esteio: DEMARCAÇÃO SEMESTRAL – PORTARIAS A E B (MATERIAL)
+  ["SUCCÇÃO E LIMPEZA SEMESTRAL DAS ELEVATÓRIAS (ARMAZÉM A E B)", "recorrente"],   // Esteio: SUCÇÃO DAS ELEVATÓRIAS – AMZ A E B
+  ["RENOVAÇÃO DE DEMERCAÇÃO ANUAL FRENTE DE DOCAS (FAIXAS) - SOMENTE MATERIAL", "recorrente"],   // Esteio: DEMARCAÇÃO ANUAL – FRENTE DE DOCAS (MATERIAL)
+  ["SUCÇÃO E LIMPEZA DO STE (SEMESTRAL) - FOSSA E FILTRO - ARMAZÉM A", "recorrente"],   // Esteio: SUCÇÃO SEMESTRAL DO STE (FOSSA E FILTRO) – AMZ A
+  ["PLANTIO DE GRAMA EM 2.492,81 M2 (FRENTE MELI AMZ 6) - R$ 9,80", "pontual"],   // Curitiba: PLANTIO DE GRAMA 2.493 M² – FRENTE MELI AMZ 6
+  ["MELHORIA DE ILUMINAÇÃO PERIMETRAL NA LATERAL DO ARMAZÉM 6/7 (FACE BMR)", "pontual"],   // Curitiba: ILUMINAÇÃO PERIMETRAL – LATERAL AMZ 6/7 (BMR)
+  ["MELHORIA DE ILUMINAÇÃO PERIMETRAL NA LATERAL DO ARMAZÉM 3/4 (FACE BMR)", "pontual"],   // Curitiba: ILUMINAÇÃO PERIMETRAL – LATERAL AMZ 3/4 (BMR)
+  ["PLANTIO DE GRAMA EM 1.013,87 M2 (FUNDOS RESTAURANTE) - R$ 9,80/M2", "pontual"],   // Curitiba: PLANTIO DE GRAMA 1.014 M² – FUNDOS RESTAURANTE
+  ["PLANTIO DE GRAMA EM 857,40 M2 (FRENTE BOSCH) - R$ 9,80", "pontual"],   // Curitiba: PLANTIO DE GRAMA 857 M² – FRENTE BOSCH
+  ["RECUPERAÇÃO DE VIGA E INSTALAÇÃO DE LOMBADAS DE CONCRETO AMZ 4", "pontual"],   // Curitiba: RECUPERAÇÃO DE VIGA + LOMBADAS DE CONCRETO – AMZ 4
+  ["RECUPERAÇÃO DE VIGA E INSTALAÇÃO DE LOMBADA DE CONCRETO AMZ 3", "pontual"],   // Curitiba: RECUPERAÇÃO DE VIGA + LOMBADA DE CONCRETO – AMZ 3
+  ["COMPRA E INSTALAÇÃO DE TV + SUPORTE NO QUIOSQUE", "pontual"],   // Curitiba: TV + SUPORTE NO QUIOSQUE
+  ["INSTALAÇÃO DE ILUMINAÇÃO ADICIONAL NA LATERAL DO AMZ 4 E 5 (PERÍMETRO)", "pontual"],   // Itajaí: ILUMINAÇÃO PERIMETRAL – LATERAL AMZ 4 E 5
+  ["COMPRA DE 2 CAÇAMBAS METÁLICAS PARA CENTRALIZAÇÃO DOS RESÍDUOS  ARMAZÉM B", "pontual"],   // Esteio: 2 CAÇAMBAS METÁLICAS PARA RESÍDUOS – AMZ B
+  ["COMPRA DE CONTENTORES DE LIXO CONTEMAR 1000 L (4 UND AMZ A)", "pontual"],   // Esteio: 4 CONTENTORES DE LIXO 1.000 L – AMZ A
+  ["COMPRA DE CONTENTORES DE LIXO CONTEMAR 1000L (2 UND AMZ B)", "pontual"],   // Esteio: 2 CONTENTORES DE LIXO 1.000 L – AMZ B
+  ["COMPRA DE PURIFICADOR DE ÁGUA PARA SALA ADMINISTRATIVA HE OXI TOP LIFE", "pontual"],   // Esteio: PURIFICADOR DE ÁGUA – SALA ADMINISTRATIVA
+  ["INSTALAÇÃO DE PONTO DE ÁGUA PARA BEBEDOURO (RETIRAR COMPRA GALÕES)", "pontual"],   // Esteio: PONTO DE ÁGUA PARA BEBEDOURO (FIM DOS GALÕES)
+];
+
+function _orcGrupoDoGestor_(descricao) {
+  if (!_orcGrupoDoGestor_.mapa) {
+    _orcGrupoDoGestor_.mapa = {};
+    ORC_GRUPO_MANUT_GESTOR.forEach(e => { _orcGrupoDoGestor_.mapa[_orcNorm_(e[0])] = e[1]; });
+  }
+  return _orcGrupoDoGestor_.mapa[_orcNorm_(String(descricao || '').replace(/^\s*\[[^\]]*\]\s*-?\s*/, ''))] || null;
+}
+
 function _orcClassificarManutencao_(dados) {
   const grupos = {
     contratos:  { nome: 'Contratos',            total: 0, itens: [] },
@@ -161,7 +215,9 @@ function _orcClassificarManutencao_(dados) {
     const nMeses = it.meses.filter(v => Math.abs(v) > 0.005).length;
     const d = _orcNorm_(it.descricao);
     let g = 'pontual';
-    if (it.contrato) g = 'contratos';
+    const doGestor = _orcGrupoDoGestor_(it.descricao);
+    if (doGestor) g = doGestor;
+    else if (it.contrato) g = 'contratos';
     else if (nMeses >= 6) g = 'recorrente';
     else if (ORC_PALAVRAS_PROJETO.some(p => d.indexOf(p) >= 0)) g = 'projetos';
     const reg = Object.assign({ categoria: cat.nome }, it);

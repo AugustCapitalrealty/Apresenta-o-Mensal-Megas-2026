@@ -532,7 +532,9 @@ const clsM = G._orcClassificarManutencao_(d);
 perto(clsM.grupos.reduce((a, g) => a + g.total, 0), d.total, 'investimento × recorrente: os 4 grupos somam a manutenção');
 ok(clsM.grupos.reduce((a, g) => a + g.itens.length, 0) === d.nItens, 'todo item cai em um grupo só');
 perto(clsM.grupos[0].total, d.totalContratos, 'grupo Contratos = contratos da manutenção');
-ok(clsM.projetos.total > 690000 && clsM.projetos.total < 705000, 'projetos ≈ R$ 698 mil (veio ' + Math.round(clsM.projetos.total) + ')');
+// 08/10/2026: plantios de grama, iluminações perimetrais, recuperações de viga e a TV do quiosque saíram de Projetos
+// para Pontual (decisão do gestor) — R$ 698 mil → R$ 595 mil.
+ok(clsM.projetos.total > 590000 && clsM.projetos.total < 600000, 'projetos ≈ R$ 595 mil (veio ' + Math.round(clsM.projetos.total) + ')');
 ok(!clsM.projetos.itens.some(it => /ZELADOR/.test(it.descricao)), '"compra de materiais para o zelador" todo mês é recorrente, não projeto');
 ok(clsM.projetos.itens.some(it => /PAISAGISMO EM 1500M2/.test(it.descricao)), 'implantação do paisagismo é projeto');
 
@@ -1102,6 +1104,8 @@ G.gerarCuritiba();
 const todasLinhas = G.ORC_TEXTOS_ABAS.reduce((a, n) =>
   a.concat(PLANILHA_TEXTOS.getSheetByName(n).getDataRange().getValues().slice(1)), []);
 const aindaCortadas = todasLinhas.filter(r => r[3] === 'SIM' && r[2] !== 'ESCRITO PELO GESTOR');
+if (aindaCortadas.length) G.ORC_TEXTOS_ABAS.forEach(n => PLANILHA_TEXTOS.getSheetByName(n).getDataRange().getValues().slice(1)
+  .filter(r => r[3] === 'SIM' && r[2] !== 'ESCRITO PELO GESTOR').forEach(r => console.log('   cortado em ' + n + ': ' + r.slice(0, 5).join(' | '))));
 ok(aindaCortadas.length === 0, 'com as propostas nenhum texto sai cortado (' + aindaCortadas.map(r => r[1]).join(' | ') + ')');
 PLANILHA_TEXTOS = novaPlanilhaTextos();      // as próximas gerações comparam com o deck sem escolhas
 LOG.length = 0;
@@ -1318,6 +1322,24 @@ console.log('Deck único de Facilities');
     JSON.stringify({ W: W, H: H, slides: fac.getSlides().map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
   G.ORC_FACILITIES.deckId = '';
   decks = {};
+}
+
+console.log('Grupo da manutenção decidido pelo gestor');
+// 08/10/2026: só os itens listados mudam de grupo (exceção item a item).
+{
+  const achados = {};
+  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(k => {
+    const cls = G._orcClassificarManutencao_(G.obterManutencao_(k));
+    const nomes = ['contratos', 'recorrente', 'pontual', 'projetos'];
+    cls.grupos.forEach((g, i) => g.itens.forEach(it => {
+      const dec = G._orcGrupoDoGestor_(it.descricao);
+      if (dec) achados[G._orcNorm_(it.descricao.replace(/^\s*\[[^\]]*\]\s*-?\s*/, ''))] = dec === nomes[i];
+    }));
+  });
+  const faltam = G.ORC_GRUPO_MANUT_GESTOR.filter(e => achados[G._orcNorm_(e[0])] === undefined).map(e => e[0]);
+  const errados = G.ORC_GRUPO_MANUT_GESTOR.filter(e => achados[G._orcNorm_(e[0])] === false).map(e => e[0]);
+  ok(!faltam.length && !errados.length, 'gestor: os ' + G.ORC_GRUPO_MANUT_GESTOR.length + ' itens reclassificados estão nos modelos e no grupo dele' +
+     (faltam.length ? ' — sem item: ' + faltam.join(' | ') : '') + (errados.length ? ' — grupo errado: ' + errados.join(' | ') : ''));
 }
 
 console.log('Roçada do Esteio numa linha');
