@@ -1333,6 +1333,10 @@ console.log('Deck único de Facilities');
     const novaOk = ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].every((p, i, a) => i === 0 || Math.min.apply(null, pn(p)) > Math.max.apply(null, pn(a[i - 1])));
     ok(antigaOk && novaOk && nova.length === nAntes, 'Facilities: deck na ordem antiga passa para Esteio → Itajaí → Curitiba ao gerar as partes de novo');
   }
+  if (process.env.PREVIA) {
+    const rels = {}; G.ORC_FAC_MEGAS.forEach(k => { rels[k] = G.obterRelatorioAnual_(k); });
+    fs.writeFileSync(path.join(process.env.PREVIA, 'comparativo_m2.json'), JSON.stringify(G._orcComparativoM2_(rels)));
+  }
   if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_facilities.json'),
     JSON.stringify({ W: W, H: H, slides: fac.getSlides().map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
   G.ORC_FACILITIES.deckId = '';
