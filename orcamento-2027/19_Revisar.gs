@@ -83,6 +83,13 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
                  texto: 'itens somam ' + _orcMoeda_(comp.excesso) + ' a mais' + (meses.length ? ' · ' + meses.join(' · ') : '') });
     }
   });
+  // Contratos que o gestor diz que já existiam em 2026, sem 2026 achado nas fontes
+  // (08/10/2026: "deixar a pergunta em aberto sinalizando").
+  ORC_CONTRATOS_2026_NAO_ID.filter(r => _orcNorm_(r.unidade) === _orcNorm_(cid.nome)).forEach(r => {
+    const chave = _orcChaveConta_(r.conta), c = rel.contas.filter(x => x.chave === chave)[0];
+    out.push({ nome: c ? c.nome : r.conta, chave: chave, tipo: (ORC_ANO - 1) + ' não identificado',
+               texto: r.item + ' — sem ' + (ORC_ANO - 1) + ' nas fontes' });
+  });
   (ORC_PENDENCIAS_GESTOR[cid.nome] || []).forEach(p => {
     const chave = _orcChaveConta_(p.conta), c = rel.contas.filter(x => x.chave === chave)[0];
     out.push({ nome: c ? c.nome : p.conta, chave: chave, tipo: p.tipo, texto: p.texto });

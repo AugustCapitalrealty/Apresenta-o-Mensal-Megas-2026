@@ -649,6 +649,10 @@ console.log('Geração — Curitiba');
 // de revisão: a estrutura do deck é conferida sem elas; elas têm teste próprio
 // em "Pendências de dados".
 const PEND_GESTOR_REAL = G.ORC_PENDENCIAS_GESTOR;
+// Contratos sem 2026 identificado (08/10/2026) também viram pendência; ficam de fora do fluxo principal
+// (os índices dos slides de Curitiba contam sem o slide de revisão) e são testados em "Pendências de dados".
+const NAO_ID_REAL = G.ORC_CONTRATOS_2026_NAO_ID;
+G.ORC_CONTRATOS_2026_NAO_ID = [];
 G.ORC_PENDENCIAS_GESTOR = {};
 decks = {};
 G.gerarCuritiba();
@@ -1144,6 +1148,13 @@ ok(tP.indexOf('Contratos reajustados pelo IPCA em janeiro.') >= 0 && tP.filter(t
 // ---------------- Pendências ----------------
 console.log('Pendências de dados');
 G.ORC_PENDENCIAS_GESTOR = PEND_GESTOR_REAL;
+G.ORC_CONTRATOS_2026_NAO_ID = NAO_ID_REAL;
+{
+  const relC = G.obterRelatorioAnual_('CURITIBA');
+  const pC = G._orcPendencias_(G.ORC_CIDADES.CURITIBA, relC, null, []).filter(p => p.tipo === '2026 não identificado');
+  ok(pC.length === 2 && pC.some(p => /Itaú/.test(p.texto)) && pC.some(p => /PMOC/.test(p.texto)),
+     'Curitiba: cerca elétrica do Itaú e PMOC como "2026 não identificado" no alerta (' + pC.map(p => p.texto).join(' | ') + ')');
+}
 {
   const cidX = G.ORC_CIDADES.ESTEIO;
   porId[cidX.relatorios.metragemId] = fixture('fixture_metragem_esteio.json');
@@ -1340,6 +1351,45 @@ console.log('Grupo da manutenção decidido pelo gestor');
   const errados = G.ORC_GRUPO_MANUT_GESTOR.filter(e => achados[G._orcNorm_(e[0])] === false).map(e => e[0]);
   ok(!faltam.length && !errados.length, 'gestor: os ' + G.ORC_GRUPO_MANUT_GESTOR.length + ' itens reclassificados estão nos modelos e no grupo dele' +
      (faltam.length ? ' — sem item: ' + faltam.join(' | ') : '') + (errados.length ? ' — grupo errado: ' + errados.join(' | ') : ''));
+}
+
+console.log('Contratos: junções e renovações (08/10/2026)');
+{
+  const linhasDe = k => {
+    const v = G._orcLerVisaoGeral_(k);
+    const cmp = G._orcCompararTodosContratos_(v.rel, FIX_CAD_2026, G.ORC_CIDADES[k].nome, v.modelos, FIX_MOD_2026);
+    const out = {};
+    cmp.grupos.forEach(g => g.linhas.forEach(l => { out[l.nome] = Object.assign({ conta: g.conta }, l); }));
+    return { l: out, cmp: cmp };
+  };
+  const show = (o, n) => o[n] ? n + ' ' + Math.round(o[n].ant) + '→' + Math.round(o[n].atual) + ' (' + o[n].situacao + ', ' + o[n].conta + ')' : n + ' AUSENTE';
+  const it = linhasDe('ITAJAI'), es = linhasDe('ESTEIO'), cu = linhasDe('CURITIBA');
+  if (process.env.VER_CONTRATOS) [it, es, cu].forEach(x => Object.keys(x.l).forEach(n => console.log('   ' + show(x.l, n))));
+  const I = it.l, E = es.l, C = cu.l;
+  ok(I['PORTOVIG VIGILÂNCIA'] && Math.round(I['PORTOVIG VIGILÂNCIA'].ant) === 1315649 && !Object.keys(I).some(n => /PORTVIG/.test(n)),
+     'Itajaí: Portvig + Portovig numa linha, 2026 = R$ 1.315.649 (' + show(I, 'PORTOVIG VIGILÂNCIA') + ')');
+  ok(I['PORTOVIG LIMPEZA E ZELADORIA'] && Math.round(I['PORTOVIG LIMPEZA E ZELADORIA'].ant) === 162211,
+     'Itajaí: limpeza e zeladoria Portovig numa linha, 2026 = R$ 162.211 (' + show(I, 'PORTOVIG LIMPEZA E ZELADORIA') + ')');
+  ok(I['LAURI BATISTA (DEDETIZAÇÃO)'] && Math.round(I['LAURI BATISTA (DEDETIZAÇÃO)'].ant) === 23421 && I['LAURI BATISTA (DEDETIZAÇÃO)'].atual > 0,
+     'Itajaí: as 3 linhas da Lauri Batista numa só, com 2027 (' + show(I, 'LAURI BATISTA (DEDETIZAÇÃO)') + ')');
+  ok(I['TAXAS AMBIENTAIS (AMZ 07 A 09)'] && Math.round(I['TAXAS AMBIENTAIS (AMZ 07 A 09)'].ant) === 6710,
+     'Itajaí: Ambiental AMZ 07–09 em "TAXAS AMBIENTAIS" (' + show(I, 'TAXAS AMBIENTAIS (AMZ 07 A 09)') + ')');
+  const arca = Object.keys(I).filter(n => /ARCA/.test(n)).map(n => I[n]);
+  ok(arca.length === 1 && Math.round(arca[0].ant) === 88428 && /Mudou de conta/.test(arca[0].situacao),
+     'Itajaí: Arca Agro numa linha, com o 2026 da Limpeza (' + arca.map(l => l.nome + ' ' + Math.round(l.ant) + '→' + Math.round(l.atual) + ' ' + l.situacao + ' ' + l.conta).join(' | ') + ')');
+  const fire = Object.keys(I).filter(n => /FIRECAM/.test(n)).map(n => I[n]);
+  ok(fire.length === 1 && /^Ano cheio/.test(fire[0].situacao), 'Itajaí: Firecam começou em jul/26 — "Ano cheio" (' + fire.map(l => l.situacao).join() + ')');
+  const pmocI = Object.keys(I).filter(n => /PMOC|AR-COND/.test(n)).map(n => I[n]);
+  ok(pmocI.length && pmocI.every(l => /não identificado/.test(l.situacao)), 'Itajaí: PMOC com "2026 não identificado" (' + pmocI.map(l => l.nome + ' ' + l.situacao).join() + ')');
+  ok(E['EMPRESA DE SEGURANÇA'] && Math.round(E['EMPRESA DE SEGURANÇA'].ant) === 502815 && !Object.keys(E).some(n => /VOIGT/.test(n) && E[n].conta === E['EMPRESA DE SEGURANÇA'].conta),
+     'Esteio: Voigt + nova empresa numa linha "EMPRESA DE SEGURANÇA" (' + show(E, 'EMPRESA DE SEGURANÇA') + ')');
+  ok(E['RENTBRELLA (ARMAZÉNS A E B)'] && E['RENTBRELLA (ARMAZÉNS A E B)'].atual > 28000, 'Esteio: Rentbrella A e B numa linha (' + show(E, 'RENTBRELLA (ARMAZÉNS A E B)') + ')');
+  ok(C['VIGILÂNCIA COM DRONE AUTÔNOMO'] && C['ROÇADA (LPU)'] && C['LIMPEZA (EMPRESA AUXILIAR)'] && C['LIMPEZA (EMPRESA AUXILIAR)'].atual > 490000,
+     'Curitiba: drone, roçada e limpeza + escala unidos (' + ['VIGILÂNCIA COM DRONE AUTÔNOMO', 'ROÇADA (LPU)', 'LIMPEZA (EMPRESA AUXILIAR)'].map(n => show(C, n)).join(' | ') + ')');
+  const itau = Object.keys(C).filter(n => /ITAÚ|ITAU/.test(n)).map(n => C[n]);
+  ok(itau.length && itau.every(l => /não identificado/.test(l.situacao)) && G._orcContratosNaoIdentificados_(cu.cmp).length >= 1,
+     'Curitiba: cerca elétrica do Itaú com "2026 não identificado" e na lista de pendências');
+  [it, es, cu].forEach(x => perto(x.cmp.ant, x.cmp.grupos.reduce((t, g) => t + g.linhas.reduce((u, l) => u + l.ant, 0), 0), 'contratos: o total de 2026 fecha com as linhas depois das junções'));
 }
 
 console.log('Roçada do Esteio numa linha');

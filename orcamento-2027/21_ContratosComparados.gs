@@ -110,7 +110,45 @@ function _orcLerCadastroContratos_(dados, unidade, conta, ano) {
     if (!porForn[k]) porForn[k] = c;
     else { porForn[k].total += c.total; c.meses.forEach((v, j) => { porForn[k].meses[j] += v; }); }
   });
-  return Object.keys(porForn).map(k => porForn[k]).sort((a, b) => b.total - a.total);
+  return _orcJuntarRenovacoes_(Object.keys(porForn).map(k => porForn[k])).sort((a, b) => b.total - a.total);
+}
+
+// Nome do fornecedor escrito errado no cadastro (Guilherme, 08/10/2026: "PORTVIG"
+// é erro de digitação de "PORTOVIG").
+const ORC_FORNECEDOR_ALIAS = { portvig: 'portovig' };
+
+// Contrato renovado no meio do ano vira duas (ou três) linhas no cadastro, com
+// código novo e às vezes nome diferente ("ARCA AGRO - … CONDOMÍNIO ITAJAÍ" até
+// jan, "ARCA AGRO - …" a partir de fev). Mesmo fornecedor (primeira palavra que
+// identifica) e meses que não se sobrepõem = o mesmo contrato: uma linha só, com
+// o nome do contrato vigente (o que tem o último mês). Ambiental AMZ 01…09 têm
+// meses sobrepostos e continuam separados. (Achado de 08/10/2026, ajuste V31.)
+function _orcJuntarRenovacoes_(lista) {
+  // Palavras que identificam o contrato (com o apelido do fornecedor corrigido).
+  const pal = c => _orcPalavrasCasamento_(c.fornecedor).map(p => ORC_FORNECEDOR_ALIAS[p] || p);
+  const ativos = c => c.meses.map(v => v > 0.5);
+  const disjuntos = (a, b) => !ativos(a).some((x, m) => x && ativos(b)[m]);
+  const ult = c => { let u = -1; c.meses.forEach((v, m) => { if (v > 0.5) u = m; }); return u; };
+  const out = lista.slice();
+  // Junta de dois em dois: mesmo primeiro nome, meses sem sobreposição e pelo menos
+  // duas palavras em comum (ou todas as do nome mais curto) — "VOIGT ZELADORIA" junta
+  // com "VOIGT ZELADORIA - SERVIÇO…", mas não com "VOIGT LIMPEZA".
+  let mudou = true;
+  while (mudou) {
+    mudou = false;
+    for (let i = 0; i < out.length && !mudou; i++) for (let j = i + 1; j < out.length && !mudou; j++) {
+      const a = out[i], b = out[j], pa = pal(a), pb = pal(b);
+      if (!pa.length || !pb.length || pa[0] !== pb[0] || !disjuntos(a, b)) continue;
+      const comum = pa.filter(p => pb.indexOf(p) >= 0).length;
+      if (comum < Math.min(2, pa.length, pb.length)) continue;
+      const vigente = ult(a) >= ult(b) ? a : b;
+      const meses = a.meses.map((v, m) => v + b.meses[m]);
+      out.splice(j, 1);
+      out[i] = Object.assign({}, vigente, { meses: meses, total: a.total + b.total, renovado: (a.renovado || 1) + (b.renovado || 1) });
+      mudou = true;
+    }
+  }
+  return out;
 }
 
 // Nome curto para a linha: o texto escolhido na planilha de textos (ou a

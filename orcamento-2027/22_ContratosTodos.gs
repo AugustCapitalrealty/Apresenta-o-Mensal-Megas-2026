@@ -28,6 +28,64 @@ const ORC_CONTRATOS_FORA = ['IPTU', 'Seguros', 'Seguro'];
 const ORC_CONTRATOS_JUNTAR = [
   { unidade: 'Mega Esteio', conta: 'Limpeza e conservação', termo: 'contrato lpu', nome: 'ROÇADA (LPU)', categoria: 'LPU' }
 ];
+// Linhas que o gestor/Guilherme mandou unir no slide de contratos (revisão de
+// 08/10/2026). Cada regra junta, na conta (ou em todas as contas da unidade sem
+// "conta"), as linhas cujo texto (nome do contrato de 2026 ou item de 2027) bate
+// com algum termo — termo é texto normalizado ou RegExp. A linha unida soma 2026 e
+// 2027 e leva o nome da regra; "situacao" fixa o texto da coluna SITUAÇÃO.
+const ORC_CONTRATOS_UNIR = [
+  { unidade: 'Mega Curitiba', conta: 'Segurança e vigilância', termos: ['drone', 'aeroscan', 'xdrone', 'implantacao internalizada'],
+    nome: 'VIGILÂNCIA COM DRONE AUTÔNOMO' },                                              // V8
+  { unidade: 'Mega Curitiba', conta: 'Limpeza e conservação', termos: ['rocada', 'adubo', 'gramix', 'roundup', 'herbicida'],
+    nome: 'ROÇADA (LPU)', categoria: 'LPU' },                                            // V9
+  { unidade: 'Mega Curitiba', conta: 'Limpeza e conservação', termos: ['empresa auxiliar', 'escala'],
+    nome: 'LIMPEZA (EMPRESA AUXILIAR)', situacao: 'Dissídio + escala 12x36' },   // V10
+  { unidade: 'Mega Itajaí', conta: 'Segurança e vigilância', termos: ['portovig', 'portvig'], nome: 'PORTOVIG VIGILÂNCIA' },        // V25
+  { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: ['portovig', 'portvig'], nome: 'PORTOVIG LIMPEZA E ZELADORIA' }, // V30
+  { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: ['lauri'], nome: 'LAURI BATISTA (DEDETIZAÇÃO)' },                // V32
+  { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: [/ambiental.*\b(amz|armazem) 0?(7|8|9)\b/],
+    nome: 'TAXAS AMBIENTAIS (AMZ 07 A 09)' },                                            // V33
+  { unidade: 'Mega Esteio', conta: 'Segurança e vigilância', termos: ['voigt', 'alteracao empresa de seguranca'],
+    nome: 'EMPRESA DE SEGURANÇA', situacao: 'Troca de empresa a partir de mar/' + String(ORC_ANO).slice(-2) },   // V42
+  { unidade: 'Mega Esteio', conta: 'Manutenção de imóveis', termos: ['rentbrella'], nome: 'RENTBRELLA (ARMAZÉNS A E B)' },         // V43
+  { unidade: 'Mega Itajaí', conta: 'Despesa com veículos', termos: ['locacao de veiculo', 'veiculo locado', 'veiculos do mega'],
+    nome: 'LOCAÇÃO DE VEÍCULOS DO MEGA', situacao: 'Era item do modelo ' + (ORC_ANO - 1) },                          // V35
+  { unidade: 'Mega Curitiba', conta: 'Material de consumo', termos: ['saco de lixo'], nome: 'SENTAX (SACO DE LIXO E PAPÉIS)' }       // V12
+];
+
+// Itens do ano com "contrato" no texto que não são contrato: material vai como
+// avulso (gestor, 08/10/2026 — "MATERIAL DE LIMPEZA, COPA E COZINHA (EXTRA CONTRATO)").
+const ORC_CONTRATOS_NAO_SAO = [
+  { unidade: 'Mega Curitiba', termo: 'material de limpeza, copa e cozinha' }   // V13
+];
+
+// Parte de 2026 que só está no ritmo item a item (070 de 2026, exportado em
+// 07/10/2026), fora do cadastro e dos modelos que o gerador lê. Itajaí: a nova
+// escala da limpeza começou em set/2026 — "diferença da auxiliar de serviços
+// gerais da escala 5x2 para 12x36" R$ 8.602,10/mês e "Auxiliar de zeladoria 5x2"
+// R$ 8.000/mês, set–dez (V29).
+const ORC_CONTRATOS_ANT_RITMO = [
+  { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termo: 'nova escala', ant: 4 * (8602.10 + 8000),
+    situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' }
+];
+
+// Contratos que em 2026 não estão no cadastro, mas estão no modelo de 2026 com
+// outro texto (Guilherme, 08/10/2026): entram no lado 2026 da conta.
+const ORC_CONTRATOS_ANT_DO_MODELO = [
+  { unidade: 'Mega Itajaí', conta: 'Manutenção de imóveis', termo: 'rentbrella' },          // V27
+  { unidade: 'Mega Itajaí', conta: 'Despesa com veículos', termo: 'locacao de veiculo' }    // V35
+];
+
+// Contratos de 2027 que o gestor diz que já existiam em 2026, mas que ninguém
+// achou nas fontes de 2026 (08/10/2026): no lugar de "Novo em 2027", a linha diz
+// "2026 não identificado" e o item vai para o alerta de pendências.
+const ORC_CONTRATOS_2026_NAO_ID = [
+  { unidade: 'Mega Curitiba', conta: 'Segurança e vigilância', termo: 'itau', item: 'Financiamento Itaú – cerca elétrica (desde jun/26)' },   // V7
+  { unidade: 'Mega Curitiba', conta: 'Manutenção de imóveis', termo: 'pmoc', item: 'Ar-condicionado (PMOC), ~R$ 4 mil em 2026' },                            // V11
+  { unidade: 'Mega Itajaí', conta: 'Manutenção de imóveis', termo: 'pmoc', item: 'Ar-condicionado (PMOC)' },                                                      // V28
+  { unidade: 'Mega Itajaí', conta: 'Material de consumo', termo: 'canaveral', item: 'LPU Canaveral: contrato × fora do contrato' } // V34
+];
+
 const ORC_CONTRATOS_POR_PAGINA = 16;
 
 // Palavras que não identificam fornecedor no casamento por conjunto.
@@ -161,6 +219,9 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
   const grupos = Object.keys(chaves).map(k => {
     let ant = contas.indexOf(chaves[k]) >= 0 ? _orcLerCadastroContratos_(cadDados, unidade, chaves[k], ORC_ANO - 1) : [];
     if (!ant.length && modelosAnt) ant = _orcContratosNoModeloAnt_(modelosAnt, unidade, k);
+    if (modelosAnt) ORC_CONTRATOS_ANT_DO_MODELO.filter(r => _orcNorm_(r.unidade) === _orcNorm_(unidade) && _orcChaveConta_(r.conta) === k)
+      .forEach(r => _orcItensModeloAnt_(modelosAnt, unidade, k, r.termo)
+        .forEach(c => { if (!ant.some(x => x.descricao === c.descricao)) ant.push(c); }));
     const itens = doModelo.filter(l => _orcChaveConta_(l.conta) === k);
     // Só item de contrato casa ("CONTRATO — X" das planilhas e do cadastro,
     // [CONTRATO]/"contrato" do modelo): "IMPERMEABILIZAÇÃO DA LAJE DA
@@ -170,7 +231,9 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
     const contaRel = rel.contas.filter(c => semEm(c.chave) === semEm(k))[0];
     const juntar = ORC_CONTRATOS_JUNTAR.filter(j => _orcNorm_(j.unidade) === _orcNorm_(unidade) && _orcChaveConta_(j.conta) === k)[0];
     const juntos = juntar ? itens.filter(l => _orcNorm_(l.item).indexOf(juntar.termo) >= 0) : [];
-    const deContrato = itens.filter(l => /\bcontrato\b/.test(_orcNorm_(l.item)) && juntos.indexOf(l) < 0);
+    const naoSao = ORC_CONTRATOS_NAO_SAO.filter(r => _orcNorm_(r.unidade) === _orcNorm_(unidade)).map(r => r.termo);
+    const deContrato = itens.filter(l => /\bcontrato\b/.test(_orcNorm_(l.item)) && juntos.indexOf(l) < 0 &&
+                                         !naoSao.some(t => _orcNorm_(l.item).indexOf(t) >= 0));
     // Cada item do ano vai para o contrato com mais palavras em comum.
     const pal = ant.map(c => _orcPalavrasCasamento_(c.fornecedor));
     const dono = deContrato.map(it => {
@@ -192,13 +255,20 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
       // "posto adicional…").
       const ampl = doAno.length > 1 ? doAno.filter(it => /ampliacao|adiciona/.test(_orcNorm_(it.item))) : [];
       const pct = c.total ? atual / c.total - 1 : 0, indice = c.reajuste || 'reajuste';
+      // Contrato que começou no meio de 2026: a alta é o ano cheio, não reajuste
+      // (gestor, 08/10/2026: Firecam R$ 60 mil → R$ 120 mil não é "acima do reajuste").
+      const mesesAnt = c.meses ? c.meses.filter(v => v > 0.5).length : 12;
+      const iniAnt = c.meses ? c.meses.findIndex(v => v > 0.5) : 0;
+      const anoCheio = mesesAnt > 0 && mesesAnt < 12 && iniAnt > 0 && atual > c.total * 1.08;
       const base = doAno.filter(it => ampl.indexOf(it) < 0).sort((a, b) => b.total - a.total)[0] || doAno[0];
       return {
         nome: _orcNomeCurtoContrato_(base ? _orcNomeContrato_(_orcSepararCategoria_(base.item).descricao || base.item) : c.fornecedor),
         categoria: base ? _orcCategoriaItem_(base) : '',
         ant: c.total, atual: atual,
+        textos: [c.fornecedor].concat(doAno.map(it => it.item)),
         situacao: !doAno.length ? (itens.length ? 'Sem item em ' + ORC_ANO : 'Fora do modelo ' + ORC_ANO) :
           c.doModelo ? 'Era item do modelo ' + (ORC_ANO - 1) :
+          anoCheio ? 'Ano cheio (começou em ' + ORC_MESES[iniAnt].toLowerCase() + '/' + String(ORC_ANO - 1).slice(-2) + ')' :
           ampl.length ? 'Ampliação ' + _orcCompacto_(ampl.reduce((t, it) => t + it.total, 0)) :
           pct > 0.08 ? 'Acima do ' + indice : pct < -0.005 ? 'Redução' : 'Reajuste' + (c.reajuste ? ' ' + c.reajuste : '')
       };
@@ -207,7 +277,7 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
       if (dono[j] >= 0) return;
       const sep = _orcSepararCategoria_(it.item);
       linhas.push({ nome: _orcNomeCurtoContrato_(_orcNomeContrato_(sep.descricao || it.item)), categoria: _orcCategoriaItem_(it),
-                    ant: 0, atual: it.total, situacao: 'Novo em ' + ORC_ANO });
+                    ant: 0, atual: it.total, situacao: 'Novo em ' + ORC_ANO, textos: [it.item] });
     });
     if (juntos.length) {
       const antContratos = ant.reduce((t, c) => t + c.total, 0);
@@ -215,17 +285,92 @@ function _orcCompararTodosContratos_(rel, cadDados, unidade, linhasModelo, model
                     ant: contaRel ? Math.max(0, contaRel.v.ritmo - antContratos) : 0, atual: juntos.reduce((t, it) => t + it.total, 0),
                     situacao: 'Era avulso em ' + (ORC_ANO - 1) + ' (' + juntos.length + ' itens)' });
     }
+    _orcUnirLinhasContratos_(linhas, unidade, k);
+    ORC_CONTRATOS_ANT_RITMO.filter(r => _orcNorm_(r.unidade) === _orcNorm_(unidade) && _orcChaveConta_(r.conta) === k).forEach(r => {
+      const l = linhas.filter(x => x.ant < 0.5 && _orcNorm_((x.textos || []).join(' ') + ' ' + x.nome).indexOf(r.termo) >= 0)[0];
+      if (l) { l.ant = r.ant; l.situacao = r.situacao; }
+    });
+    linhas.forEach(l => {
+      const t = _orcNorm_((l.textos || []).join(' ') + ' ' + l.nome);
+      const nid = ORC_CONTRATOS_2026_NAO_ID.filter(r => _orcNorm_(r.unidade) === _orcNorm_(unidade) && t.indexOf(r.termo) >= 0)[0];
+      if (nid && l.ant < 0.5) { l.situacao = ORC_ANO - 1 + ' não identificado'; l.naoId = nid.item; }
+    });
     linhas.sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual));
     return { conta: contaRel ? contaRel.nome : chaves[k], chave: k, metragem: contaRel ? contaRel.v : null, linhas: linhas,
              ant: linhas.reduce((t, l) => t + l.ant, 0), atual: linhas.reduce((t, l) => t + l.atual, 0) };
   }).filter(g => g.linhas.length).sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual));
 
+  _orcMudouDeConta_(grupos);
   const todas = [];
   grupos.forEach(g => g.linhas.forEach(l => todas.push(l)));
   const semPar = todas.filter(l => l.ant > 0.5 && l.atual < 0.5), novos = todas.filter(l => /^Novo/.test(l.situacao));
   return { grupos: grupos, ant: todas.reduce((t, l) => t + l.ant, 0), atual: todas.reduce((t, l) => t + l.atual, 0),
            semPar: { n: semPar.length, ant: semPar.reduce((t, l) => t + l.ant, 0) },
            novos: { n: novos.length, atual: novos.reduce((t, l) => t + l.atual, 0) }, n: todas.length };
+}
+
+// Itens do modelo do ano anterior (unidade, conta) com o termo no texto, no
+// formato do cadastro — contrato lançado no modelo e não no cadastro.
+function _orcItensModeloAnt_(linhas, unidade, chaveConta, termo) {
+  return (linhas || []).slice(1).filter(r =>
+    _orcNorm_(r[2]) === _orcNorm_(unidade) && /rateio/.test(_orcNorm_(r[4])) &&
+    _orcChaveConta_(r[0]) === chaveConta && _orcNorm_(r[5]).indexOf(termo) >= 0)
+    .map(r => {
+      const meses = r.slice(8, 20).map(v => Math.abs(_orcNum_(v)));
+      return { fornecedor: String(r[5]).replace(/\s*[*#]+\s*\d[\d\s\/*#]*/g, ' ').trim(), descricao: String(r[5]).trim(),
+               meses: meses, total: meses.reduce((t, v) => t + v, 0), reajuste: '', doModelo: true };
+    })
+    .filter(c => c.total > 0.5);
+}
+
+// Une as linhas de ORC_CONTRATOS_UNIR (ver a constante). Muda "linhas" no lugar.
+function _orcUnirLinhasContratos_(linhas, unidade, chaveConta) {
+  ORC_CONTRATOS_UNIR.filter(r => _orcNorm_(r.unidade) === _orcNorm_(unidade) && (!r.conta || _orcChaveConta_(r.conta) === chaveConta))
+    .forEach(r => {
+      const bate = l => {
+        const t = _orcNorm_((l.textos || []).join(' ') + ' ' + l.nome);
+        return r.termos.some(x => x instanceof RegExp ? x.test(t) : t.indexOf(x) >= 0);
+      };
+      const juntas = linhas.filter(bate);
+      if (!juntas.length) return;
+      const ant = juntas.reduce((t, l) => t + l.ant, 0), atual = juntas.reduce((t, l) => t + l.atual, 0);
+      const maior = juntas.slice().sort((a, b) => Math.max(b.ant, b.atual) - Math.max(a.ant, a.atual))[0];
+      const pct = ant > 0.5 ? atual / ant - 1 : 0;
+      const sit = r.situacao || (ant < 0.5 ? 'Novo em ' + ORC_ANO : atual < 0.5 ? 'Sem item em ' + ORC_ANO :
+        juntas.length > 1 ? 'Junta ' + juntas.length + ' linhas' + (pct > 0.08 ? ' · acima do reajuste' : '') :
+        maior.situacao);
+      const nova = { nome: r.nome, categoria: r.categoria || maior.categoria, ant: ant, atual: atual, situacao: sit,
+                     textos: juntas.reduce((t, l) => t.concat(l.textos || [l.nome]), []) };
+      const i0 = linhas.indexOf(juntas[0]);
+      juntas.forEach(l => linhas.splice(linhas.indexOf(l), 1));
+      linhas.splice(Math.min(i0, linhas.length), 0, nova);
+    });
+}
+
+// Contrato que só tem 2026 numa conta e só 2027 em outra, do mesmo fornecedor
+// (Arca Agro em Itajaí: Limpeza em 2026, Manutenção em 2027 — 08/10/2026): o
+// 2026 vai para a linha de 2027, com a conta antiga na situação.
+function _orcMudouDeConta_(grupos) {
+  const forn = l => _orcPalavrasFornecedor_(l.nome)[0];
+  grupos.forEach(gNovo => gNovo.linhas.filter(l => l.ant < 0.5 && l.atual > 0.5 && forn(l)).forEach(l => {
+    grupos.forEach(gVelho => {
+      if (gVelho === gNovo) return;
+      const velha = gVelho.linhas.filter(v => v.atual < 0.5 && v.ant > 0.5 && forn(v) === forn(l))[0];
+      if (!velha) return;
+      l.ant = velha.ant;
+      l.situacao = 'Mudou de conta (' + gVelho.conta.split(' ')[0].toLowerCase() + ')';
+      gVelho.linhas.splice(gVelho.linhas.indexOf(velha), 1);
+      gVelho.ant -= velha.ant;
+      gNovo.ant += velha.ant;
+    });
+  }));
+}
+
+// Pendências de contratos sem 2026 identificado (para o alerta).
+function _orcContratosNaoIdentificados_(cmp) {
+  const out = [];
+  (cmp && cmp.grupos || []).forEach(g => g.linhas.forEach(l => { if (l.naoId) out.push({ conta: g.conta, item: l.naoId, atual: l.atual }); }));
+  return out;
 }
 
 // Páginas: linhas de grupo e de contrato, sem deixar o nome da conta sozinho
