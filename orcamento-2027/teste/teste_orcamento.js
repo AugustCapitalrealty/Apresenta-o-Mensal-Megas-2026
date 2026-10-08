@@ -800,6 +800,8 @@ const iDemais = iInv + 1 + nGrupos, iCat0 = iDemais + nPagDemais, iMensal = iCat
   ok(tPQ.some(t => /^Sem as obras adiadas: R\$ [\d,]+ (mil|mi) · R\$ [\d,]+\/m² ao mês/.test(t)),
      'leitura sem as obras adiadas em R$ e R$/m² ao mês');
   ok(G._orcAdiados2026_(G.ORC_CIDADES.ESTEIO, G.obterManutencao_('CURITIBA')) === null, 'Mega sem obra adiada: sem o slide');
+  ok(tPQ.indexOf('ORÇ 2026') >= 0 && tPQ.indexOf('RITMO 2026') > tPQ.indexOf('ORÇ 2026') && !tPQ.some(t => /gestor/i.test(t)),
+     'por que sobe: coluna do Orç 2026 primeiro e sem "comentário do gestor" (08/10/2026)');
 }
 ok(titulo(slides[iLLManut]) === contasLL[0].nome, 'Manutenção abre com a conta (sem página 2/2)');
 // Os itens menores não têm página própria: a linha aponta para o item a item, adiante.

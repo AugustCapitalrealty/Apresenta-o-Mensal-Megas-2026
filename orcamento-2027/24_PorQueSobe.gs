@@ -46,6 +46,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
   const v = conta.v, a = rel.anos;
   const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
+  const aAnt = _orcAreaImplicita_(rel, 'orcAnt') || aRit;
   const m2 = (x, ar) => ar ? 'R$ ' + _orcM2_(x / ar / 12) + '/m²' : '';
   const alta = v.orc - v.ritmo, demais = alta - adi.total, semAdiados = v.orc - adi.total;
   const pct = x => v.ritmo ? (x >= 0 ? '+' : '−') + _orcPct_(Math.abs(x / v.ritmo)) : '–';
@@ -56,7 +57,10 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   // ---- Ponte (esquerda) ----
   const cy = 74, ch = H - 28 - cy, cw = (W - MX * 2) * 0.44, cx = MX;
   _orcCard_(slide, cx, cy, cw, ch, 'Do Ritmo ' + a.ritmo + ' ao Orçamento ' + a.orc);
-  const colunas = [
+  // Gestor, 08/10/2026: "colocar coluna ao lado (comparativo) Orç 2026" — vem
+  // primeiro, em cinza e fora da cascata (a ponte continua Ritmo → Orç).
+  const temAnt = v.orcAnt > 0.5;
+  const colunas = (temAnt ? [{ nome: 'Orç ' + a.orcAnt, de: 0, ate: v.orcAnt, cor: '#94A3B8', m2: m2(v.orcAnt, aAnt), comparativo: true }] : []).concat([
     { nome: 'Ritmo ' + a.ritmo, de: 0, ate: v.ritmo, cor: C.brandDark, m2: m2(v.ritmo, aRit) },
     // "OBRAS ADIADAS DE 2026" ia para 3 linhas e o ano saía cortado (07/10/2026).
     { nome: 'Obras adiadas', de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight,
@@ -65,16 +69,17 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
       cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce,
       m2: area && aRit ? (demais >= 0 ? '+' : '−') + 'R$ ' + _orcM2_(Math.abs(v.orc / area / 12 - v.ritmo / aRit / 12 - adi.total / area / 12)) + '/m²' : '' },
     { nome: 'Orçamento ' + a.orc, de: 0, ate: v.orc, cor: C.brandDark, m2: m2(v.orc, area) }
-  ];
+  ]);
+  const i0 = temAnt ? 1 : 0;   // índice da coluna do Ritmo
   const px = cx + 14, pw = cw - 28, topo = cy + 50, base = cy + ch - 74;
-  const maxV = Math.max(v.ritmo, v.orc, v.ritmo + adi.total) * 1.08;
+  const maxV = Math.max(v.ritmo, v.orc, v.ritmo + adi.total, temAnt ? v.orcAnt : 0) * 1.08;
   const y = x => base - (base - topo) * x / maxV;
   const colW = pw / colunas.length, barW = Math.min(colW * 0.56, 46);
   _orcLinha_(slide, px, base, px + pw, base, C.lines, 1);
   colunas.forEach((c, i) => {
     const bx = px + i * colW + (colW - barW) / 2, y1 = y(Math.max(c.de, c.ate)), y2 = y(Math.min(c.de, c.ate));
     _orcRet_(slide, bx, y1, barW, Math.max(0.8, y2 - y1), c.cor);
-    const delta = i === 1 || i === 2;
+    const delta = i === i0 + 1 || i === i0 + 2;
     const txt = delta ? _orcDeltaMil_(c.ate - c.de) + ' mil' : _orcCompacto_(c.ate);
     _orcUmaLinha_(slide, px + i * colW, y1 - 24, colW, 12, txt,
       { align: 'C', fs: 8, bold: true, cor: c.cor, fonte: T.titles, folga: 4, fsMin: 6 });
@@ -83,8 +88,10 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
         { align: 'C', fs: 6.5, cor: C.textBody, fonte: T.body, folga: 4, fsMin: 5.5 });
     }
     _orcParagrafo_(slide, px + i * colW - 2, base + 3, colW + 4, 22, c.nome.toUpperCase(),
-      { align: 'C', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.titles, cor: i === 1 ? C.brandLight : C.textBody });
+      { align: 'C', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.titles, cor: i === i0 + 1 ? C.brandLight : C.textBody });
   });
+  // Separador entre o comparativo (Orç do ano anterior) e a cascata.
+  if (temAnt) _orcLinha_(slide, px + colW, topo - 6, px + colW, base, C.lines, 0.75);
   // A leitura sem as obras adiadas, embaixo da ponte.
   const ly = base + 30;
   _orcRet_(slide, cx + 12, ly, cw - 24, 30, C.brandTint, { redondo: true });
@@ -107,10 +114,10 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
     { titulo: 'ORÇ ' + a.ritmo, w: numW }, { titulo: 'ORÇ ' + a.orc, w: numW, destaque: true }
   ], linhas, null);
   _orcParagrafo_(slide, tx + 12, yFim + 8, tw - 24, 34,
-    'Orçadas em ' + a.ritmo + ', não realizadas e passadas para ' + a.orc + ' — comentário do gestor nas planilhas de ' +
-    'comparação de itens. Orç ' + a.orc + ' = valor de hoje no modelo 090.',
+    // Sem a menção ao "comentário do gestor" (gestor, 08/10/2026: "Retirar comentário").
+    'Orçadas em ' + a.ritmo + ', não realizadas e passadas para ' + a.orc + '. Orç ' + a.orc + ' = valor de hoje no modelo 090.',
     { fs: 7, fsMin: 6, cor: C.textBody, fonte: T.body });
 
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Ritmo e Orçamento da conta) · obras: planilhas de comparação 2026 × 2027 ' +
-    '(decisões do gestor) e modelo 090 de ' + a.orc + ' · ' + cid.nome);
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · obras: planilhas de comparação ' +
+    a.ritmo + ' × ' + a.orc + ' e modelo 090 de ' + a.orc + ' · ' + cid.nome);
 }
