@@ -67,6 +67,12 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - **Próximo:** os 9 erros e as melhorias da analista 4 (`IDEIAS-DESIGN.md`, "Avaliação da analista 4"); o Guilherme
   aprovou corrigir os erros e ver rascunhos de "área × custo" e "por que sobe" de Segurança e Limpeza.
 
+### 08/10/2026 — ajustes da V2
+
+- Comentários do Jonatas no deck de Facilities anotados como V1–V45 em [`REVISAO-GESTOR.md`](REVISAO-GESTOR.md) ("Ajustes da V2"), com o status de cada um.
+- Código feito na mesma tarde (o Guilherme: "pode rodar"): ordem Esteio → Itajaí → Curitiba, ▲ 100% no lugar de "novo", "=" abaixo de 0,5%, KPIs em /m², Ofensores sem Δ do m², resumo abre a Manutenção, sai "contratos e avulsos", "Por que sobe" com o Orç 2026, grupo da manutenção item a item (`ORC_GRUPO_MANUT_GESTOR`), contratos com renovações juntas, `ORC_CONTRATOS_UNIR`, mudou de conta, ano cheio e "2026 não identificado" no alerta. Teste 4506/4506.
+- **Não publicado:** o clasp estava sem login. Falta também: rascunhos V16 e V19 (o do V4 está em "01 - CONTROLE DA APRESENTAÇÃO"), erros 4–7 da analista.
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |
