@@ -25,6 +25,67 @@ terceiros. Estão descritas em palavras, e a regra é copiar a técnica, nunca a
 - Prévia sem abrir o Slides: `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e
   `python ferramentas/previa_slides.py ferramentas/saida/formas_itajai.json <índices>`.
 
+## Aprovado e feito em 07/10/2026 (noite) — v2 dos gráficos e o motor
+
+Cada um passou por: rascunho em PNG aberto na tela do Guilherme → avaliação de uma analista (agente) → v2 → "aprovado"
+→ código → teste → publicação. Rascunhos em `ferramentas/rascunhos/` (`grafico_m2_rascunho*.py`,
+`graficos_rascunho.py`, PNGs ao lado).
+
+| Slide | Antes | Agora | Código |
+|---|---|---|---|
+| Custo por m² mês a mês | legenda solta, sem escala, esquerda vazia | painel à esquerda com as duas comparações (Orç × ritmo do ano e × saída de 2026 out–dez, "saída é projeção; degrau a explicar"), ritmo contínuo até o último mês fechado e tracejado depois com a faixa "projeção do ritmo", nome no fim de cada linha, grade com escala, rótulo que desce quando outra linha passa perto | `20_M2Mensal.gs` (`_orcGraficoM2_`, `_orcPainelM2_`, `_orcM2Mensagem_`); `ORC_RITMO_ULTIMO_MES_FECHADO` |
+| Previsão de entrega (card das categorias) | 12 barras, destacava JAN mesmo com todo mês igual | calendário 4×3 em R$ mil, cor pela intensidade, mês sem entrega em branco, pico só quando existe, frase embaixo ("R$ 11,6 mil todo mês" / "Pico em JUN") | `15_Categorias.gs` (`_orcMiniMeses_`, `_orcMisturarCor_`) |
+| Ponte ritmo → Orç | alta e redução em dois verdes | alta vermelha, redução verde (convenção ▲▼), % do degrau sobre o ritmo | `10_ResumoExecutivo.gs` |
+| Mês a mês de Manutenção, Segurança, Limpeza | 36 barras agrupadas | Orç em barras com o valor, ritmo em linha (tracejada na projeção, etiquetas brancas), Orç do ano anterior como traço cinza, leitura no topo do card | `12_LinhaALinha.gs` (`_orcMesAMesConta_`) |
+| Distribuição mensal | barras de uma cor + linha da média | barra dividida em contratos (base) e avulsos (picos), "base de contratos ~R$ 40 mil" | `14_Mensal.gs` |
+| Os Megas lado a lado (abertura do Facilities) | só a tabela de 36 linhas | slide de gráfico antes da tabela: cards do R$/m² operacional por Mega e de Facilities + 5 painéis (`ORC_FAC_PAINEIS`) com barra por Mega, traço do ritmo, tracejado de Facilities e "Mais caro: X, N% acima de Facilities"; a tabela virou "conta a conta" | `25_Facilities.gs` (`gerarSlideMegasGrafico_`) |
+| Todo slide com cabeçalho | formas soltas no Slides | **formas pelo motor**: as formas do conteúdo numa imagem logo acima da moldura, só textos no slide (README, "Formas pelo motor") | `00_Helpers.gs` (`_orcFecharGrafico_`), `ferramentas/graficos_imagem.py` |
+
+Regras que ficaram (Guilherme, 07/10/2026): **"o máximo de moldura possível"**, **"apenas textos no slide"** e **"só
+vamos mudar caso algum número mude"** — gráfico ou elemento visual novo vai pelo motor; nunca forma solta.
+
+## Avaliação da analista 4 (07/10/2026, noite): o deck inteiro — ainda não aprovado
+
+Revisou os 40 slides de Curitiba e os 4 da abertura (prévias). O Guilherme disse "ok" para corrigir os erros e ver
+rascunhos das melhorias 1 e 3.
+
+**Erros (corrigir primeiro):**
+1. ▲ de gasto que sobe na cor da marca (verde em Curitiba) nas capas, sub capas e KPIs; "+R$ 1.231.960" verde no
+   Resumo Executivo. Convenção: ▲ vermelho = gasto sobe, ▼ verde = cai.
+2. "▲ 0%" vermelho na DRE e contratos: usar "=" quando |Δ| < 0,5%.
+3. "Demais" não bate: barra do resumo da manutenção "Demais (11) R$ 268 mil 15,2%" × slide "12 categorias R$ 341 mil
+   19,4%" (Comunicação horizontal, 4,1%, fica fora num e dentro no outro).
+4. "Demais contas (21)" no "Custo por m² ao mês, 2025 → 2027" (fere "todas as contas, sem Demais contas").
+5. Rodapés: o do "Custo por m² ao mês" ("quando Itajaí e Esteio estiverem configurados") está velho; o sumário do
+   Facilities diz só "Capital Realty".
+6. Ponte: na barra de Reduções o % saiu em cima e o −247 embaixo (invertidos).
+7. Segurança mês a mês: as etiquetas "177" de nov/dez cobrem o valor das barras.
+8. Custo por m² mês a mês: escala pula o 3,50; ritmo de jan (2,40) abaixo do piso 2,50; "4,06" encosta no "4,18".
+9. "DESPESAS COM PESSOAL E ADMINISTRATI…" cortado na tabela dos Megas.
+Também: quantidade de contratos muda entre slides (40, 19, 8, 10, "5 contratos" no rodapé) — padronizar o que cada
+número conta; "projetos pontuais" junta Projeto e Manutenção pontual.
+
+**Melhorias (ordem de impacto):**
+1. **Área × custo**: ponte de Facilities nova (R$ 13,5 mi → R$ 17,95 mi, dois degraus por Mega: efeito área e efeito
+   R$/m²) — hoje a capa diz +33% e o comparativo +14% sem explicar; o Esteio aparece ▼12% no m² e quase dobra em R$.
+   Na ponte de Curitiba, primeiro degrau "Efeito área +609" (o Resumo Executivo já separa área 609 e custo 623).
+2. Títulos com a conclusão (action titles): ex. "Segurança sobe R$ 425 mil: posto 24h (+468) e drone/cerca (+361)".
+3. "Por que sobe" para Segurança e Limpeza, no formato do slide da Manutenção (dados no "Contratos 2026 × 2027").
+4. Ofensores + Defensores num gráfico de barras divergentes (critério único R$ ou R$/m²).
+5. Resumo Executivo: tirar o "101,3%"; KPIs em R$ e R$/m² + mini-ponte.
+6. Comparação "sem projetos" (R$ 1,06 mi × R$ 1,27 mi) compara bases diferentes — usar só o ajuste das obras adiadas.
+7. Os 7 slides de categoria → 1 mapa de calor categoria × mês (detalhe para anexo).
+8. Custo por m²: slope chart Ritmo 26 → Orç 27 por conta; uma métrica só.
+9. Premissas com "Escreva aqui." — premissas comuns na abertura, uma vez.
+
+**Contrariam decisões já tomadas (só com o Guilherme):** tirar o "× saída de 2026" (aprovado hoje); juntar Ofensores e
+Defensores (formato dos Megas, pedido do gestor). **Para o gestor:** "Empréstimo Itaú – cerca elétrica" (R$ 182 mil)
+como despesa de Segurança.
+
+**Os 3 mais fortes** (o padrão a copiar: um gráfico, uma mensagem e a prova, sem tabela como peça principal): "Os Megas
+lado a lado" (recado no pé de cada painel), "Por que a manutenção sobe" (cascata + prova ao lado), "Distribuição
+mensal" (base × picos, o item que causa cada pico).
+
 ## Fila de melhorias (analista 3, 07/10/2026): guardada, ainda não aprovada
 
 O Guilherme pediu para guardar e fazer outras melhorias antes. Simulações em PNG, com os números reais de Itajaí,

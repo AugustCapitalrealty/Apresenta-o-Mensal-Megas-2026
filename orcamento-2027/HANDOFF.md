@@ -48,6 +48,25 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - Planilhas de comparação item a item 2026 × 2027 (manutenção) montadas para
   os três Megas; o gestor ainda vai marcar SIM/NÃO.
 
+### Fim do dia 07/10/2026 (v2)
+
+- **Deck único de Facilities** criado (ID `1w_diCsSIpuuryXliPRBcW4YWoMmM8RyuT7O7307DsqQ`, 74 slides): gerar por
+  parte, cada uma numa execução — `gerarFacilitiesAbertura`, `gerarFacilitiesCuritiba`, `gerarFacilitiesItajai`,
+  `gerarFacilitiesEsteio` (`25_Facilities.gs`). Os decks por Mega continuam (`gerarCuritiba` etc.).
+- **Curitiba é Demercado** (verde #00594F, ouro #AF9800, títulos em EB Garamond, logo Demercado); Itajaí e Esteio são
+  Capital Realty (`ORC_MARCAS`, `cid.marca`).
+- **Motor de imagens** (README, "Molduras em imagem" e "Formas pelo motor"): moldura (`MOLDURA - <hash>.png`) no
+  fundo + formas do conteúdo (`GRAFICO - <hash>.png`) logo acima + só textos no slide. Log de cada parte: "molduras:
+  …" e "formas pelo motor: N slides em imagem, M em formas". M > 0 = número mudou: `python
+  ferramentas/graficos_imagem.py` (lê o manifesto do teste e `GRAFICOS PENDENTES.json` da pasta), esperar o Drive
+  subir (`python ferramentas/conta_drive.py --esperar 15` conta pela API) e gerar de novo.
+- **Gráficos v2** aprovados e publicados (tabela em `IDEIAS-DESIGN.md`, "Aprovado e feito em 07/10/2026").
+- **Ritmo 2026 fechado até setembro** (`ORC_RITMO_ULTIMO_MES_FECHADO = 9`, `01_Config.gs`) — suposição; o Guilherme
+  não confirmou. Atualizar a cada fechamento.
+- Teste: **4815/4815**. Último commit do dia na `main`; editor = `main`.
+- **Próximo:** os 9 erros e as melhorias da analista 4 (`IDEIAS-DESIGN.md`, "Avaliação da analista 4"); o Guilherme
+  aprovou corrigir os erros e ver rascunhos de "área × custo" e "por que sobe" de Segurança e Limpeza.
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |
@@ -58,6 +77,8 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 | Mover ou renomear arquivo do Drive | `Move-Item` / `Rename-Item` no G: (o ID não muda, o gerador continua achando) |
 | Excluir arquivo do Drive | Não exclua. Renomeie com o prefixo `PODE EXCLUIR - ` e avise o usuário |
 | Publicar o código | `clasp login` (o usuário autoriza no navegador; a credencial some no reinício) e `clasp push --force` em `orcamento-2027/` |
+| Saber se o Drive já subiu as imagens | `python ferramentas/conta_drive.py [--esperar MIN]`: conta os `GRAFICO - *.png` no Drive pela API (só metadados), com o token do clasp |
+| Ver um slide sem o Slides | `PREVIA=ferramentas/saida node teste/teste_orcamento.js` e `python ferramentas/previa_slides.py ferramentas/saida/formas_<cidade>.json <índices>` — desde 07/10/2026 desenha linhas inclinadas, tracejado, bordas e alinhamento do texto como o Slides |
 
 `exportarFixtures()` e `exportarSlides*()` foram ampliadas em 07/10/2026 e
 **ainda não foram rodadas** nessa versão: na primeira vez, confira o log
@@ -124,6 +145,15 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
   no slide.
 - Texto curto de tabela: o gestor escolhe na coluna C da planilha de
   textos; o código só propõe (`07_PropostasTextos.gs`).
+
+- **Como o Guilherme gosta de trabalhar** (07/10/2026): quando ele diz "vai anotando", só anote; nada de código
+  até "pode rodar". Visual novo: rascunho em PNG **aberto na tela dele** (`Start-Process`) antes de codar; ele
+  costuma pedir "rode um analista" (um agente avalia e dá nota) antes de aprovar. Sempre dizer **em qual arquivo**
+  está a função que ele tem que rodar. Ao entregar, um passo a passo curto do que rodar.
+- **Tudo pelo motor:** gráfico ou elemento visual novo usa `_orcRet_`/`_orcLinha_`/`_orcBolinha_` (viram imagem) e
+  `_orcUmaLinha_`/`_orcParagrafo_` (texto); nunca `slide.insertShape` solto num slide com cabeçalho.
+- **Comparação honesta** (analista, 07/10/2026): não tirar conclusão só de um recorte de meses; out–dez do ritmo é
+  projeção e tem que dizer; quando a área muda, separar efeito área de efeito custo.
 
 ## 7. Próximos passos
 
@@ -209,4 +239,18 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
 - **Nunca reconstrua arquivo a partir de texto colado no chat** (ver o
   `CLAUDE.md` da raiz): pegue da fonte.
 - Heredoc de Bash com Python quebra com aspas e `\b`; escreva o script com a
-  ferramenta de escrita e rode o arquivo.
+  ferramenta de escrita e rode o arquivo. (Voltou a quebrar em 07/10/2026 com
+  heredocs grandes: "unexpected EOF while looking for matching `''".)
+- **Caixa de texto do Slides quebra antes do que a estimativa acha**
+  (`_orcLarguraTexto_` subestima): número curto em caixa estreita ("4,50" em
+  24 pt com folga 0) e nome no fim de linha ("Ritmo 2026" em 40 pt) quebraram
+  em duas linhas. Dê folga (a caixa não tem fundo, esticar não aparece).
+- **Motor e camadas:** a imagem das formas vai com `sendToBack` e a moldura
+  fecha depois (fica mais atrás). Sem a imagem, as formas são recriadas e
+  mandadas para trás na ordem inversa — ficam atrás de todos os textos.
+  Capa, sumário e sub capas não têm cabeçalho e não entram no motor (lá há
+  forma por cima de foto e áreas de link).
+- **Assinatura igual no teste e no Apps Script:** a especificação é JSON com
+  uma casa decimal; o teste usa as mesmas planilhas (fixtures), por isso as
+  imagens desenhadas a partir do teste servem para a geração real. Se a
+  planilha real mudar, a assinatura muda e cai em "formas" + pendentes.

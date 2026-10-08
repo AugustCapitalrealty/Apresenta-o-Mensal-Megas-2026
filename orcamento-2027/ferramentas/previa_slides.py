@@ -49,18 +49,31 @@ def desenha(dados, i, destino):
         if tipo == 'IMAGE':
             d.rectangle([x, y, x + w, y + h], fill=(203, 213, 225, 255)); d.text((x + 8, y + 8), 'FOTO', font=fonte(10, True, k), fill=(100, 116, 139, 255))
         elif tipo == 'LINE':
-            d.line([x, y, x + w, y + h], fill=(203, 213, 225, 255), width=max(1, int(k)))
+            # pontas de verdade (o teste grava x1…y2 desde 07/10/2026), cor, espessura e tracejado
+            p1 = (f.get('x1', f['x']) * k, f.get('y1', f['y']) * k); p2 = (f.get('x2', f['x'] + f['w']) * k, f.get('y2', f['y'] + f['h']) * k)
+            c, larg = rgba(f.get('cor') or '#CBD5E1'), max(1, round(f.get('peso', 0.75) * k))
+            if f.get('dash'):
+                dx, dy = p2[0] - p1[0], p2[1] - p1[1]; L = (dx * dx + dy * dy) ** .5 or 1; t = 0; tr = 4 * f.get('peso', 1) * k
+                while t < L:
+                    e = min(t + tr, L); d.line([(p1[0] + dx * t / L, p1[1] + dy * t / L), (p1[0] + dx * e / L, p1[1] + dy * e / L)], fill=c, width=larg); t += tr * 1.75
+            else:
+                d.line([p1, p2], fill=c, width=larg)
         elif f.get('texto'):
             if f.get('cor'): d.rectangle([x, y, x + w, y + h], fill=rgba(f['cor'], f.get('alpha', 1)))
             ft = fonte(f.get('fs', 10), f.get('negrito'), k)
             linhas = quebra(d, f['texto'], ft, max(10, w - 2 * RECUO * k))
             alt = ft.size * 1.25 * len(linhas)
             ty = y + (h - alt) / 2 if len(linhas) == 1 else y + RECUO * k * 0.5
+            al = str(f.get('align') or '')
             for n, l in enumerate(linhas):
-                d.text((x + RECUO * k, ty + n * ft.size * 1.25), l, font=ft, fill=rgba(f.get('corTexto') or '#151E49'))
-        elif f.get('cor'):
-            forma = d.ellipse if tipo == 'ELLIPSE' else d.rectangle
-            forma([x, y, x + w, y + h], fill=rgba(f['cor'], f.get('alpha', 1)))
+                lw = d.textlength(l, font=ft)
+                tx = x + (w - lw) / 2 if 'CENTER' in al else (x + w - RECUO * k - lw if 'END' in al else x + RECUO * k)
+                d.text((tx, ty + n * ft.size * 1.25), l, font=ft, fill=rgba(f.get('corTexto') or '#151E49'))
+        elif f.get('cor') or f.get('borda'):
+            forma = d.ellipse if tipo == 'ELLIPSE' else (d.rounded_rectangle if tipo == 'ROUND_RECTANGLE' else d.rectangle)
+            extra = {'radius': min(w, h) * 0.1667} if tipo == 'ROUND_RECTANGLE' else {}
+            forma([x, y, x + w, y + h], fill=rgba(f['cor'], f.get('alpha', 1)) if f.get('cor') else None,
+                  outline=rgba(f['borda']) if f.get('borda') else None, width=max(1, round(f.get('peso', 0.75) * k)) if f.get('borda') else 0, **extra)
         img = Image.alpha_composite(img, camada)
     img.convert('RGB').save(destino)
 

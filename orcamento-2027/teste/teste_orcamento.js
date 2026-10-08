@@ -46,7 +46,8 @@ function cor(c, onde) {
 }
 function estiloTexto(reg) {
   const s = {};
-  ['setItalic', 'setFontFamily'].forEach(m => { s[m] = () => s; });
+  s.setItalic = () => s;
+  s.setFontFamily = f => { reg.fonte = f; return s; };
   s.setFontSize = v => { reg.fs = num(v, 'setFontSize'); if (v <= 0) throw new Error('fonte <= 0'); return s; };
   s.setForegroundColor = c => { cor(c, 'setForegroundColor'); reg.corTexto = c; return s; };
   s.setBold = v => { reg.negrito = !!v; return s; };
@@ -58,7 +59,7 @@ function textRange(reg) {
     getTextStyle: () => estiloTexto(reg),
     getParagraphStyle: () => {
       const p = {
-        setParagraphAlignment: () => p,
+        setParagraphAlignment: a => { reg.align = a; return p; },   // a prévia alinha o texto
         setLineSpacing: v => { if (v < 100) throw new Error('Invalid argument: spacing'); return p; }
       };
       return p;
@@ -78,10 +79,10 @@ function novoSlide(deck) {
       const reg = { tipo, x, y, w, h, texto: null, id: 'e' + (++idForma) };
       slide.shapes.push(reg);
       const fill = { setSolidFill: (c, a) => { cor(c, 'fill'); reg.cor = c; if (a !== undefined) { num(a, 'alpha'); reg.alpha = a; } }, setTransparent: () => {} };
-      const lineFill = { setSolidFill: (c, a) => { cor(c, 'border'); } };
+      const lineFill = { setSolidFill: (c, a) => { cor(c, 'border'); reg.borda = c; } };
       return {
         getFill: () => fill,
-        getBorder: () => ({ setTransparent: () => {}, getLineFill: () => lineFill, setWeight: v => num(v, 'weight') }),
+        getBorder: () => ({ setTransparent: () => {}, getLineFill: () => lineFill, setWeight: v => { num(v, 'weight'); reg.peso = v; } }),
         setContentAlignment: () => {},
         getText: () => textRange(reg),
         getObjectId: () => reg.id,
