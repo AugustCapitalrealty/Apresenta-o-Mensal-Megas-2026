@@ -73,6 +73,16 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - Código feito na mesma tarde (o Guilherme: "pode rodar"): ordem Esteio → Itajaí → Curitiba, ▲ 100% no lugar de "novo", "=" abaixo de 0,5%, KPIs em /m², Ofensores sem Δ do m², resumo abre a Manutenção, sai "contratos e avulsos", "Por que sobe" com o Orç 2026, grupo da manutenção item a item (`ORC_GRUPO_MANUT_GESTOR`), contratos com renovações juntas, `ORC_CONTRATOS_UNIR`, mudou de conta, ano cheio e "2026 não identificado" no alerta. Teste 4506/4506.
 - **Não publicado:** o clasp estava sem login. Falta também: rascunhos V16 e V19 (o do V4 está em "01 - CONTROLE DA APRESENTAÇÃO"), erros 4–7 da analista.
 
+### 08/10/2026 (fim da tarde) — METRAGEM com o ritmo atualizado
+
+- O Guilherme baixou as três METRAGEM de 08/10/2026 (`MEGA <X> METRAGEM-2027-08-10-2026.xlsx`). Só a coluna
+  **Ritmo 2026** mudou (e a diferença Orç 27 / Ritmo 26); contas e ordem iguais. Fixtures `teste/fixture_metragem_*.json`
+  atualizadas a partir delas; o teste mudou só os valores esperados: segurança e total de Curitiba, R$/m² de
+  Curitiba +10% → **+9%** (limpeza +45% → +48%), e o lado 2026 da roçada do Esteio (avulso = ritmo da limpeza −
+  contratos) caiu de ~R$ 35 mil para **R$ 20.946**, porque o ritmo da limpeza do Esteio caiu R$ 14 mil. Teste 4507/4507.
+- Depois de reiniciar (Deep Freeze) é preciso reinstalar Python, Node e openpyxl; o que cada programa faz, para a TI,
+  está em [`../PROGRAMAS-TI.md`](../PROGRAMAS-TI.md).
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |

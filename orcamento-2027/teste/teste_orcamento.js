@@ -395,7 +395,7 @@ ok(rel.avisos.length === 0, 'metragem fecha as somas: ' + rel.avisos.join(' | ')
 const conta = n => rel.contas.filter(c => c.chave === G._orcChaveConta_(n))[0];
 ok(!!conta('Segurança e vigilância'), 'conta de segurança lida');
 perto(conta('Segurança e vigilância').v.orc, 2306916.51, 'segurança Orç 2027');
-perto(conta('Segurança e vigilância').v.ritmo, 1881793.62, 'segurança Ritmo 2026');
+perto(conta('Segurança e vigilância').v.ritmo, 1881108.93, 'segurança Ritmo 2026');
 perto(conta('Manutenção de imóveis').v.orc, 1760408.01, 'manutenção Orç 2027');
 perto(rel.total.orc, 7168946.55, 'total geral Orç 2027');
 perto(rel.areaComum.orcAnt, 5068601.83, 'área comum Orç 2026');
@@ -444,7 +444,7 @@ ok(ldre.length <= 44, 'DRE cabe em até 44 linhas (veio ' + ldre.length + ')');
 
 const q = G._orcOfensores_(rel);
 pertoReal(q.ofensores.total.delta + q.defensores.total.delta, q.total.delta, 'ofensores + defensores = variação total');
-perto(q.total.delta, 7168946.55 - 5936986.71, 'variação total = Orç 2027 − Ritmo 2026');
+perto(q.total.delta, 7168946.55 - 5950510.75,'variação total = Orç 2027 − Ritmo 2026');
 ok(q.ofensores.contas.every(c => c.delta >= G.ORC_OFENSOR_MINIMO), 'ofensores listados acima do mínimo');
 ok(q.ofensores.contas[0].delta >= q.ofensores.contas[q.ofensores.contas.length - 1].delta, 'ofensores do maior para o menor');
 ok(q.defensores.contas.every(c => c.delta <= -G.ORC_OFENSOR_MINIMO), 'defensores listados abaixo do −mínimo');
@@ -976,11 +976,11 @@ ok(!slides.some(sl => PENDENTES.test(titulo(sl) || '')), 'pendentes não são ge
 
 // R$/m² fica abaixo de R$ 1: a variação não pode usar a tolerância de R$ 0,50.
 const tM2 = textos(slides[iM2]);
-ok(tM2.indexOf('▲ 10%') >= 0 && tM2.indexOf('▲ 45%') >= 0 && tM2.indexOf('0%') < 0 && tM2.indexOf('▲ novo') < 0,
-   'R$/m²: Δ% real (total +10%, limpeza +45%), sem "0%" nem "novo"');
+ok(tM2.indexOf('▲ 9%') >= 0 && tM2.indexOf('▲ 48%') >= 0 && tM2.indexOf('0%') < 0 && tM2.indexOf('▲ novo') < 0,
+   'R$/m²: Δ% real (total +9%, limpeza +48%), sem "0%" nem "novo"');
 ok(m2Top.every(l => tM2.indexOf(l.nome) >= 0) && tM2.some(t => /^Demais contas \(\d+\)$/.test(t)),
    'R$/m²: o slide lista as 10 contas do top e as Demais');
-ok(tM2.some(t => /o custo por m² sobe 10% contra o Ritmo/.test(t)), 'R$/m²: nota diz "custo por m² sobe 10%"');
+ok(tM2.some(t => /o custo por m² sobe 9% contra o Ritmo/.test(t)), 'R$/m²: nota diz "custo por m² sobe 9%"');
 LOG.length = 0;
 
 console.log('Planilha de textos');
@@ -1416,7 +1416,7 @@ console.log('Roçada do Esteio numa linha');
   const cmpE = G._orcCompararTodosContratos_(vE.rel, FIX_CAD_2026, 'Mega Esteio', vE.modelos, FIX_MOD_2026);
   const limp = cmpE.grupos.filter(g => G._orcChaveConta_(g.conta) === G._orcChaveConta_('Limpeza e conservação'))[0];
   const roc = limp ? limp.linhas.filter(l => l.nome === 'ROÇADA (LPU)') : [];
-  ok(roc.length === 1 && Math.abs(roc[0].atual - 138626) < 2 && roc[0].ant > 30000 && !limp.linhas.some(l => /^ROÇADA –/.test(l.nome)) &&
+  ok(roc.length === 1 && Math.abs(roc[0].atual - 138626) < 2 && roc[0].ant > 15000 && !limp.linhas.some(l => /^ROÇADA –/.test(l.nome)) &&
      /^Era avulso em 2026 \(22 itens\)$/.test(roc[0].situacao),
      'contratos do Esteio: a roçada LPU numa linha só, 2026 = avulso da limpeza (' + roc.map(l => Math.round(l.ant) + ' → ' + Math.round(l.atual)).join() + ')');
 }
