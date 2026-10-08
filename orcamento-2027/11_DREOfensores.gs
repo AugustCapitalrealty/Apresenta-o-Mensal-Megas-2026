@@ -313,16 +313,13 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
                   aba: 'Ofensores', original: it.descricao, sufixo: sufixo } : null;
   };
   // R$/m² ao mês pela área implícita de cada ano (a mesma da DRE e do custo
-  // por m²): Ritmo, Orç e quanto a conta mexe no R$/m² — pedido do gestor,
-  // 06/10/2026. Com a área crescendo, uma conta pode subir em R$ e cair no m².
+  // por m²): Ritmo e Orç — pedido do gestor, 06/10/2026; o Δ saiu em 08/10/2026.
   const areaRit = _orcAreaImplicita_(rel, 'ritmo'), areaOrc = _orcAreaImplicita_(rel, 'orc');
   const m2 = (v, area) => area ? v / area / 12 : null;
   const linhaConta = (c, tipo) => {
     const v = _orcVariacao_(c.v.ritmo, c.v.orc);
     const chaves = c.chaves || (c.chave ? [c.chave] : null);
     const mR = m2(c.v.ritmo, areaRit), mO = m2(c.v.orc, areaOrc);
-    const dM = mR === null || mO === null ? null : mO - mR;
-    const sM = dM === null || Math.abs(dM) < 0.005 ? 0 : (dM > 0 ? 1 : -1);
     // Nome por extenso, como na DRE (gestor, 07/10/2026: "Manut. de maquinas…"
     // destoava): a coluna CONTA se alarga para o nome mais comprido.
     return { tipo: tipo || 'item', nome: c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
@@ -330,7 +327,6 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
       { texto: _orcM2_(mR) }, { texto: _orcM2_(mO), bold: true },
-      { texto: dM === null ? '–' : (sM === 0 ? '0,00' : (dM > 0 ? '+' : '−') + _orcM2_(Math.abs(dM))), sentido: sM },
       c.chave ? maiorItem(c.chave) : null] };
   };
   const b = ofensor ? ['OFENSORES — SOBEM EM ' + a.orc, q.ofensores, 'TOTAL OFENSORES']
@@ -348,21 +344,21 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const tw = W - MX * 2, labW = Math.max(140, Math.min(184, Math.ceil(maiorNome * 1.1 + recuo + 12 + 14)));
   // Os números cabem em 40/35 pt; o que a coluna CONTA ganha sai deles, não do detalhamento.
   const folga = labW - 140, numW = 44 - Math.min(4, folga / 5), m2W = 38 - Math.min(3, Math.max(0, folga - 20) / 3);
-  const itemW = tw - labW - numW * 5 - m2W * 3;
+  const itemW = tw - labW - numW * 5 - m2W * 2;
   const colunas = [
     { titulo: 'CONTA', w: labW },
     // Títulos curtos: a coluna tem 44 pt e "RITMO 2026" saía "RITMO 20…".
     { titulo: 'ORÇ ' + String(a.orcAnt).slice(-2), w: numW }, { titulo: 'RITMO ' + String(a.ritmo).slice(-2), w: numW },
     { titulo: 'ORÇ ' + String(a.orc).slice(-2), w: numW, destaque: true },
     { titulo: 'Δ R$', w: numW }, { titulo: 'Δ %', w: numW },
+    // Sem o Δ do R$/m² (gestor, 08/10/2026: "Retirar Delta") — o espaço vai para o detalhamento.
     { titulo: 'RIT. ' + String(a.ritmo).slice(-2), w: m2W }, { titulo: 'ORÇ ' + String(a.orc).slice(-2), w: m2W, destaque: true },
-    { titulo: 'Δ', w: m2W },
     // Gestor, 07/10/2026: "Detalhamento" (era "MAIOR ITEM ORÇADO EM 2027").
     { titulo: 'DETALHAMENTO', w: itemW, align: 'L' }
   ];
   _orcTabelaNum_(slide, MX, 72, tw, H - 26 - 72, colunas, linhas, [
     { titulo: 'R$ MIL', c0: 1, n: 5 },
-    { titulo: 'R$/M² AO MÊS', c0: 6, n: 3, cor: '#475569' }
+    { titulo: 'R$/M² AO MÊS', c0: 6, n: 2, cor: '#475569' }
   ]);
   const nota = _orcNotaArea_(rel, cid);
   _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; detalhamento: maior item dos modelos de ' + a.orc + ' · ' + nota

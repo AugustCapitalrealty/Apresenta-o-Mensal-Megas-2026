@@ -864,6 +864,8 @@ const areaOrc = G._orcAreaImplicita_(rel, 'orc');
 const m2Manut = 'R$ ' + G._orcM2_(contasLL[0].v.orc / areaOrc / 12);
 ok(tOf.indexOf('R$/M² AO MÊS') >= 0 && tDf.indexOf('R$/M² AO MÊS') >= 0 && tOf.indexOf('R$ MIL') >= 0,
    'ofensores e defensores: colunas de R$ mil e de R$/m² ao mês');
+ok(tOf.indexOf('Δ') < 0 && tDf.indexOf('Δ') < 0 && tOf.indexOf('Δ R$') >= 0,
+   'ofensores e defensores: sem a coluna Δ do R$/m² (gestor, 08/10/2026), o Δ R$ fica');
 ok(tOf.indexOf(G._orcM2_(rel.total.orc / areaOrc / 12)) >= 0, 'ofensores: R$/m² do total (Despesas Operacionais)');
 const tLL = textos(slides[iLLManut]);
 ok(tLL.indexOf('R$/M² AO MÊS · ORÇ 27') >= 0 && tLL.indexOf(m2Manut) >= 0, 'linha a linha: 5º card com o R$/m² da conta (' + m2Manut + ')');
