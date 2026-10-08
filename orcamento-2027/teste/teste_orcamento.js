@@ -1303,8 +1303,14 @@ console.log('Deck único de Facilities');
   ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
      textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
      'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
-  ok(sl.slice(0, 4).every(x => !textos(x).some(t => /…$/.test(t))),
-     'Facilities: abertura sem texto cortado (' + sl.slice(0, 4).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
+  ok(sl.slice(0, 5).every(x => !textos(x).some(t => /…$/.test(t))),
+     'Facilities: abertura sem texto cortado (' + sl.slice(0, 5).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
+  {
+    const tR = textos(sl[4]);
+    ok(tR[0] === 'Ranking dos Megas — R$/m² ao mês por conta' && tR.indexOf('Segurança e vigilância') >= 0 &&
+       tR.indexOf('Segurança e vigilância') < tR.indexOf('Manutenção de imóveis') && !tR.some(t => /[▲▼]/.test(t)),
+       'Facilities: ranking dos Megas depois do comparativo, Segurança no topo, sem variação (V4, aprovado 08/10/2026)');
+  }
   const capaCur = fac.getSlideById(lista('CURITIBA')[0]);
   ok(capaCur && textos(capaCur).indexOf('Mega Curitiba') >= 0 && !lista('CURITIBA').some(id => textos(fac.getSlideById(id)).indexOf('Manutenção') >= 0 &&
      textos(fac.getSlideById(id))[0] === '04'), 'Facilities: cada Mega abre com a capa dele e não tem sub capas');

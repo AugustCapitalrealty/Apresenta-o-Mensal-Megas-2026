@@ -162,6 +162,7 @@ function _orcGerarAbertura_(deck, W, H) {
   _ORC_UNICO.alvo = 'COMPARATIVO';   // o link do sumário vai para o gráfico; a tabela vem logo depois
   _orcPasso_(deck, W, H, 'Os Megas lado a lado — gráfico', s => gerarSlideMegasGrafico_(s, W, H, rels));
   _orcPasso_(deck, W, H, 'Comparativo de R$/m² entre os Megas', s => gerarSlideComparativoM2_(s, W, H, rels));
+  _orcPasso_(deck, W, H, 'Ranking dos Megas', s => gerarSlideRankingM2_(s, W, H, rels));
 }
 
 // Totais de Facilities: soma das METRAGENS (dinheiro e área implícita de cada ano).
@@ -420,4 +421,62 @@ function gerarSlideMegasGrafico_(slide, W, H, rels) {
   });
   _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano · a tabela conta a conta vem a seguir' +
     _orcNotaAreaMegas_(cmp));
+}
+
+/**
+ * Ranking dos Megas (V4 — gestor, 08/10/2026: "monta apenas um ranking lado a lado, das maiores para as menores
+ * contas, ordenando pela média de facilities; não precisa colocar o delta"). Rascunho aprovado pelo Guilherme em
+ * 08/10/2026 (ferramentas/rascunhos/ranking_megas_rascunho.py). Uma linha por conta, do maior para o menor R$/m² ao
+ * mês de Facilities; quatro barras (os três Megas e Facilities) e os valores à direita, o Mega mais caro em destaque.
+ */
+const ORC_RANKING_CORES = { ESTEIO: '#1F3B73', ITAJAI: '#3E6DB5', CURITIBA: '#00594F', FACILITIES: '#9AA5B1' };
+const ORC_RANKING_SIGLA = { ESTEIO: 'ESTEIO', ITAJAI: 'ITAJAÍ', CURITIBA: 'CURITIBA', FACILITIES: 'FACILITIES' };
+
+function gerarSlideRankingM2_(slide, W, H, rels) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
+  const cmp = _orcComparativoM2_(rels);
+  const cols = cmp.megas.concat(['FACILITIES']);
+  _orcHeader_(slide, W, 'Ranking dos Megas — R$/m² ao mês por conta',
+    'Orçamento ' + ORC_ANO + ' · contas do maior para o menor custo por m² de Facilities · em destaque, o Mega mais caro da linha');
+  const linhas = cmp.linhas.filter(l => l.tipo === 'item' && (l.m.FACILITIES.orc || 0) >= 0.005)
+    .sort((a, b) => (b.m.FACILITIES.orc || 0) - (a.m.FACILITIES.orc || 0));
+  if (!linhas.length) return;
+
+  // Legenda no topo, à direita.
+  let lx = W - MX;
+  cols.slice().reverse().forEach(k => {
+    const nome = k === 'FACILITIES' ? 'Facilities' : ORC_CIDADES[k].nome;
+    const lw = _orcLarguraTexto_(nome, 7, T.body) + 22;
+    lx -= lw;
+    _orcRet_(slide, lx, 72, 7, 7, ORC_RANKING_CORES[k]);
+    _orcUmaLinha_(slide, lx + 10, 68, lw - 10, 14, nome, { align: 'L', fs: 7, cor: C.textBody, fonte: T.body, folga: 12 });
+  });
+
+  const top = 98, base = H - 30, rowH = Math.min(18, (base - top) / linhas.length);
+  const xNome = MX + 18, xBar = MX + 178, valW = 40, xVal = W - MX - valW * cols.length, xFim = xVal - 14;
+  const vmax = Math.max.apply(null, linhas.map(l => Math.max.apply(null, cols.map(k => l.m[k].orc || 0)))) || 1;
+  const barH = Math.max(1.5, (rowH - 4) / cols.length);
+  cols.forEach((k, j) => {
+    _orcUmaLinha_(slide, xVal + j * valW, top - 13, valW - 2, 11, ORC_RANKING_SIGLA[k],
+      { align: 'R', fs: 5.8, bold: true, cor: C.textMuted, fonte: T.titles, folga: 10 });
+  });
+  linhas.forEach((l, i) => {
+    const y = top + i * rowH;
+    if (i % 2 === 0) _orcRet_(slide, MX, y, W - MX * 2, rowH, '#F8FAFC');
+    _orcUmaLinha_(slide, MX + 2, y, 14, rowH, String(i + 1), { align: 'L', fs: 7, bold: true, cor: C.textMuted, fonte: T.titles, folga: 8 });
+    _orcUmaLinha_(slide, xNome, y, xBar - xNome - 6, rowH, l.nome,
+      { align: 'L', fs: 7.5, fsMin: 6, bold: true, cor: C.brandDark, fonte: T.titles, cortar: true });
+    cols.forEach((k, j) => {
+      const v = l.m[k].orc || 0, w = (xFim - xBar) * v / vmax;
+      if (w > 0.3) _orcRet_(slide, xBar, y + 2 + j * barH, w, Math.max(1, barH - 0.6), ORC_RANKING_CORES[k]);
+    });
+    const caro = cmp.megas.reduce((m, k) => (l.m[k].orc || 0) > (l.m[m].orc || 0) ? k : m, cmp.megas[0]);
+    cols.forEach((k, j) => {
+      const fac = k === 'FACILITIES', dest = fac || k === caro;
+      _orcUmaLinha_(slide, xVal + j * valW, y, valW - 2, rowH, _orcM2_(l.m[k].orc),
+        { align: 'R', fs: 7, bold: dest, cor: fac ? C.brandDark : (k === caro ? ORC_RANKING_CORES[k] : C.textBody),
+          fonte: T.body, folga: 10 });
+    });
+  });
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² ao mês do Orç ' + ORC_ANO + ' pela área implícita de cada Mega');
 }
