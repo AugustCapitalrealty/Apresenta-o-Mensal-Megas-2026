@@ -217,13 +217,19 @@ function _orcGerarCidade_(deck, W, H, chave) {
       s => gerarSlideItensMenores_(s, W, H, cid, visao.rel, c, pag, k, nPag, fora, i === 0 && calc ? calc.cls : null)));
   };
 
-  // Roteiro da Manutenção (itens 13 e 14 do gestor, 07/10/2026): a pergunta
-  // "e o que tem dentro disso?" é respondida no slide seguinte —
-  //   a conta → por que sobe → contratos e avulsos → os avulsos abertos
-  //   (projetos × recorrente) e o item a item com o selinho → por categoria →
-  //   Demais → categorias grandes → distribuição mensal.
+  // Roteiro da Manutenção (itens 13 e 14 do gestor, 07/10/2026; revisado em
+  // 08/10/2026): a pergunta "e o que tem dentro disso?" é respondida no slide
+  // seguinte —
+  //   o resumo da manutenção (KPIs, categorias e maiores itens — gestor:
+  //   "primeiro slide de manutenção") → a conta → por que sobe → os avulsos
+  //   abertos (projetos × recorrente) e o item a item com o selinho → Demais →
+  //   categorias grandes → distribuição mensal. O slide "contratos e avulsos"
+  //   saiu (gestor, 08/10/2026: "Tirar este slide"); os contratos da conta estão
+  //   no slide de contratos de todas as contas.
   if (contas || dados) {
     secao('Manutenção');
+    const areaOrcManut = visao ? _orcAreaImplicita_(visao.rel, 'orc') : null;
+    if (dados) _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados, areaOrcManut));
     if (contas) linhaALinha(0);
     // Por que a manutenção sobe: as obras de 2026 adiadas para 2027, segundo o
     // gestor (24_PorQueSobe.gs). Mega sem obra adiada não ganha o slide.
@@ -234,11 +240,6 @@ function _orcGerarCidade_(deck, W, H, chave) {
       if (adi) comSelo('Por que a manutenção sobe', [contas[0].chave],
         s => gerarSlidePorQueSobe_(s, W, H, cid, visao.rel, contas[0], adi));
     }
-    // Ritmo × Orç item a item nos contratos (pedido do gestor, 06/10/2026).
-    if (contas && calc && calc.cls && calc.contratosAnt && calc.contratosAnt.length) {
-      comSelo('Contratos ' + (ORC_ANO - 1) + ' × ' + ORC_ANO, [contas[0].chave],
-        s => gerarSlideContratosComparados_(s, W, H, cid, visao.rel, contas[0], calc.contratosAnt, calc.cls));
-    }
     // Os avulsos abertos (era a seção 07, "Projetos × Recorrente") e o item a
     // item com o selinho de cada grupo.
     if (visao && calc && calc.cls) {
@@ -248,7 +249,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
       pagsG.forEach((pag, i) => comSelo('Projetos × recorrente — itens (' + (i + 1) + '/' + pagsG.length + ')',
         [_orcChaveConta_('Manutenção de imóveis')], s => gerarSlideGruposManut_(s, W, H, cid, visao.rel, calc.cls, pag, i, pagsG.length)));
     }
-    if (dados) _orcGerarManutencao_(deck, W, H, cid, dados, visao ? _orcAreaImplicita_(visao.rel, 'orc') : null);
+    if (dados) _orcGerarManutencao_(deck, W, H, cid, dados, areaOrcManut);
   }
   if (contas) {
     secao('Segurança');
@@ -270,7 +271,6 @@ function _orcGerarCidade_(deck, W, H, chave) {
 // distribuição mensal.
 // area: área implícita do Orç (METRAGEM) para o R$/m² — null sem o relatório.
 function _orcGerarManutencao_(deck, W, H, cid, dados, area) {
-  _orcPasso_(deck, W, H, 'Resumo', s => gerarSlideResumo_(s, W, H, cid, dados, area));
 
   const div = _orcDividirCategorias_(dados);
   const paginas = _orcPaginasDemais_(div.demais);

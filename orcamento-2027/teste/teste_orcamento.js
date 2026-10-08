@@ -703,8 +703,9 @@ const nLL = contasLL.map((c, k) => k === 0 ? 1 : 1 + G._orcPaginasItens_(G._orcC
 const N_POR_QUE = G.ORC_DECISOES_GESTOR['Mega Curitiba'].adiados.length ? 1 : 0;
 // Projetos × recorrente: o slide e as páginas dos itens de cada grupo (dentro da Manutenção).
 const nGrupos = G._orcPaginasGrupos_(G._orcClassificarManutencao_(d)).length;
-// a conta, por que sobe, contratos 26×27, avulsos abertos + item a item, resumo, demais, categorias, mensal
-const N_MANUT = nLL[0] + N_POR_QUE + 1 + 1 + nGrupos + 1 + nPagDemais + div.proprias.length + 1;
+// resumo, a conta, por que sobe, avulsos abertos + item a item, demais, categorias, mensal (08/10/2026: o resumo
+// abre a seção e o "contratos e avulsos" saiu)
+const N_MANUT = 1 + nLL[0] + N_POR_QUE + 1 + nGrupos + nPagDemais + div.proprias.length + 1;
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
@@ -776,11 +777,11 @@ for (let k = 0; k < nTodos; k++) {
   const tt = textos(slides[iDRE + 3 + k]);
   ok(!tt.some(t => /…$/.test(t)), 'contratos ' + (k + 1) + '/' + nTodos + ': nenhum texto cortado (' + tt.filter(t => /…$/.test(t)).join(' | ') + ')');
 }
-// Roteiro da Manutenção (07/10/2026): a conta → por que sobe → contratos e avulsos → avulsos abertos (projetos ×
-// recorrente) e item a item → por categoria → Demais → categorias grandes → distribuição mensal.
-const iLLManut = iSub[3] + 1, iPorQue = iLLManut + 1;
-const iCmp = iPorQue + N_POR_QUE, iInv = iCmp + 1, iResManut = iInv + 1 + nGrupos;
-const iDemais = iResManut + 1, iCat0 = iDemais + nPagDemais, iMensal = iCat0 + div.proprias.length;
+// Roteiro da Manutenção (08/10/2026): resumo (KPIs, categorias, maiores itens) → a conta → por que sobe → avulsos
+// abertos (projetos × recorrente) e item a item → Demais → categorias grandes → distribuição mensal.
+const iResManut = iSub[3] + 1, iLLManut = iResManut + 1, iPorQue = iLLManut + 1;
+const iInv = iPorQue + N_POR_QUE;
+const iDemais = iInv + 1 + nGrupos, iCat0 = iDemais + nPagDemais, iMensal = iCat0 + div.proprias.length;
 // Por que a manutenção sobe: ponte Ritmo → Orç com o degrau das obras adiadas
 // e a tabela das obras, com o valor de hoje no modelo 090.
 {
@@ -806,12 +807,12 @@ const foraManut = G._orcCorteComposicao_(contasLL[0], modelos, H).fora;
 const totalFora = G._orcMoeda_(foraManut.reduce((a, it) => a + it.total, 0));
 ok(textos(slides[iLLManut]).some(t => t === '+ ' + foraManut.length + ' itens menores (item a item adiante)') &&
    textos(slides[iLLManut]).indexOf(totalFora) >= 0, 'a conta aponta os itens menores para o item a item adiante');
-ok(titulo(slides[iCmp]) === 'Manutenção de imóveis — contratos e avulsos' && textos(slides[iCmp]).indexOf('abertos a seguir') >= 0 &&
+ok(!slides.some(sl => titulo(sl) === 'Manutenção de imóveis — contratos e avulsos') &&
    titulo(slides[iInv]) === 'Manutenção: projetos × custo recorrente',
-   'contratos e avulsos → os avulsos abertos logo em seguida (item 13)');
-ok(/^Manutenção de Imóveis — Orçamento 2027/.test(titulo(slides[iResManut])) && /^Demais categorias/.test(titulo(slides[iDemais])) &&
-   textos(slides[iResManut]).some(t => / e mais \d+$/.test(t)),
-   'por categoria → Demais logo depois, e a barra DEMAIS diz quais são (item 14)');
+   'sem o slide "contratos e avulsos" (gestor, 08/10/2026); os avulsos abertos vêm depois do "por que sobe"');
+ok(/^Manutenção de Imóveis — Orçamento 2027/.test(titulo(slides[iResManut])) && iResManut === iSub[3] + 1 &&
+   /^Demais categorias/.test(titulo(slides[iDemais])) && textos(slides[iResManut]).some(t => / e mais \d+$/.test(t)),
+   'o resumo da manutenção abre a seção (gestor, 08/10/2026) e a barra DEMAIS diz quais são');
 ok(titulo(slides[iMensal]) === 'Distribuição mensal' && iSub[4] === iMensal + 1, 'distribuição mensal fecha a Manutenção');
 const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
 const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');
@@ -855,10 +856,6 @@ ok(cmp.linhas.filter(l => /^Novo/.test(l.situacao)).length === 3 && cmp.linhas.e
    'comparação: 3 contratos novos em 2027 (FM Security, quadro BT, AVAC) e nenhum não renovado');
 perto(cmp.contratos.atual, clsM2.grupos[0].total, 'comparação: contratos 2027 = grupo Contratos do slide de Projetos');
 perto(cmp.avulsos.ant + cmp.contratos.ant, contasLL[0].v.ritmo, 'comparação: avulsos 2026 + contratos 2026 = ritmo da conta');
-const tCmp = textos(slides[iCmp]);
-ok(tCmp[0] === 'Manutenção de imóveis — contratos e avulsos' && tCmp.indexOf('TOTAL CONTRATOS') >= 0 &&
-   tCmp.indexOf('Avulsos (sem contrato)') >= 0 && tCmp.indexOf('R$/M²') >= 0, 'slide de contratos 2026 × 2027 depois do linha a linha');
-ok(!tCmp.some(t => /…$/.test(t)), 'contratos 2026 × 2027: nenhum texto cortado (' + tCmp.filter(t => /…$/.test(t)).join(' | ') + ')');
 // Em dinheiro e em m² (o diretor lê os dois — 06/10/2026).
 const areaOrc = G._orcAreaImplicita_(rel, 'orc');
 const m2Manut = 'R$ ' + G._orcM2_(contasLL[0].v.orc / areaOrc / 12);
