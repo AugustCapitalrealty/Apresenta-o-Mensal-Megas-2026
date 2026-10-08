@@ -10,11 +10,13 @@
 // O que entra em cada grupo, em palavras de quem lê o slide — vai na faixa de
 // legenda embaixo dos cards (pedido do gestor, 06/10/2026: "vai gerar
 // dúvidas"). Mesma ordem de classManut.grupos.
+// Textos curtos, para caber em 2 linhas no card (gestor, 08/10/2026: os de
+// Pontual e Projetos vazavam a borda na 3ª linha).
 const ORC_GRUPOS_MANUT_LEGENDA = [
-  'Serviço com contrato fechado com o fornecedor (vem das planilhas de contratos ou da tag [CONTRATO]).',
-  'Sem contrato, mas se repete em 6 meses ou mais do ano (ex.: provisões).',
-  'Serviço em poucos meses do ano para manter o que já existe (pintura, revisão, lavagem).',
-  'Obra ou compra nova, que não existia antes (implantação, instalação, compra, plantio).'
+  'Serviço com contrato fechado com o fornecedor.',
+  'Sem contrato, mas se repete ao longo do ano (ex.: provisões).',
+  'Serviço em poucos meses para manter o que já existe (pintura, revisão, lavagem).',
+  'Obra ou compra nova, que não existia (implantação, instalação, compra).'
 ];
 
 // Selinho de cada grupo, nas cores das barras (pedido do gestor, 07/10/2026:
@@ -109,8 +111,8 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
       { fs: 6.5, fsMin: 5.5, cor: C.textBody, espac: 100 });
   });
 
-  _orcRodape_(slide, W, H, 'Cada item cai no primeiro grupo que servir, nesta ordem: contrato → recorrente (6+ meses) → ' +
-    'projeto (palavra de obra nova na descrição) → pontual · ' + cid.nome);
+  _orcRodape_(slide, W, H, 'Cada item cai no primeiro grupo que servir: contrato → recorrente (6+ meses) → ' +
+    'projeto (obra nova) → pontual; itens revistos pelo gestor seguem a decisão dele · ' + cid.nome);
 }
 
 // ==========================================
@@ -187,12 +189,13 @@ function _orcMarcarGrupos_(linhas, itens, cls, colunas) {
 function _orcLegendaGrupos_(slide, x, y, w) {
   const DS = CR_DESIGN_SYSTEM, cores = _orcCoresGruposManut_();
   const nomes = ['Contrato', 'Recorrente', 'Pontual', 'Projeto'], fs = 6;
-  const larg = nomes.map(n => 6 + 3 + _orcLarguraTexto_(n, fs, DS.typography.body) + 10);
+  // +16 de folga por nome (era +10): "Pontual" quebrava em "Pontua / l" no Slides (gestor, 08/10/2026).
+  const larg = nomes.map(n => 6 + 3 + _orcLarguraTexto_(n, fs, DS.typography.body) + 16);
   let cx = x + w - larg.reduce((t, l) => t + l, 0);
   nomes.forEach((n, i) => {
     _orcRet_(slide, cx, y + 3, 6, 6, cores[i], { redondo: true });
     _orcUmaLinha_(slide, cx + 9, y, larg[i] - 9, 12, n,
-      { align: 'L', fs: fs, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 4, fsMin: fs });
+      { align: 'L', fs: fs, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 14, fsMin: fs });
     cx += larg[i];
   });
 }
