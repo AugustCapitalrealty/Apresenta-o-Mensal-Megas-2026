@@ -1303,6 +1303,8 @@ console.log('Deck único de Facilities');
   ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
      textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
      'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
+  ok(sl.slice(0, 4).every(x => !textos(x).some(t => /…$/.test(t))),
+     'Facilities: abertura sem texto cortado (' + sl.slice(0, 4).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
   const capaCur = fac.getSlideById(lista('CURITIBA')[0]);
   ok(capaCur && textos(capaCur).indexOf('Mega Curitiba') >= 0 && !lista('CURITIBA').some(id => textos(fac.getSlideById(id)).indexOf('Manutenção') >= 0 &&
      textos(fac.getSlideById(id))[0] === '04'), 'Facilities: cada Mega abre com a capa dele e não tem sub capas');

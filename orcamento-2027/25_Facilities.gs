@@ -315,7 +315,8 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
     const v = ar && ao && Math.abs(ao / ar - 1) < 0.005 ? { texto: '=' } : _orcVariacao_(ar, ao);
     return a.concat([{ texto: ao ? r1(ao) : '–' }, { texto: v.texto, sentido: 0 }]);
   }, []) });
-  const tw = W - MX * 2, labW = 176, cw = (tw - labW) / (cols.length * 2);
+  const tw = W - MX * 2, labW = 200,   // 200 (era 176): "DESPESAS COM PESSOAL E ADMINISTRATIVAS" saía cortado (erro 9 da analista 4)
+        cw = (tw - labW) / (cols.length * 2);
   const colunas = [{ titulo: 'R$/M² AO MÊS', w: labW }];
   cols.forEach(() => { colunas.push({ titulo: 'ORÇ ' + String(ORC_ANO).slice(-2), w: cw * 1.1, destaque: true }); colunas.push({ titulo: 'Δ% × RIT.', w: cw * 0.9 }); });
   const grupos = cols.map((k, i) => ({ titulo: k === 'FACILITIES' ? 'FACILITIES' : ORC_CIDADES[k].nome.toUpperCase(), c0: 1 + i * 2, n: 2,
