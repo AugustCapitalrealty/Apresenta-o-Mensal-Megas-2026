@@ -1303,6 +1303,8 @@ console.log('Deck único de Facilities');
   ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
      textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
      'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
+  ok(textos(sl[0]).indexOf('/m²') < 0 && !textos(sl[0]).some(t => /vs\. ritmo|[▲▼]/.test(t)),
+     'Facilities: capa só com o total em R$, sem R$/m² nem Δ% contra o ritmo (Jonatas, 08/10/2026: distorce)');
   ok(sl.slice(0, 5).every(x => !textos(x).some(t => /…$/.test(t))),
      'Facilities: abertura sem texto cortado (' + sl.slice(0, 5).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
   {

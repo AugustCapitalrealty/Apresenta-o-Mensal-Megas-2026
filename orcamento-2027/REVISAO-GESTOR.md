@@ -137,3 +137,9 @@ V1–V24 vieram do deck de Curitiba (os marcados "vale para todos" valem para os
 - **V40:** o que "gerou errado" é o **gráfico mês a mês** do slide "Limpeza e conservação" de Itajaí (Guilherme: "ah foi gráfico"). No gráfico: as etiquetas "45" da projeção out–dez quebradas em "4 / 5" dentro de caixinhas com borda; o salto do ritmo em set (R$ 25 mil → R$ 45 mil, nova escala da limpeza — V29) sem explicação; os traços cinza do Orç 2026 soltos acima das barras. Conferir o mesmo gráfico nos outros Megas e contas.
 
 **Rodada de código de 08/10/2026 (Guilherme: "pode rodar", almoço):** feito o que não dependia dele — ver os status acima. Também: erros 1, 2, 3 (= V22) e 9 da analista 4; escala do custo por m² sem quebrar (parte do erro 8); Resumo Executivo com o sinal da área certo. **Falta:** rascunhos V4, V16, V19; erros 4 ("Demais contas" no custo por m² — precisa caber todas as contas), 5 (rodapés), 6 (ponte), 7 (etiquetas de nov/dez da Segurança) da analista; nota do salto de set no gráfico da Limpeza (V40). Teste 4506/4506. Publicado no Apps Script (clasp push) em 08/10/2026, depois do login.
+
+### Comentários da v3 (Jonatas, 08/10/2026 15:36)
+
+| # | Ajuste | Onde | Status |
+|---|---|---|---|
+| V3-1 | Capa de Facilities: tirar o R$/m² (R$ 5,08) e o ▲ 33% vs. ritmo 2026 — "não faz muito sentido... distorce" (somados, os três Megas têm áreas diferentes). Fica só o total em R$ | `25_Facilities.gs`, `gerarSlideCapaFacilities_` | Feito 08/10 (código + teste; falta publicar e gerar a abertura) |

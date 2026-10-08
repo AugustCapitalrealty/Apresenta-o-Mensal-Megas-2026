@@ -205,18 +205,13 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     } catch (e) { Logger.log('Capa de Facilities: logo ' + m + ' indisponível. ' + e.message); }
   });
   if (!Object.keys(rels).length) return;
+  // Só o total em R$. Sem R$/m² e sem Δ% contra o ritmo: somados, os três Megas têm áreas diferentes
+  // (o Esteio dobra) e os dois números distorcem — comentário do Jonatas, 08/10/2026.
   const t = _orcTotaisFacilities_(rels);
-  const v = _orcVariacao_(t.ritmo, t.orc);
   _orcUmaLinha_(slide, 384 * k, 246 * k, 156 * k, 36 * k, _orcCompacto_(t.orc),
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
   _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', os três Megas',
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
-  [[t.areaOrc ? 'R$ ' + _orcM2_(t.orc / t.areaOrc / 12) : '–', '/m²'], [v.texto, 'vs. ritmo ' + (ORC_ANO - 1)]].forEach((n, i) => {
-    _orcUmaLinha_(slide, (546 + i * 80) * k, 252 * k, 76 * k, 22 * k, n[0],
-      { align: 'L', fs: 16, bold: true, cor: _orcCorKpi_(n[0], C.brandDark), fonte: T.titles, fsMin: 10 });
-    _orcUmaLinha_(slide, (546 + i * 80) * k, 274 * k, 76 * k, 14 * k, n[1],
-      { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
-  });
 }
 
 function gerarSlideSumarioFacilities_(slide, W, H, rels) {
