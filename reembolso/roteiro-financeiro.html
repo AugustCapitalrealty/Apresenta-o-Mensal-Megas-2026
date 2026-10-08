@@ -1,0 +1,269 @@
+<title>Roteiro Financeiro · Reembolsos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: uma coluna de leitura, blocos da entrevista em sequência, anotação logo abaixo de cada pergunta; barra fixa embaixo com tempo e "copiar ata". */
+:root {
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --ink: #151E49;
+  --ink-soft: #4A5578;
+  --line: #DCE3EE;
+  --accent: #065CA9;
+  --accent-soft: #E6F0FA;
+  --clue: #8A5A00;
+  --clue-bg: #FFF6E3;
+  --done: #1F7A4D;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1430; --surface: #151E49; --ink: #E8EDF7; --ink-soft: #A9B4CF;
+    --line: #2A3566; --accent: #7DB5EC; --accent-soft: #1C2B5E;
+    --clue: #F2C46B; --clue-bg: #2A2615; --done: #6FD3A0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1430; --surface: #151E49; --ink: #E8EDF7; --ink-soft: #A9B4CF;
+  --line: #2A3566; --accent: #7DB5EC; --accent-soft: #1C2B5E;
+  --clue: #F2C46B; --clue-bg: #2A2615; --done: #6FD3A0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 120px; display: grid; gap: 28px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--font-display); font-size: clamp(26px, 5vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-soft); font-size: 13px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); font-weight: 600; }
+input[type=text], textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px;
+}
+textarea { min-height: 64px; resize: vertical; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tip { background: var(--accent-soft); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; }
+.tip h2 { font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.tip p { margin: 0; }
+.block { display: grid; gap: 14px; }
+.block-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; flex-wrap: wrap; }
+.block-head h2 { font-family: var(--font-display); font-size: 21px; margin: 0; }
+.block-head .t { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.tag { font-size: 11px; font-weight: 600; color: var(--clue); background: var(--clue-bg); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.q { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.q:last-child { border-bottom: 0; }
+.num { font-family: var(--font-mono); font-size: 13px; color: var(--accent); padding-top: 2px; }
+.q-body { min-width: 0; display: grid; gap: 8px; }
+.q-text { margin: 0; font-weight: 500; }
+.q-row { display: flex; gap: 10px; align-items: flex-start; }
+.q-row .q-text { flex: 1; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); cursor: pointer; user-select: none; white-space: nowrap; padding-top: 2px; }
+.check input { width: 16px; height: 16px; accent-color: var(--done); }
+.q.is-done .q-text { color: var(--ink-soft); }
+.q.is-done .num { color: var(--done); }
+.hint { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.clue { margin: 0; font-size: 13px; background: var(--clue-bg); color: var(--ink); border-left: 3px solid var(--clue); padding: 8px 10px; border-radius: 0 6px 6px 0; }
+.clue b { color: var(--clue); }
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.bar-in { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.clock { font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums; min-width: 64px; }
+.prog { font-size: 13px; color: var(--ink-soft); flex: 1; min-width: 110px; }
+button { font: inherit; font-size: 14px; font-weight: 500; border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.toast { font-size: 13px; color: var(--done); }
+#out { width: 100%; min-height: 160px; font-family: var(--font-mono); font-size: 12px; }
+.ph { display: grid; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Meta 2026 · Reembolsos · Fase 1 — Diagnóstico</div>
+    <h1>Entrevista com o Financeiro</h1>
+    <div class="meta">
+      <span><b>Duração:</b> 45–60 min</span>
+      <span><b>Base:</b> Procedimento Gestão de Viagens (2022)</span>
+      <span><b>Fecha:</b> Fase 1 + dor 11 (controle gerencial)</span>
+    </div>
+  </header>
+
+  <div class="field">
+    <label for="who">Entrevistada · data</label>
+    <input type="text" id="who" placeholder="Nome da gerente do financeiro · 08/10/2026">
+  </div>
+
+  <div class="tip">
+    <h2>Antes de começar</h2>
+    <p>Mostre o procedimento de 2022 e pergunte se ele ainda reflete a realidade. O que mudou na prática sem ir para o papel aparece logo aqui.</p>
+    <p>Os quadros amarelos trazem o que os 4 colaboradores disseram. Use para confrontar a resposta, sem citar nomes.</p>
+  </div>
+
+  <div id="blocks"></div>
+
+  <section class="ph">
+    <div class="field">
+      <label for="extra">Outras observações</label>
+      <textarea id="extra" placeholder="Algo que surgiu fora do roteiro, documentos que ela vai enviar, próximos contatos…"></textarea>
+    </div>
+  </section>
+
+  <section class="ph" id="outWrap" hidden>
+    <div class="field">
+      <label for="out">Ata gerada · cole na conversa com o Claude</label>
+      <textarea id="out" readonly></textarea>
+    </div>
+  </section>
+</div>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="clock" id="clock">00:00</span>
+    <button type="button" id="startBtn">Iniciar</button>
+    <span class="prog" id="prog">0 de 18 perguntas</span>
+    <span class="toast" id="toast" aria-live="polite"></span>
+    <button type="button" class="primary" id="copyBtn">Copiar ata</button>
+  </div>
+</div>
+
+<script>
+const BLOCKS = [
+  { n: 1, title: "Visão geral do processo atual", min: "~10 min", qs: [
+    { id: "1.1", q: "Como você descreveria o processo de reembolso hoje, de ponta a ponta? Quem são os atores envolvidos?", hint: "Objetivo: confirmar se o procedimento escrito reflete a prática real." },
+    { id: "1.2", q: "Em média, quantas solicitações de reembolso vocês recebem por mês? Esse volume varia muito?", hint: "Objetivo: dimensionar o problema e priorizar esforços." },
+    { id: "1.3", q: "Hoje o processo roda inteiramente pelo Fluig? Existe alguma etapa feita fora do sistema (e-mail, planilha, papel)?", clue: "<b>KM:</b> Jonatas e Ricardo contam que a quilometragem é calculada numa planilha externa, fora do Fluig, e gera trechos errados e recusas." }
+  ]},
+  { n: 2, title: "Principais dores e erros recorrentes", min: "~15 min", qs: [
+    { id: "2.1", q: "Quais são os erros mais comuns que os colaboradores cometem ao solicitar reembolso?", hint: "Ex.: comprovante errado, campo preenchido incorretamente, despesa não elegível.", clue: "<b>Documento fiscal:</b> 2 colaboradores relatam cupom que não vale como NF, ou sistema do fornecedor que falha na hora de emitir." },
+    { id: "2.2", q: "Com que frequência as solicitações chegam incompletas ou fora do prazo (10 dias)? O que acontece nesses casos? Existe fluxo de exceção documentado?", clue: "<b>Prazo:</b> quem está em viagem ou com a operação cheia perde a data. Um colaborador já desistiu de pedir reembolso por falta de tempo." },
+    { id: "2.3", q: "Existe algum tipo de despesa que gera muita dúvida ou discussão, ou que vocês frequentemente precisam recusar?", clue: "<b>4 de 4:</b> todos relatam a mesma confusão com doces e alimentação. Chocolate não, sonho sim; \"cueca virada\" é doce?; água só em certo horário. Pergunte se o financeiro reconhece esse padrão." },
+    { id: "2.4", q: "Do lado do financeiro, qual é a maior dor no processo atual? O que consome mais tempo desnecessário?", clue: "<b>4 de 4:</b> todos consultam alguém do financeiro ou da gerência antes de lançar, e um caso subiu até a diretoria. Quanto tempo isso toma do time por semana?" },
+    { id: "2.5", q: "Uma linha errada num pacote de reembolsos trava o pacote inteiro? Dá para aprovar parcialmente?", clue: "<b>Relato:</b> um colaborador que lança em lote diz que um erro numa linha bloqueia todo o processo." }
+  ]},
+  { n: 3, title: "Validação das regras e valores", min: "~10 min", qs: [
+    { id: "3.1", q: "O valor de R$ 0,97/km ainda é o praticado? Existe previsão de atualização?", hint: "O procedimento é de 2022; o valor provavelmente está defasado." },
+    { id: "3.2", q: "Os limites de valores para passagens e hotéis ainda são os mesmos? Existe tabela ou política atualizada?" },
+    { id: "3.3", q: "A regra de refeições (só jantar, com exceções para café) ainda faz sentido? Mudou alguma coisa na prática?" },
+    { id: "3.4", q: "O limite de adiantamento de R$ 200 ainda está vigente? É suficiente para a maioria dos casos?" },
+    { id: "3.5", q: "A exigência de CNPJ na nota é regra oficial? Desde quando? Podemos colocar no procedimento?", clue: "<b>Relato:</b> a exigência foi comunicada só verbalmente, não está escrita em lugar nenhum." }
+  ]},
+  { n: 4, title: "Controle e visibilidade gerencial", min: "~10 min", tag: "Fecha a dor 11", qs: [
+    { id: "4.1", q: "Vocês conseguem acompanhar o status de cada solicitação em tempo real? Existe painel ou relatório?" },
+    { id: "4.2", q: "Conseguem medir o tempo médio entre a solicitação e o pagamento? Qual é na prática?", hint: "O procedimento diz 5 dias úteis. Os colaboradores dizem 3 a 5 dias depois de aprovado e elogiam." },
+    { id: "4.3", q: "Existe controle do orçamento de viagens por área ou colaborador? Como é feito hoje?" }
+  ]},
+  { n: 5, title: "Visão de melhoria e expectativas", min: "~10 min", qs: [
+    { id: "5.1", q: "Se você pudesse mudar uma coisa no processo agora, o que seria?", hint: "Pergunta aberta. Deixe falar sem interromper." },
+    { id: "5.2", q: "Vocês já avaliaram ou conhecem alguma ferramenta de gestão de reembolsos? Têm preferência ou restrição?", clue: "<b>Ideias dos colaboradores:</b> cartão pré-pago corporativo, verba fixa por viagem, convênio com postos. Pergunte o que é viável." },
+    { id: "5.3", q: "Que exigências ou restrições o redesenho precisa respeitar? (integração com RM, formato de OC, alçadas de aprovação)", clue: "<b>Mobilidade:</b> os colaboradores pedem para lançar pelo celular, tirando foto da nota na hora, sem VPN. Há restrição técnica ou de segurança?" },
+    { id: "5.4", q: "Quem mais deveria ser consultado nesse projeto? Algum usuário frequente que vale entrevistar?" }
+  ]}
+];
+
+const KEY = "roteiro-financeiro-v1";
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+const total = BLOCKS.reduce((s, b) => s + b.qs.length, 0);
+const host = document.getElementById("blocks");
+host.style.display = "grid"; host.style.gap = "28px";
+
+BLOCKS.forEach(b => {
+  const sec = document.createElement("section");
+  sec.className = "block";
+  sec.innerHTML = `<div class="block-head"><h2>${b.n}. ${b.title}</h2><span style="display:flex;gap:8px;align-items:center">${b.tag ? `<span class="tag">${b.tag}</span>` : ""}<span class="t">${b.min}</span></span></div>`;
+  const list = document.createElement("div");
+  b.qs.forEach(q => {
+    const el = document.createElement("div");
+    el.className = "q";
+    const nid = "n-" + q.id.replace(".", "-"), cid = "c-" + q.id.replace(".", "-");
+    el.innerHTML = `
+      <span class="num">${q.id}</span>
+      <div class="q-body">
+        <div class="q-row">
+          <p class="q-text">${q.q}</p>
+          <label class="check" for="${cid}"><input type="checkbox" id="${cid}"> feita</label>
+        </div>
+        ${q.hint ? `<p class="hint">${q.hint}</p>` : ""}
+        ${q.clue ? `<p class="clue">${q.clue}</p>` : ""}
+        <textarea id="${nid}" aria-label="Anotação ${q.id}" placeholder="Resposta…"></textarea>
+      </div>`;
+    const ta = el.querySelector("textarea"), cb = el.querySelector("input");
+    ta.value = (state.notes || {})[q.id] || "";
+    cb.checked = !!(state.done || {})[q.id];
+    el.classList.toggle("is-done", cb.checked);
+    ta.addEventListener("input", () => {
+      state.notes = state.notes || {}; state.notes[q.id] = ta.value;
+      if (ta.value.trim() && !cb.checked) { cb.checked = true; mark(q.id, true, el); }
+      save();
+    });
+    cb.addEventListener("change", () => mark(q.id, cb.checked, el));
+    list.appendChild(el);
+  });
+  sec.appendChild(list);
+  host.appendChild(sec);
+});
+
+function mark(id, on, el) {
+  state.done = state.done || {}; state.done[id] = on;
+  el.classList.toggle("is-done", on);
+  save(); updateProg();
+}
+function updateProg() {
+  const n = Object.values(state.done || {}).filter(Boolean).length;
+  document.getElementById("prog").textContent = `${n} de ${total} perguntas`;
+}
+updateProg();
+
+["who", "extra"].forEach(id => {
+  const el = document.getElementById(id);
+  el.value = state[id] || "";
+  el.addEventListener("input", () => { state[id] = el.value; save(); });
+});
+
+// Cronômetro: guarda o instante de início para sobreviver a recarregar a página.
+const clock = document.getElementById("clock"), startBtn = document.getElementById("startBtn");
+let timer = null;
+function tick() {
+  const s = Math.max(0, Math.floor((Date.now() - state.start) / 1000));
+  clock.textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+}
+function run() { tick(); timer = setInterval(tick, 1000); startBtn.textContent = "Zerar"; }
+if (state.start) run();
+startBtn.addEventListener("click", () => {
+  if (timer) { clearInterval(timer); timer = null; delete state.start; save(); clock.textContent = "00:00"; startBtn.textContent = "Iniciar"; return; }
+  state.start = Date.now(); save(); run();
+});
+
+function ata() {
+  const lines = ["# Ata — Entrevista com o Financeiro (Reembolsos, Fase 1)", "", "**Entrevistada / data:** " + (state.who || "—"), ""];
+  if (state.start) lines.push("**Duração até agora:** " + clock.textContent, "");
+  BLOCKS.forEach(b => {
+    lines.push(`## ${b.n}. ${b.title}`, "");
+    b.qs.forEach(q => {
+      const r = ((state.notes || {})[q.id] || "").trim();
+      lines.push(`**${q.id}** ${q.q}`, r ? "> " + r.replace(/\n/g, "\n> ") : "> (sem anotação)", "");
+    });
+  });
+  lines.push("## Outras observações", "", (state.extra || "").trim() || "—");
+  return lines.join("\n");
+}
+const toast = document.getElementById("toast");
+document.getElementById("copyBtn").addEventListener("click", () => {
+  const txt = ata(), out = document.getElementById("out");
+  out.value = txt; document.getElementById("outWrap").hidden = false;
+  const fallback = () => { out.focus(); out.select(); toast.textContent = "Selecionei a ata abaixo. Copie com Ctrl+C."; };
+  try {
+    navigator.clipboard.writeText(txt).then(() => { toast.textContent = "Ata copiada"; }, fallback);
+  } catch (e) { fallback(); }
+  setTimeout(() => { toast.textContent = ""; }, 4000);
+});
+</script>

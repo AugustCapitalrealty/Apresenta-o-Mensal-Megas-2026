@@ -13,13 +13,14 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 11 `.gs` |
 
-Além desses seis, há mais duas pastas na raiz que **não** são projetos Apps
+Além desses seis, há outras pastas na raiz que **não** são projetos Apps
 Script mensais e não entram nas regras de namespace abaixo do mesmo jeito:
 
 | Pasta | O que é |
 |---|---|
 | `tabelas/` | Cinco geradores das apresentações **semanais**, cada um vinculado à sua própria apresentação (`mega-curitiba`, `mega-itajai`, `previsao-tempo`, `propriedades-semanal`, `template`). Tem [`README`](tabelas/README.md) próprio |
 | `design/` | Peça de design (texto, script Python, PDF/PNG). Nada a ver com os geradores de slides |
+| `reembolso/` | Meta 2026 do Guilherme: melhoria do processo de reembolsos (diagnóstico, entrevistas, planilha). Não é código; está aqui só para sobreviver ao Deep Freeze. Comece pelo [`README`](reembolso/README.md) |
 
 ## Orçamento 2027 (`orcamento-2027/`) — comece pelo HANDOFF
 
