@@ -16,6 +16,7 @@ liberados em definitivo pela TI na imagem da máquina).
 | **Claude Code** (extensão do VS Code, Anthropic) | — | Marketplace do VS Code | Assistente de IA que edita o código, roda os testes e prepara as planilhas de apoio | Roda comandos PowerShell/Python/Node na pasta do projeto; conecta em api.anthropic.com |
 | **Python** | 3.12.10 | python.org, via `winget` (instalação só do usuário) | Scripts do projeto (`orcamento-2027/ferramentas/*.py`): ler planilhas Excel (.xlsx), gerar as imagens dos gráficos dos slides, montar planilhas de comparação | Lê/grava .xlsx/.png/.json na pasta do projeto no G: |
 | └ biblioteca **openpyxl** | 3.1.5 | pypi.org (`pip install --user`) | Ler e criar arquivos .xlsx a partir do Python | — |
+| └ biblioteca **Pillow** | 12.3.0 | pypi.org (`pip install --user`) | Desenhar as imagens PNG dos gráficos dos slides (`ferramentas/graficos_imagem.py`) | Grava PNG na pasta `IMAGENS - SLIDES` do Drive |
 | **Node.js** | 24.20.0 LTS | nodejs.org, via `winget` | Rodar o teste automático das apresentações (`node teste/teste_orcamento.js`), que confere números e layout antes de publicar | Só processamento local |
 | **clasp** (Google) | — | npm (`@google/clasp`) | Publicar o código no Google Apps Script do projeto do orçamento | Conecta em script.google.com com login Google do usuário (autorizado no navegador) |
 
