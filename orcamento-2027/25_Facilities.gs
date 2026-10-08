@@ -208,7 +208,7 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
   _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', os três Megas',
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
-  [[t.areaOrc ? 'R$ ' + _orcM2_(t.orc / t.areaOrc / 12) : '–', '/m² ao mês'], [v.texto, 'vs. ritmo ' + (ORC_ANO - 1)]].forEach((n, i) => {
+  [[t.areaOrc ? 'R$ ' + _orcM2_(t.orc / t.areaOrc / 12) : '–', '/m²'], [v.texto, 'vs. ritmo ' + (ORC_ANO - 1)]].forEach((n, i) => {
     _orcUmaLinha_(slide, (546 + i * 80) * k, 252 * k, 76 * k, 22 * k, n[0],
       { align: 'L', fs: 16, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 10 });
     _orcUmaLinha_(slide, (546 + i * 80) * k, 274 * k, 76 * k, 14 * k, n[1],
@@ -295,7 +295,7 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
   const cmp = _orcComparativoM2_(rels);
   const cols = cmp.megas.concat(['FACILITIES']);
   _orcHeader_(slide, W, 'Os Megas lado a lado — conta a conta',
-    'Orçamento ' + ORC_ANO + ' em R$/m² ao mês e a variação contra o Ritmo ' + (ORC_ANO - 1) + ' · em negrito, o Mega mais caro da linha');
+    'Orçamento ' + ORC_ANO + ' em R$/m² ao mês e a variação contra o Ritmo ' + (ORC_ANO - 1) + ' · em destaque, o Mega mais caro da linha');
   const linhas = cmp.linhas.map(l => {
     const vals = cmp.megas.map(k => l.m[k].orc || 0);
     const maior = l.tipo === 'item' ? Math.max.apply(null, vals) : null;
@@ -310,7 +310,7 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
   const r1 = v => (Math.round(v / 100) / 10).toLocaleString('pt-BR');
   linhas.push({ tipo: 'grupo', nome: 'ÁREA (MIL M²) · ORÇ ' + ORC_ANO, celulas: cols.reduce((a, k) => {
     const ao = k === 'FACILITIES' ? cmp.tot.areaOrc : cmp.area[k], ar = k === 'FACILITIES' ? cmp.tot.areaRitmo : cmp.areaRit[k];
-    const v = ar && ao && Math.abs(ao / ar - 1) < 0.005 ? { texto: '0%' } : _orcVariacao_(ar, ao);
+    const v = ar && ao && Math.abs(ao / ar - 1) < 0.005 ? { texto: '=' } : _orcVariacao_(ar, ao);
     return a.concat([{ texto: ao ? r1(ao) : '–' }, { texto: v.texto, sentido: 0 }]);
   }, []) });
   const tw = W - MX * 2, labW = 176, cw = (tw - labW) / (cols.length * 2);

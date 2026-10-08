@@ -40,14 +40,16 @@ function _orcDeltaMil_(d) {
 
 // { texto, sentido: 1 | -1 | 0 } — sentido 1 = gasta mais que a base.
 // tol: abaixo disso o valor conta como zero. Padrão R$ 0,50 (valores em R$);
-// R$/m² passa 0.005 — senão tudo abaixo de R$ 0,50/m² vira "novo" ou "0%".
+// R$/m² passa 0.005 — senão tudo abaixo de R$ 0,50/m² vira "▲ 100%" ou "=".
 function _orcVariacao_(base, novo, tol) {
   const t = tol === undefined ? 0.5 : tol;
   if (Math.abs(base) < t && Math.abs(novo) < t) return { texto: '–', sentido: 0 };
-  if (Math.abs(base) < t) return { texto: '▲ novo', sentido: 1 };
+  // Base zerada com valor: ▲ 100% (gestor, 08/10/2026: "se não tem, é 100%").
+  if (Math.abs(base) < t) return { texto: '▲ 100%', sentido: 1 };
   const p = (novo / base - 1) * 100;
   const r = Math.round(Math.abs(p));
-  if (Math.abs(novo - base) < t) return { texto: '0%', sentido: 0 };
+  // Variação abaixo de 0,5%: "=" (analista 4, 07/10/2026 — "▲ 0%" vermelho confundia).
+  if (Math.abs(novo - base) < t || r === 0) return { texto: '=', sentido: 0 };
   return { texto: (p > 0 ? '▲ ' : '▼ ') + (r > 999 ? '>999' : r) + '%', sentido: p > 0 ? 1 : -1 };
 }
 

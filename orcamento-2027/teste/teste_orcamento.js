@@ -680,9 +680,9 @@ iSub.forEach((i, k) => ok(slides[i] && SECOES.every(n => textos(slides[i]).index
   'sub capa ' + SECOES[k] + ': trilha com as 7 seções'));
 const tMan = textos(slides[iSub[3]]);
 ok(tMan.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tMan.indexOf('Orçamento 2027 da conta') >= 0 &&
-   tMan.some(t => /^R\$ [\d,]+$/.test(t)) && tMan.indexOf('/m² ao mês') >= 0 && tMan.indexOf('vs. ritmo 2026') >= 0,
+   tMan.some(t => /^R\$ [\d,]+$/.test(t)) && tMan.indexOf('/m²') >= 0 && tMan.indexOf('/m² ao mês') < 0 && tMan.indexOf('vs. ritmo 2026') >= 0,
    'sub capa Manutenção: valor da conta, R$/m² ao mês e variação contra o ritmo (' + tMan.slice(0, 9).join(' | ') + ')');
-ok(textos(slides[iSub[6]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[6]]).indexOf('por m² ao mês, todas as contas') >= 0,
+ok(textos(slides[iSub[6]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[6]]).indexOf('por m², todas as contas') >= 0,
    'sub capa Custo por m²: abre com o R$/m² ao mês');
 ok(!textos(slides[iSub[0]]).some(t => /^R\$/.test(t)), 'sub capa Premissas: sem número');
 // Sumário logo depois da capa, com as 8 seções; número e nome são link para a sub capa.
@@ -904,7 +904,7 @@ slides.forEach((sl, i) => {
 ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf('Manutenção de Imóveis') < 0,
    'capa: título é a cidade, não a conta');
 const tCapa = textos(slides[0]);
-ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m² ao mês', 'vs. ritmo 2026', 'Orçamento 2027, todas as contas',
+ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m²', 'vs. ritmo 2026', 'Orçamento 2027, todas as contas',
     'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12)].every(t => tCapa.indexOf(t) >= 0),
    'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
 // Curitiba é Demercado (ORC_MARCAS): nome e rodapé da marca, sem o slogan da
@@ -1188,7 +1188,7 @@ const ESTADO_CIDADES = {};
    'Custo por m² mês a mês — Orçamento 2027', 'Manutenção de Imóveis — Orçamento 2027', 'Distribuição mensal']
     .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
   ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
-  ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m² ao mês') >= 0, c + ': capa com o Mega e o R$/m²');
+  ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m²') >= 0, c + ': capa com o Mega e o R$/m²');
   // Os relatórios fecham entre si; o slide de revisão só traz as pendências
   // de dados (19_Revisar.gs, _orcPendencias_).
   const iRev = titulos.indexOf('Revisar antes da versão final');
@@ -1339,14 +1339,14 @@ console.log('Capa como imagem');
      'capa: imagem do slide inteiro');
   ok(tc.indexOf('ORÇAMENTO 2027') < 0 && tc.indexOf('Mega Esteio') < 0 && tc.indexOf('Expandir Eficiência') < 0,
      'capa em imagem: títulos e rodapé ficam na imagem, não repetidos em texto');
-  ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m² ao mês') >= 0 && tc.indexOf('vs. ritmo 2026') >= 0,
+  ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m²') >= 0 && tc.indexOf('vs. ritmo 2026') >= 0,
      'capa em imagem: os números da METRAGEM por cima, em texto (' + tc.join(' | ') + ')');
   // Sub capa em imagem: só a 04 tem imagem no dublê; as outras ficam com formas.
   const slE = decks[ESTEIO.deckId].getSlides();
   const sub4 = slE.filter(x => x.shapes.some(s => s.nome === 'SUBCAPA - MEGA ESTEIO - 04.jpg'))[0];
   const ts4 = sub4 ? textos(sub4) : [];
   ok(sub4 && ts4.indexOf('04') < 0 && ts4.indexOf('Manutenção') < 0 && ts4.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) &&
-     ts4.indexOf('/m² ao mês') >= 0, 'sub capa em imagem: só os números da seção por cima (' + ts4.join(' | ') + ')');
+     ts4.indexOf('/m²') >= 0, 'sub capa em imagem: só os números da seção por cima (' + ts4.join(' | ') + ')');
   const areas = sub4 ? sub4.shapes.filter(s => s.link) : [];
   ok(areas.length === 6 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 6 áreas clicáveis na trilha (7 seções), com link');
   ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Segurança'), 'sub capa sem imagem continua com formas');
