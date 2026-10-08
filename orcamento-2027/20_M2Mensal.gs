@@ -89,15 +89,14 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
   const S = {};
   d.series.forEach(s => { S[s.k] = s; });
 
-  // A mensagem nas duas faces (avaliação da analista, 07/10/2026): o Orç
-  // contra o ritmo do ano inteiro e contra a SAÍDA do ano anterior (out–dez,
-  // em geral ainda projeção). Só o recorte de 3 meses enganaria.
-  const m = _orcM2Mensagem_(S);
-  const mas = m.saida && m.vAno.sentido && m.vSaida.sentido && m.vAno.sentido !== m.vSaida.sentido;
+  // O Orç contra o ritmo do ano. A comparação com a saída de out–dez saiu
+  // (gestor, 08/10/2026: "Retirar essa métrica"). Os números do painel e do
+  // subtítulo são os da tabela de baixo (total ÷ área), para não aparecer
+  // 3,38 no painel e 3,39 na tabela.
+  const m = _orcM2Mensagem_(S, d);
   _orcHeader_(slide, W, 'Custo por m² mês a mês — Orçamento ' + a.orc,
-    'Área comum · Orç ' + a.orc + ' R$ ' + _orcM2_(S.orc.media) + '/m²' +
-    (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') +
-    (m.saida ? (mas ? ', mas ' : ' · ') + m.vSaida.texto + ' × saída de ' + a.ritmo + ' (out–dez)' : '') + ' · ' + cid.nome);
+    'Área comum · Orç ' + a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
+    (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') + ' · ' + cid.nome);
 
   const cy = 70, ch = 126, labW = 76, mediaW = 52, colW = (tw - labW - mediaW) / 12;
   _orcCard_(slide, MX, cy, tw, ch, null);
@@ -156,23 +155,15 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
 // GRÁFICO E PAINEL (desenho aprovado em 07/10/2026 — rascunho
 // ferramentas/rascunhos/grafico_m2_rascunho_v2.py)
 // ==========================================
-// As duas comparações do Orç: contra o ritmo do ano e contra a saída do ano
-// anterior (média de out–dez). A saída só entra quando difere do ano em 5% ou
-// mais — senão repete a primeira. degrau: saída 15%+ acima de jan–set.
-function _orcM2Mensagem_(S) {
+// A comparação do Orç contra o ritmo do ano, com o R$/m² da área comum da
+// tabela "Custo condomínio" (total ÷ área implícita) quando há — a média dos
+// 12 meses do gráfico arredonda diferente. A saída de out–dez saiu em 08/10/2026.
+function _orcM2Mensagem_(S, d) {
   const r = S.ritmo, o = S.orc;
-  if (!r || !r.media || !o || !o.media) return { vAno: null, saida: null };
-  const media = arr => { const v = arr.filter(x => x !== null); return v.length ? v.reduce((t, x) => t + x, 0) / v.length : null; };
-  const saida = media(r.meses.slice(9)), antes = media(r.meses.slice(0, 9));
-  const fech = ORC_RITMO_ULTIMO_MES_FECHADO;
-  const m = { vAno: _orcVariacao_(r.media, o.media, 0.005), saida: null };
-  if (saida && Math.abs(saida / r.media - 1) >= 0.05) {
-    m.saida = saida;
-    m.vSaida = _orcVariacao_(saida, o.media, 0.005);
-    m.projecao = fech < 12 ? (fech <= 9 ? 'é projeção' : 'inclui projeção') : '';
-    m.degrau = !!antes && saida / antes - 1 >= 0.15;
-  }
-  return m;
+  const ac = k => d && d.custo && d.custo[k] && d.custo[k].areaComum ? d.custo[k].areaComum.m2 : null;
+  const rM = ac('ritmo') || (r && r.media), oM = ac('orc') || (o && o.media);
+  if (!rM || !oM) return { vAno: null, saida: null, ritmo: rM, orc: oM };
+  return { vAno: _orcVariacao_(rM, oM, 0.005), saida: null, ritmo: rM, orc: oM };
 }
 
 function _orcCorSentido_(sentido) {
@@ -231,8 +222,9 @@ function _orcGraficoM2_(slide, S, a, g) {
     // O número da escala sai quando bateria no valor de JAN do Orç.
     // (caixa da escala: y-9…y-1; rótulo de JAN: yJan-14,5…yJan-3,5)
     if (S.orc.meses[0] !== null && Math.abs(y(v) + 4 - y(S.orc.meses[0])) < 9.5) continue;
-    _orcUmaLinha_(slide, g.x0 + 1, y(v) - 9, 24, 8, _orcM2_(v),
-      { align: 'L', fs: 6, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, folga: 14 });
+    // Caixa larga e alta (o "4,50" quebrava em "4,5 / 0" no Slides — gestor, 08/10/2026).
+    _orcUmaLinha_(slide, g.x0 + 1, y(v) - 10, 30, 10, _orcM2_(v),
+      { align: 'L', fs: 6, fsMin: 6, cor: C.textBody, fonte: DS.typography.body, folga: 30 });
   }
 
   // Linhas: contexto atrás, Orç por cima.
@@ -286,7 +278,7 @@ function _orcPainelM2_(slide, x, y, w, S, a, m) {
   const txt = (yy, h, t, op) => _orcUmaLinha_(slide, x, yy, w, h, t,
     Object.assign({ align: 'L', fsMin: 5.5, fonte: DS.typography.body, cor: C.textBody, folga: 4 }, op));
   txt(y, 9, 'ORÇ ' + a.orc + ' · MÉDIA', { fs: 5.6, bold: true, fonte: DS.typography.titles });
-  txt(y + 8, 16, 'R$ ' + _orcM2_(S.orc.media) + '/m²', { fs: 10, fsMin: 8, bold: true, cor: C.brandDark, fonte: DS.typography.titles });
+  txt(y + 8, 16, 'R$ ' + _orcM2_(m.orc || S.orc.media) + '/m²', { fs: 10, fsMin: 8, bold: true, cor: C.brandDark, fonte: DS.typography.titles });
   let yy = y + 27;
   const bloco = (l1, l2, v) => {
     _orcLinha_(slide, x + 2, yy, x + w - 4, yy, C.lines, 0.6);
@@ -295,11 +287,6 @@ function _orcPainelM2_(slide, x, y, w, S, a, m) {
     txt(yy + 10, 13, v.texto, { fs: 9, bold: true, cor: _orcCorSentido_(v.sentido) });
     yy += 26;
   };
-  if (m.vAno) bloco('× ritmo ' + a.ritmo + ' (' + _orcM2_(S.ritmo.media) + ')', null, m.vAno);
-  if (m.saida) bloco('× saída de ' + a.ritmo, 'out–dez (' + _orcM2_(m.saida) + ')', m.vSaida);
-  else if (S.real && S.real.media) bloco('× real ' + a.real + ' (' + _orcM2_(S.real.media) + ')', null, _orcVariacao_(S.real.media, S.orc.media, 0.005));
-  if (m.saida && m.projecao) {
-    txt(yy, 9, 'saída ' + a.ritmo + ' ' + m.projecao + (m.degrau ? ';' : ''), { fs: 6.5 });
-    if (m.degrau) txt(yy + 8, 9, 'degrau a explicar', { fs: 6.5 });
-  }
+  if (m.vAno) bloco('× ritmo ' + a.ritmo + ' (' + _orcM2_(m.ritmo) + ')', null, m.vAno);
+  if (S.real && S.real.media) bloco('× real ' + a.real + ' (' + _orcM2_(S.real.media) + ')', null, _orcVariacao_(S.real.media, m.orc || S.orc.media, 0.005));
 }

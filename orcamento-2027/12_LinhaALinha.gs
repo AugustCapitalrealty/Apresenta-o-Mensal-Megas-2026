@@ -137,10 +137,12 @@ function _orcMesAMesConta_(slide, cx, cy, cw, ch, m, a) {
     _orcBolinha_(slide, xm(i), y(rit[i]), 1.6, C.brandDark, 1);
     if (proj && i >= fech) {
       // Valor da projeção numa etiqueta branca: legível em cima da barra.
-      const t = mil(rit[i]), ew = Math.max(14, _orcLarguraTexto_(t, 6, DS.typography.titles, true) + 5);
+      // A caixa do texto é bem mais larga que a etiqueta (sem fundo, não aparece): com folga 4 o Slides
+      // quebrava o "45" em "4 / 5" (gestor, 08/10/2026, Limpeza de Itajaí).
+      const t = mil(rit[i]), ew = Math.max(16, _orcLarguraTexto_(t, 6, DS.typography.titles, true) + 7);
       _orcRet_(slide, xm(i) - ew / 2, y(rit[i]) - 13, ew, 9, '#FFFFFF', { redondo: true, borda: C.brandDark, peso: 0.6 });
-      _orcUmaLinha_(slide, xm(i) - ew / 2, y(rit[i]) - 13, ew, 9, t,
-        { align: 'C', fs: 6, fsMin: 5, bold: true, cor: C.brandDark, fonte: DS.typography.titles, folga: 4 });
+      _orcUmaLinha_(slide, xm(i) - ew / 2, y(rit[i]) - 13.5, ew, 10, t,
+        { align: 'C', fs: 6, fsMin: 5, bold: true, cor: C.brandDark, fonte: DS.typography.titles, folga: 16 });
     }
   }
 }
