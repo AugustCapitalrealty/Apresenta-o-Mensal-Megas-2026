@@ -151,3 +151,7 @@ V1–V24 vieram do deck de Curitiba (os marcados "vale para todos" valem para os
 ### V16 em colunas (Guilherme, 09/10/2026)
 
 "Ainda prefiro assim" (a ponte do slide anterior): o lado esquerdo das demais variações virou ponte de colunas verticais — cada degrau a partir de onde o anterior parou e a coluna cheia do total, com a legenda de cada degrau embaixo. Na ponte do "por que sobe", a última coluna passou a "ORÇ 2027" ("ORÇAMENTO 2027" quebrava em "ORÇAMENT / O 2027"). Feito e publicado em 09/10; falta gerar.
+
+### 090 × METRAGEM: os itens (09/10/2026)
+
+Investigado mês a mês (combinação de itens que fecha a diferença): **Itajaí R$ 29.313** = JAN totem Mega (R$ 11.500) + FEV iluminação lateral AMZ 4/5 (R$ 11.875) + FEV iluminação do bolsão de leves (R$ 5.938); **Esteio R$ 15.268** = OUT linhas de vida AMZ A e B2 (2 × R$ 7.635; R$ 2 de arredondamento). O gestor já disse que os de Itajaí são de 2027 → a controladoria precisa incluir na METRAGEM-COND. O slide "Revisar antes da versão final" lista os itens e o que fazer (`_orcItensForaDaMetragem_`, `19_Revisar.gs`). Publicado; falta gerar.

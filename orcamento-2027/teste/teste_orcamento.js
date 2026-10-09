@@ -1261,6 +1261,15 @@ const ESTADO_CIDADES = {};
   ok(tRev.indexOf('Modelos acima da METRAGEM') >= 0 && tRev.indexOf('Contratos 2027 não informados') < 0,
      c + ': pendência só da manutenção acima da METRAGEM');
   ok(tRev.indexOf(excesso) >= 0, c + ': pendência com o valor e os meses (' + tRev.filter(t => /^itens somam/.test(t)).join() + ')');
+  // Os itens que fazem a diferença, com o mês e o que fazer (09/10/2026): Itajaí = totem (JAN) e as duas
+  // iluminações (FEV); Esteio = as duas linhas de vida (OUT; R$ 2 de arredondamento da METRAGEM).
+  const itensFora = { itajai: ['MANUTENÇÃO E PINTURA DO TOTEM MEGA', 'INSTALAÇÃO DE ILUMINAÇÃO ADICIONAL NA LATERAL DO AMZ 4 E 5 (PERÍMETRO)',
+                               'INSTALAÇÃO DE ILUMINAÇÃO PARA O BOLSÃO DE VEÍCULOS LEVES (ESTACIONAMENTO)'],
+                      esteio: ['INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ A',
+                               'INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ B2'] }[c];
+  ok(itensFora.every(n => tRev.indexOf(n) >= 0) && tRev.some(t => /^O que fazer: confirmar com a controladoria/.test(t)),
+     c + ': revisão lista os itens do 090 que a METRAGEM não tem e o que fazer (' +
+     itensFora.filter(n => tRev.indexOf(n) < 0).join(' | ') + ')');
   ok(!sl.some(x => textos(x).some(t => /^Não detalhado nos modelos/.test(t))), c + ': nenhuma conta com "Não detalhado"');
   ok(textos(sl[iSegC]).indexOf(chave === 'ITAJAI' ? 'CONTRATO — PORTOVIG (VIGILÂNCIA)' : 'CONTRATO — VOIGT (SEGURANÇA)') >= 0,
      c + ': segurança com os contratos do cadastro');

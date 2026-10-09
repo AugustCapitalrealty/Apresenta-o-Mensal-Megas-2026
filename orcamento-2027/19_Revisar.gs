@@ -72,14 +72,19 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
                  texto: _orcMoeda_(comp.base) + ' em "Não detalhado" — sem os contratos de ' + ORC_ANO + ' no cadastro' });
     }
     if (comp.excesso > 1) {
-      const m = mensal && mensal.contas[c.chave], meses = [];
+      const m = mensal && mensal.contas[c.chave], meses = [], fora = [];
       if (m) {
         for (let i = 0; i < 12; i++) {
           const d = comp.itens.reduce((t, it) => t + ((it.meses && it.meses[i]) || 0), 0) - m.orc[i];
-          if (d > 1) meses.push(ORC_MESES[i] + ' ' + _orcMoeda_(d));
+          if (d > 1) {
+            meses.push(ORC_MESES[i] + ' ' + _orcMoeda_(d));
+            const achados = _orcItensForaDaMetragem_(comp.itens, i, d);
+            if (achados) achados.forEach(it => fora.push({ mes: ORC_MESES[i], valor: it.meses[i], descricao: it.descricao }));
+            else fora.push({ mes: ORC_MESES[i], valor: d, descricao: null });
+          }
         }
       }
-      out.push({ nome: c.nome, chave: c.chave, tipo: 'Modelos acima da METRAGEM',
+      out.push({ nome: c.nome, chave: c.chave, tipo: 'Modelos acima da METRAGEM', fora: fora, excesso: comp.excesso,
                  texto: 'itens somam ' + _orcMoeda_(comp.excesso) + ' a mais' + (meses.length ? ' · ' + meses.join(' · ') : '') });
     }
   });
@@ -95,6 +100,33 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
     out.push({ nome: c ? c.nome : p.conta, chave: chave, tipo: p.tipo, texto: p.texto });
   });
   return out;
+}
+
+// Quais itens do mês i fazem os modelos passarem da METRAGEM em d (Guilherme,
+// 09/10/2026: "falando o que precisa ser visto"). Procura a combinação de até 3
+// itens que fecha a diferença (folga de R$ 5 para o arredondamento da
+// METRAGEM); entre as que fecham, a de menos itens, e depois a de itens
+// pontuais (poucos meses com valor) — o item que entrou no modelo depois de a
+// METRAGEM fechar costuma ser obra de um mês, não contrato. null se nada fecha.
+function _orcItensForaDaMetragem_(itens, i, d) {
+  const tol = Math.max(5, d * 0.001);
+  const cand = itens.filter(it => it.meses && it.meses[i] > 0.5)
+    .sort((a, b) => b.meses[i] - a.meses[i]).slice(0, 40);
+  const nMeses = it => it.meses.filter(v => Math.abs(v) > 0.5).length + (/^CONTRATO/i.test(it.descricao) ? 12 : 0);
+  let melhor = null;
+  const avaliar = lista => {
+    if (Math.abs(lista.reduce((t, it) => t + it.meses[i], 0) - d) > tol) return;
+    const nota = lista.length * 1000 + lista.reduce((t, it) => t + nMeses(it), 0);
+    if (!melhor || nota < melhor.nota) melhor = { nota: nota, lista: lista };
+  };
+  for (let a = 0; a < cand.length; a++) {
+    avaliar([cand[a]]);
+    for (let b = a + 1; b < cand.length; b++) {
+      avaliar([cand[a], cand[b]]);
+      for (let e = b + 1; e < cand.length; e++) avaliar([cand[a], cand[b], cand[e]]);
+    }
+  }
+  return melhor ? melhor.lista : null;
 }
 
 // Em que slides a conta aparece pelo nome (o total geral está em quase todos).
@@ -138,6 +170,22 @@ function gerarSlideRevisar_(slide, W, H, cid, rel) {
       { titulo: 'DETALHE', w: tw - 280, align: 'L' }
     ], linhas, null) + 14;
   }
+  // Modelos acima da METRAGEM: os itens que fazem a diferença, mês a mês, e o
+  // que fazer (Guilherme, 09/10/2026: "falando o que precisa ser visto ou revisado").
+  pend.filter(p => p.fora && p.fora.length).forEach(p => {
+    _orcUmaLinha_(slide, MX, y, tw, 13, p.nome + ' — itens do modelo 090 que a METRAGEM-COND não tem (' + _orcMoeda_(p.excesso) + ')',
+      { align: 'L', fs: 8, bold: true, cor: _ORC_COR_REVISAR.texto, fonte: DS.typography.titles, fsMin: 6.5, folga: 4 });
+    const linhas = p.fora.map(f => ({ tipo: 'item', nome: f.mes, celulas: [{ texto: _orcMoeda_(f.valor), bold: true },
+      { texto: f.descricao || 'nenhuma combinação de itens fecha o mês — conferir o mês no 090 e na METRAGEM' }] }));
+    y = _orcTabelaNum_(slide, MX, y + 15, tw, 16 + 15 * linhas.length, [
+      { titulo: 'MÊS', w: 50 }, { titulo: 'VALOR', w: 70 }, { titulo: 'ITEM NO MODELO 090', w: tw - 120, align: 'L' }
+    ], linhas, null) + 4;
+    _orcParagrafo_(slide, MX, y, tw, 22, 'O que fazer: confirmar com a controladoria. Se o item é de ' + rel.anos.orc +
+      ', incluir na METRAGEM-COND, no mês indicado; se não vai acontecer, tirar do modelo 090. Corrigida a fonte, gere de ' +
+      'novo — a pendência, o selo ⚠ PENDENTE e o degrau "Modelo 090 × Orç da METRAGEM" somem.',
+      { fs: 7, fsMin: 6, cor: C.textBody });
+    y += 28;
+  });
   if (rel.revisar.length) {
     const linhas = rel.revisar.map(r => {
       const d = r.mensal - r.metragem;
