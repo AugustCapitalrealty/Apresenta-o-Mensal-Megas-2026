@@ -151,6 +151,7 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
   });
   const yFim = y0 + linhas.length * rowH;
   _orcLinha_(slide, x, yFim, x + w, yFim, C.lines, 1);
+  _orcSombraTabela_(x, yCab, w, yFim - yCab);   // a faixa de grupos de coluna fica fora do card
   return yFim;
 }
 

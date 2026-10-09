@@ -239,13 +239,20 @@ function _orcGerarCidade_(deck, W, H, chave) {
       catch (e) { Logger.log('Obras adiadas de ' + cid.nome + ' indisponíveis: ' + e.message); }
       if (adi) comSelo('Por que a manutenção sobe', [contas[0].chave],
         s => gerarSlidePorQueSobe_(s, W, H, cid, visao.rel, contas[0], adi));
+      // V16 (09/10/2026): o resto da alta aberto item a item, pelos pares do
+      // gestor — também no Mega sem obra adiada (aí é a alta inteira).
+      let vi = null;
+      try { vi = _orcVariacoesItens_(cid, dados, contas[0], adi); }
+      catch (e) { Logger.log('Variações item a item de ' + cid.nome + ' indisponíveis: ' + e.message); }
+      if (vi) comSelo('Por que a manutenção sobe — item a item', [contas[0].chave],
+        s => gerarSlideDemaisVariacoes_(s, W, H, cid, visao.rel, contas[0], vi));
     }
     // Os avulsos abertos (era a seção 07, "Projetos × Recorrente") e o item a
     // item com o selinho de cada grupo.
     if (visao && calc && calc.cls) {
       comSelo('Projetos × recorrente', [_orcChaveConta_('Manutenção de imóveis')],
         s => gerarSlideInvestimento_(s, W, H, cid, visao.rel, calc.cls));
-      const pagsG = _orcPaginasGrupos_(calc.cls);
+      const pagsG = _orcPaginasGrupos_(calc.cls, H);
       pagsG.forEach((pag, i) => comSelo('Projetos × recorrente — itens (' + (i + 1) + '/' + pagsG.length + ')',
         [_orcChaveConta_('Manutenção de imóveis')], s => gerarSlideGruposManut_(s, W, H, cid, visao.rel, calc.cls, pag, i, pagsG.length)));
     }

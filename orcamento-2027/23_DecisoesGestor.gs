@@ -1,8 +1,8 @@
 /**
- * ARQUIVO: 23_DecisoesGestor.gs — GERADO por ferramentas/decisoes_gestor.py em 07/10/2026. Não edite à mão:
+ * ARQUIVO: 23_DecisoesGestor.gs — GERADO por ferramentas/decisoes_gestor.py em 09/10/2026. Não edite à mão:
  * o gestor muda a planilha de comparação, rode o script de novo.
  * Decisões do gestor nas planilhas "ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>",
- * por Mega: obras de 2026 adiadas para 2027 e os pares que ele marcou SIM.
+ * por Mega: obras de 2026 adiadas para 2027, os pares que ele marcou SIM e os gastos do ritmo 2026 sem par.
  */
 const ORC_DECISOES_GESTOR = {
  "Mega Curitiba": {
@@ -237,6 +237,148 @@ const ORC_DECISOES_GESTOR = {
     "itens2027": [],
     "orc2027": 0.0,
     "comentario": "Está em contrato agora"
+   }
+  ],
+  "semPar": [
+   {
+    "linha": 6,
+    "de2026": "Reforma do reservatório Potável 138m3",
+    "ritmo2026": 70000.0
+   },
+   {
+    "linha": 7,
+    "de2026": "Abrandador (Aquapro)",
+    "ritmo2026": 30957.18
+   },
+   {
+    "linha": 8,
+    "de2026": "Barreiras Viárias (New Jersey - FFM)",
+    "ritmo2026": 29800.0
+   },
+   {
+    "linha": 9,
+    "de2026": "Demolição ETE 3 (Monopólio)",
+    "ritmo2026": 22700.0
+   },
+   {
+    "linha": 10,
+    "de2026": "Revitalização Campo Futebol (Norte Sul)",
+    "ritmo2026": 21300.0
+   },
+   {
+    "linha": 11,
+    "de2026": "Projeto As Built do sistema de abastecimento de água",
+    "ritmo2026": 20600.0
+   },
+   {
+    "linha": 12,
+    "de2026": "Projeto Novos Reservatórios de Agua (Fundação + Hidr.)",
+    "ritmo2026": 10300.0
+   },
+   {
+    "linha": 15,
+    "de2026": "Provisão para iluminação da área comum/manutenções elétricas",
+    "ritmo2026": 21906.0
+   },
+   {
+    "linha": 16,
+    "de2026": "Provisão serralheria",
+    "ritmo2026": 4750.0
+   },
+   {
+    "linha": 27,
+    "de2026": "Limpeza de cobertura armazéns 3 e 4 Boticário #10233727",
+    "ritmo2026": 114058.25
+   },
+   {
+    "linha": 28,
+    "de2026": "Pintura da fachada cinza do Armazém 3, 4 (Fundos Sub3)  #14650845",
+    "ritmo2026": 30000.0
+   },
+   {
+    "linha": 29,
+    "de2026": "Compra de duas cancelas (Cancela 1 e 5) #14839467",
+    "ritmo2026": 62344.58
+   },
+   {
+    "linha": 30,
+    "de2026": "Lavação em fechamentos metálico fase 01 #14839538",
+    "ritmo2026": 50000.0
+   },
+   {
+    "linha": 31,
+    "de2026": "Compra de totem de autoatendimento. #14651878",
+    "ritmo2026": 13930.0
+   },
+   {
+    "linha": 33,
+    "de2026": "Reforma dos totens das cancelas #4022057",
+    "ritmo2026": 5000.0
+   },
+   {
+    "linha": 34,
+    "de2026": "Remanejamento de caixa hermética fase 01 #4152350",
+    "ritmo2026": 31740.18
+   },
+   {
+    "linha": 35,
+    "de2026": "Conjunto de Câmera Dome - Fundos Armazém 5 #14651899",
+    "ritmo2026": 17246.45
+   },
+   {
+    "linha": 37,
+    "de2026": "Provisão gastos PPCI",
+    "ritmo2026": 7091.19
+   },
+   {
+    "linha": 39,
+    "de2026": "Provisão reparo cercas/portões",
+    "ritmo2026": 10344.0
+   },
+   {
+    "linha": 40,
+    "de2026": "Infraestrutura pátio externo comunicação fibra optica #6551915",
+    "ritmo2026": 8100.0
+   },
+   {
+    "linha": 41,
+    "de2026": "Poda de árvores perimetro (Em atendimento ao diagnóstico Moked)",
+    "ritmo2026": 8004.0
+   },
+   {
+    "linha": 43,
+    "de2026": "Manutenção no reboco da placa pré-moldada (Armazém 3 e 4) #12772998",
+    "ritmo2026": 5750.0
+   },
+   {
+    "linha": 44,
+    "de2026": "Reforma Dilaceradores",
+    "ritmo2026": 5000.0
+   },
+   {
+    "linha": 45,
+    "de2026": "Compra de Equipamento para Instalação de WI-FI na casa de Bombas",
+    "ritmo2026": 4765.55
+   },
+   {
+    "linha": 46,
+    "de2026": "Referente a aquisição de sistema de monitoramento de equipamentos na casa de bombas (CAS)",
+    "ritmo2026": 4607.7
+   },
+   {
+    "linha": 47,
+    "de2026": "Referente a contratação de projeto técnico para regularização do sistema fotovoltaico",
+    "ritmo2026": 4000.0
+   },
+   {
+    "linha": 48,
+    "de2026": "Referente a instalação dos dispositivos de monitoramento na casa bombas (infra elétrica e lóigica)",
+    "ritmo2026": 3000.0
+   },
+   {
+    "linha": 49,
+    "de2026": "Preventiva bombas esgoto",
+    "ritmo2026": 2450.0
    }
   ]
  },
@@ -553,6 +695,128 @@ const ORC_DECISOES_GESTOR = {
     "itens2027": [],
     "orc2027": 0.0,
     "comentario": "Comprar com os 3% de manutenções não previstas em 2027"
+   }
+  ],
+  "semPar": [
+   {
+    "linha": 10,
+    "de2026": "Fabricação e fornecimento de nova bomba para acoplamento do trator 4",
+    "ritmo2026": 24999.96
+   },
+   {
+    "linha": 11,
+    "de2026": "Manutenção corretiva  e periódica em motor Scania do gerador",
+    "ritmo2026": 12300.0
+   },
+   {
+    "linha": 12,
+    "de2026": "Comunicação visual horizontal e letreiro do armazém",
+    "ritmo2026": 10168.0
+   },
+   {
+    "linha": 14,
+    "de2026": "Pacote serralheira *10917019 *12943732",
+    "ritmo2026": 11666.65
+   },
+   {
+    "linha": 16,
+    "de2026": "Provisão gastos CFTV",
+    "ritmo2026": 2100.0
+   },
+   {
+    "linha": 17,
+    "de2026": "Peças para painéis elétricos (substituir disjuntores e contatoras do sinistro)",
+    "ritmo2026": 3548.41
+   },
+   {
+    "linha": 26,
+    "de2026": "Rota de Fuga",
+    "ritmo2026": 119434.1
+   },
+   {
+    "linha": 27,
+    "de2026": "Reservatório 02: Prever tratamento e pintura interno e externo #14527327",
+    "ritmo2026": 88000.0
+   },
+   {
+    "linha": 28,
+    "de2026": "Cabeçote, juntas e pistões/ trator 2 #14745887 (parcelamento em 8x)",
+    "ritmo2026": 53745.96
+   },
+   {
+    "linha": 29,
+    "de2026": "Manutenção chicote trator 01",
+    "ritmo2026": 16366.38
+   },
+   {
+    "linha": 37,
+    "de2026": "Compra de ar condicionado #14596535",
+    "ritmo2026": 2500.0
+   },
+   {
+    "linha": 41,
+    "de2026": "Sinistro calhas e rufos",
+    "ritmo2026": 8920.0
+   },
+   {
+    "linha": 42,
+    "de2026": "Manutenção geral dos dilaceradores",
+    "ritmo2026": 8392.14
+   },
+   {
+    "linha": 43,
+    "de2026": "Manutenção corretiva na bomba jockey do sistema SPK",
+    "ritmo2026": 7865.0
+   },
+   {
+    "linha": 44,
+    "de2026": "Fechamento perimetral Avenida Standard",
+    "ritmo2026": 7000.0
+   },
+   {
+    "linha": 45,
+    "de2026": "Reparo em tubos de drenagem usados pelo trator",
+    "ritmo2026": 4370.0
+   },
+   {
+    "linha": 46,
+    "de2026": "Totem MEGA: Manutenção emergencial nas hastes das luminárias #17941853",
+    "ritmo2026": 3800.0
+   },
+   {
+    "linha": 47,
+    "de2026": "Manutenção emergencial no sistema de arrefecimento no motor MWM",
+    "ritmo2026": 3471.55
+   },
+   {
+    "linha": 48,
+    "de2026": "Adequação da área externa conforme projeto PPCI (compra de extinotores e placas)",
+    "ritmo2026": 2152.2
+   },
+   {
+    "linha": 49,
+    "de2026": "Extintores ABC área comum",
+    "ritmo2026": 1988.8
+   },
+   {
+    "linha": 50,
+    "de2026": "Transporte tratores do Mega para a Sotrima",
+    "ritmo2026": 1600.0
+   },
+   {
+    "linha": 51,
+    "de2026": "Estravasores fase 01",
+    "ritmo2026": 1500.0
+   },
+   {
+    "linha": 52,
+    "de2026": "Análise de água potável",
+    "ritmo2026": 853.0
+   },
+   {
+    "linha": 53,
+    "de2026": "Detectores de fumaça",
+    "ritmo2026": 659.0
    }
   ]
  },
@@ -873,6 +1137,238 @@ const ORC_DECISOES_GESTOR = {
     "itens2027": [],
     "orc2027": 0.0,
     "comentario": "Entra na provisão dos 3%"
+   }
+  ],
+  "semPar": [
+   {
+    "linha": 11,
+    "de2026": "Escadas marinheiro e subestação 02",
+    "ritmo2026": 59180.0
+   },
+   {
+    "linha": 12,
+    "de2026": "Robo tubulação",
+    "ritmo2026": 55190.0
+   },
+   {
+    "linha": 13,
+    "de2026": "Esgoto Restaurante",
+    "ritmo2026": 48750.0
+   },
+   {
+    "linha": 14,
+    "de2026": "Cancela 03",
+    "ritmo2026": 30000.0
+   },
+   {
+    "linha": 15,
+    "de2026": "Iluminação externa armazéns 02 e 03",
+    "ritmo2026": 22500.0
+   },
+   {
+    "linha": 16,
+    "de2026": "Recuperação e manutenção do totem do bolsão externo",
+    "ritmo2026": 17400.0
+   },
+   {
+    "linha": 17,
+    "de2026": "Vidros blindados da portaria",
+    "ritmo2026": 15984.97
+   },
+   {
+    "linha": 18,
+    "de2026": "Abertura do pavimento interno da frente do restaurante",
+    "ritmo2026": 15500.0
+   },
+   {
+    "linha": 19,
+    "de2026": "Redutores de velocidade armazéns (Cones E New Jersey)",
+    "ritmo2026": 15000.0
+   },
+   {
+    "linha": 21,
+    "de2026": "SEGURO MEGA ESTEIO - ÁRMAZEM A",
+    "ritmo2026": 7900.0
+   },
+   {
+    "linha": 28,
+    "de2026": "Troca lona totem *14795504",
+    "ritmo2026": 31290.4
+   },
+   {
+    "linha": 33,
+    "de2026": "Limpeza pórtico prédio apoio/pórtico *10229601",
+    "ritmo2026": 28728.2
+   },
+   {
+    "linha": 35,
+    "de2026": "Obra cancelas 2/2 *  2594805 (Equipamentos eletronicos)",
+    "ritmo2026": 124200.0
+   },
+   {
+    "linha": 39,
+    "de2026": "Botão Pânico clientes * 14753033",
+    "ritmo2026": 24311.5
+   },
+   {
+    "linha": 40,
+    "de2026": "Bicicletario externo * 14512183",
+    "ritmo2026": 11500.0
+   },
+   {
+    "linha": 43,
+    "de2026": "NFPA 25 casa de bombas",
+    "ritmo2026": 8890.0
+   },
+   {
+    "linha": 47,
+    "de2026": "PPCI prédio de apoio *2803230",
+    "ritmo2026": 11733.32
+   },
+   {
+    "linha": 49,
+    "de2026": "Projeto executifo infra eletrica e logica cancelas",
+    "ritmo2026": 8075.0
+   },
+   {
+    "linha": 50,
+    "de2026": "Tubulação de hidrante Magazine Luiza módulo 09",
+    "ritmo2026": 7500.0
+   },
+   {
+    "linha": 52,
+    "de2026": "Manutenção eixo trator",
+    "ritmo2026": 5649.4
+   },
+   {
+    "linha": 53,
+    "de2026": "Registro bomba de recalque caixa dágua",
+    "ritmo2026": 4750.0
+   },
+   {
+    "linha": 54,
+    "de2026": "Bebedouro externo industrial 100L",
+    "ritmo2026": 3898.0
+   },
+   {
+    "linha": 55,
+    "de2026": "Video Porteiro porta blindada",
+    "ritmo2026": 3813.0
+   },
+   {
+    "linha": 56,
+    "de2026": "Esgotamento subsolo restaurante",
+    "ritmo2026": 3500.0
+   },
+   {
+    "linha": 57,
+    "de2026": "Limpeza da gordura do restaurante (Subsolso Restaurante)",
+    "ritmo2026": 3500.0
+   },
+   {
+    "linha": 58,
+    "de2026": "Manutenção emergencial rede hidraulica convivencia",
+    "ritmo2026": 2500.0
+   },
+   {
+    "linha": 59,
+    "de2026": "Goteiras Rio Branco",
+    "ritmo2026": 2400.0
+   },
+   {
+    "linha": 60,
+    "de2026": "Goteiras Magnum",
+    "ritmo2026": 2400.0
+   },
+   {
+    "linha": 61,
+    "de2026": "Registros de hidrante Stella módulo 15",
+    "ritmo2026": 2300.0
+   },
+   {
+    "linha": 62,
+    "de2026": "Motor do dilacerador 02",
+    "ritmo2026": 1940.9
+   },
+   {
+    "linha": 64,
+    "de2026": "Baterias centrais arm. 04 e 05 e casa de bombas",
+    "ritmo2026": 1598.52
+   },
+   {
+    "linha": 65,
+    "de2026": "Extintores e Mangueiras",
+    "ritmo2026": 1260.0
+   },
+   {
+    "linha": 66,
+    "de2026": "Gaiola para carregar lixo no trator",
+    "ritmo2026": 980.0
+   },
+   {
+    "linha": 67,
+    "de2026": "Preventiva tobata",
+    "ritmo2026": 971.0
+   },
+   {
+    "linha": 68,
+    "de2026": "Solda motor cancela 04",
+    "ritmo2026": 950.0
+   },
+   {
+    "linha": 69,
+    "de2026": "LED Catraca 03",
+    "ritmo2026": 949.0
+   },
+   {
+    "linha": 70,
+    "de2026": "Lâmpadas led",
+    "ritmo2026": 925.75
+   },
+   {
+    "linha": 71,
+    "de2026": "Manuatenção Corretiva Cerca elétrica fase 04",
+    "ritmo2026": 924.7
+   },
+   {
+    "linha": 72,
+    "de2026": "Manutenção máquinas de alta pressão (Zelador e ASG)",
+    "ritmo2026": 917.0
+   },
+   {
+    "linha": 73,
+    "de2026": "Reposiçã das Luminárias das palmeiras",
+    "ritmo2026": 813.44
+   },
+   {
+    "linha": 74,
+    "de2026": "Resistencia bomba diesel",
+    "ritmo2026": 551.0
+   },
+   {
+    "linha": 75,
+    "de2026": "Tubulação PVC Subsolo restaurante",
+    "ritmo2026": 550.0
+   },
+   {
+    "linha": 76,
+    "de2026": "Baterias e acionador Tecnohold",
+    "ritmo2026": 535.48
+   },
+   {
+    "linha": 77,
+    "de2026": "Caçamba de entulho",
+    "ritmo2026": 450.0
+   },
+   {
+    "linha": 78,
+    "de2026": "Tomada estação de guarda-chuva",
+    "ritmo2026": 450.0
+   },
+   {
+    "linha": 79,
+    "de2026": "Pino eixo tratorito",
+    "ritmo2026": 196.0
    }
   ]
  }

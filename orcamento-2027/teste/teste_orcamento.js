@@ -707,11 +707,13 @@ const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 const nLL = contasLL.map((c, k) => k === 0 ? 1 : 1 + G._orcPaginasItens_(G._orcCorteComposicao_(c, modelos, H).fora).length);
 // "Por que a manutenção sobe" abre a seção (Curitiba tem 2 obras adiadas na planilha do gestor).
 const N_POR_QUE = G.ORC_DECISOES_GESTOR['Mega Curitiba'].adiados.length ? 1 : 0;
+// …e logo depois as demais variações item a item (V16, 09/10/2026): sai com as decisões na base ritmo (semPar).
+const N_VAR = G.ORC_DECISOES_GESTOR['Mega Curitiba'].semPar ? 1 : 0;
 // Projetos × recorrente: o slide e as páginas dos itens de cada grupo (dentro da Manutenção).
 const nGrupos = G._orcPaginasGrupos_(G._orcClassificarManutencao_(d)).length;
 // resumo, a conta, por que sobe, avulsos abertos + item a item, demais, categorias, mensal (08/10/2026: o resumo
 // abre a seção e o "contratos e avulsos" saiu)
-const N_MANUT = 1 + nLL[0] + N_POR_QUE + 1 + nGrupos + nPagDemais + div.proprias.length + 1;
+const N_MANUT = 1 + nLL[0] + N_POR_QUE + N_VAR + 1 + nGrupos + nPagDemais + div.proprias.length + 1;
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
@@ -786,7 +788,7 @@ for (let k = 0; k < nTodos; k++) {
 // Roteiro da Manutenção (08/10/2026): resumo (KPIs, categorias, maiores itens) → a conta → por que sobe → avulsos
 // abertos (projetos × recorrente) e item a item → Demais → categorias grandes → distribuição mensal.
 const iResManut = iSub[3] + 1, iLLManut = iResManut + 1, iPorQue = iLLManut + 1;
-const iInv = iPorQue + N_POR_QUE;
+const iVar = iPorQue + N_POR_QUE, iInv = iVar + N_VAR;
 const iDemais = iInv + 1 + nGrupos, iCat0 = iDemais + nPagDemais, iMensal = iCat0 + div.proprias.length;
 // Por que a manutenção sobe: ponte Ritmo → Orç com o degrau das obras adiadas
 // e a tabela das obras, com o valor de hoje no modelo 090.
@@ -829,14 +831,44 @@ const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '
 ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2),
    'Segurança e Limpeza: linha a linha depois da sub capa');
 ok(iSub[6] === iLimp + nLL[2] && slides.length === iSub[6] + 3, 'Custo por m² fecha o deck, depois da sua sub capa');
-// Itens de cada grupo: todos os itens da manutenção, cada um com o selinho.
+// As demais variações item a item (V16): os degraus somam exatamente o "demais
+// variações" da ponte; o ritmo item a item × METRAGEM aparece como degrau.
+{
+  const adiC = G._orcAdiados2026_(CUR, G.obterManutencao_('CURITIBA'));
+  const vi = G._orcVariacoesItens_(CUR, G.obterManutencao_('CURITIBA'), contasLL[0], adiC);
+  const vM = contasLL[0].v, soma = vi.blocos.reduce((t, b) => t + b.v, 0);
+  ok(N_VAR === 1 && titulo(slides[iVar]) === 'Por que a manutenção sobe: as demais variações',
+     'demais variações logo depois do "por que sobe"');
+  perto(soma, vM.orc - vM.ritmo - adiC.total, 'demais variações: os degraus fecham com a ponte (R$ ' + Math.round(soma) + ')');
+  ok(vi.blocos.length === 4 && /METRAGEM/.test(vi.blocos[3].nome) && vi.blocos[3].v < 0,
+     'demais variações: o ritmo item a item abaixo da METRAGEM vira degrau (' + vi.blocos.map(b => b.nome + ' ' + Math.round(b.v)).join(' | ') + ')');
+  ok(vi.altas.length === 5 && vi.quedas.length === 5 && vi.altas[0].d >= vi.altas[4].d && vi.quedas[0].d <= vi.quedas[4].d,
+     'demais variações: 5 maiores altas e 5 maiores quedas, em ordem');
+  const tV = textos(slides[iVar]);
+  ok(tV.indexOf('SOBEM') >= 0 && tV.indexOf('CAEM') >= 0 && tV.some(t => /^\+R\$ 252 mil \(\+R\$ 0,08\/m² ao mês\)|^Além das obras adiadas, \+R\$ 252 mil \(\+R\$ 0,08\/m²/.test(t)),
+     'demais variações: subtítulo em R$ e R$/m² igual ao degrau da ponte (' + tV[1] + ')');
+  ok(G._orcVariacoesItens_(CUR, null, contasLL[0], adiC) === null, 'sem o modelo: sem o slide');
+}
+// Itens de cada grupo (V19): um quadro por grupo, com o total e todos os itens.
 {
   const clsT = G._orcClassificarManutencao_(d);
   const pagsT = slides.slice(iInv + 1, iInv + 1 + nGrupos);
-  const selos = pagsT.reduce((t, s) => t.concat(textos(s).filter(x => G.ORC_GRUPOS_MANUT_SELO.indexOf(x) >= 0)), []);
-  const nIt = clsT.grupos.reduce((t, g) => t + g.itens.length, 0);
-  ok(nGrupos >= 1 && pagsT.every(s => /^Manutenção: os itens de cada grupo/.test(titulo(s))) && selos.length >= nIt,
-     'itens de cada grupo: ' + nIt + ' itens com selinho em ' + nGrupos + ' página(s) (selos: ' + selos.length + ')');
+  const tG = pagsT.reduce((t, s) => t.concat(textos(s)), []);
+  ok(nGrupos >= 1 && pagsT.every(s => /^Manutenção: os itens de cada grupo/.test(titulo(s))),
+     'itens de cada grupo: ' + nGrupos + ' página(s)');
+  clsT.grupos.forEach((g, i) => {
+    if (!g.itens.length) return;
+    const linhas = G._orcItensQuadro_(g);
+    perto(linhas.reduce((t, x) => t + x.total, 0), g.total, 'quadro ' + G.ORC_GRUPOS_MANUT_TITULO[i] + ': as linhas somam o grupo');
+    ok(tG.indexOf(G.ORC_GRUPOS_MANUT_TITULO[i]) >= 0 && tG.indexOf(G._orcMoeda_(g.total)) >= 0 &&
+       linhas.every(x => tG.indexOf(G._orcMoeda_(x.total)) >= 0),
+       'quadro ' + G.ORC_GRUPOS_MANUT_TITULO[i] + ': título, total e o valor de cada uma das ' + linhas.length + ' linhas');
+  });
+  ok(!tG.some(t => G.ORC_GRUPOS_MANUT_SELO && G.ORC_GRUPOS_MANUT_SELO.indexOf(t) >= 0) && !tG.some(t => t === 'GRUPO'),
+     'itens de cada grupo: sem a coluna GRUPO e sem o selo repetido');
+  const lv = G._orcItensQuadro_(clsT.grupos[3]).filter(x => x.juntos);
+  ok(lv.length === 1 && lv[0].juntos === 9 && /^LINHA DE VIDA .*— AMZ 1 a 9 \(9×\)$/.test(lv[0].descricao) && tG.indexOf(lv[0].descricao) >= 0,
+     'as 9 linhas de vida iguais (AMZ 1 a 9) numa linha só (' + (lv[0] && lv[0].descricao) + ')');
 }
 const iM2 = iSub[6] + 1;
 // Contratos de manutenção 2026 × 2027, fornecedor a fornecedor.
@@ -1558,6 +1590,17 @@ console.log('Gravação no Slides');
 }
 
 console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
+// Sombra (Guilherme, 09/10/2026: "esse tem que ser o padrão"): todo slide com
+// cabeçalho tem o conteúdo em card da moldura — tabela solta no fundo ganha o
+// card do tamanho dela (_orcSombraTabela_), e é ele que leva a sombra.
+{
+  const semCard = {};
+  G._ORC_MOLDURAS_PASSOS.forEach(p => {
+    const s = JSON.parse(G._ORC_MOLDURAS_USADAS[p[2]]);
+    if (s.header && !s.cards.length) semCard[p[1]] = true;
+  });
+  ok(!Object.keys(semCard).length, 'sombra: todo slide com cabeçalho tem card na moldura (sem card: ' + Object.keys(semCard).join(' | ') + ')');
+}
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));

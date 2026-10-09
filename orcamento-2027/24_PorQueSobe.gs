@@ -7,6 +7,8 @@
  *          2027" — ORC_DECISOES_GESTOR, 23_DecisoesGestor.gs). À esquerda a
  *          ponte Ritmo → Orç com o degrau das obras adiadas; à direita, as
  *          obras. Mega sem obra adiada não ganha o slide.
+ *          Logo depois, "as demais variações" (V16, aprovado em 09/10/2026):
+ *          o degrau que sobra aberto item a item, pelos pares do gestor.
  */
 
 // Obras adiadas de 2026 com o valor de hoje no modelo 090: { itens, total,
@@ -42,6 +44,15 @@ function _orcNomeObra_(s) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+// R$/m² ao mês das demais variações ("+R$ 0,08/m²"): cada ano com a sua área
+// (a do Orç e a do Ritmo), por isso não é a diferença em R$ ÷ uma área só.
+function _orcM2Demais_(rel, v, totalAdiados) {
+  const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
+  if (!area || !aRit) return '';
+  const d = v.orc / area / 12 - v.ritmo / aRit / 12 - totalAdiados / area / 12;
+  return (d >= 0 ? '+' : '−') + 'R$ ' + _orcM2_(Math.abs(d)) + '/m²';
+}
+
 function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
   const v = conta.v, a = rel.anos;
@@ -66,8 +77,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
     { nome: 'Obras adiadas', de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight,
       m2: area ? '+' + m2(adi.total, area) : '' },
     { nome: 'Demais variações', de: v.ritmo + adi.total, ate: v.orc,
-      cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce,
-      m2: area && aRit ? (demais >= 0 ? '+' : '−') + 'R$ ' + _orcM2_(Math.abs(v.orc / area / 12 - v.ritmo / aRit / 12 - adi.total / area / 12)) + '/m²' : '' },
+      cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce, m2: _orcM2Demais_(rel, v, adi.total) },
     { nome: 'Orçamento ' + a.orc, de: 0, ate: v.orc, cor: C.brandDark, m2: m2(v.orc, area) }
   ]);
   const i0 = temAnt ? 1 : 0;   // índice da coluna do Ritmo
@@ -120,4 +130,169 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
 
   _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · obras: planilhas de comparação ' +
     a.ritmo + ' × ' + a.orc + ' e modelo 090 de ' + a.orc + ' · ' + cid.nome);
+}
+
+// ==========================================
+// AS DEMAIS VARIAÇÕES, ITEM A ITEM (V16, 09/10/2026)
+// ==========================================
+// O degrau "demais variações" da ponte (Orç − Ritmo − obras adiadas) aberto
+// pelas decisões do gestor na planilha de comparação (ORC_DECISOES_GESTOR):
+//   itens novos       → itens do modelo 090 que não são par nem obra adiada;
+//   mesmo serviço     → pares SIM (Ritmo 2026 do par × itens de 2027 no 090);
+//   não se repetem    → gastos do Ritmo 2026 sem par (semPar) e o ritmo das
+//                       obras adiadas (o valor de 2027 delas já está no degrau
+//                       das obras);
+//   e as duas diferenças entre as fontes, quando existem: o ritmo item a item
+//   × o da METRAGEM (pendência com a controladoria) e o modelo 090 × o Orç da
+//   METRAGEM. Os degraus somam exatamente o "demais variações" da ponte.
+// null sem as decisões na base ritmo (semPar) ou sem o modelo.
+function _orcVariacoesItens_(cid, dados, conta, adi) {
+  const dec = ORC_DECISOES_GESTOR[cid.nome];
+  if (!dec || !dec.semPar || !dados) return null;
+  const v = conta.v;
+  const porNome = {};
+  dados.categorias.forEach(cat => cat.itens.forEach(it => {
+    const k = _orcNorm_(it.descricao);
+    porNome[k] = (porNome[k] || 0) + it.total;
+  }));
+  const usados = {};
+  (dec.adiados || []).forEach(a => a.itens2027.forEach(n => { usados[_orcNorm_(n)] = true; }));
+  // Valor de 2027 do par: os itens no modelo pelo nome; se algum não está
+  // mais no modelo, vai o valor da planilha (o degrau "novos" fecha a conta).
+  const pares = (dec.pares || []).map(p => {
+    const ks = p.itens2027.map(_orcNorm_).filter((k, i, arr) => arr.indexOf(k) === i);
+    const doModelo = ks.length > 0 && ks.every(k => porNome[k] !== undefined);
+    ks.forEach(k => { usados[k] = true; });
+    return { nome: p.itens2027[0] || p.de2026, nome2027: p.itens2027.length > 0, v26: p.ritmo2026 || 0,
+             v27: doModelo ? ks.reduce((t, k) => t + porNome[k], 0) : p.orc2027 };
+  });
+  const novos = [];
+  dados.categorias.forEach(cat => cat.itens.forEach(it => {
+    if (it.total && !usados[_orcNorm_(it.descricao)]) novos.push({ nome: it.descricao, nome2027: true, v26: 0, v27: it.total });
+  }));
+  const semPar = dec.semPar.map(s => ({ nome: s.de2026, nome2027: false, v26: s.ritmo2026, v27: 0 }));
+  const soma = (l, f) => l.reduce((t, x) => t + f(x), 0);
+  const totAdi = adi ? adi.total : 0;
+  const p26 = soma(pares, x => x.v26), p27 = soma(pares, x => x.v27);
+  const s26 = soma(semPar, x => x.v26) + soma(dec.adiados || [], a => a.ritmo2026 || 0);
+  const a26 = ORC_ANO - 1, a27 = ORC_ANO;
+  // As diferenças entre as fontes ficam à vista, em vez de sumir num degrau;
+  // centavos (menos de R$ 0,50) vão para o degrau vizinho, para a soma fechar.
+  const ritmoItens = p26 + s26;
+  const difRitmo = Math.abs(ritmoItens - v.ritmo) >= 0.5, difOrc = Math.abs(v.orc - dados.total) >= 0.5;
+  const blocos = [
+    { nome: 'Itens novos em ' + a27, expl: novos.length + ' itens sem gasto parecido no Ritmo ' + a26,
+      v: (difOrc ? dados.total : v.orc) - totAdi - p27 },
+    { nome: 'Mesmo serviço nos dois anos', expl: pares.length + ' pares ligados pelo gestor' +
+      (totAdi ? ' (sem as obras adiadas)' : '') + ': reajuste, área nova, escopo', v: p27 - p26 },
+    { nome: 'Gastos de ' + a26 + ' que não se repetem', expl: semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27,
+      v: -(difRitmo ? s26 : v.ritmo - p26) }
+  ];
+  if (difRitmo) {
+    blocos.push({ nome: 'Ritmo da METRAGEM × soma dos itens', v: ritmoItens - v.ritmo,
+      expl: 'a soma item a item ' + (ritmoItens < v.ritmo ? 'fica abaixo' : 'passa') + ' da METRAGEM (a conferir com a controladoria)' });
+  }
+  if (difOrc) {
+    blocos.push({ nome: 'Modelo 090 × Orç da METRAGEM', v: v.orc - dados.total,
+      expl: 'os itens do modelo somam ' + (dados.total > v.orc ? 'mais' : 'menos') + ' que o Orç da METRAGEM (pendência)' });
+  }
+  const cand = pares.concat(novos, semPar).map(x => Object.assign(x, { d: x.v27 - x.v26 }));
+  return { blocos: blocos, demais: v.orc - v.ritmo - totAdi, totAdi: totAdi, nCand: cand.length,
+           altas: cand.filter(x => x.d > 0.5).sort((x, y) => y.d - x.d).slice(0, 5),
+           quedas: cand.filter(x => x.d < -0.5).sort((x, y) => x.d - y.d).slice(0, 5) };
+}
+
+// Nome de item para a tabela: sem o número do chamado, o primeiro de um par
+// com vários itens e, se vier todo em maiúsculas, só a inicial maiúscula.
+function _orcNomeItemVar_(s) {
+  let t = _orcNomeObra_(String(s || '').split(' + ')[0]);
+  if (t === t.toUpperCase()) t = t.charAt(0) + t.slice(1).toLowerCase();
+  return t;
+}
+
+function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
+  const v = conta.v, a = rel.anos, comAdi = vi.totAdi > 0.5;
+  const mil = x => (x >= 0 ? '+' : '−') + _orcCompacto_(Math.abs(x));
+  const corDe = x => x >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce;
+  const m2 = _orcM2Demais_(rel, v, vi.totAdi);
+  _orcHeader_(slide, W, comAdi ? 'Por que a manutenção sobe: as demais variações' : 'Por que a manutenção sobe: item a item',
+    (comAdi ? 'Além das obras adiadas, ' : 'Alta contra o Ritmo ' + a.ritmo + ': ') + mil(vi.demais) +
+    (m2 ? ' (' + m2 + ' ao mês)' : '') + ' · Ritmo ' + a.ritmo + ' → Orç ' + a.orc + ', item a item · ' + cid.nome);
+
+  // ---- Os degraus (esquerda): cascata horizontal a partir do Ritmo ----
+  const cy = 74, ch = H - 28 - cy, cw = (W - MX * 2) * 0.46, cx = MX;
+  _orcCard_(slide, cx, cy, cw, ch, 'De onde vêm os ' + mil(vi.demais));
+  const bl = vi.blocos, totH = 38;
+  const topo = cy + 26, fundo = cy + ch - totH - 16;
+  const bh = Math.min(58, (fundo - topo) / bl.length);
+  const acs = [0];
+  bl.forEach(b => acs.push(acs[acs.length - 1] + b.v));
+  const lo = Math.min.apply(null, acs), hi = Math.max.apply(null, acs);
+  const px = cx + 14, pw = cw - 28, esc = pw / Math.max(1, hi - lo);
+  const xDe = val => px + (val - lo) * esc;
+  bl.forEach((b, i) => {
+    const y = topo + i * bh;
+    _orcUmaLinha_(slide, px, y, pw - 76, 13, b.nome,
+      { align: 'L', fs: 8.5, bold: true, cor: C.textMain, fonte: T.titles, fsMin: 6.5, folga: 4 });
+    _orcUmaLinha_(slide, px + pw - 76, y - 1, 76, 15, mil(b.v),
+      { align: 'R', fs: 10, bold: true, cor: corDe(b.v), fonte: T.titles, fsMin: 8, folga: 6 });
+    _orcParagrafo_(slide, px, y + 12, pw, 11, b.expl, { fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body });
+    const x1 = xDe(acs[i]), x2 = xDe(acs[i + 1]);
+    _orcRet_(slide, Math.min(x1, x2), y + 25, Math.max(0.8, Math.abs(x2 - x1)), 9, corDe(b.v));
+  });
+  // Linha do Ritmo (o zero da cascata).
+  const yLin = topo + (bl.length - 1) * bh + 38;
+  _orcLinha_(slide, xDe(0), topo + 22, xDe(0), yLin, C.lines, 0.75);
+  _orcUmaLinha_(slide, xDe(0) - 30, yLin + 1, 60, 9, 'Ritmo ' + a.ritmo,
+    { align: 'C', fs: 5.5, cor: C.textMuted, fonte: T.body, fsMin: 5, folga: 6 });
+  const ly = cy + ch - totH - 8;
+  _orcRet_(slide, cx + 12, ly, cw - 24, totH, C.brandTint, { redondo: true });
+  _orcRet_(slide, cx + 12, ly, 3, totH, C.brandLight);
+  _orcUmaLinha_(slide, cx + 22, ly + 4, cw - 40, 16,
+    '= ' + (comAdi ? 'Demais variações' : 'Alta contra o Ritmo ' + a.ritmo) + ': ' + mil(vi.demais),
+    { align: 'L', fs: 10, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 8, folga: 4 });
+  _orcParagrafo_(slide, cx + 20, ly + 19, cw - 36, 16, comAdi
+    ? 'Com as obras adiadas (' + mil(vi.totAdi) + '), a alta toda da manutenção: ' + mil(v.orc - v.ritmo)
+    : 'Ritmo ' + a.ritmo + ' ' + _orcCompacto_(v.ritmo) + ' → Orç ' + a.orc + ' ' + _orcCompacto_(v.orc),
+    { fs: 7, fsMin: 6, cor: C.textBody, fonte: T.body });
+
+  // ---- Maiores altas e quedas (direita) ----
+  const tx = cx + cw + 12, tw = W - MX - tx;
+  _orcCard_(slide, tx, cy, tw, ch, 'Maiores altas e quedas, item a item');
+  const x0 = tx + 10, lw = tw - 20, numW = 54, nomeW = lw - numW * 3, hCab = 15, hNota = 24;
+  const nLin = vi.altas.length + vi.quedas.length;
+  const rowH = Math.min(20, (ch - 26 - hCab * 2 - 10 - hNota - 6) / Math.max(1, nLin));
+  const tabela = (y, titulo, cor, lista) => {
+    _orcRet_(slide, x0, y, lw, hCab, cor);
+    _orcUmaLinha_(slide, x0 + 4, y, nomeW - 4, hCab, titulo,
+      { align: 'L', fs: 6.5, bold: true, cor: '#FFFFFF', fonte: T.titles, fsMin: 6, folga: 4 });
+    ['Ritmo ' + a.ritmo, 'Orç ' + a.orc, 'Δ'].forEach((t, k) => _orcUmaLinha_(slide, x0 + nomeW + k * numW, y, numW - 4, hCab,
+      t.toUpperCase(), { align: 'R', fs: 6.5, bold: true, cor: '#FFFFFF', fonte: T.titles, fsMin: 5.5, folga: 4 }));
+    let ry = y + hCab;
+    lista.forEach((it, r) => {
+      if (r % 2) _orcRet_(slide, x0, ry, lw, rowH, C.zebra);
+      // Item de 2027 com o texto curto que o gestor escolheu na planilha de textos (aba Composição), se houver.
+      const nome = it.nome2027 ? _orcTextoEscolhido_('Composição', it.nome) : it.nome;
+      _orcParagrafo_(slide, x0 + 2, ry, nomeW - 4, rowH, _orcNomeItemVar_(nome),
+        { fs: 6.5, fsMin: 5.5, cor: C.textMain, fonte: T.body, meio: true, espac: 100 });
+      [it.v26 ? _orcMoeda_(it.v26) : '–', it.v27 ? _orcMoeda_(it.v27) : '–'].forEach((t, k) =>
+        _orcUmaLinha_(slide, x0 + nomeW + k * numW, ry, numW - 4, rowH, t,
+          { align: 'R', fs: 6.5, cor: C.textMain, fonte: T.body, fsMin: 5.5, folga: 4 }));
+      _orcUmaLinha_(slide, x0 + nomeW + 2 * numW, ry, numW - 4, rowH, (it.d >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(it.d)),
+        { align: 'R', fs: 6.5, bold: true, cor: corDe(it.d), fonte: T.body, fsMin: 5.5, folga: 4 });
+      ry += rowH;
+    });
+    return ry;
+  };
+  let y = tabela(cy + 26, 'SOBEM', _ORC_COR_VAR.sobe, vi.altas);
+  y = tabela(y + 10, 'CAEM', C.brandDark, vi.quedas);
+  const mostrados = vi.altas.concat(vi.quedas);
+  _orcParagrafo_(slide, tx + 12, y + 6, tw - 24, hNota,
+    'Os ' + mostrados.length + ' itens somam ' + mil(mostrados.reduce((t, x) => t + x.d, 0)) + '; o resto se espalha em ' +
+    (vi.nCand - mostrados.length) + ' itens. Par = item de ' + a.orc + ' que o gestor ligou a um gasto de ' + a.ritmo +
+    ' na planilha de comparação.', { fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body });
+
+  _orcRodape_(slide, W, H, 'Fonte: planilha de comparação Ritmo ' + a.ritmo + ' × Orç ' + a.orc + ' (pares do gestor), modelo 090 de ' +
+    a.orc + ' e METRAGEM-COND · ' + cid.nome);
 }

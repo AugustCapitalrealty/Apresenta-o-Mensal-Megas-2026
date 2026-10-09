@@ -88,6 +88,7 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
     ry += rowH;
   });
   _orcLinha_(slide, x, ry, x + w, ry, DS.colors.lines, 1);
+  _orcSombraTabela_(x, y, w, ry - y);
   return ry;
 }
 

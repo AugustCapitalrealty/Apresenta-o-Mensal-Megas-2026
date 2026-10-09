@@ -473,5 +473,7 @@ function gerarSlideRankingM2_(slide, W, H, rels) {
           fonte: T.body, folga: 10 });
     });
   });
+  // O ranking (das siglas à última linha) num card com sombra, como as tabelas.
+  _orcSombraTabela_(MX, top - 16, W - MX * 2, linhas.length * rowH + 20);
   _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² ao mês do Orç ' + ORC_ANO + ' pela área implícita de cada Mega');
 }

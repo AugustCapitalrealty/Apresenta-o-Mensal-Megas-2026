@@ -359,7 +359,22 @@ function _orcLogMolduras_(quem) {
 }
 
 function _orcAbrirMoldura_() {
-  _ORC_MOLD = ORC_USAR_MOLDURAS ? { cards: [], header: false, secao: 0 } : null;
+  _ORC_MOLD = ORC_USAR_MOLDURAS ? { cards: [], tabelas: [], header: false, secao: 0 } : null;
+}
+
+// Tabela solta no fundo do slide (DRE, ofensores, demais categorias…) ganha
+// um card branco do tamanho dela na moldura — e com ele a sombra dos cards
+// (Guilherme, 09/10/2026: "esse tem que ser o padrão"). Tabela dentro de um
+// card não ganha outro (_orcFecharMoldura_).
+function _orcSombraTabela_(x, y, w, h) {
+  if (_ORC_MOLD && w >= 60 && h >= 30) _ORC_MOLD.tabelas.push({ x: x, y: y, w: w, h: h });
+}
+
+function _orcCardsDasTabelas_(m) {
+  (m.tabelas || []).forEach(t => {
+    const dentro = m.cards.some(c => c.x <= t.x + 1 && c.y <= t.y + 1 && c.x + c.w >= t.x + t.w - 1 && c.y + c.h >= t.y + t.h - 1);
+    if (!dentro) m.cards.push({ x: t.x, y: t.y, w: t.w, h: t.h, cor: CR_DESIGN_SYSTEM.colors.cardBg, borda: null, peso: 0 });
+  });
 }
 
 // Especificação da moldura em texto ASCII (a assinatura é o MD5 dele): marca,
@@ -380,6 +395,7 @@ function _orcAssinatura_(texto) {
 function _orcFecharMoldura_(slide, W, H) {
   const m = _ORC_MOLD;
   _ORC_MOLD = null;
+  if (m) _orcCardsDasTabelas_(m);
   if (!m || (!m.header && !m.cards.length)) return;
   try {
     const spec = _orcSpecMoldura_(m, W, H), assin = _orcAssinatura_(spec);

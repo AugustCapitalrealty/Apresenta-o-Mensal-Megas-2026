@@ -16,6 +16,8 @@ O que vai para o .gs, por Mega:
             "deslocamos" ou "realocado"): a descrição e o valor do Orç 2026 (base ritmo: colunas M e N), o ritmo 2026
             e os itens de 2027 (nomes do modelo 090).
   pares   → os pares que ele marcou SIM, com o comentário (para a comparação item a item).
+  semPar  → (só na base ritmo, desde 09/10/2026) os gastos do ritmo 2026 que não são par SIM nem obra adiada: o que
+            "não se repete em 2027" no slide das demais variações (V16, 24_PorQueSobe.gs).
 """
 import glob, json, os, re, sys
 from datetime import date
@@ -42,7 +44,7 @@ def itens(txt):
 def ler(caminho):
     ws = openpyxl.load_workbook(caminho, data_only=True)['Comparação']
     ritmo = str(ws.cell(row=5, column=4).value or '').startswith('Ritmo')
-    adiados, pares = [], []
+    adiados, pares, sem_par = [], [], []
     for r in ws.iter_rows(min_row=6, values_only=True):
         n, tipo, it26, o26, it27, cat, o27, d, leit, pq, comp, com, itOrc, orc = (list(r) + [None] * 14)[:14]
         if not isinstance(n, (int, float)): continue
@@ -60,7 +62,9 @@ def ler(caminho):
                    'itens2027': itens(it27), 'orc2027': round(float(o27 or 0), 2), 'comentario': com}
         if comp in ('NÃO', 'NAO') and ADIADO.search(com): adiados.append(reg)
         elif comp == 'SIM': pares.append(reg)
-    return adiados, pares
+        elif ritmo and float(o26 or 0) > 0.5:
+            sem_par.append({'linha': int(n), 'de2026': str(it26 or '').strip(), 'ritmo2026': round(float(o26), 2)})
+    return adiados, pares, sem_par
 
 
 def main(arqs):
@@ -75,18 +79,19 @@ def main(arqs):
     dados = {}
     for a in arqs:
         mega = mega_do_arquivo(a)
-        adiados, pares = ler(a)
-        dados[mega] = {'arquivo': os.path.basename(a), 'adiados': adiados, 'pares': pares}
+        adiados, pares, sem_par = ler(a)
+        dados[mega] = {'arquivo': os.path.basename(a), 'adiados': adiados, 'pares': pares, 'semPar': sem_par}
         print(f'{mega}: {len(adiados)} obras adiadas de 2026 (R$ {sum(x["orc2027"] for x in adiados):,.0f} no Orç 2027, '
               f'R$ {sum(x.get("ritmo2026", 0) for x in adiados):,.0f} no ritmo 2026), '
-              f'{len(pares)} pares SIM  ← {os.path.basename(a)}')
+              f'{len(pares)} pares SIM, {len(sem_par)} gastos de 2026 sem par '
+              f'(R$ {sum(x["ritmo2026"] for x in sem_par):,.0f})  ← {os.path.basename(a)}')
     corpo = json.dumps(dados, ensure_ascii=False, indent=1)
     with open(SAIDA, 'w', encoding='utf-8', newline='\n') as f:
         f.write('/**\n * ARQUIVO: 23_DecisoesGestor.gs — GERADO por ferramentas/decisoes_gestor.py em ' +
                 date.today().strftime('%d/%m/%Y') + '. Não edite à mão:\n'
                 ' * o gestor muda a planilha de comparação, rode o script de novo.\n'
                 ' * Decisões do gestor nas planilhas "ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>",\n'
-                ' * por Mega: obras de 2026 adiadas para 2027 e os pares que ele marcou SIM.\n */\n')
+                ' * por Mega: obras de 2026 adiadas para 2027, os pares que ele marcou SIM e os gastos do ritmo 2026 sem par.\n */\n')
         f.write('const ORC_DECISOES_GESTOR = ' + corpo + ';\n')
     print('ok ->', os.path.relpath(SAIDA, PROJETO))
 

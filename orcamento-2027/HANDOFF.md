@@ -83,6 +83,18 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - Depois de reiniciar (Deep Freeze) é preciso reinstalar Python, Node e openpyxl; o que cada programa faz, para a TI,
   está em [`../PROGRAMAS-TI.md`](../PROGRAMAS-TI.md).
 
+### 09/10/2026 — V16, V19 e a sombra como padrão
+
+- Reinstalados Git, Node, Python (+ openpyxl, Pillow) e clasp; login do clasp e do GitHub (Git Credential Manager) feitos.
+- **V16** (rascunho aprovado): slide "Por que a manutenção sobe: as demais variações" (`24_PorQueSobe.gs`,
+  `_orcVariacoesItens_`), nos três Megas. `ferramentas/decisoes_gestor.py` passou a gravar `semPar` (gastos do ritmo
+  2026 sem par) em `23_DecisoesGestor.gs`. Curitiba: novos +834 mil, pares +125 mil, não se repetem −620 mil, METRAGEM
+  × itens −87 mil = +252 mil.
+- **V19** (rascunho aprovado): itens de cada grupo em quadros (`17_Investimento.gs`, `_orcPaginasGrupos_`).
+- **Sombra é o padrão** (Guilherme): todo slide com cabeçalho tem o conteúdo em card da moldura; tabela solta ganha o
+  card do tamanho dela (`_orcSombraTabela_`). O teste reprova slide com cabeçalho sem card.
+- Molduras e gráficos novos desenhados na pasta `IMAGENS - SLIDES`. Teste 4452/4452. Publicado (clasp push).
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |
@@ -166,6 +178,8 @@ o nome do arquivo em comentário. O mapa fonte → slide está no README
   até "pode rodar". Visual novo: rascunho em PNG **aberto na tela dele** (`Start-Process`) antes de codar; ele
   costuma pedir "rode um analista" (um agente avalia e dá nota) antes de aprovar. Sempre dizer **em qual arquivo**
   está a função que ele tem que rodar. Ao entregar, um passo a passo curto do que rodar.
+- **Sombra em todo slide** (09/10/2026): conteúdo em card (`_orcCard_`, ou tabela por `_orcTabela_`/`_orcTabelaNum_`, que
+  ganham o card sozinhas); desenho solto sem card chama `_orcSombraTabela_` com a área dele.
 - **Tudo pelo motor:** gráfico ou elemento visual novo usa `_orcRet_`/`_orcLinha_`/`_orcBolinha_` (viram imagem) e
   `_orcUmaLinha_`/`_orcParagrafo_` (texto); nunca `slide.insertShape` solto num slide com cabeçalho.
 - **Comparação honesta** (analista, 07/10/2026): não tirar conclusão só de um recorte de meses; out–dez do ritmo é

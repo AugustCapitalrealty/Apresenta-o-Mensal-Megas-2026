@@ -19,16 +19,11 @@ const ORC_GRUPOS_MANUT_LEGENDA = [
   'Obra ou compra nova, que não existia (implantação, instalação, compra).'
 ];
 
-// Selinho de cada grupo, nas cores das barras (pedido do gestor, 07/10/2026:
-// "abrir e sinalizar melhor o que é contrato, recorrente, projetos e pontual").
-const ORC_GRUPOS_MANUT_SELO = ['CONTRATO', 'RECORRENTE', 'PONTUAL', 'PROJETO'];
+// Cor de cada grupo (contrato, recorrente, pontual, projeto), a mesma nas
+// barras, nas marcas da composição e na faixa dos quadros dos itens.
 function _orcCoresGruposManut_() {
   const C = CR_DESIGN_SYSTEM.colors;
   return [C.brandDark, C.brandMed, C.brandLight, C.brandSoft];
-}
-function _orcSeloGrupo_(i) {
-  const cores = _orcCoresGruposManut_();
-  return { texto: ORC_GRUPOS_MANUT_SELO[i], fundo: cores[i], cor: i === 3 ? CR_DESIGN_SYSTEM.colors.brandDark : '#FFFFFF' };
 }
 
 // Grupo (0–3) de um item da composição, pela descrição e pelo valor; -1 se
@@ -118,55 +113,129 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
 // ==========================================
 // OS ITENS DE CADA GRUPO (páginas depois do slide de projetos × recorrente)
 // ==========================================
-// Linhas por coluna e colunas por página dos slides de itens por grupo.
-const ORC_GRUPOS_LINHAS_COLUNA = 26;
+// Um quadro (card) por grupo — V19, aprovado em 09/10/2026 (Jonatas: "abrir um
+// quadro por grupo ou deixar mais intuitivo que são sub categorias"). A faixa
+// do topo leva a cor do grupo, a definição curta, o total e o nº de itens; sai
+// a coluna GRUPO com o selo repetido em toda linha. Medidas em pt.
+const ORC_QUADRO = { topo: 74, base: 30, cab: 31, pe: 5, linha: 10.5, gap: 8 };
+const ORC_GRUPOS_MANUT_TITULO = ['CONTRATOS', 'RECORRENTE', 'MANUTENÇÃO PONTUAL', 'PROJETOS'];
+const ORC_GRUPOS_MANUT_LEGENDA_CURTA = [
+  'Serviço com contrato fechado com o fornecedor',
+  'Se repete ao longo do ano (6+ meses, semestral ou anual)',
+  'Serviço em poucos meses para manter o que já existe',
+  'Obra ou compra nova, que não existia'
+];
 
-// Todos os itens da manutenção, grupo a grupo (cabeçalho do grupo + itens do
-// maior para o menor), em páginas de duas colunas. Cabeçalho que cairia na
-// última linha de uma coluna desce para a próxima.
-function _orcPaginasGrupos_(cls) {
-  const linhas = [];
+// Itens de um grupo, do maior para o menor. Três ou mais itens iguais que só
+// mudam o armazém no fim do nome ("… ESCADA DE ACESSO - AMZ 1" … "AMZ 9", mesmo
+// valor) viram uma linha: "LINHA DE VIDA … — AMZ 1 a 9 (9×)" — cortados, os nove
+// pareciam o mesmo item repetido.
+function _orcItensQuadro_(g) {
+  const re = /^(.*?)[\s\-–]*\b(AMZ|ARMAZÉM|ARMAZEM)\s*0*(\d+)\s*$/i;
+  const juntos = {};
+  const lido = g.itens.map(it => {
+    const m = String(it.descricao).match(re);
+    const k = m ? _orcNorm_(m[1]) + '|' + m[2].toUpperCase() + '|' + Math.round(it.total) : null;
+    if (k) (juntos[k] = juntos[k] || []).push({ it: it, n: Number(m[3]), base: m[1].trim(), pref: m[2].toUpperCase() });
+    return { it: it, k: k };
+  });
+  const feitos = {}, saida = [];
+  lido.forEach(l => {
+    const lista = l.k ? juntos[l.k] : null;
+    if (!lista || lista.length < 3) { saida.push({ descricao: l.it.descricao, total: l.it.total }); return; }
+    if (feitos[l.k]) return;
+    feitos[l.k] = true;
+    const ns = lista.map(x => x.n).sort((a, b) => a - b);
+    const seguidos = ns.every((n, i) => i === 0 || n === ns[i - 1] + 1);
+    // Sem o verbo do começo ("INSTALAÇÃO DE…"): a linha juntada cabe na letra das outras.
+    const base = lista[0].base.replace(/^(INSTALA[ÇC][ÃA]O|IMPLANTA[ÇC][ÃA]O|COMPRA|FORNECIMENTO)( E \S+)? D[EOA]S? /i, '');
+    saida.push({ descricao: base + ' — ' + lista[0].pref + ' ' + (seguidos ? ns[0] + ' a ' + ns[ns.length - 1] : ns.join(', ')) +
+                   ' (' + lista.length + '×)',
+                 total: lista.reduce((t, x) => t + x.it.total, 0), juntos: lista.length });
+  });
+  return saida.sort((a, b) => b.total - a.total);
+}
+
+// Páginas dos quadros: [{ quadros: [{ grupo, g, itens, col (0, 1 ou 'largo'),
+// y, linha, nCol, cont }] }]. Grupo que cabe numa coluna vai empilhado nas
+// colunas, na ordem; o que não cabe ganha a página inteira, com duas colunas
+// dentro do quadro (e mais páginas, "(cont.)", se precisar).
+function _orcPaginasGrupos_(cls, H) {
+  const Q = ORC_QUADRO, alt = (H || 405) - Q.base - Q.topo;
+  const cap = Math.floor((alt - Q.cab - Q.pe) / Q.linha);
+  const pequenos = [], grandes = [];
   cls.grupos.forEach((g, i) => {
     if (!g.itens.length) return;
-    linhas.push({ grupo: i, g: g });
-    g.itens.forEach(it => linhas.push({ item: it, grupo: i }));
+    const itens = _orcItensQuadro_(g);
+    (itens.length <= cap ? pequenos : grandes).push({ grupo: i, g: g, itens: itens });
   });
-  const N = ORC_GRUPOS_LINHAS_COLUNA, colunas = [];
-  let col = [];
-  linhas.forEach(l => {
-    if (col.length === N || (l.g && col.length === N - 1)) { colunas.push(col); col = []; }
-    if (!col.length && !l.g && l.item) col.push({ grupo: l.grupo, g: cls.grupos[l.grupo], cont: true });
-    col.push(l);
-  });
-  if (col.length) colunas.push(col);
   const paginas = [];
-  for (let i = 0; i < colunas.length; i += 2) paginas.push(colunas.slice(i, i + 2));
+  let pag = null, col = 1, y = 0;
+  pequenos.forEach(q => {
+    const h = Q.cab + q.itens.length * Q.linha + Q.pe;
+    if (!pag || y + Q.gap + h > alt) {
+      col++; y = -Q.gap;
+      if (col > 1) { pag = { quadros: [] }; paginas.push(pag); col = 0; }
+    }
+    pag.quadros.push({ grupo: q.grupo, g: q.g, itens: q.itens, col: col, y: y + Q.gap, linha: Q.linha, nCol: 1 });
+    y += Q.gap + h;
+  });
+  grandes.forEach(q => {
+    for (let i = 0; i < q.itens.length; i += cap * 2) {
+      const parte = q.itens.slice(i, i + cap * 2), porCol = Math.ceil(parte.length / 2);
+      paginas.push({ quadros: [{ grupo: q.grupo, g: q.g, itens: parte, col: 'largo', y: 0, nCol: 2, cont: i > 0,
+                                 linha: Math.min(16, (alt - Q.cab - Q.pe) / porCol) }] });
+    }
+  });
   return paginas;
 }
 
 function gerarSlideGruposManut_(slide, W, H, cid, rel, cls, pagina, iPag, nPag) {
-  const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
+  const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX, Q = ORC_QUADRO;
   const nItens = cls.grupos.reduce((t, g) => t + g.itens.length, 0);
   _orcHeader_(slide, W, 'Manutenção: os itens de cada grupo' + (nPag > 1 ? ' (' + (iPag + 1) + '/' + nPag + ')' : ''),
-    nItens + ' itens do Orç ' + rel.anos.orc + ' · ' + _orcMoeda_(cls.total) + ' · contrato, recorrente, pontual e projeto · ' + cid.nome);
-  const ty = 74, hCab = 16, gap = 12, cw = (W - MX * 2 - gap) / 2;
-  const rowH = Math.min(14, (H - 30 - ty - hCab) / ORC_GRUPOS_LINHAS_COLUNA);
-  const fs = rowH >= 12 ? 7 : 6.5;
-  // Sem a coluna de entrega (o slide de projetos já a mostra): o nome precisa
-  // da largura da composição para o texto curto caber.
-  const colunas = [{ titulo: 'Grupo', w: 58, align: 'C' }, { titulo: 'Item', w: null, align: 'L' },
-                   { titulo: 'Valor', w: 58, align: 'C' }];
-  pagina.forEach((col, k) => {
-    const linhas = col.map(l => l.g
-      ? { total: true, celulas: [{ selo: _orcSeloGrupo_(l.grupo) },
-          { texto: l.g.nome.toUpperCase() + (l.cont ? ' (cont.)' : ' · ' + l.g.itens.length + (l.g.itens.length === 1 ? ' item' : ' itens')) },
-          { texto: l.cont ? '' : _orcMoeda_(l.g.total) }] }
-      : { celulas: [{ selo: _orcSeloGrupo_(l.grupo) }, { texto: l.item.descricao, aba: 'Composição' },
-          { texto: _orcMoeda_(l.item.total), bold: true }] });
-    _orcTabela_(slide, MX + k * (cw + gap), ty, cw, colunas, linhas, rowH, { hCab: hCab, fs: fs });
+    nItens + ' itens do Orç ' + rel.anos.orc + ' · ' + _orcMoeda_(cls.total) + ' · ' + cid.nome);
+  const gap = 12, cw = (W - MX * 2 - gap) / 2;
+  pagina.quadros.forEach(q => {
+    const largo = q.col === 'largo';
+    _orcQuadroGrupo_(slide, largo ? MX : MX + q.col * (cw + gap), Q.topo + q.y, largo ? W - MX * 2 : cw, q, cls);
   });
-  _orcRodape_(slide, W, H, 'Contrato: tag [CONTRATO] ou cadastro de contratos · recorrente: valor em 6 meses ou mais · ' +
-    'projeto: palavra de obra nova (implantação, instalação, compra, plantio) · pontual: o resto · ' + cid.nome);
+  _orcRodape_(slide, W, H, 'Contrato: cadastro de contratos · recorrente: 6+ meses, semestral ou anual · projeto: obra ou compra nova · ' +
+    'pontual: o resto · itens revistos pelo gestor seguem a decisão dele · ' + cid.nome);
+}
+
+function _orcQuadroGrupo_(slide, x, y, w, q, cls) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, Q = ORC_QUADRO;
+  const porCol = Math.ceil(q.itens.length / q.nCol), h = Q.cab + porCol * q.linha + Q.pe;
+  // O card branco vai para a moldura (com a sombra); a faixa tem menos de 30 pt
+  // de altura, então fica no conteúdo mesmo quando é o verde escuro da marca.
+  _orcRet_(slide, x, y, w, h, C.cardBg, { redondo: true, borda: C.lines });
+  const ct = q.grupo === 3 ? C.brandDark : '#FFFFFF';
+  _orcRet_(slide, x + 3, y + 3, w - 6, 25, _orcCoresGruposManut_()[q.grupo], { redondo: true });
+  const dir = 130;
+  _orcUmaLinha_(slide, x + 11, y + 3, w - 22 - dir, 14, ORC_GRUPOS_MANUT_TITULO[q.grupo] + (q.cont ? ' (cont.)' : ''),
+    { align: 'L', fs: 9, bold: true, cor: ct, fonte: T.titles, fsMin: 7, folga: 4 });
+  _orcUmaLinha_(slide, x + 11, y + 16, w - 22 - dir, 11, ORC_GRUPOS_MANUT_LEGENDA_CURTA[q.grupo],
+    { align: 'L', fs: 6.5, cor: ct, fonte: T.body, fsMin: 5, folga: 4 });
+  _orcUmaLinha_(slide, x + w - 11 - dir, y + 3, dir, 14, _orcMoeda_(q.g.total),
+    { align: 'R', fs: 10.5, bold: true, cor: ct, fonte: T.titles, fsMin: 8, folga: 4 });
+  const n = q.g.itens.length;
+  _orcUmaLinha_(slide, x + w - 11 - dir, y + 16, dir, 11,
+    n + (n === 1 ? ' item' : ' itens') + ' · ' + _orcPct_(cls.total ? q.g.total / cls.total : 0) + ' da manutenção',
+    { align: 'R', fs: 6.5, cor: ct, fonte: T.body, fsMin: 5.5, folga: 4 });
+  const colW = (w - 10) / q.nCol, fs = q.linha >= 14 ? 7.5 : 7, valW = 58;
+  q.itens.forEach((it, i) => {
+    const c = Math.floor(i / porCol), r = i % porCol;
+    const xa = x + 5 + c * colW, ry = y + Q.cab + r * q.linha, lw = colW - (q.nCol > 1 ? 4 : 0);
+    if (r % 2) _orcRet_(slide, xa, ry, lw, q.linha, C.zebra);
+    // A descrição passa pela planilha de textos (aba Composição), como na
+    // composição; a linha dos itens juntados é montada aqui e encolhe se precisar.
+    _orcUmaLinha_(slide, xa + 2, ry, lw - valW - 6, q.linha, it.descricao, it.juntos
+      ? { align: 'L', fs: fs, cor: C.textMain, fonte: T.body, fsMin: 5, folga: 4 }
+      : { align: 'L', fs: fs, cor: C.textMain, fonte: T.body, fsMin: fs, folga: 4, cortar: true, aba: 'Composição' });
+    _orcUmaLinha_(slide, xa + lw - valW - 4, ry, valW, q.linha, _orcMoeda_(it.total),
+      { align: 'R', fs: fs, bold: true, cor: C.textMain, fonte: T.body, fsMin: fs - 1, folga: 4 });
+  });
 }
 
 // Composição da manutenção: coluna estreita na frente com a marca do grupo de
