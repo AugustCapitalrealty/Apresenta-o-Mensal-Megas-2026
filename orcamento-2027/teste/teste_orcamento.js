@@ -116,7 +116,12 @@ function novoSlide(deck) {
       };
       return img;
     },
-    remove: () => { slide.removido = true; deck._slides = deck._slides.filter(s => s !== slide); }
+    remove: () => { slide.removido = true; deck._slides = deck._slides.filter(s => s !== slide); },
+    // Anotações do apresentador (marca dos slides de fotos do gestor, 26_Fotos.gs) e mudança de posição.
+    notas: '',
+    getNotesPage: () => ({ getSpeakerNotesShape: () => ({ getText: () => ({
+      setText: t => { slide.notas = String(t); }, asString: () => slide.notas }) }) }),
+    move: i => { deck._slides = deck._slides.filter(s => s !== slide); deck._slides.splice(i, 0, slide); }
   };
   return slide;
 }
@@ -670,7 +675,8 @@ const titulo = sl => textos(sl)[0];
 
 // Seções: a sub capa escreve o número ("01") e o nome logo depois.
 // 7 seções desde 07/10/2026: "Projetos × Recorrente" virou parte da Manutenção (roteiro dos itens 13 e 14).
-const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza e Conservação', 'Custo por m²'];
+// 8 desde 09/10/2026: a 08 é o Registro fotográfico (slides do gestor, 26_Fotos.gs).
+const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza e Conservação', 'Custo por m²', 'Registro fotográfico'];
 const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
 ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
    'sub capas 01–07 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
@@ -719,7 +725,7 @@ const N_MANUT = 1 + nLL[0] + N_POR_QUE + N_VAR + 1 + nGrupos + nPagDemais + div.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
 const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos, FIX_MOD_2026);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
-const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 2;
+const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 2 + 3;   // + os 3 moldes de fotos
 ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 7 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, custo por m² (veio ' +
    slides.length + ')');
@@ -830,7 +836,15 @@ const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
 const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');
 ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2),
    'Segurança e Limpeza: linha a linha depois da sub capa');
-ok(iSub[6] === iLimp + nLL[2] && slides.length === iSub[6] + 3, 'Custo por m² fecha o deck, depois da sua sub capa');
+ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 3, 'Custo por m² depois da sua sub capa, antes do Registro fotográfico');
+// 08 · Registro fotográfico: os três moldes (1, 2 e 3 fotos) fecham o deck, marcados nas anotações como do gestor.
+{
+  const fotos = slides.slice(iSub[7] + 1);
+  const espacos = sl => sl.shapes.filter(f => f.tipo === 'RECTANGLE' && f.cor === '#E8EEF5').length;
+  ok(fotos.length === 3 && fotos.every(sl => titulo(sl) === 'Registro fotográfico — Título do assunto' && sl.notas.indexOf('[REGISTRO FOTOGRÁFICO · CURITIBA]') === 0) &&
+     fotos.map(espacos).join() === '1,2,3' && fotos.every(sl => textos(sl).some(t => /^Escreva aqui a descrição/.test(t))),
+     'Registro fotográfico: 1, 2 e 3 fotos com a descrição, marcados como slides do gestor (' + fotos.map(espacos).join() + ')');
+}
 // As demais variações item a item (V16): os degraus somam exatamente o "demais
 // variações" da ponte; o ritmo item a item × METRAGEM aparece como degrau.
 {
@@ -1339,8 +1353,30 @@ console.log('Deck único de Facilities');
   const lista = p => JSON.parse(PROPS_DADOS['ORC_FAC_' + p] || '[]');
   const pos = p => lista(p).map(id => ids.indexOf(id));
   const ordemOk = ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].every((p, i, a) => i === 0 || Math.min.apply(null, pos(p)) > Math.max.apply(null, pos(a[i - 1])));
-  ok(sl.length === ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].reduce((t, p) => t + lista(p).length, 0) && ordemOk && pos('ABERTURA')[0] === 0,
+  // Os slides de fotos do gestor (3 por Mega) ficam fora das listas das partes: nunca saem.
+  const fotosDe = p => sl.filter(x => x.notas.indexOf('[REGISTRO FOTOGRÁFICO · ' + p + ']') === 0).map(x => ids.indexOf(x.getObjectId()));
+  ok(sl.length === ['ABERTURA', 'CURITIBA', 'ITAJAI', 'ESTEIO'].reduce((t, p) => t + lista(p).length, 0) + 9 && ordemOk && pos('ABERTURA')[0] === 0,
      'Facilities: abertura, Esteio, Itajaí e Curitiba em ordem, sem slide sobrando (' + sl.length + ' slides)');
+  const fotosNoFim = p => { const f = fotosDe(p); return f.length === 3 && Math.min.apply(null, f) === Math.max.apply(null, pos(p)) + 1; };
+  ok(['ESTEIO', 'ITAJAI', 'CURITIBA'].every(fotosNoFim) && lista('ITAJAI').every(id => sl.filter(x => x.getObjectId() === id)[0].notas === ''),
+     'Facilities: os 3 slides de fotos no fim de cada Mega, fora da lista da parte (' + ['ESTEIO', 'ITAJAI', 'CURITIBA'].map(p => fotosDe(p).join('-')).join(' | ') + ')');
+  // O gestor preenche e duplica (Ctrl+D leva as anotações); gerar Itajaí de novo não apaga nem recria os slides dele,
+  // e Itajaí continua antes de Curitiba.
+  const fotoI = sl.filter(x => x.notas.indexOf('[REGISTRO FOTOGRÁFICO · ITAJAI]') === 0);
+  fotoI[0].shapes.push({ tipo: 'TEXT_BOX', x: 50, y: 300, w: 100, h: 14, texto: 'ESCRITO PELO GESTOR' });
+  const copia = fac.insertSlide(ids.indexOf(fotoI[0].getObjectId()) + 1);
+  copia.notas = fotoI[0].notas;
+  const idsFotoI = fotoI.map(x => x.getObjectId()).concat([copia.getObjectId()]);
+  G._orcGerarFacilities_('ITAJAI');
+  const sl2 = fac.getSlides(), idsR = sl2.map(x => x.getObjectId());
+  const fotoI2 = sl2.filter(x => x.notas.indexOf('[REGISTRO FOTOGRÁFICO · ITAJAI]') === 0);
+  const pos2 = p => lista(p).map(id => idsR.indexOf(id));
+  ok(fotoI2.length === 4 && fotoI2.every(x => idsFotoI.indexOf(x.getObjectId()) >= 0) &&
+     textos(fotoI2[0]).indexOf('ESCRITO PELO GESTOR') >= 0 &&
+     Math.min.apply(null, fotoI2.map(x => idsR.indexOf(x.getObjectId()))) === Math.max.apply(null, pos2('ITAJAI')) + 1 &&
+     Math.max.apply(null, fotoI2.map(x => idsR.indexOf(x.getObjectId()))) < Math.min.apply(null, pos2('CURITIBA')),
+     'Facilities: gerar Itajaí de novo mantém os slides de fotos do gestor (e a cópia dele) no fim de Itajaí');
+  copia.remove();
   ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Sumário' &&
      textos(sl[2]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[2]).indexOf(t) >= 0),
      'Facilities: capa, sumário e o comparativo de R$/m² dos três Megas');
@@ -1361,7 +1397,8 @@ console.log('Deck único de Facilities');
   ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(p => linksCapa.indexOf(lista(p)[0]) >= 0) && linksCapa.indexOf(ids[2]) >= 0,
      'Facilities: sumário com link para o comparativo e para a capa de cada Mega');
   // Gerar de novo um Mega troca só os slides dele, no mesmo lugar.
-  const antesIt = pos('ITAJAI')[0], nAntes = sl.length, curAntes = lista('CURITIBA').join(), esAntes = lista('ESTEIO').join();
+  const idsAgora = fac.getSlides().map(x => x.getObjectId());   // o deck de agora (Itajaí já foi gerado de novo acima)
+  const antesIt = idsAgora.indexOf(lista('ITAJAI')[0]), nAntes = idsAgora.length, curAntes = lista('CURITIBA').join(), esAntes = lista('ESTEIO').join();
   G._orcGerarFacilities_('ITAJAI');
   const ids2 = fac.getSlides().map(x => x.getObjectId());
   ok(fac.getSlides().length === nAntes && lista('CURITIBA').join() === curAntes && lista('ESTEIO').join() === esAntes &&
@@ -1497,7 +1534,7 @@ console.log('Capa como imagem');
   ok(sub4 && ts4.indexOf('04') < 0 && ts4.indexOf('Manutenção') < 0 && ts4.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) &&
      ts4.indexOf('/m²') >= 0, 'sub capa em imagem: só os números da seção por cima (' + ts4.join(' | ') + ')');
   const areas = sub4 ? sub4.shapes.filter(s => s.link) : [];
-  ok(areas.length === 6 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 6 áreas clicáveis na trilha (7 seções), com link');
+  ok(areas.length === 7 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 7 áreas clicáveis na trilha (8 seções), com link');
   ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Segurança'), 'sub capa sem imagem continua com formas');
   // Moldura em imagem: no fundo (primeira forma), sem os cards e sem barra/linha do cabeçalho em formas.
   const comMold = slE.filter(x => x.shapes[0] && /^MOLDURA - /.test(x.shapes[0].nome || ''));
@@ -1508,7 +1545,8 @@ console.log('Capa como imagem');
      Math.abs(llM.shapes[0].w - W) < 0.01 && Math.abs(llM.shapes[0].h - H) < 0.01,
      'moldura em imagem: ' + comMold.length + ' slides com a moldura no fundo; cards e cabeçalho não viram formas');
   // Formas pelo motor: logo acima da moldura, a imagem das formas; no slide, só textos e imagens.
-  const comHeader = slE.filter(x => comMold.indexOf(x) >= 0);
+  // Os slides de fotos do gestor ficam fora: sem a imagem do molde, o espaço da foto é um retângulo de verdade.
+  const comHeader = slE.filter(x => comMold.indexOf(x) >= 0 && !x.notas);
   const soTexto = x => x.shapes.every(f => f.tipo === 'TEXT_BOX' || f.tipo === 'IMAGE');
   ok(llM && /^GRAFICO - /.test(llM.shapes[1].nome || '') && Math.abs(llM.shapes[1].w - W) < 0.01 && soTexto(llM) &&
      comHeader.every(soTexto), 'formas pelo motor: ' + comHeader.filter(soTexto).length + ' de ' + comHeader.length +
@@ -1552,7 +1590,7 @@ console.log('Gravação no Slides');
   PEDIDOS_DRIVE.length = 0;
   G._orcGerar_(['ESTEIO']);
   const nSub = d.getSlides().filter(x => /^0\d$/.test(textos(x)[0] || '')).length;
-  ok(nSub === 7 && d.salvos === nSub + 1,
+  ok(nSub === 8 && d.salvos === nSub + 1,
      'Slides ocupado: uma gravação por seção + a da remoção, depois de tentar de novo (' + d.salvos + ' gravações, ' + nSub + ' seções)');
   ok(PEDIDOS_DRIVE.filter(id => id === G.LOGOS_CR.fullPositivo).length === 1, 'logo do cabeçalho pedido ao Drive uma vez só');
   ok(PEDIDOS_DRIVE.filter(id => id === ESTEIO.fotoFundoId).length === 1, 'foto do Mega (capa e Resumo) pedida uma vez só');
@@ -1598,7 +1636,20 @@ console.log('Gravação no Slides');
   ok(!erro3 && LOG.some(m => /^Slides ocupado.*timed out/.test(m)), 'Slides lento (timed out): tenta de novo e termina (' + (erro3 && erro3.message) + ')');
 }
 
-console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
+// Deck por Mega: a geração apaga tudo e recria, MENOS os slides de fotos do gestor, que voltam para o fim.
+{
+  decks = {};
+  G.gerarCuritiba();
+  const d = decks[CUR.deckId];
+  const marca = x => x.notas.indexOf('[REGISTRO FOTOGRÁFICO · CURITIBA]') === 0;
+  const f1 = d.getSlides().filter(marca), n1 = d.getSlides().length;
+  f1[1].shapes.push({ tipo: 'TEXT_BOX', x: 50, y: 300, w: 100, h: 14, texto: 'FOTO DO GESTOR' });
+  G.gerarCuritiba();
+  const s2 = d.getSlides(), f2 = s2.filter(marca);
+  ok(f2.length === 3 && f2.map(x => x.id).join() === f1.map(x => x.id).join() && s2.slice(-3).every(marca) &&
+     textos(f2[1]).indexOf('FOTO DO GESTOR') >= 0 && s2.length === n1 && textos(s2[s2.length - 4])[1] === 'Registro fotográfico',
+     'deck por Mega: gerar de novo mantém os 3 slides de fotos do gestor, no fim, depois da sub capa 08 (' + s2.length + ' slides)');
+}
 // Sombra (Guilherme, 09/10/2026: "esse tem que ser o padrão"): todo slide com
 // cabeçalho tem o conteúdo em card da moldura — tabela solta no fundo ganha o
 // card do tamanho dela (_orcSombraTabela_), e é ele que leva a sombra.
@@ -1616,4 +1667,5 @@ if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'graficos.json'), JSON.stringify(G._ORC_GRAFICOS_USADOS, null, 1));
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'graficos_passos.json'), JSON.stringify(G._ORC_GRAFICOS_PASSOS, null, 1));
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras_passos.json'), JSON.stringify(G._ORC_MOLDURAS_PASSOS, null, 1));
+console.log('\n' + (total - falhas) + '/' + total + ' asserções ok');
 process.exit(falhas ? 1 : 0);

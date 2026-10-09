@@ -59,7 +59,8 @@ SECOES = [('Premissas', 'DOCUMENTACAO', 'Como este orçamento foi construído'),
           ('Manutenção', 'CORRETIVA', 'O custo para manter o Mega rodando'),
           ('Segurança', 'PATRIMONIAL', 'Vigilância, portaria e monitoramento'),
           ('Limpeza e Conservação', 'INTERNOS', 'O Mega limpo e conservado o ano inteiro'),
-          ('Custo por m²', 'CONTRATADOS', 'Quanto custa cada m² por mês')]
+          ('Custo por m²', 'CONTRATADOS', 'Quanto custa cada m² por mês'),
+          ('Registro fotográfico', 'PREVENTIVA', 'O que o gestor quer mostrar, em fotos')]   # 08 desde 09/10/2026
 # = ORC_FOTO_FOCO (onde está o assunto, fração da largura)
 FOCO_X = {'CORRETIVA': 0.40, 'PATRIMONIAL': 0.45, 'INTERNOS': 0.65, 'PREVENTIVA': 0.68, 'CONTRATADOS': 0.47,
           'DOCUMENTACAO': 0.58, 'OPERACIONAL': 0.47, 'MEGA CURITIBA': 0.26, 'MEGA ITAJAÍ': 0.30, 'MEGA ESTEIO': 0.52}

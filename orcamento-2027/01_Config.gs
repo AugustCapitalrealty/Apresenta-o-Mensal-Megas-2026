@@ -285,7 +285,9 @@ const ORC_SUBCAPAS = {
   'Manutenção':            { foto: 'CORRETIVA',    frase: 'O custo para manter o Mega rodando' },
   'Segurança':             { foto: 'PATRIMONIAL',  frase: 'Vigilância, portaria e monitoramento' },
   'Limpeza e Conservação': { foto: 'INTERNOS',     frase: 'O Mega limpo e conservado o ano inteiro' },
-  'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' }
+  'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' },
+  // Seção 08 (09/10/2026): slides do gestor com 1 a 3 fotos e a descrição (26_Fotos.gs).
+  'Registro fotográfico':  { foto: 'PREVENTIVA',   frase: 'O que o gestor quer mostrar, em fotos' }
 };
 // Perguntas em aberto com o gestor ou a controladoria, por Mega (nome em
 // ORC_CIDADES): entram no slide "Revisar antes da versão final" junto com as

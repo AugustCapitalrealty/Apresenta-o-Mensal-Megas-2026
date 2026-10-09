@@ -38,7 +38,8 @@ function _orcGerar_(chaves) {
     // ("Service timed out" no openById). Fica só o primeiro, apagado no fim.
     // Se a geração falhar, a próxima recria tudo; versões anteriores ficam
     // no histórico do Slides.
-    const velhos = deck.getSlides();
+    // Os slides de fotos do gestor (26_Fotos.gs) nunca saem: só os gerados.
+    const velhos = deck.getSlides().filter(s => !_orcDonoFotos_(s));
     const primeiro = velhos.length ? velhos[0].getObjectId() : null;
     if (velhos.length > 1) {
       velhos.slice(1).forEach(s => s.remove());
@@ -51,6 +52,9 @@ function _orcGerar_(chaves) {
     _orcGerarCidade_(deck, W, H, k);
     const final = SlidesApp.openById(cid.deckId);
     final.getSlides().forEach(s => { if (s.getObjectId() === primeiro) s.remove(); });
+    // Os slides do gestor ficaram onde estavam (no começo, porque os gerados
+    // entram no fim): voltam para o fim, depois da sub capa da seção deles.
+    _orcSlidesDeFotos_(final, k).forEach(s => s.move(final.getSlides().length - 1));
     _orcLigarSecoes_(final, cid);
     const n = final.getSlides().length, url = final.getUrl();
     _orcSalvarDeck_(final, 'a remoção do último slide antigo de ' + cid.nome);
@@ -149,7 +153,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
     visao ? ['Resumo Executivo', 'DRE'] : [],
     contas || dados ? ['Manutenção'] : [],
     contas ? ['Segurança', 'Limpeza e Conservação'] : [],
-    visao ? ['Custo por m²'] : []);
+    visao ? ['Custo por m²', ORC_FOTOS_TITULO] : []);
   // Pendências de dados (contratos que faltam, modelos acima da METRAGEM):
   // alerta no slide de revisão e selo nos slides da conta (19_Revisar.gs).
   if (visao) {
@@ -269,6 +273,9 @@ function _orcGerarCidade_(deck, W, H, chave) {
     secao('Custo por m²');
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
     comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
+    // 08 · Registro fotográfico: os slides do gestor (criados uma vez; 26_Fotos.gs).
+    secao(ORC_FOTOS_TITULO);
+    _orcSecaoFotos_(deck, W, H, cid, chave);
   }
   gravar(false);   // a última seção; a remoção dos antigos fica em _orcGerar_
 }

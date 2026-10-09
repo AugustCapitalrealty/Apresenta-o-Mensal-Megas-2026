@@ -102,6 +102,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - **Próximo (quando o Guilherme voltar):** ele gerar os decks (Facilities: `gerarFacilities*` em `25_Facilities.gs`) e
   `aplicarPropostasTextos()` → gerar de novo; conferir no log "molduras: … 0 com as formas de antes". Depois, a lista
   de pendências: erros 4–7 da analista, V40 (salto de set na Limpeza de Itajaí), G6/G7/G13 com gestor e controladoria.
+- **Seção 08 · Registro fotográfico** (rascunho aprovado 09/10): 3 moldes (1, 2 e 3 fotos + descrição) no fim de cada Mega,
+  `26_Fotos.gs`. São slides do GESTOR: marcados nas anotações (`[REGISTRO FOTOGRÁFICO · <CHAVE>]`), criados uma vez e
+  nunca apagados nem recriados (decks por Mega e Facilities); cópia com Ctrl+D também fica. Espaço da foto = imagem
+  `FOTO - MOLDE <m> - <n>.png` (`ferramentas/fotos_molde_imagem.py`) → botão direito → Substituir imagem. Trilha, sub capas
+  e molduras redesenhadas para 8 seções.
 - **Fotos dos Megas com IA (Nano Banana / Google Flow): testado e recusado** pelo Guilherme ("não gostei de nada,
   vamos deixar do jeito que está"). As fotos das capas e sub capas ficam as reais de hoje; não propor de novo sem ele
   pedir. Os arquivos do teste ficaram com o prefixo "PODE EXCLUIR - ".

@@ -60,9 +60,11 @@ function _orcFacilitiesGuardarIds_() {
 // Posição da parte no deck: logo depois da parte anterior (na ordem de ORC_FACILITIES.partes) que já existe; sem
 // nenhuma antes, antes da primeira que vem depois; sem as outras, onde ela estava; sem nada, no fim. Seguir a ordem
 // (e não o lugar antigo) faz a troca de ordem de 08/10/2026 se arrumar sozinha ao gerar as partes de novo.
-function _orcPosicaoFacilities_(idsDeck, parte) {
+// Os slides de fotos do gestor (fotos: { parte: [ids] }, 26_Fotos.gs) contam como da parte deles: não estão na
+// lista (nunca saem), mas a parte seguinte entra depois deles.
+function _orcPosicaoFacilities_(idsDeck, parte, fotos) {
   const ordem = ORC_FACILITIES.partes, i = ordem.indexOf(parte);
-  const pos = p => _orcListaFacilities_(p).map(id => idsDeck.indexOf(id)).filter(x => x >= 0);
+  const pos = p => _orcListaFacilities_(p).concat((fotos && fotos[p]) || []).map(id => idsDeck.indexOf(id)).filter(x => x >= 0);
   for (let j = i - 1; j >= 0; j--) { const a = pos(ordem[j]); if (a.length) return Math.max.apply(null, a) + 1; }
   for (let j = i + 1; j < ordem.length; j++) { const d = pos(ordem[j]); if (d.length) return Math.min.apply(null, d); }
   const minha = pos(parte);
@@ -84,7 +86,7 @@ function _orcGerarFacilities_(parte) {
   // 1) Tira os slides antigos desta parte (e o slide inicial do Slides), guardando a posição. O deck não pode ficar
   //    vazio: se só sobrariam os desta parte, um slide provisório segura o lugar e sai no fim.
   const idsDeck = deck.getSlides().map(s => s.getObjectId());
-  const indice = _orcPosicaoFacilities_(idsDeck, parte);
+  const indice = _orcPosicaoFacilities_(idsDeck, parte, _orcFotosPorParte_(deck));
   const sair = _orcListaFacilities_(parte).concat(JSON.parse(props.getProperty('ORC_FAC_INICIAL') || '[]'))
     .filter(id => idsDeck.indexOf(id) >= 0);
   let provisorio = null;

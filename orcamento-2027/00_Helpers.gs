@@ -295,7 +295,8 @@ function _orcNovoSlide_(deck) {
                            : deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   if (_ORC_UNICO) {
     const id = slide.getObjectId();
-    _ORC_UNICO.ids.push(id);
+    // Slide do gestor (26_Fotos.gs) fica fora da lista da parte: a próxima geração não o apaga.
+    if (!_ORC_SLIDE_DO_GESTOR) _ORC_UNICO.ids.push(id);
     if (_ORC_UNICO.alvo) { _ORC_LINKS.alvos[_ORC_UNICO.alvo] = id; _ORC_UNICO.alvo = null; }
   }
   slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.bgSlide);
