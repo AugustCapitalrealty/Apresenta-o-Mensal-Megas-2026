@@ -94,6 +94,14 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - **Sombra é o padrão** (Guilherme): todo slide com cabeçalho tem o conteúdo em card da moldura; tabela solta ganha o
   card do tamanho dela (`_orcSombraTabela_`). O teste reprova slide com cabeçalho sem card.
 - Molduras e gráficos novos desenhados na pasta `IMAGENS - SLIDES`. Teste 4452/4452. Publicado (clasp push).
+- Tarde: o V16 virou **ponte de colunas verticais** (Guilherme preferiu ao horizontal); a ponte do "por que sobe" fecha
+  em "ORÇ 2027" (quebrava "ORÇAMENT / O"). **090 × METRAGEM investigado**: Itajaí R$ 29.313 = totem (JAN) + duas
+  iluminações (FEV); Esteio R$ 15.268 = duas linhas de vida (OUT). O slide de revisão lista os itens e o que fazer
+  (`_orcItensForaDaMetragem_`, `19_Revisar.gs`). **Falta a controladoria incluir esses itens na METRAGEM-COND** — aí
+  baixar a METRAGEM nova, atualizar as fixtures e gerar: a pendência e o degrau somem. Teste 4457/4457, publicado.
+- **Próximo (quando o Guilherme voltar):** ele gerar os decks (Facilities: `gerarFacilities*` em `25_Facilities.gs`) e
+  `aplicarPropostasTextos()` → gerar de novo; conferir no log "molduras: … 0 com as formas de antes". Depois, a lista
+  de pendências: erros 4–7 da analista, V40 (salto de set na Limpeza de Itajaí), G6/G7/G13 com gestor e controladoria.
 - **Fotos dos Megas com IA (Nano Banana / Google Flow): testado e recusado** pelo Guilherme ("não gostei de nada,
   vamos deixar do jeito que está"). As fotos das capas e sub capas ficam as reais de hoje; não propor de novo sem ele
   pedir. Os arquivos do teste ficaram com o prefixo "PODE EXCLUIR - ".
