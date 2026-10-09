@@ -147,3 +147,7 @@ V1–V24 vieram do deck de Curitiba (os marcados "vale para todos" valem para os
 ### Sombra como padrão (Guilherme, 09/10/2026)
 
 "Alguns moldes não têm o efeito de sombra bonito que têm alguns, esse tem que ser o padrão." Os slides com a tabela solta no fundo (DRE, Ofensores, Defensores, Demais categorias, Revisar, Comparativo de R\$/m², Ranking dos Megas) ganharam o card branco da moldura do tamanho da tabela, e com ele a sombra (`_orcSombraTabela_`, `00_Helpers.gs`). O teste reprova slide com cabeçalho sem card na moldura. Feito 09/10, publicado; falta gerar.
+
+### V16 em colunas (Guilherme, 09/10/2026)
+
+"Ainda prefiro assim" (a ponte do slide anterior): o lado esquerdo das demais variações virou ponte de colunas verticais — cada degrau a partir de onde o anterior parou e a coluna cheia do total, com a legenda de cada degrau embaixo. Na ponte do "por que sobe", a última coluna passou a "ORÇ 2027" ("ORÇAMENTO 2027" quebrava em "ORÇAMENT / O 2027"). Feito e publicado em 09/10; falta gerar.

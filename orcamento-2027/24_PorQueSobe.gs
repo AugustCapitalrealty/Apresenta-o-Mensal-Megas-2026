@@ -78,7 +78,8 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
       m2: area ? '+' + m2(adi.total, area) : '' },
     { nome: 'Demais variações', de: v.ritmo + adi.total, ate: v.orc,
       cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce, m2: _orcM2Demais_(rel, v, adi.total) },
-    { nome: 'Orçamento ' + a.orc, de: 0, ate: v.orc, cor: C.brandDark, m2: m2(v.orc, area) }
+    // "ORÇAMENTO 2027" quebrava no meio da palavra ("ORÇAMENT / O 2027", Guilherme, 09/10/2026).
+    { nome: 'Orç ' + a.orc, de: 0, ate: v.orc, cor: C.brandDark, m2: m2(v.orc, area) }
   ]);
   const i0 = temAnt ? 1 : 0;   // índice da coluna do Ritmo
   const px = cx + 14, pw = cw - 28, topo = cy + 50, base = cy + ch - 74;
@@ -181,19 +182,19 @@ function _orcVariacoesItens_(cid, dados, conta, adi) {
   const ritmoItens = p26 + s26;
   const difRitmo = Math.abs(ritmoItens - v.ritmo) >= 0.5, difOrc = Math.abs(v.orc - dados.total) >= 0.5;
   const blocos = [
-    { nome: 'Itens novos em ' + a27, expl: novos.length + ' itens sem gasto parecido no Ritmo ' + a26,
+    { nome: 'Itens novos em ' + a27, curto: 'Itens novos', expl: novos.length + ' itens sem gasto parecido no Ritmo ' + a26,
       v: (difOrc ? dados.total : v.orc) - totAdi - p27 },
-    { nome: 'Mesmo serviço nos dois anos', expl: pares.length + ' pares ligados pelo gestor' +
+    { nome: 'Mesmo serviço nos dois anos', curto: 'Mesmo serviço', expl: pares.length + ' pares ligados pelo gestor' +
       (totAdi ? ' (sem as obras adiadas)' : '') + ': reajuste, área nova, escopo', v: p27 - p26 },
-    { nome: 'Gastos de ' + a26 + ' que não se repetem', expl: semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27,
+    { nome: 'Gastos de ' + a26 + ' que não se repetem', curto: 'Não se repetem', expl: semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27,
       v: -(difRitmo ? s26 : v.ritmo - p26) }
   ];
   if (difRitmo) {
-    blocos.push({ nome: 'Ritmo da METRAGEM × soma dos itens', v: ritmoItens - v.ritmo,
+    blocos.push({ nome: 'Ritmo da METRAGEM × soma dos itens', curto: 'METRAGEM × itens', v: ritmoItens - v.ritmo,
       expl: 'a soma item a item ' + (ritmoItens < v.ritmo ? 'fica abaixo' : 'passa') + ' da METRAGEM (a conferir com a controladoria)' });
   }
   if (difOrc) {
-    blocos.push({ nome: 'Modelo 090 × Orç da METRAGEM', v: v.orc - dados.total,
+    blocos.push({ nome: 'Modelo 090 × Orç da METRAGEM', curto: '090 × METRAGEM', v: v.orc - dados.total,
       expl: 'os itens do modelo somam ' + (dados.total > v.orc ? 'mais' : 'menos') + ' que o Orç da METRAGEM (pendência)' });
   }
   const cand = pares.concat(novos, semPar).map(x => Object.assign(x, { d: x.v27 - x.v26 }));
@@ -220,33 +221,37 @@ function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
     (comAdi ? 'Além das obras adiadas, ' : 'Alta contra o Ritmo ' + a.ritmo + ': ') + mil(vi.demais) +
     (m2 ? ' (' + m2 + ' ao mês)' : '') + ' · Ritmo ' + a.ritmo + ' → Orç ' + a.orc + ', item a item · ' + cid.nome);
 
-  // ---- Os degraus (esquerda): cascata horizontal a partir do Ritmo ----
+  // ---- Os degraus (esquerda): ponte em colunas, como a do slide anterior ----
+  // (Guilherme, 09/10/2026: preferiu as colunas verticais à cascata horizontal.)
+  // Cada degrau sobe ou desce a partir de onde o anterior parou; a última
+  // coluna, cheia, é o total — "demais variações" (ou a alta inteira).
   const cy = 74, ch = H - 28 - cy, cw = (W - MX * 2) * 0.46, cx = MX;
   _orcCard_(slide, cx, cy, cw, ch, 'De onde vêm os ' + mil(vi.demais));
-  const bl = vi.blocos, totH = 38;
-  const topo = cy + 26, fundo = cy + ch - totH - 16;
-  const bh = Math.min(58, (fundo - topo) / bl.length);
+  const bl = vi.blocos, totH = 38, legL = 10;
+  const ly = cy + ch - totH - 8;                       // caixa do total, embaixo
+  const yLeg = ly - 6 - bl.length * legL;              // legenda dos degraus
+  const base = yLeg - 28, topo = cy + 52;              // área das colunas (nomes embaixo da base)
   const acs = [0];
   bl.forEach(b => acs.push(acs[acs.length - 1] + b.v));
-  const lo = Math.min.apply(null, acs), hi = Math.max.apply(null, acs);
-  const px = cx + 14, pw = cw - 28, esc = pw / Math.max(1, hi - lo);
-  const xDe = val => px + (val - lo) * esc;
-  bl.forEach((b, i) => {
-    const y = topo + i * bh;
-    _orcUmaLinha_(slide, px, y, pw - 76, 13, b.nome,
-      { align: 'L', fs: 8.5, bold: true, cor: C.textMain, fonte: T.titles, fsMin: 6.5, folga: 4 });
-    _orcUmaLinha_(slide, px + pw - 76, y - 1, 76, 15, mil(b.v),
-      { align: 'R', fs: 10, bold: true, cor: corDe(b.v), fonte: T.titles, fsMin: 8, folga: 6 });
-    _orcParagrafo_(slide, px, y + 12, pw, 11, b.expl, { fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body });
-    const x1 = xDe(acs[i]), x2 = xDe(acs[i + 1]);
-    _orcRet_(slide, Math.min(x1, x2), y + 25, Math.max(0.8, Math.abs(x2 - x1)), 9, corDe(b.v));
-  });
-  // Linha do Ritmo (o zero da cascata).
-  const yLin = topo + (bl.length - 1) * bh + 38;
-  _orcLinha_(slide, xDe(0), topo + 22, xDe(0), yLin, C.lines, 0.75);
-  _orcUmaLinha_(slide, xDe(0) - 30, yLin + 1, 60, 9, 'Ritmo ' + a.ritmo,
-    { align: 'C', fs: 5.5, cor: C.textMuted, fonte: T.body, fsMin: 5, folga: 6 });
-  const ly = cy + ch - totH - 8;
+  const lo = Math.min(0, Math.min.apply(null, acs)), hi = Math.max(1, Math.max.apply(null, acs));
+  const yDe = val => base - (base - topo) * (val - lo) / (hi - lo);
+  const px = cx + 14, pw = cw - 28, colW = pw / (bl.length + 1), barW = Math.min(colW * 0.56, 40);
+  _orcLinha_(slide, px, yDe(0), px + pw, yDe(0), C.lines, 1);
+  const coluna = (i, de, ate, cor, rotulo, nome, sub) => {
+    const bx = px + i * colW + (colW - barW) / 2, y1 = yDe(Math.max(de, ate)), y2 = yDe(Math.min(de, ate));
+    _orcRet_(slide, bx, y1, barW, Math.max(0.8, y2 - y1), cor);
+    _orcUmaLinha_(slide, px + i * colW, y1 - (sub ? 24 : 14), colW, 12, rotulo,
+      { align: 'C', fs: 8, bold: true, cor: cor, fonte: T.titles, folga: 4, fsMin: 6 });
+    if (sub) _orcUmaLinha_(slide, px + i * colW, y1 - 13, colW, 11, sub,
+      { align: 'C', fs: 6.5, cor: C.textBody, fonte: T.body, folga: 4, fsMin: 5.5 });
+    _orcParagrafo_(slide, px + i * colW - 2, base + 4, colW + 4, 22, nome.toUpperCase(),
+      { align: 'C', fs: 6, fsMin: 5, bold: true, fonte: T.titles, cor: C.textBody });
+  };
+  bl.forEach((b, i) => coluna(i, acs[i], acs[i + 1], corDe(b.v), _orcDeltaMil_(b.v) + ' mil', b.curto, ''));
+  coluna(bl.length, 0, vi.demais, C.brandDark, mil(vi.demais), comAdi ? 'Demais variações' : 'Alta total', m2);
+  // Legenda: o que é cada degrau.
+  bl.forEach((b, i) => _orcParagrafo_(slide, px, yLeg + i * legL, pw, legL, b.curto + ': ' + b.expl,
+    { fs: 6, fsMin: 5, cor: C.textBody, fonte: T.body }));
   _orcRet_(slide, cx + 12, ly, cw - 24, totH, C.brandTint, { redondo: true });
   _orcRet_(slide, cx + 12, ly, 3, totH, C.brandLight);
   _orcUmaLinha_(slide, cx + 22, ly + 4, cw - 40, 16,
