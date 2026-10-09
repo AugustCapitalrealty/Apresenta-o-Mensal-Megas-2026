@@ -94,6 +94,9 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - **Sombra é o padrão** (Guilherme): todo slide com cabeçalho tem o conteúdo em card da moldura; tabela solta ganha o
   card do tamanho dela (`_orcSombraTabela_`). O teste reprova slide com cabeçalho sem card.
 - Molduras e gráficos novos desenhados na pasta `IMAGENS - SLIDES`. Teste 4452/4452. Publicado (clasp push).
+- **Fotos dos Megas com IA (Nano Banana / Google Flow): testado e recusado** pelo Guilherme ("não gostei de nada,
+  vamos deixar do jeito que está"). As fotos das capas e sub capas ficam as reais de hoje; não propor de novo sem ele
+  pedir. Os arquivos do teste ficaram com o prefixo "PODE EXCLUIR - ".
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
