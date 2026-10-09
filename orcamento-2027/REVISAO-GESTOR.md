@@ -142,4 +142,4 @@ V1–V24 vieram do deck de Curitiba (os marcados "vale para todos" valem para os
 
 | # | Ajuste | Onde | Status |
 |---|---|---|---|
-| V3-1 | Capa de Facilities: tirar o R$/m² (R$ 5,08) e o ▲ 33% vs. ritmo 2026 — "não faz muito sentido... distorce" (somados, os três Megas têm áreas diferentes). Fica só o total em R$ | `25_Facilities.gs`, `gerarSlideCapaFacilities_` | Feito 08/10 (código + teste; falta publicar e gerar a abertura) |
+| V3-1 | Capa de Facilities: tirar o R$/m² (R$ 5,08) e o ▲ 33% vs. ritmo 2026 — "não faz muito sentido... distorce" (somados, os três Megas têm áreas diferentes). Fica só o total em R$ | `25_Facilities.gs`, `gerarSlideCapaFacilities_` | Feito 08/10 (código + teste); publicado 09/10 (clasp push). Falta gerar a abertura |
