@@ -107,6 +107,9 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   nunca apagados nem recriados (decks por Mega e Facilities); cópia com Ctrl+D também fica. Espaço da foto = imagem
   `FOTO - MOLDE <m> - <n>.png` (`ferramentas/fotos_molde_imagem.py`) → botão direito → Substituir imagem. Trilha, sub capas
   e molduras redesenhadas para 8 seções.
+- **Atualizar só alguns slides** (`27_Atualizar.gs`): `atualizarSlidesFacilities()` (ou `atualizarSlides<Mega>()`) refaz no
+  deck de Facilities só os grupos de `ORC_ATUALIZAR_AGORA` (hoje: Ponte, Por que sobe, Demais variações), no mesmo lugar,
+  e atualiza a lista da parte. Grupos possíveis em `ORC_GRUPOS_ATUALIZAVEIS`; nunca o 1º slide de uma seção (link do sumário).
 - **Fotos dos Megas com IA (Nano Banana / Google Flow): testado e recusado** pelo Guilherme ("não gostei de nada,
   vamos deixar do jeito que está"). As fotos das capas e sub capas ficam as reais de hoje; não propor de novo sem ele
   pedir. Os arquivos do teste ficaram com o prefixo "PODE EXCLUIR - ".

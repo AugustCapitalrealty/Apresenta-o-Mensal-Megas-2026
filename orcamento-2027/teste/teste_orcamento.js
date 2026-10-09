@@ -121,7 +121,10 @@ function novoSlide(deck) {
     notas: '',
     getNotesPage: () => ({ getSpeakerNotesShape: () => ({ getText: () => ({
       setText: t => { slide.notas = String(t); }, asString: () => slide.notas }) }) }),
-    move: i => { deck._slides = deck._slides.filter(s => s !== slide); deck._slides.splice(i, 0, slide); }
+    move: i => { deck._slides = deck._slides.filter(s => s !== slide); deck._slides.splice(i, 0, slide); },
+    // Formas com texto (27_Atualizar.gs acha o título do slide por aqui).
+    getShapes: () => slide.shapes.filter(r => r.tipo !== 'IMAGE' && r.tipo !== 'LINE')
+      .map(r => ({ getText: () => ({ asString: () => r.texto || '' }) }))
   };
   return slide;
 }
@@ -1410,6 +1413,27 @@ console.log('Deck único de Facilities');
   ok(fac.getSlides().length === nAntes && lista('CURITIBA').join() === curAntes && lista('ESTEIO').join() === esAntes &&
      ids2.indexOf(lista('ITAJAI')[0]) === antesIt && fac.getSlides()[1].shapes.filter(f => f.link).map(f => f.link).indexOf(lista('ITAJAI')[0]) >= 0,
      'Facilities: gerar Itajaí de novo troca só os slides dele, no mesmo lugar, e refaz o link do sumário');
+  // Atualizar só alguns slides (27_Atualizar.gs, 09/10/2026): troca a ponte, o "por que sobe" e as demais variações
+  // no mesmo lugar, sem mexer no resto; slide que falta entra depois do de referência.
+  {
+    const tit = id => textos(fac.getSlideById(id))[0] || '';
+    const ehDe = (p, pref) => lista(p).filter(id => tit(id).indexOf(pref) === 0);
+    const n0 = fac.getSlides().length, outrosAntes = lista('ESTEIO').filter(id => !/^(Ponte Ritmo|Por que a manutenção sobe)/.test(tit(id))).join();
+    const ponteAntes = ehDe('ESTEIO', 'Ponte Ritmo ')[0], posPonte = fac.getSlides().map(x => x.getObjectId()).indexOf(ponteAntes);
+    // O "por que sobe" do Esteio some (como num deck gerado antes de 09/10/2026): a atualização o põe de volta.
+    const pq = ehDe('ESTEIO', 'Por que a manutenção sobe — ')[0];
+    fac.getSlideById(pq).remove();
+    PROPS_DADOS.ORC_FAC_ESTEIO = JSON.stringify(lista('ESTEIO').filter(id => id !== pq));
+    G.atualizarSlidesFacilities();
+    const idsA = fac.getSlides().map(x => x.getObjectId());
+    const ponteNova = ehDe('ESTEIO', 'Ponte Ritmo ')[0];
+    const iLL = idsA.indexOf(ehDe('ESTEIO', 'Manutenção de imóveis')[0]), iPQ = idsA.indexOf(ehDe('ESTEIO', 'Por que a manutenção sobe — ')[0]);
+    ok(fac.getSlides().length === n0 && ponteNova && ponteNova !== ponteAntes && idsA.indexOf(ponteNova) === posPonte &&
+       lista('ESTEIO').filter(id => !/^(Ponte Ritmo|Por que a manutenção sobe)/.test(tit(id))).join() === outrosAntes &&
+       iPQ === iLL + 1 && idsA.indexOf(ehDe('ESTEIO', 'Por que a manutenção sobe:')[0]) === iPQ + 1 &&
+       lista('ESTEIO').every(id => idsA.indexOf(id) >= 0) && ['ITAJAI', 'CURITIBA'].every(p => ehDe(p, 'Ponte Ritmo ').length === 1),
+       'atualizarSlidesFacilities: ponte trocada no mesmo lugar, o resto intacto e o "por que sobe" que faltava volta depois da conta');
+  }
   // Troca de ordem (08/10/2026): um deck na ordem antiga (Curitiba antes de Esteio) se arruma ao gerar as partes de novo.
   {
     const ord = G.ORC_FACILITIES.partes.slice();
