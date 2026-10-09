@@ -712,7 +712,7 @@ const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // Manutenção: só a 1ª página — os itens menores estão no item a item com o selinho.
 const nLL = contasLL.map((c, k) => k === 0 ? 1 : 1 + G._orcPaginasItens_(G._orcCorteComposicao_(c, modelos, H).fora).length);
 // "Por que a manutenção sobe" abre a seção (Curitiba tem 2 obras adiadas na planilha do gestor).
-const N_POR_QUE = G.ORC_DECISOES_GESTOR['Mega Curitiba'].adiados.length ? 1 : 0;
+const N_POR_QUE = 1;   // desde 09/10/2026 sai em todo Mega (sem obra adiada: Orç anterior × Ritmo × Orç)
 // …e logo depois as demais variações item a item (V16, 09/10/2026): sai com as decisões na base ritmo (semPar).
 const N_VAR = G.ORC_DECISOES_GESTOR['Mega Curitiba'].semPar ? 1 : 0;
 // Projetos × recorrente: o slide e as páginas dos itens de cada grupo (dentro da Manutenção).
@@ -813,7 +813,7 @@ const iDemais = iInv + 1 + nGrupos, iCat0 = iDemais + nPagDemais, iMensal = iCat
      'subtítulo com a alta sem as obras adiadas (' + tPQ[1] + ')');
   ok(tPQ.some(t => /^Sem as obras adiadas: R\$ [\d,]+ (mil|mi) · R\$ [\d,]+\/m² ao mês/.test(t)),
      'leitura sem as obras adiadas em R$ e R$/m² ao mês');
-  ok(G._orcAdiados2026_(G.ORC_CIDADES.ESTEIO, G.obterManutencao_('CURITIBA')) === null, 'Mega sem obra adiada: sem o slide');
+  ok(G._orcAdiados2026_(G.ORC_CIDADES.ESTEIO, G.obterManutencao_('CURITIBA')) === null, 'Mega sem obra adiada: sem obras (o slide sai com o quadro Orç anterior × Ritmo × Orç)');
   ok(tPQ.indexOf('ORÇ 2026') >= 0 && tPQ.indexOf('RITMO 2026') > tPQ.indexOf('ORÇ 2026') && !tPQ.some(t => /gestor/i.test(t)),
      'por que sobe: coluna do Orç 2026 primeiro e sem "comentário do gestor" (08/10/2026)');
 }
@@ -1252,6 +1252,12 @@ const ESTADO_CIDADES = {};
    'Custo por m² mês a mês — Orçamento 2027', 'Manutenção de Imóveis — Orçamento 2027', 'Distribuição mensal']
     .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
   ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
+  // Orç do ano anterior na ponte e no "por que sobe", nos três Megas (09/10/2026).
+  const tPonteC = textos(sl[titulos.indexOf('Ponte Ritmo 2026 → Orçamento 2027')] || { shapes: [] });
+  const tPQC = textos(sl[titulos.indexOf('Por que a manutenção sobe — Orçamento 2027')] || { shapes: [] });
+  ok(tPonteC.indexOf('ORÇ 2026') >= 0 && tPonteC.indexOf('ORÇ 2026 → ORÇ 2027') >= 0 && tPQC.indexOf('ORÇ 2026') >= 0 &&
+     (c !== 'esteio' || (tPQC.indexOf('VARIAÇÃO') >= 0 && tPQC.indexOf('R$/M² AO MÊS') >= 0 && tPQC.some(t => /área implícita muda/.test(t)))),
+     c + ': ponte e "por que sobe" com o Orç 2026' + (c === 'esteio' ? ' (sem obra adiada: quadro Orç × Ritmo × Orç e o aviso da área)' : ''));
   ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m²') >= 0, c + ': capa com o Mega e o R$/m²');
   // Os relatórios fecham entre si; o slide de revisão só traz as pendências
   // de dados (19_Revisar.gs, _orcPendencias_).

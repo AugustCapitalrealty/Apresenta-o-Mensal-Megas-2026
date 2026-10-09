@@ -120,6 +120,14 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     (sobe ? '▲ +' : '▼ −') + _orcCompacto_(Math.abs(alta)) + ' (' + (sobe ? '+' : '−') +
     _orcPct_(p.inicio ? Math.abs(alta / p.inicio) : 0) + ')',
     sobe ? '#FEF2F2' : '#F0FDF4', sobe ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce);
+  // Orç do ano anterior (Guilherme, 09/10/2026: "ter o orçado também aqui"): coluna cinza antes do Ritmo, fora da
+  // cascata, e o chip Orç → Orç — a ponte continua Ritmo → Orç.
+  const orcAnt = rel.total.orcAnt || 0, temAnt = orcAnt > 0.5, off = temAnt ? 1 : 0, CINZA = '#94A3B8';
+  if (temAnt) {
+    const dAnt = p.fim - orcAnt;
+    chipX = chip(chipX, 'ORÇ ' + a.orcAnt + ' → ORÇ ' + a.orc, (dAnt >= 0 ? '▲ +' : '▼ −') + _orcCompacto_(Math.abs(dAnt)) +
+      ' (' + (dAnt >= 0 ? '+' : '−') + _orcPct_(Math.abs(dAnt / orcAnt)) + ')', '#F1F5F9', '#64748B');
+  }
   const notas = p.degraus.filter(d => d.partes.length > 1);
   if (notas.length) {
     const soma = tipo => notas.reduce((t, d) => t + d.partes.filter(pt => pt.tipo === tipo)[0].v, 0);
@@ -135,12 +143,13 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
   let run = p.inicio;
   p.degraus.forEach(d => { d.partes.forEach(pt => { run += pt.v; niveis.push(run); }); });
   niveis.push(p.fim);
+  if (temAnt) niveis.push(orcAnt);
   const piso = Math.floor(Math.min.apply(null, niveis) * 0.85 / 5e5) * 5e5;
   const teto = Math.max.apply(null, niveis) * 1.04;
   const px = cx + 14, pw = cw - 28, pTop = cy + 56, base = cy + ch - 52;
   const ph = base - pTop;
   const y = v => base - ph * (v - piso) / (teto - piso);
-  const n = p.degraus.length + 2, colW = pw / n, barW = Math.min(colW * 0.56, 40);
+  const n = p.degraus.length + 2 + off, colW = pw / n, barW = Math.min(colW * 0.56, 40);
   // Nome da coluna em até duas linhas. Degrau de conta com divergência entre
   // os relatórios: rótulo laranja com ⚠.
   const rotulo = (i, txt, op) => {
@@ -153,16 +162,20 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     { align: 'C', fs: fs || 7, bold: true, cor: cor, fonte: DS.typography.titles, folga: 4, fsMin: 5.5 });
 
   _orcLinha_(slide, px, base, px + pw, base, C.lines, 1);
-  const barraTotal = (i, v, nome) => {
-    const bx = px + i * colW + (colW - barW) / 2;
-    _orcRet_(slide, bx, y(v), barW, base - y(v), C.brandDark);
-    valor(i, y(v) - 14, _orcCompacto_(v).replace('R$ ', ''), C.brandDark, 7.5);
-    rotulo(i, nome.toUpperCase(), { cor: C.brandDark });
+  const barraTotal = (i, v, nome, cor) => {
+    const bx = px + i * colW + (colW - barW) / 2, c = cor || C.brandDark;
+    _orcRet_(slide, bx, y(v), barW, base - y(v), c);
+    valor(i, y(v) - 14, _orcCompacto_(v).replace('R$ ', ''), c, 7.5);
+    rotulo(i, nome.toUpperCase(), { cor: c });
   };
-  barraTotal(0, p.inicio, 'Ritmo ' + a.ritmo);
+  if (temAnt) {
+    barraTotal(0, orcAnt, 'Orç ' + a.orcAnt, CINZA);
+    _orcLinha_(slide, px + colW, pTop - 4, px + colW, base, C.lines, 0.75);   // separa o comparativo da cascata
+  }
+  barraTotal(off, p.inicio, 'Ritmo ' + a.ritmo);
   run = p.inicio;
   p.degraus.forEach((d, k) => {
-    const i = k + 1, bx = px + i * colW + (colW - barW) / 2;
+    const i = k + 1 + off, bx = px + i * colW + (colW - barW) / 2;
     const ini = run;
     d.partes.forEach(pt => {
       const de = run, ate = run + pt.v;
@@ -206,6 +219,7 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
     lx += larg[k] + gapL;
   });
 
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (totais por conta) · % = degrau sobre o ritmo ' + a.ritmo +
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (totais por conta)' + (temAnt ? ' · Orç ' + a.orcAnt + ' em cinza, fora da ponte' : '') +
+    ' · % = degrau sobre o ritmo ' + a.ritmo +
     (notas.length ? ' e Despesas-Mensal (dezembro do ritmo)' : '') + ' · ' + cid.nome);
 }

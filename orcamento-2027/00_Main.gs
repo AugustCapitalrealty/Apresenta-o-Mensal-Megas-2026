@@ -241,7 +241,8 @@ function _orcGerarCidade_(deck, W, H, chave) {
       let adi = null;
       try { adi = _orcAdiados2026_(cid, dados); }
       catch (e) { Logger.log('Obras adiadas de ' + cid.nome + ' indisponíveis: ' + e.message); }
-      if (adi) comSelo('Por que a manutenção sobe', [contas[0].chave],
+      // Desde 09/10/2026 também no Mega sem obra adiada (com o Orç anterior na ponte, nos três Megas).
+      comSelo('Por que a manutenção sobe', [contas[0].chave],
         s => gerarSlidePorQueSobe_(s, W, H, cid, visao.rel, contas[0], adi));
       // V16 (09/10/2026): o resto da alta aberto item a item, pelos pares do
       // gestor — também no Mega sem obra adiada (aí é a alta inteira).

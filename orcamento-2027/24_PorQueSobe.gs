@@ -44,6 +44,38 @@ function _orcNomeObra_(s) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+// Quadro da direita do "por que sobe" no Mega sem obra adiada: Orç anterior,
+// Ritmo e Orç em R$ e R$/m² ao mês, e o Orç contra cada base. Quando a área
+// implícita muda muito (Esteio cresce com B1 e B2), diz que o R$ e o R$/m²
+// andam em sentidos diferentes — comparação honesta (analista, 07/10/2026).
+function _orcQuadroBasesManut_(slide, x, y, w, h, rel, v, areas) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, a = rel.anos;
+  _orcCard_(slide, x, y, w, h, 'Orçado, ritmo e orçamento da conta');
+  const m2 = (val, ar) => ar ? 'R$ ' + _orcM2_(val / ar / 12) : '–';
+  const var_ = (de, ate) => {
+    if (!(de > 0.5)) return { texto: '–' };
+    const d = ate / de - 1;
+    return { texto: (d >= 0 ? '▲ +' : '▼ −') + _orcPct_(Math.abs(d)), sentido: d > 0.005 ? 1 : (d < -0.005 ? -1 : 0) };
+  };
+  const linhas = [
+    { tipo: 'item', nome: 'Orç ' + a.orcAnt, celulas: [{ texto: _orcMoeda_(v.orcAnt) }, { texto: m2(v.orcAnt, areas.aAnt) }, var_(v.orcAnt, v.orc)] },
+    { tipo: 'item', nome: 'Ritmo ' + a.ritmo, celulas: [{ texto: _orcMoeda_(v.ritmo) }, { texto: m2(v.ritmo, areas.aRit) }, var_(v.ritmo, v.orc)] },
+    { tipo: 'total', nome: 'Orç ' + a.orc, celulas: [{ texto: _orcMoeda_(v.orc) }, { texto: m2(v.orc, areas.area) }, { texto: '' }] }
+  ];
+  const numW = (w - 20 - 90) / 3;
+  const yFim = _orcTabelaNum_(slide, x + 10, y + 26, w - 20, 16 + 15 * linhas.length, [
+    { titulo: 'BASE', w: 90 }, { titulo: 'R$ NO ANO', w: numW }, { titulo: 'R$/M² AO MÊS', w: numW, destaque: true },
+    { titulo: 'ORÇ ' + a.orc + ' × BASE', w: numW }
+  ], linhas, null);
+  let texto = 'Sem obras de ' + a.ritmo + ' adiadas para ' + a.orc + ' neste Mega (planilha de comparação do gestor). ' +
+              'A alta aberta item a item está no próximo slide.';
+  if (areas.area && areas.aRit && Math.abs(areas.area / areas.aRit - 1) > 0.1) {
+    texto += ' A área implícita muda de ' + _orcMilhar_(Math.round(areas.aRit / 1000)) + ' mil para ' +
+             _orcMilhar_(Math.round(areas.area / 1000)) + ' mil m² entre o Ritmo e o Orç: por isso o R$ e o R$/m² não andam juntos.';
+  }
+  _orcParagrafo_(slide, x + 12, yFim + 10, w - 24, 50, texto, { fs: 7.5, fsMin: 6, cor: C.textBody, fonte: T.body });
+}
+
 // R$/m² ao mês das demais variações ("+R$ 0,08/m²"): cada ano com a sua área
 // (a do Orç e a do Ritmo), por isso não é a diferença em R$ ÷ uma área só.
 function _orcM2Demais_(rel, v, totalAdiados) {
@@ -53,17 +85,23 @@ function _orcM2Demais_(rel, v, totalAdiados) {
   return (d >= 0 ? '+' : '−') + 'R$ ' + _orcM2_(Math.abs(d)) + '/m²';
 }
 
-function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
+// Mega sem obra adiada (adi null; Esteio): desde 09/10/2026 o slide sai também ("ter o orçado também nos 3 Megas"),
+// com a ponte Orç → Ritmo → variação → Orç e, à direita, o quadro Orç anterior × Ritmo × Orç em R$ e R$/m².
+function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adiOuNull) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
+  const adi = adiOuNull || { itens: [], total: 0, total2026: 0 }, comAdi = adi.total > 0.5;
   const v = conta.v, a = rel.anos;
   const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
   const aAnt = _orcAreaImplicita_(rel, 'orcAnt') || aRit;
   const m2 = (x, ar) => ar ? 'R$ ' + _orcM2_(x / ar / 12) + '/m²' : '';
   const alta = v.orc - v.ritmo, demais = alta - adi.total, semAdiados = v.orc - adi.total;
   const pct = x => v.ritmo ? (x >= 0 ? '+' : '−') + _orcPct_(Math.abs(x / v.ritmo)) : '–';
-  _orcHeader_(slide, W, 'Por que a manutenção sobe — Orçamento ' + a.orc,
-    'Ritmo ' + a.ritmo + ' → Orç ' + a.orc + ': ' + pct(alta) + '; sem as obras adiadas de ' + a.ritmo + ': ' +
-    pct(semAdiados - v.ritmo) + ' · ' + cid.nome);
+  const pctAnt = x => v.orcAnt > 0.5 ? (x >= 0 ? '+' : '−') + _orcPct_(Math.abs(x / v.orcAnt)) : '–';
+  _orcHeader_(slide, W, 'Por que a manutenção sobe — Orçamento ' + a.orc, comAdi
+    ? 'Ritmo ' + a.ritmo + ' → Orç ' + a.orc + ': ' + pct(alta) + '; sem as obras adiadas de ' + a.ritmo + ': ' +
+      pct(semAdiados - v.ritmo) + ' · ' + cid.nome
+    : 'Ritmo ' + a.ritmo + ' → Orç ' + a.orc + ': ' + pct(alta) + '; Orç ' + a.orcAnt + ' → Orç ' + a.orc + ': ' +
+      pctAnt(v.orc - v.orcAnt) + ' · ' + cid.nome);
 
   // ---- Ponte (esquerda) ----
   const cy = 74, ch = H - 28 - cy, cw = (W - MX * 2) * 0.44, cx = MX;
@@ -72,16 +110,16 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   // primeiro, em cinza e fora da cascata (a ponte continua Ritmo → Orç).
   const temAnt = v.orcAnt > 0.5;
   const colunas = (temAnt ? [{ nome: 'Orç ' + a.orcAnt, de: 0, ate: v.orcAnt, cor: '#94A3B8', m2: m2(v.orcAnt, aAnt), comparativo: true }] : []).concat([
-    { nome: 'Ritmo ' + a.ritmo, de: 0, ate: v.ritmo, cor: C.brandDark, m2: m2(v.ritmo, aRit) },
+    { nome: 'Ritmo ' + a.ritmo, de: 0, ate: v.ritmo, cor: C.brandDark, m2: m2(v.ritmo, aRit) }
+  ], comAdi ? [
     // "OBRAS ADIADAS DE 2026" ia para 3 linhas e o ano saía cortado (07/10/2026).
-    { nome: 'Obras adiadas', de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight,
-      m2: area ? '+' + m2(adi.total, area) : '' },
-    { nome: 'Demais variações', de: v.ritmo + adi.total, ate: v.orc,
+    { nome: 'Obras adiadas', de: v.ritmo, ate: v.ritmo + adi.total, cor: C.brandLight, delta: true, destaque: true,
+      m2: area ? '+' + m2(adi.total, area) : '' }] : [], [
+    { nome: comAdi ? 'Demais variações' : 'Variação', de: v.ritmo + adi.total, ate: v.orc, delta: true,
       cor: demais >= 0 ? _ORC_COR_VAR.sobe : _ORC_COR_VAR.desce, m2: _orcM2Demais_(rel, v, adi.total) },
     // "ORÇAMENTO 2027" quebrava no meio da palavra ("ORÇAMENT / O 2027", Guilherme, 09/10/2026).
     { nome: 'Orç ' + a.orc, de: 0, ate: v.orc, cor: C.brandDark, m2: m2(v.orc, area) }
   ]);
-  const i0 = temAnt ? 1 : 0;   // índice da coluna do Ritmo
   const px = cx + 14, pw = cw - 28, topo = cy + 50, base = cy + ch - 74;
   const maxV = Math.max(v.ritmo, v.orc, v.ritmo + adi.total, temAnt ? v.orcAnt : 0) * 1.08;
   const y = x => base - (base - topo) * x / maxV;
@@ -90,8 +128,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   colunas.forEach((c, i) => {
     const bx = px + i * colW + (colW - barW) / 2, y1 = y(Math.max(c.de, c.ate)), y2 = y(Math.min(c.de, c.ate));
     _orcRet_(slide, bx, y1, barW, Math.max(0.8, y2 - y1), c.cor);
-    const delta = i === i0 + 1 || i === i0 + 2;
-    const txt = delta ? _orcDeltaMil_(c.ate - c.de) + ' mil' : _orcCompacto_(c.ate);
+    const txt = c.delta ? _orcDeltaMil_(c.ate - c.de) + ' mil' : _orcCompacto_(c.ate);
     _orcUmaLinha_(slide, px + i * colW, y1 - 24, colW, 12, txt,
       { align: 'C', fs: 8, bold: true, cor: c.cor, fonte: T.titles, folga: 4, fsMin: 6 });
     if (c.m2) {
@@ -99,7 +136,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
         { align: 'C', fs: 6.5, cor: C.textBody, fonte: T.body, folga: 4, fsMin: 5.5 });
     }
     _orcParagrafo_(slide, px + i * colW - 2, base + 3, colW + 4, 22, c.nome.toUpperCase(),
-      { align: 'C', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.titles, cor: i === i0 + 1 ? C.brandLight : C.textBody });
+      { align: 'C', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.titles, cor: c.destaque ? C.brandLight : C.textBody });
   });
   // Separador entre o comparativo (Orç do ano anterior) e a cascata.
   if (temAnt) _orcLinha_(slide, px + colW, topo - 6, px + colW, base, C.lines, 0.75);
@@ -107,13 +144,20 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adi) {
   const ly = base + 30;
   _orcRet_(slide, cx + 12, ly, cw - 24, 30, C.brandTint, { redondo: true });
   _orcRet_(slide, cx + 12, ly, 3, 30, C.brandLight);
-  _orcParagrafo_(slide, cx + 20, ly + 2, cw - 36, 26,
-    'Sem as obras adiadas: ' + _orcCompacto_(semAdiados) + (area ? ' · ' + m2(semAdiados, area) + ' ao mês' : '') +
-    ' · ' + pct(semAdiados - v.ritmo) + ' contra o Ritmo ' + a.ritmo + ' (com elas, ' + pct(alta) + ')',
+  _orcParagrafo_(slide, cx + 20, ly + 2, cw - 36, 26, comAdi
+    ? 'Sem as obras adiadas: ' + _orcCompacto_(semAdiados) + (area ? ' · ' + m2(semAdiados, area) + ' ao mês' : '') +
+      ' · ' + pct(semAdiados - v.ritmo) + ' contra o Ritmo ' + a.ritmo + ' (com elas, ' + pct(alta) + ')'
+    : 'Orç ' + a.orc + ': ' + _orcCompacto_(v.orc) + (area ? ' · ' + m2(v.orc, area) + ' ao mês' : '') + ' · ' +
+      pct(alta) + ' contra o Ritmo ' + a.ritmo + ' e ' + pctAnt(v.orc - v.orcAnt) + ' contra o Orç ' + a.orcAnt,
     { fs: 8, fsMin: 6.5, bold: true, cor: C.brandDark, fonte: T.body, meio: true });
 
-  // ---- As obras (direita) ----
   const tx = cx + cw + 12, tw = W - MX - tx;
+  if (!comAdi) {
+    _orcQuadroBasesManut_(slide, tx, cy, tw, ch, rel, v, { area: area, aRit: aRit, aAnt: aAnt });
+    _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · área implícita = total ÷ R$/m² ÷ 12 · ' + cid.nome);
+    return;
+  }
+  // ---- As obras (direita) ----
   _orcCard_(slide, tx, cy, tw, ch, 'As obras de ' + a.ritmo + ' que ficaram para ' + a.orc);
   const linhas = adi.itens.map(it => ({ tipo: 'item', nome: it.nome, celulas: [
     { texto: _orcMoeda_(it.orc2026) }, { texto: _orcMoeda_(it.orc2027), bold: true }] }));
