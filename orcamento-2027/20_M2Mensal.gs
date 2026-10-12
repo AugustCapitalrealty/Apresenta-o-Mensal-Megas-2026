@@ -43,10 +43,15 @@ function _orcM2Mensal_(rel, mensal, realAnt) {
   const area = {};
   ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => { area[k] = _orcAreaImplicita_(rel, k); });
   if (!area.orcAnt) area.orcAnt = area.ritmo;
+  // Real do ano retrasado com a área do rateio de cada mês (rel.areaMesesReal):
+  // cada mês ÷ a sua área, e a média = total ÷ soma das áreas (a do DRE e da
+  // tabela) — não a média simples dos doze R$/m².
   const serie = (k, reais) => {
-    const meses = reais.map(v => area[k] ? v / area[k] : null);
-    return { k: k, nome: nomes[k], meses: meses, area: area[k],
-             media: area[k] ? meses.reduce((t, v) => t + v, 0) / 12 : null };
+    const am = k === 'real' && rel.areaMesesReal ? rel.areaMesesReal : null;
+    const meses = reais.map((v, i) => am ? v / am[i] : (area[k] ? v / area[k] : null));
+    const media = am ? reais.reduce((t, v) => t + v, 0) / am.reduce((t, x) => t + x, 0)
+                     : (area[k] ? meses.reduce((t, v) => t + v, 0) / 12 : null);
+    return { k: k, nome: nomes[k], meses: meses, area: area[k], media: media };
   };
 
   const series = [];

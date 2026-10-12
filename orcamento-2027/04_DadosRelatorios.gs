@@ -97,7 +97,21 @@ function obterRelatorioAnual_(chaveCidade, modelos) {
     _orcAplicarOrcDosModelos_(rel, _orcOrcDosModelos_(cid, modelos || _orcLinhasModelosCidade_(chaveCidade)));
   }
   _orcAplicarAreaAnoAnterior_(rel, ORC_AREA_ANO_ANTERIOR[chaveCidade]);
+  _orcAplicarAreaAnoRetrasado_(rel, ORC_AREA_ANO_RETRASADO_MESES[chaveCidade]);
   return rel;
+}
+
+// Real do ano retrasado pela área do rateio de cada mês (ORC_AREA_ANO_RETRASADO_MESES):
+// o R$/m² do ano é o total ÷ a soma das doze áreas — a área "do ano" vira a
+// média dos meses, que _orcAreaImplicita_ devolve. rel.areaMesesReal fica para
+// o mês a mês do custo por m² (20_M2Mensal.gs), cada mês com a sua área.
+function _orcAplicarAreaAnoRetrasado_(rel, meses) {
+  if (!meses || meses.length !== 12 || !meses.every(a => a > 0)) return;
+  const media = meses.reduce((t, a) => t + a, 0) / 12;
+  if (!rel.m2Total) rel.m2Total = { real: 0, orcAnt: 0, ritmo: 0, orc: 0 };
+  rel.m2Total.real = rel.total.real / media / 12;
+  if (rel.m2AreaComum) rel.m2AreaComum.real = rel.areaComum.real / media / 12;
+  rel.areaMesesReal = meses.slice();
 }
 
 // R$/m² do Orç e do Ritmo do ano anterior pela área oficial do condomínio

@@ -180,6 +180,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   `_orcAplicarAreaAnoAnterior_` refaz o R$/m² de 2026 com ela, e `_orcAreaImplicita_` passa a devolvê-la. Real 2025 e
   Orç 2027 seguem com a área da METRAGEM. Diferença < 0,1% da implícita; o degrau "demais variações" de Curitiba foi
   de +R$ 0,08 para +R$ 0,07/m². Teste 4761/4761.
+- **Área de 2025 mês a mês** (PDF da thread "Novo Rateio Megas", Kethli, Financeiro/Contábil; cada tabela a partir do mês
+  do e-mail): jan–abr fase 5B (06/11/2024), mai–jun fase 4 Itajaí parcial (08/05/2025), jul–dez armazém 6 de Itajaí
+  (01/07/2025) — `ORC_AREA_ANO_RETRASADO_MESES` (01_Config.gs), `_orcAplicarAreaAnoRetrasado_`. R$/m² do Real 2025 =
+  total ÷ soma das 12 áreas; no m² mês a mês cada mês usa a sua área (`rel.areaMesesReal`). Real 2025: Curitiba
+  3,51 → 3,61; Itajaí 3,58 → 3,64; Esteio 6,86 → 6,88 (a METRAGEM usava outra área). Teste 4767/4767.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

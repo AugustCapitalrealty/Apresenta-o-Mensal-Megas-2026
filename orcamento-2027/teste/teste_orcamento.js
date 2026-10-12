@@ -1399,6 +1399,16 @@ const MODELO_SEC = {};
       perto(rel.m2Total.ritmo, rel.total.ritmo / G.ORC_AREA_ANO_ANTERIOR[chave] / 12, c + ': R$/m² do Ritmo 2026 pela área do rateio');
       const ofM = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json'));
       perto(G._orcAreaImplicita_(rel, 'orc'), G._orcAreaImplicita_(ofM, 'orc'), c + ': área do Orç 2027 continua a da METRAGEM');
+      // 2025: a área do rateio de cada mês (e-mails "Novo Rateio Megas"); o ano usa a média dos doze meses.
+      const am = G.ORC_AREA_ANO_RETRASADO_MESES[chave], mediaAm = am.reduce((t, x) => t + x, 0) / 12;
+      perto(G._orcAreaImplicita_(rel, 'real'), mediaAm, c + ': área do Real 2025 = média do rateio mês a mês');
+      if (chave === 'ITAJAI') {
+        ok(am[3] === 63960.39 && am[4] === 100061.58 && am[6] === 108165.91 && Math.abs(mediaAm - 92080.015) < 0.01,
+           'itajai: 2025 com fase 5B até abr, fase 4 parcial em mai–jun e armazém 6 a partir de jul (média ' + mediaAm.toFixed(2) + ')');
+        const s25 = G._orcM2Mensal_(rel, vis.mensal, vis.realAnt).series.filter(s => s.k === 'real')[0];
+        perto(s25.meses[0], vis.realAnt.ac[0] / 63960.39, 'itajai: R$/m² de jan/2025 pela área de jan (63.960 m²)');
+        perto(s25.meses[11], vis.realAnt.ac[11] / 108165.91, 'itajai: R$/m² de dez/2025 pela área de dez (108.166 m²)');
+      }
       pertoReal(G.obterManutencao_(chave).total, conta('Manutenção de imóveis').v.orc, c + ' (exportação nova): manutenção das categorias = DRE');
       G.ORC_CONTAS_DETALHE.forEach(n => {
         const comp = G._orcComposicaoConta_(conta(n), vis.modelos);
