@@ -31,6 +31,13 @@ planilhas mudarem — perguntado ao Guilherme, não mexer sem decisão.
 Export novo (12/10 19h07): 147 slides; Esteio ganhou o 044 "Subst. Chicote Elétrico do Trator 03" (título interno
 copiado "PINTURA DA TUBULAÇÃO…"); Itajaí agora 78–95.
 
+**Português (12/10, 19h18, `d857fa1`):** varredura `node ferramentas/diagnostico/ortografia.js teste` nos três
+Megas — só dois erros nos slides gerados, corrigidos: "CHICOTE ELÉTRICA" → "ELÉTRICO" (proposta revista; o
+Guilherme roda `aplicarPropostasTextos()` e gera o Esteio) e "eletronicos" (23_DecisoesGestor.gs). Os erros
+dos slides DO GESTOR na v3 (28–44, 78–82: "aprimentos", "Eventos de Atípicos", "METEREOLÓGICA", "linha de
+vertical", "Portário/Garam", "suscetíveis", títulos internos copiados de outro slide, LOCAL errado no Canal
+BR 116…) foram passados ao Guilherme como lista para corrigir à mão — a v3 não é tocada.
+
 **Missão anterior — slides da Moked (Esteio) e a ordem do gestor:**
 1. O Guilherme vai rodar `exportarSlidesVersaoGestor()` (03_Exportar.gs, só leitura) na
    "FACILITIES - APRESENTAÇÃO ORÇAMENTO 2027 v3" (pasta VERSÕES, id `1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s`
