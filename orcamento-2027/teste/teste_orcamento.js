@@ -874,16 +874,21 @@ ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 3, 'Custo por m² depois 
      'Registro fotográfico: 1, 2 e 3 fotos com a descrição, marcados como slides do gestor (' + fotos.map(espacos).join() + ')');
 }
 // As demais variações item a item (V16): os degraus somam exatamente o "demais
-// variações" da ponte; o ritmo item a item × METRAGEM aparece como degrau.
+// variações" da ponte. A diferença ritmo item a item × METRAGEM não vira degrau
+// (Guilherme, 12/10/2026, nos três Megas): fica em "não se repetem".
 {
   const adiC = G._orcAdiados2026_(CUR, G.obterManutencao_('CURITIBA'));
+  LOG.length = 0;
   const vi = G._orcVariacoesItens_(CUR, G.obterManutencao_('CURITIBA'), contasLL[0], adiC);
   const vM = contasLL[0].v, soma = vi.blocos.reduce((t, b) => t + b.v, 0);
   ok(N_VAR === 1 && titulo(slides[iVar]) === 'Por que a manutenção sobe: as demais variações',
      'demais variações logo depois do "por que sobe"');
   perto(soma, vM.orc - vM.ritmo - adiC.total, 'demais variações: os degraus fecham com a ponte (R$ ' + Math.round(soma) + ')');
-  ok(vi.blocos.length === 4 && /METRAGEM/.test(vi.blocos[3].nome) && vi.blocos[3].v < 0,
-     'demais variações: o ritmo item a item abaixo da METRAGEM vira degrau (' + vi.blocos.map(b => b.nome + ' ' + Math.round(b.v)).join(' | ') + ')');
+  ok(vi.blocos.length === 3 && !vi.blocos.some(b => /METRAGEM|090/.test(b.nome + b.curto + b.expl)) &&
+     /^gastos do Ritmo 2026 sem item em 2027$/.test(vi.blocos[2].expl) && LOG.some(l => /item a item .* × METRAGEM .*não se repetem/.test(l)),
+     'demais variações: sem degrau "METRAGEM × itens" — a diferença fica em "não se repetem" e no log (' +
+     vi.blocos.map(b => b.curto + ' ' + Math.round(b.v)).join(' | ') + ')');
+  ok(!textos(slides[iVar]).some(t => /METRAGEM × itens|METRAGEM × ITENS|controladoria/.test(t)), 'demais variações: o slide não fala em METRAGEM × itens');
   ok(vi.altas.length === 5 && vi.quedas.length === 5 && vi.altas[0].d >= vi.altas[4].d && vi.quedas[0].d <= vi.quedas[4].d,
      'demais variações: 5 maiores altas e 5 maiores quedas, em ordem');
   const tV = textos(slides[iVar]);

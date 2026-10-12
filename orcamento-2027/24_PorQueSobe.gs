@@ -196,10 +196,13 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adiOuNull) {
 //   mesmo serviço     → pares SIM (Ritmo 2026 do par × itens de 2027 no 090);
 //   não se repetem    → gastos do Ritmo 2026 sem par (semPar) e o ritmo das
 //                       obras adiadas (o valor de 2027 delas já está no degrau
-//                       das obras);
-//   e as duas diferenças entre as fontes, quando existem: o ritmo item a item
-//   × o da METRAGEM (pendência com a controladoria) e o modelo 090 × o Orç da
-//   METRAGEM. Os degraus somam exatamente o "demais variações" da ponte.
+//                       das obras).
+// Os degraus somam exatamente o "demais variações" da ponte. As diferenças
+// entre as fontes não viram degrau (Guilherme, 12/10/2026: "METRAGEM × itens
+// vai gerar muita pergunta que não vamos conseguir responder", nos três
+// Megas): o Ritmo da METRAGEM que a soma item a item não alcança fica em "não
+// se repetem" (o Ritmo da conta menos o dos pares) e o Orç que o modelo não
+// alcança, em "itens novos". As duas vão para o log.
 // null sem as decisões na base ritmo (semPar) ou sem o modelo.
 function _orcVariacoesItens_(cid, dados, conta, adi) {
   const dec = ORC_DECISOES_GESTOR[cid.nome];
@@ -231,26 +234,22 @@ function _orcVariacoesItens_(cid, dados, conta, adi) {
   const p26 = soma(pares, x => x.v26), p27 = soma(pares, x => x.v27);
   const s26 = soma(semPar, x => x.v26) + soma(dec.adiados || [], a => a.ritmo2026 || 0);
   const a26 = ORC_ANO - 1, a27 = ORC_ANO;
-  // As diferenças entre as fontes ficam à vista, em vez de sumir num degrau;
-  // centavos (menos de R$ 0,50) vão para o degrau vizinho, para a soma fechar.
+  // Diferença entre as fontes (ritmo item a item × METRAGEM, modelo × Orç da
+  // conta) não vira degrau: fica no degrau da sua ponta e no log.
   const ritmoItens = p26 + s26;
   const difRitmo = Math.abs(ritmoItens - v.ritmo) >= 0.5, difOrc = Math.abs(v.orc - dados.total) >= 0.5;
+  if (difRitmo) Logger.log(cid.nome + ', demais variações: Ritmo ' + a26 + ' item a item ' + _orcMoeda_(ritmoItens) +
+                           ' × METRAGEM ' + _orcMoeda_(v.ritmo) + ' — a diferença fica em "não se repetem"');
+  if (difOrc) Logger.log(cid.nome + ', demais variações: modelo ' + _orcMoeda_(dados.total) + ' × Orç ' + a27 + ' ' +
+                         _orcMoeda_(v.orc) + ' — a diferença fica em "itens novos"');
   const blocos = [
-    { nome: 'Itens novos em ' + a27, curto: 'Itens novos', expl: novos.length + ' itens sem gasto parecido no Ritmo ' + a26,
-      v: (difOrc ? dados.total : v.orc) - totAdi - p27 },
+    { nome: 'Itens novos em ' + a27, curto: 'Itens novos', v: v.orc - totAdi - p27,
+      expl: difOrc ? 'gastos de ' + a27 + ' sem gasto parecido no Ritmo ' + a26 : novos.length + ' itens sem gasto parecido no Ritmo ' + a26 },
     { nome: 'Mesmo serviço nos dois anos', curto: 'Mesmo serviço', expl: pares.length + ' pares ligados pelo gestor' +
       (totAdi ? ' (sem as obras adiadas)' : '') + ': reajuste, área nova, escopo', v: p27 - p26 },
-    { nome: 'Gastos de ' + a26 + ' que não se repetem', curto: 'Não se repetem', expl: semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27,
-      v: -(difRitmo ? s26 : v.ritmo - p26) }
+    { nome: 'Gastos de ' + a26 + ' que não se repetem', curto: 'Não se repetem', v: -(v.ritmo - p26),
+      expl: difRitmo ? 'gastos do Ritmo ' + a26 + ' sem item em ' + a27 : semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27 }
   ];
-  if (difRitmo) {
-    blocos.push({ nome: 'Ritmo da METRAGEM × soma dos itens', curto: 'METRAGEM × itens', v: ritmoItens - v.ritmo,
-      expl: 'a soma item a item ' + (ritmoItens < v.ritmo ? 'fica abaixo' : 'passa') + ' da METRAGEM (a conferir com a controladoria)' });
-  }
-  if (difOrc) {
-    blocos.push({ nome: 'Modelo 090 × Orç da METRAGEM', curto: '090 × METRAGEM', v: v.orc - dados.total,
-      expl: 'os itens do modelo somam ' + (dados.total > v.orc ? 'mais' : 'menos') + ' que o Orç da METRAGEM (pendência)' });
-  }
   const cand = pares.concat(novos, semPar).map(x => Object.assign(x, { d: x.v27 - x.v26 }));
   return { blocos: blocos, demais: v.orc - v.ritmo - totAdi, totAdi: totAdi, nCand: cand.length,
            altas: cand.filter(x => x.d > 0.5).sort((x, y) => y.d - x.d).slice(0, 5),

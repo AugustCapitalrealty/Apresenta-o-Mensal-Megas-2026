@@ -223,6 +223,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   (começou em mai/26)". **Curitiba paga a Lovable em 2026, mas o cadastro de 2027 não tem a linha** (~R$ 67/mês).
   Guilherme: "é um valor pequeno, se aparecer você troca" — fica assim; quando a Lovable de Curitiba aparecer num
   cadastro/modelo de 2027, ou o razão de Assistência em informática do Esteio/Itajaí, trocar sem perguntar.
+- **"Demais variações" sem o degrau "METRAGEM × itens"** (Guilherme: "vai gerar muita pergunta que não vamos conseguir
+  responder", nos três Megas). A diferença entre o Ritmo item a item e o da METRAGEM fica em "não se repetem" (Ritmo da
+  conta − Ritmo dos pares; legenda "gastos do Ritmo 2026 sem item em 2027") e a do modelo × Orç, em "itens novos"; as
+  duas vão para o log (`_orcVariacoesItens_`). Hoje: Curitiba −87 mil, Itajaí −78 mil, Esteio +117 mil. Teste 4761/4761
+  (3 asserções a menos = as formas do degrau que saiu).
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
