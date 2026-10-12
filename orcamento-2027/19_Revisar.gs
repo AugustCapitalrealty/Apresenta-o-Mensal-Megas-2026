@@ -95,16 +95,18 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
     out.push({ nome: c ? c.nome : r.conta, chave: chave, tipo: (ORC_ANO - 1) + ' não identificado',
                texto: r.item + ' — sem ' + (ORC_ANO - 1) + ' nas fontes' });
   });
-  // Orç do ano calculado pelos modelos (orcDosModelos, 04_DadosRelatorios.gs):
-  // lembrete de que é prévia e o que saiu diferente da METRAGEM. Sem chave,
-  // não põe selo nos slides.
-  if (rel.orcCalculado) {
-    const tipo = 'Orç ' + rel.anos.orc + ' calculado';
+  // Orç do ano conferido com os modelos (orcDosModelos, 04_DadosRelatorios.gs):
+  // só aparece o que a METRAGEM tinha diferente — METRAGEM que bate não gera
+  // nada (Guilherme, 12/10/2026: "se estiver batendo ok, se não ajusta").
+  // Sem chave, não põe selo nos slides.
+  const calc = rel.orcCalculado;
+  if (calc && (calc.mudou.length || calc.semConta.length)) {
+    const tipo = 'Orç ' + rel.anos.orc + ' ajustado';
     out.push({ nome: 'METRAGEM-COND', chave: '', tipo: tipo,
-               texto: 'modelos 070/090 + contratos; a controladoria ainda não fechou' });
-    rel.orcCalculado.mudou.forEach(m => out.push({ nome: m.nome, chave: '', tipo: tipo,
+               texto: 'não bate com os modelos 070/090 + contratos; o deck usa os modelos' });
+    calc.mudou.forEach(m => out.push({ nome: m.nome, chave: '', tipo: tipo,
       texto: 'METRAGEM ' + _orcMoeda_(m.metragem) + ' → modelos ' + _orcMoeda_(m.calculado) }));
-    rel.orcCalculado.semConta.forEach(s => out.push({ nome: s.nome, chave: '', tipo: 'Sem linha na METRAGEM',
+    calc.semConta.forEach(s => out.push({ nome: s.nome, chave: '', tipo: 'Sem linha na METRAGEM',
       texto: _orcMoeda_(s.total) + ' nos modelos, fora do total' }));
   }
   (ORC_PENDENCIAS_GESTOR[cid.nome] || []).forEach(p => {

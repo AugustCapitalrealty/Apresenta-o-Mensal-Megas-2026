@@ -122,11 +122,13 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   seguem da METRAGEM; a área também (R$/m² refeito com ela). Ficam com a METRAGEM: contas zeradas nos modelos
   (Representação e refeição) e `valeMetragem` (IPTU e Seguro de Curitiba). Sinônimos em `ORC_CONTAS_SINONIMOS`.
 - Motivo do Guilherme: "não podemos ter slides que um número fala uma coisa e no outro fala outro". Com isso a
-  manutenção da DRE/ponte = a dos slides de categoria, e some a pendência "Modelos acima da METRAGEM". O slide de
-  revisão lista "Orç 2027 calculado" e o que mudou (METRAGEM → modelos). Ofensores não mostra item maior que a conta.
+  manutenção da DRE/ponte = a dos slides de categoria, e some a pendência "Modelos acima da METRAGEM". Se a METRAGEM
+  não bate, o slide de revisão lista "Orç 2027 ajustado" e o que mudou (METRAGEM → modelos). Ofensores não mostra item maior que a conta.
 - Com as fixtures de 08/10: Itajaí R$ 6.605.554 (+29.313), Esteio R$ 4.222.639 (+15.268), Curitiba igual.
   Teste: seção "Orç 2027 calculado pelos modelos"; o resto do teste roda com a opção desligada (fluxo oficial).
-- **Quando a METRAGEM nova chegar:** `orcDosModelos: false` (ou apagar a linha) nos três Megas.
+- **Fica ligado para sempre** (Guilherme, 12/10: "não preciso avisar se chegar outra METRAGEM; calcule, se estiver
+  batendo ok, se não ajusta"). METRAGEM que bate com os modelos não gera aviso; a que não bate vira "Orç 2027
+  ajustado" no slide de revisão, conta a conta. Não desligar.
 - Sem Python (antivírus, 12/10): imagens dos gráficos não são redesenhadas; slide com número novo sai "pelas formas".
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá

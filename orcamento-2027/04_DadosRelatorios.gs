@@ -95,8 +95,10 @@ function obterRelatorioAnual_(chaveCidade, modelos) {
 // ==========================================
 // ORÇ DO ANO CALCULADO PELOS MODELOS (relatorios.orcDosModelos)
 // ==========================================
-// Out/2026: os modelos 070/090 e os contratos foram atualizados, mas a
-// controladoria não fecha a METRAGEM a tempo. Com orcDosModelos ligado, a
+// Out/2026: os modelos 070/090 e os contratos são atualizados antes de a
+// controladoria fechar a METRAGEM. Com orcDosModelos ligado (sempre, também
+// com METRAGEM nova: batendo, nada muda; não batendo, valem os modelos e a
+// diferença vai para o slide de revisão), a
 // coluna Orç do ano de cada conta passa a ser a soma dos modelos + contratos
 // (no anual e no mês a mês); Real, Orç e Ritmo do ano anterior continuam os
 // da METRAGEM. Conta que os modelos não trazem (ou trazem zerada) e as de

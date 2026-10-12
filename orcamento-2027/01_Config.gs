@@ -54,10 +54,11 @@ const ORC_CIDADES = {
       // −R$ 10.645 no Orç 2027). Ficam sem o ⚠ REVISAR e fora do slide de
       // revisão; a divergência só vai para o log.
       valeMetragem: ['IPTU', 'Seguro'],
-      // Orç 2027 de cada conta = modelos 070/090 + contratos, no lugar da
-      // METRAGEM (12/10/2026: a controladoria não fecha a METRAGEM a tempo).
-      // Real 2025, Orç e Ritmo 2026 seguem da METRAGEM. Quando ela chegar
-      // atualizada, false. Ver 04_DadosRelatorios.gs.
+      // Orç 2027 de cada conta = modelos 070/090 + contratos, conferido com a
+      // METRAGEM a cada geração (12/10/2026): batendo, nada aparece; não
+      // batendo, vale o dos modelos e a diferença vai para o slide de revisão.
+      // Fica ligado também com METRAGEM nova — não precisa mexer.
+      // Real 2025, Orç e Ritmo 2026 seguem da METRAGEM. Ver 04_DadosRelatorios.gs.
       orcDosModelos: true
     },
     // Contratos: do cadastro mestre do ano, como Itajaí e Esteio (pedido do

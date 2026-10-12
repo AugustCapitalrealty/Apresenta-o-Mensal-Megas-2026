@@ -1372,6 +1372,24 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
        (rel.orcCalculado ? rel.orcCalculado.semConta.map(s => s.nome).join(', ') : 'sem orcCalculado') + ')');
     ok(rel.orcCalculado.mudou.some(m => m.nome === 'Manutenção de imóveis') === (degrau > 0),
        c + ': lista o que mudou (' + rel.orcCalculado.mudou.map(m => m.nome).join(', ') + ')');
+    if (degrau) {
+      // Chega a METRAGEM nova, já com a manutenção dos modelos: nada a ajustar,
+      // nenhum aviso — sem mexer no 01_Config.gs.
+      const nova = fixture('fixture_metragem_' + c + '.json'), dif = manut - manutOf;
+      const col = nova[0].findIndex(h => /^orca? 2027$/.test(G._orcNorm_(String(h))));
+      nova.forEach((r, i) => {
+        const n = G._orcNorm_(String(r[0]));
+        if (i && (/^manutencao de imoveis/.test(n) || /^total area comum/.test(n))) r[col] -= dif;
+      });
+      porId[cid.relatorios.metragemId] = nova;
+      const relNova = G.obterRelatorioAnual_(chave);
+      ok(!relNova.avisos.length && !relNova.orcCalculado.mudou.length &&
+         !G._orcPendencias_(cid, relNova, null, G._orcLinhasModelosCidade_(chave)).some(p => /ajustado/.test(p.tipo)),
+         c + ': METRAGEM nova que bate com os modelos — nada ajustado, nenhum aviso (' +
+         relNova.avisos.concat(relNova.orcCalculado.mudou.map(m => m.nome)).join(' | ') + ')');
+      pertoReal(relNova.total.orc, rel.total.orc, c + ': METRAGEM nova e Orç calculado dão o mesmo total');
+      porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '.json');
+    }
     // Mês a mês: os 12 meses fecham com o anual — nenhum ⚠ REVISAR novo.
     G._orcConferirMensal_(rel, mensal, cid.relatorios.valeMetragem);
     ok(!rel.revisar.length, c + ': mensal fecha com o Orç calculado (' + rel.revisar.map(r => r.nome).join(', ') + ')');
@@ -1396,9 +1414,14 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
     const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
     ok(!comFalha.length, c + ' (Orç calculado): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
     const iRev = titulos.indexOf('Revisar antes da versão final'), tRev = iRev >= 0 ? textos(sl[iRev]) : [];
-    ok(iRev === 1 && tRev.indexOf('Orç 2027 calculado') >= 0 &&
-       tRev.indexOf('modelos 070/090 + contratos; a controladoria ainda não fechou') >= 0,
-       c + ' (Orç calculado): revisão avisa que o Orç 2027 é dos modelos');
+    // METRAGEM que bate não gera aviso; a que não bate vira "Orç 2027 ajustado" (12/10/2026).
+    const ajustado = tRev.indexOf('Orç 2027 ajustado') >= 0 &&
+      tRev.indexOf('não bate com os modelos 070/090 + contratos; o deck usa os modelos') >= 0;
+    ok(degrau ? iRev === 1 && ajustado : !ajustado,
+       c + (degrau ? ' (Orç calculado): revisão avisa que a METRAGEM foi ajustada pelos modelos'
+                   : ' (Orç calculado): METRAGEM bate — sem aviso de ajuste'));
+    ok(rel.orcCalculado.mudou.length === 0 || degrau > 0,
+       c + ': METRAGEM que bate não lista nada (' + rel.orcCalculado.mudou.map(m => m.nome).join(', ') + ')');
     ok(tRev.indexOf('Modelos acima da METRAGEM') < 0, c + ' (Orç calculado): sem a pendência "Modelos acima da METRAGEM"');
     if (degrau) ok(tRev.some(t => /^METRAGEM R\$ .* → modelos R\$ /.test(t)), c + ' (Orç calculado): revisão mostra METRAGEM → modelos');
     // O selo só fica se houver pergunta em aberto do gestor (ORC_PENDENCIAS_GESTOR), não por divergência de fonte.
