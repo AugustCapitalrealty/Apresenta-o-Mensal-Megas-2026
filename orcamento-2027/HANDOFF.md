@@ -7,6 +7,51 @@ reinício). O que importa sobre o projeto está aqui, no
 [`README.md`](README.md) (referência técnica completa) e no
 [`PASSO-A-PASSO.md`](PASSO-A-PASSO.md) (o que o usuário roda no editor).
 
+## 0. COMECE AQUI — onde parou (12/10/2026, ~18h30; apresentação em 13/10)
+
+Tudo commitado/pushado (último código: `ac18e31`) e publicado (clasp 18:24). A próxima sessão
+**não tem o conector do Drive**: leia os arquivos pelo G: (os `.gsheet/.gslides` são atalhos e
+não abrem — peça ao Guilherme para rodar as funções de exportação, que gravam no G:).
+
+**Missão em aberto — slides da Moked (Esteio) e a ordem do gestor:**
+1. O Guilherme vai rodar `exportarSlidesVersaoGestor()` (03_Exportar.gs, só leitura) na
+   "FACILITIES - APRESENTAÇÃO ORÇAMENTO 2027 v3" (pasta VERSÕES, id `1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s`
+   — cópia de trabalho do gestor; o gerador escreve em outro deck, `1w_di…`, e NÃO mexe na v3).
+   Resultado em `G:\…\APRESENTAÇÃO ORÇAMENTO\_slides-versao-gestor\`: `ordem.txt` (todos os slides,
+   em ordem, "GESTOR"/"gerado") e `slide_NNN.png` dos slides do gestor. Leia com a ferramenta de imagem.
+2. Aprender a **ordem** que o gestor propõe (pelo texto: no Esteio ele pôs o bloco Implantação
+   Moked + Substituição Segurança logo depois de "Manutenção: projetos × custo recorrente", e as
+   fotos de obras entre "itens de cada grupo (1/2)" e "(2/2)") e o **estilo** dos slides dele
+   (molde de fotos de 26_Fotos.gs: título "Tema | Assunto", subtítulo "· Mega X", cartão, foto,
+   título interno em maiúsculas, CONTA/LOCAL/VALOR, rodapé "Fotos e textos preenchidos pelo gestor").
+3. Melhorar os slides **"Implantação Moked"** com o relatório da Moked (09/10/2026), salvo em
+   `G:\…\APRESENTAÇÃO ORÇAMENTO\01 - CONTROLE DA APRESENTAÇÃO\MOKED - REFERÊNCIA\` (HTML legível +
+   PDF). Proposta já mostrada ao Guilherme (5 slides, no estilo do gestor, numa apresentação
+   SEPARADA para ele copiar para a v3 — não editar a v3): (a) o que a Moked registra — 3.643 registros,
+   P311A Curitiba 2.891 desde mar/23, P311B Itajaí 752 desde abr/25, por área; (b) perfil das
+   ocorrências (colisões ≥143/≥102, cancelas ≥106/≥79, saúde ≥121/≥18…) e evolução por ano;
+   (c) controles MokLog mai–out/26 (sistemas 95–100%, ambulância 25/17, iluminação 90,9%/81,9%,
+   bolsão, equipe 11/16, 34 treinamentos, Brigada não aplicada); (d) caso invasão perimetral
+   27/02/2026; (e) frentes de atuação + custo no Esteio em 2027: R$ 7.948,98/mês (R$ 95.388/ano).
+   Ele ainda não aprovou o formato — confirme antes de construir.
+
+**Achados na v3 (o gestor está construindo a narrativa — só avisar, não mexer):** na seção do
+Itajaí, ~13 slides de fotos ainda com o texto-molde do Esteio ("Fachadas armazém A e B2",
+R$ 50.000); Linha de Vida do Esteio diz R$ 15.270 mas o modelo tem R$ 1 por escada; a v3 é
+anterior aos ajustes das 17h37–18h04 e tem textos cortados (faltou `aplicarPropostasTextos()`).
+
+**Pendentes de resposta do Guilherme (não fazer sem o OK):** (1) tratar como retirado o item
+com R$ 1 no ano (Esteio: gera "R$ 2 da manutenção são projetos pontuais"); (2) tirar do rodapé de
+"Custo por m²" a frase "comparação com os outros Megas quando Itajaí e Esteio estiverem
+configurados". Para conferir com o gestor: Itajaí "Defensas anti-evasão – estac. leves (36 m)"
+R$ 59.497 = mesmo valor de "Elevação do piso da doca".
+
+**Scripts de diagnóstico (Node, sem Python):** `ferramentas/diagnostico/*.js` — rodam o harness
+do teste com as fixtures (`node ferramentas/diagnostico/geracao_final.js <caminho>/teste`):
+geracao_final (totais/falhas/cortados), contratos_itau, textos_itens, linhas_conta, demais_var,
+mede_detalhe (cabe na coluna?), compara_modelos + xlsx_matriz (exportação nova × fixture),
+lista_asserts (diff de asserções). A 1ª linha de cada um diz o uso.
+
 ## 1. O que é
 
 Projeto Apps Script que gera, no Google Slides, a apresentação do
