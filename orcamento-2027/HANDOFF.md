@@ -175,6 +175,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   R$ 760 set–dez = R$ 3.040 → `ORC_CONTRATOS_ANT_RITMO`, "Ano cheio (começou em set/26)" (2027: R$ 760 jan–ago e
   R$ 940 set–dez = R$ 9.840). **Único aviso que sobra nos três Megas: LPU Canaveral do Itajaí (V34)** — separar 2026
   entre contrato e fora do contrato pede o razão de 2026 do Itajaí por nota fiscal (como o CAS_1 de Curitiba).
+- **Área de 2026 travada** na tabela "Rateio 2026 - Com fase 6 CGS" (`ORC_AREA_ANO_ANTERIOR`, 01_Config.gs): Curitiba
+  120.577,91 · Itajaí 108.165,91 · Esteio 24.294,66 (total 253.038,48 m²), para o Orç e o Ritmo 2026.
+  `_orcAplicarAreaAnoAnterior_` refaz o R$/m² de 2026 com ela, e `_orcAreaImplicita_` passa a devolvê-la. Real 2025 e
+  Orç 2027 seguem com a área da METRAGEM. Diferença < 0,1% da implícita; o degrau "demais variações" de Curitiba foi
+  de +R$ 0,08 para +R$ 0,07/m². Teste 4761/4761.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
