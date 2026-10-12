@@ -28,27 +28,6 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 const ORC_MODELO_090_ID = '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U';   // MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES
 const ORC_MODELO_070_ID = '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY';   // MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES
 
-// Área de cada condomínio no ano anterior (2026), em m², da tabela "Rateio 2026 -
-// Com fase 6 CGS" (Guilherme, 12/10/2026: "para 2026 trave o tamanho dos
-// condomínios nesse"). Vale para o R$/m² do Orç e do Ritmo 2026 em todo slide;
-// antes a área saía da METRAGEM (total ÷ R$/m² ÷ 12, com o R$/m² arredondado).
-// Total dos três: 253.038,48 m². Real 2025 e Orç 2027 seguem com a área da METRAGEM.
-const ORC_AREA_ANO_ANTERIOR = { CURITIBA: 120577.91, ITAJAI: 108165.91, ESTEIO: 24294.66 };
-
-// Área mês a mês do ano retrasado (2025), dos e-mails "Novo Rateio Megas" do
-// Financeiro/Contábil (Kethli; PDF da thread, Guilherme, 12/10/2026: "ao longo
-// de 2025 o rateio mudou"), cada tabela a partir do mês do e-mail:
-//   jan–abr: "Rateio Megas com fase 5B" (06/11/2024)
-//   mai–jun: "Rateio Megas com fase 4 Itajaí parcial", provisório (08/05/2025)
-//   jul–dez: "Rateio 2025 - Com fase 4 de Itajaí", entrega do armazém 6 (01/07/2025)
-// O R$/m² do Real 2025 = total ÷ soma das 12 áreas (cada mês com a sua área).
-const _orcAreaMeses_ = (...trechos) => [].concat.apply([], trechos.map(([n, m2]) => Array(n).fill(m2)));
-const ORC_AREA_ANO_RETRASADO_MESES = {
-  CURITIBA: _orcAreaMeses_([12, 102937.17]),
-  ITAJAI:   _orcAreaMeses_([4, 63960.39], [2, 100061.58], [6, 108165.91]),
-  ESTEIO:   _orcAreaMeses_([6, 24268.27], [6, 24294.66])
-};
-
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide
 // em vez de desenhar números zerados.

@@ -175,16 +175,13 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   R$ 760 set–dez = R$ 3.040 → `ORC_CONTRATOS_ANT_RITMO`, "Ano cheio (começou em set/26)" (2027: R$ 760 jan–ago e
   R$ 940 set–dez = R$ 9.840). **Único aviso que sobra nos três Megas: LPU Canaveral do Itajaí (V34)** — separar 2026
   entre contrato e fora do contrato pede o razão de 2026 do Itajaí por nota fiscal (como o CAS_1 de Curitiba).
-- **Área de 2026 travada** na tabela "Rateio 2026 - Com fase 6 CGS" (`ORC_AREA_ANO_ANTERIOR`, 01_Config.gs): Curitiba
-  120.577,91 · Itajaí 108.165,91 · Esteio 24.294,66 (total 253.038,48 m²), para o Orç e o Ritmo 2026.
-  `_orcAplicarAreaAnoAnterior_` refaz o R$/m² de 2026 com ela, e `_orcAreaImplicita_` passa a devolvê-la. Real 2025 e
-  Orç 2027 seguem com a área da METRAGEM. Diferença < 0,1% da implícita; o degrau "demais variações" de Curitiba foi
-  de +R$ 0,08 para +R$ 0,07/m². Teste 4761/4761.
-- **Área de 2025 mês a mês** (PDF da thread "Novo Rateio Megas", Kethli, Financeiro/Contábil; cada tabela a partir do mês
-  do e-mail): jan–abr fase 5B (06/11/2024), mai–jun fase 4 Itajaí parcial (08/05/2025), jul–dez armazém 6 de Itajaí
-  (01/07/2025) — `ORC_AREA_ANO_RETRASADO_MESES` (01_Config.gs), `_orcAplicarAreaAnoRetrasado_`. R$/m² do Real 2025 =
-  total ÷ soma das 12 áreas; no m² mês a mês cada mês usa a sua área (`rel.areaMesesReal`). Real 2025: Curitiba
-  3,51 → 3,61; Itajaí 3,58 → 3,64; Esteio 6,86 → 6,88 (a METRAGEM usava outra área). Teste 4767/4767.
+- **Área: vale a da METRAGEM da controladoria** (total ÷ R$/m² ÷ 12) em todos os anos — Guilherme, 12/10/2026: "dê
+  preferência para a METRAGEM da controladoria; o que estiver batendo, perfeito; 2025 foi só por mandar". Chegou a ser
+  travada no rateio e foi desfeita no mesmo dia. Rateios só como referência: 2026 "Com fase 6 CGS" — Curitiba
+  120.577,91 · Itajaí 108.165,91 · Esteio 24.294,66 (bate com a METRAGEM a < 0,1%); 2025, e-mails "Novo Rateio Megas"
+  (Kethli) — jan–abr fase 5B (Itajaí 63.960,39), mai–jun fase 4 parcial (Itajaí 100.061,58), jul–dez armazém 6 (Itajaí
+  108.165,91; Esteio 24.294,66); Curitiba 102.937,17 o ano todo. Em 2025 a METRAGEM usa outra área (Curitiba ≈ 105,8
+  mil m²): não trocar sem a controladoria.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

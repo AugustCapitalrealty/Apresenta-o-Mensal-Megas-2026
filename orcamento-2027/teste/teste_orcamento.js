@@ -887,11 +887,8 @@ ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 3, 'Custo por m² depois 
   ok(vi.altas.length === 5 && vi.quedas.length === 5 && vi.altas[0].d >= vi.altas[4].d && vi.quedas[0].d <= vi.quedas[4].d,
      'demais variações: 5 maiores altas e 5 maiores quedas, em ordem');
   const tV = textos(slides[iVar]);
-  // O R$/m² do degrau é o da ponte (_orcM2Demais_); desde 12/10/2026 o Ritmo 2026 usa a área do rateio 2026
-  // (era +R$ 0,08/m² com a área implícita da METRAGEM, agora +R$ 0,07/m²).
-  const m2D = G._orcM2Demais_(rel, vM, adiC.total);
-  ok(tV.indexOf('SOBEM') >= 0 && tV.indexOf('CAEM') >= 0 && m2D === '+R$ 0,07/m²' && tV.some(t => t.indexOf('+R$ 252 mil (' + m2D + ' ao mês)') >= 0),
-     'demais variações: subtítulo em R$ e R$/m² igual ao degrau da ponte (' + tV[1] + ' · ponte ' + m2D + ')');
+  ok(tV.indexOf('SOBEM') >= 0 && tV.indexOf('CAEM') >= 0 && tV.some(t => /^\+R\$ 252 mil \(\+R\$ 0,08\/m² ao mês\)|^Além das obras adiadas, \+R\$ 252 mil \(\+R\$ 0,08\/m²/.test(t)),
+     'demais variações: subtítulo em R$ e R$/m² igual ao degrau da ponte (' + tV[1] + ')');
   ok(G._orcVariacoesItens_(CUR, null, contasLL[0], adiC) === null, 'sem o modelo: sem o slide');
 }
 // Itens de cada grupo (V19): um quadro por grupo, com o total e todos os itens.
@@ -1394,21 +1391,6 @@ const MODELO_SEC = {};
       const vis = G._orcLerVisaoGeral_(chave), rel = vis.rel;
       const conta = n => rel.contas.filter(x => x.chave === G._orcChaveConta_(n))[0];
       ok(vis.modelos.filter(l => l.linha).every(l => true) && vis.modelos.length > 0, c + ' (exportação nova): modelos lidos');
-      // Área de 2026 travada no rateio 2026 (12/10/2026): Orç e Ritmo 2026; o R$/m² da DRE sai dela.
-      ['ritmo', 'orcAnt'].forEach(k => perto(G._orcAreaImplicita_(rel, k), G.ORC_AREA_ANO_ANTERIOR[chave], c + ': área de ' + k + ' 2026 = rateio 2026'));
-      perto(rel.m2Total.ritmo, rel.total.ritmo / G.ORC_AREA_ANO_ANTERIOR[chave] / 12, c + ': R$/m² do Ritmo 2026 pela área do rateio');
-      const ofM = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json'));
-      perto(G._orcAreaImplicita_(rel, 'orc'), G._orcAreaImplicita_(ofM, 'orc'), c + ': área do Orç 2027 continua a da METRAGEM');
-      // 2025: a área do rateio de cada mês (e-mails "Novo Rateio Megas"); o ano usa a média dos doze meses.
-      const am = G.ORC_AREA_ANO_RETRASADO_MESES[chave], mediaAm = am.reduce((t, x) => t + x, 0) / 12;
-      perto(G._orcAreaImplicita_(rel, 'real'), mediaAm, c + ': área do Real 2025 = média do rateio mês a mês');
-      if (chave === 'ITAJAI') {
-        ok(am[3] === 63960.39 && am[4] === 100061.58 && am[6] === 108165.91 && Math.abs(mediaAm - 92080.015) < 0.01,
-           'itajai: 2025 com fase 5B até abr, fase 4 parcial em mai–jun e armazém 6 a partir de jul (média ' + mediaAm.toFixed(2) + ')');
-        const s25 = G._orcM2Mensal_(rel, vis.mensal, vis.realAnt).series.filter(s => s.k === 'real')[0];
-        perto(s25.meses[0], vis.realAnt.ac[0] / 63960.39, 'itajai: R$/m² de jan/2025 pela área de jan (63.960 m²)');
-        perto(s25.meses[11], vis.realAnt.ac[11] / 108165.91, 'itajai: R$/m² de dez/2025 pela área de dez (108.166 m²)');
-      }
       pertoReal(G.obterManutencao_(chave).total, conta('Manutenção de imóveis').v.orc, c + ' (exportação nova): manutenção das categorias = DRE');
       G.ORC_CONTAS_DETALHE.forEach(n => {
         const comp = G._orcComposicaoConta_(conta(n), vis.modelos);
@@ -1465,10 +1447,6 @@ const MODELO_SEC = {};
     }
   });
   if (process.env.DETALHE) console.log(JSON.stringify(MODELO_SEC, null, 1));
-  // Facilities: a área de 2026 dos três Megas soma a do rateio (253.038,48 m²).
-  const relsF = {};
-  ['CURITIBA', 'ITAJAI', 'ESTEIO'].forEach(k => { relsF[k] = G.obterRelatorioAnual_(k); });
-  perto(G._orcTotaisFacilities_(relsF).areaRitmo, 253038.48, 'Facilities: área do Ritmo 2026 = rateio 2026 (253.038,48 m²)');
 }
 
 // Out/2026: a controladoria não fecha a METRAGEM a tempo e o Orç 2027 de cada
