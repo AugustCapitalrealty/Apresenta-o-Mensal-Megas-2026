@@ -123,8 +123,11 @@ function novoSlide(deck) {
       setText: t => { slide.notas = String(t); }, asString: () => slide.notas }) }) }),
     move: i => { deck._slides = deck._slides.filter(s => s !== slide); deck._slides.splice(i, 0, slide); },
     // Formas com texto (27_Atualizar.gs acha o título do slide por aqui).
+    // Posição e troca de texto: 29_GestorRevisado.gs corrige as cópias dos slides do gestor.
     getShapes: () => slide.shapes.filter(r => r.tipo !== 'IMAGE' && r.tipo !== 'LINE')
-      .map(r => ({ getText: () => ({ asString: () => r.texto || '' }) })),
+      .map(r => ({ getLeft: () => r.x, getTop: () => r.y, getWidth: () => r.w, getHeight: () => r.h,
+                   getText: () => ({ asString: () => r.texto || '', setText: t => { r.texto = String(t); },
+                                     replaceAllText: (de, para) => { const p = String(r.texto || '').split(de); r.texto = p.join(para); return p.length - 1; } }) })),
     // Elementos da página (cópia de um slide da v3, 28_Moked.gs): tipo, posição, texto e remoção.
     getPageElements: () => slide.shapes.slice().map(reg => ({
       getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
@@ -2279,6 +2282,50 @@ console.log('Slides da Moked (28_Moked.gs)');
      'Moked: sem o slide na v3, o lugar das fotos fica marcado nos slides 28 e 29');
   delete decks[G.ORC_DECK_VERSAO_GESTOR_ID];
   delete G.SlidesApp.create;
+}
+
+console.log('Slides do gestor revisados (29_GestorRevisado.gs)');
+// Cópias dos slides do gestor da v3 com subtítulo, português, título interno, LOCAL, rodapé e trilha corrigidos.
+{
+  const v3 = novoDeck();
+  const gerado = sub => { const s = v3.appendSlide(); s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: sub }); };
+  const doGestor = (titulo, mega, extra) => {
+    const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';
+    s.shapes.push({ tipo: 'IMAGE', x: 0, y: 0, w: 720, h: 405, nome: 'MOLDURA - 10830624af2a.png' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
+                  { tipo: 'TEXT_BOX', x: 456, y: 90, w: 222, h: 12, texto: extra.interno },
+                  { tipo: 'TEXT_BOX', x: 456, y: 104, w: 222, h: 60, texto: extra.desc },
+                  { tipo: 'TEXT_BOX', x: 456, y: 176, w: 222, h: 10, texto: 'CONTA' },
+                  { tipo: 'TEXT_BOX', x: 456, y: 186, w: 222, h: 16, texto: 'Manutenção de imóveis' },
+                  { tipo: 'TEXT_BOX', x: 456, y: 208, w: 222, h: 10, texto: 'LOCAL' },
+                  { tipo: 'TEXT_BOX', x: 456, y: 218, w: 222, h: 16, texto: extra.local },
+                  { tipo: 'TEXT_BOX', x: 30, y: 385, w: 660, h: 14, texto: 'Fotos e textos preenchidos pelo gestor · ' + mega },
+                  { tipo: 'IMAGE', x: 52, y: 90, w: 380, h: 260, nome: 'foto' });
+  };
+  gerado('Manutenção · Mega Esteio');
+  doGestor('Implantação Moked | Rotina de Segurança', 'Mega Esteio', { interno: 'X', desc: 'x', local: 'x' });
+  doGestor('Automação Monitoramento Canal BR 116', 'Mega Esteio',
+    { interno: 'MEDIÇÃO CANAL BR 116 + ESTAÇÃO METEREOLÓGICA', desc: 'texto', local: 'Escada Cobertura A e B2 (Fase 1)' });
+  doGestor('Subst. Chicote Elétrico do Trator 03', 'Mega Esteio', { interno: 'PINTURA DA TUBULAÇÃO DE INCÊNDIO AÉREA', desc: '* Orçamento', local: 'Trator 03' });
+  gerado('Manutenção: os itens de cada grupo (1/2) · Mega Itajaí');
+  doGestor('Implantação Mastro de Bandeiras', 'Mega Esteio', { interno: 'LIMPEZA E LAVAGEM DAS ESTRUTURAS METÁLICAS',
+    desc: 'Premissa de lavação com Drone as telhas metálicas de fechamento no Armazém A + B2. R$ 50.000,00', local: 'Fachadas armazém A e B2' });
+  const v3Antes = JSON.stringify(v3._slides.map(s => s.shapes));
+  const deck = novoDeck();
+  const res = G._orcGerarGestorRevisados_(deck, v3), sl = deck.getSlides(), tt = s => textos(s).join(' | ');
+  ok(sl.length === 3 && res.length === 3 && JSON.stringify(v3._slides.map(s => s.shapes)) === v3Antes,
+     'gestor revisado: 3 slides (sem o da Moked) e a v3 intacta (' + sl.length + ')');
+  ok(textos(sl[0]).indexOf('Manutenção de imóveis · Canal da BR-116 · Mega Esteio') >= 0 && tt(sl[0]).indexOf('METEOROLÓGICA') >= 0 &&
+     textos(sl[0]).indexOf('Canal da BR-116') >= 0 && textos(sl[0]).indexOf('MEDIÇÃO CANAL BR 116 + ESTAÇÃO METEOROLÓGICA') >= 0,
+     'gestor revisado: subtítulo preenchido, LOCAL e "meteorológica" corrigidos, título interno com palavra em comum mantido (' + tt(sl[0]) + ')');
+  ok(textos(sl[1]).indexOf('SUBST. CHICOTE ELÉTRICO DO TRATOR 03') >= 0, 'gestor revisado: título interno copiado vira o título do slide');
+  ok(textos(sl[2]).indexOf('Manutenção de imóveis · Fachadas armazém A e B2 · Mega Itajaí') >= 0 &&
+     textos(sl[2]).indexOf('Fotos e textos preenchidos pelo gestor · Mega Itajaí') >= 0 && res[2].mega === 'Mega Itajaí' &&
+     res[2].avisos.length === 2 && sl[2].notas.indexOf('[REGISTRO FOTOGRÁFICO · ITAJAI]') === 0,
+     'gestor revisado: slide do Itajaí com o Mega certo e o aviso do molde esquecido (' + res[2].avisos.join(' / ') + ')');
+  ok(sl.every(s => s.shapes.some(r => r.nome === 'foto')), 'gestor revisado: as fotos do gestor ficam');
 }
 
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
