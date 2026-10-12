@@ -83,7 +83,14 @@ const ORC_CONTRATOS_ANT_RITMO = [
     ant: 14847.52 + 14681.99 + 14518.31 + 14345.73 + 14191.11 + 14017.18,
     situacao: 'Ano cheio (começou em jun/' + String(ORC_ANO - 1).slice(-2) + ')' },                               // V7
   { unidade: 'Mega Curitiba', conta: 'Manutenção de imóveis', termo: 'pmoc', ant: 4000,
-    situacao: 'Era avulso em ' + (ORC_ANO - 1) }                                                                   // V11
+    situacao: 'Era avulso em ' + (ORC_ANO - 1) }, // V11
+  // Lovable (Guilherme, 12/10/2026): "já existe nos Megas, começou em 2026" — o cadastro de 2027 diz início
+  // 01/01/2025 e nenhuma fonte de 2026 o traz. Mês de início não sabido: ESTIMATIVA de 12 × o valor
+  // mensal do cadastro de 2027 (Esteio R$ 13,59, Itajaí R$ 60,51). Sai de "Novo em 2027".
+  { unidade: 'Mega Esteio', conta: 'Assistência em informática', termo: 'lovable', ant: 12 * 13.59,
+    situacao: 'Começou em ' + (ORC_ANO - 1) },
+  { unidade: 'Mega Itajaí', conta: 'Assistência em informática', termo: 'lovable', ant: 12 * 60.51,
+    situacao: 'Começou em ' + (ORC_ANO - 1) }
 ];
 
 // Contratos que em 2026 não estão no cadastro, mas estão no modelo de 2026 com

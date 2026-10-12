@@ -1245,12 +1245,17 @@ G.ORC_CONTRATOS_2026_NAO_ID = NAO_ID_REAL;
   ok(pX.some(p => p.texto === 'R$ 120.068 em "Não detalhado" — sem os contratos de 2027 no cadastro'), 'pendência da segurança com o valor');
   ok(G._orcPendencias_(cidX, relX, menX, G._orcLinhasModelosCidade_('ESTEIO')).every(p => p.tipo !== 'Contratos 2027 não informados'),
      'com o cadastro: nenhuma conta sem contrato');
-  // Perguntas em aberto com o gestor: entram como pendência da conta.
-  const comPergunta = Object.assign({}, cidX, { nome: 'Mega Curitiba' });
+  // Perguntas em aberto com o gestor: entram como pendência da conta. Pergunta de teste — as reais
+  // foram todas respondidas em 12/10/2026 (ORC_PENDENCIAS_GESTOR vazio nos três Megas).
+  G.ORC_PENDENCIAS_GESTOR['Mega Teste'] = [{ conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar', texto: 'Pergunta de teste, linha 4' }];
+  const comPergunta = Object.assign({}, cidX, { nome: 'Mega Teste' });
   const pG = G._orcPendencias_(comPergunta, relX, menX, G._orcLinhasModelosCidade_('ESTEIO'))
     .filter(p => p.tipo === 'Decisão a confirmar');
+  delete G.ORC_PENDENCIAS_GESTOR['Mega Teste'];
   ok(pG.length === 1 && pG[0].chave === G._orcChaveConta_('Manutenção de imóveis') && /linha 4/.test(pG[0].texto),
      'pergunta em aberto do Mega vira pendência da Manutenção (selo ⚠ PENDENTE nos slides dela)');
+  ok(['Mega Curitiba', 'Mega Itajaí', 'Mega Esteio'].every(n => !(G.ORC_PENDENCIAS_GESTOR[n] || []).length),
+     'nenhuma pergunta em aberto com o gestor nos três Megas (12/10/2026)');
 }
 
 // ---------------- Geração — Itajaí e Esteio ----------------
@@ -1795,6 +1800,12 @@ console.log('Contratos: junções e renovações (08/10/2026)');
   ok(pmocC.length === 1 && pmocC[0].ant === 4000 && /^Era avulso em 2026$/.test(pmocC[0].situacao),
      'Curitiba: PMOC com os R$ 4.000 de 2026 (3 preventivas CLIMATIZAR) (' + pmocC.map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join() + ')');
   ok(!G._orcContratosNaoIdentificados_(cu.cmp).length, 'Curitiba: nenhum contrato com "2026 não identificado"');
+  // Lovable "começou em 2026" (Guilherme, 12/10/2026): sai de "Novo em 2027", 2026 estimado em 12 × o mensal.
+  [[I, 60.51, 'Itajaí'], [E, 13.59, 'Esteio']].forEach(([M, mensal, nome]) => {
+    const lov = Object.keys(M).filter(n => /LOVABLE/.test(n)).map(n => M[n]);
+    ok(lov.length === 1 && lov[0].situacao === 'Começou em 2026' && Math.abs(lov[0].ant - 12 * mensal) < 0.01,
+       nome + ': Lovable "Começou em 2026", 2026 = 12 × R$ ' + mensal + ' (' + lov.map(l => Math.round(l.ant) + ' ' + l.situacao).join() + ')');
+  });
   [it, es, cu].forEach(x => perto(x.cmp.ant, x.cmp.grupos.reduce((t, g) => t + g.linhas.reduce((u, l) => u + l.ant, 0), 0), 'contratos: o total de 2026 fecha com as linhas depois das junções'));
 }
 

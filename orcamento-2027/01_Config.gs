@@ -328,10 +328,9 @@ const ORC_PENDENCIAS_GESTOR = {
   // recalque paver (feito em ago/2026) e Orbital → Firecam / NFPA (NFPA feita
   // em out/2026; em 2027 só a Firecam), respondidas pelo ritmo.
   'Mega Itajaí': [],
-  'Mega Curitiba': [
-    { conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar',
-      texto: 'Comparação, linha 4: vale o SIM (provisão de acesso × FM Security) ou entra nos 3%?' }
-  ]
+  // Curitiba, linha 4 da comparação (provisão de acesso × FM Security): vale o
+  // SIM, não entra nos 3% (gestor, via Guilherme, 12/10/2026).
+  'Mega Curitiba': []
 };
 
 // Pasta (dentro de APRESENTAÇÃO ORÇAMENTO) com slides desenhados como imagem
