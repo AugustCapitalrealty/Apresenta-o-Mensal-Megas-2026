@@ -19,13 +19,14 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 // coluna C estão em 07_PropostasTextos.gs.
 
 // Modelos de orçamento 2027 de TODAS as unidades (exportação completa do
-// sistema, pasta APRESENTAÇÃO ORÇAMENTO — Guilherme, 12/10/2026). Os três
+// sistema, pasta "00 - PLANILHAS MESTRAS" — Guilherme, 12/10/2026). Os três
 // Megas leem as mesmas duas planilhas e ficam só com as linhas da sua unidade
 // (unidadeModelo, coluna B "Cód. da unidade"): Capital Realty, Demercado, CR
 // SP e as comissões por módulo ficam de fora, como nas planilhas por Mega de
-// antes. Nova exportação: substituir o conteúdo destas planilhas (o ID fica).
-const ORC_MODELO_090_ID = '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U';   // 090-Despesas-Gerais
-const ORC_MODELO_070_ID = '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY';   // 070-Servicos-de-Terceiros
+// antes (hoje "PODE EXCLUIR - MEGA <X> - 0x0 …"). Nova exportação: substituir
+// o conteúdo destas planilhas (o ID fica).
+const ORC_MODELO_090_ID = '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U';   // MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES
+const ORC_MODELO_070_ID = '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY';   // MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES
 
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide

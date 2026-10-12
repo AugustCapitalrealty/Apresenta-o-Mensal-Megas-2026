@@ -155,6 +155,9 @@ COMUNS = [
     ('MESTRA - CONTRATOS 2026 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2026 (era "2025 - Contratos")', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
     ('MESTRA - CONTRATOS 2027 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2027 (era "CONTRATOS-2027-COMPLETO") — fonte dos contratos de Itajaí e Esteio', 'Sim (Itajaí e Esteio)', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
     ('MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES', 'Totais planejados de 2026 por conta, todas as unidades somadas (era "2026")', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
+    # 12/10/2026: os modelos 2027 vêm da exportação completa do sistema; cada Mega lê a sua unidade.
+    ('MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção), todas as unidades (era "090-Despesas-Gerais")', 'Sim (só a unidade do Mega)', MESTRAS, '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U', S_),
+    ('MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (serviços de terceiros), todas as unidades (era "070-Servicos-de-Terceiros")', 'Sim (só a unidade do Mega)', MESTRAS, '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY', S_),
     ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '01 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
 ]
 CUR, ITA, EST = '02 - MEGA CURITIBA', '03 - MEGA ITAJAÍ', '04 - MEGA ESTEIO'
@@ -163,8 +166,8 @@ gerar('curitiba', 'Mega Curitiba', [
     ('MEGA CURITIBA - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', CUR, '1dxVHYGcpaOHJzO6_37cNz4WQ94mR6gh9PUHt5zVifvI', P_),
     ('MEGA CURITIBA - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m² (Real 25, Orç 26, Ritmo 26, Orç 27)', 'Sim', CUR, '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c', S_),
     ('MEGA CURITIBA - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta (Orç 26, Real 26, Orç 27)', 'Sim', CUR, '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM', S_),
-    ('MEGA CURITIBA - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção)', 'Sim', CUR, '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA', S_),
-    ('MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', CUR, '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw', S_),
+    ('PODE EXCLUIR - MEGA CURITIBA - 090 DESPESAS GERAIS 2027', 'Modelo 090 só de Curitiba, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', CUR, '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA', S_),
+    ('PODE EXCLUIR - MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo 070 só de Curitiba, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', CUR, '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw', S_),
     ('MEGA CURITIBA - CONTRATOS 2027 - MANUTENÇÃO DE IMÓVEIS', 'Contratos de manutenção de 2027 mês a mês', 'Sim', CUR, '1diDWTo5tQPL28YRrejGILSEsRhPkUt4kasmC8ehVlrA', S_),
     ('MEGA CURITIBA - CONTRATOS 2027 - SEGURANÇA E VIGILÂNCIA', 'Contratos de segurança de 2027 mês a mês', 'Sim', CUR, '12EFl12AKmwwCwEZ84j2UO2TQiT2B9I9QwrK5cYdLqK8', S_),
     ('MEGA CURITIBA - CONTRATOS 2027 - LIMPEZA E CONSERVAÇÃO', 'Contratos de limpeza de 2027 mês a mês', 'Sim', CUR, '1eLJmH-lHef_mczrQ6kgxOs_aGWHcJB6ZMJMLzF5H4FI', S_),
@@ -177,13 +180,13 @@ gerar('itajai', 'Mega Itajaí', [
     ('MEGA ITAJAÍ - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', ITA, '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E', P_),
     ('MEGA ITAJAÍ - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', ITA, '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw', S_),
     ('MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta', 'Sim', ITA, '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA', S_),
-    ('MEGA ITAJAÍ - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', ITA, '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg', S_),
-    ('MEGA ITAJAÍ - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', ITA, '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY', S_),
+    ('PODE EXCLUIR - MEGA ITAJAÍ - 090 DESPESAS GERAIS 2027', 'Modelo 090 só de Itajaí, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', ITA, '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg', S_),
+    ('PODE EXCLUIR - MEGA ITAJAÍ - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo 070 só de Itajaí, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', ITA, '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY', S_),
 ] + COMUNS)
 gerar('esteio', 'Mega Esteio', [
     ('MEGA ESTEIO - APRESENTAÇÃO ORÇAMENTO 2027', 'Apresentação do orçamento que o gerador escreve', 'É ela', EST, '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0', P_),
     ('MEGA ESTEIO - METRAGEM-COND 2027', 'Relatório da controladoria: total por conta, IPTU, seguro e R$/m²', 'Sim', EST, '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE', S_),
     ('MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027', 'Relatório da controladoria: mês a mês por conta', 'Sim', EST, '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg', S_),
-    ('MEGA ESTEIO - 090 DESPESAS GERAIS 2027', 'Modelo do orçamento 2027 item a item (despesas gerais)', 'Sim', EST, '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ', S_),
-    ('MEGA ESTEIO - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo do orçamento 2027 item a item (serviços de terceiros)', 'Sim', EST, '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk', S_),
+    ('PODE EXCLUIR - MEGA ESTEIO - 090 DESPESAS GERAIS 2027', 'Modelo 090 só do Esteio, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', EST, '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ', S_),
+    ('PODE EXCLUIR - MEGA ESTEIO - 070 SERVIÇOS DE TERCEIROS 2027', 'Modelo 070 só do Esteio, até 12/10/2026 — substituído pela MESTRA de todas as unidades', 'Não', EST, '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk', S_),
 ] + COMUNS)

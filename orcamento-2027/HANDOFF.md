@@ -139,8 +139,9 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 
 ### 12/10/2026 (tarde) — modelos de todas as unidades, Itaú/PMOC e assistente do Esteio
 
-- **Modelos 070/090 = exportação completa do sistema** (todas as unidades): `ORC_MODELO_090_ID` ("090-Despesas-Gerais")
-  e `ORC_MODELO_070_ID` ("070-Servicos-de-Terceiros"), na pasta APRESENTAÇÃO ORÇAMENTO. Cada Mega filtra pela
+- **Modelos 070/090 = exportação completa do sistema** (todas as unidades): `ORC_MODELO_090_ID` ("MESTRA - 090 DESPESAS
+  GERAIS 2027 - TODAS AS UNIDADES") e `ORC_MODELO_070_ID` ("MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS
+  UNIDADES"), na pasta 00 - PLANILHAS MESTRAS; as seis por Mega viraram "PODE EXCLUIR - …". Cada Mega filtra pela
   `unidadeModelo` (coluna B: Curitiba 60, Itajaí 19, Esteio 18) — é o mesmo recorte das planilhas por Mega de antes,
   que o gerador não lê mais. Nova exportação: substituir o conteúdo dessas duas planilhas (o ID fica). Unidade sem
   linha = erro, nunca deck zerado. Fixtures: `teste/fixture_090_megas_2027.json` e `fixture_070_megas_2027.json`.
@@ -203,9 +204,9 @@ Pasta no Drive: `08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`
 
 | Pasta | Conteúdo |
 |---|---|
-| `00 - PLANILHAS MESTRAS` | `MESTRA - ORÇAMENTO 2026 ITEM A ITEM` (`1X39Bz…`), `MESTRA - CONTRATOS 2026` (`11bcQ0…`, `ORC_CONTRATOS_ANO_ANTERIOR_ID`), `MESTRA - CONTRATOS 2027` (`1cwbW249…`, `ORC_CONTRATOS_ANO_IDS[0]`), `MESTRA - TOTAIS 2026 POR CONTA` |
+| `00 - PLANILHAS MESTRAS` | `MESTRA - ORÇAMENTO 2026 ITEM A ITEM` (`1X39Bz…`), `MESTRA - CONTRATOS 2026` (`11bcQ0…`, `ORC_CONTRATOS_ANO_ANTERIOR_ID`), `MESTRA - CONTRATOS 2027` (`1cwbW249…`, `ORC_CONTRATOS_ANO_IDS[0]`), `MESTRA - TOTAIS 2026 POR CONTA`, `MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES` (`1eGg8vWV…`, `ORC_MODELO_090_ID`), `MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES` (`1TSAqizR…`, `ORC_MODELO_070_ID`) |
 | `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` (`ORC_TEXTOS_ID`), `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>` (três; Curitiba é Google Planilha, Itajaí e Esteio são .xlsx) |
-| `02 - MEGA CURITIBA`, `03 - MEGA ITAJAÍ`, `04 - MEGA ESTEIO` | apresentação, `METRAGEM-COND 2027`, `DESPESAS MENSAL 2026 x 2027`, `090 DESPESAS GERAIS 2027`, `070 SERVIÇOS DE TERCEIROS 2027`, `BASE DO ORÇAMENTO 2027.xlsx` (Curitiba ainda tem `CONTRATOS 2027 - <CONTA>`, que o gerador não lê mais) |
+| `02 - MEGA CURITIBA`, `03 - MEGA ITAJAÍ`, `04 - MEGA ESTEIO` | apresentação, `METRAGEM-COND 2027`, `DESPESAS MENSAL 2026 x 2027`, `PODE EXCLUIR - … 090 / 070 …` (modelos por Mega de antes de 12/10/2026), `BASE DO ORÇAMENTO 2027.xlsx` (Curitiba ainda tem `CONTRATOS 2027 - <CONTA>`, que o gerador não lê mais) |
 
 Todos os IDs que o gerador usa estão em `ORC_CIDADES` (`01_Config.gs`), com
 o nome do arquivo em comentário. O mapa fonte → slide está no README
