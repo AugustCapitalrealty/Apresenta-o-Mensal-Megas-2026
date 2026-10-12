@@ -64,9 +64,26 @@ const ORC_CONTRATOS_NAO_SAO = [
 // escala da limpeza começou em set/2026 — "diferença da auxiliar de serviços
 // gerais da escala 5x2 para 12x36" R$ 8.602,10/mês e "Auxiliar de zeladoria 5x2"
 // R$ 8.000/mês, set–dez (V29).
+// Curitiba (Guilherme, 12/10/2026 — ritmo 2026 item a item, conferido no razão
+// do realizado de 2026, planilha "CAS_1"):
+//   ▸ Financiamento Itaú da cerca elétrica — no ritmo é "[CONTRATO A SENSE] -
+//     Financiamento da Fibra Òptica" (070, Segurança e vigilância), tabela SAC jul–dez:
+//     14.847,52 · 14.681,99 · 14.518,31 · 14.345,73 · 14.191,11 · 14.017,18. No
+//     razão são as "EMPRESTIMO ITAU PARCELA nn/48 - CERCA ELETRICA" (jun–out
+//     15.186,12 · 15.179,97 · 15.182,66 · 15.175,66 · 14.345,73; o razão chama set
+//     e out de "05/48"). Vale o ritmo: é a base do Ritmo 2026 da DRE.
+//   ▸ PMOC — "Preventiva condicionadores de ar" do ritmo, R$ 4.000: no razão, a
+//     CLIMATIZAR, preventiva das 5 máquinas + laudo PMOC (NF 18 em abr, NF 30 em
+//     jul, 1.333,33 cada) em Manutenção predial. As notas da LF e a bomba de
+//     dreno (Manutenção de máquinas) são corretivas, fora do PMOC.
 const ORC_CONTRATOS_ANT_RITMO = [
   { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termo: 'nova escala', ant: 4 * (8602.10 + 8000),
-    situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' }
+    situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' },
+  { unidade: 'Mega Curitiba', conta: 'Segurança e vigilância', termo: 'itau',
+    ant: 14847.52 + 14681.99 + 14518.31 + 14345.73 + 14191.11 + 14017.18,
+    situacao: 'Ano cheio (começou em jun/' + String(ORC_ANO - 1).slice(-2) + ')' },                               // V7
+  { unidade: 'Mega Curitiba', conta: 'Manutenção de imóveis', termo: 'pmoc', ant: 4000,
+    situacao: 'Era avulso em ' + (ORC_ANO - 1) }                                                                   // V11
 ];
 
 // Contratos que em 2026 não estão no cadastro, mas estão no modelo de 2026 com
@@ -79,9 +96,9 @@ const ORC_CONTRATOS_ANT_DO_MODELO = [
 // Contratos de 2027 que o gestor diz que já existiam em 2026, mas que ninguém
 // achou nas fontes de 2026 (08/10/2026): no lugar de "Novo em 2027", a linha diz
 // "2026 não identificado" e o item vai para o alerta de pendências.
+// Curitiba: Itaú (V7) e PMOC (V11) achados no razão de 2026 em 12/10/2026 —
+// agora em ORC_CONTRATOS_ANT_RITMO.
 const ORC_CONTRATOS_2026_NAO_ID = [
-  { unidade: 'Mega Curitiba', conta: 'Segurança e vigilância', termo: 'itau', item: 'Financiamento Itaú – cerca elétrica (desde jun/26)' },   // V7
-  { unidade: 'Mega Curitiba', conta: 'Manutenção de imóveis', termo: 'pmoc', item: 'Ar-condicionado (PMOC), ~R$ 4 mil em 2026' },                            // V11
   { unidade: 'Mega Itajaí', conta: 'Manutenção de imóveis', termo: 'pmoc', item: 'Ar-condicionado (PMOC)' },                                                      // V28
   { unidade: 'Mega Itajaí', conta: 'Material de consumo', termo: 'canaveral', item: 'LPU Canaveral: contrato × fora do contrato' } // V34
 ];

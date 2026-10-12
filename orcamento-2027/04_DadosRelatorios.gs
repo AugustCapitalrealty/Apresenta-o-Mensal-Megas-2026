@@ -116,17 +116,32 @@ const ORC_CONTAS_SINONIMOS = {
   'Quilometragem / Estacionamento': 'KM, estacionamento e pedágio'
 };
 
-// { [chave]: { nome, total, meses[12] } } — só contas com valor.
+// Conta dos modelos que SOMA numa conta da METRAGEM que os modelos não montam
+// (a despesa de pessoal vem do RH, não do 070/090). Esteio (Guilherme,
+// 12/10/2026): "CUSTO PARA ALOCAÇÃO DE CADEIRA DE ASSISTENTE DE FACILITIES",
+// R$ 90 mil em "Assessoria de RH" — lançado para medir o efeito na despesa com
+// pessoal; quem inclui de fato é o RH, quando aprovar ("pode considerar, mas
+// ainda não está junto"). Quando a Despesa de pessoal da METRAGEM passar a
+// trazer a assistente, apague a linha — senão conta em dobro.
+const ORC_CONTAS_SOMAR = {
+  'Assessoria de RH': { conta: 'Despesa de pessoal', nota: '(+ assistente de facilities)' }
+};
+
+// { [chave]: { nome, total, meses[12] } } — só contas com valor. As de
+// ORC_CONTAS_SOMAR vêm em 'somar:<chave da conta da METRAGEM>', com somar: true.
 function _orcOrcDosModelos_(cid, modelos) {
-  const sin = {};
+  const sin = {}, somar = {};
   Object.keys(ORC_CONTAS_SINONIMOS).forEach(k => { sin[_orcChaveConta_(k)] = _orcChaveConta_(ORC_CONTAS_SINONIMOS[k]); });
+  Object.keys(ORC_CONTAS_SOMAR).forEach(k => { somar[_orcChaveConta_(k)] = ORC_CONTAS_SOMAR[k]; });
   const fixas = (cid.relatorios.valeMetragem || []).map(_orcChaveConta_);
   const out = {};
   modelos.forEach(l => {
     let k = _orcChaveConta_(l.conta);
-    k = sin[k] || k;
+    const soma = somar[k];
+    k = soma ? 'somar:' + _orcChaveConta_(soma.conta) : (sin[k] || k);
     if (fixas.indexOf(k) >= 0) return;
-    const s = out[k] || (out[k] = { nome: l.conta, total: 0, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
+    const s = out[k] || (out[k] = { nome: soma ? soma.conta : l.conta, total: 0, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                    somar: !!soma, nota: soma ? soma.nota : '' });
     s.total += l.total;
     (l.meses || []).forEach((v, i) => { s.meses[i] += v || 0; });
   });
@@ -141,12 +156,15 @@ function _orcAplicarOrcDosModelos_(rel, calc) {
   const areaAC = rel.m2AreaComum && rel.m2AreaComum.orc > 0 ? rel.areaComum.orc / rel.m2AreaComum.orc / 12 : null;
   const areaT = _orcAreaImplicita_(rel, 'orc');
   const usadas = {}, mudou = [];
+  // s: a conta montada pelos modelos (troca o Orç); a: o que soma por cima (ORC_CONTAS_SOMAR).
   const aplicar = (nome, chave, v) => {
-    const s = calc[chave];
-    if (!s) return;
-    usadas[chave] = true;
-    if (Math.abs(s.total - v.orc) > 1) mudou.push({ nome: nome, metragem: v.orc, calculado: s.total });
-    v.orc = s.total;
+    const s = calc[chave], a = calc['somar:' + chave];
+    if (!s && !a) return;
+    if (s) usadas[chave] = true;
+    if (a) usadas['somar:' + chave] = true;
+    const novo = (s ? s.total : v.orc) + (a ? a.total : 0);
+    if (Math.abs(novo - v.orc) > 1) mudou.push({ nome: nome, metragem: v.orc, calculado: novo, nota: a ? a.nota : '' });
+    v.orc = novo;
   };
   rel.contas.forEach(c => aplicar(c.nome, c.chave, c.v));
   aplicar('IPTU', _orcChaveConta_('IPTU'), rel.iptu);
@@ -271,9 +289,13 @@ function obterRelatorioMensal_(chaveCidade, modelos) {
   const mensal = _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
   const cid = ORC_CIDADES[chaveCidade];
   if (cid.relatorios.orcDosModelos) {
-    // Mesmas contas que o anual troca: os 12 meses continuam somando o anual.
+    // Mesmas contas que o anual troca: os 12 meses continuam somando o anual
+    // (o que é de ORC_CONTAS_SOMAR soma por cima dos meses da conta).
     const calc = _orcOrcDosModelos_(cid, modelos || _orcLinhasModelosCidade_(chaveCidade));
-    Object.keys(calc).forEach(k => { if (mensal.contas[k]) mensal.contas[k].orc = calc[k].meses.slice(); });
+    Object.keys(calc).forEach(k => {
+      const e = calc[k], m = mensal.contas[e.somar ? k.slice('somar:'.length) : k];
+      if (m) m.orc = e.somar ? m.orc.map((v, i) => v + e.meses[i]) : e.meses.slice();
+    });
   }
   return mensal;
 }
@@ -463,7 +485,7 @@ function _orcLinhasModelosCidade_(chaveCidade) {
   const out = [];
   [cid.servicosTerceirosId, cid.despesasGeraisId].forEach(id => {
     if (!id) return;
-    try { Array.prototype.push.apply(out, _orcLerModelo_(id)); }
+    try { Array.prototype.push.apply(out, _orcLerModelo_(id, cid.unidadeModelo)); }
     catch (e) { Logger.log('Modelo ' + id + ' ignorado na análise por conta: ' + e.message); }
   });
   // Contratos recorrentes entram como linhas da sua conta: sem eles a

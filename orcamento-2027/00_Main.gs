@@ -360,7 +360,7 @@ function _orcPasso_(deck, W, H, nome, fn) {
 function diagnosticarOrcamento() {
   const chave = 'CURITIBA';
   const cid = ORC_CIDADES[chave];
-  const linhas = _orcLerModelo_(cid.despesasGeraisId);
+  const linhas = _orcLerModelo_(cid.despesasGeraisId, cid.unidadeModelo);
   Logger.log(cid.nome + ' — ' + linhas.length + ' linhas com conta em "' + ORC_ABA_MODELO + '"');
 
   const porConta = {};

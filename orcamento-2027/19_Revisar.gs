@@ -105,7 +105,7 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
     out.push({ nome: 'METRAGEM-COND', chave: '', tipo: tipo,
                texto: 'não bate com os modelos 070/090 + contratos; o deck usa os modelos' });
     calc.mudou.forEach(m => out.push({ nome: m.nome, chave: '', tipo: tipo,
-      texto: 'METRAGEM ' + _orcMoeda_(m.metragem) + ' → modelos ' + _orcMoeda_(m.calculado) }));
+      texto: 'METRAGEM ' + _orcMoeda_(m.metragem) + ' → modelos ' + _orcMoeda_(m.calculado) + (m.nota ? ' ' + m.nota : '') }));
     calc.semConta.forEach(s => out.push({ nome: s.nome, chave: '', tipo: 'Sem linha na METRAGEM',
       texto: _orcMoeda_(s.total) + ' nos modelos, fora do total' }));
   }

@@ -19,7 +19,7 @@ function obterManutencao_(chaveCidade) {
     throw new Error(cid.nome + ': a planilha 090-Despesas-Gerais ainda não foi configurada em ORC_CIDADES (01_Config.gs).');
   }
 
-  const linhas = _orcLerModelo_(cid.despesasGeraisId);
+  const linhas = _orcLerModelo_(cid.despesasGeraisId, cid.unidadeModelo);
   const alvo = linhas.filter(l => l.contaNorm === ORC_CONTA_MANUTENCAO);
 
   // Zero falso: planilha com linhas mas sem a conta (renomeada, digitada de
@@ -179,14 +179,16 @@ function _orcRecategorizar_(categoria, descricao) {
   return r ? r.para : categoria;
 }
 
-function _orcLerModelo_(planilhaId) {
+// unidade: código da unidade do Mega (cid.unidadeModelo) — a planilha traz
+// todas as unidades e o Mega fica só com as suas linhas. Sem ele, tudo.
+function _orcLerModelo_(planilhaId, unidade) {
   const aba = SpreadsheetApp.openById(planilhaId).getSheetByName(ORC_ABA_MODELO);
   if (!aba) throw new Error('Aba "' + ORC_ABA_MODELO + '" não encontrada na planilha ' + planilhaId);
-  return _orcLinhasModelo_(aba.getDataRange().getValues());
+  return _orcLinhasModelo_(aba.getDataRange().getValues(), unidade);
 }
 
 // Separado da leitura para o teste passar a matriz direto.
-function _orcLinhasModelo_(dados) {
+function _orcLinhasModelo_(dados, unidade) {
   const cab = dados[0] || [];
   if (_orcNorm_(cab[ORC_COL.item]) !== 'item' || _orcNorm_(cab[ORC_COL.mes1]) !== 'mes 1' ||
       _orcNorm_(cab[ORC_COL.mes1 + 11]) !== 'mes 12') {
@@ -194,10 +196,22 @@ function _orcLinhasModelo_(dados) {
                     '"Mês 1".."Mês 12" em I..T. Encontrado: F="' + cab[ORC_COL.item] + '", I="' +
                     cab[ORC_COL.mes1] + '", T="' + cab[ORC_COL.mes1 + 11] + '".');
   }
+  const filtrar = unidade !== undefined && unidade !== null && unidade !== '';
+  if (filtrar && !/^cod\.? da unidade$/.test(_orcNorm_(cab[ORC_COL.unidade]))) {
+    throw new Error('Cabeçalho inesperado em "' + ORC_ABA_MODELO + '": esperava "Cód. da unidade" na coluna B ' +
+                    '(filtro do Mega). Encontrado: B="' + cab[ORC_COL.unidade] + '".');
+  }
+  const daUnidade = r => String(r[ORC_COL.unidade] === null || r[ORC_COL.unidade] === undefined ? '' : r[ORC_COL.unidade])
+    .trim() === String(unidade);
 
   const out = [];
+  const unidades = {};
   for (let i = 1; i < dados.length; i++) {
     const r = dados[i];
+    if (filtrar) {
+      unidades[String(r[ORC_COL.unidade]).trim()] = true;
+      if (!daUnidade(r)) continue;
+    }
     const conta = String(r[ORC_COL.conta] === null || r[ORC_COL.conta] === undefined ? '' : r[ORC_COL.conta])
       .replace(/ /g, ' ').trim();
     if (!conta) continue;
@@ -212,6 +226,12 @@ function _orcLinhasModelo_(dados) {
       meses: meses,
       total: meses.reduce((a, b) => a + b, 0)
     });
+  }
+  // Zero falso: código da unidade errado (ou exportação sem o Mega) não pode
+  // virar um deck de R$ 0 — para e diz quais unidades a planilha tem.
+  if (filtrar && !out.length) {
+    throw new Error('Nenhuma linha da unidade ' + unidade + ' em "' + ORC_ABA_MODELO + '". Unidades na planilha: ' +
+                    (Object.keys(unidades).filter(String).join(', ') || '(nenhuma)') + ' — confira unidadeModelo em ORC_CIDADES (01_Config.gs).');
   }
   return out;
 }

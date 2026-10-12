@@ -137,6 +137,24 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   Uma linha "Mês a mês = DRE" no slide de revisão; o detalhe no log. A tabela do m² mês a mês usa a mesma área das
   linhas (o R$/m² da área comum escrito na METRAGEM dava 3,46 × 3,45). Teste 4692/4692.
 
+### 12/10/2026 (tarde) — modelos de todas as unidades, Itaú/PMOC e assistente do Esteio
+
+- **Modelos 070/090 = exportação completa do sistema** (todas as unidades): `ORC_MODELO_090_ID` ("090-Despesas-Gerais")
+  e `ORC_MODELO_070_ID` ("070-Servicos-de-Terceiros"), na pasta APRESENTAÇÃO ORÇAMENTO. Cada Mega filtra pela
+  `unidadeModelo` (coluna B: Curitiba 60, Itajaí 19, Esteio 18) — é o mesmo recorte das planilhas por Mega de antes,
+  que o gerador não lê mais. Nova exportação: substituir o conteúdo dessas duas planilhas (o ID fica). Unidade sem
+  linha = erro, nunca deck zerado. Fixtures: `teste/fixture_090_megas_2027.json` e `fixture_070_megas_2027.json`.
+- Com essas exportações (fixtures de METRAGEM de 08/10): Curitiba R$ 7.497.667 (manutenção 1.990 mil), Itajaí
+  R$ 6.616.939, Esteio R$ 4.175.921. Textos curtos dos itens novos em `07_PropostasTextos.gs`.
+- **Esteio, "Assessoria de RH" R$ 90 mil** ("cadeira de assistente de facilities"): lançada para medir o efeito na
+  despesa com pessoal; o RH só inclui quando aprovar. `ORC_CONTAS_SOMAR` soma na Despesa de pessoal da METRAGEM
+  (331 → 421 mil). **Quando a METRAGEM trouxer a assistente na Despesa de pessoal, apagar a linha** (senão dobra).
+- **Curitiba, 2026 achado** (razão do realizado "CAS_1" + ritmo 2026 item a item): Itaú/cerca elétrica = ritmo
+  "[CONTRATO A SENSE] - Financiamento da Fibra Òptica" jul–dez R$ 86.601,84 (no razão, 5 parcelas pagas jun–out);
+  PMOC = R$ 4.000 (CLIMATIZAR, 3 preventivas). Em `ORC_CONTRATOS_ANT_RITMO`; saíram de "2026 não identificado".
+  Fica só o PMOC de Itajaí (sem razão de Itajaí).
+- Teste 4736/4736.
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |

@@ -284,6 +284,17 @@ Object.keys(G.ORC_CIDADES).forEach(k => {
   ORC_DOS_MODELOS_CONFIG[k] = !!G.ORC_CIDADES[k].relatorios.orcDosModelos;
   G.ORC_CIDADES[k].relatorios.orcDosModelos = false;
 });
+// Desde 12/10/2026 os três Megas leem os modelos 070/090 de uma planilha com
+// todas as unidades (ORC_MODELO_090_ID / _070_ID, filtrada por unidadeModelo).
+// O teste antigo roda com as planilhas por Mega de antes
+// (fixture_090_<cidade>_2027.json), cada Mega com um ID próprio; a seção
+// "Modelos de todas as unidades" testa a exportação completa.
+const MODELOS_CONFIG = {};
+Object.keys(G.ORC_CIDADES).forEach(k => {
+  const cid = G.ORC_CIDADES[k];
+  MODELOS_CONFIG[k] = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId };
+  if (cid.unidadeModelo) { cid.despesasGeraisId = 'teste-090-' + k; cid.servicosTerceirosId = 'teste-070-' + k; }
+});
 const CUR = G.ORC_CIDADES.CURITIBA;
 if (!FIX_METRAGEM || !FIX_MENSAL || !FIX_070) {
   console.log('✗ Faltam fixtures em teste/ — rode exportarFixtures() no editor e copie de _fixtures/.');
@@ -1213,9 +1224,10 @@ G.ORC_PENDENCIAS_GESTOR = PEND_GESTOR_REAL;
 G.ORC_CONTRATOS_2026_NAO_ID = NAO_ID_REAL;
 {
   const relC = G.obterRelatorioAnual_('CURITIBA');
+  // 12/10/2026: os dois achados no razão de 2026 (ORC_CONTRATOS_ANT_RITMO) saem do alerta.
   const pC = G._orcPendencias_(G.ORC_CIDADES.CURITIBA, relC, null, []).filter(p => p.tipo === '2026 não identificado');
-  ok(pC.length === 2 && pC.some(p => /Itaú/.test(p.texto)) && pC.some(p => /PMOC/.test(p.texto)),
-     'Curitiba: cerca elétrica do Itaú e PMOC como "2026 não identificado" no alerta (' + pC.map(p => p.texto).join(' | ') + ')');
+  ok(pC.length === 0, 'Curitiba: Itaú e PMOC achados no razão de 2026 — fora do alerta "2026 não identificado" (' +
+     pC.map(p => p.texto).join(' | ') + ')');
 }
 {
   const cidX = G.ORC_CIDADES.ESTEIO;
@@ -1330,6 +1342,92 @@ const ESTADO_CIDADES = {};
               ESTADO_CIDADES[c].naoDetalhado.join(', '));
 });
 if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
+// 12/10/2026: os modelos 070/090 passaram a vir da exportação completa do
+// sistema (todas as unidades numa planilha só, ORC_MODELO_090_ID / _070_ID);
+// cada Mega fica com a sua unidade (unidadeModelo). Fixtures: as duas
+// exportações de 12/10/2026 convertidas como o getValues() devolve.
+console.log('Modelos de todas as unidades (exportação de 12/10/2026)');
+const MODELO_SEC = {};
+{
+  const M090 = fixture('fixture_090_megas_2027.json'), M070 = fixture('fixture_070_megas_2027.json');
+  ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => MODELOS_CONFIG[k].d === G.ORC_MODELO_090_ID && MODELOS_CONFIG[k].s === G.ORC_MODELO_070_ID),
+     'os três Megas leem as planilhas de todas as unidades (01_Config.gs)');
+  porId[G.ORC_MODELO_090_ID] = M090;
+  porId[G.ORC_MODELO_070_ID] = M070;
+  // O filtro deixa só a unidade do Mega (Capital Realty, Demercado, CR SP e as
+  // comissões por módulo ficam de fora) e o total confere com a exportação.
+  const esperado = { CURITIBA: [60, 2530449, 1286148], ITAJAI: [19, 2907387, 453133], ESTEIO: [18, 1474045, 1410411] };
+  Object.keys(esperado).forEach(k => {
+    const [u, t090, t070] = esperado[k];
+    const l090 = G._orcLinhasModelo_(M090, u), l070 = G._orcLinhasModelo_(M070, u);
+    ok(G.ORC_CIDADES[k].unidadeModelo === u, k + ': unidade ' + u + ' no 01_Config.gs');
+    ok(Math.round(-l090.reduce((a, l) => a - l.total, 0)) === t090 && Math.round(-l070.reduce((a, l) => a - l.total, 0)) === t070,
+       k + ': 090 e 070 da unidade ' + u + ' (' + Math.round(l090.reduce((a, l) => a + l.total, 0)) + ' / ' +
+       Math.round(l070.reduce((a, l) => a + l.total, 0)) + ')');
+  });
+  ok(G._orcLinhasModelo_(M090).length > G._orcLinhasModelo_(M090, 60).length, 'sem unidade: todas as linhas (como as planilhas por Mega de antes)');
+  lanca(() => G._orcLinhasModelo_(M090, 99), 'Nenhuma linha da unidade 99', 'unidade que não está na planilha: erro em vez de deck zerado');
+
+  // Geração completa de cada Mega com a exportação nova, como o usuário roda.
+  [['CURITIBA', 'curitiba'], ['ITAJAI', 'itajai'], ['ESTEIO', 'esteio']].forEach(([chave, c]) => {
+    const cid = G.ORC_CIDADES[chave];
+    const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId };
+    cid.despesasGeraisId = G.ORC_MODELO_090_ID;
+    cid.servicosTerceirosId = G.ORC_MODELO_070_ID;
+    cid.relatorios.orcDosModelos = true;
+    porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '.json');
+    porIdFinanceiro[cid.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_' + c + '.json');
+    try {
+      const vis = G._orcLerVisaoGeral_(chave), rel = vis.rel;
+      const conta = n => rel.contas.filter(x => x.chave === G._orcChaveConta_(n))[0];
+      ok(vis.modelos.filter(l => l.linha).every(l => true) && vis.modelos.length > 0, c + ' (exportação nova): modelos lidos');
+      pertoReal(G.obterManutencao_(chave).total, conta('Manutenção de imóveis').v.orc, c + ' (exportação nova): manutenção das categorias = DRE');
+      G.ORC_CONTAS_DETALHE.forEach(n => {
+        const comp = G._orcComposicaoConta_(conta(n), vis.modelos);
+        ok(comp.base === 0 && comp.excesso === 0, c + ' (exportação nova): ' + n + ' fecha item a item com a DRE');
+      });
+      const naoFecha = [];
+      rel.contas.forEach(x => {
+        const m = vis.mensal.contas[x.chave];
+        if (m) [['orcAnt', 'orcAnt'], ['ritmo', 'real'], ['orc', 'orc']].forEach(([k, campo]) => {
+          if (Math.abs(m[campo].reduce((t, v) => t + v, 0) - x.v[k]) > 1) naoFecha.push(x.nome + ' ' + k);
+        });
+      });
+      ok(!naoFecha.length, c + ' (exportação nova): mês a mês = DRE (' + naoFecha.join(', ') + ')');
+      ok(!rel.orcCalculado.semConta.length, c + ' (exportação nova): toda conta dos modelos tem linha na METRAGEM (' +
+         rel.orcCalculado.semConta.map(s => s.nome + ' ' + Math.round(s.total)).join(', ') + ')');
+      // Esteio: a assistente de facilities ("Assessoria de RH", R$ 90 mil) soma na Despesa de pessoal
+      // da METRAGEM — o RH ainda não incluiu (Guilherme, 12/10/2026; ORC_CONTAS_SOMAR).
+      const pesOf = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json')).contas.filter(x => x.chave === G._orcChaveConta_('Despesa de pessoal'))[0];
+      pertoReal(conta('Despesa de pessoal').v.orc, pesOf.v.orc + (chave === 'ESTEIO' ? 90000 : 0),
+                c + ' (exportação nova): Despesa de pessoal = METRAGEM' + (chave === 'ESTEIO' ? ' + assistente de facilities (R$ 90 mil)' : ''));
+
+      decks = {};
+      G._orcGerar_([chave]);
+      G.aplicarPropostasTextos();
+      decks = {};
+      G._orcGerar_([chave]);
+      const sl = decks[cid.deckId].getSlides();
+      const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
+      ok(!comFalha.length, c + ' (exportação nova): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
+      const cortados = [];
+      sl.forEach((x, i) => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push((i + 1) + ' ' + titulo(x) + ' :: ' + t); }));
+      ok(!cortados.length, c + ' (exportação nova): nenhum texto cortado (' + cortados.join(' | ') + ')');
+      ok(!sl.some(x => textos(x).some(t => /^⚠ REVISAR/.test(t))), c + ' (exportação nova): nenhum slide com ⚠ REVISAR');
+      MODELO_SEC[c] = { slides: sl.length, orc: rel.total.orc, metragem: G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json')).total.orc,
+                        mudou: rel.orcCalculado.mudou.map(m => m.nome + ' ' + G._orcMoeda_(m.metragem) + ' → ' + G._orcMoeda_(m.calculado)) };
+      console.log('  ' + cid.nome + ': ' + sl.length + ' slides · Orç 2027 ' + G._orcMoeda_(rel.total.orc) + ' (METRAGEM ' +
+                  G._orcMoeda_(MODELO_SEC[c].metragem) + ') · ajustadas: ' + rel.orcCalculado.mudou.length);
+    } finally {
+      cid.despesasGeraisId = antes.d;
+      cid.servicosTerceirosId = antes.s;
+      cid.relatorios.orcDosModelos = false;
+    }
+  });
+  if (process.env.DETALHE) console.log(JSON.stringify(MODELO_SEC, null, 1));
+}
 
 // Out/2026: a controladoria não fecha a METRAGEM a tempo e o Orç 2027 de cada
 // conta sai dos modelos 070/090 + contratos (relatorios.orcDosModelos,
@@ -1670,9 +1768,15 @@ console.log('Contratos: junções e renovações (08/10/2026)');
   ok(E['RENTBRELLA (ARMAZÉNS A E B)'] && E['RENTBRELLA (ARMAZÉNS A E B)'].atual > 28000, 'Esteio: Rentbrella A e B numa linha (' + show(E, 'RENTBRELLA (ARMAZÉNS A E B)') + ')');
   ok(C['VIGILÂNCIA COM DRONE AUTÔNOMO'] && C['ROÇADA (LPU)'] && C['LIMPEZA (EMPRESA AUXILIAR)'] && C['LIMPEZA (EMPRESA AUXILIAR)'].atual > 490000,
      'Curitiba: drone, roçada e limpeza + escala unidos (' + ['VIGILÂNCIA COM DRONE AUTÔNOMO', 'ROÇADA (LPU)', 'LIMPEZA (EMPRESA AUXILIAR)'].map(n => show(C, n)).join(' | ') + ')');
+  // Itaú e PMOC de Curitiba achados no razão de 2026 (Guilherme, 12/10/2026): o 2026 entra na linha.
   const itau = Object.keys(C).filter(n => /ITAÚ|ITAU/.test(n)).map(n => C[n]);
-  ok(itau.length && itau.every(l => /não identificado/.test(l.situacao)) && G._orcContratosNaoIdentificados_(cu.cmp).length >= 1,
-     'Curitiba: cerca elétrica do Itaú com "2026 não identificado" e na lista de pendências');
+  ok(itau.length === 1 && Math.abs(itau[0].ant - 86601.84) < 0.01 && /^Ano cheio \(começou em jun\/26\)$/.test(itau[0].situacao),
+     'Curitiba: cerca elétrica do Itaú com o 2026 do ritmo ("Financiamento da Fibra Òptica", jul–dez) (' +
+     itau.map(l => Math.round(l.ant) + ' ' + l.situacao).join() + ')');
+  const pmocC = Object.keys(C).filter(n => /PMOC|AR CONDICIONADO|AR-COND/.test(n)).map(n => C[n]);
+  ok(pmocC.length === 1 && pmocC[0].ant === 4000 && /^Era avulso em 2026$/.test(pmocC[0].situacao),
+     'Curitiba: PMOC com os R$ 4.000 de 2026 (3 preventivas CLIMATIZAR) (' + pmocC.map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join() + ')');
+  ok(!G._orcContratosNaoIdentificados_(cu.cmp).length, 'Curitiba: nenhum contrato com "2026 não identificado"');
   [it, es, cu].forEach(x => perto(x.cmp.ant, x.cmp.grupos.reduce((t, g) => t + g.linhas.reduce((u, l) => u + l.ant, 0), 0), 'contratos: o total de 2026 fecha com as linhas depois das junções'));
 }
 

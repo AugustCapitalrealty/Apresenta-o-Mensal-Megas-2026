@@ -18,6 +18,15 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 // As propostas de texto curto que aplicarPropostasTextos() copia para a
 // coluna C estão em 07_PropostasTextos.gs.
 
+// Modelos de orçamento 2027 de TODAS as unidades (exportação completa do
+// sistema, pasta APRESENTAÇÃO ORÇAMENTO — Guilherme, 12/10/2026). Os três
+// Megas leem as mesmas duas planilhas e ficam só com as linhas da sua unidade
+// (unidadeModelo, coluna B "Cód. da unidade"): Capital Realty, Demercado, CR
+// SP e as comissões por módulo ficam de fora, como nas planilhas por Mega de
+// antes. Nova exportação: substituir o conteúdo destas planilhas (o ID fica).
+const ORC_MODELO_090_ID = '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U';   // 090-Despesas-Gerais
+const ORC_MODELO_070_ID = '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY';   // 070-Servicos-de-Terceiros
+
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide
 // em vez de desenhar números zerados.
@@ -32,8 +41,11 @@ const ORC_CIDADES = {
     // apresentação mensal dos Megas (megas-mensal/01_Config.gs, PROJETOS).
     fotoFundoId: '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
     unitLogoId:  '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',
-    despesasGeraisId:    '1cMgo0gBmqFj0K8rKDtlnqyEBy7TlMK0OuAS6SMs5_OA',  // MEGA CURITIBA - 090 DESPESAS GERAIS 2027
-    servicosTerceirosId: '1BrIqFUFhFN9IJG77SidP5mlkID4U5UrrRzXfTepBXBw',  // MEGA CURITIBA - 070 SERVIÇOS DE TERCEIROS 2027
+    // Até 12/10/2026: "MEGA CURITIBA - 090 DESPESAS GERAIS 2027" (1cMgo0gB…)
+    // e "… - 070 SERVIÇOS DE TERCEIROS 2027" (1BrIqFUF…), só com a unidade 60.
+    despesasGeraisId:    ORC_MODELO_090_ID,
+    servicosTerceirosId: ORC_MODELO_070_ID,
+    unidadeModelo: 60,                                                     // Mega Curitiba
     // Relatórios da controladoria (pasta "02 - MEGA CURITIBA"), uma aba cada:
     //   metragem → conta × Real 2025 | Orça 2026 | Ritmo 2026 | Orça 2027, com
     //              IPTU, Seguro e R$/m² — base da DRE e dos ofensores.
@@ -89,8 +101,10 @@ const ORC_CIDADES = {
     deckId: '1IBhGpq4PPPHj4il-2zEYRX1a_7ftJN_1X0VRFb4kA_E',            // MEGA ITAJAÍ - APRESENTAÇÃO ORÇAMENTO 2027
     fotoFundoId: '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
     unitLogoId:  '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',
-    despesasGeraisId:    '1x2Fqc_t2IEOvc5FnZVyNRo9YUG-3v3viGqmplRJrgwg',  // MEGA ITAJAÍ - 090 DESPESAS GERAIS 2027
-    servicosTerceirosId: '1jlUb8NJbt6uhfezuK7YHU2qxmxQN0B8wEvaQu8uI0xY',  // MEGA ITAJAÍ - 070 SERVIÇOS DE TERCEIROS 2027
+    // Até 12/10/2026: "MEGA ITAJAÍ - 090 …" (1x2Fqc_t…) e "… - 070 …" (1jlUb8NJ…).
+    despesasGeraisId:    ORC_MODELO_090_ID,
+    servicosTerceirosId: ORC_MODELO_070_ID,
+    unidadeModelo: 19,                                                     // Mega Itajaí
     relatorios: {
       metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // MEGA ITAJAÍ - METRAGEM-COND 2027
       mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027
@@ -109,8 +123,10 @@ const ORC_CIDADES = {
     deckId: '1hynGvAf4fCYFexCOi5jvf7dm50TFFwbmPV1jwLy1w_0',            // MEGA ESTEIO - APRESENTAÇÃO ORÇAMENTO 2027
     fotoFundoId: '1ed2NujxpCBkk6tMDBC0h3LwB9wu6NEVA',
     unitLogoId:  '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',
-    despesasGeraisId:    '1jC7aDDGSDF6yzPxzmTlbGIbwbe4Se6svwj7XtZkG9qQ',  // MEGA ESTEIO - 090 DESPESAS GERAIS 2027
-    servicosTerceirosId: '1hDki35EFiw1d6gGTt3bSb75flqdt-DCr9_Gb8VmkXpk',  // MEGA ESTEIO - 070 SERVIÇOS DE TERCEIROS 2027
+    // Até 12/10/2026: "MEGA ESTEIO - 090 …" (1jC7aDDG…) e "… - 070 …" (1hDki35E…).
+    despesasGeraisId:    ORC_MODELO_090_ID,
+    servicosTerceirosId: ORC_MODELO_070_ID,
+    unidadeModelo: 18,                                                     // Mega Esteio
     relatorios: {
       metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // MEGA ESTEIO - METRAGEM-COND 2027
       mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027
@@ -128,10 +144,11 @@ const ORC_CIDADES = {
 };
 
 // Colunas da aba "Valores do Modelo" (base 0): A = descrição do item (é a
-// conta: "manutenção imóveis", "Seguros"...), F = item, I..T = Mês 1..12.
+// conta: "manutenção imóveis", "Seguros"...), B = código da unidade (filtro
+// do Mega na planilha de todas as unidades), F = item, I..T = Mês 1..12.
 // O cabeçalho é conferido na leitura: se alguém inserir uma coluna, a geração
 // para com erro em vez de ler o mês errado.
-const ORC_COL = { conta: 0, item: 5, mes1: 8 };
+const ORC_COL = { conta: 0, unidade: 1, item: 5, mes1: 8 };
 
 // Conta desta primeira versão, já normalizada por _orcNorm_ (a planilha grava
 // "manutenção imóveis", com espaço não-quebrável).

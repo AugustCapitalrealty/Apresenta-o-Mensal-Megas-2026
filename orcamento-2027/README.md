@@ -54,8 +54,8 @@ contratos do cadastro (R$ 371,7 mil) = R$ 1.266.241, igual à METRAGEM.
 
 | Chave | Planilha | Para quê |
 |---|---|---|
-| `despesasGeraisId` | `MEGA <X> - 090 DESPESAS GERAIS 2027`, aba `Valores do Modelo` | itens avulsos da manutenção |
-| `servicosTerceirosId` | `MEGA <X> - 070 SERVIÇOS DE TERCEIROS 2027`, aba `Valores do Modelo` | itens de segurança e limpeza |
+| `despesasGeraisId` | desde 12/10/2026, `090-Despesas-Gerais` (`ORC_MODELO_090_ID`): exportação completa, **todas as unidades**, aba `Valores do Modelo`; cada Mega lê só a sua unidade (`unidadeModelo`, coluna B: Curitiba 60, Itajaí 19, Esteio 18). Antes: `MEGA <X> - 090 DESPESAS GERAIS 2027` | itens avulsos da manutenção e das outras contas do 090 |
+| `servicosTerceirosId` | desde 12/10/2026, `070-Servicos-de-Terceiros` (`ORC_MODELO_070_ID`), mesma regra. Antes: `MEGA <X> - 070 SERVIÇOS DE TERCEIROS 2027` | itens de segurança e limpeza |
 | `contratosDoCadastro: true` | `MESTRA - CONTRATOS 2027 - TODOS OS MEGAS` (`ORC_CONTRATOS_ANO_IDS`, 02_Dados.gs — vale o primeiro da lista com valor para o Mega) | contratos recorrentes que os modelos não listam, tirados do cadastro do ano, todas as contas da unidade — **os três Megas** desde 07/10/2026 (padronizado nas planilhas mestras). Cabeçalho do mês como data ou como texto "jan./27" |
 | `contratos[<conta>]` | uma planilha de contratos por conta | formato antigo de Curitiba (até 07/10/2026); fica vazio (`{}`). O leitor continua no código |
 | `relatorios.metragemId` | `MEGA <X> - METRAGEM-COND 2027` | DRE, ofensores, totais por conta |
