@@ -139,14 +139,23 @@ function _orcTabelaNum_(slide, x, y, w, h, colunas, linhas, cabecalhoGrupos) {
           folga: 2, fsMin: fs });
     }
     (ln.celulas || []).forEach((cel, k) => {
-      if (!cel || !cel.texto) return;
+      if (!cel) return;
       const i = k + 1, c = colunas[i];
+      const bold = st.bold || !!cel.bold || cel.sentido !== undefined;
+      // Célula em branco com linha na planilha de textos (conta sem item nos modelos): a linha nasce
+      // vazia, com quanto cabe, para o gestor preencher.
+      if (!cel.texto) {
+        if (cel.aba && cel.tambem) {
+          _orcRegistrarTexto_(cel.aba, cel.tambem, '', _orcLetrasCabem_(_orcUtilUmaLinha_(c.w, c.align || 'C', 4), fs, DS.typography.body, bold));
+        }
+        return;
+      }
       let cor = st.cor;
       if (cel.sentido === 1) cor = st.escuro ? _ORC_COR_VAR.sobeClaro : _ORC_COR_VAR.sobe;
       else if (cel.sentido === -1) cor = st.escuro ? _ORC_COR_VAR.desceClaro : _ORC_COR_VAR.desce;
       _orcUmaLinha_(slide, xs[i], ry, c.w, rowH, cel.texto,
-        { align: c.align || 'C', fs: fs, bold: st.bold || !!cel.bold || cel.sentido !== undefined, cor: cor,
-          fonte: DS.typography.body, folga: 4, fsMin: fs, cortar: true, aba: cel.aba, original: cel.original, sufixo: cel.sufixo });
+        { align: c.align || 'C', fs: fs, bold: bold, cor: cor, fonte: DS.typography.body, folga: 4, fsMin: fs, cortar: true,
+          aba: cel.aba, original: cel.original, sufixo: cel.sufixo, tambem: cel.tambem });
     });
   });
   const yFim = y0 + linhas.length * rowH;
@@ -291,6 +300,11 @@ function _orcOfensores_(rel) {
   };
 }
 
+// Chave da linha do detalhamento da conta na aba Ofensores: "MEGA ESTEIO · DESPESA DE PESSOAL".
+function _orcChaveDetalheConta_(cid, nomeConta) {
+  return (cid.nome + ' · ' + nomeConta).toUpperCase();
+}
+
 // Um slide por bloco (lado = 'ofensores' | 'defensores'): juntos não cabiam
 // com folga e o gestor pediu separados (30/09/2026). DESPESAS OPERACIONAIS
 // (o total geral, mesmo nome da DRE) fecha os
@@ -317,6 +331,17 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     return it ? { texto: _orcTextoEscolhido_('Ofensores', it.descricao) + sufixo,
                   aba: 'Ofensores', original: it.descricao, sufixo: sufixo } : null;
   };
+  // O gestor escreve o detalhamento da CONTA na aba Ofensores, linha "MEGA X · CONTA" (12/10/2026: "tem
+  // linhas em branco que ele quer preencher, despesa com pessoal, e não tem na planilha"). Escrito, vale
+  // no lugar do maior item, sem o valor; vazio, fica o maior item (ou a célula em branco) e a linha da
+  // conta é registrada mesmo assim — toda conta do slide tem onde ser preenchida.
+  const detalhe = c => {
+    const chave = _orcChaveDetalheConta_(cid, c.nome);
+    const escrito = _orcTextoEscolhido_('Ofensores', chave);
+    if (_orcNorm_(escrito) !== _orcNorm_(chave)) return { texto: escrito, aba: 'Ofensores', original: chave, doGestor: true };
+    const it = maiorItem(c.chave, c.v.orc);
+    return it ? Object.assign(it, { tambem: chave }) : { texto: '', aba: 'Ofensores', tambem: chave };
+  };
   // R$/m² ao mês pela área implícita de cada ano (a mesma da DRE e do custo
   // por m²): Ritmo e Orç — pedido do gestor, 06/10/2026; o Δ saiu em 08/10/2026.
   const areaRit = _orcAreaImplicita_(rel, 'ritmo'), areaOrc = _orcAreaImplicita_(rel, 'orc');
@@ -332,7 +357,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
       { texto: _orcM2_(mR) }, { texto: _orcM2_(mO), bold: true },
-      c.chave ? maiorItem(c.chave, c.v.orc) : null] };
+      c.chave ? detalhe(c) : null] };
   };
   const b = ofensor ? ['OFENSORES — SOBEM EM ' + a.orc, q.ofensores, 'TOTAL OFENSORES']
                     : ['DEFENSORES — CAEM EM ' + a.orc, q.defensores, 'TOTAL DEFENSORES'];
@@ -367,7 +392,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     { titulo: 'R$/M² AO MÊS', c0: 6, n: 2, cor: '#475569' }
   ]);
   const nota = _orcNotaArea_(rel, cid);
-  _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; detalhamento: maior item dos modelos de ' + a.orc + ' · ' + nota
-    : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); detalhamento: maior item dos modelos 070 e 090 de ' +
+  const doGestor = linhas.some(l => (l.celulas || []).some(c => c && c.doGestor));
+  const fonteDet = 'detalhamento: ' + (doGestor ? 'nota da gestão ou ' : '') + 'maior item dos modelos';
+  _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; ' + fonteDet + ' de ' + a.orc + ' · ' + nota
+    : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); ' + fonteDet + ' 070 e 090 de ' +
       a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' fica só no total');
 }

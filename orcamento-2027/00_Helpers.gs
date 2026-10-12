@@ -111,7 +111,9 @@ function _orcLinhasTexto_(texto, larguraCaixa, fs, fonte, bold) {
  *   3) com op.cortar, o que sobrar em fsMin é cortado com reticências.
  * Com op.aba (descrição longa de tabela), o texto passa antes pela planilha
  * de textos (06_TextosTabelas.gs) e o resultado fica registrado para ela;
- * op.original é a chave quando o texto vem montado ("item · R$ 200 mil").
+ * op.original é a chave quando o texto vem montado ("item · R$ 200 mil");
+ * op.tambem, uma segunda chave registrada com o mesmo texto e a célula inteira
+ * (a linha da conta nos ofensores, que o gestor pode preencher).
  * Ver .claude/skills/slides-caixa-texto-sem-quebra.
  */
 function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
@@ -132,10 +134,7 @@ function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
   else if (align === 'L') { bw = w + folga; }
   else { bx = x - folga; bw = w + folga; }
 
-  // A folga vence o recuo; o que decide se cabe é a largura VISÍVEL. Centrado,
-  // o texto pode ocupar w inteiro; alinhado a um lado, o recuo (~7pt) desse
-  // lado continua valendo. Nunca mais que o miolo útil da caixa.
-  const util = Math.min(bw - _ORC_RECUO_TEXTBOX, align === 'C' ? w : w - _ORC_RECUO_TEXTBOX / 2);
+  const util = _orcUtilUmaLinha_(w, align, folga);
   while (fs > fsMin && _orcLarguraTexto_(t, fs, fonte, o.bold) > util) fs -= 0.25;
   if (o.cortar && _orcLarguraTexto_(t, fs, fonte, o.bold) > util) {
     while (t.length > 4 && _orcLarguraTexto_(t + '…', fs, fonte, o.bold) > util) t = t.slice(0, -1);
@@ -144,14 +143,29 @@ function _orcUmaLinha_(slide, x, y, w, h, texto, op) {
   if (o.aba) {
     // "Cabe até" é da descrição: o que vem montado depois dela (op.sufixo,
     // " · R$ 200 mil") ocupa parte da célula.
-    const fator = (_ORC_FATOR_FONTE[fonte] || 0.55) * (o.bold ? 1.04 : 1);
     const livre = util - (o.sufixo ? _orcLarguraTexto_(o.sufixo, fs, fonte, o.bold) : 0);
-    _orcRegistrarTexto_(o.aba, original, t, Math.max(0, Math.floor(livre / (fs * fator * _ORC_PESO_MAIUSCULA))));
+    _orcRegistrarTexto_(o.aba, original, t, _orcLetrasCabem_(livre, fs, fonte, o.bold));
+    if (o.tambem) _orcRegistrarTexto_(o.aba, o.tambem, t, _orcLetrasCabem_(util, fs, fonte, o.bold));
   }
 
   const q = { t: 'txt', x: bx, y: y, w: bw, h: h, texto: t, fs: fs, bold: !!o.bold, italic: !!o.italic,
               cor: o.cor || CR_DESIGN_SYSTEM.colors.textMain, fonte: fonte, align: align };
   return _orcCaixaTexto_(slide, q);
+}
+
+// Largura em que o texto de _orcUmaLinha_ tem que caber. A folga vence o
+// recuo; o que decide é a largura VISÍVEL: centrado, o texto pode ocupar w
+// inteiro; alinhado a um lado, o recuo (~7pt) desse lado continua valendo.
+// Nunca mais que o miolo útil da caixa.
+function _orcUtilUmaLinha_(w, align, folga) {
+  const bw = align === 'C' ? w + folga * 2 : w + folga;
+  return Math.min(bw - _ORC_RECUO_TEXTBOX, align === 'C' ? w : w - _ORC_RECUO_TEXTBOX / 2);
+}
+
+// Quantas letras (maiúsculas) cabem em util pt — a coluna "CABE ATÉ" da planilha de textos.
+function _orcLetrasCabem_(util, fs, fonte, bold) {
+  const fator = (_ORC_FATOR_FONTE[fonte] || 0.55) * (bold ? 1.04 : 1);
+  return Math.max(0, Math.floor(util / (fs * fator * _ORC_PESO_MAIUSCULA)));
 }
 
 // A caixa de texto de uma linha já medida (q de _orcUmaLinha_).

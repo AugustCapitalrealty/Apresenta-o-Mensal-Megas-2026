@@ -1142,6 +1142,36 @@ const lPais2 = shComp.getDataRange().getValues()[iPais];
 ok(shComp.getLastRow() === nAntes && lPais2[2] === 'ÁREA DE PAISAGISMO 1500M2' &&
    lPais2[1] === 'ÁREA DE PAISAGISMO 1500M2' && lPais2[3] === '',
    'nova geração mantém a escolha, atualiza "como aparece hoje" e não duplica a linha (' + JSON.stringify(lPais2) + ')');
+
+// Detalhamento por conta (gestor, 12/10/2026): toda conta dos ofensores/defensores tem a linha
+// "MEGA CURITIBA · CONTA" na aba Ofensores, mesmo sem item nos modelos; o que ele escreve nela vale no
+// slide. E o que ele escreve fora das colunas do gerador (coluna G, linhas criadas por ele) não some.
+const shOf = plTx.getSheetByName('Ofensores');
+const visOf = G._orcLerVisaoGeral_('CURITIBA'), qOf = G._orcOfensores_(visOf.rel);
+const contasOf = qOf.ofensores.contas.concat(qOf.defensores.contas).filter(c => c.chave);
+const chavesOf = contasOf.map(c => G._orcChaveDetalheConta_(CUR, c.nome));
+let lOf = shOf.getDataRange().getValues();
+ok(chavesOf.length > 5 && chavesOf.every(k => lOf.filter(r => r[0] === k).length === 1),
+   'aba Ofensores: uma linha "MEGA CURITIBA · CONTA" por conta dos ofensores e defensores (' + chavesOf.length + ')');
+const semItemOf = contasOf.filter(c => !G._orcItensDaConta_(visOf.modelos, c.chave).length).map(c => G._orcChaveDetalheConta_(CUR, c.nome));
+ok(semItemOf.length > 0 && semItemOf.every(k => lOf.filter(r => r[0] === k)[0][1] === ''),
+   'conta sem item nos modelos ganha a linha em branco para o gestor preencher (' + semItemOf.join(', ') + ')');
+const kOf = semItemOf[0], iKOf = lOf.findIndex(r => r[0] === kOf);
+shOf.getRange(iKOf + 1, 3, 1, 1).setValues([['EXPLICAÇÃO DO GESTOR']]);
+shOf.getRange(2, 7, 1, 1).setValues([['anotação na coluna G']]);
+const nOf = shOf.getLastRow();
+shOf.getRange(nOf + 1, 3, 1, 1).setValues([['LINHA CRIADA PELO GESTOR']]);
+shOf.getRange(nOf + 1, 7, 1, 1).setValues([['DESPESA DE PESSOAL']]);
+decks = {};
+G.gerarCuritiba();
+const sOf = decks[CUR.deckId].getSlides();
+lOf = shOf.getDataRange().getValues();
+ok(lOf[1][6] === 'anotação na coluna G' && lOf[nOf][2] === 'LINHA CRIADA PELO GESTOR' && lOf[nOf][6] === 'DESPESA DE PESSOAL',
+   'nova geração não apaga a coluna G nem a linha criada pelo gestor (' + JSON.stringify([lOf[1][6], lOf[nOf]]) + ')');
+const tOfG = textos(sOf[iDRE + 1]).concat(textos(sOf[iDRE + 2]));
+ok(tOfG.indexOf('EXPLICAÇÃO DO GESTOR') >= 0 && lOf.filter(r => r[0] === kOf)[0][1] === 'EXPLICAÇÃO DO GESTOR',
+   'texto do gestor na linha da conta vira o detalhamento, sem o valor de item');
+ok(tOfG.some(t => /detalhamento: nota da gestão ou maior item/.test(t)), 'rodapé: o detalhamento tem nota da gestão');
 PLANILHA_TEXTOS = novaPlanilhaTextos();
 LOG.length = 0;
 
@@ -1458,6 +1488,14 @@ const MODELO_SEC = {};
       decks = {};
       G._orcGerar_([chave]);
       const sl = decks[cid.deckId].getSlides();
+      if (chave === 'ESTEIO') {
+        // Detalhamento por conta que o gestor escreveu (12/10/2026): nos ofensores, no lugar do maior item.
+        const tOfE = sl.filter(x => /^(Ofensores|Defensores) — /.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
+        ok(['NOVO ANALISTA DE FACILITIES JR + RATEIO GERÊNCIA', 'ENTRADA DO AMZ B + MANUT. SEMESTRAL DRENAGEM',
+            'ENTRADA DO AMZ B + ZELADORIA EXTRA NAS CHUVAS', 'MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3'].every(t => tOfE.indexOf(t) >= 0) &&
+           tOfE.filter(t => t === 'ENTRADA DO ARMAZÉM B').length === 4,
+           'esteio (exportação nova): detalhamento por conta do gestor nos ofensores (Despesa de pessoal, Água, Seguro…)');
+      }
       const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
       ok(!comFalha.length, c + ' (exportação nova): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
       const tRevN = textos(sl[sl.map(titulo).indexOf('Revisar antes da versão final')] || { shapes: [] });

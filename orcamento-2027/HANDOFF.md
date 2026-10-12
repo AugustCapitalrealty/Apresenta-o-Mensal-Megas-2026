@@ -202,6 +202,17 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   12.545 → 7.948,98/mês (R$ 150.534 → 95.388); Curitiba sem as duas lavagens das estruturas metálicas de março (pórtico
   R$ 3.968, portaria R$ 5.040). Orç 2027: **Curitiba R$ 7.560.933** (Segurança 2.438.920), Itajaí R$ 6.670.068 (igual),
   **Esteio R$ 4.120.775**. Teste 4756/4756.
+- **Planilha de textos não apaga mais o que o gestor escreve** (Guilherme, 17h: "quando eu gero está apagando o que ele
+  coloca"). `_orcSalvarTextos_` limpava a aba e reescrevia só A–F: a coluna G que o gestor usava sumia. Agora grava só
+  B, D, E, F das linhas que já existem e acrescenta as novas no fim; C, colunas depois da F e linhas criadas por ele
+  ficam. `aplicarPropostasTextos` grava só as células de C que mudam (`_orcGravarCelulas_`).
+- **Detalhamento por conta nos Ofensores/Defensores** ("tem linhas em branco que ele quer preencher, despesa com
+  pessoal, e não tem na planilha"): toda conta do slide ganha a linha **"MEGA X · CONTA"** na aba Ofensores — em
+  branco quando a conta não tem item nos modelos (Despesa de pessoal, IPTU, hospedagem…). O texto da coluna C vale no
+  DETALHAMENTO, no lugar do maior item e sem o valor (`_orcChaveDetalheConta_`, 11_DREOfensores.gs); o rodapé passa a
+  dizer "nota da gestão ou maior item". Os 8 textos que o gestor escreveu para o Esteio (linhas 47–54, conta na coluna G)
+  viraram propostas dessas linhas; três encurtados para caber (Despesa de pessoal, Manutenção de imóveis, Limpeza). As
+  linhas dele com a conta na G ficam na planilha, mas o gerador não as lê. Teste 4762/4762.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

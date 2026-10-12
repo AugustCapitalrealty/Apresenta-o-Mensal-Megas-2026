@@ -15,7 +15,14 @@
  *
  *            Cada geração lê a coluna C antes de desenhar e, no fim, devolve
  *            à planilha as colunas B, D, E e F, acrescentando os textos novos.
- *            A coluna C nunca é sobrescrita.
+ *            A coluna C nunca é sobrescrita; nem o que estiver depois da F
+ *            (anotações do gestor) ou nas linhas que ele criou — a planilha
+ *            não é mais apagada e reescrita (12/10/2026: a coluna G do gestor
+ *            sumia a cada geração).
+ *
+ *            Na aba Ofensores, além das descrições dos itens, cada conta dos
+ *            slides Ofensores/Defensores tem a linha "MEGA X · CONTA": o texto
+ *            da coluna C vira o DETALHAMENTO da conta (11_DREOfensores.gs).
  */
 
 // Abas da planilha, na ordem do deck. O nome é o que vai em op.aba / cel.aba.
@@ -99,17 +106,17 @@ function aplicarPropostasTextos() {
     const vistos = {};
     if (sh && sh.getLastRow() > 1) {
       const dados = sh.getDataRange().getValues().slice(1);
-      const colC = dados.map(r => {
+      const novos = [];                                   // [linha da planilha, proposta]
+      dados.forEach((r, i) => {
         const k = _orcNorm_(r[0]), atual = String(r[2] === undefined ? '' : r[2]).trim();
         const p = props[aba][k];
-        if (!p) return [atual];
+        if (!p) return;
         vistos[k] = true;
-        if (!atual) { aplicadas++; return [p.prop]; }
-        if (p.anterior && atual !== p.prop && _orcNorm_(atual) === _orcNorm_(p.anterior)) { revistas++; return [p.prop]; }
+        if (!atual) { aplicadas++; novos.push([i + 2, p.prop]); return; }
+        if (p.anterior && atual !== p.prop && _orcNorm_(atual) === _orcNorm_(p.anterior)) { revistas++; novos.push([i + 2, p.prop]); return; }
         mantidas++;
-        return [atual];
       });
-      sh.getRange(2, 3, colC.length, 1).setValues(colC);
+      _orcGravarCelulas_(sh, 3, novos);
     }
     semLinha += Object.keys(props[aba]).filter(k => !vistos[k]).length;
   });
@@ -118,9 +125,25 @@ function aplicarPropostasTextos() {
              (semLinha ? ' · sem linha na planilha de textos: ' + semLinha + ' (rode gerarTodas() antes)' : ''));
 }
 
-// Fim da geração: grava o que foi desenhado. Linha que já existe mantém a
-// coluna C; texto novo entra no fim da aba; nada é apagado (uma geração
-// parcial, de outra cidade, não some com as linhas das outras abas).
+// Grava só as células que mudam (celulas: [linha, valor], em ordem de linha),
+// em blocos de linhas seguidas: o resto da coluna fica como está, mesmo que o
+// gestor esteja digitando nela enquanto a função roda.
+function _orcGravarCelulas_(sh, coluna, celulas) {
+  let i = 0;
+  while (i < celulas.length) {
+    let j = i;
+    while (j + 1 < celulas.length && celulas[j + 1][0] === celulas[j][0] + 1) j++;
+    sh.getRange(celulas[i][0], coluna, j - i + 1, 1).setValues(celulas.slice(i, j + 1).map(c => [c[1]]));
+    i = j + 1;
+  }
+}
+
+// Fim da geração: grava o que foi desenhado, sem apagar nada. Linha que já
+// existe recebe só as colunas do gerador (B, D, E, F); texto novo entra no fim
+// da aba. A coluna C, o que estiver depois da F e as linhas criadas pelo
+// gestor ficam como estão — antes a aba era limpa e reescrita só até a F, e a
+// coluna G que o gestor usava sumia a cada geração (12/10/2026). Uma geração
+// parcial, de outra cidade, também não some com as linhas das outras.
 function _orcSalvarTextos_() {
   const usados = Object.keys(_ORC_TEXTOS_USADOS).map(k => _ORC_TEXTOS_USADOS[k]);
   if (!ORC_TEXTOS_ID || !usados.length) return;
@@ -133,26 +156,36 @@ function _orcSalvarTextos_() {
       if (!sh && !daqui.length) return;
       if (!sh) sh = ss.insertSheet(nome);
 
-      const linhas = sh.getLastRow() > 1
-        ? sh.getDataRange().getValues().slice(1).map(r => ORC_TEXTOS_CABECALHO.map((c, i) => r[i] === undefined ? '' : r[i]))
-        : [];
+      const tudo = sh.getLastRow() > 0 ? sh.getDataRange().getValues() : [];
+      const cel = (r, i) => (r && r[i] !== undefined && r[i] !== null) ? r[i] : '';
+      const linhas = tudo.slice(1);
+      const doGerador = linhas.map(r => [cel(r, 1), cel(r, 3), cel(r, 4), cel(r, 5)]);   // B, D, E, F
       const indice = {};
-      linhas.forEach((l, i) => { indice[_orcNorm_(l[0])] = i; });
+      linhas.forEach((r, i) => { const k = _orcNorm_(cel(r, 0)); if (k && indice[k] === undefined) indice[k] = i; });
+      const novas = [];
       daqui.forEach(r => {
         const cortado = /…$/.test(r.exibido) ? 'SIM' : '';
         const onde = Object.keys(r.onde).join(' · ');
-        const i = indice[_orcNorm_(r.original)];
-        if (i === undefined) linhas.push([r.original, r.exibido, '', cortado, r.cabe, onde]);
-        else linhas[i] = [linhas[i][0], r.exibido, linhas[i][2], cortado, r.cabe, onde];
+        const k = _orcNorm_(r.original), i = indice[k];
+        if (i === undefined) { indice[k] = -1; novas.push([r.original, r.exibido, '', cortado, r.cabe, onde]); }
+        else if (i >= 0) doGerador[i] = [r.exibido, cortado, r.cabe, onde];
       });
 
-      const tudo = [ORC_TEXTOS_CABECALHO].concat(linhas);
-      sh.clearContents();
-      sh.getRange(1, 1, tudo.length, nc).setValues(tudo);
-      sh.getRange(1, 1, 1, nc).setFontWeight('bold').setBackground(CR_DESIGN_SYSTEM.colors.brandDark).setFontColor('#FFFFFF');
-      if (linhas.length) sh.getRange(2, 3, linhas.length, 1).setBackground('#FEF9C3');   // a coluna a preencher
-      sh.setFrozenRows(1);
-      [380, 300, 300, 80, 110, 260].forEach((w, i) => sh.setColumnWidth(i + 1, w));
+      if (!String(cel(tudo[0], 0)).trim()) {            // aba nova (ou sem cabeçalho)
+        sh.getRange(1, 1, 1, nc).setValues([ORC_TEXTOS_CABECALHO]);
+        sh.getRange(1, 1, 1, nc).setFontWeight('bold').setBackground(CR_DESIGN_SYSTEM.colors.brandDark).setFontColor('#FFFFFF');
+        sh.setFrozenRows(1);
+        [380, 300, 300, 80, 110, 260].forEach((w, i) => sh.setColumnWidth(i + 1, w));
+      }
+      if (linhas.length) {
+        sh.getRange(2, 2, linhas.length, 1).setValues(doGerador.map(g => [g[0]]));
+        sh.getRange(2, 4, linhas.length, 3).setValues(doGerador.map(g => g.slice(1)));
+      }
+      if (novas.length) {
+        const ini = Math.max(tudo.length, 1) + 1;
+        sh.getRange(ini, 1, novas.length, nc).setValues(novas);
+        sh.getRange(ini, 3, novas.length, 1).setBackground('#FEF9C3');   // a coluna a preencher
+      }
     });
     // A aba vazia que vem na planilha nova sai, para não parecer pendência.
     ss.getSheets().forEach(sh => {

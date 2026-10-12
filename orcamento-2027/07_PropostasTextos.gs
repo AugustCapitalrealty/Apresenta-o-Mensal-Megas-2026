@@ -456,5 +456,16 @@ const ORC_PROPOSTAS_TEXTOS = [
   // Esteio — troca da empresa de segurança (o "VIGILÃNCIA" com til vem assim do modelo).
   ["Ofensores","ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÃNCIA 24H - PORTARIA A E B","VIGILÂNCIA 24H – PORTARIAS A E B",""],
   ["Composição","ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÃNCIA 24H - PORTARIA A E B","VIGILÂNCIA 24H – PORTARIAS A E B",""],
-  ["Composição","ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÂNCIA ARMADA 24H RONDA","VIGILÂNCIA ARMADA 24H – RONDA",""]
+  ["Composição","ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÂNCIA ARMADA 24H RONDA","VIGILÂNCIA ARMADA 24H – RONDA",""],
+  // 12/10/2026, 17h: detalhamento por conta que o gestor escreveu para o Esteio (aba Ofensores, linhas 47–54,
+  // com a conta na coluna G) — agora nas linhas "MEGA ESTEIO · CONTA". Os três que passavam da coluna
+  // (60, 51 e 59 letras) vão encurtados; o texto inteiro continua nas linhas dele.
+  ["Ofensores","MEGA ESTEIO · DESPESA DE PESSOAL","NOVO ANALISTA DE FACILITIES JR + RATEIO GERÊNCIA",""],
+  ["Ofensores","MEGA ESTEIO · MANUTENÇÃO DE IMÓVEIS","ENTRADA DO AMZ B + MANUT. SEMESTRAL DRENAGEM",""],
+  ["Ofensores","MEGA ESTEIO · LIMPEZA E CONSERVAÇÃO","ENTRADA DO AMZ B + ZELADORIA EXTRA NAS CHUVAS",""],
+  ["Ofensores","MEGA ESTEIO · ÁGUA","ENTRADA DO ARMAZÉM B",""],
+  ["Ofensores","MEGA ESTEIO · SEGURO","ENTRADA DO ARMAZÉM B",""],
+  ["Ofensores","MEGA ESTEIO · MATERIAL DE CONSUMO","ENTRADA DO ARMAZÉM B",""],
+  ["Ofensores","MEGA ESTEIO · ENERGIA ELÉTRICA","ENTRADA DO ARMAZÉM B",""],
+  ["Ofensores","MEGA ESTEIO · MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS","MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3",""]
 ];
