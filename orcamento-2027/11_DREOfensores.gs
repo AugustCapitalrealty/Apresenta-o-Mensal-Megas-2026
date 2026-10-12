@@ -178,7 +178,7 @@ function _orcLinhasDRE_(rel) {
   if (!area.orcAnt) area.orcAnt = area.ritmo;
   const m2 = v => ks.reduce((o, k) => { o[k] = area[k] ? v[k] / area[k] / 12 : null; return o; }, {});
   const out = [];
-  out.push({ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', v: rel.total });
+  out.push({ tipo: 'total', nome: ORC_TOTAL_COM_IPTU, v: rel.total });
   if (rel.m2Total) out.push({ tipo: 'm2', nome: 'R$/m²', v: rel.m2Total });
 
   const ordem = c => {
@@ -303,7 +303,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const ofensor = lado !== 'defensores';
   _orcHeader_(slide, W, (ofensor ? 'Ofensores' : 'Defensores') + ' — Orçamento ' + ORC_ANO,
     'O que puxa o orçamento para ' + (ofensor ? 'cima' : 'baixo') + ' · Orç ' + a.orc + ' contra o Ritmo ' + a.ritmo +
-    ' · ' + cid.nome + ' · R$ mil');
+    ' · ' + cid.nome + ' · R$ mil · total ' + ORC_COM_IPTU);
 
   // Maior item orçado da conta nos modelos 070/090 — dá nome ao número. A
   // chave na planilha de textos é só a descrição, sem o valor.
@@ -339,6 +339,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const linhas = [{ tipo: 'secao', nome: b[0], celulas: [] }];
   b[1].contas.forEach(c => linhas.push(linhaConta(c)));
   linhas.push(linhaConta({ nome: b[2], v: b[1].total.v, delta: b[1].total.delta }, 'grupo'));
+  // A coluna CONTA não cabe "(COM IPTU E SEGURO)": o aviso vai no subtítulo.
   linhas.push(linhaConta({ nome: 'DESPESAS OPERACIONAIS', v: q.total.v, delta: q.total.delta }, 'total'));
 
   const recuo = _orcEstiloLinha_('item').recuo;

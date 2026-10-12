@@ -214,6 +214,7 @@ function gerarSlideCapaFacilities_(slide, W, H, rels) {
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
   _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', os três Megas',
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body });
+  _orcUmaLinha_(slide, 384 * k, 295 * k, 156 * k, 12 * k, ORC_COM_IPTU, { align: 'L', fs: 7.5, cor: C.textBody, fonte: T.body });
 }
 
 function gerarSlideSumarioFacilities_(slide, W, H, rels) {
@@ -227,7 +228,8 @@ function gerarSlideSumarioFacilities_(slide, W, H, rels) {
     const r = rels[chave], cid = ORC_CIDADES[chave], marca = (ORC_MARCAS[cid.marca || 'CAPITAL'].marca || {}).nome;
     if (!r) return marca;
     const area = _orcAreaImplicita_(r, 'orc');
-    return marca + ' · ' + _orcCompacto_(r.total.orc) + (area ? ' · R$ ' + _orcM2_(r.total.orc / area / 12) + '/m² ao mês' : '');
+    return marca + ' · ' + _orcCompacto_(r.total.orc) + (area ? ' · R$ ' + _orcM2_(r.total.orc / area / 12) + '/m² ao mês' : '') +
+      ' · ' + ORC_COM_IPTU;
   };
   const itens = [['COMPARATIVO', 'Os Megas lado a lado', 'Quanto custa cada m² em cada Mega, linha a linha']]
     .concat(ORC_FAC_MEGAS.map(k2 => [k2, ORC_CIDADES[k2].nome, linhaMega(k2)]));
@@ -272,7 +274,7 @@ function _orcComparativoM2_(rels) {
     out.FACILITIES = { orc: m2(soma('orc'), tot.areaOrc), ritmo: m2(soma('ritmo'), tot.areaRitmo) };
     return out;
   };
-  const linhas = [{ tipo: 'total', nome: 'DESPESAS OPERACIONAIS', m: celulas(megas.reduce((o, k) => { o[k] = rels[k].total; return o; }, {})) }];
+  const linhas = [{ tipo: 'total', nome: ORC_TOTAL_COM_IPTU, m: celulas(megas.reduce((o, k) => { o[k] = rels[k].total; return o; }, {})) }];
   ORC_DRE_GRUPOS.map(g => g.nome).concat([ORC_DRE_OUTRAS]).forEach(nomeGrupo => {
     const g = ORC_DRE_GRUPOS.filter(x => x.nome === nomeGrupo)[0];
     const ordem = c => { const i = g ? g.contas.map(_orcChaveConta_).indexOf(c) : -1; return i < 0 ? 999 : i; };
@@ -338,7 +340,7 @@ function _orcNotaAreaMegas_(cmp) {
 const ORC_FAC_PAINEIS = [
   { nome: 'Segurança e vigilância' },
   { nome: 'Manutenção de imóveis' },
-  { grupo: 'Utilities, Taxas e Consumo', titulo: 'Utilities, taxas e consumo' },
+  { grupo: 'Utilities, Taxas e Consumo', titulo: 'Utilities, taxas e consumo', iptu: true },   // IPTU e Seguro estão aqui
   { nome: 'Limpeza e conservação' },
   { grupo: 'Despesas com Pessoal e Administrativas', titulo: 'Pessoal e administrativo' }
 ];
@@ -366,7 +368,7 @@ function gerarSlideMegasGrafico_(slide, W, H, rels) {
       { align: 'L', fs: 7, bold: true, cor: fac ? C.brandSoft : C.textBody, fonte: T.titles });
     _orcUmaLinha_(slide, x + 12, ky + 16, cw - 24, 20, c.orc === null ? '–' : 'R$ ' + _orcM2_(c.orc) + '/m²',
       { align: 'L', fs: 15, fsMin: 10, bold: true, cor: fac ? '#FFFFFF' : C.brandDark, fonte: T.titles });
-    _orcUmaLinha_(slide, x + 12, ky + 36, cw - 24, 11, v.texto + ' × ritmo ' + (ORC_ANO - 1) + ' · despesas operacionais',
+    _orcUmaLinha_(slide, x + 12, ky + 36, cw - 24, 11, v.texto + ' × ritmo ' + (ORC_ANO - 1) + ' · ' + ORC_COM_IPTU,
       { align: 'L', fs: 6.5, fsMin: 5.5, bold: true, fonte: T.body, cortar: true,
         cor: fac ? (v.sentido > 0 ? _ORC_COR_VAR.sobeClaro : (v.sentido < 0 ? _ORC_COR_VAR.desceClaro : '#FFFFFF')) : _orcCorSentido_(v.sentido) });
   });
@@ -383,6 +385,9 @@ function gerarSlideMegasGrafico_(slide, W, H, rels) {
     _orcRet_(slide, x, py, pw, ph, C.cardBg, { redondo: true, borda: C.lines });
     _orcUmaLinha_(slide, x + 9, py + 6, pw - 18, 12, (pn.p.titulo || l.nome).toUpperCase(),
       { align: 'L', fs: 5.8, fsMin: 5, bold: true, cor: C.textBody, fonte: T.titles, cortar: true });
+    // Painel com IPTU e Seguro dentro: o aviso logo abaixo do título (12/10/2026).
+    if (pn.p.iptu) _orcUmaLinha_(slide, x + 9, py + 14.5, pw - 18, 9, ORC_COM_IPTU.toUpperCase(),
+      { align: 'L', fs: 5.3, fsMin: 5, bold: true, cor: C.brandLight, fonte: T.titles, cortar: true });
     const vals = cmp.megas.map(k => l.m[k].orc || 0), rits = cmp.megas.map(k => l.m[k].ritmo || 0);
     const mx = Math.max.apply(null, vals.concat(rits, [fac || 0])) * 1.12 || 1;
     const bx = x + 9, bw = pw - 18, X = v => bx + bw * Math.max(0, v) / mx;

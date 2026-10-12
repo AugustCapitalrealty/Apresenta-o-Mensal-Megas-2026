@@ -17,10 +17,11 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
 
   const ky = 74, kh = 56, gap = 10, kw = (W - MX * 2 - gap * 2) / 3;
   const v = _orcVariacao_(r.ritmo, r.total);
+  // O total e o R$/m² trazem IPTU e Seguro: o rótulo avisa (12/10/2026).
   const kpis = [
-    ['Orçamento ' + a.orc, _orcMoeda_(r.total), 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
+    ['Orçamento ' + a.orc + ' ' + ORC_COM_IPTU, _orcMoeda_(r.total), 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
     ['Variação × ritmo', (r.delta >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(r.delta)), v.texto + ' contra o Ritmo ' + a.ritmo],
-    ['R$/m² ao mês', r.m2Orc != null ? _orcM2_(r.m2Orc) : '–',
+    ['R$/m² ao mês ' + ORC_COM_IPTU, r.m2Orc != null ? _orcM2_(r.m2Orc) : '–',
      r.m2Rit != null ? _orcM2_(r.m2Rit) + ' no Ritmo ' + a.ritmo : '']
   ];
   kpis.forEach((k, i) => {
@@ -86,7 +87,8 @@ function gerarSlidePonte_(slide, W, H, cid, rel, mensal) {
   const p = _orcPonte_(rel, mensal);
   const alta = p.fim - p.inicio;
   _orcHeader_(slide, W, 'Ponte Ritmo ' + a.ritmo + ' → Orçamento ' + a.orc,
-    'De onde vem a ' + (alta >= 0 ? 'alta' : 'queda') + ' de ' + _orcCompacto_(Math.abs(alta)) + ' · ' + cid.nome + ' · R$ mil');
+    'De onde vem a ' + (alta >= 0 ? 'alta' : 'queda') + ' de ' + _orcCompacto_(Math.abs(alta)) + ' · ' + ORC_COM_IPTU + ' · ' +
+    cid.nome + ' · R$ mil');
 
   const cx = MX, cy = 72, cw = W - MX * 2, ch = H - 28 - cy;
   _orcCard_(slide, cx, cy, cw, ch, null);

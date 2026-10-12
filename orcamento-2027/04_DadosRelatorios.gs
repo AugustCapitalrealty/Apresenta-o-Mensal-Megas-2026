@@ -56,6 +56,13 @@ const ORC_DRE_GRUPOS = [
 ];
 const ORC_DRE_OUTRAS = 'Outras despesas';
 
+// Número que traz IPTU e Seguro leva o aviso (Guilherme, 12/10/2026: "sinalizar
+// quando IPTU tiver incluso"): o total da DRE (área comum + IPTU + Seguro), o
+// R$/m² dele e o grupo Utilities, Taxas e Consumo, onde os dois entram. O mesmo
+// texto em todo slide.
+const ORC_COM_IPTU = 'com IPTU e seguro';
+const ORC_TOTAL_COM_IPTU = 'DESPESAS OPERACIONAIS (' + ORC_COM_IPTU.toUpperCase() + ')';
+
 // Nome da conta como a METRAGEM escreve, com o acento que faltar
 // ("Manutenção de maquinas…" → "máquinas…", gestor 07/10/2026): vale o nome
 // de ORC_DRE_GRUPOS quando a diferença é só de acento.

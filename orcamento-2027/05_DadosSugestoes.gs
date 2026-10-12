@@ -446,5 +446,5 @@ function _orcM2PorConta_(rel) {
     const resto = ks.reduce((o, k) => { o[k] = fora.reduce((a, c) => a + c.v[k], 0); return o; }, {});
     linhas.push({ nome: 'Demais contas (' + fora.length + ')', chaves: fora.map(c => c.chave), v: resto, m2: m2(resto) });
   }
-  return { area: area, linhas: linhas, total: { nome: 'TOTAL GERAL', v: rel.total, m2: m2(rel.total) } };
+  return { area: area, linhas: linhas, total: { nome: 'TOTAL GERAL (' + ORC_COM_IPTU.toUpperCase() + ')', v: rel.total, m2: m2(rel.total) } };
 }

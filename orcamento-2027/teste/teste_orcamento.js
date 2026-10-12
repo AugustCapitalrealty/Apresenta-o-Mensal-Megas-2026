@@ -444,8 +444,9 @@ ldre.filter(l => l.tipo === 'grupo').forEach(g => {
 });
 // Igual à DRE dos Megas: um total só, IPTU e Seguro dentro de Utilities e as
 // contas na ordem fixa do mapa.
-ok(ldre[0].nome === 'DESPESAS OPERACIONAIS' && ldre[1].tipo === 'm2' &&
-   !ldre.some(l => /ÁREA COMUM|IPTU E SEGURO/.test(l.nome)), 'DRE: um total (Despesas Operacionais), sem Área Comum');
+// 12/10/2026: o total avisa que traz IPTU e seguro (Guilherme: "sinalizar quando IPTU tiver incluso").
+ok(ldre[0].nome === 'DESPESAS OPERACIONAIS (COM IPTU E SEGURO)' && ldre[0].nome === G.ORC_TOTAL_COM_IPTU && ldre[1].tipo === 'm2' &&
+   !ldre.some(l => /ÁREA COMUM/.test(l.nome)), 'DRE: um total (Despesas Operacionais, com IPTU e seguro), sem Área Comum');
 const iUtil = ldre.findIndex(l => l.nome === 'UTILITIES, TAXAS E CONSUMO');
 const nomesUtil = ldre.slice(iUtil + 2).map(l => l.nome);
 ok(nomesUtil.join(' | ') === 'Energia elétrica | Água | Telefone | Material de consumo | Outras taxas e impostos | IPTU | Seguro',
@@ -719,7 +720,7 @@ const tMan = textos(slides[iSub[3]]);
 ok(tMan.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tMan.indexOf('Orçamento 2027 da conta') >= 0 &&
    tMan.some(t => /^R\$ [\d,]+$/.test(t)) && tMan.indexOf('/m²') >= 0 && tMan.indexOf('/m² ao mês') < 0 && tMan.indexOf('vs. ritmo 2026') >= 0,
    'sub capa Manutenção: valor da conta, R$/m² ao mês e variação contra o ritmo (' + tMan.slice(0, 9).join(' | ') + ')');
-ok(textos(slides[iSub[6]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[6]]).indexOf('por m², todas as contas') >= 0,
+ok(textos(slides[iSub[6]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[6]]).indexOf('por m², com IPTU e seguro') >= 0,
    'sub capa Custo por m²: abre com o R$/m² ao mês');
 ok(!textos(slides[iSub[0]]).some(t => /^R\$/.test(t)), 'sub capa Premissas: sem número');
 // Sumário logo depois da capa, com as 8 seções; número e nome são link para a sub capa.
@@ -770,7 +771,7 @@ ok(!tPonte.some(t => /já roda|novo/i.test(t)) && tPonte.indexOf('Alta da conta'
    'ponte: sem "já roda", legenda só com Alta da conta e Redução (' + tPonte.filter(t => /roda|novo|Alta|Redu/i.test(t)).join(' | ') + ')');
 
 const iDRE = iSub[2] + 1;
-ok(textos(slides[iDRE]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[iDRE]).indexOf('DESPESAS OPERACIONAIS') >= 0,
+ok(textos(slides[iDRE]).indexOf('DRE — Orçamento 2027') >= 0 && textos(slides[iDRE]).indexOf(G.ORC_TOTAL_COM_IPTU) >= 0,
    'DRE logo depois da sub capa');
 const tOf = textos(slides[iDRE + 1]), tDf = textos(slides[iDRE + 2]);
 ok(tOf[0] === 'Ofensores — Orçamento 2027' && tOf.some(t => /^OFENSORES/.test(t)) && !tOf.some(t => /^DEFENSORES/.test(t)),
@@ -778,6 +779,8 @@ ok(tOf[0] === 'Ofensores — Orçamento 2027' && tOf.some(t => /^OFENSORES/.test
 ok(tDf[0] === 'Defensores — Orçamento 2027' && tDf.some(t => /^DEFENSORES/.test(t)) && !tDf.some(t => /^OFENSORES/.test(t)),
    'um slide só de defensores');
 ok(tOf.indexOf('DESPESAS OPERACIONAIS') >= 0 && tDf.indexOf('DESPESAS OPERACIONAIS') >= 0, 'DESPESAS OPERACIONAIS (total geral, nome da DRE) fecha os dois');
+// O aviso de IPTU e seguro vai no subtítulo (a coluna CONTA não cabe o rótulo inteiro).
+ok([tOf, tDf].every(t => t.some(x => /total com IPTU e seguro$/.test(x))), 'ofensores e defensores: "total com IPTU e seguro" no subtítulo');
 ok(!tOf.concat(tDf).some(t => /^Demais contas/.test(t)), 'ofensores/defensores: sem "Demais contas"');
 ok(['Material de consumo', 'Representação e refeição', 'Cursos e seminários', 'Despesa com combustíveis'].every(n => tOf.indexOf(n) >= 0),
    'ofensores: conta com variação visível tem linha própria (cursos, refeição, consumo, combustíveis)');
@@ -984,7 +987,7 @@ slides.forEach((sl, i) => {
 ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf('Manutenção de Imóveis') < 0,
    'capa: título é a cidade, não a conta');
 const tCapa = textos(slides[0]);
-ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m²', 'vs. ritmo 2026', 'Orçamento 2027, todas as contas',
+ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m²', 'vs. ritmo 2026', 'Orçamento 2027, com IPTU e seguro',
     'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12)].every(t => tCapa.indexOf(t) >= 0),
    'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
 // Curitiba é Demercado (ORC_MARCAS): nome e rodapé da marca, sem o slogan da

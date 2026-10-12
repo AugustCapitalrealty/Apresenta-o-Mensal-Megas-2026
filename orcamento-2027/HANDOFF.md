@@ -155,6 +155,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   PMOC = R$ 4.000 (CLIMATIZAR, 3 preventivas). Em `ORC_CONTRATOS_ANT_RITMO`; saíram de "2026 não identificado".
   Fica só o PMOC de Itajaí (sem razão de Itajaí).
 - Teste 4736/4736.
+- **"com IPTU e seguro"** (Guilherme: "sinalizar quando IPTU tiver incluso"): todo total/R$/m² que traz IPTU e Seguro
+  avisa — `ORC_COM_IPTU` e `ORC_TOTAL_COM_IPTU` (04_DadosRelatorios.gs). DRE e tabela de Facilities: "DESPESAS
+  OPERACIONAIS (COM IPTU E SEGURO)"; Custo por m²: "TOTAL GERAL (COM IPTU E SEGURO)"; capas, sub capas, Resumo
+  Executivo, Ponte, sumário e cards de Facilities: "com IPTU e seguro"; painel Utilities do gráfico de Facilities:
+  segunda linha "COM IPTU E SEGURO"; Ofensores/Defensores: no subtítulo (a coluna CONTA não cabe). Teste 4737/4737.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

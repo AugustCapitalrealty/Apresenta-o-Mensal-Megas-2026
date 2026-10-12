@@ -157,7 +157,7 @@ function _orcCapaNumeros_(slide, k, rel) {
   const vT = _orcVariacao_(rel.total.ritmo, rel.total.orc);
   _orcUmaLinha_(slide, 384 * k, 246 * k, 156 * k, 36 * k, _orcCompacto_(rel.total.orc),
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
-  _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', todas as contas',
+  _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', ' + ORC_COM_IPTU,
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
   const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m²'] : null,
                 vT.texto !== '–' ? [vT.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
@@ -347,13 +347,13 @@ function _orcDestaqueSecao_(titulo, rel, contas) {
   if (titulo === 'Custo por m²') {
     if (!area) return null;
     const m2 = rel.total.orc / area / 12;
-    return { valor: 'R$ ' + _orcM2_(m2), rotulo: 'por m², todas as contas',
+    return { valor: 'R$ ' + _orcM2_(m2), rotulo: 'por m², ' + ORC_COM_IPTU,
              kpis: [aRit ? contra(_orcVariacao_(rel.total.ritmo / aRit / 12, m2, 0.005)) : null].filter(Boolean) };
   }
   const iConta = { 'Manutenção': 0, 'Segurança': 1, 'Limpeza e Conservação': 2 }[titulo];
   let v, rotulo;
   if (iConta !== undefined && contas) { v = contas[iConta].v; rotulo = 'Orçamento ' + ORC_ANO + ' da conta'; }
-  else if (titulo === 'Resumo Executivo') { v = rel.total; rotulo = 'Orçamento ' + ORC_ANO + ', todas as contas'; }
+  else if (titulo === 'Resumo Executivo') { v = rel.total; rotulo = 'Orçamento ' + ORC_ANO + ', ' + ORC_COM_IPTU; }
   else return null;
   return { valor: _orcCompacto_(v.orc), rotulo: rotulo,
            kpis: [area ? ['R$ ' + _orcM2_(v.orc / area / 12), '/m²'] : null,
