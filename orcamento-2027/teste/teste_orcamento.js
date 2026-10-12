@@ -2086,6 +2086,50 @@ console.log('Gravação no Slides');
   });
   ok(!Object.keys(semCard).length, 'sombra: todo slide com cabeçalho tem card na moldura (sem card: ' + Object.keys(semCard).join(' | ') + ')');
 }
+console.log('Slides da Moked (28_Moked.gs)');
+// Os prints do relatório da Moked (v3, slides 22 a 27) refeitos em slides nativos, numa apresentação separada:
+// criada na 1ª vez (o ID fica nas propriedades) e refeita inteira nas seguintes.
+{
+  const criadas = [];
+  G.SlidesApp.create = nome => { const d = novoDeck(); d.getId = () => 'moked-teste'; decks['moked-teste'] = d; criadas.push(nome); return d; };
+  delete PROPS_DADOS[G.ORC_MOKED.prop];
+  const trilhaAntes = G._ORC_TRILHA, nMold = G._ORC_MOLDURAS_PASSOS.length;
+  G.gerarSlidesMoked();
+  G.gerarSlidesMoked();
+  const sl = decks['moked-teste'].getSlides(), tudo = sl.map(s => textos(s).join(' | '));
+  ok(criadas.length === 1 && PROPS_DADOS[G.ORC_MOKED.prop] === 'moked-teste',
+     'Moked: a apresentação é criada uma vez e o ID fica nas propriedades (' + criadas.length + ' criadas)');
+  ok(sl.length === 6, 'Moked: 6 slides depois de gerar duas vezes (' + sl.length + ')');
+  ok(sl.every(s => !textos(s).some(t => t.indexOf('Falha ao gerar') === 0)), 'Moked: nenhum slide com falha');
+  ok(sl.every(s => !textos(s).some(t => /…$/.test(t))), 'Moked: nenhum texto cortado (' +
+     sl.map(s => textos(s).filter(t => /…$/.test(t)).join(' / ')).filter(x => x).join(' | ') + ')');
+  ok(sl.every(s => s.notas.indexOf('[REGISTRO FOTOGRÁFICO · ESTEIO]') === 0),
+     'Moked: todos com a marca dos slides do gestor do Esteio nas anotações (a geração não os apaga)');
+  ok(sl.every(s => textos(s).indexOf('Implantação Moked | Rotina de Segurança') >= 0 && !textos(s).some(t => /^Subtítulo:/.test(t))),
+     'Moked: título do gestor e subtítulo preenchido');
+  [['3.643', 0], ['2.891', 0], ['752', 0], ['cerca de 2 registros situacionais por Mega por dia', 0], ['1.882', 1],
+   ['82% de tudo', 1], ['≥ 143', 2], ['78% no Mega Curitiba', 2], ['81,9% operantes', 3], ['Brigada não aplicada', 3],
+   ['168-19879', 4], ['MODERADO', 5], ['217 dispositivos', 5]]
+    .forEach(c => ok(tudo[c[1]].indexOf(c[0]) >= 0, 'Moked: o slide ' + (c[1] + 1) + ' mostra "' + c[0] + '"'));
+  ok(!tudo.some(t => /´|dia útil|aprimentos/.test(t)), 'Moked: sem os erros do texto original (acento solto, "dia útil")');
+  // Os números do relatório fecham entre si.
+  const M = G.ORC_MOKED, somaA = M.areas.reduce((s, r) => [s[0] + r[1], s[1] + r[2]], [0, 0]);
+  ok(somaA[0] === M.registros[1][0] && somaA[1] === M.registros[2][0] && somaA[0] + somaA[1] === M.registros[0][0],
+     'Moked: as áreas somam os registros de cada Mega (' + somaA.join(' + ') + ')');
+  ok(M.porAno.reduce((s, p) => s + p[1], 0) === M.areas[0][1] && M.porAno.reduce((s, p) => s + (p[2] || 0), 0) === M.areas[0][2],
+     'Moked: as ocorrências por ano somam a área Ocorrência de cada Mega');
+  ok(M.painel.linhas.every(l => l[1].length === M.painel.semanas.length && /^[OPI-]+$/.test(l[1])),
+     'Moked: painel com um estado por semana em cada dispositivo');
+  // Moldura: a do molde de fotos do gestor, com a trilha em 05 Segurança (a imagem foi montada a partir da 08).
+  const mold = G._ORC_MOLDURAS_PASSOS.slice(nMold).filter(p => /^Moked/.test(p[1])).map(p => p[2]);
+  const spec = mold.length ? JSON.parse(G._ORC_MOLDURAS_USADAS[mold[0]]) : {};
+  ok(mold.length === 12 && mold.every(x => x === mold[0]) && spec.secao === 5 && spec.cards.length === 1 &&
+     mold[0] === '4c4ed339ecdc', 'Moked: uma moldura só (MOLDURA - 4c4ed339ecdc.png), trilha em 05 Segurança (' + mold[0] + ')');
+  ok(G._ORC_TRILHA === trilhaAntes && G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark,
+     'Moked: trilha e marca voltam ao que eram');
+  delete G.SlidesApp.create;
+}
+
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));

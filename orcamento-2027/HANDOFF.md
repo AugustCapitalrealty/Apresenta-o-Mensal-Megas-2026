@@ -13,7 +13,25 @@ Tudo commitado/pushado (último código: `ac18e31`) e publicado (clasp 18:24). A
 **não tem o conector do Drive**: leia os arquivos pelo G: (os `.gsheet/.gslides` são atalhos e
 não abrem — peça ao Guilherme para rodar as funções de exportação, que gravam no G:).
 
-**Missão em aberto — slides da Moked (Esteio) e a ordem do gestor:**
+**Slides da Moked — FEITO (12/10, ~19h30), aguardando o Guilherme rodar:** `gerarSlidesMoked()` (28_Moked.gs)
+cria/refaz a apresentação SEPARADA "MOKED - SLIDES PARA A v3 (Implantação Moked · Mega Esteio)" na pasta do
+orçamento (ID na propriedade `ORC_MOKED_DECK_ID`): 6 slides nativos que substituem os prints 22 a 27 da v3
+(registros, áreas, perfil, MokLog, atuação + caso da invasão, painel de sistemas), no molde do gestor, subtítulo
+preenchido, trilha 05 Segurança, texto em português revisto ("por dia", não "por dia útil": 1,96 registro por Mega
+por dia corrido). Notas de cada slide: marca `[REGISTRO FOTOGRÁFICO · ESTEIO]` + qual print substitui. Moldura
+`MOLDURA - 4c4ed339ecdc.png` montada SEM Python (PowerShell/System.Drawing: a moldura 08 do molde de fotos com a
+faixa da trilha trocada pela TRILHA 05) e já na pasta IMAGENS - SLIDES. Prévia local sem Python:
+`node ferramentas/diagnostico/previa_moked.js teste <saída>` + Chrome headless (`--screenshot`, 1440×810).
+`exportarSlidesMoked()` grava os PNG reais em `_slides-moked`. O painel (slide 6) veio do print do slide 27 (não
+está no relatório); o print não diz o Mega — pelo Alpha Sense parece Curitiba, não escrito no slide.
+**Rateio do contrato Moked:** o gestor CORRIGIU o slide 30 da v3 (export de 12/10 19h07): 18,14% / 36,71% /
+45,15%, R$ 6.826,00 / 13.814,45 / 16.993,04 = R$ 37.633,50. Mas o ORÇAMENTO ainda carrega a divisão antiga
+(Esteio 7.948,98 no modelo 070; Itajaí 16.971,92 e Curitiba 20.706,69 no cadastro rev01): só muda quando as
+planilhas mudarem — perguntado ao Guilherme, não mexer sem decisão.
+Export novo (12/10 19h07): 147 slides; Esteio ganhou o 044 "Subst. Chicote Elétrico do Trator 03" (título interno
+copiado "PINTURA DA TUBULAÇÃO…"); Itajaí agora 78–95.
+
+**Missão anterior — slides da Moked (Esteio) e a ordem do gestor:**
 1. O Guilherme vai rodar `exportarSlidesVersaoGestor()` (03_Exportar.gs, só leitura) na
    "FACILITIES - APRESENTAÇÃO ORÇAMENTO 2027 v3" (pasta VERSÕES, id `1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s`
    — cópia de trabalho do gestor; o gerador escreve em outro deck, `1w_di…`, e NÃO mexe na v3).
