@@ -170,7 +170,11 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - Curitiba, linha 4 (provisão de acesso × FM Security): **vale o SIM, não entra nos 3%** — `ORC_PENDENCIAS_GESTOR`
   vazio nos três Megas. **Lovable** (Esteio e Itajaí) "começou em 2026" (o cadastro de 2027 diz 01/01/2025; mês
   não sabido): em `ORC_CONTRATOS_ANT_RITMO`, 2026 = **estimativa** de 12 × o mensal do cadastro (R$ 163 / R$ 726),
-  situação "Começou em 2026". Slide de revisão: só o PMOC e a LPU Canaveral do Itajaí. Teste 4748/4748.
+  situação "Começou em 2026". Teste 4748/4748.
+- **PMOC do Itajaí (V28)** — "procure Perri, uns 700/mês": no ritmo 2026 (090) é "Contrato de condicionadores de ar",
+  R$ 760 set–dez = R$ 3.040 → `ORC_CONTRATOS_ANT_RITMO`, "Ano cheio (começou em set/26)" (2027: R$ 760 jan–ago e
+  R$ 940 set–dez = R$ 9.840). **Único aviso que sobra nos três Megas: LPU Canaveral do Itajaí (V34)** — separar 2026
+  entre contrato e fora do contrato pede o razão de 2026 do Itajaí por nota fiscal (como o CAS_1 de Curitiba).
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

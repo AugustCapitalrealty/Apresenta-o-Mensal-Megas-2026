@@ -1785,7 +1785,9 @@ console.log('Contratos: junções e renovações (08/10/2026)');
   const fire = Object.keys(I).filter(n => /FIRECAM/.test(n)).map(n => I[n]);
   ok(fire.length === 1 && /^Ano cheio/.test(fire[0].situacao), 'Itajaí: Firecam começou em jul/26 — "Ano cheio" (' + fire.map(l => l.situacao).join() + ')');
   const pmocI = Object.keys(I).filter(n => /PMOC|AR-COND/.test(n)).map(n => I[n]);
-  ok(pmocI.length && pmocI.every(l => /não identificado/.test(l.situacao)), 'Itajaí: PMOC com "2026 não identificado" (' + pmocI.map(l => l.nome + ' ' + l.situacao).join() + ')');
+  // 12/10/2026: o 2026 do PMOC do Itajaí é o "Contrato de condicionadores de ar" do ritmo (Perri), R$ 760 set–dez.
+  ok(pmocI.length === 1 && pmocI[0].ant === 3040 && pmocI[0].situacao === 'Ano cheio (começou em set/26)',
+     'Itajaí: PMOC com o 2026 do ritmo (R$ 760 set–dez) e "Ano cheio" (' + pmocI.map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join() + ')');
   ok(E['EMPRESA DE SEGURANÇA'] && Math.round(E['EMPRESA DE SEGURANÇA'].ant) === 502815 && !Object.keys(E).some(n => /VOIGT/.test(n) && E[n].conta === E['EMPRESA DE SEGURANÇA'].conta),
      'Esteio: Voigt + nova empresa numa linha "EMPRESA DE SEGURANÇA" (' + show(E, 'EMPRESA DE SEGURANÇA') + ')');
   ok(E['RENTBRELLA (ARMAZÉNS A E B)'] && E['RENTBRELLA (ARMAZÉNS A E B)'].atual > 28000, 'Esteio: Rentbrella A e B numa linha (' + show(E, 'RENTBRELLA (ARMAZÉNS A E B)') + ')');
