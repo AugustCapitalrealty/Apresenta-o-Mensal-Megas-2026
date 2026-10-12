@@ -326,6 +326,9 @@ function _orcLerVisaoGeral_(chave) {
   let realAnt = null;
   try { realAnt = obterRealMensalAnoRetrasado_(chave); }
   catch (e) { Logger.log('Real ' + (ORC_ANO - 2) + ' mês a mês indisponível — custo por m² sem ele: ' + e.message); }
+  // Depois da conferência (que registra a divergência): o mês a mês passa a
+  // somar a DRE, para gráfico e card mostrarem o mesmo número (04_DadosRelatorios.gs).
+  if (ORC_CIDADES[chave].relatorios.orcDosModelos) _orcConciliarMensal_(rel, mensal, realAnt);
   return { rel: rel, mensal: mensal, realAnt: realAnt, modelos: modelos };
 }
 

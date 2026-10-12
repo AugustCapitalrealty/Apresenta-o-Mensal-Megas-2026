@@ -109,6 +109,14 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
     calc.semConta.forEach(s => out.push({ nome: s.nome, chave: '', tipo: 'Sem linha na METRAGEM',
       texto: _orcMoeda_(s.total) + ' nos modelos, fora do total' }));
   }
+  // Mês a mês ajustado para somar a DRE (_orcConciliarMensal_): uma linha só,
+  // com a maior diferença — o detalhe conta a conta vai para o log.
+  const conc = rel.mensalConciliado || [];
+  if (conc.length) {
+    const maior = conc.slice().sort((x, y) => Math.abs(y.dif) - Math.abs(x.dif))[0];
+    out.push({ nome: 'Despesas-Mensal', chave: '', tipo: 'Mês a mês = DRE',
+               texto: conc.length + ' ajustes · maior: ' + maior.nome + ' ' + (maior.dif >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(maior.dif)) });
+  }
   (ORC_PENDENCIAS_GESTOR[cid.nome] || []).forEach(p => {
     const chave = _orcChaveConta_(p.conta), c = rel.contas.filter(x => x.chave === chave)[0];
     out.push({ nome: c ? c.nome : p.conta, chave: chave, tipo: p.tipo, texto: p.texto });

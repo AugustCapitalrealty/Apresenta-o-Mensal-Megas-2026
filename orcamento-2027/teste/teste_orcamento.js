@@ -514,7 +514,10 @@ ok(Math.abs(serie('orc').media - rel.m2AreaComum.orc) < 0.01 && Math.abs(serie('
 ok(m2m.fora.indexOf('Despesa de pessoal') >= 0, 'm² mensal: despesa de pessoal (sem abertura mensal) entra 1/12 por mês');
 ['ritmo', 'orc'].forEach(k => ok(Math.abs(m2m.custo[k].areaComum.m2 + m2m.custo[k].iptu.m2 + m2m.custo[k].seguro.m2 - m2m.custo[k].total.m2) < 0.015,
    'm² mensal: área comum + IPTU + seguro = total em R$/m² (' + k + ')'));
-ok(m2m.custo.ritmo.areaComum.m2 === rel.m2AreaComum.ritmo, 'm² mensal: R$/m² da área comum é o da METRAGEM');
+// Desde 12/10/2026 a área comum usa a mesma área das linhas e dos outros
+// slides (o R$/m² escrito na METRAGEM dava 3,46 contra 3,45 na média).
+perto(m2m.custo.ritmo.areaComum.m2, rel.areaComum.ritmo / G._orcAreaImplicita_(rel, 'ritmo') / 12,
+      'm² mensal: R$/m² da área comum pela área implícita do total, a mesma das linhas');
 ok(contasLL.map(c => c.nome).join(' | ') === 'Manutenção de imóveis | Segurança e vigilância | Limpeza e conservação',
    'linha a linha: só manutenção, segurança e limpeza, nessa ordem (veio ' + contasLL.map(c => c.nome).join(' | ') + ')');
 lanca(() => G._orcContasLinhaALinha_({ contas: rel.contas.filter(c => !/limpeza/i.test(c.nome)) }),
@@ -1403,6 +1406,35 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
       ok(comp.base === 0 && comp.excesso === 0, c + ': ' + n + ' fecha item a item com a DRE (sobra ' +
          Math.round(comp.base) + ', excesso ' + Math.round(comp.excesso) + ')');
     });
+
+    // Um número, uma fonte (12/10/2026: "não aparecer na DRE um valor e na
+    // estratificação outro"): na leitura da geração o mês a mês soma a DRE em
+    // toda conta e coluna, o realizado do ritmo fica intacto, o Real do ano
+    // retrasado fecha com a METRAGEM e o R$/m² da tabela é a média das linhas.
+    const vis = G._orcLerVisaoGeral_(chave), cru = G.obterRelatorioMensal_(chave);
+    const contasV = vis.rel.contas.concat([{ nome: 'IPTU', chave: G._orcChaveConta_('IPTU'), v: vis.rel.iptu },
+                                           { nome: 'Seguro', chave: G._orcChaveConta_('Seguro'), v: vis.rel.seguro }]);
+    const naoFecha = [], mexeuRealizado = [];
+    contasV.forEach(x => {
+      const m = vis.mensal.contas[x.chave];
+      if (!m) return;
+      [['orcAnt', 'orcAnt'], ['ritmo', 'real'], ['orc', 'orc']].forEach(([k, campo]) => {
+        if (Math.abs(m[campo].reduce((t, v) => t + v, 0) - x.v[k]) > 1) naoFecha.push(x.nome + ' ' + k);
+      });
+      for (let i = 0; i < G.ORC_RITMO_ULTIMO_MES_FECHADO; i++) {
+        if (Math.abs(m.real[i] - cru.contas[x.chave].real[i]) > 0.01 && mexeuRealizado.indexOf(x.nome) < 0) mexeuRealizado.push(x.nome);
+      }
+    });
+    ok(!naoFecha.length, c + ': mês a mês soma a DRE em toda conta e coluna (' + naoFecha.join(', ') + ')');
+    ok(mexeuRealizado.length <= 2, c + ': ritmo realizado (jan–set) intacto, salvo conta sem espaço na projeção (' + mexeuRealizado.join(', ') + ')');
+    if (vis.realAnt) pertoReal(vis.realAnt.ac.reduce((t, v) => t + v, 0), vis.rel.areaComum.real, c + ': Real 2025 mês a mês = DRE');
+    const m2v = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt);
+    m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(s.media.toFixed(2) === m2v.custo[s.k].areaComum.m2.toFixed(2),
+      c + ': m² mês a mês — média das linhas = tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2v.custo[s.k].areaComum.m2.toFixed(2) + ')'));
+    const pv = G._orcPonte_(vis.rel, vis.mensal);
+    pertoReal(pv.degraus.reduce((t, x) => t + x.delta, 0), pv.fim - pv.inicio, c + ': ponte — degraus somam Orç − Ritmo');
+    ok(G._orcClassificarManutencao_(G.obterManutencao_(chave)).grupos.reduce((t, g) => t + g.total, 0) - manut < 1,
+       c + ': projetos × recorrente somam a manutenção da DRE');
 
     // Geração completa, como o usuário roda.
     decks = {};

@@ -130,6 +130,12 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   batendo ok, se não ajusta"). METRAGEM que bate com os modelos não gera aviso; a que não bate vira "Orç 2027
   ajustado" no slide de revisão, conta a conta. Não desligar.
 - Sem Python (antivírus, 12/10): imagens dos gráficos não são redesenhadas; slide com número novo sai "pelas formas".
+- **Auditoria "DRE × estratificação" (12/10):** o Orç fechava em tudo; o **Ritmo 2026 do Despesas-Mensal não somava o
+  da METRAGEM** (ex.: limpeza de Curitiba 563 mil × 542 mil — card e gráfico do linha a linha discordavam) e o Real
+  2025 de Curitiba (Financeiro) ficava R$ 8,9 mil abaixo. `_orcConciliarMensal_` (04_DadosRelatorios.gs, chamada em
+  `_orcLerVisaoGeral_` com orcDosModelos): a DRE manda; o ritmo só mexe na projeção out–dez, o Real 2025 na proporção.
+  Uma linha "Mês a mês = DRE" no slide de revisão; o detalhe no log. A tabela do m² mês a mês usa a mesma área das
+  linhas (o R$/m² da área comum escrito na METRAGEM dava 3,46 × 3,45). Teste 4692/4692.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

@@ -65,9 +65,11 @@ function _orcM2Mensal_(rel, mensal, realAnt) {
   ['real', 'ritmo', 'orc'].forEach(k => {
     const m2 = v => area[k] ? v / area[k] / 12 : null;
     custo[k] = {
-      // Área comum e total com o R$/m² escrito na METRAGEM (a área implícita
-      // vem dele arredondado: recalcular daria 3,44 onde o relatório diz 3,45).
-      areaComum: { v: rel.areaComum[k], m2: (rel.m2AreaComum && rel.m2AreaComum[k]) || m2(rel.areaComum[k]) },
+      // Área comum pela mesma área das linhas do gráfico e dos outros slides
+      // (12/10/2026): o R$/m² da área comum escrito na METRAGEM vem de outro
+      // arredondamento e dava 3,46 na tabela contra 3,45 na média das linhas.
+      // O total segue o escrito na METRAGEM (é dele que sai a área).
+      areaComum: { v: rel.areaComum[k], m2: m2(rel.areaComum[k]) },
       iptu:      { v: rel.iptu[k],      m2: m2(rel.iptu[k]) },
       seguro:    { v: rel.seguro[k],    m2: m2(rel.seguro[k]) },
       total:     { v: rel.total[k],     m2: (rel.m2Total && rel.m2Total[k]) || m2(rel.total[k]) }

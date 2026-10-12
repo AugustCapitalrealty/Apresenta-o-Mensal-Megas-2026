@@ -311,6 +311,59 @@ function _orcConferirMensal_(rel, mensal, valeMetragem) {
   });
 }
 
+/**
+ * Um número, uma fonte (Guilherme, 12/10/2026: "não aparecer na DRE um valor e
+ * na estratificação outro"): com orcDosModelos, o mês a mês passa a somar o que
+ * a DRE mostra, conta a conta e coluna a coluna. Sem isso o slide linha a linha
+ * dizia Ritmo 2026 = R$ 542 mil no card e R$ 563 mil no gráfico (limpeza de
+ * Curitiba: o Despesas-Mensal e a METRAGEM são exportados em dias diferentes).
+ * O Ritmo mexe só na projeção (meses depois de ORC_RITMO_ULTIMO_MES_FECHADO):
+ * o realizado fica como está. O Real do ano retrasado (planilha dos Megas) vai
+ * ao total da METRAGEM do mesmo jeito. O que foi ajustado fica em
+ * rel.mensalConciliado (uma linha no slide de revisão).
+ */
+function _orcConciliarMensal_(rel, mensal, realAnt) {
+  const ajustes = [];
+  const contas = rel.contas.concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
+                                    { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
+  if (mensal) contas.forEach(c => {
+    const m = mensal.contas[c.chave];
+    if (!m) return;
+    [['orcAnt', 'orcAnt', 0], ['ritmo', 'real', ORC_RITMO_ULTIMO_MES_FECHADO], ['orc', 'orc', 0]].forEach(([k, campo, desde]) => {
+      const d = _orcAjustarSerie_(m[campo], c.v[k], desde);
+      if (d) ajustes.push({ nome: c.nome, k: k, dif: d });
+    });
+  });
+  if (realAnt) {
+    const d = _orcAjustarSerie_(realAnt.ac, rel.areaComum.real, 0);
+    _orcAjustarSerie_(realAnt.total, rel.total.real, 0);
+    if (d) ajustes.push({ nome: 'Real ' + rel.anos.real + ' mês a mês', k: 'real', dif: d });
+  }
+  ajustes.forEach(a => Logger.log('Mês a mês conciliado com a DRE — ' + a.nome + ' (' + _orcRotuloColuna_(a.k, rel.anos) +
+                                  '): ' + (a.dif >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(a.dif))));
+  rel.mensalConciliado = ajustes;
+}
+
+// Leva a soma da série (12 meses, alterada no lugar) ao alvo; devolve a
+// diferença (0 se já batia). Os meses antes de `desde` ficam; a diferença vai
+// para os outros na proporção do que já têm (por igual se zerados). Se ali
+// não couber sem mês negativo, vai para o ano todo.
+function _orcAjustarSerie_(serie, alvo, desde) {
+  const d = alvo - serie.reduce((t, v) => t + v, 0);
+  if (Math.abs(d) <= 1) return 0;
+  const tenta = (ini, semNegativo) => {
+    const idx = [];
+    for (let i = ini; i < 12; i++) idx.push(i);
+    const base = idx.reduce((t, i) => t + serie[i], 0);
+    const novo = serie.slice();
+    idx.forEach(i => { novo[i] += base > 0.5 ? d * serie[i] / base : d / idx.length; });
+    return !semNegativo || idx.every(i => novo[i] >= -0.005) ? novo : null;
+  };
+  const novo = (desde > 0 && desde < 12 ? tenta(desde, true) : null) || tenta(0, true) || tenta(0, false);
+  novo.forEach((v, i) => { serie[i] = v; });
+  return d;
+}
+
 const _ORC_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 // ==========================================
