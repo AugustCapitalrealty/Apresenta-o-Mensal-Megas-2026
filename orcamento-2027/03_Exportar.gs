@@ -23,6 +23,41 @@ function exportarSlidesCuritiba() { _orcExportarSlides_(ORC_CIDADES.CURITIBA.dec
 function exportarSlidesItajai()   { _orcExportarSlides_(ORC_CIDADES.ITAJAI.deckId, '_slides-gerados - MEGA ITAJAÍ'); }
 function exportarSlidesEsteio()   { _orcExportarSlides_(ORC_CIDADES.ESTEIO.deckId, '_slides-gerados - MEGA ESTEIO'); }
 
+// Versão de trabalho do gestor (pasta VERSÕES, "FACILITIES - … v3"): SÓ LEITURA. A ordem de todos os
+// slides vai para "ordem.txt" e os slides do gestor (marca de fotos nas anotações, ou Moked/segurança no
+// texto) viram PNG — para a sessão sem acesso ao Slides ver a ordem e o estilo que ele propõe (12/10/2026).
+const ORC_DECK_VERSAO_GESTOR_ID = '1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s';
+function exportarSlidesVersaoGestor() { _orcExportarVersaoGestor_(ORC_DECK_VERSAO_GESTOR_ID, '_slides-versao-gestor'); }
+
+function _orcExportarVersaoGestor_(deckId, nomePasta) {
+  const inicio = Date.now();
+  const deck = SlidesApp.openById(deckId);
+  const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
+  const it = pai.getFoldersByName(nomePasta);
+  const pasta = it.hasNext() ? it.next() : pai.createFolder(nomePasta);
+  const velhos = pasta.getFiles();
+  while (velhos.hasNext()) velhos.next().setTrashed(true);
+
+  const token = ScriptApp.getOAuthToken();
+  const linhas = [], semTempo = [];
+  deck.getSlides().forEach((s, i) => {
+    const n = String(i + 1).padStart(3, '0');
+    const textos = s.getShapes().map(sh => { try { return sh.getText().asString().replace(/\s+/g, ' ').trim(); } catch (e) { return ''; } })
+      .filter(String).slice(0, 4).map(t => t.slice(0, 110));
+    const dono = _orcDonoFotos_(s);
+    const doGestor = !!dono || /moked|seguran[cç]a \||implanta[cç][aã]o/i.test(textos.join(' '));
+    linhas.push([n, doGestor ? 'GESTOR' + (dono ? ' ' + dono : '') : 'gerado', s.getImages().length + ' img'].concat(textos).join(' | '));
+    if (!doGestor) return;
+    if (Date.now() - inicio > 5 * 60 * 1000) { semTempo.push(n); return; }   // o Apps Script para em 6 min
+    const resp = _orcBuscarComEspera_('https://docs.google.com/presentation/d/' + deckId + '/export/png?pageid=' + s.getObjectId(), token);
+    if (resp.getResponseCode() === 200) pasta.createFile(resp.getBlob().setName('slide_' + n + '.png'));
+    else Logger.log('Slide ' + n + ': HTTP ' + resp.getResponseCode());
+  });
+  pasta.createFile('ordem.txt', linhas.join('\n'), MimeType.PLAIN_TEXT);
+  if (semTempo.length) Logger.log('Sem tempo para o PNG dos slides ' + semTempo.join(', ') + ' — rode de novo se precisar.');
+  Logger.log('Pronto: ' + linhas.length + ' slides em ordem.txt — ' + pasta.getUrl());
+}
+
 function _orcExportarSlides_(deckId, nomePasta) {
   const deck = SlidesApp.openById(deckId);
   const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
