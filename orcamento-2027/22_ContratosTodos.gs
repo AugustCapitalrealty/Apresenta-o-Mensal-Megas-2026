@@ -90,12 +90,16 @@ const ORC_CONTRATOS_ANT_RITMO = [
   { unidade: 'Mega Curitiba', conta: 'Manutenção de imóveis', termo: 'pmoc', ant: 4000,
     situacao: 'Era avulso em ' + (ORC_ANO - 1) }, // V11
   // Lovable (Guilherme, 12/10/2026): "já existe nos Megas, começou em 2026" — o cadastro de 2027 diz início
-  // 01/01/2025 e nenhuma fonte de 2026 o traz. Mês de início não sabido: ESTIMATIVA de 12 × o valor
-  // mensal do cadastro de 2027 (Esteio R$ 13,59, Itajaí R$ 60,51). Sai de "Novo em 2027".
-  { unidade: 'Mega Esteio', conta: 'Assistência em informática', termo: 'lovable', ant: 12 * 13.59,
-    situacao: 'Começou em ' + (ORC_ANO - 1) },
-  { unidade: 'Mega Itajaí', conta: 'Assistência em informática', termo: 'lovable', ant: 12 * 60.51,
-    situacao: 'Começou em ' + (ORC_ANO - 1) },
+  // 01/01/2025. No razão é a nota "…SERVIÇOS DE CRIAÇÃO, HOSPEDAGEM E MELHORIA CONTINUA DA PLATAFORMA DE
+  // FACILITIES… RATEIO ENTRE OS 3 MEGAS - MAIO/2026": começou em mai/26. No de Curitiba ("CAS_1",
+  // Assistência em informática) vem sem o nome Lovable: 64,94 · 65,84 · 67,46 · 66,88 · 67,58 (mai–set). O
+  // razão dessa conta do Esteio e do Itajaí não veio: 2026 = mai–dez, 8 × o mensal do cadastro de 2027
+  // (Esteio R$ 13,59, Itajaí R$ 60,51) — estimativa, com o mês certo. Curitiba não tem a Lovable no
+  // cadastro de 2027.
+  { unidade: 'Mega Esteio', conta: 'Assistência em informática', termo: 'lovable', ant: 8 * 13.59,
+    situacao: 'Ano cheio (começou em mai/' + String(ORC_ANO - 1).slice(-2) + ')' },
+  { unidade: 'Mega Itajaí', conta: 'Assistência em informática', termo: 'lovable', ant: 8 * 60.51,
+    situacao: 'Ano cheio (começou em mai/' + String(ORC_ANO - 1).slice(-2) + ')' },
   // Itajaí, PMOC (V28 — Guilherme, 12/10/2026: "procure Perri, uns 700 por mês"): no ritmo 2026 (090) é
   // "Contrato de condicionadores de ar", R$ 760/mês de set a dez; em 2027, R$ 760 jan–ago e R$ 940 set–dez.
   { unidade: 'Mega Itajaí', conta: 'Manutenção de imóveis', termo: 'pmoc', ant: 4 * 760,

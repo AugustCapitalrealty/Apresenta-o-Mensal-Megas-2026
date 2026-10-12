@@ -1900,11 +1900,12 @@ console.log('Contratos: junções e renovações (08/10/2026)');
      canC.concat(canF).map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join(' | ') + ')');
   ok(!G._orcContratosNaoIdentificados_(it.cmp).length && !G.ORC_CONTRATOS_2026_NAO_ID.length,
      'Itajaí: nenhum contrato com "2026 não identificado" (12/10/2026)');
-  // Lovable "começou em 2026" (Guilherme, 12/10/2026): sai de "Novo em 2027", 2026 estimado em 12 × o mensal.
+  // Lovable começou em mai/26 (nota "RATEIO ENTRE OS 3 MEGAS - MAIO/2026"; razão de Curitiba): sai de
+  // "Novo em 2027", 2026 = mai–dez, 8 × o mensal do cadastro de 2027.
   [[I, 60.51, 'Itajaí'], [E, 13.59, 'Esteio']].forEach(([M, mensal, nome]) => {
     const lov = Object.keys(M).filter(n => /LOVABLE/.test(n)).map(n => M[n]);
-    ok(lov.length === 1 && lov[0].situacao === 'Começou em 2026' && Math.abs(lov[0].ant - 12 * mensal) < 0.01,
-       nome + ': Lovable "Começou em 2026", 2026 = 12 × R$ ' + mensal + ' (' + lov.map(l => Math.round(l.ant) + ' ' + l.situacao).join() + ')');
+    ok(lov.length === 1 && lov[0].situacao === 'Ano cheio (começou em mai/26)' && Math.abs(lov[0].ant - 8 * mensal) < 0.01,
+       nome + ': Lovable "Ano cheio (começou em mai/26)", 2026 = 8 × R$ ' + mensal + ' (' + lov.map(l => Math.round(l.ant) + ' ' + l.situacao).join() + ')');
   });
   [it, es, cu].forEach(x => perto(x.cmp.ant, x.cmp.grupos.reduce((t, g) => t + g.linhas.reduce((u, l) => u + l.ant, 0), 0), 'contratos: o total de 2026 fecha com as linhas depois das junções'));
 }

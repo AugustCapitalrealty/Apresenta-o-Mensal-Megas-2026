@@ -215,6 +215,12 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   linhas dele com a conta na G ficam na planilha, mas o gerador não as lê. Teste 4762/4762.
 - **Detalhamento sem o valor do item** (Guilherme: "aparece o valor no final, tire isso"): o maior item sai só com a
   descrição, sem o " · R$ 214 mil" — a célula ganha ~8 letras ("CABE ATÉ" 34 → 42). Teste 4763/4763.
+- **Itajaí: as seis coletas de lixo (AMZ 01 a 06)** numa linha do slide de contratos — "COLETA DE LIXO (AMZ 01 A 06)",
+  R$ 40.259 → 40.259 (`ORC_CONTRATOS_UNIR`). Teste 4764/4764.
+- **Lovable começou em mai/26** (nota "…PLATAFORMA DE FACILITIES… RATEIO ENTRE OS 3 MEGAS - MAIO/2026"; cada Mega tem a
+  sua parte do rateio). No razão de Curitiba (CAS_1) vem sem o nome Lovable: 64,94 · 65,84 · 67,46 · 66,88 · 67,58
+  (mai–set). Esteio e Itajaí sem o razão da conta: 2026 = 8 × o mensal do cadastro 2027 (R$ 109 e R$ 484), "Ano cheio
+  (começou em mai/26)". **Curitiba paga a Lovable em 2026, mas o cadastro de 2027 não tem a linha** (~R$ 67/mês).
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
