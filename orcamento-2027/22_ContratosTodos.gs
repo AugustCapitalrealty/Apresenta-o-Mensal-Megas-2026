@@ -45,6 +45,9 @@ const ORC_CONTRATOS_UNIR = [
   { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: ['lauri'], nome: 'LAURI BATISTA (DEDETIZAÇÃO)' },                // V32
   { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: [/ambiental.*\b(amz|armazem) 0?(7|8|9)\b/],
     nome: 'TAXAS AMBIENTAIS (AMZ 07 A 09)' },                                            // V33
+  // Guilherme, 12/10/2026 ("coloque junto esses"): as seis coletas da Ambiental Limpeza Urbana, uma por armazém.
+  { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termos: [/(limpeza urbana|coleta de lixo).*\b(amz|armazem) 0?[1-6]\b/],
+    nome: 'COLETA DE LIXO (AMZ 01 A 06)' },
   { unidade: 'Mega Esteio', conta: 'Segurança e vigilância', termos: ['voigt', 'alteracao empresa de seguranca'],
     nome: 'EMPRESA DE SEGURANÇA', situacao: 'Troca de empresa a partir de mar/' + String(ORC_ANO).slice(-2) },   // V42
   { unidade: 'Mega Esteio', conta: 'Manutenção de imóveis', termos: ['rentbrella'], nome: 'RENTBRELLA (ARMAZÉNS A E B)' },         // V43

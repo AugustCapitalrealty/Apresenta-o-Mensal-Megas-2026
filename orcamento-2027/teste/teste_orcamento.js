@@ -1862,6 +1862,11 @@ console.log('Contratos: junções e renovações (08/10/2026)');
      'Itajaí: as 3 linhas da Lauri Batista numa só, com 2027 (' + show(I, 'LAURI BATISTA (DEDETIZAÇÃO)') + ')');
   ok(I['TAXAS AMBIENTAIS (AMZ 07 A 09)'] && Math.round(I['TAXAS AMBIENTAIS (AMZ 07 A 09)'].ant) === 6710,
      'Itajaí: Ambiental AMZ 07–09 em "TAXAS AMBIENTAIS" (' + show(I, 'TAXAS AMBIENTAIS (AMZ 07 A 09)') + ')');
+  // Guilherme, 12/10/2026: as seis coletas de lixo (uma por armazém, ~R$ 6.710 cada) numa linha.
+  ok(I['COLETA DE LIXO (AMZ 01 A 06)'] && Math.round(I['COLETA DE LIXO (AMZ 01 A 06)'].ant) === 40259 &&
+     Math.round(I['COLETA DE LIXO (AMZ 01 A 06)'].atual) === 40259 && I['COLETA DE LIXO (AMZ 01 A 06)'].situacao === 'Junta 6 linhas' &&
+     !Object.keys(I).some(n => /COLETA DE LIXO AMZ|LIMPEZA URBANA/.test(n)),
+     'Itajaí: coleta de lixo dos AMZ 01–06 numa linha (' + show(I, 'COLETA DE LIXO (AMZ 01 A 06)') + ')');
   const arca = Object.keys(I).filter(n => /ARCA/.test(n)).map(n => I[n]);
   ok(arca.length === 1 && Math.round(arca[0].ant) === 88428 && /Mudou de conta/.test(arca[0].situacao),
      'Itajaí: Arca Agro numa linha, com o 2026 da Limpeza (' + arca.map(l => l.nome + ' ' + Math.round(l.ant) + '→' + Math.round(l.atual) + ' ' + l.situacao + ' ' + l.conta).join(' | ') + ')');
