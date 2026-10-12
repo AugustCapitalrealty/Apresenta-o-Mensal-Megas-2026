@@ -24,9 +24,13 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 // (unidadeModelo, coluna B "Cód. da unidade"): Capital Realty, Demercado, CR
 // SP e as comissões por módulo ficam de fora, como nas planilhas por Mega de
 // antes (hoje "PODE EXCLUIR - MEGA <X> - 0x0 …"). Nova exportação: substituir
-// o conteúdo destas planilhas (o ID fica).
-const ORC_MODELO_090_ID = '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U';   // MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES
-const ORC_MODELO_070_ID = '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY';   // MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES
+// o conteúdo destas planilhas (o ID fica) ou trocar o ID aqui.
+// 12/10/2026, 16h: exportação "…-Atualizado" — o empréstimo Itaú entra no 070
+// de Curitiba, o Moked do Esteio cai e as duas lavagens das estruturas
+// metálicas de Curitiba saem do ano (090 "v2"; a primeira veio sem a coluna
+// Item). As de 12h (1eGg8vWV…, 1TSAqizR…) viraram "PODE EXCLUIR - …".
+const ORC_MODELO_090_ID = '1GsxlXr-LNMM5or0_alx4tmoQtCONxz1QFeaALOzzjXo';   // MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES
+const ORC_MODELO_070_ID = '1Msx1LjK4FVx14ChQPz6R4tbQilqXY1b2LF-VDSZ5v14';   // MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES
 
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide

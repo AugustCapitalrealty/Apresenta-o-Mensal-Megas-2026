@@ -143,7 +143,8 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   GERAIS 2027 - TODAS AS UNIDADES") e `ORC_MODELO_070_ID` ("MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS
   UNIDADES"), na pasta 00 - PLANILHAS MESTRAS; as seis por Mega viraram "PODE EXCLUIR - …". Cada Mega filtra pela
   `unidadeModelo` (coluna B: Curitiba 60, Itajaí 19, Esteio 18) — é o mesmo recorte das planilhas por Mega de antes,
-  que o gerador não lê mais. Nova exportação: substituir o conteúdo dessas duas planilhas (o ID fica). Unidade sem
+  que o gerador não lê mais. Nova exportação: substituir o conteúdo dessas duas planilhas (o ID fica) ou trocar o ID
+  em `01_Config.gs` (como às 16h); o .xlsx tem que vir **por item** (coluna F "Item"). Unidade sem
   linha = erro, nunca deck zerado. Fixtures: `teste/fixture_090_megas_2027.json` e `fixture_070_megas_2027.json`.
 - Com essas exportações (fixtures de METRAGEM de 08/10): Curitiba R$ 7.497.667 (manutenção 1.990 mil), Itajaí
   R$ 6.616.939, Esteio R$ 4.175.921. Textos curtos dos itens novos em `07_PropostasTextos.gs`.
@@ -189,10 +190,18 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
 - **Cadastro de contratos 2027 = exportação "rev01" (12/10)** — "MESTRA - CONTRATOS 2027 - TODOS OS MEGAS" (`1KGL-w8J…`,
   `ORC_CONTRATOS_ANO_IDS`); a de 07/10 virou "PODE EXCLUIR - …". Diferença: Moked Curitiba 150.534 → 248.480, Moked
   Itajaí 150.534 → 203.663 e o **empréstimo Itaú da cerca elétrica sai dos contratos** (fim 31/12/2026, 2027 zerado —
-  o Guilherme: "foi para os modelos"). **O Itaú ainda não está no modelo 2027 exportado** (MESTRA 070/090 de 12/10): até
-  a nova exportação, Curitiba fica sem os ~R$ 182 mil de 2027. Com rev01 + modelos de 12/10: Curitiba R$ 7.413.454,
-  Itajaí R$ 6.670.068, Esteio R$ 4.175.921. Os arquivos "100-03-02-Servicos-de-Terceiros (1)" e "120-03-04-Despesas-Gerais"
-  da pasta são os modelos de 2026 (ritmo), não de 2027.
+  o Guilherme: "foi para os modelos"). O Itaú não estava nos modelos das 12h (entrou no das 16h, abaixo). Com rev01 +
+  modelos das 12h: Curitiba R$ 7.413.454, Itajaí R$ 6.670.068, Esteio R$ 4.175.921. Os arquivos
+  "100-03-02-Servicos-de-Terceiros (1)" e "120-03-04-Despesas-Gerais" da pasta são os modelos de 2026 (ritmo), não de 2027.
+- **Modelos 2027 = exportação "…-Atualizado" (12/10, 16h)**: o 070 e o 090 "v2" viraram as MESTRA (`1Msx1LjK…`,
+  `1GsxlXr-…`); as das 12h viraram "PODE EXCLUIR - … (até 12-10-2026 16h)" e o primeiro 090 das 16h, que veio **sem a
+  coluna Item** (por conta × centro de custo — o gerador recusa), "PODE EXCLUIR - … (sem a coluna Item)". Mudanças:
+  **Itaú no 070 de Curitiba** — "[CONTRATO EMPRÉSTIMO ITAÚ] - PARCELAS MENSAIS DA FIBRA ÓPTICA A SENSE", Segurança,
+  SAC R$ 13.866 → 12.234/mês = R$ 156.486,87; no slide de contratos "FINANCIAMENTO ITAÚ – FIBRA ÓPTICA", 2026 =
+  R$ 86.602 do ritmo, "Ano cheio (começou em jun/26)" (texto curto em `07_PropostasTextos.gs`); Moked do Esteio
+  12.545 → 7.948,98/mês (R$ 150.534 → 95.388); Curitiba sem as duas lavagens das estruturas metálicas de março (pórtico
+  R$ 3.968, portaria R$ 5.040). Orç 2027: **Curitiba R$ 7.560.933** (Segurança 2.438.920), Itajaí R$ 6.670.068 (igual),
+  **Esteio R$ 4.120.775**. Teste 4756/4756.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
@@ -242,7 +251,7 @@ Pasta no Drive: `08.000 - Business Analysis/APRESENTAÇÃO ORÇAMENTO`
 
 | Pasta | Conteúdo |
 |---|---|
-| `00 - PLANILHAS MESTRAS` | `MESTRA - ORÇAMENTO 2026 ITEM A ITEM` (`1X39Bz…`), `MESTRA - CONTRATOS 2026` (`11bcQ0…`, `ORC_CONTRATOS_ANO_ANTERIOR_ID`), `MESTRA - CONTRATOS 2027` (`1cwbW249…`, `ORC_CONTRATOS_ANO_IDS[0]`), `MESTRA - TOTAIS 2026 POR CONTA`, `MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES` (`1eGg8vWV…`, `ORC_MODELO_090_ID`), `MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES` (`1TSAqizR…`, `ORC_MODELO_070_ID`) |
+| `00 - PLANILHAS MESTRAS` | `MESTRA - ORÇAMENTO 2026 ITEM A ITEM` (`1X39Bz…`), `MESTRA - CONTRATOS 2026` (`11bcQ0…`, `ORC_CONTRATOS_ANO_ANTERIOR_ID`), `MESTRA - CONTRATOS 2027` (`1KGL-w8J…`, rev01, `ORC_CONTRATOS_ANO_IDS[0]`), `MESTRA - TOTAIS 2026 POR CONTA`, `MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES` (`1GsxlXr-…`, `ORC_MODELO_090_ID`), `MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES` (`1Msx1LjK…`, `ORC_MODELO_070_ID`) — exportações de 12/10, 16h |
 | `01 - CONTROLE DA APRESENTAÇÃO` | `ORÇAMENTO 2027 - TEXTOS DAS TABELAS` (`ORC_TEXTOS_ID`), `ORÇAMENTO 2027 - COMPARAÇÃO DE ITENS 2026 x 2027 - MEGA <X>` (três; Curitiba é Google Planilha, Itajaí e Esteio são .xlsx) |
 | `02 - MEGA CURITIBA`, `03 - MEGA ITAJAÍ`, `04 - MEGA ESTEIO` | apresentação, `METRAGEM-COND 2027`, `DESPESAS MENSAL 2026 x 2027`, `PODE EXCLUIR - … 090 / 070 …` (modelos por Mega de antes de 12/10/2026), `BASE DO ORÇAMENTO 2027.xlsx` (Curitiba ainda tem `CONTRATOS 2027 - <CONTA>`, que o gerador não lê mais) |
 

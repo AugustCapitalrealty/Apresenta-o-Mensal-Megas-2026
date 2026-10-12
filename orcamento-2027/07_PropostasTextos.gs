@@ -449,6 +449,8 @@ const ORC_PROPOSTAS_TEXTOS = [
   ["Categorias","INSTALAÇÃO E CONFIGURAÇÃO MEDIDORES CAS - PROJETO AUTOMAÇÃO DE LEITURAS","INSTALAÇÃO MEDIDORES CAS – AUTOMAÇÃO DE LEITURAS",""],
   ["Composição","VIGILÂNCIA COM DRONE AUTONÔMO + SOFTWARE DE ANÁLISE DE RISCO","DRONE AUTÔNOMO + SOFTWARE DE RISCO",""],
   ["Composição","IMPLANTAÇÃO E CONFIGURAÇÃO XDRONE (SETUP)","IMPLANTAÇÃO DO XDRONE (SETUP)",""],
+  // Empréstimo Itaú: saiu do cadastro de contratos e foi para o 070 (exportação das 16h, "[CONTRATO EMPRÉSTIMO ITAÚ] - …").
+  ["Composição","PARCELAS MENSAIS DA FIBRA ÓPTICA A SENSE","FINANCIAMENTO ITAÚ – FIBRA ÓPTICA (SENSE)",""],
   // Itajaí — câmera com IA da subestação.
   ["Ofensores","REFERENTE A AQUISIÇÃO DE CÂMERA+LICENÇA HIKVISION IA E ANALITICO PARA SUBESTAÇÃO 1","CÂMERA HIKVISION IA – SUBESTAÇÃO 1",""],
   // Esteio — troca da empresa de segurança (o "VIGILÃNCIA" com til vem assim do modelo).

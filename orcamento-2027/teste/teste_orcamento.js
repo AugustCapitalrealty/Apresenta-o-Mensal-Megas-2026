@@ -1353,9 +1353,9 @@ if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
 
 // 12/10/2026: os modelos 070/090 passaram a vir da exportação completa do
 // sistema (todas as unidades numa planilha só, ORC_MODELO_090_ID / _070_ID);
-// cada Mega fica com a sua unidade (unidadeModelo). Fixtures: as duas
-// exportações de 12/10/2026 convertidas como o getValues() devolve.
-console.log('Modelos de todas as unidades (exportação de 12/10/2026)');
+// cada Mega fica com a sua unidade (unidadeModelo). Fixtures: as exportações
+// "…-Atualizado" de 12/10/2026, 16h (070 e 090 "v2", do .xlsx), como o getValues() devolve.
+console.log('Modelos de todas as unidades (exportação de 12/10/2026, 16h)');
 const MODELO_SEC = {};
 {
   const M090 = fixture('fixture_090_megas_2027.json'), M070 = fixture('fixture_070_megas_2027.json');
@@ -1363,9 +1363,15 @@ const MODELO_SEC = {};
      'os três Megas leem as planilhas de todas as unidades (01_Config.gs)');
   porId[G.ORC_MODELO_090_ID] = M090;
   porId[G.ORC_MODELO_070_ID] = M070;
+  // O cadastro de contratos que o deck lê (rev01, sem o Itaú — está no 070); sem limpar o cache
+  // da leitura, valeria o "completo" do começo do teste. Volta ao fim da seção.
+  const CAD_ANTES = porId[G.ORC_CONTRATOS_ANO_IDS[0]];
+  const limparCadastro = () => Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = fixture('fixture_contratos_2027_rev01.json');
+  limparCadastro();
   // O filtro deixa só a unidade do Mega (Capital Realty, Demercado, CR SP e as
   // comissões por módulo ficam de fora) e o total confere com a exportação.
-  const esperado = { CURITIBA: [60, 2530449, 1286148], ITAJAI: [19, 2907387, 453133], ESTEIO: [18, 1474045, 1410411] };
+  const esperado = { CURITIBA: [60, 2521441, 1442635], ITAJAI: [19, 2907387, 453133], ESTEIO: [18, 1474045, 1355264] };
   Object.keys(esperado).forEach(k => {
     const [u, t090, t070] = esperado[k];
     const l090 = G._orcLinhasModelo_(M090, u), l070 = G._orcLinhasModelo_(M070, u);
@@ -1376,6 +1382,17 @@ const MODELO_SEC = {};
   });
   ok(G._orcLinhasModelo_(M090).length > G._orcLinhasModelo_(M090, 60).length, 'sem unidade: todas as linhas (como as planilhas por Mega de antes)');
   lanca(() => G._orcLinhasModelo_(M090, 99), 'Nenhuma linha da unidade 99', 'unidade que não está na planilha: erro em vez de deck zerado');
+  // Exportação das 16h: o empréstimo Itaú entra no 070 de Curitiba (tabela SAC), o Moked do Esteio
+  // cai para R$ 7.948,98/mês e as duas lavagens das estruturas metálicas de Curitiba saem do ano.
+  const itau070 = G._orcLinhasModelo_(M070, 60).filter(l => /EMPR[ÉE]STIMO ITA[ÚU]/i.test(l.item));
+  ok(itau070.length === 1 && Math.abs(itau070[0].total - 156486.87) < 0.01 && itau070[0].meses.every((v, i) => !i || v < itau070[0].meses[i - 1]),
+     '070 de Curitiba: empréstimo Itaú, R$ 156.486,87 em 2027, parcela caindo mês a mês (' + itau070.map(l => l.total.toFixed(2)).join() + ')');
+  const moked18 = G._orcLinhasModelo_(M070, 18).filter(l => /MOKED/.test(l.item));
+  ok(moked18.length === 1 && Math.abs(moked18[0].total - 12 * 7948.98) < 0.01,
+     '070 do Esteio: Moked de R$ 7.948,98/mês (' + moked18.map(l => l.total.toFixed(2)).join() + ')');
+  const lavagens = G._orcLinhasModelo_(M090, 60).filter(l => /LAVAGEM DAS ESTRUTURAS MET/.test(l.item));
+  ok(lavagens.length === 2 && lavagens.every(l => l.meses.every(v => Math.abs(v) < 0.5)),
+     '090 de Curitiba: lavagens das estruturas metálicas (pórtico e portaria) fora do ano');
 
   // Geração completa de cada Mega com a exportação nova, como o usuário roda.
   [['CURITIBA', 'curitiba'], ['ITAJAI', 'itajai'], ['ESTEIO', 'esteio']].forEach(([chave, c]) => {
@@ -1422,6 +1439,19 @@ const MODELO_SEC = {};
            'itajai (exportação nova): obras puxadas para 2026 saem das adiadas (' + (adiN ? adiN.itens.map(i => i.nome + ' ' + Math.round(i.orc2027)).join(' | ') : 'nenhuma') + ')');
         ok(!(G.ORC_PENDENCIAS_GESTOR[cid.nome] || []).length, 'itajai: perguntas do gestor respondidas na exportação de 12/10/2026');
       }
+      if (chave === 'CURITIBA') {
+        // Itaú uma vez só (o do 070; o rev01 não o traz) e, no slide de contratos, com o 2026 do ritmo.
+        const itauLinhas = vis.modelos.filter(l => /itau/.test(G._orcNorm_(l.item)) && Math.abs(l.total) > 0.5);
+        ok(itauLinhas.length === 1 && itauLinhas[0].linha > 0, 'curitiba (exportação nova): empréstimo Itaú uma vez só, do 070 (' +
+           itauLinhas.map(l => l.item + ' ' + Math.round(l.total)).join(' | ') + ')');
+        const cmpC = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, cid.nome, vis.modelos, FIX_MOD_2026);
+        const itauC = [];
+        cmpC.grupos.forEach(g => g.linhas.filter(l => /itau/.test(G._orcNorm_((l.textos || []).join(' ') + ' ' + l.nome))).forEach(l => itauC.push(l)));
+        ok(itauC.length === 1 && Math.abs(itauC[0].ant - 86601.84) < 0.01 && Math.abs(itauC[0].atual - 156486.87) < 0.01 &&
+           itauC[0].situacao === 'Ano cheio (começou em jun/26)' && /^FINANCIAMENTO ITAÚ/.test(itauC[0].nome),
+           'curitiba (exportação nova): Itaú no slide de contratos, 2026 do ritmo e 2027 do 070 (' +
+           itauC.map(l => l.nome + ' ' + Math.round(l.ant) + '→' + Math.round(l.atual) + ' ' + l.situacao).join(' | ') + ')');
+      }
       decks = {};
       G._orcGerar_([chave]);
       G.aplicarPropostasTextos();
@@ -1456,6 +1486,8 @@ const MODELO_SEC = {};
   ok(Math.round(tot(segC, /MOKED|CONSULTORIA DE SEGURAN/i)) === 248480 && !segC.some(k => /ITAU/i.test(k.fornecedor + k.descricao)) &&
      Math.round(tot(segI, /MOKED/i)) === 203663,
      'cadastro rev01: Moked Curitiba R$ 248.480, Moked Itajaí R$ 203.663, Itaú fora dos contratos de 2027');
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_ANTES;
+  limparCadastro();
 }
 
 // Out/2026: a controladoria não fecha a METRAGEM a tempo e o Orç 2027 de cada

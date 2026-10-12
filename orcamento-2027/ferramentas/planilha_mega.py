@@ -157,8 +157,11 @@ COMUNS = [
     ('PODE EXCLUIR - MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (até 12-10-2026)', 'Cadastro de contratos 2027 de 07/10/2026 (era "CONTRATOS-2027-COMPLETO") — substituído pela rev01', 'Não', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
     ('MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES', 'Totais planejados de 2026 por conta, todas as unidades somadas (era "2026")', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
     # 12/10/2026: os modelos 2027 vêm da exportação completa do sistema; cada Mega lê a sua unidade.
-    ('MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção), todas as unidades (era "090-Despesas-Gerais")', 'Sim (só a unidade do Mega)', MESTRAS, '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U', S_),
-    ('MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (serviços de terceiros), todas as unidades (era "070-Servicos-de-Terceiros")', 'Sim (só a unidade do Mega)', MESTRAS, '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY', S_),
+    # 16h: exportação "…-Atualizado" (Itaú no 070 de Curitiba) — as das 12h viraram PODE EXCLUIR.
+    ('MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção), todas as unidades (era "090-Despesas-Gerais-Atualizado-v2", 12/10/2026 16h)', 'Sim (só a unidade do Mega)', MESTRAS, '1GsxlXr-LNMM5or0_alx4tmoQtCONxz1QFeaALOzzjXo', S_),
+    ('MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (serviços de terceiros), todas as unidades (era "070-Servicos-de-Terceiros-Atualizado", 12/10/2026 16h)', 'Sim (só a unidade do Mega)', MESTRAS, '1Msx1LjK4FVx14ChQPz6R4tbQilqXY1b2LF-VDSZ5v14', S_),
+    ('PODE EXCLUIR - MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES (até 12-10-2026 16h)', 'Modelo 090 das 12h — substituído pela exportação das 16h', 'Não', MESTRAS, '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U', S_),
+    ('PODE EXCLUIR - MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES (até 12-10-2026 16h)', 'Modelo 070 das 12h (sem o empréstimo Itaú) — substituído pela exportação das 16h', 'Não', MESTRAS, '1TSAqizRWikyObi3rIKT9rSXRqTqQUm6W8QTU_7cAbOY', S_),
     ('ORÇAMENTO 2027 - TEXTOS DAS TABELAS', 'Textos curtos que aparecem nas tabelas da apresentação', 'Sim', '01 - CONTROLE DA APRESENTAÇÃO', '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY', S_),
 ]
 CUR, ITA, EST = '02 - MEGA CURITIBA', '03 - MEGA ITAJAÍ', '04 - MEGA ESTEIO'

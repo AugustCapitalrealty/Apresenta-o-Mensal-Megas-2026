@@ -71,7 +71,9 @@ const ORC_CONTRATOS_NAO_SAO = [
 //     14.847,52 · 14.681,99 · 14.518,31 · 14.345,73 · 14.191,11 · 14.017,18. No
 //     razão são as "EMPRESTIMO ITAU PARCELA nn/48 - CERCA ELETRICA" (jun–out
 //     15.186,12 · 15.179,97 · 15.182,66 · 15.175,66 · 14.345,73; o razão chama set
-//     e out de "05/48"). Vale o ritmo: é a base do Ritmo 2026 da DRE.
+//     e out de "05/48"). Vale o ritmo: é a base do Ritmo 2026 da DRE. O 2027
+//     vem do 070 desde a exportação de 12/10/2026, 16h ("[CONTRATO EMPRÉSTIMO
+//     ITAÚ] - PARCELAS MENSAIS DA FIBRA ÓPTICA A SENSE" — o "itau" casa pela tag).
 //   ▸ PMOC — "Preventiva condicionadores de ar" do ritmo, R$ 4.000: no razão, a
 //     CLIMATIZAR, preventiva das 5 máquinas + laudo PMOC (NF 18 em abr, NF 30 em
 //     jul, 1.333,33 cada) em Manutenção predial. As notas da LF e a bomba de
