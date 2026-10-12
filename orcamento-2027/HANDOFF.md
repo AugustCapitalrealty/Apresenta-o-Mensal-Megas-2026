@@ -34,6 +34,18 @@ planilhas mudarem — perguntado ao Guilherme, não mexer sem decisão.
 Export novo (12/10 19h07): 147 slides; Esteio ganhou o 044 "Subst. Chicote Elétrico do Trator 03" (título interno
 copiado "PINTURA DA TUBULAÇÃO…"); Itajaí agora 78–95.
 
+**Atualização de 12/10, 19h56 (em Downloads do Guilherme; AINDA NÃO no Drive):** METRAGEM dos 3 Megas
+(Mega-*.xlsx), 090 (igual ao atual), 070 (Moked do Esteio 7.949 → 7.000/mês), Contratos-Atualizado.csv (Moked
+Curitiba 20.706,69 → 17.781,40 e Itajaí 16.971,92 → 14.574,25/mês = rateio corrigido com o mesmo reajuste; o resto
+igual) e "IPTU E SEGURO - MEGAS 2027" (racional: valor/m² 2026 × reajuste × área 2027 — seguro +5%, IPTU +5,5% em
+Curitiba e Itajaí, Esteio +13,75%; a premissa ESCRITA diz 15% "conforme Selic" — perguntar). Fixtures:
+`*_1956.json` e `fixture_contratos_2027_rev02.json`, seção "Atualização de 12/10/2026, 19h56" do teste. Com eles o
+Orç 2027: Esteio 4.110.587 (METRAGEM 4.020.587 + R$ 90 mil da cadeira de assistente de facilities, de propósito —
+ORC_CONTAS_SOMAR, "enquanto o RH não aprova"), Itajaí 6.643.596 e Curitiba 7.528.284 (= METRAGEM). FALTA: o
+Guilherme subir no Drive (Planilhas Google) e mandar os links → trocar ORC_MODELO_070_ID (01_Config),
+ORC_CONTRATOS_ANO_IDS (02_Dados) e o metragemId dos 3 Megas; ou ele cola por cima das planilhas atuais e o código
+não muda. O slide 30 da Moked lê a linha da Moked do Esteio no 070 (R$ 84.000 no ano com o 070 novo).
+
 **Português (12/10, 19h18, `d857fa1`):** varredura `node ferramentas/diagnostico/ortografia.js teste` nos três
 Megas — só dois erros nos slides gerados, corrigidos: "CHICOTE ELÉTRICA" → "ELÉTRICO" (proposta revista; o
 Guilherme roda `aplicarPropostasTextos()` e gera o Esteio) e "eletronicos" (23_DecisoesGestor.gs). Os erros

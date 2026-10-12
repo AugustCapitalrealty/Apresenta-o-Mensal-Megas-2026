@@ -38,6 +38,9 @@ if (V3PNG) {
                                          [498.75, 235.5, 167.25, 121.5]]);
   decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
 }
+// O slide do contrato lê a Moked do Esteio no 070 (a exportação mais nova que estiver em teste/).
+const f070 = ['fixture_070_megas_2027_1956.json', 'fixture_070_megas_2027.json'].filter(n => fs.existsSync(path.join(TESTE, n)))[0];
+if (f070) porId[G.ORC_CIDADES.ESTEIO.servicosTerceirosId] = fixture(f070);
 const deck = novoDeck();
 const n = G._orcGerarMoked_(deck);
 LOG.filter(m => /Moked|FALHA|moldura/i.test(m)).forEach(m => console.log('log: ' + m));

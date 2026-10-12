@@ -664,6 +664,18 @@ const _orcMokedDec_ = (v, n) => {
   return (v < 0 ? '-' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (n ? ',' + s[1] : '');
 };
 
+// A Moked do Mega Esteio no Orç 2027 (a linha do 070), para o slide do contrato; null se o modelo não abrir.
+function _orcMokedOrcEsteio_() {
+  try {
+    const cid = ORC_CIDADES.ESTEIO;
+    const ls = _orcLerModelo_(cid.servicosTerceirosId, cid.unidadeModelo).filter(l => /MOKED/i.test(l.item));
+    return ls.length ? ls.reduce((s, l) => s + Math.abs(l.total), 0) : null;
+  } catch (e) {
+    Logger.log('Moked: a linha do Esteio no 070 não foi lida — o slide do contrato sai sem o valor do orçamento: ' + e.message);
+    return null;
+  }
+}
+
 // Rateio do contrato pela área: { total, linhas: [[Mega, área, participação, valor por mês]] }.
 function _orcMokedRateio_() {
   const K = ORC_MOKED.contrato, total = K.areas.reduce((s, r) => s + r[1], 0);
@@ -700,10 +712,13 @@ function gerarSlideMokedContrato_(slide, W, H) {
   _orcParagrafo_(slide, a.ex, fim + 4, a.ew, a.ey + a.eh - fim - 4,
     'Valor de cada Mega = contrato × participação do Mega na área dos três.', { fs: 7, fsMin: 6, cor: C.textMuted, fonte: T.body });
 
+  // No pé da coluna: o contrato, a parte do Esteio e, se o 070 abrir, a linha da Moked no Orç 2027 do Esteio.
+  const orcE = _orcMokedOrcEsteio_();
+  const dest = [['CONTRATO MOKED · TRÊS MEGAS', rs(K.mensal) + ' por mês'],
+                ['MEGA ESTEIO · ' + pct(est[2]) + ' DA ÁREA', rs(est[3]) + ' por mês']];
+  if (orcE) dest.push(['MOKED NO ORÇAMENTO ' + ORC_ANO + ' · MEGA ESTEIO', _orcMoeda_(orcE) + ' no ano · ' + rs(orcE / 12) + ' por mês']);
   _orcMokedColuna_(slide, a, a.dy + 2, [['O QUE ISSO MOSTRA',
     'Pela cláusula 3.4, a gestão de segurança dos três Megas vira um pacote corporativo, dividido entre eles pela área. ' +
     'Com ' + pct(est[2]) + ' da área, o Mega Esteio fica com ' + rs(est[3]) + ' por mês do contrato.\n\n' +
-    'A entrada do Mega Esteio não tem custo de startup (cláusula 3.4.1).']], [
-    ['CONTRATO MOKED · TRÊS MEGAS', rs(K.mensal) + ' por mês'],
-    ['MEGA ESTEIO · ' + pct(est[2]) + ' DA ÁREA', rs(est[3]) + ' por mês']]);
+    'A entrada do Mega Esteio não tem custo de startup (cláusula 3.4.1).']], dest);
 }

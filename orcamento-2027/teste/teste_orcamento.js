@@ -2107,6 +2107,59 @@ console.log('Gravação no Slides');
   });
   ok(!Object.keys(semCard).length, 'sombra: todo slide com cabeçalho tem card na moldura (sem card: ' + Object.keys(semCard).join(' | ') + ')');
 }
+console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
+// O rateio da Moked corrigido (gestor, 12/10/2026): Curitiba e Itajaí no cadastro de contratos (rev02) e o
+// Esteio no 070 (R$ 7.000/mês). Com ele a METRAGEM nova fecha com o Orç dos modelos em Itajaí e Curitiba; no
+// Esteio o deck fica R$ 90 mil acima — a cadeira de assistente de facilities (ORC_CONTAS_SOMAR), que entra na
+// despesa de pessoal enquanto o RH não aprova e que a METRAGEM ainda não traz. O 090 não mudou.
+{
+  const CAD_ANTES = porId[G.ORC_CONTRATOS_ANO_IDS[0]], M090_ANTES = porId[G.ORC_MODELO_090_ID], M070_ANTES = porId[G.ORC_MODELO_070_ID];
+  const limpar = () => Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
+  porId[G.ORC_MODELO_090_ID] = fixture('fixture_090_megas_2027.json');
+  porId[G.ORC_MODELO_070_ID] = fixture('fixture_070_megas_2027_1956.json');
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = fixture('fixture_contratos_2027_rev02.json');
+  limpar();
+  const REV02 = fixture('fixture_contratos_2027_rev02.json');
+  const tot = (l, re) => l.filter(k => re.test(k.fornecedor + ' ' + k.descricao)).reduce((t, k) => t + k.total, 0);
+  ok(Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Curitiba', 'Segurança e vigilância', 2027), /MOKED|CONSULTORIA DE SEGURAN/i)) === 213377 &&
+     Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Itajaí', 'Segurança e vigilância', 2027), /MOKED/i)) === 174891,
+     'cadastro rev02: Moked Curitiba R$ 213.377 (17.781,40/mês) e Itajaí R$ 174.891 (14.574,25/mês)');
+  const esperado = { CURITIBA: [7528284, 0], ITAJAI: [6643596, 0], ESTEIO: [4110587, 90000] };
+  [['CURITIBA', 'curitiba'], ['ITAJAI', 'itajai'], ['ESTEIO', 'esteio']].forEach(([chave, c]) => {
+    const cid = G.ORC_CIDADES[chave];
+    const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
+    cid.despesasGeraisId = G.ORC_MODELO_090_ID;
+    cid.servicosTerceirosId = G.ORC_MODELO_070_ID;
+    cid.relatorios.orcDosModelos = true;
+    const metNova = fixture('fixture_metragem_' + c + '_1956.json');
+    porId[cid.relatorios.metragemId] = metNova;
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '.json');
+    porIdFinanceiro[cid.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_' + c + '.json');
+    try {
+      const rel = G._orcLerVisaoGeral_(chave).rel, met = G._orcLerMetragem_(metNova);
+      ok(Math.round(rel.total.orc) === esperado[chave][0] && Math.round(rel.total.orc - met.total.orc) === esperado[chave][1],
+         c + ' (19h56): Orç 2027 ' + G._orcMoeda_(rel.total.orc) + ', METRAGEM nova ' + G._orcMoeda_(met.total.orc) +
+         ' (diferença esperada ' + G._orcMoeda_(esperado[chave][1]) + ')');
+      if (chave === 'ESTEIO') {
+        const moked = G._orcLinhasModelo_(fixture('fixture_070_megas_2027_1956.json'), 18).filter(l => /MOKED/.test(l.item));
+        ok(moked.length === 1 && Math.abs(moked[0].total - 84000) < 0.01, 'esteio (19h56): Moked de R$ 7.000/mês no 070');
+      }
+      decks = {};
+      G._orcGerar_([chave]);
+      const sl = decks[cid.deckId].getSlides();
+      ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))), c + ' (19h56): nenhum slide com falha ou texto cortado');
+    } finally {
+      cid.despesasGeraisId = antes.d;
+      cid.servicosTerceirosId = antes.s;
+      cid.relatorios.orcDosModelos = antes.o;
+    }
+  });
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_ANTES;
+  porId[G.ORC_MODELO_090_ID] = M090_ANTES;
+  porId[G.ORC_MODELO_070_ID] = M070_ANTES;
+  limpar();
+}
+
 console.log('Slides da Moked (28_Moked.gs)');
 // Os slides da Implantação Moked (v3, 22 a 30) refeitos numa apresentação separada: criada na 1ª vez (o ID fica
 // nas propriedades) e refeita inteira nas seguintes. Os slides 28 e 29 são cópias dos da v3 (as fotos do gestor).
@@ -2137,6 +2190,9 @@ console.log('Slides da Moked (28_Moked.gs)');
      { x: 286, y: 88, w: 150, h: 267, nome: 'foto 3' }, { x: 499, y: 236, w: 166, h: 120, nome: 'ficha' }]);
   decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
   const v3Antes = JSON.stringify(v3._slides.map(s => s.shapes));
+  // O slide do contrato lê a linha da Moked do Esteio no 070 (o de 12/10/2026, 19h56: R$ 7.000/mês).
+  const s070Esteio = G.ORC_CIDADES.ESTEIO.servicosTerceirosId, s070Antes = porId[s070Esteio];
+  porId[s070Esteio] = fixture('fixture_070_megas_2027_1956.json');
 
   const criadas = [];
   G.SlidesApp.create = nome => { const d = novoDeck(); d.getId = () => 'moked-teste'; decks['moked-teste'] = d; criadas.push(nome); return d; };
@@ -2170,6 +2226,9 @@ console.log('Slides da Moked (28_Moked.gs)');
       '294.666,91', 'R$ 37.633,50', 'R$ 34.500,00'].every(x => tudo[8].indexOf(x) >= 0) &&
      Math.abs(rat.linhas.reduce((s, l) => s + l[3], 0) - G.ORC_MOKED.contrato.mensal) < 0.01,
      'Moked: o 30 com a cláusula e o rateio pela área (18,14% · R$ 6.826,00 …), que soma o contrato');
+  ok(tudo[8].indexOf('MOKED NO ORÇAMENTO 2027 · MEGA ESTEIO') >= 0 && tudo[8].indexOf('R$ 84.000 no ano · R$ 7.000,00 por mês') >= 0,
+     'Moked: o 30 mostra a linha da Moked no Orç 2027 do Esteio, lida do 070 (R$ 84.000 no ano)');
+  porId[s070Esteio] = s070Antes;
   ok(sl.every(s => !textos(s).some(t => t.indexOf('Falha ao gerar') === 0)), 'Moked: nenhum slide com falha');
   ok(sl.every(s => !textos(s).some(t => /…$/.test(t))), 'Moked: nenhum texto cortado (' +
      sl.map(s => textos(s).filter(t => /…$/.test(t)).join(' / ')).filter(x => x).join(' | ') + ')');
