@@ -53,7 +53,12 @@ const ORC_CIDADES = {
       // orientou usar a METRAGEM (06/10/2026: IPTU −R$ 3.032, Seguro
       // −R$ 10.645 no Orç 2027). Ficam sem o ⚠ REVISAR e fora do slide de
       // revisão; a divergência só vai para o log.
-      valeMetragem: ['IPTU', 'Seguro']
+      valeMetragem: ['IPTU', 'Seguro'],
+      // Orç 2027 de cada conta = modelos 070/090 + contratos, no lugar da
+      // METRAGEM (12/10/2026: a controladoria não fecha a METRAGEM a tempo).
+      // Real 2025, Orç e Ritmo 2026 seguem da METRAGEM. Quando ela chegar
+      // atualizada, false. Ver 04_DadosRelatorios.gs.
+      orcDosModelos: true
     },
     // Contratos: do cadastro mestre do ano, como Itajaí e Esteio (pedido do
     // usuário em 07/10/2026: "padronizar os 3, usar as planilhas mestres").
@@ -88,7 +93,8 @@ const ORC_CIDADES = {
     relatorios: {
       metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // MEGA ITAJAÍ - METRAGEM-COND 2027
       mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027
-      financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4'    // planilha dos Megas (Itajaí)
+      financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',   // planilha dos Megas (Itajaí)
+      orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
     },
     contratos: {},
     // Conferido em 07/10/2026 (Itajaí e Esteio): na segurança, na limpeza,
@@ -107,7 +113,8 @@ const ORC_CIDADES = {
     relatorios: {
       metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // MEGA ESTEIO - METRAGEM-COND 2027
       mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027
-      financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY'    // planilha dos Megas (Esteio)
+      financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',   // planilha dos Megas (Esteio)
+      orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
     },
     contratos: {},
     contratosDoCadastro: true,

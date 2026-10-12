@@ -95,6 +95,18 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
     out.push({ nome: c ? c.nome : r.conta, chave: chave, tipo: (ORC_ANO - 1) + ' não identificado',
                texto: r.item + ' — sem ' + (ORC_ANO - 1) + ' nas fontes' });
   });
+  // Orç do ano calculado pelos modelos (orcDosModelos, 04_DadosRelatorios.gs):
+  // lembrete de que é prévia e o que saiu diferente da METRAGEM. Sem chave,
+  // não põe selo nos slides.
+  if (rel.orcCalculado) {
+    const tipo = 'Orç ' + rel.anos.orc + ' calculado';
+    out.push({ nome: 'METRAGEM-COND', chave: '', tipo: tipo,
+               texto: 'modelos 070/090 + contratos; a controladoria ainda não fechou' });
+    rel.orcCalculado.mudou.forEach(m => out.push({ nome: m.nome, chave: '', tipo: tipo,
+      texto: 'METRAGEM ' + _orcMoeda_(m.metragem) + ' → modelos ' + _orcMoeda_(m.calculado) }));
+    rel.orcCalculado.semConta.forEach(s => out.push({ nome: s.nome, chave: '', tipo: 'Sem linha na METRAGEM',
+      texto: _orcMoeda_(s.total) + ' nos modelos, fora do total' }));
+  }
   (ORC_PENDENCIAS_GESTOR[cid.nome] || []).forEach(p => {
     const chave = _orcChaveConta_(p.conta), c = rel.contas.filter(x => x.chave === chave)[0];
     out.push({ nome: c ? c.nome : p.conta, chave: chave, tipo: p.tipo, texto: p.texto });

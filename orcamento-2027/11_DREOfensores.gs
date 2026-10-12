@@ -307,8 +307,12 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
 
   // Maior item orçado da conta nos modelos 070/090 — dá nome ao número. A
   // chave na planilha de textos é só a descrição, sem o valor.
-  const maiorItem = chave => {
-    const it = _orcItensDaConta_(linhasModelo || [], chave)[0];
+  // Item maior que a própria conta (conta em valeMetragem, como o Seguro de
+  // Curitiba: METRAGEM R$ 604 mil, modelo R$ 614 mil) não sai: seriam dois
+  // números contraditórios na mesma linha.
+  const maiorItem = (chave, orc) => {
+    let it = _orcItensDaConta_(linhasModelo || [], chave)[0];
+    if (it && it.total > orc + 1) it = null;
     const sufixo = it ? ' · ' + _orcCompacto_(it.total) : '';
     return it ? { texto: _orcTextoEscolhido_('Ofensores', it.descricao) + sufixo,
                   aba: 'Ofensores', original: it.descricao, sufixo: sufixo } : null;
@@ -328,7 +332,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
       { texto: _orcM2_(mR) }, { texto: _orcM2_(mO), bold: true },
-      c.chave ? maiorItem(c.chave) : null] };
+      c.chave ? maiorItem(c.chave, c.v.orc) : null] };
   };
   const b = ofensor ? ['OFENSORES — SOBEM EM ' + a.orc, q.ofensores, 'TOTAL OFENSORES']
                     : ['DEFENSORES — CAEM EM ' + a.orc, q.defensores, 'TOTAL DEFENSORES'];

@@ -81,8 +81,86 @@ function _orcGrupoDaConta_(nome) {
  * Cada "v" é { real, orcAnt, ritmo, orc } em R$ positivos: Real do ano
  * retrasado, orçado e ritmo do ano anterior, orçado do ano em curso.
  */
-function obterRelatorioAnual_(chaveCidade) {
-  return _orcLerMetragem_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'metragemId', 'METRAGEM-COND')));
+// modelos: linhas de _orcLinhasModelosCidade_ já lidas (opcional — sem elas,
+// e com o Orç calculado ligado, são lidas aqui).
+function obterRelatorioAnual_(chaveCidade, modelos) {
+  const rel = _orcLerMetragem_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'metragemId', 'METRAGEM-COND')));
+  const cid = ORC_CIDADES[chaveCidade];
+  if (cid.relatorios.orcDosModelos) {
+    _orcAplicarOrcDosModelos_(rel, _orcOrcDosModelos_(cid, modelos || _orcLinhasModelosCidade_(chaveCidade)));
+  }
+  return rel;
+}
+
+// ==========================================
+// ORÇ DO ANO CALCULADO PELOS MODELOS (relatorios.orcDosModelos)
+// ==========================================
+// Out/2026: os modelos 070/090 e os contratos foram atualizados, mas a
+// controladoria não fecha a METRAGEM a tempo. Com orcDosModelos ligado, a
+// coluna Orç do ano de cada conta passa a ser a soma dos modelos + contratos
+// (no anual e no mês a mês); Real, Orç e Ritmo do ano anterior continuam os
+// da METRAGEM. Conta que os modelos não trazem (ou trazem zerada) e as de
+// valeMetragem ficam com a METRAGEM. O R$/m² é refeito com a área da
+// METRAGEM (a área não muda porque o custo mudou).
+// Antes de ligar, conferido nas fixtures de 08/10/2026: modelos + contratos
+// fechavam com a METRAGEM em toda conta, menos a manutenção de Itajaí
+// (+R$ 29.313) e Esteio (+R$ 15.268) e Representação e refeição (zerada nos
+// modelos, fica a METRAGEM).
+
+// Mesma conta com outro nome nos modelos (conferido pelos valores: Esteio
+// R$ 146.046 e R$ 1.200 exatos).
+const ORC_CONTAS_SINONIMOS = {
+  'Manutenção de bens móveis': 'Manutenção de máquinas e equipamentos',
+  'Quilometragem / Estacionamento': 'KM, estacionamento e pedágio'
+};
+
+// { [chave]: { nome, total, meses[12] } } — só contas com valor.
+function _orcOrcDosModelos_(cid, modelos) {
+  const sin = {};
+  Object.keys(ORC_CONTAS_SINONIMOS).forEach(k => { sin[_orcChaveConta_(k)] = _orcChaveConta_(ORC_CONTAS_SINONIMOS[k]); });
+  const fixas = (cid.relatorios.valeMetragem || []).map(_orcChaveConta_);
+  const out = {};
+  modelos.forEach(l => {
+    let k = _orcChaveConta_(l.conta);
+    k = sin[k] || k;
+    if (fixas.indexOf(k) >= 0) return;
+    const s = out[k] || (out[k] = { nome: l.conta, total: 0, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
+    s.total += l.total;
+    (l.meses || []).forEach((v, i) => { s.meses[i] += v || 0; });
+  });
+  Object.keys(out).forEach(k => { if (Math.abs(out[k].total) < 0.5) delete out[k]; });
+  return out;
+}
+
+// Troca o Orç do ano no relatório anual e refaz totais e R$/m². O que mudou
+// fica em rel.orcCalculado (vira pendência no slide de revisão).
+function _orcAplicarOrcDosModelos_(rel, calc) {
+  // Áreas antes de mexer no total: depois, total ÷ R$/m² já não dá a área.
+  const areaAC = rel.m2AreaComum && rel.m2AreaComum.orc > 0 ? rel.areaComum.orc / rel.m2AreaComum.orc / 12 : null;
+  const areaT = _orcAreaImplicita_(rel, 'orc');
+  const usadas = {}, mudou = [];
+  const aplicar = (nome, chave, v) => {
+    const s = calc[chave];
+    if (!s) return;
+    usadas[chave] = true;
+    if (Math.abs(s.total - v.orc) > 1) mudou.push({ nome: nome, metragem: v.orc, calculado: s.total });
+    v.orc = s.total;
+  };
+  rel.contas.forEach(c => aplicar(c.nome, c.chave, c.v));
+  aplicar('IPTU', _orcChaveConta_('IPTU'), rel.iptu);
+  aplicar('Seguro', _orcChaveConta_('Seguro'), rel.seguro);
+  // Conta dos modelos sem linha na METRAGEM: não há onde pôr — fica fora do
+  // total e vira pendência, nunca some calada.
+  const semConta = Object.keys(calc).filter(k => !usadas[k]).map(k => calc[k]);
+  rel.areaComum.orc = rel.contas.reduce((a, c) => a + c.v.orc, 0);
+  rel.total.orc = rel.areaComum.orc + rel.iptu.orc + rel.seguro.orc;
+  if (areaAC) rel.m2AreaComum.orc = rel.areaComum.orc / areaAC / 12;
+  if (areaT) rel.m2Total.orc = rel.total.orc / areaT / 12;
+  rel.orcCalculado = { mudou: mudou, semConta: semConta };
+  mudou.forEach(m => Logger.log('Orç ' + rel.anos.orc + ' calculado — ' + m.nome + ': METRAGEM ' + _orcMoeda_(m.metragem) +
+                                ' → modelos + contratos ' + _orcMoeda_(m.calculado)));
+  semConta.forEach(s => Logger.log('Orç ' + rel.anos.orc + ' calculado — conta dos modelos sem linha na METRAGEM: ' +
+                                   s.nome + ' ' + _orcMoeda_(s.total)));
 }
 
 // Cada relatório é cobrado só por quem o usa: sem o mensal a cidade perde o
@@ -187,8 +265,15 @@ function _orcRotuloColuna_(k, anos) {
  * "real" do ano anterior traz o realizado até o último mês fechado e o ritmo
  * projetado nos seguintes — o relatório não separa os dois.
  */
-function obterRelatorioMensal_(chaveCidade) {
-  return _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
+function obterRelatorioMensal_(chaveCidade, modelos) {
+  const mensal = _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
+  const cid = ORC_CIDADES[chaveCidade];
+  if (cid.relatorios.orcDosModelos) {
+    // Mesmas contas que o anual troca: os 12 meses continuam somando o anual.
+    const calc = _orcOrcDosModelos_(cid, modelos || _orcLinhasModelosCidade_(chaveCidade));
+    Object.keys(calc).forEach(k => { if (mensal.contas[k]) mensal.contas[k].orc = calc[k].meses.slice(); });
+  }
+  return mensal;
 }
 
 /**

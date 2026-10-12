@@ -276,6 +276,14 @@ fs.readdirSync(PASTA).filter(f => f.endsWith('.gs')).sort().forEach(f => {
   vm.runInContext(fonte, ctx, { filename: f });
 });
 const G = ctx;
+// O teste todo roda com a METRAGEM oficial (orcDosModelos desligado): é o
+// fluxo que volta quando a controladoria fechar a METRAGEM. O Orç calculado
+// pelos modelos tem a sua seção, "Orç 2027 calculado pelos modelos".
+const ORC_DOS_MODELOS_CONFIG = {};
+Object.keys(G.ORC_CIDADES).forEach(k => {
+  ORC_DOS_MODELOS_CONFIG[k] = !!G.ORC_CIDADES[k].relatorios.orcDosModelos;
+  G.ORC_CIDADES[k].relatorios.orcDosModelos = false;
+});
 const CUR = G.ORC_CIDADES.CURITIBA;
 if (!FIX_METRAGEM || !FIX_MENSAL || !FIX_070) {
   console.log('✗ Faltam fixtures em teste/ — rode exportarFixtures() no editor e copie de _fixtures/.');
@@ -1319,6 +1327,99 @@ const ESTADO_CIDADES = {};
               ESTADO_CIDADES[c].naoDetalhado.join(', '));
 });
 if (process.env.DETALHE) console.log(JSON.stringify(ESTADO_CIDADES, null, 1));
+
+// Out/2026: a controladoria não fecha a METRAGEM a tempo e o Orç 2027 de cada
+// conta sai dos modelos 070/090 + contratos (relatorios.orcDosModelos,
+// 04_DadosRelatorios.gs). Real 2025, Orç e Ritmo 2026 seguem da METRAGEM; a
+// área também, e o R$/m² é refeito com ela.
+console.log('Orç 2027 calculado pelos modelos');
+ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcDosModelos ligado nos três Megas no 01_Config.gs');
+[['CURITIBA', 'curitiba', 0], ['ITAJAI', 'itajai', 29313], ['ESTEIO', 'esteio', 15268]].forEach(([chave, c, degrau]) => {
+  const cid = G.ORC_CIDADES[chave];
+  porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '.json');
+  porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '.json');
+  porId[cid.despesasGeraisId] = chave === 'CURITIBA' ? FIXTURE : fixture('fixture_090_' + c + '_2027.json');
+  porId[cid.servicosTerceirosId] = fixture('fixture_070_' + c + '_2027.json');
+  porIdFinanceiro[cid.relatorios.financeiroMegasId] = fixture('fixture_financeiro2025_' + c + '.json');
+  const oficial = G.obterRelatorioAnual_(chave);
+  cid.relatorios.orcDosModelos = true;
+  try {
+    const rel = G.obterRelatorioAnual_(chave), mensal = G.obterRelatorioMensal_(chave);
+    const conta = (r, n) => r.contas.filter(x => x.chave === G._orcChaveConta_(n))[0];
+    const manut = conta(rel, 'Manutenção de imóveis').v.orc, manutOf = conta(oficial, 'Manutenção de imóveis').v.orc;
+    ok(Math.round(manut - manutOf) === degrau, c + ': manutenção = modelo 090 + contratos (' + Math.round(manut - manutOf) +
+       ' acima da METRAGEM, esperado ' + degrau + ')');
+    ok(['real', 'orcAnt', 'ritmo'].every(k => rel.total[k] === oficial.total[k] && rel.m2Total[k] === oficial.m2Total[k]),
+       c + ': Real 2025, Orç 2026 e Ritmo 2026 seguem da METRAGEM');
+    pertoReal(rel.areaComum.orc, rel.contas.reduce((a, x) => a + x.v.orc, 0), c + ': área comum = soma das contas');
+    pertoReal(rel.total.orc, rel.areaComum.orc + rel.iptu.orc + rel.seguro.orc, c + ': total = área comum + IPTU + Seguro');
+    perto(G._orcAreaImplicita_(rel, 'orc'), G._orcAreaImplicita_(oficial, 'orc'), c + ': área do Orç 2027 é a da METRAGEM');
+    perto(rel.areaComum.orc / rel.m2AreaComum.orc, oficial.areaComum.orc / oficial.m2AreaComum.orc,
+          c + ': área da área comum também');
+    ok(degrau === 0 || rel.m2Total.orc > oficial.m2Total.orc, c + ': R$/m² sobe junto com o total');
+    // Zerada nos modelos: fica a METRAGEM.
+    ok(conta(rel, 'Representação e refeição').v.orc === conta(oficial, 'Representação e refeição').v.orc && conta(oficial, 'Representação e refeição').v.orc > 0,
+       c + ': Representação e refeição (zerada nos modelos) fica com a METRAGEM');
+    if (chave === 'ESTEIO') {
+      // Sinônimos: "Manutenção de bens móveis" e "Quilometragem / Estacionamento" nos modelos.
+      perto(conta(rel, 'Manutenção de máquinas e equipamentos').v.orc, 146045.62, 'esteio: bens móveis dos modelos = máquinas e equipamentos');
+      perto(conta(rel, 'KM, estacionamento e pedágio').v.orc, 1200, 'esteio: quilometragem dos modelos = KM, estacionamento e pedágio');
+    }
+    if (chave === 'CURITIBA') {
+      perto(rel.seguro.orc, oficial.seguro.orc, 'curitiba: Seguro em valeMetragem fica com a METRAGEM (o modelo tem R$ 10.645 a mais)');
+    }
+    ok(rel.orcCalculado && !rel.orcCalculado.semConta.length, c + ': toda conta dos modelos tem linha na METRAGEM (' +
+       (rel.orcCalculado ? rel.orcCalculado.semConta.map(s => s.nome).join(', ') : 'sem orcCalculado') + ')');
+    ok(rel.orcCalculado.mudou.some(m => m.nome === 'Manutenção de imóveis') === (degrau > 0),
+       c + ': lista o que mudou (' + rel.orcCalculado.mudou.map(m => m.nome).join(', ') + ')');
+    // Mês a mês: os 12 meses fecham com o anual — nenhum ⚠ REVISAR novo.
+    G._orcConferirMensal_(rel, mensal, cid.relatorios.valeMetragem);
+    ok(!rel.revisar.length, c + ': mensal fecha com o Orç calculado (' + rel.revisar.map(r => r.nome).join(', ') + ')');
+    // Um número, uma fonte (apresentação de 13/10/2026): o total da manutenção
+    // dos slides de categoria (obterManutencao_) é o mesmo da DRE/ponte, e as
+    // três contas em foco fecham item a item, sem "Não detalhado" nem excesso.
+    pertoReal(G.obterManutencao_(chave).total, manut, c + ': manutenção dos slides de categoria = manutenção da DRE');
+    const modelos = G._orcLinhasModelosCidade_(chave);
+    G.ORC_CONTAS_DETALHE.forEach(n => {
+      const comp = G._orcComposicaoConta_(conta(rel, n), modelos);
+      ok(comp.base === 0 && comp.excesso === 0, c + ': ' + n + ' fecha item a item com a DRE (sobra ' +
+         Math.round(comp.base) + ', excesso ' + Math.round(comp.excesso) + ')');
+    });
+
+    // Geração completa, como o usuário roda.
+    decks = {};
+    G._orcGerar_([chave]);
+    G.aplicarPropostasTextos();
+    decks = {};
+    G._orcGerar_([chave]);
+    const sl = decks[cid.deckId].getSlides(), titulos = sl.map(titulo);
+    const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
+    ok(!comFalha.length, c + ' (Orç calculado): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
+    const iRev = titulos.indexOf('Revisar antes da versão final'), tRev = iRev >= 0 ? textos(sl[iRev]) : [];
+    ok(iRev === 1 && tRev.indexOf('Orç 2027 calculado') >= 0 &&
+       tRev.indexOf('modelos 070/090 + contratos; a controladoria ainda não fechou') >= 0,
+       c + ' (Orç calculado): revisão avisa que o Orç 2027 é dos modelos');
+    ok(tRev.indexOf('Modelos acima da METRAGEM') < 0, c + ' (Orç calculado): sem a pendência "Modelos acima da METRAGEM"');
+    if (degrau) ok(tRev.some(t => /^METRAGEM R\$ .* → modelos R\$ /.test(t)), c + ' (Orç calculado): revisão mostra METRAGEM → modelos');
+    // O selo só fica se houver pergunta em aberto do gestor (ORC_PENDENCIAS_GESTOR), não por divergência de fonte.
+    ok((G.ORC_PENDENCIAS_GESTOR[cid.nome] || []).length > 0 ||
+       !textos(sl[titulos.indexOf('Manutenção de imóveis')]).some(t => /^⚠ PENDENTE · Manutenção/.test(t)),
+       c + ' (Orç calculado): manutenção sem o selo ⚠ PENDENTE');
+    ok(!sl.some(x => textos(x).some(t => /^⚠ REVISAR/.test(t))), c + ' (Orç calculado): nenhum slide com ⚠ REVISAR');
+    if (chave === 'CURITIBA') {
+      // Seguro: METRAGEM R$ 604 mil (valeMetragem) e item do modelo R$ 614 mil — o item não sai ao lado da conta.
+      const tOf = sl.filter(x => /^(Ofensores|Defensores) —/.test(titulo(x))).map(textos).reduce((a, t) => a.concat(t), []);
+      ok(tOf.length && !tOf.some(t => /R\$ 614 mil/.test(t)), 'curitiba: ofensores sem o item do seguro maior que a conta');
+    }
+    const cortados = [];
+    sl.forEach((x, i) => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push((i + 1) + ' ' + titulo(x) + ' :: ' + t); }));
+    ok(!cortados.length, c + ' (Orç calculado): nenhum texto cortado (' + cortados.join(' | ') + ')');
+    console.log('  ' + cid.nome + ': ' + sl.length + ' slides · Orç 2027 ' + G._orcMoeda_(rel.total.orc) + ' (METRAGEM ' +
+                G._orcMoeda_(oficial.total.orc) + ') · R$/m² ' + rel.m2Total.orc.toFixed(2) + ' (METRAGEM ' + oficial.m2Total.orc.toFixed(2) + ')');
+  } finally {
+    cid.relatorios.orcDosModelos = false;
+  }
+});
 
 console.log('Degradê do véu');
 // Faixas lado a lado deixavam listras na sub capa (07/10/2026): agora são

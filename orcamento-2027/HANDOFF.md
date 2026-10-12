@@ -114,6 +114,21 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   vamos deixar do jeito que está"). As fotos das capas e sub capas ficam as reais de hoje; não propor de novo sem ele
   pedir. Os arquivos do teste ficaram com o prefixo "PODE EXCLUIR - ".
 
+### 12/10/2026 — Orç 2027 calculado pelos modelos (apresentação em 13/10)
+
+- A controladoria não fecha a METRAGEM a tempo; o Guilherme está atualizando os modelos 070/090 e os contratos.
+  **`relatorios.orcDosModelos: true`** nos três Megas (`01_Config.gs`): o Orç 2027 de cada conta = modelos +
+  contratos, no anual e no mês a mês (`_orcOrcDosModelos_`, `04_DadosRelatorios.gs`). Real 2025, Orç e Ritmo 2026
+  seguem da METRAGEM; a área também (R$/m² refeito com ela). Ficam com a METRAGEM: contas zeradas nos modelos
+  (Representação e refeição) e `valeMetragem` (IPTU e Seguro de Curitiba). Sinônimos em `ORC_CONTAS_SINONIMOS`.
+- Motivo do Guilherme: "não podemos ter slides que um número fala uma coisa e no outro fala outro". Com isso a
+  manutenção da DRE/ponte = a dos slides de categoria, e some a pendência "Modelos acima da METRAGEM". O slide de
+  revisão lista "Orç 2027 calculado" e o que mudou (METRAGEM → modelos). Ofensores não mostra item maior que a conta.
+- Com as fixtures de 08/10: Itajaí R$ 6.605.554 (+29.313), Esteio R$ 4.222.639 (+15.268), Curitiba igual.
+  Teste: seção "Orç 2027 calculado pelos modelos"; o resto do teste roda com a opção desligada (fluxo oficial).
+- **Quando a METRAGEM nova chegar:** `orcDosModelos: false` (ou apagar a linha) nos três Megas.
+- Sem Python (antivírus, 12/10): imagens dos gráficos não são redesenhadas; slide com número novo sai "pelas formas".
+
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
 | Precisa de | Como fazer |

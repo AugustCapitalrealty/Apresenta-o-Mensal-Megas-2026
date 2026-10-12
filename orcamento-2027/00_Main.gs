@@ -315,15 +315,18 @@ function _orcCalculosCompartilhados_(cid, visao, dados) {
 // Relatórios da controladoria + linhas dos modelos: { rel, mensal, realAnt, modelos }.
 // Lança se o relatório anual não abre; sem o mensal segue com mensal = null.
 function _orcLerVisaoGeral_(chave) {
-  const rel = obterRelatorioAnual_(chave);
+  // Os modelos uma vez só: com o Orç calculado (orcDosModelos) os dois
+  // relatórios também os usam.
+  const modelos = _orcLinhasModelosCidade_(chave);
+  const rel = obterRelatorioAnual_(chave, modelos);
   let mensal = null;
-  try { mensal = obterRelatorioMensal_(chave); }
+  try { mensal = obterRelatorioMensal_(chave, modelos); }
   catch (e) { Logger.log('Relatório mensal indisponível — linha a linha sem o mês a mês: ' + e.message); }
   if (mensal) _orcConferirMensal_(rel, mensal, ORC_CIDADES[chave].relatorios.valeMetragem);
   let realAnt = null;
   try { realAnt = obterRealMensalAnoRetrasado_(chave); }
   catch (e) { Logger.log('Real ' + (ORC_ANO - 2) + ' mês a mês indisponível — custo por m² sem ele: ' + e.message); }
-  return { rel: rel, mensal: mensal, realAnt: realAnt, modelos: _orcLinhasModelosCidade_(chave) };
+  return { rel: rel, mensal: mensal, realAnt: realAnt, modelos: modelos };
 }
 
 // Um slide por passo, com try/catch próprio: a falha fica escrita NO slide e
