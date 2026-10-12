@@ -1293,9 +1293,9 @@ const ESTADO_CIDADES = {};
   const iRev = titulos.indexOf('Revisar antes da versão final');
   ok(iRev === 1, c + ': slide de revisão logo depois da capa (pendências de dados)');
   if (chave === 'ITAJAI') {
-    ok(['Sem provisão de 3%', 'Parcelado ou em dobro?'].every(t => textos(sl[iRev]).indexOf(t) >= 0) &&
-       textos(sl[iRev]).indexOf('Reconferir (controladoria)') < 0,
-       'Itajaí: as perguntas em aberto com o gestor no slide de revisão');
+    // 12/10/2026: o gestor pôs a provisão de 3% e puxou as quatro obras para 2026 — perguntas respondidas.
+    ok(['Sem provisão de 3%', 'Parcelado ou em dobro?', 'Reconferir (controladoria)'].every(t => textos(sl[iRev]).indexOf(t) < 0),
+       'Itajaí: perguntas do gestor respondidas (provisão de 3% e as quatro obras) — fora do slide de revisão');
   }
   const tRev = iRev >= 0 ? textos(sl[iRev]) : [];
   ok(tRev.some(t => /dados pendentes/.test(t)) && !tRev.some(t => /não fecham entre si/.test(t)),
@@ -1407,6 +1407,16 @@ const MODELO_SEC = {};
       pertoReal(conta('Despesa de pessoal').v.orc, pesOf.v.orc + (chave === 'ESTEIO' ? 90000 : 0),
                 c + ' (exportação nova): Despesa de pessoal = METRAGEM' + (chave === 'ESTEIO' ? ' + assistente de facilities (R$ 90 mil)' : ''));
 
+      // Item tirado do ano com R$ 0,01 (o sistema não aceita zero) não é item: Itajaí, 12/10/2026 —
+      // iluminações, quadro da portaria, totem, encanamento PPR e bebedouro voltaram para 2026.
+      const dadosN = G.obterManutencao_(chave);
+      ok(!dadosN.categorias.some(cat => cat.itens.some(it => Math.abs(it.total) < 0.5)), c + ' (exportação nova): nenhum item de centavos na manutenção');
+      if (chave === 'ITAJAI') {
+        const adiN = G._orcAdiados2026_(cid, dadosN);
+        ok(adiN && adiN.itens.length === 4 && !adiN.itens.some(i => /ilumina|quadro/i.test(i.nome)) && adiN.itens.every(i => i.doModelo),
+           'itajai (exportação nova): obras puxadas para 2026 saem das adiadas (' + (adiN ? adiN.itens.map(i => i.nome + ' ' + Math.round(i.orc2027)).join(' | ') : 'nenhuma') + ')');
+        ok(!(G.ORC_PENDENCIAS_GESTOR[cid.nome] || []).length, 'itajai: perguntas do gestor respondidas na exportação de 12/10/2026');
+      }
       decks = {};
       G._orcGerar_([chave]);
       G.aplicarPropostasTextos();
@@ -1415,6 +1425,8 @@ const MODELO_SEC = {};
       const sl = decks[cid.deckId].getSlides();
       const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
       ok(!comFalha.length, c + ' (exportação nova): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
+      const tRevN = textos(sl[sl.map(titulo).indexOf('Revisar antes da versão final')] || { shapes: [] });
+      ok(!tRevN.some(t => /maior: (IPTU|Seguro)/.test(t)), c + ' (exportação nova): resumo do mês a mês sem IPTU e Seguro');
       const cortados = [];
       sl.forEach((x, i) => textos(x).forEach(t => { if (/…$/.test(t)) cortados.push((i + 1) + ' ' + titulo(x) + ' :: ' + t); }));
       ok(!cortados.length, c + ' (exportação nova): nenhum texto cortado (' + cortados.join(' | ') + ')');
@@ -1557,10 +1569,13 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
        c + ': METRAGEM que bate não lista nada (' + rel.orcCalculado.mudou.map(m => m.nome).join(', ') + ')');
     ok(tRev.indexOf('Modelos acima da METRAGEM') < 0, c + ' (Orç calculado): sem a pendência "Modelos acima da METRAGEM"');
     if (degrau) ok(tRev.some(t => /^METRAGEM R\$ .* → modelos R\$ /.test(t)), c + ' (Orç calculado): revisão mostra METRAGEM → modelos');
-    // O selo só fica se houver pergunta em aberto do gestor (ORC_PENDENCIAS_GESTOR), não por divergência de fonte.
-    ok((G.ORC_PENDENCIAS_GESTOR[cid.nome] || []).length > 0 ||
-       !textos(sl[titulos.indexOf('Manutenção de imóveis')]).some(t => /^⚠ PENDENTE · Manutenção/.test(t)),
-       c + ' (Orç calculado): manutenção sem o selo ⚠ PENDENTE');
+    // O selo da manutenção só fica por pendência de dado da conta (pergunta do gestor, 2026 não identificado),
+    // nunca por divergência de fonte ("Modelos acima da METRAGEM").
+    const pendM = G._orcPendencias_(cid, rel, mensal, G._orcLinhasModelosCidade_(chave))
+      .filter(p => p.chave === G._orcChaveConta_('Manutenção de imóveis'));
+    ok(textos(sl[titulos.indexOf('Manutenção de imóveis')]).some(t => /^⚠ PENDENTE · Manutenção/.test(t)) === (pendM.length > 0) &&
+       !pendM.some(p => p.tipo === 'Modelos acima da METRAGEM'),
+       c + ' (Orç calculado): selo ⚠ PENDENTE da manutenção só por pendência da conta (' + pendM.map(p => p.tipo).join(', ') + ')');
     ok(!sl.some(x => textos(x).some(t => /^⚠ REVISAR/.test(t))), c + ' (Orç calculado): nenhum slide com ⚠ REVISAR');
     if (chave === 'CURITIBA') {
       // Seguro: METRAGEM R$ 604 mil (valeMetragem) e item do modelo R$ 614 mil — o item não sai ao lado da conta.

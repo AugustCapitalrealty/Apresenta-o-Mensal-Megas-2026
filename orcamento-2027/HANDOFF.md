@@ -160,6 +160,13 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   OPERACIONAIS (COM IPTU E SEGURO)"; Custo por m²: "TOTAL GERAL (COM IPTU E SEGURO)"; capas, sub capas, Resumo
   Executivo, Ponte, sumário e cards de Facilities: "com IPTU e seguro"; painel Utilities do gráfico de Facilities:
   segunda linha "COM IPTU E SEGURO"; Ofensores/Defensores: no subtítulo (a coluna CONTA não cabe). Teste 4737/4737.
+- **Revisão dos avisos dos três Megas** com a exportação de 12/10: o gestor do Itajaí pôs a provisão de 3% (R$ 4.506/mês)
+  e tirou de 2027 iluminações do bolsão e do AMZ 4/5, quadro da portaria, totem, encanamento PPR do restaurante e
+  bebedouro — **lançando R$ 0,01** (o sistema não aceita zero). Linha com todos os meses < R$ 0,50 = zerada
+  (`_orcAgruparCategorias_`, `dados.zerados`); obra adiada com os itens de 2027 zerados sai das adiadas
+  (`_orcAdiados2026_`). `ORC_PENDENCIAS_GESTOR['Mega Itajaí']` vazio. Resumo "Mês a mês = DRE" sem IPTU/Seguro.
+  Ficam: Curitiba — pergunta da linha 4 (provisão de acesso × FM Security × 3%); Itajaí — PMOC e LPU Canaveral
+  "2026 não identificado" (falta o razão de 2026 do Itajaí). Esteio limpo. Teste 4745/4745.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 

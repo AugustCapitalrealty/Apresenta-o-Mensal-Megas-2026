@@ -262,6 +262,9 @@ function _orcAgruparCategorias_(linhas, contratos) {
   const meses = zeros();
   let total = 0, nItens = 0, nZerados = 0, totalContratos = 0;
   const avisos = [];
+  // Descrição dos itens zerados nos doze meses: item que o gestor tirou do ano
+  // (12/10/2026: obras do Itajaí puxadas de volta para 2026) não é item "sumido".
+  const zerados = [];
 
   const somar = (categoria, item) => {
     const chave = _orcNorm_(categoria);
@@ -277,8 +280,10 @@ function _orcAgruparCategorias_(linhas, contratos) {
   };
 
   linhas.forEach(l => {
-    // Linha "RATEIO" do modelo vem zerada nos doze meses: não é item orçado.
-    if (l.meses.every(v => Math.abs(v) < 0.005)) { nZerados++; return; }
+    // Linha "RATEIO" do modelo vem zerada nos doze meses: não é item orçado. Nem
+    // a de centavos: o sistema não aceita zero e quem tira um item do ano deixa
+    // R$ 0,01 (gestor do Itajaí, 12/10/2026) — viraria item de "R$ 0" nas tabelas.
+    if (l.meses.every(v => Math.abs(v) < 0.5)) { nZerados++; zerados.push(_orcSepararCategoria_(l.item).descricao); return; }
     const s = _orcSepararCategoria_(l.item);
     somar(_orcRecategorizar_(s.categoria, s.descricao), {
       descricao: s.descricao, total: l.total, meses: l.meses, linha: l.linha,
@@ -296,7 +301,7 @@ function _orcAgruparCategorias_(linhas, contratos) {
     c.itens.sort((a, b) => b.total - a.total);
     c.pct = total ? c.total / total : 0;
   });
-  return { total: total, meses: meses, nItens: nItens, nZerados: nZerados, categorias: categorias,
+  return { total: total, meses: meses, nItens: nItens, nZerados: nZerados, zerados: zerados, categorias: categorias,
            totalContratos: totalContratos, nContratos: (contratos || []).length, avisos: avisos };
 }
 

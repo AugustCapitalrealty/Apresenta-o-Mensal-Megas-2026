@@ -23,8 +23,17 @@ function _orcAdiados2026_(cid, dados) {
     const k = _orcNorm_(it.descricao);
     porNome[k] = (porNome[k] || 0) + it.total;
   }));
+  const zerados = {};
+  (dados.zerados || []).forEach(d => { zerados[_orcNorm_(d)] = true; });
   const itens = dec.map(a => {
     const achados = a.itens2027.map(n => porNome[_orcNorm_(n)]);
+    // Itens de 2027 da obra todos zerados no 090: o gestor tirou a obra do ano
+    // (Itajaí, 12/10/2026: iluminações e quadro da portaria voltaram para 2026).
+    // Não é mais obra adiada — nem com o valor antigo da planilha do gestor.
+    if (a.itens2027.length && a.itens2027.every(n => achados[a.itens2027.indexOf(n)] === undefined && zerados[_orcNorm_(n)])) {
+      Logger.log(cid.nome + ': obra "' + a.de2026 + '" zerada no 090 de ' + ORC_ANO + ' — fora das obras adiadas.');
+      return null;
+    }
     const doModelo = achados.length > 0 && achados.every(v => v !== undefined);
     if (!doModelo) {
       Logger.log(cid.nome + ': obra adiada "' + a.de2026 + '" sem item no 090 de ' + ORC_ANO +
@@ -32,7 +41,8 @@ function _orcAdiados2026_(cid, dados) {
     }
     return { nome: _orcNomeObra_(a.de2026), orc2026: a.orc2026,
              orc2027: doModelo ? achados.reduce((t, v) => t + v, 0) : a.orc2027, doModelo: doModelo };
-  }).sort((x, y) => y.orc2027 - x.orc2027);
+  }).filter(Boolean).sort((x, y) => y.orc2027 - x.orc2027);
+  if (!itens.length) return null;
   return { itens: itens, total: itens.reduce((t, x) => t + x.orc2027, 0),
            total2026: itens.reduce((t, x) => t + x.orc2026, 0) };
 }

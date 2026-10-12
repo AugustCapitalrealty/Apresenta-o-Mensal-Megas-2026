@@ -321,22 +321,13 @@ const ORC_SUBCAPAS = {
 // a pergunta, apague a linha e gere de novo. Origem: comentários do gestor nas
 // planilhas de comparação 2026 × 2027 (07/10/2026).
 const ORC_PENDENCIAS_GESTOR = {
-  'Mega Itajaí': [
-    { conta: 'Manutenção de imóveis', tipo: 'Sem provisão de 3%',
-      texto: 'O 090 de 2027 não tem a linha de 3% para não previstos (Curitiba e Esteio têm). Esquecida?' },
-    // Ritmo 2026 (07/10/2026): no ritmo em dez/2026 e no Orç 2027 em jan–fev.
-    // O Guilherme acha que é parcelamento; a pergunta fica para o gestor confirmar.
-    // Respondidas pelo ritmo e retiradas: recalque paver (feito em ago/2026) e
-    // Orbital → Firecam / NFPA (NFPA feita em out/2026; em 2027 só a Firecam).
-    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
-      texto: 'Iluminação rua armazém 4/5: dez/2026 R$ 17.250 (ritmo) e fev/2027 R$ 11.875 (Orç). Parcelas da mesma obra?' },
-    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
-      texto: 'Iluminação do bolsão: dez/2026 R$ 1.800 (ritmo) e fev/2027 R$ 5.938 (Orç). Parcelas da mesma obra?' },
-    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
-      texto: 'Quadro elétrico da portaria: dez/2026 R$ 5.900 (ritmo) e jan/2027 R$ 4.290 (Orç). Parcelas da mesma obra?' },
-    { conta: 'Manutenção de imóveis', tipo: 'Parcelado ou em dobro?',
-      texto: 'Totem: bolsão dez/2026 R$ 17.400 (ritmo) e totem Mega jan/2027 R$ 11.500 (Orç). Parcelas da mesma obra?' }
-  ],
+  // Itajaí: tudo respondido pelo gestor na exportação dos modelos de 12/10/2026 —
+  // entrou a "PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS"
+  // (R$ 4.506/mês) e as iluminações do bolsão e do AMZ 4/5, o quadro da portaria
+  // e o totem foram puxados para 2026 (zerados no 090 de 2027). Antes:
+  // recalque paver (feito em ago/2026) e Orbital → Firecam / NFPA (NFPA feita
+  // em out/2026; em 2027 só a Firecam), respondidas pelo ritmo.
+  'Mega Itajaí': [],
   'Mega Curitiba': [
     { conta: 'Manutenção de imóveis', tipo: 'Decisão a confirmar',
       texto: 'Comparação, linha 4: vale o SIM (provisão de acesso × FM Security) ou entra nos 3%?' }

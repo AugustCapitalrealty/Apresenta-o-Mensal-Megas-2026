@@ -110,8 +110,11 @@ function _orcPendencias_(cid, rel, mensal, modelos) {
       texto: _orcMoeda_(s.total) + ' nos modelos, fora do total' }));
   }
   // Mês a mês ajustado para somar a DRE (_orcConciliarMensal_): uma linha só,
-  // com a maior diferença — o detalhe conta a conta vai para o log.
-  const conc = rel.mensalConciliado || [];
+  // com a maior diferença — o detalhe conta a conta vai para o log. IPTU e
+  // Seguro ficam de fora: nenhum slide os mostra mês a mês, e o Despesas-Mensal
+  // não traz o ritmo deles (o "maior: IPTU +R$ 426 mil" só assustava).
+  const semMes = [_orcChaveConta_('IPTU'), _orcChaveConta_('Seguro')];
+  const conc = (rel.mensalConciliado || []).filter(a => semMes.indexOf(_orcChaveConta_(a.nome)) < 0);
   if (conc.length) {
     const maior = conc.slice().sort((x, y) => Math.abs(y.dif) - Math.abs(x.dif))[0];
     out.push({ nome: 'Despesas-Mensal', chave: '', tipo: 'Mês a mês = DRE',
