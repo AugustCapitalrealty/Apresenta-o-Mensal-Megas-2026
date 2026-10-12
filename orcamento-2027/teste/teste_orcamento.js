@@ -1501,9 +1501,16 @@ const MODELO_SEC = {};
         // Detalhamento por conta que o gestor escreveu (12/10/2026): nos ofensores, no lugar do maior item.
         const tOfE = sl.filter(x => /^(Ofensores|Defensores) — /.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
         ok(['NOVO ANALISTA DE FACILITIES JR + RATEIO GERÊNCIA', 'ENTRADA DO AMZ B + MANUT. SEMESTRAL DRENAGEM',
-            'ENTRADA DO AMZ B + ZELADORIA EXTRA NAS CHUVAS', 'MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3'].every(t => tOfE.indexOf(t) >= 0) &&
+            'ENTRADA DO AMZ B + ZELADORIA EXTRA NAS CHUVAS', 'MANUTENÇÃO CHICOTE ELÉTRICO DO TRATOR 3'].every(t => tOfE.indexOf(t) >= 0) &&
            tOfE.filter(t => t === 'ENTRADA DO ARMAZÉM B').length === 4,
            'esteio (exportação nova): detalhamento por conta do gestor nos ofensores (Despesa de pessoal, Água, Seguro…)');
+        // Português (12/10/2026, 19h): a célula que ainda tem "chicote elétrica" passa a "elétrico" com aplicarPropostasTextos().
+        const shOf = PLANILHA_TEXTOS.getSheetByName('Ofensores'), dOf = shOf.getDataRange().getValues();
+        const iCh = dOf.findIndex(r => r[0] === 'MEGA ESTEIO · MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS');
+        shOf.getRange(iCh + 1, 3, 1, 1).setValues([['MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3']]);
+        G.aplicarPropostasTextos();
+        ok(iCh > 0 && shOf.getDataRange().getValues()[iCh][2] === 'MANUTENÇÃO CHICOTE ELÉTRICO DO TRATOR 3',
+           'esteio: a proposta revista troca "chicote elétrica" por "chicote elétrico" na planilha de textos');
       }
       const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
       ok(!comFalha.length, c + ' (exportação nova): nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');

@@ -467,5 +467,7 @@ const ORC_PROPOSTAS_TEXTOS = [
   ["Ofensores","MEGA ESTEIO · SEGURO","ENTRADA DO ARMAZÉM B",""],
   ["Ofensores","MEGA ESTEIO · MATERIAL DE CONSUMO","ENTRADA DO ARMAZÉM B",""],
   ["Ofensores","MEGA ESTEIO · ENERGIA ELÉTRICA","ENTRADA DO ARMAZÉM B",""],
-  ["Ofensores","MEGA ESTEIO · MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS","MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3",""]
+  // 12/10/2026, 19h: "chicote elétrico" (o gestor escreveu "elétrica"); a anterior na 4ª coluna faz
+  // aplicarPropostasTextos() trocar a célula que ainda tem o texto antigo.
+  ["Ofensores","MEGA ESTEIO · MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS","MANUTENÇÃO CHICOTE ELÉTRICO DO TRATOR 3","MANUTENÇÃO CHICOTE ELÉTRICA DO TRATOR 3"]
 ];

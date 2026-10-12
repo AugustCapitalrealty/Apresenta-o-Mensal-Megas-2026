@@ -1202,7 +1202,7 @@ const ORC_DECISOES_GESTOR = {
    },
    {
     "linha": 35,
-    "de2026": "Obra cancelas 2/2 *  2594805 (Equipamentos eletronicos)",
+    "de2026": "Obra cancelas 2/2 *  2594805 (Equipamentos eletrônicos)",
     "ritmo2026": 124200.0
    },
    {
