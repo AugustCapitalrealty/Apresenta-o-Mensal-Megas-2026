@@ -70,7 +70,11 @@ const ORC_CIDADES = {
       // orientou usar a METRAGEM (06/10/2026: IPTU −R$ 3.032, Seguro
       // −R$ 10.645 no Orç 2027). Ficam sem o ⚠ REVISAR e fora do slide de
       // revisão; a divergência só vai para o log.
-      valeMetragem: ['IPTU', 'Seguro'],
+      // 12/10/2026, 20h: + Outras taxas e impostos — a METRAGEM das 19h56 traz
+      // R$ 2.455 e o Despesas-Mensal (mais antigo, não veio na atualização)
+      // ainda R$ 0; os modelos não têm a conta, o número é o da METRAGEM. Sem
+      // isso, 7 slides com ⚠ REVISAR. O mês a mês se ajusta à DRE sozinho.
+      valeMetragem: ['IPTU', 'Seguro', 'Outras taxas e impostos'],
       // Orç 2027 de cada conta = modelos 070/090 + contratos, conferido com a
       // METRAGEM a cada geração (12/10/2026): batendo, nada aparece; não
       // batendo, vale o dos modelos e a diferença vai para o slide de revisão.
@@ -136,6 +140,9 @@ const ORC_CIDADES = {
       metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // MEGA ESTEIO - METRAGEM-COND 2027
       mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027
       financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',   // planilha dos Megas (Esteio)
+      // 12/10/2026, 20h: a METRAGEM das 19h56 traz R$ 1.200 em Outras taxas e
+      // impostos e o Despesas-Mensal ainda R$ 0 — vale a METRAGEM (ver Curitiba).
+      valeMetragem: ['Outras taxas e impostos'],
       orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
     },
     contratos: {},

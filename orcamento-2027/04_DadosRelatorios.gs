@@ -124,31 +124,40 @@ const ORC_CONTAS_SINONIMOS = {
 };
 
 // Conta dos modelos que SOMA numa conta da METRAGEM que os modelos não montam
-// (a despesa de pessoal vem do RH, não do 070/090). Esteio (Guilherme,
-// 12/10/2026): "CUSTO PARA ALOCAÇÃO DE CADEIRA DE ASSISTENTE DE FACILITIES",
-// R$ 90 mil em "Assessoria de RH" — lançado para medir o efeito na despesa com
-// pessoal; quem inclui de fato é o RH, quando aprovar ("pode considerar, mas
-// ainda não está junto"). Quando a Despesa de pessoal da METRAGEM passar a
-// trazer a assistente, apague a linha — senão conta em dobro.
-const ORC_CONTAS_SOMAR = {
-  'Assessoria de RH': { conta: 'Despesa de pessoal', nota: '(+ assistente de facilities)' }
+// (a despesa de pessoal vem do RH, não do 070/090): { 'Conta do modelo': { conta, nota } }.
+// Vazio desde 12/10/2026, 20h — a assistente de facilities, que somava aqui, passou
+// para ORC_CONTAS_DENTRO.
+const ORC_CONTAS_SOMAR = {};
+
+// Conta dos modelos que já está DENTRO de uma conta da METRAGEM: não soma (o total e
+// o R$/m² ficam iguais aos da METRAGEM), não vira pendência, e a conta da METRAGEM sai
+// com "*" na DRE e nos ofensores, com a nota (11_DREOfensores.gs). Esteio (Guilherme,
+// 12/10/2026, 20h): "CUSTO PARA ALOCAÇÃO DE CADEIRA DE ASSISTENTE DE FACILITIES",
+// R$ 90 mil em "Assessoria de RH" no 090, fica na Despesa de pessoal como consultoria
+// até o RH aprovar — "colocasse os 90 mil e da linha de origem tirasse 90 para ficar
+// igual e não afetar metragem" (até 20h ele somava por cima: R$ 90 mil acima da METRAGEM).
+const ORC_CONTAS_DENTRO = {
+  'Assessoria de RH': { conta: 'Despesa de pessoal',
+                        asterisco: 'da assistente de facilities, como consultoria até o RH aprovar' }
 };
 
 // { [chave]: { nome, total, meses[12] } } — só contas com valor. As de
-// ORC_CONTAS_SOMAR vêm em 'somar:<chave da conta da METRAGEM>', com somar: true.
+// ORC_CONTAS_SOMAR vêm em 'somar:<chave da conta da METRAGEM>', com somar: true; as de
+// ORC_CONTAS_DENTRO em 'dentro:<chave>', com dentro: true e o texto do asterisco.
 function _orcOrcDosModelos_(cid, modelos) {
-  const sin = {}, somar = {};
+  const sin = {}, somar = {}, dentro = {};
   Object.keys(ORC_CONTAS_SINONIMOS).forEach(k => { sin[_orcChaveConta_(k)] = _orcChaveConta_(ORC_CONTAS_SINONIMOS[k]); });
   Object.keys(ORC_CONTAS_SOMAR).forEach(k => { somar[_orcChaveConta_(k)] = ORC_CONTAS_SOMAR[k]; });
+  Object.keys(ORC_CONTAS_DENTRO).forEach(k => { dentro[_orcChaveConta_(k)] = ORC_CONTAS_DENTRO[k]; });
   const fixas = (cid.relatorios.valeMetragem || []).map(_orcChaveConta_);
   const out = {};
   modelos.forEach(l => {
     let k = _orcChaveConta_(l.conta);
-    const soma = somar[k];
-    k = soma ? 'somar:' + _orcChaveConta_(soma.conta) : (sin[k] || k);
+    const soma = somar[k], dent = dentro[k], para = soma || dent;
+    k = soma ? 'somar:' + _orcChaveConta_(soma.conta) : dent ? 'dentro:' + _orcChaveConta_(dent.conta) : (sin[k] || k);
     if (fixas.indexOf(k) >= 0) return;
-    const s = out[k] || (out[k] = { nome: soma ? soma.conta : l.conta, total: 0, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                    somar: !!soma, nota: soma ? soma.nota : '' });
+    const s = out[k] || (out[k] = { nome: para ? para.conta : l.conta, total: 0, meses: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                    somar: !!soma, dentro: !!dent, nota: soma ? soma.nota : '', asterisco: dent ? dent.asterisco : '' });
     s.total += l.total;
     (l.meses || []).forEach((v, i) => { s.meses[i] += v || 0; });
   });
@@ -173,7 +182,13 @@ function _orcAplicarOrcDosModelos_(rel, calc) {
     if (Math.abs(novo - v.orc) > 1) mudou.push({ nome: nome, metragem: v.orc, calculado: novo, nota: a ? a.nota : '' });
     v.orc = novo;
   };
-  rel.contas.forEach(c => aplicar(c.nome, c.chave, c.v));
+  rel.contas.forEach(c => {
+    aplicar(c.nome, c.chave, c.v);
+    // ORC_CONTAS_DENTRO: não mexe no Orç da conta; ela só leva o asterisco (c.asterisco; _orcNotaAsterisco_,
+    // 11_DREOfensores.gs) e a linha do modelo deixa de ser pendência.
+    const d = calc['dentro:' + c.chave];
+    if (d) { usadas['dentro:' + c.chave] = true; c.asterisco = { valor: d.total, texto: d.asterisco }; }
+  });
   aplicar('IPTU', _orcChaveConta_('IPTU'), rel.iptu);
   aplicar('Seguro', _orcChaveConta_('Seguro'), rel.seguro);
   // Conta dos modelos sem linha na METRAGEM: não há onde pôr — fica fora do
@@ -297,9 +312,11 @@ function obterRelatorioMensal_(chaveCidade, modelos) {
   const cid = ORC_CIDADES[chaveCidade];
   if (cid.relatorios.orcDosModelos) {
     // Mesmas contas que o anual troca: os 12 meses continuam somando o anual
-    // (o que é de ORC_CONTAS_SOMAR soma por cima dos meses da conta).
+    // (o que é de ORC_CONTAS_SOMAR soma por cima dos meses da conta; o de
+    // ORC_CONTAS_DENTRO já está nela e não mexe).
     const calc = _orcOrcDosModelos_(cid, modelos || _orcLinhasModelosCidade_(chaveCidade));
     Object.keys(calc).forEach(k => {
+      if (calc[k].dentro) return;
       const e = calc[k], m = mensal.contas[e.somar ? k.slice('somar:'.length) : k];
       if (m) m.orc = e.somar ? m.orc.map((v, i) => v + e.meses[i]) : e.meses.slice();
     });

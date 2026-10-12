@@ -40,8 +40,14 @@ Curitiba 20.706,69 → 17.781,40 e Itajaí 16.971,92 → 14.574,25/mês = rateio
 igual) e "IPTU E SEGURO - MEGAS 2027" (racional: valor/m² 2026 × reajuste × área 2027 — seguro +5%, IPTU +5,5% em
 Curitiba e Itajaí, Esteio +13,75%; a premissa ESCRITA diz 15% "conforme Selic" — perguntar). Fixtures:
 `*_1956.json` e `fixture_contratos_2027_rev02.json`, seção "Atualização de 12/10/2026, 19h56" do teste. Com eles o
-Orç 2027: Esteio 4.110.587 (METRAGEM 4.020.587 + R$ 90 mil da cadeira de assistente de facilities, de propósito —
-ORC_CONTAS_SOMAR, "enquanto o RH não aprova"), Itajaí 6.643.596 e Curitiba 7.528.284 (= METRAGEM). FALTA: o
+Orç 2027 = METRAGEM nos três: Esteio 4.020.587, Itajaí 6.643.596, Curitiba 7.528.284. **Assistente de facilities
+(20h, decisão do Guilherme):** os R$ 90 mil ("Assessoria de RH" no 090) NÃO somam mais por cima — ficam DENTRO da
+Despesa de pessoal da METRAGEM (ORC_CONTAS_DENTRO, 04_DadosRelatorios.gs; ORC_CONTAS_SOMAR ficou vazio): total e
+R$/m² iguais aos da METRAGEM, a conta sai "Despesa de pessoal*" na DRE e nos ofensores, e a nota vai no RODAPÉ
+("* Despesa de pessoal: inclui R$ 90.000 da assistente de facilities, como consultoria até o RH aprovar") — a
+tabela não encolhe porque a altura dela entra na moldura (mais baixa = MOLDURA nova sem imagem = sem sombra).
+"Outras taxas e impostos" em valeMetragem no Esteio e em Curitiba (METRAGEM nova R$ 1.200/R$ 2.455 × Despesas-
+Mensal antigo R$ 0 → sem isso, 7 slides com ⚠ REVISAR por Mega). FALTA: o
 Guilherme subir no Drive (Planilhas Google) e mandar os links → trocar ORC_MODELO_070_ID (01_Config),
 ORC_CONTRATOS_ANO_IDS (02_Dados) e o metragemId dos 3 Megas; ou ele cola por cima das planilhas atuais e o código
 não muda. O slide 30 da Moked lê a linha da Moked do Esteio no 070 (R$ 84.000 no ano com o 070 novo).

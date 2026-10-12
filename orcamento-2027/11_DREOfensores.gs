@@ -58,6 +58,28 @@ function _orcM2_(v) {
   return v.toFixed(2).replace('.', ',');
 }
 
+// Nome da conta como aparece na tabela: com "*" se tem dentro uma linha de ORC_CONTAS_DENTRO (04_DadosRelatorios.gs)
+// — Esteio: a Despesa de pessoal com a cadeira de assistente de facilities (Guilherme, 12/10/2026).
+function _orcNomeConta_(c) {
+  return c.nome + (c.asterisco ? '*' : '');
+}
+
+// "* Despesa de pessoal: inclui R$ 90.000 da cadeira de assistente de facilities, como consultoria até o RH
+// aprovar." — '' sem conta com asterisco. O valor já está na conta: o total e o R$/m² são os da METRAGEM.
+function _orcNotaAsterisco_(rel) {
+  const cs = ((rel && rel.contas) || []).filter(c => c.asterisco);
+  return cs.map(c => '* ' + c.nome + ': inclui ' + _orcMoeda_(c.asterisco.valor) + ' ' + c.asterisco.texto + '.').join(' ');
+}
+
+// Rodapé com a nota do asterisco: "fonte · nota da área · * nota"; sem espaço numa linha, sai a nota da área.
+// A nota vai no rodapé e não numa linha própria porque a tabela não pode encolher: a altura dela faz parte da
+// moldura (imagem pronta na pasta) — mais baixa, o slide sairia sem a sombra.
+function _orcRodapeComAsterisco_(W, fonte, notaArea, asterisco) {
+  const DS = CR_DESIGN_SYSTEM, util = W - DS.layout.marginX * 2 - _ORC_RECUO_TEXTBOX;
+  const comArea = fonte + (notaArea ? ' · ' + notaArea : '') + ' · ' + asterisco;
+  return _orcLarguraTexto_(comArea, 6, DS.typography.body, false) <= util ? comArea : fonte + ' · ' + asterisco;
+}
+
 // ==========================================
 // TABELA NUMÉRICA
 // ==========================================
@@ -208,7 +230,7 @@ function _orcLinhasDRE_(rel) {
     const vGrupo = soma(doGrupo.map(c => c.v));
     out.push({ tipo: 'grupo', nome: nomeGrupo.toUpperCase(), v: vGrupo });
     if (rel.m2Total) out.push({ tipo: 'm2grupo', nome: 'R$/m²', v: m2(vGrupo) });
-    contas.forEach(c => out.push({ tipo: 'item', nome: c.nome, chaves: [c.chave], v: c.v }));
+    contas.forEach(c => out.push({ tipo: 'item', nome: _orcNomeConta_(c), chaves: [c.chave], v: c.v }));
   });
   return out;
 }
@@ -255,8 +277,9 @@ function gerarSlideDRE_(slide, W, H, cid, rel) {
   ]);
 
   _orcAvisosRodape_(slide, W, H, rel.avisos);
-  const nota = _orcNotaArea_(rel, cid);
-  _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + ' · R$ mil, ▲ gasta mais, ▼ gasta menos · ' + nota
+  const nota = _orcNotaArea_(rel, cid), ast = _orcNotaAsterisco_(rel);
+  _orcRodape_(slide, W, H, ast ? _orcRodapeComAsterisco_(W, 'Fonte: METRAGEM-COND — ' + cid.nome + ' · R$ mil', nota, ast)
+    : nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + ' · R$ mil, ▲ gasta mais, ▼ gasta menos · ' + nota
     : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria) · despesa em R$ mil, ▲ vermelho gasta mais, ▼ verde gasta menos');
 }
 
@@ -280,7 +303,7 @@ function _orcAvisosRodape_(slide, W, H, avisos) {
  * entra no total do bloco, que fecha com a variação geral.
  */
 function _orcOfensores_(rel) {
-  const todas = rel.contas.map(c => ({ nome: c.nome, chave: c.chave, v: c.v }))
+  const todas = rel.contas.map(c => ({ nome: c.nome, chave: c.chave, v: c.v, asterisco: c.asterisco }))
     .concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
              { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
   todas.forEach(c => { c.delta = c.v.orc - c.v.ritmo; });
@@ -351,7 +374,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     const mR = m2(c.v.ritmo, areaRit), mO = m2(c.v.orc, areaOrc);
     // Nome por extenso, como na DRE (gestor, 07/10/2026: "Manut. de maquinas…"
     // destoava): a coluna CONTA se alarga para o nome mais comprido.
-    return { tipo: tipo || 'item', nome: c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
+    return { tipo: tipo || 'item', nome: c.chave ? _orcNomeConta_(c) : c.nome, revisar: !!chaves && _orcRevisarDe_(rel, chaves).length > 0, celulas: [
       { texto: _orcMil_(c.v.orcAnt) }, { texto: _orcMil_(c.v.ritmo) }, { texto: _orcMil_(c.v.orc), bold: true },
       { texto: _orcDeltaMil_(c.delta), sentido: c.delta > 0.5 ? 1 : (c.delta < -0.5 ? -1 : 0) },
       { texto: v.texto, sentido: v.sentido },
@@ -393,6 +416,9 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   const nota = _orcNotaArea_(rel, cid);
   const doGestor = linhas.some(l => (l.celulas || []).some(c => c && c.doGestor));
   const fonteDet = 'detalhamento: ' + (doGestor ? 'nota da gestão ou ' : '') + 'maior item dos modelos';
+  // A conta com "*" no bloco: a nota do asterisco vai no rodapé.
+  const comAsterisco = b[1].contas.some(c => c.asterisco);
+  if (comAsterisco) { _orcRodape_(slide, W, H, _orcRodapeComAsterisco_(W, 'Fonte: METRAGEM-COND — ' + cid.nome, nota, _orcNotaAsterisco_(rel))); return; }
   _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; ' + fonteDet + ' de ' + a.orc + ' · ' + nota
     : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); ' + fonteDet + ' 070 e 090 de ' +
       a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' fica só no total');

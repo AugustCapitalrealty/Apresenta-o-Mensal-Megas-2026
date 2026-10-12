@@ -1476,11 +1476,14 @@ const MODELO_SEC = {};
       ok(!naoFecha.length, c + ' (exportação nova): mês a mês = DRE (' + naoFecha.join(', ') + ')');
       ok(!rel.orcCalculado.semConta.length, c + ' (exportação nova): toda conta dos modelos tem linha na METRAGEM (' +
          rel.orcCalculado.semConta.map(s => s.nome + ' ' + Math.round(s.total)).join(', ') + ')');
-      // Esteio: a assistente de facilities ("Assessoria de RH", R$ 90 mil) soma na Despesa de pessoal
-      // da METRAGEM — o RH ainda não incluiu (Guilherme, 12/10/2026; ORC_CONTAS_SOMAR).
+      // Esteio: a assistente de facilities ("Assessoria de RH", R$ 90 mil no 090) fica DENTRO da Despesa de
+      // pessoal da METRAGEM, como consultoria até o RH aprovar — não soma por cima; a conta ganha o asterisco
+      // (Guilherme, 12/10/2026, 20h; ORC_CONTAS_DENTRO).
       const pesOf = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '.json')).contas.filter(x => x.chave === G._orcChaveConta_('Despesa de pessoal'))[0];
-      pertoReal(conta('Despesa de pessoal').v.orc, pesOf.v.orc + (chave === 'ESTEIO' ? 90000 : 0),
-                c + ' (exportação nova): Despesa de pessoal = METRAGEM' + (chave === 'ESTEIO' ? ' + assistente de facilities (R$ 90 mil)' : ''));
+      pertoReal(conta('Despesa de pessoal').v.orc, pesOf.v.orc, c + ' (exportação nova): Despesa de pessoal = METRAGEM');
+      ok(chave === 'ESTEIO' ? !!conta('Despesa de pessoal').asterisco && Math.round(conta('Despesa de pessoal').asterisco.valor) === 90000
+                            : !rel.contas.some(x => x.asterisco),
+         c + ' (exportação nova): ' + (chave === 'ESTEIO' ? 'Despesa de pessoal com o asterisco dos R$ 90 mil da assistente' : 'nenhuma conta com asterisco'));
 
       // Item tirado do ano com R$ 0,01 (o sistema não aceita zero) não é item: Itajaí, 12/10/2026 —
       // iluminações, quadro da portaria, totem, encanamento PPR e bebedouro voltaram para 2026.
@@ -2109,9 +2112,9 @@ console.log('Gravação no Slides');
 }
 console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
 // O rateio da Moked corrigido (gestor, 12/10/2026): Curitiba e Itajaí no cadastro de contratos (rev02) e o
-// Esteio no 070 (R$ 7.000/mês). Com ele a METRAGEM nova fecha com o Orç dos modelos em Itajaí e Curitiba; no
-// Esteio o deck fica R$ 90 mil acima — a cadeira de assistente de facilities (ORC_CONTAS_SOMAR), que entra na
-// despesa de pessoal enquanto o RH não aprova e que a METRAGEM ainda não traz. O 090 não mudou.
+// Esteio no 070 (R$ 7.000/mês). Com ele a METRAGEM nova fecha com o Orç dos modelos nos três Megas — no
+// Esteio, com a cadeira de assistente de facilities DENTRO da despesa de pessoal (ORC_CONTAS_DENTRO: até as
+// 20h ela somava por cima e o deck ficava R$ 90 mil acima). O 090 não mudou.
 {
   const CAD_ANTES = porId[G.ORC_CONTRATOS_ANO_IDS[0]], M090_ANTES = porId[G.ORC_MODELO_090_ID], M070_ANTES = porId[G.ORC_MODELO_070_ID];
   const limpar = () => Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
@@ -2124,7 +2127,7 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
   ok(Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Curitiba', 'Segurança e vigilância', 2027), /MOKED|CONSULTORIA DE SEGURAN/i)) === 213377 &&
      Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Itajaí', 'Segurança e vigilância', 2027), /MOKED/i)) === 174891,
      'cadastro rev02: Moked Curitiba R$ 213.377 (17.781,40/mês) e Itajaí R$ 174.891 (14.574,25/mês)');
-  const esperado = { CURITIBA: [7528284, 0], ITAJAI: [6643596, 0], ESTEIO: [4110587, 90000] };
+  const esperado = { CURITIBA: [7528284, 0], ITAJAI: [6643596, 0], ESTEIO: [4020587, 0] };
   [['CURITIBA', 'curitiba'], ['ITAJAI', 'itajai'], ['ESTEIO', 'esteio']].forEach(([chave, c]) => {
     const cid = G.ORC_CIDADES[chave];
     const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
@@ -2148,6 +2151,16 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
       G._orcGerar_([chave]);
       const sl = decks[cid.deckId].getSlides();
       ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))), c + ' (19h56): nenhum slide com falha ou texto cortado');
+      // O asterisco da Despesa de pessoal: na DRE e nos ofensores do Esteio, com a nota no rodapé (a tabela não
+      // encolhe — a moldura continua a mesma); nos outros Megas, nada.
+      const nota = '* Despesa de pessoal: inclui R$ 90.000 da assistente de facilities, como consultoria até o RH aprovar.';
+      const temNota = x => textos(x).some(t => /^Fonte: /.test(t) && t.indexOf(nota) >= 0);
+      const comAst = sl.filter(x => textos(x).indexOf('Despesa de pessoal*') >= 0).map(titulo);
+      ok(chave === 'ESTEIO' ? ['DRE — Orçamento 2027', 'Ofensores — Orçamento 2027'].every(t => comAst.indexOf(t) >= 0) &&
+                              sl.filter(x => textos(x).indexOf('Despesa de pessoal*') >= 0).every(temNota)
+                            : !comAst.length && !sl.some(temNota),
+         c + ' (19h56): ' + (chave === 'ESTEIO' ? '"Despesa de pessoal*" e a nota na DRE e nos ofensores (' + comAst.join(', ') + ')' : 'sem asterisco'));
+      ok(!rel.orcCalculado.semConta.some(s => /assessoria de rh|pessoal/i.test(s.nome)), c + ' (19h56): a assistente não vira pendência');
     } finally {
       cid.despesasGeraisId = antes.d;
       cid.servicosTerceirosId = antes.s;
