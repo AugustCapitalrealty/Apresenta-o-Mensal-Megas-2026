@@ -1070,6 +1070,10 @@ ok(lPais && lPais[3] === 'SIM' && /…$/.test(lPais[1]) && lPais[2] === '' && lP
    'paisagismo cortado na composição, com quanto cabe e a coluna de escolha vazia (' + JSON.stringify(lPais) + ')');
 ok(lPais && /Linha a linha/.test(lPais[5]), 'diz em que slide o texto aparece');
 ok(linhasAba('Ofensores').slice(1).every(r => !/ · R\$/.test(r[0])), 'ofensores: a chave é a descrição, sem o valor');
+// Guilherme, 12/10/2026: "aparece o valor no final, tire isso" — o detalhamento é só a descrição.
+ok(linhasAba('Ofensores').slice(1).every(r => !/ · R\$ /.test(r[1])) &&
+   ![iDRE + 1, iDRE + 2].some(i => textos(slides[i]).some(t => / · R\$ [\d.,]+ (mil|mi)$/.test(t))),
+   'ofensores e defensores: detalhamento sem o valor do item no fim');
 
 // Fonte única: toda descrição da tabela sai com a mesma letra, cortada ou não.
 const fontesDe = (sl, n) => {

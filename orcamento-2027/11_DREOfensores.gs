@@ -319,22 +319,21 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     'O que puxa o orçamento para ' + (ofensor ? 'cima' : 'baixo') + ' · Orç ' + a.orc + ' contra o Ritmo ' + a.ritmo +
     ' · ' + cid.nome + ' · R$ mil · total ' + ORC_COM_IPTU);
 
-  // Maior item orçado da conta nos modelos 070/090 — dá nome ao número. A
-  // chave na planilha de textos é só a descrição, sem o valor.
+  // Maior item orçado da conta nos modelos 070/090 — dá nome ao número. Só a
+  // descrição: o valor do item no fim (" · R$ 214 mil") saiu a pedido do
+  // Guilherme (12/10/2026, "aparece o valor no final, tire isso").
   // Item maior que a própria conta (conta em valeMetragem, como o Seguro de
-  // Curitiba: METRAGEM R$ 604 mil, modelo R$ 614 mil) não sai: seriam dois
-  // números contraditórios na mesma linha.
+  // Curitiba: METRAGEM R$ 604 mil, modelo R$ 614 mil) não sai: seria um item
+  // maior que a conta na mesma linha.
   const maiorItem = (chave, orc) => {
     let it = _orcItensDaConta_(linhasModelo || [], chave)[0];
     if (it && it.total > orc + 1) it = null;
-    const sufixo = it ? ' · ' + _orcCompacto_(it.total) : '';
-    return it ? { texto: _orcTextoEscolhido_('Ofensores', it.descricao) + sufixo,
-                  aba: 'Ofensores', original: it.descricao, sufixo: sufixo } : null;
+    return it ? { texto: _orcTextoEscolhido_('Ofensores', it.descricao), aba: 'Ofensores', original: it.descricao } : null;
   };
   // O gestor escreve o detalhamento da CONTA na aba Ofensores, linha "MEGA X · CONTA" (12/10/2026: "tem
   // linhas em branco que ele quer preencher, despesa com pessoal, e não tem na planilha"). Escrito, vale
-  // no lugar do maior item, sem o valor; vazio, fica o maior item (ou a célula em branco) e a linha da
-  // conta é registrada mesmo assim — toda conta do slide tem onde ser preenchida.
+  // no lugar do maior item; vazio, fica o maior item (ou a célula em branco) e a linha da conta é
+  // registrada mesmo assim — toda conta do slide tem onde ser preenchida.
   const detalhe = c => {
     const chave = _orcChaveDetalheConta_(cid, c.nome);
     const escrito = _orcTextoEscolhido_('Ofensores', chave);

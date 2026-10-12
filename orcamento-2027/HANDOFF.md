@@ -213,6 +213,8 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   dizer "nota da gestão ou maior item". Os 8 textos que o gestor escreveu para o Esteio (linhas 47–54, conta na coluna G)
   viraram propostas dessas linhas; três encurtados para caber (Despesa de pessoal, Manutenção de imóveis, Limpeza). As
   linhas dele com a conta na G ficam na planilha, mas o gerador não as lê. Teste 4762/4762.
+- **Detalhamento sem o valor do item** (Guilherme: "aparece o valor no final, tire isso"): o maior item sai só com a
+  descrição, sem o " · R$ 214 mil" — a célula ganha ~8 letras ("CABE ATÉ" 34 → 42). Teste 4763/4763.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
