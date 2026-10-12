@@ -124,7 +124,14 @@ function novoSlide(deck) {
     move: i => { deck._slides = deck._slides.filter(s => s !== slide); deck._slides.splice(i, 0, slide); },
     // Formas com texto (27_Atualizar.gs acha o título do slide por aqui).
     getShapes: () => slide.shapes.filter(r => r.tipo !== 'IMAGE' && r.tipo !== 'LINE')
-      .map(r => ({ getText: () => ({ asString: () => r.texto || '' }) }))
+      .map(r => ({ getText: () => ({ asString: () => r.texto || '' }) })),
+    // Elementos da página (cópia de um slide da v3, 28_Moked.gs): tipo, posição, texto e remoção.
+    getPageElements: () => slide.shapes.slice().map(reg => ({
+      getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
+      getLeft: () => reg.x, getTop: () => reg.y, getWidth: () => reg.w, getHeight: () => reg.h,
+      asShape: () => ({ getText: () => ({ asString: () => (reg.texto || '') + '\n' }) }),
+      remove: () => { const i = slide.shapes.indexOf(reg); if (i >= 0) slide.shapes.splice(i, 1); }
+    }))
   };
   return slide;
 }
@@ -134,7 +141,13 @@ function novoDeck() {
   deck.getPageWidth = () => W;
   deck.getPageHeight = () => H;
   deck.getSlides = () => deck._slides.slice();
-  deck.appendSlide = () => { const s = novoSlide(deck); deck._slides.push(s); return s; };
+  // appendSlide(slide de outra apresentação) copia as formas e as anotações (28_Moked.gs copia slides da v3).
+  deck.appendSlide = origem => {
+    const s = novoSlide(deck);
+    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign({}, r, { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
+    deck._slides.push(s);
+    return s;
+  };
   deck.insertSlide = (i, layout) => { const s = novoSlide(deck); deck._slides.splice(i, 0, s); return s; };
   deck.getUrl = () => 'https://docs.google.com/presentation/d/teste';
   deck.getSlideById = id => deck._slides.filter(s => s.id === id)[0] || null;
@@ -258,6 +271,7 @@ const ctx = {
     PredefinedLayout: { BLANK: 'BLANK' },
     LineCategory: { STRAIGHT: 'STRAIGHT' },
     DashStyle: { DASH: 'DASH' },
+    PageElementType: { SHAPE: 'SHAPE', IMAGE: 'IMAGE', LINE: 'LINE', TABLE: 'TABLE', GROUP: 'GROUP' },
     openById: id => decks[id] || (decks[id] = novoDeck())
   },
   // Sem Drive no teste: força o caminho de reserva do logo (texto no lugar).
@@ -2094,9 +2108,36 @@ console.log('Gravação no Slides');
   ok(!Object.keys(semCard).length, 'sombra: todo slide com cabeçalho tem card na moldura (sem card: ' + Object.keys(semCard).join(' | ') + ')');
 }
 console.log('Slides da Moked (28_Moked.gs)');
-// Os prints do relatório da Moked (v3, slides 22 a 27) refeitos em slides nativos, numa apresentação separada:
-// criada na 1ª vez (o ID fica nas propriedades) e refeita inteira nas seguintes.
+// Os slides da Implantação Moked (v3, 22 a 30) refeitos numa apresentação separada: criada na 1ª vez (o ID fica
+// nas propriedades) e refeita inteira nas seguintes. Os slides 28 e 29 são cópias dos da v3 (as fotos do gestor).
 {
+  // A v3 de mentira: os slides 28 e 29 do gestor (marca nas anotações, título, texto dele, imagens, moldura, logo,
+  // cartão e linha do molde) e um slide sem a marca com o mesmo texto, que não pode ser o escolhido.
+  const v3 = novoDeck();
+  const slideGestor = (textoDireita, imgs) => {
+    const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';
+    s.shapes.push({ tipo: 'IMAGE', x: 0, y: 0, w: 720, h: 405, nome: 'MOLDURA - 10830624af2a.png' },
+                  { tipo: 'IMAGE', x: 600, y: 20, w: 90, h: 24, nome: 'logo' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: 'Implantação Moked | Treinamento e Capacitação' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · Mega Esteio' },
+                  { tipo: 'ROUND_RECTANGLE', x: 30, y: 74, w: 660, h: 300, texto: null },
+                  { tipo: 'LINE', x: 448, y: 92, w: 0, h: 264 },
+                  { tipo: 'TEXT_BOX', x: 456, y: 96, w: 222, h: 200, texto: textoDireita },
+                  { tipo: 'TEXT_BOX', x: 30, y: 385, w: 660, h: 14, texto: 'Fotos e textos preenchidos pelo gestor · Mega Esteio' });
+    imgs.forEach(r => s.shapes.push(Object.assign({ tipo: 'IMAGE' }, r)));
+    return s;
+  };
+  v3.appendSlide().shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26,
+    texto: 'Implantação Moked | Treinamento e Capacitação · Aplicação de Orientações · Programa Quadrimestral' });
+  slideGestor('Gestão Operacional Moked\nAplicação de Orientações e Procedimentos\nTreinamentos e Testes de Eventos de Atípicos',
+    [{ x: 52, y: 88, w: 384, h: 97, nome: 'print do relatório' }, { x: 112, y: 193, w: 315, h: 161, nome: 'fichas' }]);
+  slideGestor('Gestão Operacional Moked\nPrograma Quadrimestral de Treinamentos e aprimentos da equipe',
+    [{ x: 52, y: 91, w: 229, h: 126, nome: 'foto 1' }, { x: 52, y: 223, w: 229, h: 127, nome: 'foto 2' },
+     { x: 286, y: 88, w: 150, h: 267, nome: 'foto 3' }, { x: 499, y: 236, w: 166, h: 120, nome: 'ficha' }]);
+  decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
+  const v3Antes = JSON.stringify(v3._slides.map(s => s.shapes));
+
   const criadas = [];
   G.SlidesApp.create = nome => { const d = novoDeck(); d.getId = () => 'moked-teste'; decks['moked-teste'] = d; criadas.push(nome); return d; };
   delete PROPS_DADOS[G.ORC_MOKED.prop];
@@ -2106,14 +2147,36 @@ console.log('Slides da Moked (28_Moked.gs)');
   const sl = decks['moked-teste'].getSlides(), tudo = sl.map(s => textos(s).join(' | '));
   ok(criadas.length === 1 && PROPS_DADOS[G.ORC_MOKED.prop] === 'moked-teste',
      'Moked: a apresentação é criada uma vez e o ID fica nas propriedades (' + criadas.length + ' criadas)');
-  ok(sl.length === 6, 'Moked: 6 slides depois de gerar duas vezes (' + sl.length + ')');
+  ok(sl.length === 9, 'Moked: 9 slides (22 a 30 da v3) depois de gerar duas vezes (' + sl.length + ')');
+  ok(JSON.stringify(v3._slides.map(s => s.shapes)) === v3Antes, 'Moked: a v3 só é lida (nada mudou nela)');
+  // 28 e 29: cópias da v3 — ficam as imagens do conteúdo; saem moldura, logo, textos, cartão e linha do gestor.
+  const imgs = s => s.shapes.filter(r => r.tipo === 'IMAGE').map(r => r.nome);
+  ok(['print do relatório', 'fichas'].every(n => imgs(sl[6]).indexOf(n) >= 0) && imgs(sl[6]).indexOf('logo') < 0 &&
+     imgs(sl[6]).indexOf('MOLDURA - 10830624af2a.png') < 0,
+     'Moked: o 28 vem da v3 com o print e as fichas do gestor, sem a moldura e o logo antigos (' + imgs(sl[6]).join(', ') + ')');
+  ok(!textos(sl[6]).some(t => /Subtítulo:|Gestão Operacional Moked|Eventos de Atípicos|preenchidos pelo gestor/.test(t)) &&
+     textos(sl[6]).some(t => t.indexOf('• Treinamentos e testes de eventos atípicos') >= 0),
+     'Moked: no 28 sai o texto antigo do gestor e entra a lista com o português revisto');
+  const ficha = sl[7].shapes.filter(r => r.nome === 'ficha')[0];
+  const direita = sl[7].shapes.filter(r => r.texto && r.x >= 450 && r.y > 80 && r.y < 380);
+  ok(ficha && ['foto 1', 'foto 2', 'foto 3'].every(n => imgs(sl[7]).indexOf(n) >= 0) && direita.length &&
+     direita.every(r => r.y + r.h <= ficha.y), 'Moked: no 29 ficam as fotos e a ficha, e o texto da direita para acima da ficha (' +
+     direita.map(r => Math.round(r.y + r.h)).join(', ') + ' × ' + (ficha && ficha.y) + ')');
+  ok(textos(sl[7]).some(t => /aprimoramento da equipe/.test(t)) && !textos(sl[7]).some(t => /aprimentos|Gestão Operacional Moked/.test(t)),
+     'Moked: no 29, "aprimoramento" no lugar de "aprimentos"');
+  // 30: a cláusula e o rateio como o gestor corrigiu (12/10/2026).
+  const rat = G._orcMokedRateio_();
+  ok(['Implantação Moked | Contrato e Rateio', '18,14%', '36,71%', '45,15%', 'R$ 6.826,00', 'R$ 13.814,45', 'R$ 16.993,04',
+      '294.666,91', 'R$ 37.633,50', 'R$ 34.500,00'].every(x => tudo[8].indexOf(x) >= 0) &&
+     Math.abs(rat.linhas.reduce((s, l) => s + l[3], 0) - G.ORC_MOKED.contrato.mensal) < 0.01,
+     'Moked: o 30 com a cláusula e o rateio pela área (18,14% · R$ 6.826,00 …), que soma o contrato');
   ok(sl.every(s => !textos(s).some(t => t.indexOf('Falha ao gerar') === 0)), 'Moked: nenhum slide com falha');
   ok(sl.every(s => !textos(s).some(t => /…$/.test(t))), 'Moked: nenhum texto cortado (' +
      sl.map(s => textos(s).filter(t => /…$/.test(t)).join(' / ')).filter(x => x).join(' | ') + ')');
   ok(sl.every(s => s.notas.indexOf('[REGISTRO FOTOGRÁFICO · ESTEIO]') === 0),
      'Moked: todos com a marca dos slides do gestor do Esteio nas anotações (a geração não os apaga)');
-  ok(sl.every(s => textos(s).indexOf('Implantação Moked | Rotina de Segurança') >= 0 && !textos(s).some(t => /^Subtítulo:/.test(t))),
-     'Moked: título do gestor e subtítulo preenchido');
+  ok(sl.every(s => textos(s).some(t => /^Implantação Moked \| /.test(t)) && !textos(s).some(t => /^Subtítulo:/.test(t))),
+     'Moked: título "Implantação Moked | …" e subtítulo preenchido');
   [['3.643', 0], ['2.891', 0], ['752', 0], ['cerca de 2 registros situacionais por Mega por dia', 0], ['1.882', 1],
    ['82% de tudo', 1], ['≥ 143', 2], ['78% no Mega Curitiba', 2], ['81,9% operantes', 3], ['Brigada não aplicada', 3],
    ['168-19879', 4], ['MODERADO', 5], ['217 dispositivos', 5]]
@@ -2130,10 +2193,19 @@ console.log('Slides da Moked (28_Moked.gs)');
   // Moldura: a do molde de fotos do gestor, com a trilha em 05 Segurança (a imagem foi montada a partir da 08).
   const mold = G._ORC_MOLDURAS_PASSOS.slice(nMold).filter(p => /^Moked/.test(p[1])).map(p => p[2]);
   const spec = mold.length ? JSON.parse(G._ORC_MOLDURAS_USADAS[mold[0]]) : {};
-  ok(mold.length === 12 && mold.every(x => x === mold[0]) && spec.secao === 5 && spec.cards.length === 1 &&
+  ok(mold.length === 18 && mold.every(x => x === mold[0]) && spec.secao === 5 && spec.cards.length === 1 &&
      mold[0] === '4c4ed339ecdc', 'Moked: uma moldura só (MOLDURA - 4c4ed339ecdc.png), trilha em 05 Segurança (' + mold[0] + ')');
   ok(G._ORC_TRILHA === trilhaAntes && G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark,
      'Moked: trilha e marca voltam ao que eram');
+  // Sem a v3 (o slide não está lá): 28 e 29 saem com o lugar das fotos marcado, e o resto igual.
+  decks[G.ORC_DECK_VERSAO_GESTOR_ID] = novoDeck();
+  G.gerarSlidesMoked();
+  const sl2 = decks['moked-teste'].getSlides();
+  ok(sl2.length === 9 && textos(sl2[6]).some(t => t.indexOf('Fotos do slide 28 da v3') === 0) &&
+     textos(sl2[7]).some(t => t.indexOf('Fotos do slide 29 da v3') === 0) &&
+     sl2.every(s => !textos(s).some(t => t.indexOf('Falha ao gerar') === 0)),
+     'Moked: sem o slide na v3, o lugar das fotos fica marcado nos slides 28 e 29');
+  delete decks[G.ORC_DECK_VERSAO_GESTOR_ID];
   delete G.SlidesApp.create;
 }
 

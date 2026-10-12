@@ -2,9 +2,12 @@
 // pasta "IMAGENS - SLIDES" do G: (moldura e trilha), e grava um HTML por slide (2 px por pt) para o Chrome fotografar:
 //   chrome --headless --screenshot=slide_1.png --window-size=1440,810 slide_1.html
 // Também grava molduras.json (assinatura → especificação das molduras usadas).
-// Uso: node previa_moked.js <pasta teste> <pasta de saída>
+// Os slides 28 e 29 (cópias da v3) usam uma v3 de mentira com as imagens do gestor nas posições medidas no PNG da
+// exportação da v3 (pasta _slides-versao-gestor, 3º argumento): cada imagem mostra o pedaço do PNG que ela cobre.
+// Uso: node previa_moked.js <pasta teste> <pasta de saída> [pasta _slides-versao-gestor]
 const fs = require('fs'), path = require('path');
 const TESTE = path.resolve(process.argv[2]), SAIDA = path.resolve(process.argv[3]);
+const V3PNG = process.argv[4] ? path.resolve(process.argv[4]) : null;
 const IMG = path.resolve(TESTE, '..', '..', '..', 'IMAGENS - SLIDES');
 const FONTES = path.resolve(TESTE, '..', 'ferramentas', 'fontes');
 const src = fs.readFileSync(path.join(TESTE, 'teste_orcamento.js'), 'utf8').split('// ---------------- Helpers')[0]
@@ -21,6 +24,20 @@ const META = {};
 const oT = G._orcCaixaTexto_, oP = G._orcCaixaParagrafo_;
 G._orcCaixaTexto_ = (s, q) => { const b = oT(s, q); META[b.getObjectId()] = { meio: true, espac: 100 }; return b; };
 G._orcCaixaParagrafo_ = (s, q) => { const b = oP(s, q); META[b.getObjectId()] = { meio: !!q.meio, espac: q.espac }; return b; };
+if (V3PNG) {
+  const v3 = novoDeck();
+  const slideV3 = (n, texto, imgs) => {
+    const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]';
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: 'Implantação Moked | Treinamento e Capacitação' },
+                  { tipo: 'TEXT_BOX', x: 456, y: 96, w: 222, h: 200, texto: texto });
+    imgs.forEach(r => s.shapes.push({ tipo: 'IMAGE', x: r[0], y: r[1], w: r[2], h: r[3], fundoV3: path.join(V3PNG, 'slide_0' + n + '.png') }));
+  };
+  slideV3(28, 'Gestão Operacional Moked · Aplicação de Orientações', [[52.5, 87.75, 384, 98.25], [111, 192, 316.5, 162.75]]);
+  slideV3(29, 'Programa Quadrimestral', [[52.5, 91.5, 228.75, 126.75], [52.5, 222.75, 228.75, 127.5], [285.75, 88.5, 150, 267],
+                                         [498.75, 235.5, 167.25, 121.5]]);
+  decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
+}
 const deck = novoDeck();
 const n = G._orcGerarMoked_(deck);
 LOG.filter(m => /Moked|FALHA|moldura/i.test(m)).forEach(m => console.log('log: ' + m));
@@ -37,6 +54,8 @@ const cortados = [];
 deck.getSlides().forEach((s, i) => {
   const els = s.shapes.map(r => {
     const pos = 'left:' + px(r.x) + ';top:' + px(r.y) + ';width:' + px(r.w) + ';height:' + px(r.h) + ';';
+    if (r.tipo === 'IMAGE' && r.fundoV3) return '<div style="' + pos + 'background:url(\\'' + url(r.fundoV3) + '\\') -' + px(r.x) + ' -' + px(r.y) +
+      ' / ' + px(W) + ' ' + px(H) + ' no-repeat"></div>';
     if (r.tipo === 'IMAGE') return '<img src="' + url(path.join(IMG, r.nome || '')) + '" style="' + pos + '">';
     if (r.tipo === 'LINE') {
       const p = r.peso || 0.75;

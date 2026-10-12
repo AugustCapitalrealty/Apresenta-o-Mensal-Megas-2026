@@ -15,8 +15,11 @@ não abrem — peça ao Guilherme para rodar as funções de exportação, que g
 
 **Slides da Moked — FEITO (12/10, ~19h30), aguardando o Guilherme rodar:** `gerarSlidesMoked()` (28_Moked.gs)
 cria/refaz a apresentação SEPARADA "MOKED - SLIDES PARA A v3 (Implantação Moked · Mega Esteio)" na pasta do
-orçamento (ID na propriedade `ORC_MOKED_DECK_ID`): 6 slides nativos que substituem os prints 22 a 27 da v3
-(registros, áreas, perfil, MokLog, atuação + caso da invasão, painel de sistemas), no molde do gestor, subtítulo
+orçamento (ID na propriedade `ORC_MOKED_DECK_ID`): 9 slides — os 22 a 30 da v3. 22–27: os prints do relatório,
+nativos (registros, áreas, perfil, MokLog, atuação + caso da invasão, painel de sistemas); 28–29: CÓPIA do slide da
+v3 (`appendSlide(slide da v3)`, as fotos/fichas com o recorte do gestor) sem textos/moldura/cabeçalho, com o texto
+redesenhado; 30: "Contrato e Rateio" nativo (cláusula 3.4 em resumo + rateio corrigido pelo gestor, calculado pela
+área). A v3 só é lida. Sem a v3, 28–29 saem com o lugar das fotos marcado. No molde do gestor, subtítulo
 preenchido, trilha 05 Segurança, texto em português revisto ("por dia", não "por dia útil": 1,96 registro por Mega
 por dia corrido). Notas de cada slide: marca `[REGISTRO FOTOGRÁFICO · ESTEIO]` + qual print substitui. Moldura
 `MOLDURA - 4c4ed339ecdc.png` montada SEM Python (PowerShell/System.Drawing: a moldura 08 do molde de fotos com a
