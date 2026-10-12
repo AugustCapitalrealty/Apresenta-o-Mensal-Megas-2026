@@ -221,6 +221,8 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   sua parte do rateio). No razão de Curitiba (CAS_1) vem sem o nome Lovable: 64,94 · 65,84 · 67,46 · 66,88 · 67,58
   (mai–set). Esteio e Itajaí sem o razão da conta: 2026 = 8 × o mensal do cadastro 2027 (R$ 109 e R$ 484), "Ano cheio
   (começou em mai/26)". **Curitiba paga a Lovable em 2026, mas o cadastro de 2027 não tem a linha** (~R$ 67/mês).
+  Guilherme: "é um valor pequeno, se aparecer você troca" — fica assim; quando a Lovable de Curitiba aparecer num
+  cadastro/modelo de 2027, ou o razão de Assistência em informática do Esteio/Itajaí, trocar sem perguntar.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
