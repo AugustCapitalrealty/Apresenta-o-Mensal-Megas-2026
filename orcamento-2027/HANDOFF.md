@@ -35,6 +35,26 @@ não abrem — peça ao Guilherme para rodar as funções de exportação, que g
    27/02/2026; (e) frentes de atuação + custo no Esteio em 2027: R$ 7.948,98/mês (R$ 95.388/ano).
    Ele ainda não aprovou o formato — confirme antes de construir.
 
+**Exportação da v3 lida (12/10, 18h36 — zip em Downloads, `_slides-versao-gestor/`):** 146 slides.
+Os gerados seguem a ordem do gerador; o gestor INTERCALA os dele: Esteio — 22–33 (Implantação
+Moked ×9, Substituição Segurança: Cenário Hoje / Proposto / Comparativo Megas) logo depois de
+"Manutenção: projetos × custo recorrente" (21) e antes de "itens de cada grupo (1/2)" (34); 35–43
+(fotos de obras) entre "itens (1/2)" e "(2/2)". Itajaí — 77–94 entre "itens (1/2)" e "(2/2)"
+(notas com a marca `[REGISTRO FOTOGRÁFICO · ESTEIO]` copiada — o gerador os trataria como do Esteio).
+Curitiba — só o molde no fim. ATENÇÃO: regenerar a parte no deck principal joga os slides do gestor
+para depois do bloco gerado (perde a intercalação) — para seguir a ordem dele, ancorar cada slide do
+gestor ao slide gerado anterior (não implementado). Estilo do gestor: molde de fotos com print/imagem
+à esquerda (prints do relatório Moked, cláusula de contrato, mapa aéreo com marcadores, tabelas de
+planilha) e texto à direita após linha vertical; subtítulo-molde nunca preenchido; trilha marca
+"08 Fotos" mesmo em slide de segurança.
+**ERRO no slide 30 (rateio do contrato Moked):** o total de área 253.038,48 é o de 2026 (Itajaí
+108.165,91 + Curitiba 120.577,91 + Esteio 24.294,66), mas as linhas usam as áreas de 2027 (Esteio
+53.447, Curitiba 133.054) → os % somam 116,45% e os valores somam R$ 43.824,75/mês para um contrato
+de R$ 37.633,50. Rateio certo por área (294.666,91 m²): Esteio 18,14% R$ 6.826,00 · Itajaí 36,71%
+R$ 13.814,45 · Curitiba 45,15% R$ 16.993,04. O orçamento 2027 carrega Esteio 7.948,98 (modelo 070),
+Itajaí 16.971,92 e Curitiba 20.706,69 (cadastro rev01) = R$ 45.627,59/mês. Levado ao Guilherme
+— não mexer nos números sem decisão dele.
+
 **Achados na v3 (o gestor está construindo a narrativa — só avisar, não mexer):** na seção do
 Itajaí, ~13 slides de fotos ainda com o texto-molde do Esteio ("Fachadas armazém A e B2",
 R$ 50.000); Linha de Vida do Esteio diz R$ 15.270 mas o modelo tem R$ 1 por escada; a v3 é
