@@ -48,8 +48,12 @@ function obterManutencao_(chaveCidade) {
 // 07/10/2026: "CONTRATOS-2027-COMPLETO" — os três Megas; Itajaí igual ao
 // "TESTE-2 - COMPLETO" e Curitiba igual às planilhas de contratos por conta
 // — que o gerador deixou de ler (os três Megas no cadastro, 07/10/2026).
+// 12/10/2026: a exportação "rev01" do cadastro (Guilherme: "aplicar como está") —
+// Moked de Curitiba e de Itajaí com valores novos, e o empréstimo Itaú da cerca
+// elétrica sai dos contratos (fim em 31/12/2026; o Guilherme: "foi para os
+// modelos"). A de 07/10 (1cwbW249…) virou "PODE EXCLUIR - …".
 const ORC_CONTRATOS_ANO_IDS = [
-  '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY'    // CONTRATOS-2027-COMPLETO
+  '1KGL-w8Jz2raK_0iqObZ7r81WA3NanjrM3sx2xnm9-_4'    // MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (rev01, 12/10/2026)
 ];
 
 const _ORC_CADASTRO_ANO = {};   // cache da leitura por planilha (uma por execução)

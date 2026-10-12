@@ -94,7 +94,16 @@ const ORC_CONTRATOS_ANT_RITMO = [
   // Itajaí, PMOC (V28 — Guilherme, 12/10/2026: "procure Perri, uns 700 por mês"): no ritmo 2026 (090) é
   // "Contrato de condicionadores de ar", R$ 760/mês de set a dez; em 2027, R$ 760 jan–ago e R$ 940 set–dez.
   { unidade: 'Mega Itajaí', conta: 'Manutenção de imóveis', termo: 'pmoc', ant: 4 * 760,
-    situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' }
+    situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' },
+  // Itajaí, Material de consumo (V34 — Guilherme, 12/10/2026, razão de 2026 da conta, planilha "Teste_1",
+  // jan–out realizado): contrato LPU Canaveral = as notas da Canaveral (R$ 21.183,39); fora do contrato = a
+  // nota Canaveral "fora de contrato" (R$ 999,79) + as compras gerais de outros fornecedores (papelaria,
+  // materiais de construção, cadeados, mangueiras… R$ 10.581,04), sem o diesel dos geradores (tem linha própria
+  // em 2027), o caminhão-pipa e as placas de comunicação visual — escolha do Guilherme.
+  { unidade: 'Mega Itajaí', conta: 'Material de consumo', termo: 'canaveral', ant: 21183.39,
+    situacao: 'Realizado jan–out/' + String(ORC_ANO - 1).slice(-2) },
+  { unidade: 'Mega Itajaí', conta: 'Material de consumo', termo: 'fora do contrato', ant: 999.79 + 10581.04,
+    situacao: 'Realizado jan–out/' + String(ORC_ANO - 1).slice(-2) }
 ];
 
 // Contratos que em 2026 não estão no cadastro, mas estão no modelo de 2026 com
@@ -108,10 +117,9 @@ const ORC_CONTRATOS_ANT_DO_MODELO = [
 // achou nas fontes de 2026 (08/10/2026): no lugar de "Novo em 2027", a linha diz
 // "2026 não identificado" e o item vai para o alerta de pendências.
 // Curitiba: Itaú (V7) e PMOC (V11) achados no razão de 2026 e Itajaí: PMOC (V28)
-// achado no ritmo, em 12/10/2026 — agora em ORC_CONTRATOS_ANT_RITMO.
-const ORC_CONTRATOS_2026_NAO_ID = [
-  { unidade: 'Mega Itajaí', conta: 'Material de consumo', termo: 'canaveral', item: 'LPU Canaveral: contrato × fora do contrato' } // V34
-];
+// achado no ritmo e Canaveral (V34) no razão, em 12/10/2026 — agora em
+// ORC_CONTRATOS_ANT_RITMO. Lista vazia: nenhum contrato sem 2026 nos três Megas.
+const ORC_CONTRATOS_2026_NAO_ID = [];
 
 const ORC_CONTRATOS_POR_PAGINA = 16;
 

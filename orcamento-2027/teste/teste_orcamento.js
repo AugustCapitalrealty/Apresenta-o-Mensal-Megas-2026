@@ -1447,6 +1447,15 @@ const MODELO_SEC = {};
     }
   });
   if (process.env.DETALHE) console.log(JSON.stringify(MODELO_SEC, null, 1));
+  // Cadastro de contratos 2027 "rev01" (12/10/2026), o que o deck lê agora: Moked de Curitiba e de Itajaí
+  // com os valores novos; o empréstimo Itaú da cerca elétrica sai (zerado em 2027 — "foi para os modelos").
+  const REV01 = fixture('fixture_contratos_2027_rev01.json');
+  const segC = G._orcLerCadastroContratos_(REV01, 'Mega Curitiba', 'Segurança e vigilância', 2027);
+  const segI = G._orcLerCadastroContratos_(REV01, 'Mega Itajaí', 'Segurança e vigilância', 2027);
+  const tot = (l, re) => l.filter(k => re.test(k.fornecedor + ' ' + k.descricao)).reduce((t, k) => t + k.total, 0);
+  ok(Math.round(tot(segC, /MOKED|CONSULTORIA DE SEGURAN/i)) === 248480 && !segC.some(k => /ITAU/i.test(k.fornecedor + k.descricao)) &&
+     Math.round(tot(segI, /MOKED/i)) === 203663,
+     'cadastro rev01: Moked Curitiba R$ 248.480, Moked Itajaí R$ 203.663, Itaú fora dos contratos de 2027');
 }
 
 // Out/2026: a controladoria não fecha a METRAGEM a tempo e o Orç 2027 de cada
@@ -1802,6 +1811,16 @@ console.log('Contratos: junções e renovações (08/10/2026)');
   ok(pmocC.length === 1 && pmocC[0].ant === 4000 && /^Era avulso em 2026$/.test(pmocC[0].situacao),
      'Curitiba: PMOC com os R$ 4.000 de 2026 (3 preventivas CLIMATIZAR) (' + pmocC.map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join() + ')');
   ok(!G._orcContratosNaoIdentificados_(cu.cmp).length, 'Curitiba: nenhum contrato com "2026 não identificado"');
+  // Canaveral do Itajaí (V34, razão de 2026 "Teste_1", jan–out): contrato = notas da Canaveral; fora = nota
+  // "fora de contrato" + compras gerais (sem diesel, caminhão-pipa e placas).
+  const canC = Object.keys(I).filter(n => I[n].conta === 'Material de consumo' && /LIMPEZA E CONSUMO|CANAVERAL/.test(n)).map(n => I[n]);
+  const canF = Object.keys(I).filter(n => I[n].conta === 'Material de consumo' && /FORA DO CONTRATO/.test(n)).map(n => I[n]);
+  ok(canC.length === 1 && Math.abs(canC[0].ant - 21183.39) < 0.01 && canC[0].situacao === 'Realizado jan–out/26' &&
+     canF.length === 1 && Math.abs(canF[0].ant - 11580.83) < 0.01 && canF[0].situacao === 'Realizado jan–out/26',
+     'Itajaí: Canaveral contrato (R$ 21.183) e fora do contrato (R$ 11.581) com o 2026 do razão (' +
+     canC.concat(canF).map(l => l.nome + ' ' + Math.round(l.ant) + ' ' + l.situacao).join(' | ') + ')');
+  ok(!G._orcContratosNaoIdentificados_(it.cmp).length && !G.ORC_CONTRATOS_2026_NAO_ID.length,
+     'Itajaí: nenhum contrato com "2026 não identificado" (12/10/2026)');
   // Lovable "começou em 2026" (Guilherme, 12/10/2026): sai de "Novo em 2027", 2026 estimado em 12 × o mensal.
   [[I, 60.51, 'Itajaí'], [E, 13.59, 'Esteio']].forEach(([M, mensal, nome]) => {
     const lov = Object.keys(M).filter(n => /LOVABLE/.test(n)).map(n => M[n]);

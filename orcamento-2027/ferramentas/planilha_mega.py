@@ -153,7 +153,8 @@ MESTRAS = '00 - PLANILHAS MESTRAS'
 COMUNS = [
     ('MESTRA - ORÇAMENTO 2026 ITEM A ITEM - TODOS OS MEGAS', 'Orçamento 2026 item a item de todos os Megas (era "Modelos 2025 Megas")', 'Não', MESTRAS, '1X39BzfFKwSo2v1wt0Lhe1kxjnSdnn4D74kvAxg41bOM', S_),
     ('MESTRA - CONTRATOS 2026 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2026 (era "2025 - Contratos")', 'Sim', MESTRAS, '11bcQ0zD81kjx_aGNg8nI6s72gxsea3vSH6AcnMssU6A', S_),
-    ('MESTRA - CONTRATOS 2027 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2027 (era "CONTRATOS-2027-COMPLETO") — fonte dos contratos de Itajaí e Esteio', 'Sim (Itajaí e Esteio)', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
+    ('MESTRA - CONTRATOS 2027 - TODOS OS MEGAS', 'Cadastro de contratos com os valores de 2027 (exportação "rev01" de 12/10/2026) — fonte dos contratos dos três Megas', 'Sim', MESTRAS, '1KGL-w8Jz2raK_0iqObZ7r81WA3NanjrM3sx2xnm9-_4', S_),
+    ('PODE EXCLUIR - MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (até 12-10-2026)', 'Cadastro de contratos 2027 de 07/10/2026 (era "CONTRATOS-2027-COMPLETO") — substituído pela rev01', 'Não', MESTRAS, '1cwbW249I--uhsg3trSTQetb88gnjDgLGQ3aW5Xk_jeY', S_),
     ('MESTRA - TOTAIS 2026 POR CONTA - TODAS AS UNIDADES', 'Totais planejados de 2026 por conta, todas as unidades somadas (era "2026")', 'Não', MESTRAS, '113GH2xaZjBWHxAE9qMzko0LiPkR2iKxc7U1h2Aku6rA', S_),
     # 12/10/2026: os modelos 2027 vêm da exportação completa do sistema; cada Mega lê a sua unidade.
     ('MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES', 'Modelo do orçamento 2027 item a item (despesas gerais, inclui manutenção), todas as unidades (era "090-Despesas-Gerais")', 'Sim (só a unidade do Mega)', MESTRAS, '1eGg8vWV5r2S8LoMAOBjDjoj1OCV2uZnJ_RrtAfdJv2U', S_),

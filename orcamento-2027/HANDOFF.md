@@ -182,6 +182,17 @@ geração (`gerarCuritiba()`, `gerarItajai()`, `gerarEsteio()`).
   (Kethli) — jan–abr fase 5B (Itajaí 63.960,39), mai–jun fase 4 parcial (Itajaí 100.061,58), jul–dez armazém 6 (Itajaí
   108.165,91; Esteio 24.294,66); Curitiba 102.937,17 o ano todo. Em 2025 a METRAGEM usa outra área (Curitiba ≈ 105,8
   mil m²): não trocar sem a controladoria.
+- **Canaveral do Itajaí (V34) resolvida** com o razão de 2026 de Material de consumo (planilha "Teste_1", jan–out):
+  contrato = notas da Canaveral R$ 21.183,39; fora do contrato = nota Canaveral "fora de contrato" R$ 999,79 + compras
+  gerais R$ 10.581,04 (sem diesel R$ 19,3 mil, caminhão-pipa R$ 17,6 mil e placas R$ 8 mil — escolha do Guilherme).
+  `ORC_CONTRATOS_ANT_RITMO`, situação "Realizado jan–out/26". `ORC_CONTRATOS_2026_NAO_ID` vazio.
+- **Cadastro de contratos 2027 = exportação "rev01" (12/10)** — "MESTRA - CONTRATOS 2027 - TODOS OS MEGAS" (`1KGL-w8J…`,
+  `ORC_CONTRATOS_ANO_IDS`); a de 07/10 virou "PODE EXCLUIR - …". Diferença: Moked Curitiba 150.534 → 248.480, Moked
+  Itajaí 150.534 → 203.663 e o **empréstimo Itaú da cerca elétrica sai dos contratos** (fim 31/12/2026, 2027 zerado —
+  o Guilherme: "foi para os modelos"). **O Itaú ainda não está no modelo 2027 exportado** (MESTRA 070/090 de 12/10): até
+  a nova exportação, Curitiba fica sem os ~R$ 182 mil de 2027. Com rev01 + modelos de 12/10: Curitiba R$ 7.413.454,
+  Itajaí R$ 6.670.068, Esteio R$ 4.175.921. Os arquivos "100-03-02-Servicos-de-Terceiros (1)" e "120-03-04-Despesas-Gerais"
+  da pasta são os modelos de 2026 (ritmo), não de 2027.
 
 ## 3. Sem acesso ao Drive: o que dá e o que não dá
 
