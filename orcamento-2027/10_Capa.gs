@@ -423,35 +423,36 @@ function _orcLigarSecoes_(deck, cid) {
 // ==========================================
 // PREMISSAS
 // ==========================================
-// [chave em cid.premissas, título do bloco, o que vai nele]
-const ORC_PREMISSAS_BLOCOS = [
-  ['premissas', 'Premissas',            'as bases adotadas no orçamento'],
-  ['analisado', 'O que foi analisado',  'fontes, contas e períodos considerados'],
-  ['comoLer',   'Como ler o relatório', 'o que cada seção mostra e como interpretar']
+// Premissas no estilo que o Guilherme mandou (13/10/2026): quatro linhas numeradas — número, título e o texto —
+// iguais nos três Megas e também logo depois da capa de Facilities (25_Facilities.gs). Texto: ORC_PREMISSAS_ITENS.
+const ORC_PREMISSAS_ITENS = [
+  ['Preventivas', 'As manutenções preventivas levaram em consideração o histórico de manutenções dos últimos 5 anos, ' +
+                  'em especial os estudos e planejamentos de 2026 (ano em exercício).'],
+  ['Corretivas', 'As manutenções corretivas foram mapeadas e orçadas preliminarmente (ao menos 1 orçamento) para tomada ' +
+                 'de preço e escopo de atuação.'],
+  ['Não Previsíveis', 'Estipulou-se como premissa limite de até 3% do valor de manutenção planejada como valor para itens ' +
+                      'não previsíveis. Importante destacar que são para itens inesperados e atípicos. Todos os itens ' +
+                      'previsíveis tiveram preço tomado e foram mapeados.'],
+  ['Projetos e Detalhamentos', 'Todos os lançamentos e registros foram realizados diretamente no sistema Plano (sem uso de ' +
+                               'planilhas) e no nível mais detalhado possível, inclusive classificando-os por projetos e disciplinas.']
 ];
-const ORC_PREMISSAS_VAZIO = 'Escreva aqui.';
 
-// Três blocos que o gestor preenche. Sem texto em cid.premissas, cada bloco
-// leva uma caixa com "Escreva aqui." para ele digitar por cima no Slides — a
-// caixa já tem fonte e cor do corpo, então o que ele digitar sai no padrão.
 function gerarSlidePremissas_(slide, W, H, cid) {
-  const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
-  const textos = cid.premissas || {};
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
   _orcHeader_(slide, W, 'Premissas — Orçamento ' + ORC_ANO,
     cid.nome + ' · como o orçamento foi construído e como ler esta apresentação');
-
-  const ty = 74, gap = 10, cw = (W - MX * 2 - gap * 2) / 3, ch = H - 28 - ty;
-  ORC_PREMISSAS_BLOCOS.forEach((b, i) => {
-    const x = MX + i * (cw + gap);
-    _orcRet_(slide, x, ty, cw, ch, C.cardBg, { redondo: true, borda: C.lines });
-    _orcRet_(slide, x, ty, cw, 4, C.brandLight);
-    _orcUmaLinha_(slide, x + 12, ty + 12, cw - 24, 20, b[1],
-      { align: 'L', fs: 12, bold: true, cor: C.brandDark, fonte: DS.typography.titles, fsMin: 9 });
-    _orcUmaLinha_(slide, x + 12, ty + 32, cw - 24, 14, b[2],
-      { align: 'L', fs: 7.5, italic: true, cor: C.textMuted, fonte: DS.typography.body, cortar: true });
-    _orcLinha_(slide, x + 12, ty + 52, x + cw - 12, ty + 52, C.lines, 0.75);
-    const texto = String(textos[b[0]] || '').trim();
-    _orcParagrafo_(slide, x + 8, ty + 58, cw - 16, ch - 66, texto || ORC_PREMISSAS_VAZIO,
-      { fs: 9, fsMin: 6.5, cor: C.textBody });
+  const n = ORC_PREMISSAS_ITENS.length, top = 76, gap = 8, fim = H - 30;
+  const rh = (fim - top - gap * (n - 1)) / n, x = MX, w = W - MX * 2;
+  ORC_PREMISSAS_ITENS.forEach((it, i) => {
+    const y = top + i * (rh + gap);
+    _orcRet_(slide, x, y, w, rh, C.cardBg, { redondo: true, borda: C.lines });
+    _orcRet_(slide, x, y + 8, 4, rh - 16, C.brandLight);
+    _orcUmaLinha_(slide, x + 18, y + (rh - 32) / 2, 54, 32, ('0' + (i + 1)).slice(-2),
+      { align: 'L', fs: 24, bold: true, cor: C.brandAccent, fonte: T.titles, folga: 8 });
+    _orcParagrafo_(slide, x + 74, y + 6, 150, rh - 12, it[0],
+      { fs: 13, fsMin: 10, bold: true, cor: C.brandDark, fonte: T.titles, meio: true });
+    _orcLinha_(slide, x + 232, y + 12, x + 232, y + rh - 12, C.lines, 0.75);
+    _orcParagrafo_(slide, x + 244, y + 6, w - 244 - 16, rh - 12, it[1],
+      { fs: 9, fsMin: 7, italic: true, cor: C.textBody, fonte: T.body, meio: true });
   });
 }

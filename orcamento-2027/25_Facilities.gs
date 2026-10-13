@@ -171,6 +171,8 @@ function _orcGerarAbertura_(deck, W, H) {
   });
   _ORC_TRILHA = 0;
   _orcPasso_(deck, W, H, 'Capa — Facilities', s => gerarSlideCapaFacilities_(s, W, H, rels));
+  // As premissas logo depois da capa (Guilherme, 13/10/2026) — as mesmas dos Megas (10_Capa.gs).
+  _orcPasso_(deck, W, H, 'Premissas — Facilities', s => gerarSlidePremissas_(s, W, H, { nome: 'Facilities' }));
   _orcPasso_(deck, W, H, 'Sumário — Facilities', s => gerarSlideSumarioFacilities_(s, W, H, rels));
   _ORC_UNICO.alvo = 'COMPARATIVO';   // o link do sumário vai para o gráfico; a tabela vem logo depois
   _orcPasso_(deck, W, H, 'Os Megas lado a lado — gráfico', s => gerarSlideMegasGrafico_(s, W, H, rels));
