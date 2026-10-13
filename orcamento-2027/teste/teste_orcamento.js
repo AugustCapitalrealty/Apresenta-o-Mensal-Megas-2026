@@ -2518,6 +2518,68 @@ console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');
   ok(Math.abs(somaIt - 95844.28) < 0.01, 'ajustes: as linhas da tabela do Itajaí somam o total (' + somaIt.toFixed(2) + ')');
 }
 
+console.log('Fontes guardadas (32_Fontes.gs)');
+// A coluna FONTE digitada no slide vai para a aba "Fontes" e volta na geração seguinte.
+{
+  const deck = novoDeck(); deck._slides = [];
+  const s = deck.appendSlide();
+  const caixa = (x, y, t) => s.shapes.push({ tipo: 'TEXT_BOX', x: x, y: y, w: 100, h: 18, texto: t });
+  caixa(44, 12, 'Demais categorias (1/2)');
+  caixa(44, 36, '14 categorias com menos de 5% cada · R$ 222.859 · 26,3% do orçamento de manutenção');
+  caixa(172, 76, 'ITEM'); caixa(560, 76, 'FONTE');
+  caixa(172, 96, 'LINHA DE VIDA – ESCADA MARINHEIRO AMZ A'); caixa(560, 96, 'ORÇ. PROSSALTER');
+  caixa(172, 118, 'REVISÃO SEMESTRAL DOS BEBEDOUROS (AMZ A E B)'); caixa(560, 118, '—');
+  caixa(172, 140, 'COMPRA DE 22 MEDIDORES DE ENERGIA TRIFASICO DIRETO 100A…'); caixa(560, 140, 'ORÇ. CAS');
+  caixa(44, 385, 'Orçamento 2027 · Mega Esteio · Manutenção de Imóveis · categorias abaixo de 5% do total');
+  const lidas = G._orcFontesDoSlide_(s, null);
+  ok(lidas.length === 2 && lidas[0].mega === 'Mega Esteio' && lidas[0].fonte === 'ORÇ. PROSSALTER',
+     'fontes: lê a coluna FONTE digitada, sem o "—" (' + JSON.stringify(lidas) + ')');
+  G._orcTextosReiniciar_();
+  const r1 = G._orcGuardarFontes_(lidas);
+  const aba = PLANILHA_TEXTOS.getSheetByName('Fontes');
+  ok(r1.novas === 2 && aba && aba.getDataRange().getValues().length === 3, 'fontes: 2 linhas novas na aba Fontes');
+  // A fonte volta: pelo texto do item, pelo começo do texto cortado e só no Mega certo.
+  G._orcTextosReiniciar_();
+  ok(G._orcCelulaFonte_(G.ORC_CIDADES.ESTEIO, 'Linha de vida – escada marinheiro AMZ A').texto === 'ORÇ. PROSSALTER' &&
+     G._orcCelulaFonte_(G.ORC_CIDADES.ESTEIO, 'COMPRA DE 22 MEDIDORES DE ENERGIA TRIFASICO DIRETO 100A - PROJETO AUTOMAÇÃO DE LEITURAS').texto === 'ORÇ. CAS' &&
+     G._orcCelulaFonte_(G.ORC_CIDADES.ITAJAI, 'LINHA DE VIDA – ESCADA MARINHEIRO AMZ A').texto === '—' &&
+     G._orcCelulaFonte_().texto === '—',
+     'fontes: a geração escreve a fonte guardada do item (texto exato ou cortado), só no Mega dele');
+  // Fonte trocada no slide troca a da aba; "—" não apaga.
+  s.shapes[5].texto = 'ORÇ. PROSSALTER (REV.)';
+  const r2 = G._orcGuardarFontes_(G._orcFontesDoSlide_(s, 'Mega Esteio'));
+  ok(r2.trocadas === 1 && r2.iguais === 1 && aba.getDataRange().getValues()[1][2] === 'ORÇ. PROSSALTER (REV.)',
+     'fontes: fonte nova no slide troca a da aba (' + JSON.stringify(r2) + ')');
+  // A aba Fontes não vira "texto escolhido" das descrições.
+  G._orcTextosReiniciar_();
+  ok(!Object.keys(G._orcLerEscolhas_()).some(a => a === 'Fontes'), 'fontes: a aba Fontes não é lida como textos');
+  // Slide que não é de manutenção não é lido.
+  const outro = deck.appendSlide();
+  outro.shapes.push({ tipo: 'TEXT_BOX', x: 172, y: 76, w: 100, h: 18, texto: 'ITEM' }, { tipo: 'TEXT_BOX', x: 560, y: 76, w: 100, h: 18, texto: 'FONTE' },
+                    { tipo: 'TEXT_BOX', x: 560, y: 96, w: 100, h: 18, texto: 'X' }, { tipo: 'TEXT_BOX', x: 172, y: 96, w: 100, h: 18, texto: 'Y · Mega Esteio' });
+  ok(G._orcFontesDoSlide_(outro, null).length === 0, 'fontes: só as tabelas de manutenção');
+  PLANILHA_TEXTOS.deleteSheet(aba);
+  G._orcTextosReiniciar_();
+}
+
+// Num slide gerado de verdade (não montado à mão): a coluna FONTE digitada é achada, e o slide de categoria também.
+{
+  const gerados = Object.keys(decks).map(k => decks[k]).filter(d => d._slides)
+    .reduce((a, d) => a.concat(d._slides), []);
+  const demais = gerados.filter(s => /^Demais categorias/.test(textos(s)[0] || ''))[0];
+  const cat = gerados.filter(s => textos(s).some(t => /^TOTAL [A-ZÁÉÍÓÚÇ]/.test(t)) && textos(s).some(t => t === '% CAT.'))[0];
+  const digitar = s => {
+    const iF = s.shapes.findIndex(r => r.texto === 'FONTE');
+    const cel = s.shapes.filter(r => r.texto === '—' && Math.abs(r.x - s.shapes[iF].x) < 1.5)[0];
+    cel.texto = 'ORÇ. TESTE';
+  };
+  ok(!!demais && !!cat, 'fontes: há slides de Demais e de categoria nos decks do teste');
+  digitar(demais); digitar(cat);
+  const a = G._orcFontesDoSlide_(demais, 'Mega Teste'), b = G._orcFontesDoSlide_(cat, 'Mega Teste');
+  ok(a.length === 1 && a[0].fonte === 'ORÇ. TESTE' && a[0].item.length > 5 && b.length === 1 && b[0].fonte === 'ORÇ. TESTE',
+     'fontes: lidas nos slides gerados (' + JSON.stringify(a.concat(b)) + ')');
+}
+
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));

@@ -41,6 +41,7 @@ function _orcGerar_(chaves) {
     // Os slides de fotos do gestor (26_Fotos.gs) nunca saem: só os gerados.
     const velhos = deck.getSlides().filter(s => !_orcDonoFotos_(s));
     const primeiro = velhos.length ? velhos[0].getObjectId() : null;
+    _orcSalvarFontesDeSlides_(velhos, cid.nome);   // a coluna FONTE digitada (32_Fontes.gs)
     if (velhos.length > 1) {
       velhos.slice(1).forEach(s => s.remove());
       _orcSalvarDeck_(deck, 'a limpeza dos slides antigos de ' + cid.nome);

@@ -92,6 +92,7 @@ function _orcGerarFacilities_(parte) {
   let provisorio = null;
   if (sair.length && sair.length === idsDeck.length) provisorio = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK).getObjectId();
   const antes = sair.filter(id => idsDeck.indexOf(id) < indice).length;     // os que saem antes da posição
+  if (parte !== 'ABERTURA') _orcSalvarFontesDeSlides_(sair.map(id => deck.getSlideById(id)).filter(Boolean), ORC_CIDADES[parte].nome);
   sair.forEach(id => { const s = deck.getSlideById(id); if (s) s.remove(); });
   props.deleteProperty('ORC_FAC_INICIAL');
   props.setProperty('ORC_FAC_' + parte, '[]');

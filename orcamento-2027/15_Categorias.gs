@@ -94,10 +94,12 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
 
 // Coluna FONTE ("Proposta XPTO"...): o gestor preenche à mão no Slides. Sai
 // um "—" cinza em vez de vazio porque caixa sem texto não é criada e não
-// haveria onde clicar. Uma nova geração do deck apaga o que foi digitado.
+// haveria onde clicar. O que foi digitado fica guardado na aba "Fontes" da
+// planilha de textos e volta na geração seguinte (32_Fontes.gs).
 const ORC_FONTE_VAZIA = '—';
-function _orcCelulaFonte_() {
-  return { texto: ORC_FONTE_VAZIA, cor: CR_DESIGN_SYSTEM.colors.textMuted, fs: 7.5 };
+function _orcCelulaFonte_(cid, descricao) {
+  const f = cid && descricao ? _orcFonteSalva_(cid.nome, descricao) : '';
+  return { texto: f || ORC_FONTE_VAZIA, cor: CR_DESIGN_SYSTEM.colors.textMuted, fs: 7.5 };
 }
 
 // Mini gráfico de 12 colunas (sem rótulo de valor), usado no painel lateral.
@@ -190,7 +192,7 @@ function gerarSlideCategoria_(slide, W, H, cid, dados, cat) {
     { texto: _orcQuando_(it.meses), cor: DS.colors.textBody, fs: 7.5 },
     { texto: _orcMoeda_(it.total), bold: true },
     { texto: _orcPct_(cat.total ? it.total / cat.total : 0), cor: DS.colors.textBody, fs: 7.5 },
-    _orcCelulaFonte_()
+    _orcCelulaFonte_(cid, it.descricao)
   ] }));
   if (resto) {
     linhas.push({ celulas: [
@@ -293,7 +295,7 @@ function gerarSlideDemais_(slide, W, H, cid, dados, demais, pagina, iPag, nPag) 
         { texto: l.it.descricao, aba: 'Categorias' },
         { texto: _orcQuando_(l.it.meses), cor: DS.colors.textBody, fs: 7.5 },
         { texto: _orcMoeda_(l.it.total), bold: true },
-        _orcCelulaFonte_()
+        _orcCelulaFonte_(cid, l.it.descricao)
       ]
     };
   });

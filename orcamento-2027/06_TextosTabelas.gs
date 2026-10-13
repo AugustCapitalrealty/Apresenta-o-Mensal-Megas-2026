@@ -40,6 +40,7 @@ function _orcTextosReiniciar_() {
   _ORC_TEXTOS_ESCOLHAS = null;
   _ORC_TEXTOS_USADOS = {};
   _ORC_SLIDE_ATUAL = '';
+  _ORC_FONTES = null;           // e a aba de fontes (32_Fontes.gs)
 }
 
 function _orcLerEscolhas_() {
@@ -48,6 +49,7 @@ function _orcLerEscolhas_() {
   if (!ORC_TEXTOS_ID) return _ORC_TEXTOS_ESCOLHAS;
   try {
     SpreadsheetApp.openById(ORC_TEXTOS_ID).getSheets().forEach(sh => {
+      if (sh.getName() === ORC_FONTES_ABA) return;   // a aba das fontes não é de textos
       const m = _ORC_TEXTOS_ESCOLHAS[sh.getName()] = {};
       sh.getDataRange().getValues().slice(1).forEach(r => {
         const orig = String(r[0] === undefined ? '' : r[0]).trim();
