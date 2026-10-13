@@ -87,6 +87,26 @@ const ORC_GESTOR_AJUSTES = [
 
 // Título interno copiado de outro slide (os que apareceram na v3): troca pelo título do slide quando não tem
 // palavra em comum com ele. Título interno escrito pelo gestor (fora desta lista) fica como está.
+// Selo "⚠ REVISAR" (13/10/2026, Guilherme: "um selo que é fácil de arrumar"): o que só o gestor sabe corrigir. Uma
+// forma só, no canto direito abaixo do cabeçalho — corrigido, é clicar no selo e apagar.
+const ORC_GESTOR_REVISAR = [
+  { titulo: 'lavagem fechamento metalico', mega: 'Mega Curitiba', motivo: 'texto do Esteio (Armazéns A e B2, Garagem dos Tratores)' },
+  { titulo: 'lavagem cobertura', mega: 'Mega Curitiba', motivo: 'R$ 50.000,00 parece valor de molde' },
+  { titulo: 'manutencao preventivas 39 vga', mega: 'Mega Curitiba', motivo: 'descrição igual à VGA do Esteio' }
+];
+
+function _orcSeloGestor_(slide, W, motivo) {
+  const w = 210, h = 16, x = W - CR_DESIGN_SYSTEM.layout.marginX - w, y = 56;
+  const sh = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
+  sh.getFill().setSolidFill('#B45309');
+  sh.getBorder().setTransparent();
+  sh.getText().setText('⚠ REVISAR · ' + motivo);
+  sh.getText().getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(CR_DESIGN_SYSTEM.typography.body);
+  sh.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  sh.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  return sh;
+}
+
 const ORC_GESTOR_INTERNOS_COPIADOS = ['PINTURA DA TUBULAÇÃO DE INCÊNDIO AÉREA', 'LIMPEZA E LAVAGEM DAS ESTRUTURAS METÁLICAS',
   'LINHA DE VIDA VERTICAL'];   // 13/10/2026: copiado nos slides de Curitiba (Tubulação Incêndio, Pintura Prédios…)
 
@@ -232,6 +252,12 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   // 5b. Tabela em print ou tabela simples → tabela no padrão do deck (33_GestorRedesenho.gs).
   const red = ORC_GESTOR_REDESENHOS.filter(r => r.mega === mega && nt.indexOf(r.titulo) >= 0)[0];
   if (red) _orcRedesenharGestor_(slide, W, H, red, feito, avisos);
+
+  // 5c. O que só o gestor sabe corrigir: selo ⚠ REVISAR no slide.
+  ORC_GESTOR_REVISAR.filter(x => x.mega === mega && nt.indexOf(x.titulo) >= 0).forEach(x => {
+    try { _orcSeloGestor_(slide, W, x.motivo); feito.push('selo REVISAR: ' + x.motivo); avisos.push(x.motivo); }
+    catch (e) { avisos.push('selo REVISAR não desenhado: ' + e.message); }
+  });
 
   // 6. O que parece molde esquecido: só avisa.
   const tudo = shapes.map(txt).join(' | ');
