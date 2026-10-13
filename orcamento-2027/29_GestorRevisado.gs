@@ -78,7 +78,11 @@ const ORC_GESTOR_AJUSTES = [
   { titulo: 'paisagismo restaurante', mega: 'Mega Curitiba', local: 'Restaurante industrial', localEra: ['Pavimento Intertravado'] },
   { titulo: 'defensas entre platos', mega: 'Mega Curitiba', local: 'Platôs 1, 2 e 3', localEra: ['Pavimento Intertravado'] },
   { titulo: 'implantacao torniquete 4', mega: 'Mega Curitiba', local: 'Acessos', localEra: ['Pavimento Intertravado'] },
-  { titulo: 'automacao leituras', mega: 'Mega Curitiba', local: 'Medidores de água e energia', localEra: ['Armazém 1 a 9'] }
+  { titulo: 'automacao leituras', mega: 'Mega Curitiba', local: 'Medidores de água e energia', localEra: ['Armazém 1 a 9'] },
+  // 13/10/2026: campos vazios na v3/v4, preenchidos com o que o próprio gestor pôs nos slides irmãos do mesmo assunto.
+  { titulo: 'retrofit e adequacao', mega: 'Mega Itajaí', local: 'Copa e Cozinha (Prédio Adm)', localEra: [''],
+    valor: 'R$ 21.785,00', valorEra: [''] },
+  { titulo: 'pintura predios de apoio', mega: 'Mega Curitiba', local: 'Prédios de Apoio', localEra: ['', 'Armazém 1 a 9'] }
 ];
 
 // Título interno copiado de outro slide (os que apareceram na v3): troca pelo título do slide quando não tem
@@ -248,6 +252,15 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
 
 // Aplica um ORC_GESTOR_AJUSTES: o LOCAL, se ainda é o texto copiado de outro slide.
 function _orcAjustarSlideGestor_(slide, W, shapes, a, campos, feito, avisos) {
+  // VALOR vazio: o do slide irmão (a.valor), só se o campo ainda está como em a.valorEra.
+  if (a.valor && campos.valor) {
+    let v = '';
+    try { v = campos.valor.getText().asString().replace(/\n$/, '').trim(); } catch (e) { v = null; }
+    if (v !== null && v !== a.valor && (a.valorEra || []).indexOf(v) >= 0) {
+      campos.valor.getText().setText(a.valor);
+      feito.push('VALOR "' + v + '" → "' + a.valor + '"');
+    }
+  }
   const sh = campos.local;
   if (!a.local || !sh) return;
   let atual = '';

@@ -2422,6 +2422,7 @@ console.log('Mega completo (00_Gerar.gs)');
   ger('Manutenção: os itens de cada grupo (1/2)', '50 itens · Mega Itajaí');
   gest('Pintura dos Prédios de Apoio', 'Mega Itajaí');
   decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
+  Object.keys(G.ORC_GESTOR_FONTE).forEach(k => { decks[G.ORC_GESTOR_FONTE[k]] = v3; });   // a fonte de cada Mega (13/10/2026)
   G.gerarComeco(); G.gerarMegaEsteio(); G.gerarMegaItajai();
   const lista = p => JSON.parse(PROPS_DADOS['ORC_FAC_' + p] || '[]');
   const tit = s => textos(s)[0] || '';

@@ -224,7 +224,7 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
 
   // 2. O plano: os slides do gestor deste Mega na v3, cada um com a âncora. A seção do Mega vai do sumário dele ao
   //    sumário do Mega seguinte.
-  const v3 = SlidesApp.openById(ORC_DECK_VERSAO_GESTOR_ID);
+  const v3 = SlidesApp.openById(ORC_GESTOR_FONTE[parte] || ORC_DECK_VERSAO_GESTOR_ID);
   const plano = [];
   let mega = null, ancora = null, dentro = false;
   const sv3 = v3.getSlides();
