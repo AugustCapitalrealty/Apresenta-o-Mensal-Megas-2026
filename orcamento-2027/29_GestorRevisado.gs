@@ -208,7 +208,7 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   const sub = shapes.filter(sh => /^Subtítulo:/.test(txt(sh).trim()))[0];
   const seguranca = /^substituicao seguranca/.test(nt);   // subtítulo "Segurança e vigilância · Mega"
   if (sub) {
-    const partes = (seguranca ? ['Segurança e vigilância'] : [conta, lugar]).filter(String).concat([mega]);
+    const partes = (seguranca ? ['Segurança e vigilância'] : [conta, lugar]).filter(p => p && p !== mega).concat([mega]);   // LOCAL = o próprio Mega não repete (13/10/2026)
     const veio = txt(sub).trim(), megaVeio = (veio.match(/Mega \S+/) || [''])[0];
     sub.getText().setText(partes.join(' · '));
     feito.push('subtítulo "' + partes.join(' · ') + '"' + (megaVeio && megaVeio !== mega ? ' (dizia ' + megaVeio + ')' : ''));
