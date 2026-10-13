@@ -18,6 +18,9 @@ apresentada à diretoria na 1ª rodada"). <<<**
 - **Congelar:** o Guilherme roda `congelarV1()` (35_Versoes.gs) uma vez → cópia do deck na pasta VERSÕES
   ("FACILITIES - ORÇAMENTO 2027 · V1 (apresentada à diretoria em 13-10-2026)") + "ORÇAMENTO 2027 - BASE V1.json" na
   pasta do orçamento (METRAGEM e linhas dos modelos 070/090 + contratos, item a item, por Mega). Não refaz.
+  **CONGELADA em 13/10/2026 18h52:** deck V1 `1f-0RpZCPiveXQw4UNRBp7c1IaAKUi5dNFB63Cv_CCLo` (pasta VERSÕES) · base
+  `1-O6ybc4RZfJeoEviENdGqc_yi14Mgxyu` — Esteio R$ 4.020.587 (178 linhas), Itajaí R$ 6.643.596 (131), Curitiba
+  R$ 7.528.284 (163). Itajaí dos slides do gestor: da v4 desde 18h23 (17 slides; sem Defensas, Linha de Vida, Mastro).
 - **Apontamentos da diretoria** (28 linhas: G1–G4, E1–E5, C1–C8, I1–I9): planilha "ORÇAMENTO 2027 - AJUSTES PEDIDOS
   PELO DIRETOR (13-10-2026)" (`1kbDZfe0I_dNTDZ-oWijm-YG7q_5XhL2n-OnqyP377Hc`, pasta do orçamento). Simulado no chat:
   Curitiba posto noturno 6 meses (−234.103), paisagismo Sodexo 64 mil (−136.000), jardim vertical fora (−16.000) →
