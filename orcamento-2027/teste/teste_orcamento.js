@@ -131,6 +131,10 @@ function novoSlide(deck) {
                    // Link para outro slide (31_VersaoFinal.gs refaz os que iam para slides que saíram).
                    getLink: () => r.link ? { getSlideId: () => r.link } : null,
                    setLinkSlide: alvo => { r.link = alvo.getObjectId(); }, removeLink: () => { delete r.link; } })),
+    // Tabelas (forma TABLE com celulas[linha][coluna]): 29_GestorRevisado.gs refaz a tabela do slide do gestor.
+    getTables: () => slide.shapes.filter(r => r.tipo === 'TABLE').map(r => ({
+      getNumRows: () => r.celulas.length, getNumColumns: () => r.celulas[0].length,
+      getCell: (i, j) => ({ getText: () => ({ asString: () => r.celulas[i][j] + '\n', setText: t => { r.celulas[i][j] = String(t); } }) }) })),
     // Elementos da página (cópia de um slide da v3, 28_Moked.gs): tipo, posição, texto e remoção.
     getPageElements: () => slide.shapes.slice().map(reg => ({
       getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
@@ -150,14 +154,14 @@ function novoDeck() {
   // appendSlide(slide de outra apresentação) copia as formas e as anotações (28_Moked.gs copia slides da v3).
   deck.appendSlide = origem => {
     const s = novoSlide(deck);
-    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign({}, r, { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
+    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign(JSON.parse(JSON.stringify(r)), { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
     deck._slides.push(s);
     return s;
   };
   // insertSlide(i, slide de outra apresentação) também copia (31_VersaoFinal.gs); com layout, slide em branco.
   deck.insertSlide = (i, origem) => {
     const s = novoSlide(deck);
-    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign({}, r, { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
+    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign(JSON.parse(JSON.stringify(r)), { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
     deck._slides.splice(i, 0, s);
     return s;
   };
@@ -2427,6 +2431,91 @@ console.log('Versão final (31_VersaoFinal.gs)');
   ok(sumE.shapes[1].link === sl[2].id && !('link' in sumC.shapes[1]),
      'versão final: link do sumário vai para o primeiro slide do gestor do Mega; sem slide do gestor, sai');
   ok(JSON.stringify(v3._slides.map(s => [s.shapes, s.notas])) === v3Antes, 'versão final: a v3 não muda');
+}
+
+console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');
+// Valor do orçamento com selo, campos copiados de outro slide, tabela refeita e o slide fora do orçamento.
+{
+  const v3 = novoDeck(); v3._slides = [];
+  const gerado = sub => { const s = v3.appendSlide(); s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: sub }); };
+  const doGestor = (titulo, mega, campos, extra) => {
+    const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';
+    s.shapes.push({ tipo: 'IMAGE', x: 0, y: 0, w: 720, h: 405, nome: 'MOLDURA - 10830624af2a.png' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
+                  { tipo: 'TEXT_BOX', x: 463, y: 96, w: 222, h: 12, texto: campos.interno || 'TÍTULO DO ASSUNTO' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 110, w: 222, h: 60, texto: campos.desc || 'texto do gestor' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 262, w: 222, h: 10, texto: 'CONTA' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 272, w: 222, h: 16, texto: campos.conta },
+                  { tipo: 'TEXT_BOX', x: 463, y: 294, w: 222, h: 10, texto: 'LOCAL' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 304, w: 222, h: 16, texto: campos.local },
+                  { tipo: 'TEXT_BOX', x: 463, y: 326, w: 222, h: 10, texto: 'VALOR NO ORÇ 2027' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 336, w: 222, h: 16, texto: campos.valor },
+                  { tipo: 'IMAGE', x: 52, y: 90, w: 380, h: 260, nome: 'foto' });
+    (extra || []).forEach(r => s.shapes.push(r));
+  };
+  const tabela = (linhas, total) => ({ tipo: 'TABLE', x: 44, y: 188, w: 390, h: 180,
+    celulas: [['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL']].concat(linhas, [total]) });
+  gerado('Manutenção · Mega Esteio');
+  doGestor('Instalação de Linha de Vida Vertical | Fase 1', 'Mega Esteio',
+    { conta: 'Manutenção de imóveis', local: 'Escada Cobertura A e B2 (Fase 1)', valor: 'R$ 15.270,00' });
+  doGestor('Subst. Chicote Elétrico do Trator 03', 'Mega Esteio',
+    { conta: 'Manutenção de Bens Móveis', local: 'Trator 03', valor: 'R$ 54.978,55', interno: 'CHICOTE ELÉTRICO DO TRATOR' });
+  gerado('Manutenção: os itens de cada grupo (1/2) · Mega Itajaí');
+  const linhasIt = [['ÁREA DE ACESSO', '100', 'SEMESTRAL (2X)', 'R$ 3.900,00'], ['EMB. DESEMBARQ.', '20', 'SEMESTRAL (2X)', 'R$ 780,00'],
+    ['PONTE', '22,2', 'SEMESTRAL (2X)', 'R$ 865,80'], ['BOLSÃO', '300', 'ANUAL', 'R$ 11.700,00'], ['CALÇADAS', '476,69', 'ANUAL', 'R$ 26.218,14'],
+    ['VIAS DE CARRO', '1.059', 'ANUAL', 'R$ 41.334,54'], ['TACHINHAS', 'N/A (100 und)', 'SOB DEMANDA', 'R$ 5.500,00']];
+  doGestor('Manutenção Comunicação Horizontal (CVISH)', 'Mega Itajaí',
+    { conta: 'Manutenção de imóveis', local: 'Pavimentação Intertravada', valor: 'R$ 105.844,28', interno: 'PLANO DE MANUTENÇÃO CVISH' },
+    [tabela(linhasIt, ['TOTAL', '1.977,89', 'N/A', 'R$ 105.844,28'])]);
+  doGestor('Implantação A Sense', 'Mega Itajaí',
+    { conta: 'Manutenção de imóveis', local: 'Escada Cobertura (Fase 1, 2 e 3)', valor: 'R$ 15.000,00/mês (Financiamento)',
+      interno: 'PROJETO DE FIBRA ÓPTICA A SENSE' });
+  doGestor('Implantação Torniquetes Digicon TX 1500', 'Mega Itajaí',
+    { conta: 'Manutenção de imóveis', local: 'Acessos', valor: 'R$ 205.000,00', interno: 'AQUISIÇÃO DE 3 TORNIQUETES DIGICON' });
+  gerado('Manutenção · Mega Curitiba');
+  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba',
+    { conta: 'Manutenção de imóveis', local: 'Armazém, área ou equipamento', valor: 'R$ —', interno: 'O QUE MOSTRAR',
+      desc: 'Escreva aqui a descrição: o que as fotos mostram e por que isso importa para o orçamento.' },
+    [tabela(linhasIt, ['TOTAL', '1.977,89', 'N/A', 'R$ 105.844,28']),
+     { tipo: 'TEXT_BOX', x: 463, y: 356, w: 222, h: 12, texto: 'Legenda: data e local da foto.' }]);
+  doGestor('Implantação Torniquete 4', 'Mega Curitiba',
+    { conta: 'Manutenção de imóveis', local: 'Pavimento Intertravado', valor: 'R$ 216.000,00', interno: 'TORNIQUETE 4' });
+  doGestor('Paisagismo Restaurante Sodexo + Jardim Vertical', 'Mega Curitiba',
+    { conta: 'Manutenção de imóveis', local: 'Fundos do restaurante', valor: 'R$ 216.000,00', interno: 'PAISAGISMO' });
+  const v3Antes = JSON.stringify(v3._slides.map(s => s.shapes));
+  const deck = novoDeck();
+  const res = G._orcGerarGestorRevisados_(deck, v3), sl = deck.getSlides();
+  const tem = (s, t) => textos(s).indexOf(t) >= 0;
+  const tab = s => s.shapes.filter(r => r.tipo === 'TABLE')[0].celulas;
+  ok(sl.length === 8 && JSON.stringify(v3._slides.map(s => s.shapes)) === v3Antes, 'ajustes: 8 slides e a v3 intacta');
+  ok(tem(sl[6], 'R$ 86.550,00') && tem(sl[6], 'Acessos') && tem(sl[6], '⚠ VALOR DO ORÇAMENTO · ERA R$ 216.000,00'),
+     'ajustes: torniquete 4 de Curitiba com LOCAL e VALOR copiados → os do orçamento (' + textos(sl[6]).join(' | ') + ')');
+  ok(tem(sl[7], 'Fundos do restaurante') && tem(sl[7], 'R$ 216.000,00') && res[7].avisos.some(a => a.indexOf('não troquei') >= 0),
+     'ajustes: LOCAL que o gestor já corrigiu fica, só com aviso');
+  ok(tem(sl[0], '⚠ FORA DO ORÇAMENTO 2027 · PARA DECISÃO') && tem(sl[0], 'R$ 15.270,00'),
+     'ajustes: linha de vida do Esteio fica, com o selo "fora do orçamento" e o valor do gestor');
+  ok(tem(sl[1], 'R$ 54.978,56') && !textos(sl[1]).some(t => t.indexOf('⚠') === 0), 'ajustes: centavos corrigidos sem selo');
+  const it = tab(sl[2]);
+  ok(tem(sl[2], 'R$ 95.844,28') && tem(sl[2], '⚠ VALOR DO ORÇAMENTO · ERA R$ 105.844,28') && tem(sl[2], 'Vias, docas, bolsão e calçadas') &&
+     it[0][3] === 'TOTAL NO ANO' && it[1][3] === 'R$ 7.800,00' && it[8][3] === 'R$ 95.844,28' && tem(sl[2], 'Manutenção de imóveis · Vias, docas, bolsão e calçadas · Mega Itajaí'),
+     'ajustes: CVISH do Itajaí com o valor do orçamento, selo, LOCAL e a tabela no ano (' + it.map(l => l[3]).join(' / ') + ')');
+  ok(tem(sl[3], 'Segurança e vigilância') && tem(sl[3], 'Perímetro externo (6 zonas)') && tem(sl[3], 'R$ 12.500,00/mês · R$ 150.000,00 no ano') &&
+     tem(sl[3], 'Segurança e vigilância · Perímetro externo (6 zonas) · Mega Itajaí'),
+     'ajustes: A Sense com CONTA, LOCAL, valor do 070 e subtítulo de segurança (' + textos(sl[3]).join(' | ') + ')');
+  ok(tem(sl[4], 'R$ 205.000,00') && !tem(sl[4], 'R$ 206.700,00') && res[4].avisos.some(a => a.indexOf('não troquei') >= 0),
+     'ajustes: valor mudado pelo gestor não é trocado, só avisado');
+  const cu = tab(sl[5]);
+  ok(tem(sl[5], 'R$ 75.758,16') && tem(sl[5], '⚠ PREENCHIDO PELO ORÇAMENTO · CONFERIR') && tem(sl[5], 'PLANO DE MANUTENÇÃO CVISH') &&
+     tem(sl[5], 'Vias, docas, bolsão e lombadas') && !textos(sl[5]).some(t => /^Escreva aqui|^Legenda: data/.test(t)) &&
+     cu[1][0] === 'FRENTE DE DOCAS' && cu[8][1] === '1.179,47' && cu[8][3] === 'R$ 75.758,16',
+     'ajustes: CVISH de Curitiba preenchido pelo orçamento (descrição, LOCAL, VALOR e tabela)');
+  // A tabela de Curitiba soma o total.
+  const soma = cu.slice(1, 8).reduce((a, l) => a + Number(l[3].replace(/[R$\s.]/g, '').replace(',', '.')), 0);
+  ok(Math.abs(soma - 75758.16) < 0.01, 'ajustes: as linhas da tabela de Curitiba somam o total (' + soma.toFixed(2) + ')');
+  const somaIt = it.slice(1, 8).reduce((a, l) => a + Number(l[3].replace(/[R$\s.]/g, '').replace(',', '.')), 0);
+  ok(Math.abs(somaIt - 95844.28) < 0.01, 'ajustes: as linhas da tabela do Itajaí somam o total (' + somaIt.toFixed(2) + ')');
 }
 
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que

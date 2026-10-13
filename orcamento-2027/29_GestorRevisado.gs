@@ -67,6 +67,73 @@ const ORC_GESTOR_LOCAL = [['automacao monitoramento canal br 116', 'Canal da BR-
 // Texto do molde de outro slide esquecido no slide (aviso, não troca).
 const ORC_GESTOR_MOLDE = [/Premissa: lavagem com drone/, /Premissa de lavação com Drone/];
 
+// Valores e campos conferidos com os modelos 090/070 (12/10/2026, 22h). Guilherme: "o resto vamos fazer mas deixe um
+// selo sinalizando e depois aviso se tiver ajustes"; a linha de vida do Esteio saiu do orçamento mas fica para a
+// defesa. Por slide: titulo (trecho do título sem acento, minúsculo) + mega; era = o(s) VALOR(es) que o slide tinha
+// (só troca se ainda for um deles — se o gestor mudou, só avisa); valor = o do orçamento; selo = o texto do selo
+// (sem ele: "VALOR DO ORÇAMENTO · ERA …"; nada nos centavos, semSelo); conta/local = textos novos, trocados só se o
+// campo ainda tem o texto copiado de outro slide (contaEra/localEra); interno/desc/legenda = no lugar do texto do
+// molde; secao = trilha; tabela = linhas da tabela (sem o cabeçalho e o total, que vêm em cabecalho/total), só
+// junto com a troca do VALOR; nota = vai para as anotações.
+const ORC_GESTOR_AJUSTES = [
+  { titulo: 'instalacao de linha de vida vertical', mega: 'Mega Esteio', selo: '⚠ FORA DO ORÇAMENTO 2027 · PARA DECISÃO',
+    nota: 'a instalação nos Armazéns A e B2 está com R$ 1 no 090 (fora do Orç 2027); o slide fica para a defesa' },
+  { titulo: 'comunicacao horizontal', mega: 'Mega Itajaí', era: 'R$ 105.844,28', valor: 'R$ 95.844,28',
+    local: 'Vias, docas, bolsão e calçadas', localEra: ['Pavimentação Intertravada'],
+    cabecalho: ['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL NO ANO'],
+    tabela: [['ÁREA DE ACESSO', '100', 'SEMESTRAL (2X)', 'R$ 7.800,00'],
+             ['EMB. DESEMBARQ.', '20', 'SEMESTRAL (2X)', 'R$ 1.560,00'],
+             ['PONTE', '22,2', 'SEMESTRAL (2X)', 'R$ 1.731,60'],
+             ['BOLSÃO', '300', 'ANUAL', 'R$ 11.700,00'],
+             ['CALÇADAS', '476,69', 'ANUAL', 'R$ 26.218,14'],
+             ['VIAS DE CARRO', '1.059', 'ANUAL', 'R$ 41.334,54'],
+             ['TACHINHAS', 'N/A (100 und)', 'SOB DEMANDA', 'R$ 5.500,00']],
+    total: ['TOTAL', '1.977,89', 'N/A', 'R$ 95.844,28'],
+    nota: 'no 090 são 7 itens que somam R$ 95.844,28 (o semestral entra 2× no ano); o slide dizia R$ 105.844,28' },
+  { titulo: 'comunicacao horizontal', mega: 'Mega Curitiba', era: ['R$ —', 'R$ 64.758,16'], valor: 'R$ 75.758,16',
+    local: 'Vias, docas, bolsão e lombadas', localEra: ['Armazém, área ou equipamento', 'Pavimento Intertravado'],
+    interno: 'PLANO DE MANUTENÇÃO CVISH', legenda: '',
+    desc: 'Plano de manutenção contínua da comunicação horizontal, a R$ 39/m² de demarcação viária.\n\n' +
+          'a) Semestral: rua principal (descida), acessos, embarque e desembarque, rotatória, rua lateral dos ' +
+          'Armazéns 1 e 2 e lombadas\nb) Anual: frente de docas dos Armazéns 1 a 7 e bolsão de pesados\n' +
+          'c) Sob demanda: tachinhas refletivas (R$ 55 por unidade)',
+    cabecalho: ['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL NO ANO'],
+    tabela: [['FRENTE DE DOCAS', '539,5', 'ANUAL', 'R$ 21.040,50'],
+             ['RUA PRINCIPAL', '113,65', 'SEMESTRAL (2X)', 'R$ 8.864,70'],
+             ['ACESSOS + EMBARQUE', '137,36', 'SEMESTRAL (2X)', 'R$ 10.714,08'],
+             ['ROTATÓRIA + LOMBADAS', '61,56', 'SEMESTRAL (2X)', 'R$ 4.801,68'],
+             ['RUA LATERAL AMZ 1/2', '27,4', 'SEMESTRAL (2X)', 'R$ 2.137,20'],
+             ['BOLSÃO DE PESADOS', '300', 'ANUAL', 'R$ 11.700,00'],
+             ['TACHINHAS', 'N/A (300 und)', 'SOB DEMANDA', 'R$ 16.500,00']],
+    total: ['TOTAL', '1.179,47', 'N/A', 'R$ 75.758,16'],
+    nota: 'slide ainda no molde: descrição, LOCAL, VALOR e tabela preenchidos com os 9 itens do 090 de Curitiba ' +
+          '(a tabela tinha o total e as vias do Itajaí)' },
+  { titulo: 'impermeabilizacao lajes subestacoes', mega: 'Mega Itajaí', era: 'R$ 171.230,00', valor: 'R$ 103.084,76',
+    nota: 'no 090: casa de bombas R$ 39.426,11 + Subestação 2 R$ 63.658,65; a Subestação 1 não está no orçamento' },
+  { titulo: 'copa e cozinha', mega: 'Mega Itajaí', era: 'R$ 21.785,00', valor: 'R$ 21.155,00',
+    nota: 'no 090: adequação da copa R$ 18.300 + geladeira R$ 2.855' },
+  { titulo: 'torniquetes digicon', mega: 'Mega Itajaí', era: 'R$ 205.500,00', valor: 'R$ 206.700,00',
+    nota: 'no 090: 3 torniquetes TX1500 Digicon inox, parcelado em 3×' },
+  { titulo: 'implantacao a sense', mega: 'Mega Itajaí', era: 'R$ 15.000,00/mês (Financiamento)',
+    valor: 'R$ 12.500,00/mês · R$ 150.000,00 no ano', conta: 'Segurança e vigilância', contaEra: ['Manutenção de imóveis'],
+    local: 'Perímetro externo (6 zonas)', localEra: ['Escada Cobertura (Fase 1, 2 e 3)'],
+    secao: 5, nota: 'no 070: parcela Alfa Sense (fibra sensitiva), R$ 150.000 no ano, na conta Segurança e Vigilância' },
+  { titulo: 'chicote eletrico do trator', mega: 'Mega Esteio', era: 'R$ 54.978,55', valor: 'R$ 54.978,56', semSelo: true },
+  { titulo: 'reforma reservatorio spk', mega: 'Mega Itajaí', era: 'R$ 179.543,06', valor: 'R$ 179.543,16', semSelo: true },
+  // Curitiba (12/10, 22h — o gestor ainda preenchendo: LOCAL e VALOR copiados do slide anterior).
+  { titulo: 'paisagismo restaurante', mega: 'Mega Curitiba', local: 'Restaurante industrial', localEra: ['Pavimento Intertravado'] },
+  { titulo: 'defensas entre platos', mega: 'Mega Curitiba', era: 'R$ 216.000,00', valor: 'R$ 146.030,29',
+    local: 'Platôs 1, 2 e 3', localEra: ['Pavimento Intertravado'],
+    nota: 'no 090: defensas metálicas platôs 1 e 2 R$ 44.823,85 + platôs 2 e 3 R$ 101.206,44' },
+  { titulo: 'implantacao torniquete 4', mega: 'Mega Curitiba', era: 'R$ 216.000,00', valor: 'R$ 86.550,00',
+    local: 'Acessos', localEra: ['Pavimento Intertravado'],
+    nota: 'no 090: torniquete Digicon TX1500 inox R$ 68.900 + mão de obra do 4º torniquete R$ 17.650' },
+  { titulo: 'automacao leituras', mega: 'Mega Curitiba', era: 'R$ 68.715,00', valor: 'R$ 87.591,26',
+    local: 'Medidores de água e energia', localEra: ['Armazém 1 a 9'],
+    nota: 'no 090: hidrômetros R$ 11.914 + RS2000 Modbus R$ 40.107,26 + 22 medidores R$ 21.582 + instalação R$ 4.400 + ' +
+          'kit RS2000 R$ 9.588 (materiais de informática); a mensalidade do CAS, R$ 15.300 no ano, está no 070' }
+];
+
 function gerarSlidesGestorRevisados() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty(ORC_GESTOR_REV.prop);
@@ -150,6 +217,9 @@ function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
     feito.push('LOCAL "' + txt(shLocal).trim() + '" → "' + local[1] + '"');
     shLocal.getText().setText(local[1]);
   }
+  const ajuste = ORC_GESTOR_AJUSTES.filter(a => a.mega === mega && nt.indexOf(a.titulo) >= 0)[0] || null;
+  if (ajuste) _orcAjustarSlideGestor_(slide, W, shapes, ajuste, { conta: shConta, local: shLocal, valor: valorDe('VALOR NO ORÇ 2027') },
+                                      feito, avisos);
   const conta = shConta ? txt(shConta).trim() : '', lugar = shLocal ? txt(shLocal).trim() : '';
 
   // 3. Título interno copiado de outro slide: nenhuma palavra (5+ letras) em comum com o título.
@@ -169,7 +239,7 @@ function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
 
   // 4. Subtítulo e rodapé com o Mega da seção.
   const sub = shapes.filter(sh => /^Subtítulo:/.test(txt(sh).trim()))[0];
-  const seguranca = /^substituicao seguranca/.test(nt);
+  const seguranca = /^substituicao seguranca/.test(nt);   // subtítulo "Segurança e vigilância · Mega"
   if (sub) {
     const partes = (seguranca ? ['Segurança e vigilância'] : [conta, lugar]).filter(String).concat([mega]);
     const veio = txt(sub).trim(), megaVeio = (veio.match(/Mega \S+/) || [''])[0];
@@ -183,7 +253,7 @@ function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
   }
 
   // 5. Trilha: a moldura da seção do assunto no lugar da de 08 Fotos.
-  const secao = seguranca ? 5 : 4;
+  const secao = (ajuste && ajuste.secao) || (seguranca ? 5 : 4);
   if (_orcTrocarMolduraGestor_(slide, W, H, secao)) feito.push('trilha em 0' + secao);
 
   // 6. O que parece molde esquecido: só avisa.
@@ -201,6 +271,72 @@ function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
       '. Não apague a primeira linha destas anotações.');
   } catch (e) { Logger.log('Anotações do slide revisado não gravadas: ' + e.message); }
   return { v3: nV3, mega: mega, titulo: titulo, feito: feito, avisos: avisos };
+}
+
+// Aplica um ORC_GESTOR_AJUSTES no slide: campos, descrição, tabela, VALOR (só se ainda for o "era") e o selo no
+// canto do cabeçalho (o mesmo lugar do ⚠ REVISAR dos slides gerados). campos = { conta, local, valor } (formas).
+function _orcAjustarSlideGestor_(slide, W, shapes, a, campos, feito, avisos) {
+  const txt = sh => { try { return sh.getText().asString().replace(/\n$/, ''); } catch (e) { return ''; } };
+  const trocar = (sh, novo, rotulo) => {
+    if (!sh) { avisos.push(rotulo + ' não encontrado no slide'); return; }
+    if (txt(sh).trim() === novo) return;
+    feito.push(rotulo + ' "' + txt(sh).trim() + '" → "' + novo + '"');
+    sh.getText().setText(novo);
+  };
+  // CONTA/LOCAL: só se ainda têm o texto copiado de outro slide (o gestor pode ter corrigido de outro jeito).
+  const campo = (sh, novo, eras, rotulo) => {
+    if (!novo) return;
+    if (!sh) { avisos.push(rotulo + ' não encontrado no slide'); return; }
+    const atual = txt(sh).trim();
+    if (atual === novo) return;
+    if (eras && eras.indexOf(atual) < 0) { avisos.push(rotulo + ' é "' + atual + '"; sugerido "' + novo + '" (não troquei)'); return; }
+    trocar(sh, novo, rotulo);
+  };
+  campo(campos.conta, a.conta, a.contaEra, 'CONTA');
+  campo(campos.local, a.local, a.localEra, 'LOCAL');
+  const porTexto = re => shapes.filter(sh => re.test(txt(sh).trim()))[0] || null;
+  if (a.desc !== undefined) trocar(porTexto(/^Escreva aqui a descrição/), a.desc, 'descrição');
+  if (a.interno !== undefined) trocar(porTexto(/^O QUE MOSTRAR$/), a.interno, 'título interno');
+  if (a.legenda !== undefined) { const l = porTexto(/^Legenda: data e local da foto\.?$/); if (l) trocar(l, a.legenda, 'legenda do molde'); }
+
+  // VALOR: troca só se o slide ainda tem o valor conferido; se o gestor já mudou, avisa.
+  let trocou = false, anterior = '';
+  if (a.valor) {
+    const v = campos.valor, atual = v ? txt(v).trim() : '';
+    if (!v) avisos.push('VALOR não encontrado no slide (o do orçamento é ' + a.valor + ')');
+    else if ([].concat(a.era).indexOf(atual) >= 0) {
+      v.getText().setText(a.valor); trocou = true; anterior = atual; feito.push('VALOR ' + atual + ' → ' + a.valor + ' (orçamento)');
+    }
+    else if (atual !== a.valor) avisos.push('VALOR no slide é ' + atual + '; no orçamento, ' + a.valor + ' (não troquei)');
+  }
+
+  // Tabela: cabeçalho + linhas + total, se o tamanho bate (o gestor pode ter mudado a tabela).
+  if (a.tabela && trocou) {
+    const linhas = [a.cabecalho].concat(a.tabela, [a.total]);
+    const tb = (slide.getTables ? slide.getTables() : []).filter(t => t.getNumColumns() === 4)[0];
+    if (!tb) avisos.push('tabela não encontrada (a do orçamento soma ' + a.total[3] + ')');
+    else if (tb.getNumRows() !== linhas.length) avisos.push('tabela com ' + tb.getNumRows() + ' linhas, esperava ' + linhas.length + ' (não troquei)');
+    else {
+      let n = 0;
+      linhas.forEach((l, r) => l.forEach((v, c) => {
+        const cel = tb.getCell(r, c).getText();
+        if (cel.asString().replace(/\n$/, '').trim() !== v) { cel.setText(v); n++; }
+      }));
+      if (n) feito.push('tabela com os itens do orçamento (' + n + ' células)');
+    }
+  }
+
+  // Selo: ajuste de valor (com o valor antigo) ou o texto do ajuste.
+  const selo = a.selo || (trocou && !a.semSelo
+    ? (/^R\$\s*—$/.test(anterior) ? '⚠ PREENCHIDO PELO ORÇAMENTO · CONFERIR' : '⚠ VALOR DO ORÇAMENTO · ERA ' + anterior) : '');
+  if (selo) {
+    const DS = CR_DESIGN_SYSTEM, w = 200, x = W - DS.layout.marginX - w, y = 47;
+    _orcRet_(slide, x, y, w, 14, _ORC_COR_REVISAR.borda, { redondo: true });
+    _orcUmaLinha_(slide, x, y, w, 14, selo,
+      { align: 'C', fs: 6.5, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, folga: 6, fsMin: 5, cortar: true });
+    feito.push('selo "' + selo + '"');
+  }
+  if (a.nota) avisos.push(a.nota);
 }
 
 // Troca a imagem da moldura (a do slide inteiro) pela do molde de fotos com a trilha na seção dada. Sem a imagem na
