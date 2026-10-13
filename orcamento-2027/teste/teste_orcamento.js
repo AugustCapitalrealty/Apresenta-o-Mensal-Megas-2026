@@ -140,6 +140,8 @@ function novoSlide(deck) {
       getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
       getLeft: () => reg.x, getTop: () => reg.y, getWidth: () => reg.w, getHeight: () => reg.h,
       asShape: () => ({ getText: () => ({ asString: () => (reg.texto || '') + '\n' }) }),
+      asTable: () => ({ getNumRows: () => reg.celulas.length, getNumColumns: () => reg.celulas[0].length,
+        getCell: (i, j) => ({ getText: () => ({ asString: () => reg.celulas[i][j] + '\n' }) }) }),
       remove: () => { const i = slide.shapes.indexOf(reg); if (i >= 0) slide.shapes.splice(i, 1); }
     }))
   };
@@ -2436,7 +2438,7 @@ console.log('Versão final (31_VersaoFinal.gs)');
 }
 
 console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');
-// Valor do orçamento com selo, campos copiados de outro slide, tabela refeita e o slide fora do orçamento.
+// Só os erros: LOCAL copiado de outro slide. Valores, CONTA e o texto do gestor ficam; nenhum selo (12/10, 22h45).
 {
   const v3 = novoDeck(); v3._slides = [];
   const gerado = sub => { const s = v3.appendSlide(); s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: sub }); };
@@ -2447,9 +2449,9 @@ console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');
                   { tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
                   { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
                   { tipo: 'TEXT_BOX', x: 463, y: 96, w: 222, h: 12, texto: campos.interno || 'TÍTULO DO ASSUNTO' },
-                  { tipo: 'TEXT_BOX', x: 463, y: 110, w: 222, h: 60, texto: campos.desc || 'texto do gestor' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 110, w: 222, h: 60, texto: 'texto do gestor' },
                   { tipo: 'TEXT_BOX', x: 463, y: 262, w: 222, h: 10, texto: 'CONTA' },
-                  { tipo: 'TEXT_BOX', x: 463, y: 272, w: 222, h: 16, texto: campos.conta },
+                  { tipo: 'TEXT_BOX', x: 463, y: 272, w: 222, h: 16, texto: campos.conta || 'Manutenção de imóveis' },
                   { tipo: 'TEXT_BOX', x: 463, y: 294, w: 222, h: 10, texto: 'LOCAL' },
                   { tipo: 'TEXT_BOX', x: 463, y: 304, w: 222, h: 16, texto: campos.local },
                   { tipo: 'TEXT_BOX', x: 463, y: 326, w: 222, h: 10, texto: 'VALOR NO ORÇ 2027' },
@@ -2457,67 +2459,30 @@ console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');
                   { tipo: 'IMAGE', x: 52, y: 90, w: 380, h: 260, nome: 'foto' });
     (extra || []).forEach(r => s.shapes.push(r));
   };
-  const tabela = (linhas, total) => ({ tipo: 'TABLE', x: 44, y: 188, w: 390, h: 180,
-    celulas: [['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL']].concat(linhas, [total]) });
   gerado('Manutenção · Mega Esteio');
-  doGestor('Instalação de Linha de Vida Vertical | Fase 1', 'Mega Esteio',
-    { conta: 'Manutenção de imóveis', local: 'Escada Cobertura A e B2 (Fase 1)', valor: 'R$ 15.270,00' });
-  doGestor('Subst. Chicote Elétrico do Trator 03', 'Mega Esteio',
-    { conta: 'Manutenção de Bens Móveis', local: 'Trator 03', valor: 'R$ 54.978,55', interno: 'CHICOTE ELÉTRICO DO TRATOR' });
+  doGestor('Instalação de Linha de Vida Vertical | Fase 1', 'Mega Esteio', { local: 'Escada Cobertura A e B2 (Fase 1)', valor: 'R$ 15.270,00' });
+  doGestor('Subst. Chicote Elétrico do Trator 03', 'Mega Esteio', { local: 'Trator 03', valor: 'R$ 54.978,55', interno: 'PINTURA DA TUBULAÇÃO DE INCÊNDIO AÉREA' });
   gerado('Manutenção: os itens de cada grupo (1/2) · Mega Itajaí');
-  const linhasIt = [['ÁREA DE ACESSO', '100', 'SEMESTRAL (2X)', 'R$ 3.900,00'], ['EMB. DESEMBARQ.', '20', 'SEMESTRAL (2X)', 'R$ 780,00'],
-    ['PONTE', '22,2', 'SEMESTRAL (2X)', 'R$ 865,80'], ['BOLSÃO', '300', 'ANUAL', 'R$ 11.700,00'], ['CALÇADAS', '476,69', 'ANUAL', 'R$ 26.218,14'],
-    ['VIAS DE CARRO', '1.059', 'ANUAL', 'R$ 41.334,54'], ['TACHINHAS', 'N/A (100 und)', 'SOB DEMANDA', 'R$ 5.500,00']];
-  doGestor('Manutenção Comunicação Horizontal (CVISH)', 'Mega Itajaí',
-    { conta: 'Manutenção de imóveis', local: 'Pavimentação Intertravada', valor: 'R$ 105.844,28', interno: 'PLANO DE MANUTENÇÃO CVISH' },
-    [tabela(linhasIt, ['TOTAL', '1.977,89', 'N/A', 'R$ 105.844,28'])]);
-  doGestor('Implantação A Sense', 'Mega Itajaí',
-    { conta: 'Manutenção de imóveis', local: 'Escada Cobertura (Fase 1, 2 e 3)', valor: 'R$ 15.000,00/mês (Financiamento)',
-      interno: 'PROJETO DE FIBRA ÓPTICA A SENSE' });
-  doGestor('Implantação Torniquetes Digicon TX 1500', 'Mega Itajaí',
-    { conta: 'Manutenção de imóveis', local: 'Acessos', valor: 'R$ 205.000,00', interno: 'AQUISIÇÃO DE 3 TORNIQUETES DIGICON' });
+  doGestor('Implantação A Sense', 'Mega Itajaí', { local: 'Escada Cobertura (Fase 1, 2 e 3)', valor: 'R$ 15.000,00/mês (Financiamento)',
+    interno: 'PROJETO DE FIBRA ÓPTICA A SENSE' });
   gerado('Manutenção · Mega Curitiba');
-  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba',
-    { conta: 'Manutenção de imóveis', local: 'Armazém, área ou equipamento', valor: 'R$ —', interno: 'O QUE MOSTRAR',
-      desc: 'Escreva aqui a descrição: o que as fotos mostram e por que isso importa para o orçamento.' },
-    [tabela(linhasIt, ['TOTAL', '1.977,89', 'N/A', 'R$ 105.844,28']),
-     { tipo: 'TEXT_BOX', x: 463, y: 356, w: 222, h: 12, texto: 'Legenda: data e local da foto.' }]);
-  doGestor('Implantação Torniquete 4', 'Mega Curitiba',
-    { conta: 'Manutenção de imóveis', local: 'Pavimento Intertravado', valor: 'R$ 216.000,00', interno: 'TORNIQUETE 4' });
-  doGestor('Paisagismo Restaurante Sodexo + Jardim Vertical', 'Mega Curitiba',
-    { conta: 'Manutenção de imóveis', local: 'Fundos do restaurante', valor: 'R$ 216.000,00', interno: 'PAISAGISMO' });
-  const v3Antes = JSON.stringify(v3._slides.map(s => s.shapes));
+  doGestor('Implantação Torniquete 4', 'Mega Curitiba', { local: 'Pavimento Intertravado', valor: 'R$ 216.000,00', interno: 'TORNIQUETE 4' });
+  doGestor('Paisagismo Restaurante Sodexo + Jardim Vertical', 'Mega Curitiba', { local: 'Fundos do restaurante', valor: 'R$ 216.000,00', interno: 'PAISAGISMO' });
+  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba', { local: 'Pavimento Intertravado', valor: 'R$ 64.758,16', interno: 'PLANO DE MANUTENÇÃO CONTINUADA' });
   const deck = novoDeck();
   const res = G._orcGerarGestorRevisados_(deck, v3), sl = deck.getSlides();
   const tem = (s, t) => textos(s).indexOf(t) >= 0;
-  const tab = s => s.shapes.filter(r => r.tipo === 'TABLE')[0].celulas;
-  ok(sl.length === 8 && JSON.stringify(v3._slides.map(s => s.shapes)) === v3Antes, 'ajustes: 8 slides e a v3 intacta');
-  ok(tem(sl[6], 'R$ 86.550,00') && tem(sl[6], 'Acessos') && tem(sl[6], '⚠ VALOR DO ORÇAMENTO · ERA R$ 216.000,00'),
-     'ajustes: torniquete 4 de Curitiba com LOCAL e VALOR copiados → os do orçamento (' + textos(sl[6]).join(' | ') + ')');
-  ok(tem(sl[7], 'Fundos do restaurante') && tem(sl[7], 'R$ 216.000,00') && res[7].avisos.some(a => a.indexOf('não troquei') >= 0),
-     'ajustes: LOCAL que o gestor já corrigiu fica, só com aviso');
-  ok(tem(sl[0], '⚠ FORA DO ORÇAMENTO 2027 · PARA DECISÃO') && tem(sl[0], 'R$ 15.270,00'),
-     'ajustes: linha de vida do Esteio fica, com o selo "fora do orçamento" e o valor do gestor');
-  ok(tem(sl[1], 'R$ 54.978,56') && !textos(sl[1]).some(t => t.indexOf('⚠') === 0), 'ajustes: centavos corrigidos sem selo');
-  const it = tab(sl[2]);
-  ok(tem(sl[2], 'R$ 95.844,28') && tem(sl[2], '⚠ VALOR DO ORÇAMENTO · ERA R$ 105.844,28') && tem(sl[2], 'Vias, docas, bolsão e calçadas') &&
-     it[0][3] === 'TOTAL NO ANO' && it[1][3] === 'R$ 7.800,00' && it[8][3] === 'R$ 95.844,28' && tem(sl[2], 'Manutenção de imóveis · Vias, docas, bolsão e calçadas · Mega Itajaí'),
-     'ajustes: CVISH do Itajaí com o valor do orçamento, selo, LOCAL e a tabela no ano (' + it.map(l => l[3]).join(' / ') + ')');
-  ok(tem(sl[3], 'Segurança e vigilância') && tem(sl[3], 'Perímetro externo (6 zonas)') && tem(sl[3], 'R$ 12.500,00/mês · R$ 150.000,00 no ano') &&
-     tem(sl[3], 'Segurança e vigilância · Perímetro externo (6 zonas) · Mega Itajaí'),
-     'ajustes: A Sense com CONTA, LOCAL, valor do 070 e subtítulo de segurança (' + textos(sl[3]).join(' | ') + ')');
-  ok(tem(sl[4], 'R$ 205.000,00') && !tem(sl[4], 'R$ 206.700,00') && res[4].avisos.some(a => a.indexOf('não troquei') >= 0),
-     'ajustes: valor mudado pelo gestor não é trocado, só avisado');
-  const cu = tab(sl[5]);
-  ok(tem(sl[5], 'R$ 75.758,16') && tem(sl[5], '⚠ PREENCHIDO PELO ORÇAMENTO · CONFERIR') && tem(sl[5], 'PLANO DE MANUTENÇÃO CVISH') &&
-     tem(sl[5], 'Vias, docas, bolsão e lombadas') && !textos(sl[5]).some(t => /^Escreva aqui|^Legenda: data/.test(t)) &&
-     cu[1][0] === 'FRENTE DE DOCAS' && cu[8][1] === '1.179,47' && cu[8][3] === 'R$ 75.758,16',
-     'ajustes: CVISH de Curitiba preenchido pelo orçamento (descrição, LOCAL, VALOR e tabela)');
-  // A tabela de Curitiba soma o total.
-  const soma = cu.slice(1, 8).reduce((a, l) => a + Number(l[3].replace(/[R$\s.]/g, '').replace(',', '.')), 0);
-  ok(Math.abs(soma - 75758.16) < 0.01, 'ajustes: as linhas da tabela de Curitiba somam o total (' + soma.toFixed(2) + ')');
-  const somaIt = it.slice(1, 8).reduce((a, l) => a + Number(l[3].replace(/[R$\s.]/g, '').replace(',', '.')), 0);
-  ok(Math.abs(somaIt - 95844.28) < 0.01, 'ajustes: as linhas da tabela do Itajaí somam o total (' + somaIt.toFixed(2) + ')');
+  ok(sl.length === 6 && !sl.some(s => textos(s).some(t => t.indexOf('⚠') === 0)), 'ajustes: nenhum selo nos slides do gestor');
+  ok(tem(sl[0], 'R$ 15.270,00') && tem(sl[1], 'R$ 54.978,55') && tem(sl[2], 'R$ 15.000,00/mês (Financiamento)') && tem(sl[3], 'R$ 216.000,00') &&
+     tem(sl[5], 'R$ 64.758,16'), 'ajustes: os valores do gestor ficam como estão');
+  ok(tem(sl[2], 'Manutenção de imóveis') && tem(sl[2], 'Perímetro externo (6 zonas)') &&
+     tem(sl[2], 'Manutenção de imóveis · Perímetro externo (6 zonas) · Mega Itajaí'),
+     'ajustes: A Sense com o LOCAL copiado corrigido e a CONTA do gestor (' + textos(sl[2]).join(' | ') + ')');
+  ok(tem(sl[3], 'Acessos') && tem(sl[4], 'Fundos do restaurante') && tem(sl[5], 'Vias, docas, bolsão e lombadas'),
+     'ajustes: LOCAL copiado de outro slide corrigido; o escrito pelo gestor fica');
+  ok(tem(sl[1], 'SUBST. CHICOTE ELÉTRICO DO TRATOR 03') && tem(sl[5], 'PLANO DE MANUTENÇÃO CONTINUADA'),
+     'ajustes: título interno copiado (conhecido) trocado; o do gestor fica');
+  ok(!sl.some(s => /CONFERIR/.test(s.notas)), 'ajustes: sem "CONFERIR" nas anotações');
 }
 
 console.log('Fontes guardadas (32_Fontes.gs)');
@@ -2591,7 +2556,7 @@ console.log('Fontes guardadas (32_Fontes.gs)');
 }
 
 console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
-// Print de tabela → tabela no padrão do deck, na marca do Mega; sem o print no lugar, não mexe.
+// Print de tabela → tabela no padrão do deck com o MESMO texto e valores, na marca do Mega; sem o print no lugar, não mexe.
 {
   const v3 = novoDeck(); v3._slides = [];
   const gerado = sub => { const s = v3.appendSlide(); s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: sub }); };
@@ -2611,21 +2576,24 @@ console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
   doGestor('Reforma Reservatório SPK', 'Mega Itajaí', 'R$ 179.543,06', [{ tipo: 'IMAGE', x: 44, y: 200, w: 402, h: 118, nome: 'print-platner' }]);
   doGestor('Reforma Reservatório SPK', 'Mega Itajaí', 'R$ 179.543,06', [{ tipo: 'IMAGE', x: 44, y: 120, w: 300, h: 60, nome: 'outro-lugar' }]);
   gerado('Manutenção · Mega Curitiba');
-  const tabelaCur = { tipo: 'TABLE', x: 44, y: 199, w: 390, h: 169, celulas: [['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL']] };
-  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba', 'R$ —',
+  const tabelaCur = { tipo: 'TABLE', x: 44, y: 199, w: 390, h: 169, celulas: [['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL'],
+    ['FRENTE DE DOCAS', '539,50', 'ANUAL', 'R$ 21.040,50'], ['TACHINHAS', 'N/A (100 und)', 'SOB DEMANDA', 'R$ 5.500,00'],
+    ['TOTAL', '1.883,47', 'N/A', 'R$ 64.758,16']] };
+  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba', 'R$ 64.758,16',
     [tabelaCur, { tipo: 'IMAGE', x: 218.5, y: 91.2, w: 220.6, h: 74.4, nome: 'precos' }]);
   const deck = novoDeck();
   const res = G._orcGerarGestorRevisados_(deck, v3), sl = deck.getSlides();
   const nomes = s => s.shapes.filter(r => r.tipo === 'IMAGE').map(r => r.nome);
-  ok(nomes(sl[0]).indexOf('print-platner') < 0 && nomes(sl[0]).indexOf('logo') >= 0 && textos(sl[0]).indexOf('R$ 67.234,38') >= 0 &&
-     textos(sl[0]).indexOf('PROPOSTA PLATNER · ITENS') >= 0 && res[0].feito.some(f => /redesenhado/.test(f)),
-     'redesenho: o print da proposta vira tabela; o logo fica (' + res[0].feito.join(' / ') + ')');
-  ok(nomes(sl[1]).indexOf('outro-lugar') >= 0 && textos(sl[1]).indexOf('PROPOSTA PLATNER · ITENS') < 0 &&
-     res[1].avisos.some(a => /não está mais onde estava/.test(a)), 'redesenho: print fora do lugar → não mexe, só avisa');
+  ok(nomes(sl[0]).indexOf('print-platner') < 0 && nomes(sl[0]).indexOf('logo') >= 0 &&
+     textos(sl[0]).indexOf('MAT/MDO - Pintura externa de reservatório metálico com tinta PU - Cor cinza RAL 7038;') >= 0 &&
+     textos(sl[0]).indexOf('VALOR PARCIAL') >= 0 && textos(sl[0]).indexOf('R$ 179.543,06') >= 0 && res[0].feito.some(f => /redesenhado/.test(f)),
+     'redesenho: o print da Platner vira tabela com o mesmo texto e valores; o logo fica');
+  ok(nomes(sl[1]).indexOf('outro-lugar') >= 0 && textos(sl[1]).indexOf('VALOR PARCIAL') < 0 &&
+     res[1].avisos.some(a => /não está mais onde estava/.test(a)), 'redesenho: print fora do lugar → não mexe');
   const cur = sl[2], DEM = G.ORC_MARCAS.DEMERCADO.colors.brandDark;
-  ok(!cur.shapes.some(r => r.tipo === 'TABLE') && nomes(cur).indexOf('precos') < 0 && textos(cur).indexOf('R$ 75.758,16') >= 0 &&
-     textos(cur).indexOf('Frente de docas (Amz 1 a 7)') >= 0 && textos(cur).indexOf('PREÇOS DA ELETROSINAL') >= 0,
-     'redesenho: CVISH de Curitiba com a tabela do orçamento e os preços (' + res[2].avisos.join(' / ') + ')');
+  ok(!cur.shapes.some(r => r.tipo === 'TABLE') && nomes(cur).indexOf('precos') >= 0 &&
+     ['FRENTE DE DOCAS', 'N/A (100 und)', 'R$ 64.758,16', '1.883,47', 'TAMANHO (M2)'].every(t => textos(cur).indexOf(t) >= 0),
+     'redesenho: tabela do CVISH no padrão do deck com as células do gestor; os preços (print) ficam (' + textos(cur).join(' | ') + ')');
   ok(DEM && cur.shapes.some(r => r.cor === DEM) && !sl[0].shapes.some(r => r.cor === DEM),
      'redesenho: tabela de Curitiba na cor da Demercado; a do Itajaí, na da Capital');
   ok(G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark, 'redesenho: a marca volta para a Capital no fim');
