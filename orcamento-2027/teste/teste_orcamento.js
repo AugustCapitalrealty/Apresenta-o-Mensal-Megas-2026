@@ -2450,6 +2450,19 @@ console.log('Mega completo (00_Gerar.gs)');
   G.ORC_FACILITIES.deckId = idAntes;
 }
 
+console.log('Tabela do gestor larga demais (33_GestorRedesenho.gs)');
+// 13/10/2026: no Curitiba (fonte da Demercado) as colunas de número tomavam a largura toda e a 1ª ficava com zero.
+{
+  const s = novoDeck().appendSlide();
+  G._orcAplicarMarca_(G.ORC_CIDADES.CURITIBA);
+  G._orcRedesenhoTabelaSlides_(s, { x: 44, y: 100, w: 380, h: 200, celulas: [
+    ['ITEM', 'QUANTIDADE TOTAL', 'UNIDADE DE MEDIDA', 'VALOR UNITÁRIO MENSAL', 'VALOR TOTAL ANUAL', 'OBSERVAÇÃO DO GESTOR'],
+    ['Faixa de pedestres', '1.234,56 m²', 'metro quadrado', 'R$ 12.345,67', 'R$ 148.148,04', 'conforme proposta']] });
+  G._orcAplicarMarca_(null);
+  ok(s.shapes.length > 0 && s.shapes.every(f => !(f.w <= 0)),
+     'tabela do gestor larga demais: nenhuma coluna com largura zero (' + s.shapes.filter(f => f.w <= 0).length + ' com zero)');
+}
+
 console.log('Versão final (31_VersaoFinal.gs)');
 // Cópia do deck de Facilities + os slides do gestor da v3 no lugar deles, a Moked no lugar dos slides dela.
 {

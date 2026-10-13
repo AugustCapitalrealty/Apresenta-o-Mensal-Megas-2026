@@ -88,7 +88,16 @@ function _orcRedesenhoTabelaSlides_(slide, t) {
     return { total: total, celulas: l.map((v, j) => v ? { texto: v, bold: j === n - 1, fs: fs } : null) };
   });
   const hCab = 18, rowH = Math.min(22, Math.max(14, (Math.min(t.h, ORC_GESTOR_ESQ.fim - t.y) - hCab) / linhas.length));
-  _orcTabela_(slide, t.x, t.y, Math.min(t.w, ORC_GESTOR_ESQ.x + ORC_GESTOR_ESQ.w - t.x), colunas, linhas, rowH, { fs: fs, hCab: hCab });
+  const w = Math.min(t.w, ORC_GESTOR_ESQ.x + ORC_GESTOR_ESQ.w - t.x);
+  // As colunas de número não podem tomar a largura toda (13/10/2026: no Curitiba, na fonte da Demercado, a 1ª coluna
+  // ficava com largura zero e o Slides parava a geração): encolhem por igual; sem caber, todas do mesmo tamanho.
+  const min1 = Math.max(60, w * 0.3), fixo = () => colunas.reduce((a, c) => a + (c.w || 0), 0);
+  if (fixo() > w - min1) {
+    const f = (w - min1) / fixo();
+    colunas.forEach(c => { if (c.w) c.w = Math.max(24, Math.floor(c.w * f)); });
+    if (fixo() > w - min1) colunas.forEach(c => { c.w = null; });
+  }
+  _orcTabela_(slide, t.x, t.y, w, colunas, linhas, rowH, { fs: fs, hCab: hCab });
 }
 
 // Tabela com a 1ª coluna em várias linhas (descrição longa de proposta): a altura da linha segue o texto.

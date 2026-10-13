@@ -208,11 +208,18 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
   };
   const tituloDe = ts => ts.map(t => t.trim()).filter(String)[0] || '';
 
-  // 1. Os moldes de fotos vazios do Mega saem (no Mega completo os slides do gestor vêm da v3).
+  // 1. Saem os slides do gestor deste Mega que não estão na lista da parte: os moldes de fotos vazios e o que sobrou de
+  //    uma rodada que parou no meio (no Mega completo os slides do gestor vêm da v3, copiados de novo).
   let nMoldes = 0;
+  const naLista = JSON.parse(props.getProperty(propLista) || '[]');
   (_orcFotosPorParte_(deck)[parte] || []).forEach(id => {
+    if (naLista.indexOf(id) >= 0) return;
     const s = deck.getSlideById(id);
-    if (s && /Título do assunto/.test(_orcTituloGestor_(s))) { s.remove(); nMoldes++; }
+    if (!s) return;
+    const t = _orcTituloGestor_(s);
+    if (!/Título do assunto/.test(t)) Logger.log(cid.nome + ' · saiu um slide do gestor que tinha sobrado no deck: ' + t);
+    s.remove();
+    nMoldes++;
   });
 
   // 2. O plano: os slides do gestor deste Mega na v3, cada um com a âncora. A seção do Mega vai do sumário dele ao
@@ -264,13 +271,28 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
       if (parou || p.feito) return;
       if (Date.now() - inicio > 5 * 60 * 1000) { parou = true; return; }
       const novo = deck.insertSlide(pos + 1 + k, p.origem);
-      const r = _orcRevisarSlideGestor_(novo, W, H, cid.nome, p.n, p.ancora);
-      if (r.avisos.length) log.push('slide ' + p.n + ' da v3 — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
+      // Na lista logo ao entrar: se a execução parar no meio, a próxima geração do Mega tira este slide também.
       lista.push(novo.getObjectId());
       feitos.push(p.origem.getObjectId());
       n++;
       props.setProperty(propLista, JSON.stringify(lista));
       props.setProperty(propFeitos, JSON.stringify(feitos));
+      // A revisão que falha não para a geração: o slide fica como está na v3 e o log pede para conferir.
+      try {
+        const r = _orcRevisarSlideGestor_(novo, W, H, cid.nome, p.n, p.ancora);
+        if (r.avisos.length) log.push('slide ' + p.n + ' da v3 — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
+      } catch (e) {
+        // A revisão pode ter parado no meio (tabela tirada e não desenhada): sai a cópia e entra outra, sem revisão.
+        try {
+          novo.remove();
+          const cru = deck.insertSlide(pos + 1 + k, p.origem);
+          lista[lista.length - 1] = cru.getObjectId();
+          props.setProperty(propLista, JSON.stringify(lista));
+          cru.getNotesPage().getSpeakerNotesShape().getText().setText(_orcMarcaFotos_(parte) + '\nCopiado da v3 (slide ' + p.n +
+            ') sem a revisão de 29_GestorRevisado.gs, que falhou: ' + e.message + '. Não apague a primeira linha destas anotações.');
+        } catch (e2) { log.push('slide ' + p.n + ' da v3: a cópia sem revisão também falhou (' + e2.message + ')'); }
+        log.push('slide ' + p.n + ' da v3 — ' + p.titulo + ': CONFERIR, a revisão falhou (' + e.message + ') — entrou como está na v3');
+      }
     });
   });
   _orcSalvarDeck_(deck, 'os slides do gestor do ' + cid.nome);
