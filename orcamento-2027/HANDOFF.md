@@ -34,7 +34,7 @@ planilhas mudarem — perguntado ao Guilherme, não mexer sem decisão.
 Export novo (12/10 19h07): 147 slides; Esteio ganhou o 044 "Subst. Chicote Elétrico do Trator 03" (título interno
 copiado "PINTURA DA TUBULAÇÃO…"); Itajaí agora 78–95.
 
-**Atualização de 12/10, 19h56 (em Downloads do Guilherme; AINDA NÃO no Drive):** METRAGEM dos 3 Megas
+**Atualização de 12/10, 19h56 (NO DRIVE desde 21h12 — pasta "ATUALIZAÇÃO 12-10-2026", importarAtualizacao(), IDs em IDS.json; o gerador já aponta para elas, inclusive relatorios.ritmoId = RITMO 2026 dos 3 Megas):** METRAGEM dos 3 Megas
 (Mega-*.xlsx), 090 (igual ao atual), 070 (Moked do Esteio 7.949 → 7.000/mês), Contratos-Atualizado.csv (Moked
 Curitiba 20.706,69 → 17.781,40 e Itajaí 16.971,92 → 14.574,25/mês = rateio corrigido com o mesmo reajuste; o resto
 igual) e "IPTU E SEGURO - MEGAS 2027" (racional: valor/m² 2026 × reajuste × área 2027 — seguro +5%, IPTU +5,5% em
@@ -47,7 +47,7 @@ R$/m² iguais aos da METRAGEM, a conta sai "Despesa de pessoal*" na DRE e nos of
 ("* Despesa de pessoal: inclui R$ 90.000 da assistente de facilities, como consultoria até o RH aprovar") — a
 tabela não encolhe porque a altura dela entra na moldura (mais baixa = MOLDURA nova sem imagem = sem sombra).
 "Outras taxas e impostos" em valeMetragem no Esteio e em Curitiba (METRAGEM nova R$ 1.200/R$ 2.455 × Despesas-
-Mensal antigo R$ 0 → sem isso, 7 slides com ⚠ REVISAR por Mega). FALTA: o
+Mensal antigo R$ 0 → sem isso, 7 slides com ⚠ REVISAR por Mega). FEITO (21h15): IDs trocados; as planilhas antigas viram "PODE EXCLUIR - …" pelo Guilherme. ERA: o
 Guilherme subir no Drive (Planilhas Google) e mandar os links → trocar ORC_MODELO_070_ID (01_Config),
 ORC_CONTRATOS_ANO_IDS (02_Dados) e o metragemId dos 3 Megas; ou ele cola por cima das planilhas atuais e o código
 não muda. O slide 30 da Moked lê a linha da Moked do Esteio no 070 (R$ 84.000 no ano com o 070 novo).

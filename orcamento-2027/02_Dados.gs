@@ -53,8 +53,10 @@ function obterManutencao_(chaveCidade) {
 // elétrica sai dos contratos (fim em 31/12/2026; o Guilherme: "foi para os
 // modelos" — está no 070 de Curitiba desde a exportação das 16h). A de 07/10
 // (1cwbW249…) virou "PODE EXCLUIR - …".
+// 12/10/2026, 19h56: "rev02" (Contratos-Atualizado.csv, importarAtualizacao()) — rateio do Moked
+// corrigido (Curitiba 17.781,40/mês, Itajaí 14.574,25). A rev01 era 1KGL-w8J….
 const ORC_CONTRATOS_ANO_IDS = [
-  '1KGL-w8Jz2raK_0iqObZ7r81WA3NanjrM3sx2xnm9-_4'    // MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (rev01, 12/10/2026)
+  '1Np5cYV1hNu-AEB0RlkplE9snqmCJ2aBCkOKyf_dSzyU'    // MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (rev02, 12-10-2026 19h56)
 ];
 
 const _ORC_CADASTRO_ANO = {};   // cache da leitura por planilha (uma por execução)

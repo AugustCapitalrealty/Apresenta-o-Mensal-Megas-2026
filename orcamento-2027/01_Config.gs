@@ -29,8 +29,10 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 // de Curitiba, o Moked do Esteio cai e as duas lavagens das estruturas
 // metálicas de Curitiba saem do ano (090 "v2"; a primeira veio sem a coluna
 // Item). As de 12h (1eGg8vWV…, 1TSAqizR…) viraram "PODE EXCLUIR - …".
-const ORC_MODELO_090_ID = '1GsxlXr-LNMM5or0_alx4tmoQtCONxz1QFeaALOzzjXo';   // MESTRA - 090 DESPESAS GERAIS 2027 - TODAS AS UNIDADES
-const ORC_MODELO_070_ID = '1Msx1LjK4FVx14ChQPz6R4tbQilqXY1b2LF-VDSZ5v14';   // MESTRA - 070 SERVIÇOS DE TERCEIROS 2027 - TODAS AS UNIDADES
+// 12/10/2026, 19h54: a atualização final (pasta "ATUALIZAÇÃO 12-10-2026", importarAtualizacao()) —
+// o Moked do Esteio volta ao 070 (R$ 7.000/mês). As das 16h: 090 1GsxlXr-…, 070 1Msx1LjK….
+const ORC_MODELO_090_ID = '1w6ZFk2c7tmIB9WKe7EGOVTdq_Wo7YVeIsnqnPNR-HvY';   // MESTRA - 090 - DESPESAS GERAIS (12-10-2026 19h54)
+const ORC_MODELO_070_ID = '1d_60Hu5SQpxbrsBiZ6riyQHMubjbDvjCEcacEA0kevw';   // MESTRA - 070 - SERVIÇOS DE TERCEIROS (12-10-2026 19h54)
 
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
 // as planilhas existirem — com o ID vazio a geração escreve o aviso no slide
@@ -60,7 +62,9 @@ const ORC_CIDADES = {
     // dela repete a variação de janeiro (-58.471 em vez de -425.122 na
     // segurança).
     relatorios: {
-      metragemId: '1D8CeKKOKXSsO-BpfNqy8oCLvX019np3Zz_P3fcP3s1c',   // MEGA CURITIBA - METRAGEM-COND 2027
+      metragemId: '1sZujwhadwRK9LmU9EHzufP-qNxEXWJWHp7e_Xjdm0rM',   // MEGA CURITIBA - METRAGEM-COND 2027 (12-10-2026 19h49); até 19h: 1D8CeKKO…
+      // 2026 mês a mês (Orç e Ritmo) que fecha com a METRAGEM — substitui o do Despesas-Mensal.
+      ritmoId:    '121pYnxYFP0OippjzeJSdvd_IzHxCnzqqqy7BgqBZ1zU',   // MEGA CURITIBA - RITMO 2026 (12-10-2026 20h42)
       mensalId:   '1QhfFrV8EzUVChX0DGtrTdaOjsMnLBLyHmbI0Eiy-yjM',   // MEGA CURITIBA - DESPESAS MENSAL 2026 x 2027
       // Planilha da apresentação mensal dos Megas (megas-mensal/01_Config.gs,
       // PROJETOS.<cidade>.spreadsheetId): a aba "Financeiro <ano retrasado>"
@@ -115,7 +119,8 @@ const ORC_CIDADES = {
     servicosTerceirosId: ORC_MODELO_070_ID,
     unidadeModelo: 19,                                                     // Mega Itajaí
     relatorios: {
-      metragemId: '1MXl34wpw1JWxtssYydfFTX9pXX2nmWjxWSuFuikEZYw',   // MEGA ITAJAÍ - METRAGEM-COND 2027
+      metragemId: '1Q722FDPfPGYHPy-zm-8nQJBvOIKXzzEjQzH77h7CwK4',   // MEGA ITAJAÍ - METRAGEM-COND 2027 (12-10-2026 19h42); até 19h: 1MXl34wp…
+      ritmoId:    '1fNnwrqm22x0RVq0zXMO5f3vD1oOZF0pCpPS-ytmYOyk',   // MEGA ITAJAÍ - RITMO 2026 (12-10-2026 20h43)
       mensalId:   '1IaJvCRMBnuxJhcDhDq3ECvqRRTsyAM4Gvku8jEKrwgA',   // MEGA ITAJAÍ - DESPESAS MENSAL 2026 x 2027
       financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',   // planilha dos Megas (Itajaí)
       orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
@@ -137,7 +142,8 @@ const ORC_CIDADES = {
     servicosTerceirosId: ORC_MODELO_070_ID,
     unidadeModelo: 18,                                                     // Mega Esteio
     relatorios: {
-      metragemId: '1mlDwyG5x6L7SPbjGkG1B8Vq8T34EqGbBiZWnm7Pk2jE',   // MEGA ESTEIO - METRAGEM-COND 2027
+      metragemId: '1IQpQ3jtgdxwbDGaiBFq-RhBS3l0tVALGg2gyZLnnzaE',   // MEGA ESTEIO - METRAGEM-COND 2027 (12-10-2026 19h41); até 19h: 1mlDwyG5…
+      ritmoId:    '1p3RX8XDVy9PZHmjfWfap1YdlZO7n1tDPfwd4ZEag8AQ',   // MEGA ESTEIO - RITMO 2026 (12-10-2026 20h43)
       mensalId:   '1Un3Seh4c9BJsVBuRFzYIYoiNb_KuXgg84AIbaN9DHBg',   // MEGA ESTEIO - DESPESAS MENSAL 2026 x 2027
       financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',   // planilha dos Megas (Esteio)
       // 12/10/2026, 20h: a METRAGEM das 19h56 traz R$ 1.200 em Outras taxas e
