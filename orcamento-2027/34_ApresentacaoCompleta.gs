@@ -57,9 +57,11 @@ function _orcApagarGatilhosCompleta_() {
     .forEach(t => ScriptApp.deleteTrigger(t));
 }
 
-function continuarApresentacaoCompleta() {
+// e: o evento do gatilho (sem ele, a função foi rodada à mão — aí vale mesmo depois de pararApresentacaoCompleta()).
+function continuarApresentacaoCompleta(e) {
   _orcApagarGatilhosCompleta_();   // o gatilho que chamou este passo (se foi um) não serve mais
   const props = PropertiesService.getScriptProperties();
+  if (!e || !e.triggerUid) props.deleteProperty(ORC_COMPLETA.propParar);
   if (props.getProperty(ORC_COMPLETA.propParar)) { Logger.log('Sequência parada (pararApresentacaoCompleta): nada a fazer.'); return; }
   const seq = props.getProperty(ORC_COMPLETA.propSeq) || 'TODOS';
   const passos = ORC_COMPLETA.sequencias[seq] || ORC_COMPLETA.sequencias.TODOS;
