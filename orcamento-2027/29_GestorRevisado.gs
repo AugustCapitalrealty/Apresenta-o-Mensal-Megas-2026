@@ -119,7 +119,9 @@ const ORC_GESTOR_AJUSTES = [
     local: 'Perímetro externo (6 zonas)', localEra: ['Escada Cobertura (Fase 1, 2 e 3)'],
     secao: 5, nota: 'no 070: parcela Alfa Sense (fibra sensitiva), R$ 150.000 no ano, na conta Segurança e Vigilância' },
   { titulo: 'chicote eletrico do trator', mega: 'Mega Esteio', era: 'R$ 54.978,55', valor: 'R$ 54.978,56', semSelo: true },
-  { titulo: 'reforma reservatorio spk', mega: 'Mega Itajaí', era: 'R$ 179.543,06', valor: 'R$ 179.543,16', semSelo: true },
+  { titulo: 'reforma reservatorio spk', mega: 'Mega Itajaí', era: 'R$ 179.543,06', valor: 'R$ 179.543,16', semSelo: true,
+    nota: 'o texto diz pintura interna cinza RAL 7038 e externa epóxi; a proposta da Platner diz interna epóxi branco ' +
+          'RAL 9003 e externa PU cinza RAL 7038' },
   // Curitiba (12/10, 22h — o gestor ainda preenchendo: LOCAL e VALOR copiados do slide anterior).
   { titulo: 'paisagismo restaurante', mega: 'Mega Curitiba', local: 'Restaurante industrial', localEra: ['Pavimento Intertravado'] },
   { titulo: 'defensas entre platos', mega: 'Mega Curitiba', era: 'R$ 216.000,00', valor: 'R$ 146.030,29',
@@ -190,7 +192,16 @@ function _orcTituloGestor_(slide) {
   return cs.sort((a, b) => b.length - a.length)[0] || '';
 }
 
+// Com a marca do Mega do slide (Demercado em Curitiba): a moldura da trilha nova, o selo e as tabelas redesenhadas
+// saem no padrão dele — antes saía a moldura da Capital nos slides de Curitiba (12/10/2026).
 function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
+  const chave = Object.keys(ORC_CIDADES).filter(k => ORC_CIDADES[k].nome === mega)[0];
+  _orcAplicarMarca_(chave ? ORC_CIDADES[chave] : null);
+  try { return _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3); }
+  finally { _orcAplicarMarca_(null); }
+}
+
+function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3) {
   const feito = [], avisos = [];
   const txt = sh => { try { return sh.getText().asString().replace(/\n$/, ''); } catch (e) { return ''; } };
   const shapes = slide.getShapes();
@@ -255,6 +266,10 @@ function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
   // 5. Trilha: a moldura da seção do assunto no lugar da de 08 Fotos.
   const secao = (ajuste && ajuste.secao) || (seguranca ? 5 : 4);
   if (_orcTrocarMolduraGestor_(slide, W, H, secao)) feito.push('trilha em 0' + secao);
+
+  // 5b. Tabela em print ou tabela simples → tabela no padrão do deck (33_GestorRedesenho.gs).
+  const red = ORC_GESTOR_REDESENHOS.filter(r => r.mega === mega && nt.indexOf(r.titulo) >= 0)[0];
+  if (red) _orcRedesenharGestor_(slide, W, H, red, valorDe('VALOR NO ORÇ 2027'), feito, avisos);
 
   // 6. O que parece molde esquecido: só avisa.
   const tudo = shapes.map(txt).join(' | ');

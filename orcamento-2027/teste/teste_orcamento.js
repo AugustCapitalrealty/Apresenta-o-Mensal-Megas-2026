@@ -2590,6 +2590,47 @@ console.log('Fontes guardadas (32_Fontes.gs)');
      'fontes: as dos prints saem nas Demais categorias do Esteio gerado');
 }
 
+console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
+// Print de tabela → tabela no padrão do deck, na marca do Mega; sem o print no lugar, não mexe.
+{
+  const v3 = novoDeck(); v3._slides = [];
+  const gerado = sub => { const s = v3.appendSlide(); s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: sub }); };
+  const doGestor = (titulo, mega, valor, extra) => {
+    const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';
+    s.shapes.push({ tipo: 'IMAGE', x: 0, y: 0, w: 720, h: 405, nome: 'MOLDURA - 10830624af2a.png' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
+                  { tipo: 'TEXT_BOX', x: 463, y: 326, w: 222, h: 10, texto: 'VALOR NO ORÇ 2027' },
+                  { tipo: 'TEXT_BOX', x: 463, y: 336, w: 222, h: 16, texto: valor },
+                  { tipo: 'IMAGE', x: 159, y: 128, w: 147, h: 50, nome: 'logo' });
+    (extra || []).forEach(r => s.shapes.push(r));
+    return s;
+  };
+  gerado('Manutenção · Mega Itajaí');
+  doGestor('Reforma Reservatório SPK', 'Mega Itajaí', 'R$ 179.543,06', [{ tipo: 'IMAGE', x: 44, y: 200, w: 402, h: 118, nome: 'print-platner' }]);
+  doGestor('Reforma Reservatório SPK', 'Mega Itajaí', 'R$ 179.543,06', [{ tipo: 'IMAGE', x: 44, y: 120, w: 300, h: 60, nome: 'outro-lugar' }]);
+  gerado('Manutenção · Mega Curitiba');
+  const tabelaCur = { tipo: 'TABLE', x: 44, y: 199, w: 390, h: 169, celulas: [['LOCAL', 'TAMANHO (M2)', 'FREQUÊNCIA', 'TOTAL']] };
+  doGestor('Comunicação Horizontal (CVISH)', 'Mega Curitiba', 'R$ —',
+    [tabelaCur, { tipo: 'IMAGE', x: 218.5, y: 91.2, w: 220.6, h: 74.4, nome: 'precos' }]);
+  const deck = novoDeck();
+  const res = G._orcGerarGestorRevisados_(deck, v3), sl = deck.getSlides();
+  const nomes = s => s.shapes.filter(r => r.tipo === 'IMAGE').map(r => r.nome);
+  ok(nomes(sl[0]).indexOf('print-platner') < 0 && nomes(sl[0]).indexOf('logo') >= 0 && textos(sl[0]).indexOf('R$ 67.234,38') >= 0 &&
+     textos(sl[0]).indexOf('PROPOSTA PLATNER · ITENS') >= 0 && res[0].feito.some(f => /redesenhado/.test(f)),
+     'redesenho: o print da proposta vira tabela; o logo fica (' + res[0].feito.join(' / ') + ')');
+  ok(nomes(sl[1]).indexOf('outro-lugar') >= 0 && textos(sl[1]).indexOf('PROPOSTA PLATNER · ITENS') < 0 &&
+     res[1].avisos.some(a => /não está mais onde estava/.test(a)), 'redesenho: print fora do lugar → não mexe, só avisa');
+  const cur = sl[2], DEM = G.ORC_MARCAS.DEMERCADO.colors.brandDark;
+  ok(!cur.shapes.some(r => r.tipo === 'TABLE') && nomes(cur).indexOf('precos') < 0 && textos(cur).indexOf('R$ 75.758,16') >= 0 &&
+     textos(cur).indexOf('Frente de docas (Amz 1 a 7)') >= 0 && textos(cur).indexOf('PREÇOS DA ELETROSINAL') >= 0,
+     'redesenho: CVISH de Curitiba com a tabela do orçamento e os preços (' + res[2].avisos.join(' / ') + ')');
+  ok(DEM && cur.shapes.some(r => r.cor === DEM) && !sl[0].shapes.some(r => r.cor === DEM),
+     'redesenho: tabela de Curitiba na cor da Demercado; a do Itajaí, na da Capital');
+  ok(G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark, 'redesenho: a marca volta para a Capital no fim');
+}
+
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.
 if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'molduras.json'), JSON.stringify(G._ORC_MOLDURAS_USADAS, null, 1));
