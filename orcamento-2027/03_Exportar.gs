@@ -26,7 +26,9 @@ function exportarSlidesEsteio()   { _orcExportarSlides_(ORC_CIDADES.ESTEIO.deckI
 // Versão de trabalho do gestor (pasta VERSÕES, "FACILITIES - … v3"): SÓ LEITURA. A ordem de todos os
 // slides vai para "ordem.txt" e os slides do gestor (marca de fotos nas anotações, ou Moked/segurança no
 // texto) viram PNG — para a sessão sem acesso ao Slides ver a ordem e o estilo que ele propõe (12/10/2026).
-const ORC_DECK_VERSAO_GESTOR_ID = '1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s';
+// 13/10/2026, 9h: a v4 ("FACILITIES - APRESENTAÇÃO ORÇAMENTO 2027 v4") — o gestor terminou o Curitiba nela; a v3 era
+// '1aIl-vCtbiuSLJo0BVxfHejsjGYOodhIWMnxgPOiJj7s'.
+const ORC_DECK_VERSAO_GESTOR_ID = '1IObiKZpG_iqvpQ69DFTTuOlhO0b_uImhe0O7inA9iGk';
 // Em duas partes (12/10/2026: numa execução só o PNG não cabia nos 6 min do Apps Script): a parte 1 limpa a
 // pasta, grava ordem.txt e o PNG da primeira metade dos slides do gestor; a parte 2, a segunda metade, na
 // mesma pasta. Rode a 1 e depois a 2. exportarSlidesVersaoGestor() continua fazendo tudo de uma vez.

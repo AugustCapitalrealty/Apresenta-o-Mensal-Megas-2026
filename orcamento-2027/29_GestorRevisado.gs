@@ -83,7 +83,8 @@ const ORC_GESTOR_AJUSTES = [
 
 // Título interno copiado de outro slide (os que apareceram na v3): troca pelo título do slide quando não tem
 // palavra em comum com ele. Título interno escrito pelo gestor (fora desta lista) fica como está.
-const ORC_GESTOR_INTERNOS_COPIADOS = ['PINTURA DA TUBULAÇÃO DE INCÊNDIO AÉREA', 'LIMPEZA E LAVAGEM DAS ESTRUTURAS METÁLICAS'];
+const ORC_GESTOR_INTERNOS_COPIADOS = ['PINTURA DA TUBULAÇÃO DE INCÊNDIO AÉREA', 'LIMPEZA E LAVAGEM DAS ESTRUTURAS METÁLICAS',
+  'LINHA DE VIDA VERTICAL'];   // 13/10/2026: copiado nos slides de Curitiba (Tubulação Incêndio, Pintura Prédios…)
 
 function gerarSlidesGestorRevisados() {
   const props = PropertiesService.getScriptProperties();
