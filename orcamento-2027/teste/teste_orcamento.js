@@ -2458,6 +2458,29 @@ console.log('Versão final (31_VersaoFinal.gs)');
   ok(sumE.shapes[1].link === sl[2].id && !('link' in sumC.shapes[1]),
      'versão final: link do sumário vai para o primeiro slide do gestor do Mega; sem slide do gestor, sai');
   ok(JSON.stringify(v3._slides.map(s => [s.shapes, s.notas])) === v3Antes, 'versão final: a v3 não muda');
+  // Versão final de um Mega só (13/10/2026, gerarVersaoFinalEsteio): a cópia já só com a parte do Mega; entram só os
+  // slides do gestor desse Mega (no Esteio, também a Moked).
+  {
+    const facE = novoDeck(); facE._slides = [];
+    gerado(facE, 'Sumário', 'Mega Esteio · Orçamento 2027');
+    gerado(facE, 'Manutenção: projetos × custo recorrente', 'R$ 850 mil · Mega Esteio');
+    gerado(facE, 'Manutenção: os itens de cada grupo (1/2)', '63 itens · Mega Esteio');
+    gerado(facE, 'Manutenção: os itens de cada grupo (2/2)', '63 itens · Mega Esteio');
+    const rE = G._orcMontarVersaoFinal_(facE, v3, mk, 'Mega Esteio');
+    const ordemE = facE.getSlides().map(s => textos(s)[0] || '');
+    ok(JSON.stringify(ordemE) === JSON.stringify(['Sumário', 'Manutenção: projetos × custo recorrente', 'Moked A', 'Moked B', 'Moked C',
+         'Substituição Segurança | Cenário Hoje', 'Manutenção: os itens de cada grupo (1/2)', 'Pintura Tubulação de Incêndio',
+         'Manutenção: os itens de cada grupo (2/2)']) && rE.gestor === 2 && rE.moked === 3,
+       'versão final do Esteio: só os slides do gestor do Esteio e a Moked (' + ordemE.join(' / ') + ')');
+    const facI = novoDeck(); facI._slides = [];
+    gerado(facI, 'Sumário', 'Mega Itajaí · Orçamento 2027');
+    gerado(facI, 'Manutenção: os itens de cada grupo (1/2)', '50 itens · Mega Itajaí');
+    const rI = G._orcMontarVersaoFinal_(facI, v3, null, 'Mega Itajaí');
+    const ordemI = facI.getSlides().map(s => textos(s)[0] || '');
+    ok(rI.moked === 0 && rI.gestor === 2 && ordemI.join('|') ===
+         'Sumário|Manutenção: os itens de cada grupo (1/2)|Pintura dos Prédios de Apoio|Retrofit e Adequação da Área de Copa e Cozinha',
+       'versão final do Itajaí: sem a Moked, só os slides do gestor do Itajaí (' + ordemI.join(' / ') + ')');
+  }
 }
 
 console.log('Ajustes dos slides do gestor (ORC_GESTOR_AJUSTES)');

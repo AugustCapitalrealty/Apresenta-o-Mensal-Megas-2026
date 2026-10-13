@@ -22,20 +22,10 @@ const ORC_VERSAO_FINAL = { nome: 'FACILITIES - ORÇAMENTO ' + ORC_ANO + ' · VER
 function gerarVersaoFinal() {
   const facId = _orcIdFacilities_();
   if (!facId) throw new Error('Falta o deck de Facilities: gere a abertura e os três Megas antes.');
-  const props = PropertiesService.getScriptProperties();
-  const mokedId = props.getProperty(ORC_MOKED.prop);
+  const mokedId = PropertiesService.getScriptProperties().getProperty(ORC_MOKED.prop);
   if (!mokedId) throw new Error('Rode gerarSlidesMoked() antes: a apresentação da Moked ainda não existe.');
 
-  const pasta = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
-  const anterior = props.getProperty(ORC_VERSAO_FINAL.prop);
-  if (anterior) {
-    try { const f = DriveApp.getFileById(anterior); if (f.getName().indexOf('PODE EXCLUIR - ') !== 0) f.setName('PODE EXCLUIR - ' + f.getName()); }
-    catch (e) { Logger.log('A versão final anterior (' + anterior + ') não foi renomeada: ' + e.message); }
-  }
-  const quando = Utilities.formatDate(new Date(), 'America/Sao_Paulo', "dd-MM-yyyy HH'h'mm");
-  const copia = DriveApp.getFileById(facId).makeCopy(ORC_VERSAO_FINAL.nome + ' (' + quando + ')', pasta);
-  props.setProperty(ORC_VERSAO_FINAL.prop, copia.getId());
-
+  const copia = _orcCopiaVersaoFinal_(facId, ORC_VERSAO_FINAL.nome, ORC_VERSAO_FINAL.prop);
   const deck = SlidesApp.openById(copia.getId());
   const res = _orcMontarVersaoFinal_(deck, SlidesApp.openById(ORC_DECK_VERSAO_GESTOR_ID), SlidesApp.openById(mokedId));
   _orcSalvarDeck_(deck, 'a versão final');
@@ -44,8 +34,56 @@ function gerarVersaoFinal() {
              'https://docs.google.com/presentation/d/' + copia.getId() + '/edit');
 }
 
+/**
+ * A versão final de UM Mega (13/10/2026 — Guilherme: "uma função só pra gerar o Mega Esteio completo"; cabe folgado
+ * nos 6 min): "MEGA <X> - ORÇAMENTO 2027 · VERSÃO FINAL (data hora)", com só a parte do Mega do deck de Facilities e
+ * os slides do gestor desse Mega na v3 (no Esteio, também os nove da Moked). Antes: gerarFacilities<Mega>() e, no
+ * Esteio, gerarSlidesMoked(). Rodar de novo cria outra cópia; a anterior vira "PODE EXCLUIR - …".
+ */
+function gerarVersaoFinalEsteio()   { _orcGerarVersaoFinalMega_('ESTEIO'); }
+function gerarVersaoFinalItajai()   { _orcGerarVersaoFinalMega_('ITAJAI'); }
+function gerarVersaoFinalCuritiba() { _orcGerarVersaoFinalMega_('CURITIBA'); }
+
+function _orcGerarVersaoFinalMega_(chave) {
+  const cid = ORC_CIDADES[chave], facId = _orcIdFacilities_();
+  if (!facId) throw new Error('Falta o deck de Facilities: rode criarDeckFacilities() (25_Facilities.gs) uma vez.');
+  const funcao = 'gerarFacilities' + chave.charAt(0) + chave.slice(1).toLowerCase() + '()';
+  // A cópia tem a mesma ordem do deck de Facilities: as posições dos slides da parte do Mega dizem o que fica.
+  const idsParte = _orcListaFacilities_(chave), manter = {};
+  SlidesApp.openById(facId).getSlides().forEach((s, i) => { if (idsParte.indexOf(s.getObjectId()) >= 0) manter[i] = true; });
+  if (!Object.keys(manter).length) throw new Error('O ' + cid.nome + ' não está no deck de Facilities: rode ' + funcao + ' (25_Facilities.gs) antes.');
+  const mokedId = PropertiesService.getScriptProperties().getProperty(ORC_MOKED.prop);
+  if (chave === 'ESTEIO' && !mokedId) throw new Error('Rode gerarSlidesMoked() (28_Moked.gs) antes: a apresentação da Moked ainda não existe.');
+
+  const copia = _orcCopiaVersaoFinal_(facId, cid.nome.toUpperCase() + ' - ORÇAMENTO ' + ORC_ANO + ' · VERSÃO FINAL',
+                                      'ORC_VERSAO_FINAL_' + chave + '_DECK_ID');
+  const deck = SlidesApp.openById(copia.getId());
+  deck.getSlides().forEach((s, i) => { if (!manter[i]) s.remove(); });   // a abertura e os outros Megas
+  const res = _orcMontarVersaoFinal_(deck, SlidesApp.openById(ORC_DECK_VERSAO_GESTOR_ID), mokedId ? SlidesApp.openById(mokedId) : null, cid.nome);
+  _orcSalvarDeck_(deck, 'a versão final do ' + cid.nome);
+  res.log.forEach(l => Logger.log(l));
+  Logger.log('Pronto: versão final do ' + cid.nome + ' com ' + res.total + ' slides (' + res.gestor + ' do gestor, ' + res.moked +
+             ' da Moked) — https://docs.google.com/presentation/d/' + copia.getId() + '/edit');
+}
+
+// Cópia do deck de Facilities na pasta do orçamento, com a data e a hora no nome; a cópia anterior (ID na propriedade
+// prop) vira "PODE EXCLUIR - …".
+function _orcCopiaVersaoFinal_(facId, nome, prop) {
+  const props = PropertiesService.getScriptProperties();
+  const anterior = props.getProperty(prop);
+  if (anterior) {
+    try { const f = DriveApp.getFileById(anterior); if (f.getName().indexOf('PODE EXCLUIR - ') !== 0) f.setName('PODE EXCLUIR - ' + f.getName()); }
+    catch (e) { Logger.log('A versão final anterior (' + anterior + ') não foi renomeada: ' + e.message); }
+  }
+  const quando = Utilities.formatDate(new Date(), 'America/Sao_Paulo', "dd-MM-yyyy HH'h'mm");
+  const copia = DriveApp.getFileById(facId).makeCopy(nome + ' (' + quando + ')', DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID));
+  props.setProperty(prop, copia.getId());
+  return copia;
+}
+
 // Monta a versão final na cópia do deck de Facilities. Devolve { total, gestor, moked, log: [...] }.
-function _orcMontarVersaoFinal_(deck, v3, moked) {
+// soMega ("Mega Esteio"…): só os slides do gestor desse Mega entram (a versão final de um Mega só).
+function _orcMontarVersaoFinal_(deck, v3, moked, soMega) {
   _ORC_BLOBS = {};
   _ORC_PASTA_IMG = undefined;
   _orcAplicarMarca_(null);
@@ -63,14 +101,15 @@ function _orcMontarVersaoFinal_(deck, v3, moked) {
     }
     const titulo = _orcTituloGestor_(s);
     if (/Título do assunto/.test(titulo)) return;                                   // molde vazio
+    if (soMega && (mega || 'Mega Esteio') !== soMega) return;                       // versão de um Mega só
     if (/^Implantação Moked/i.test(titulo)) {                                       // os nove de 28_Moked.gs, uma vez
-      if (!mokedPosto) moked.getSlides().forEach(m => plano.push({ ancora: ancora, origem: m, moked: true, n: i + 1 }));
+      if (!mokedPosto && moked) moked.getSlides().forEach(m => plano.push({ ancora: ancora, origem: m, moked: true, n: i + 1 }));
       mokedPosto = true;
       return;
     }
     plano.push({ ancora: ancora, origem: s, mega: mega || 'Mega Esteio', n: i + 1, titulo: titulo });
   });
-  if (!mokedPosto) log.push('A v3 não tem slide "Implantação Moked": os slides da Moked não entraram.');
+  if (!mokedPosto && (!soMega || soMega === 'Mega Esteio')) log.push('A v3 não tem slide "Implantação Moked": os slides da Moked não entraram.');
 
   // 2. Sai da cópia o que não vai para a reunião: o "Revisar antes da versão final" e os moldes de fotos.
   const saiu = {};   // id do slide que saiu → Mega dele (para refazer os links)
