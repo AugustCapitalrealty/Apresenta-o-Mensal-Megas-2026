@@ -58,29 +58,47 @@ function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
   if (realAnt) series.push(serie('real', comIptu ? realAnt.total : realAnt.ac));
   _ORC_M2_SERIES.forEach(s => {
     const reais = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // Com IPTU: no Ritmo, IPTU e seguro seguem os meses previstos no Orç do ano anterior (IPTU num mês só, seguro em
+    // 8 meses) com o valor anual do Ritmo na DRE — o realizado jan–set ainda não traz o IPTU e só 2 meses de seguro, e
+    // a conciliação jogaria o resto em out–dez (Guilherme, 13/10/2026).
+    const previstos = comIptu && s.k === 'ritmo'
+      ? [[_orcChaveConta_('IPTU'), rel.iptu.ritmo], [_orcChaveConta_('Seguro'), rel.seguro.ritmo]] : [];
     Object.keys(mensal.contas).forEach(ch => {
       if (semAc.indexOf(ch) >= 0) return;
+      const p = previstos.filter(x => x[0] === ch)[0], molde = p && mensal.contas[ch].orcAnt;
+      const soma = molde ? molde.reduce((t, v) => t + v, 0) : 0;
+      if (p && Math.abs(soma) > 0.5) { molde.forEach((v, i) => { reais[i] += v / soma * (p[1] || 0); }); return; }
       mensal.contas[ch][s.campo].forEach((v, i) => { reais[i] += v; });
     });
     const foraMes = (fora.reduce((t, c) => t + c.v[s.k], 0) + foraExtra(s.k)) / 12;
     series.push(serie(s.k, reais.map(v => v + foraMes)));
   });
 
+  // IPTU e seguro não se pagam todo mês (Guilherme, 13/10/2026: "o IPTU é cobrado em um único mês, o seguro em 8"):
+  // o R$/m² deles é por mês de cobrança — os meses com valor no Despesas-Mensal (Orç do ano; Orç anterior para Real e
+  // Ritmo, que ainda não têm todos os meses). Área comum e total seguem ao mês (÷ 12).
+  const nMeses = (nome, k) => {
+    const c = mensal.contas[_orcChaveConta_(nome)], s = c && (k === 'orc' ? c.orc : c.orcAnt);
+    const n = s ? s.filter(v => Math.abs(v) > 0.5).length : 0;
+    return n || 12;
+  };
+  const meses = { iptu: { real: nMeses('IPTU', 'real'), ritmo: nMeses('IPTU', 'ritmo'), orc: nMeses('IPTU', 'orc') },
+                  seguro: { real: nMeses('Seguro', 'real'), ritmo: nMeses('Seguro', 'ritmo'), orc: nMeses('Seguro', 'orc') } };
   const custo = {};
   ['real', 'ritmo', 'orc'].forEach(k => {
-    const m2 = v => area[k] ? v / area[k] / 12 : null;
+    const m2 = (v, n) => area[k] ? v / area[k] / (n || 12) : null;
     custo[k] = {
       // Área comum pela mesma área das linhas do gráfico e dos outros slides
       // (12/10/2026): o R$/m² da área comum escrito na METRAGEM vem de outro
       // arredondamento e dava 3,46 na tabela contra 3,45 na média das linhas.
       // O total segue o escrito na METRAGEM (é dele que sai a área).
       areaComum: { v: rel.areaComum[k], m2: m2(rel.areaComum[k]) },
-      iptu:      { v: rel.iptu[k],      m2: m2(rel.iptu[k]) },
-      seguro:    { v: rel.seguro[k],    m2: m2(rel.seguro[k]) },
+      iptu:      { v: rel.iptu[k],      m2: m2(rel.iptu[k], meses.iptu[k]) },
+      seguro:    { v: rel.seguro[k],    m2: m2(rel.seguro[k], meses.seguro[k]) },
       total:     { v: rel.total[k],     m2: (rel.m2Total && rel.m2Total[k]) || m2(rel.total[k]) }
     };
   });
-  return { series: series, fora: fora.map(c => c.nome), custo: custo, area: area };
+  return { series: series, fora: fora.map(c => c.nome), custo: custo, area: area, meses: meses };
 }
 
 function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
@@ -143,8 +161,8 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
     { titulo: 'R$', w: nW, destaque: true }, { titulo: 'R$/M²', w: nW, destaque: true }, { titulo: 'Δ R$/M²', w: dW }
   ], [
     linhaCusto('Área comum (sem IPTU e seguro)', 'areaComum', 'subtotal'),
-    linhaCusto('IPTU', 'iptu'),
-    linhaCusto('Seguro', 'seguro'),
+    linhaCusto('IPTU' + (n => (n === 1 ? ' · em 1 mês' : n < 12 ? ' · em ' + n + ' meses' : ''))(d.meses.iptu.orc), 'iptu'),
+    linhaCusto('Seguro' + (n => (n === 1 ? ' · em 1 mês' : n < 12 ? ' · em ' + n + ' meses' : ''))(d.meses.seguro.orc), 'seguro'),
     linhaCusto('Total de despesas', 'total', 'total'),
     linhaArea
   ], [{ titulo: 'REAL ' + a.real, c0: 1, n: 2 }, { titulo: 'RITMO ' + a.ritmo, c0: 3, n: 2 },

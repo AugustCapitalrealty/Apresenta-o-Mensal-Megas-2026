@@ -556,8 +556,14 @@ ok(Math.abs(serie('orc').media - rel.m2AreaComum.orc) < 0.01 && Math.abs(serie('
    'm² mensal: média bate com o R$/m² da área comum da METRAGEM (' + serie('orc').media.toFixed(3) + ', ' +
    serie('ritmo').media.toFixed(3) + ')');
 ok(m2m.fora.indexOf('Despesa de pessoal') >= 0, 'm² mensal: despesa de pessoal (sem abertura mensal) entra 1/12 por mês');
-['ritmo', 'orc'].forEach(k => ok(Math.abs(m2m.custo[k].areaComum.m2 + m2m.custo[k].iptu.m2 + m2m.custo[k].seguro.m2 - m2m.custo[k].total.m2) < 0.015,
-   'm² mensal: área comum + IPTU + seguro = total em R$/m² (' + k + ')'));
+// 13/10/2026: IPTU e seguro por mês de cobrança (IPTU num mês, seguro nos meses com valor no Despesas-Mensal); em R$ a
+// soma continua fechando o total.
+['ritmo', 'orc'].forEach(k => {
+  const c = m2m.custo[k], area = m2m.area[k];
+  ok(Math.abs(c.areaComum.v + c.iptu.v + c.seguro.v - c.total.v) < 1 && m2m.meses.iptu[k] === 1 &&
+     Math.abs(c.iptu.m2 - c.iptu.v / area) < 0.005 && Math.abs(c.seguro.m2 - c.seguro.v / area / m2m.meses.seguro[k]) < 0.005,
+     'm² mensal: IPTU em 1 mês e seguro em ' + m2m.meses.seguro[k] + ' meses, por m² (' + k + ')');
+});
 // Desde 12/10/2026 a área comum usa a mesma área das linhas e dos outros
 // slides (o R$/m² escrito na METRAGEM dava 3,46 contra 3,45 na média).
 perto(m2m.custo.ritmo.areaComum.m2, rel.areaComum.ritmo / G._orcAreaImplicita_(rel, 'ritmo') / 12,
@@ -1006,7 +1012,7 @@ ok(tMes[0] === 'Distribuição mensal' && tMes.filter(t => /^\d+,\d{2}\/m²$/.te
    'distribuição mensal: cada mês com o R$/m² embaixo do valor');
 const tM2m = textos(slides[iM2 + 1]);
 ok(tM2m[0] === 'Custo por m² mês a mês — Orçamento 2027', 'custo por m² mês a mês depois do custo por m²');
-ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU', 'Seguro',
+ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU · em 1 mês', 'Seguro · em ' + m2m.meses.seguro.orc + ' meses',
     'Total de despesas', 'REAL 2025', 'Área (m²)', G._orcMoeda_(rel.total.orc), G._orcM2_(serie('orc').media),
     'R$ ' + G._orcM2_(serie('orc').media) + '/m²'].every(t => tM2m.indexOf(t) >= 0),
    'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
