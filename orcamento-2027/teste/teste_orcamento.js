@@ -1691,6 +1691,16 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
     const m2v = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt);
     m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(s.media.toFixed(2) === m2v.custo[s.k].areaComum.m2.toFixed(2),
       c + ': m² mês a mês — média das linhas = tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2v.custo[s.k].areaComum.m2.toFixed(2) + ')'));
+    // Com IPTU e seguro (13/10/2026): a média das linhas = o R$/m² total da tabela, e o IPTU num mês só.
+    const m2i = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt, true);
+    m2i.series.filter(s => m2i.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2i.custo[s.k].total.m2) < 0.015,
+      c + ': m² mês a mês com IPTU — média das linhas = total da tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2i.custo[s.k].total.m2.toFixed(2) + ')'));
+    {
+      const sl = novoSlide({ _slides: [] });
+      G.gerarSlideM2Mensal_(sl, W, H, G.ORC_CIDADES[chave], vis.rel, vis.mensal, vis.realAnt, true);
+      ok(textos(sl).some(x => x.indexOf("Total com IPTU (no mês previsto) e seguro") === 0) && !textos(sl).some(x => /…$/.test(x)),
+         c + ': slide do m² com IPTU, sem texto cortado (' + textos(sl).filter(x => /…$/.test(x) || /^Total com/.test(x)).join(' | ') + ')');
+    }
     const pv = G._orcPonte_(vis.rel, vis.mensal);
     pertoReal(pv.degraus.reduce((t, x) => t + x.delta, 0), pv.fim - pv.inicio, c + ': ponte — degraus somam Orç − Ritmo');
     ok(G._orcClassificarManutencao_(G.obterManutencao_(chave)).grupos.reduce((t, g) => t + g.total, 0) - manut < 1,

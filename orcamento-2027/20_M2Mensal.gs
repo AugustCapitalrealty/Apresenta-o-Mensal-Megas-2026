@@ -35,11 +35,16 @@ const _ORC_M2_SERIES = [
  *           custo: { real, ritmo, orc } com { areaComum, iptu, seguro, total } em R$ e R$/m²;
  *           area: { real, orcAnt, ritmo, orc } }
  */
-function _orcM2Mensal_(rel, mensal, realAnt) {
+// comIptu (13/10/2026, Guilherme): o total com IPTU e seguro mês a mês — o IPTU no mês previsto do Despesas-Mensal,
+// o seguro mês a mês, o Real pelo total do Financeiro; conta que o mensal não traz entra com 1/12.
+function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
   const a = rel.anos;
   const nomes = { real: 'Real ' + a.real, orcAnt: 'Orç ' + a.orcAnt, ritmo: 'Ritmo ' + a.ritmo, orc: 'Orç ' + a.orc };
-  const semAc = [_orcChaveConta_('IPTU'), _orcChaveConta_('Seguro')];
+  const semAc = comIptu ? [] : [_orcChaveConta_('IPTU'), _orcChaveConta_('Seguro')];
   const fora = rel.contas.filter(c => !mensal.contas[c.chave]);
+  // IPTU e seguro não são contas de rel.contas: sem eles no mensal, 1/12 do anual da METRAGEM.
+  const foraExtra = k => !comIptu ? 0 : (mensal.contas[_orcChaveConta_('IPTU')] ? 0 : (rel.iptu[k] || 0)) +
+                                        (mensal.contas[_orcChaveConta_('Seguro')] ? 0 : (rel.seguro[k] || 0));
   const area = {};
   ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => { area[k] = _orcAreaImplicita_(rel, k); });
   if (!area.orcAnt) area.orcAnt = area.ritmo;
@@ -50,14 +55,14 @@ function _orcM2Mensal_(rel, mensal, realAnt) {
   };
 
   const series = [];
-  if (realAnt) series.push(serie('real', realAnt.ac));
+  if (realAnt) series.push(serie('real', comIptu ? realAnt.total : realAnt.ac));
   _ORC_M2_SERIES.forEach(s => {
     const reais = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     Object.keys(mensal.contas).forEach(ch => {
       if (semAc.indexOf(ch) >= 0) return;
       mensal.contas[ch][s.campo].forEach((v, i) => { reais[i] += v; });
     });
-    const foraMes = fora.reduce((t, c) => t + c.v[s.k], 0) / 12;
+    const foraMes = (fora.reduce((t, c) => t + c.v[s.k], 0) + foraExtra(s.k)) / 12;
     series.push(serie(s.k, reais.map(v => v + foraMes)));
   });
 
@@ -78,7 +83,7 @@ function _orcM2Mensal_(rel, mensal, realAnt) {
   return { series: series, fora: fora.map(c => c.nome), custo: custo, area: area };
 }
 
-function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
+function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
   const a = rel.anos, tw = W - MX * 2;
   if (!mensal) {
@@ -87,7 +92,7 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
       ' não há o mês a mês desta cidade.', { fs: 10, cor: C.textMuted, align: 'C' });
     return;
   }
-  const d = _orcM2Mensal_(rel, mensal, realAnt);
+  const d = _orcM2Mensal_(rel, mensal, realAnt, comIptu);
   const S = {};
   d.series.forEach(s => { S[s.k] = s; });
 
@@ -95,9 +100,9 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
   // (gestor, 08/10/2026: "Retirar essa métrica"). Os números do painel e do
   // subtítulo são os da tabela de baixo (total ÷ área), para não aparecer
   // 3,38 no painel e 3,39 na tabela.
-  const m = _orcM2Mensagem_(S, d);
+  const m = _orcM2Mensagem_(S, d, comIptu);
   _orcHeader_(slide, W, 'Custo por m² mês a mês — Orçamento ' + a.orc,
-    'Área comum · Orç ' + a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
+    (comIptu ? 'Total com IPTU (no mês previsto) e seguro' : 'Área comum') + ' · Orç ' + a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
     (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') + ' · ' + cid.nome);
 
   const cy = 70, ch = 126, labW = 76, mediaW = 52, colW = (tw - labW - mediaW) / 12;
@@ -160,9 +165,9 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
 // A comparação do Orç contra o ritmo do ano, com o R$/m² da área comum da
 // tabela "Custo condomínio" (total ÷ área implícita) quando há — a média dos
 // 12 meses do gráfico arredonda diferente. A saída de out–dez saiu em 08/10/2026.
-function _orcM2Mensagem_(S, d) {
-  const r = S.ritmo, o = S.orc;
-  const ac = k => d && d.custo && d.custo[k] && d.custo[k].areaComum ? d.custo[k].areaComum.m2 : null;
+function _orcM2Mensagem_(S, d, comIptu) {
+  const r = S.ritmo, o = S.orc, campo = comIptu ? 'total' : 'areaComum';
+  const ac = k => d && d.custo && d.custo[k] && d.custo[k][campo] ? d.custo[k][campo].m2 : null;
   const rM = ac('ritmo') || (r && r.media), oM = ac('orc') || (o && o.media);
   if (!rM || !oM) return { vAno: null, saida: null, ritmo: rM, orc: oM };
   return { vAno: _orcVariacao_(rM, oM, 0.005), saida: null, ritmo: rM, orc: oM };

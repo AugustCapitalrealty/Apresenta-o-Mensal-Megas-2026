@@ -32,3 +32,42 @@ function completarSlidesDoGestor() {
   if (!parte) { Logger.log('Nenhum Mega com slides do gestor pendentes.'); return; }
   _orcGestorNaParte_(_orcIdFacilities_(), parte, Date.now());
 }
+
+// ==========================================
+// CUSTO POR M² MÊS A MÊS COM IPTU E SEGURO — os 3 slides numa apresentação à parte, para colar (13/10/2026)
+// ==========================================
+// gerarSlidesM2ComIptu() → "M² MÊS A MÊS COM IPTU E SEGURO (para colar)" na pasta do orçamento: um slide por Mega,
+// igual ao "Custo por m² mês a mês", com as linhas, a tabela e a média pelo total com IPTU e seguro (o IPTU no mês
+// previsto). Rodar de novo refaz a mesma apresentação. Gráfico sem imagem na pasta sai em formas (igual no slide).
+const ORC_M2_IPTU = { nome: 'M² MÊS A MÊS COM IPTU E SEGURO (para colar)', prop: 'ORC_M2_IPTU_DECK_ID' };
+
+function gerarSlidesM2ComIptu() {
+  const props = PropertiesService.getScriptProperties();
+  let id = props.getProperty(ORC_M2_IPTU.prop), deck = null;
+  if (id) { try { deck = SlidesApp.openById(id); } catch (e) { deck = null; } }
+  if (!deck) {
+    deck = SlidesApp.create(ORC_M2_IPTU.nome);
+    DriveApp.getFileById(deck.getId()).moveTo(DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID));
+    props.setProperty(ORC_M2_IPTU.prop, deck.getId());
+  }
+  _orcTextosReiniciar_();
+  _ORC_BLOBS = {};
+  _ORC_PASTA_IMG = undefined;
+  _ORC_LINKS = { alvos: {}, origens: [] };
+  const velhos = deck.getSlides(), W = deck.getPageWidth(), H = deck.getPageHeight();
+  const trilha = _ORC_TRILHA;
+  ORC_FAC_MEGAS.forEach(k => {
+    const cid = ORC_CIDADES[k];
+    _orcAplicarMarca_(cid);
+    try {
+      const v = _orcLerVisaoGeral_(k);
+      _ORC_TRILHA = ORC_SECOES.indexOf('Análise de Custos') + 1;
+      _orcPasso_(deck, W, H, 'Custo por m² mês a mês com IPTU — ' + cid.nome,
+        s => gerarSlideM2Mensal_(s, W, H, cid, v.rel, v.mensal, v.realAnt, true));
+    } finally { _ORC_TRILHA = trilha; _orcAplicarMarca_(null); }
+  });
+  velhos.forEach(s => s.remove());
+  _orcLogMolduras_('M² com IPTU');
+  _orcSalvarDeck_(deck, 'os slides de m² com IPTU');
+  Logger.log('Pronto: 3 slides (Esteio, Itajaí, Curitiba) — ' + deck.getUrl());
+}
