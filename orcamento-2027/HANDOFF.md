@@ -52,6 +52,14 @@ Guilherme subir no Drive (Planilhas Google) e mandar os links → trocar ORC_MOD
 ORC_CONTRATOS_ANO_IDS (02_Dados) e o metragemId dos 3 Megas; ou ele cola por cima das planilhas atuais e o código
 não muda. O slide 30 da Moked lê a linha da Moked do Esteio no 070 (R$ 84.000 no ano com o 070 novo).
 
+**Versão final num passo (12/10, 21h30, `31_VersaoFinal.gs`):** `gerarVersaoFinal()` copia o deck de Facilities
+(gerado com os dados de agora) para "FACILITIES - ORÇAMENTO 2027 · VERSÃO FINAL (data hora)" e põe nele os slides do
+gestor da v3 — revisados como em 29_GestorRevisado.gs — logo depois do slide gerado que vem antes deles na v3 (mesmo
+título e Mega; sem o "(1/2)" se a paginação mudou; senão no fim do Mega). Os "Implantação Moked" da v3 viram os nove
+da apresentação da Moked (rode gerarSlidesMoked() antes). Saem o "Revisar antes da versão final" e os moldes de
+fotos; links do sumário/trilha para eles vão ao primeiro slide do gestor do Mega (ou saem). Rodar de novo cria outra
+cópia e renomeia a anterior "PODE EXCLUIR - …". Edições do gestor em slides GERADOS da v3 não passam (são refeitos).
+
 **Português (12/10, 19h18, `d857fa1`):** varredura `node ferramentas/diagnostico/ortografia.js teste` nos três
 Megas — só dois erros nos slides gerados, corrigidos: "CHICOTE ELÉTRICA" → "ELÉTRICO" (proposta revista; o
 Guilherme roda `aplicarPropostasTextos()` e gera o Esteio) e "eletronicos" (23_DecisoesGestor.gs). Os erros

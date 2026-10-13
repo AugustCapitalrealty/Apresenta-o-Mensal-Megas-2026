@@ -127,7 +127,10 @@ function novoSlide(deck) {
     getShapes: () => slide.shapes.filter(r => r.tipo !== 'IMAGE' && r.tipo !== 'LINE')
       .map(r => ({ getLeft: () => r.x, getTop: () => r.y, getWidth: () => r.w, getHeight: () => r.h,
                    getText: () => ({ asString: () => r.texto || '', setText: t => { r.texto = String(t); },
-                                     replaceAllText: (de, para) => { const p = String(r.texto || '').split(de); r.texto = p.join(para); return p.length - 1; } }) })),
+                                     replaceAllText: (de, para) => { const p = String(r.texto || '').split(de); r.texto = p.join(para); return p.length - 1; } }),
+                   // Link para outro slide (31_VersaoFinal.gs refaz os que iam para slides que saíram).
+                   getLink: () => r.link ? { getSlideId: () => r.link } : null,
+                   setLinkSlide: alvo => { r.link = alvo.getObjectId(); }, removeLink: () => { delete r.link; } })),
     // Elementos da página (cópia de um slide da v3, 28_Moked.gs): tipo, posição, texto e remoção.
     getPageElements: () => slide.shapes.slice().map(reg => ({
       getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
@@ -151,7 +154,13 @@ function novoDeck() {
     deck._slides.push(s);
     return s;
   };
-  deck.insertSlide = (i, layout) => { const s = novoSlide(deck); deck._slides.splice(i, 0, s); return s; };
+  // insertSlide(i, slide de outra apresentação) também copia (31_VersaoFinal.gs); com layout, slide em branco.
+  deck.insertSlide = (i, origem) => {
+    const s = novoSlide(deck);
+    if (origem && origem.shapes) { origem.shapes.forEach(r => s.shapes.push(Object.assign({}, r, { id: 'e' + (++idForma) }))); s.notas = origem.notas; }
+    deck._slides.splice(i, 0, s);
+    return s;
+  };
   deck.getUrl = () => 'https://docs.google.com/presentation/d/teste';
   deck.getSlideById = id => deck._slides.filter(s => s.id === id)[0] || null;
   deck.getPageElementById = id => {
@@ -2351,6 +2360,73 @@ console.log('Slides do gestor revisados (29_GestorRevisado.gs)');
      res[2].avisos.length === 2 && sl[2].notas.indexOf('[REGISTRO FOTOGRÁFICO · ITAJAI]') === 0,
      'gestor revisado: slide do Itajaí com o Mega certo e o aviso do molde esquecido (' + res[2].avisos.join(' / ') + ')');
   ok(sl.every(s => s.shapes.some(r => r.nome === 'foto')), 'gestor revisado: as fotos do gestor ficam');
+}
+
+console.log('Versão final (31_VersaoFinal.gs)');
+// Cópia do deck de Facilities + os slides do gestor da v3 no lugar deles, a Moked no lugar dos slides dela.
+{
+  const gerado = (deck, titulo, sub) => {
+    const s = deck.appendSlide();
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo, id: 'e' + (++idForma) },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: sub, id: 'e' + (++idForma) });
+    return s;
+  };
+  const doGestor = (deck, titulo, mega, nota) => {
+    const s = deck.appendSlide();
+    s.notas = (nota || '[REGISTRO FOTOGRÁFICO · ESTEIO]') + '\nSlide do gestor';
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
+                  { tipo: 'TEXT_BOX', x: 30, y: 385, w: 660, h: 14, texto: 'Fotos e textos preenchidos pelo gestor · ' + mega },
+                  { tipo: 'IMAGE', x: 52, y: 90, w: 380, h: 260, nome: 'foto' });
+    return s;
+  };
+  // A v3: o que o gestor montou em cima de uma geração antiga.
+  const v3 = novoDeck(); v3._slides = [];
+  gerado(v3, 'Sumário', 'Mega Esteio · Orçamento 2027');
+  gerado(v3, 'Manutenção: projetos × custo recorrente', 'R$ 848 mil · Mega Esteio');
+  doGestor(v3, 'Implantação Moked | Rotina de Segurança', 'Mega Esteio');
+  doGestor(v3, 'Implantação Moked | Treinamento e Capacitação', 'Mega Esteio');
+  doGestor(v3, 'Substituição Segurança | Cenário Hoje', 'Mega Esteio');
+  gerado(v3, 'Manutenção: os itens de cada grupo (1/2)', '62 itens · Mega Esteio');
+  doGestor(v3, 'Pintura Tubulação de Incêndio', 'Mega Esteio');
+  gerado(v3, 'Manutenção: os itens de cada grupo (2/2)', '62 itens · Mega Esteio');
+  gerado(v3, 'Sumário', 'Mega Itajaí · Orçamento 2027');
+  gerado(v3, 'Manutenção: os itens de cada grupo (1/2)', '50 itens · Mega Itajaí');
+  doGestor(v3, 'Pintura dos Prédios de Apoio', 'Mega Esteio');
+  doGestor(v3, 'Retrofit e Adequação área de Copa e Cozinha', 'Mega Itajaí');
+  gerado(v3, 'Sumário', 'Mega Curitiba · Orçamento 2027');
+  doGestor(v3, 'Registro fotográfico — Título do assunto', 'Mega Curitiba', '[REGISTRO FOTOGRÁFICO · CURITIBA]');
+  // A Moked (28_Moked.gs): três slides aqui.
+  const mk = novoDeck(); mk._slides = [];
+  ['Moked A', 'Moked B', 'Moked C'].forEach(t => doGestor(mk, t, 'Mega Esteio'));
+  // A cópia do deck de Facilities gerado agora: Itajaí sem a paginação "(1/2)"; moldes de fotos e Revisar.
+  const fac = novoDeck(); fac._slides = [];
+  gerado(fac, 'Revisar antes da versão final', 'Mega Esteio · dados pendentes');
+  const sumE = gerado(fac, 'Sumário', 'Mega Esteio · Orçamento 2027');
+  gerado(fac, 'Manutenção: projetos × custo recorrente', 'R$ 850 mil · Mega Esteio');
+  gerado(fac, 'Manutenção: os itens de cada grupo (1/2)', '63 itens · Mega Esteio');
+  gerado(fac, 'Manutenção: os itens de cada grupo (2/2)', '63 itens · Mega Esteio');
+  const fotoE = doGestor(fac, 'Registro fotográfico — Título do assunto', 'Mega Esteio');
+  gerado(fac, 'Sumário', 'Mega Itajaí · Orçamento 2027');
+  gerado(fac, 'Manutenção: os itens de cada grupo', '50 itens · Mega Itajaí');
+  const sumC = gerado(fac, 'Sumário', 'Mega Curitiba · Orçamento 2027');
+  const fotoC = doGestor(fac, 'Registro fotográfico — Título do assunto', 'Mega Curitiba', '[REGISTRO FOTOGRÁFICO · CURITIBA]');
+  sumE.shapes[1].link = fotoE.id; sumC.shapes[1].link = fotoC.id;
+  const v3Antes = JSON.stringify(v3._slides.map(s => [s.shapes, s.notas]));
+  const r = G._orcMontarVersaoFinal_(fac, v3, mk), sl = fac.getSlides();
+  const ordem = sl.map(s => textos(s)[0] || '');
+  const esperado = ['Sumário', 'Manutenção: projetos × custo recorrente', 'Moked A', 'Moked B', 'Moked C',
+    'Substituição Segurança | Cenário Hoje', 'Manutenção: os itens de cada grupo (1/2)', 'Pintura Tubulação de Incêndio',
+    'Manutenção: os itens de cada grupo (2/2)', 'Sumário', 'Manutenção: os itens de cada grupo', 'Pintura dos Prédios de Apoio',
+    'Retrofit e Adequação da Área de Copa e Cozinha', 'Sumário'];
+  ok(JSON.stringify(ordem) === JSON.stringify(esperado),
+     'versão final: Moked e slides do gestor no lugar da v3, sem Revisar e sem moldes (' + ordem.join(' / ') + ')');
+  ok(r.gestor === 4 && r.moked === 3 && r.total === 14, 'versão final: 4 do gestor e 3 da Moked (' + r.gestor + ', ' + r.moked + ', ' + r.total + ')');
+  ok(textos(sl[11]).indexOf('Fotos e textos preenchidos pelo gestor · Mega Itajaí') >= 0 && sl[11].notas.indexOf('[REGISTRO FOTOGRÁFICO · ITAJAI]') === 0,
+     'versão final: slide do gestor revisado com o Mega da seção (' + textos(sl[11]).join(' | ') + ')');
+  ok(sumE.shapes[1].link === sl[2].id && !('link' in sumC.shapes[1]),
+     'versão final: link do sumário vai para o primeiro slide do gestor do Mega; sem slide do gestor, sai');
+  ok(JSON.stringify(v3._slides.map(s => [s.shapes, s.notas])) === v3Antes, 'versão final: a v3 não muda');
 }
 
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
