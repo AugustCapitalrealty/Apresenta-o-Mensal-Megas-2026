@@ -26,6 +26,24 @@ do Ritmo 2026 embaixo do valor dele. "implícita" saiu dos textos (os rodapés f
 (34_ApresentacaoCompleta.gs): abertura → Esteio → Itajaí → Curitiba → Moked → versão final, um passo por execução,
 encadeados por gatilho de 1 min (escopo `script.scriptapp` novo: pede autorização na 1ª vez). Teste 4855/4855.
 
+**13/10/2026, 8h — O QUE RODAR AGORA: `00_Gerar.gs`** (pedido do Guilherme: "uma função para cada um; a Moked e os
+outros já têm que estar dentro"): `gerarComeco()`, `gerarMegaEsteio()`, `gerarMegaItajai()`, `gerarMegaCuritiba()`,
+uma por execução, tudo no deck de Facilities (`1w_di…`). Cada Mega gera a parte (sem "Revisar", sem moldes de fotos)
+e copia da v3 os slides do gestor DESSE Mega (Moked, substituição, obras) logo depois do slide gerado que vem antes
+deles lá (`_orcGestorNaParte_`, 31_VersaoFinal.gs), revisados (29_GestorRevisado.gs), na lista da parte — gerar de
+novo troca também esses. Esteio rodou às 7h56–8h02 e coube nos 6 min (geração 192 s + 22 cópias). Perto dos 5,5 min
+para e agenda `completarSlidesDoGestor()` (o gatilho de 1 min do Google NÃO disparou no horário hoje: rodar à mão).
+Esperado no log: Esteio 22 do gestor (9 da Moked), Itajaí 20, Curitiba 17. A v3 do gestor (`1aIl-…`) só é lida.
+`gerarVersaoFinal*()`, `gerarSlidesMoked()` e 34_ApresentacaoCompleta.gs ficaram, mas não são mais o caminho.
+- **Slide novo do gestor:** ele faz na v3 duplicando um slide dele (Ctrl+D copia a 1ª linha das anotações,
+  `[REGISTRO FOTOGRÁFICO · ESTEIO]` — ou ITAJAI/CURITIBA) e põe depois do slide gerado em que quer; aí é só rodar
+  `gerarMega<X>()` de novo. Não precisa de Python: o slide do gestor é copiado como está (as molduras da trilha 04 e 05
+  já estão na pasta).
+- **No trabalho não tem Python** (antivírus): moldura nova → `node ferramentas/molduras_imagem.js`; gráfico novo (número
+  mudou) só tem `graficos_imagem.py` — sem ele o slide sai "pelas formas" (certo, menos bonito). Se precisar, portar
+  graficos_imagem.py para Node (o desenho é simples: retângulo, linha, elipse; ver molduras_imagem.js, que já grava PNG).
+- GitHub: commits de 13/10 só no G: (`git push` pede login no navegador).
+
 Tudo commitado/pushado (último código: `ac18e31`) e publicado (clasp 18:24). A próxima sessão
 **não tem o conector do Drive**: leia os arquivos pelo G: (os `.gsheet/.gslides` são atalhos e
 não abrem — peça ao Guilherme para rodar as funções de exportação, que gravam no G:).
