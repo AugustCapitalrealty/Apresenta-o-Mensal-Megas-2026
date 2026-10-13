@@ -156,12 +156,16 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   const feito = [], avisos = [];
   const txt = sh => { try { return sh.getText().asString().replace(/\n$/, ''); } catch (e) { return ''; } };
   const shapes = slide.getShapes();
-  // 1. Português e títulos.
+  // 1. Português e títulos. O texto de cada forma é lido uma vez só (13/10/2026: ler a cada troca levava ~10 s por slide).
   let trocas = 0;
-  shapes.forEach(sh => ORC_GESTOR_TROCAS.forEach(t => {
-    if (txt(sh).indexOf(t[0]) < 0) return;
-    try { trocas += sh.getText().replaceAllText(t[0], t[1]) || 0; } catch (e) { /* forma sem texto */ }
-  }));
+  shapes.forEach(sh => {
+    const t0 = txt(sh);
+    if (!t0) return;
+    ORC_GESTOR_TROCAS.forEach(t => {
+      if (t0.indexOf(t[0]) < 0) return;
+      try { trocas += sh.getText().replaceAllText(t[0], t[1]) || 0; } catch (e) { /* forma sem texto */ }
+    });
+  });
   if (trocas) feito.push(trocas + ' correção(ões) de texto');
   const titulo = _orcTituloGestor_(slide);
   const nt = _orcNorm_(titulo);
