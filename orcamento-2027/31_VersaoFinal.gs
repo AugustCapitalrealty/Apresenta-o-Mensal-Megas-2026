@@ -144,9 +144,13 @@ function _orcMontarVersaoFinal_(deck, v3, moked, soMega) {
     porPos[pos].forEach((p, k) => {
       const novo = deck.insertSlide(pos + 1 + k, p.origem);
       if (p.moked) { nMoked++; return; }
-      const r = _orcRevisarSlideGestor_(novo, W, H, p.mega, p.n, p.ancora);
       nGestor++;
-      if (r.avisos.length) log.push('Slide ' + p.n + ' da v3 (' + p.mega + ') — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
+      try {
+        const r = _orcRevisarSlideGestor_(novo, W, H, p.mega, p.n, p.ancora);
+        if (r.avisos.length) log.push('Slide ' + p.n + ' da v3 (' + p.mega + ') — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
+      } catch (e) {   // 13/10/2026: a revisão que falha não para a versão final — o slide fica como está na v3
+        log.push('Slide ' + p.n + ' da v3 (' + p.mega + ') — ' + (p.titulo || '') + ': CONFERIR, a revisão falhou (' + e.message + ')');
+      }
     });
   });
   mega = null;

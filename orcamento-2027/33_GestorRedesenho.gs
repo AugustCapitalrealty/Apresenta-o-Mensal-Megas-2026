@@ -71,6 +71,8 @@ function _orcRedesenharGestor_(slide, W, H, r, feito, avisos) {
     return d;
   });
   if (tirados.some(t => t.celulas && t.celulas.length < 2)) { avisos.push('tabela não redesenhada: tabela vazia'); return; }
+  // Tamanho que não dá para redesenhar: o slide fica como o gestor fez (nada sai antes de saber que o desenho cabe).
+  if (tirados.some(t => !(t.w >= 60) || !(t.h > 0))) { avisos.push('tabela não redesenhada: pequena demais ou fora do lugar'); return; }
   alvos.forEach(el => el.remove());
   r.desenhar(slide, W, H, tirados);
   feito.push('redesenhado: ' + r.o);
@@ -88,7 +90,10 @@ function _orcRedesenhoTabelaSlides_(slide, t) {
     return { total: total, celulas: l.map((v, j) => v ? { texto: v, bold: j === n - 1, fs: fs } : null) };
   });
   const hCab = 18, rowH = Math.min(22, Math.max(14, (Math.min(t.h, ORC_GESTOR_ESQ.fim - t.y) - hCab) / linhas.length));
-  const w = Math.min(t.w, ORC_GESTOR_ESQ.x + ORC_GESTOR_ESQ.w - t.x);
+  // Tabela fora da área da esquerda do molde (o gestor mudou o slide de lugar na v4, 13/10/2026): fica com a largura dela.
+  let w = Math.min(t.w, ORC_GESTOR_ESQ.x + ORC_GESTOR_ESQ.w - t.x);
+  if (!(w >= 120)) w = t.w;
+  if (!(w >= 60) || !(t.h > 0)) throw new Error('tabela pequena demais para redesenhar (' + Math.round(t.w) + ' × ' + Math.round(t.h) + ' pt)');
   // As colunas de número não podem tomar a largura toda (13/10/2026: no Curitiba, na fonte da Demercado, a 1ª coluna
   // ficava com largura zero e o Slides parava a geração): encolhem por igual; sem caber, todas do mesmo tamanho.
   const min1 = Math.max(60, w * 0.3), fixo = () => colunas.reduce((a, c) => a + (c.w || 0), 0);
