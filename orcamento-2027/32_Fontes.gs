@@ -18,6 +18,110 @@ const ORC_FONTES_ABA = 'Fontes';
 const ORC_FONTES_CABECALHO = ['MEGA', 'ITEM (como aparece no slide)', 'FONTE', 'ONDE', 'ATUALIZADO EM'];
 let _ORC_FONTES = null;   // { exatas: { chave: fonte }, cortadas: [{ mega, inicio, fonte }] }, lido uma vez por geração
 
+// As fontes dos prints do Guilherme (12/10/2026, 22h — "Demais categorias" dos três Megas), copiadas aqui para valerem
+// mesmo antes de salvarFontes(): base por baixo da aba "Fontes" (o que estiver na aba vale), e salvarFontes() grava
+// na aba as que ainda não estão lá. [item como aparece no slide, fonte].
+const ORC_FONTES_PRINTS = {
+  'Mega Esteio': [
+    ['2 CAÇAMBAS METÁLICAS PARA RESÍDUOS – AMZ B', 'ORÇ. JAJEMEC'],
+    ['4 CONTENTORES DE LIXO 1.000 L – AMZ A', 'ORÇ CONTEMAR'],
+    ['2 CONTENTORES DE LIXO 1.000 L – AMZ B', 'ORÇ. CONTEMAR'],
+    ['LAUDO DE LINHA DE VIDA ARMAZÉM A - ALPENDRE', 'ORÇ. MIRIAD'],
+    ['LAUDO DE LINHA DE VIDA ARMAZÉM A - COBERTURA', 'ORÇ. MIRIAD'],
+    ['LAUDO DE LINHA DE VIDA ARMAZÉM B2 - ALPENDRE', 'ORÇ. MIRIAD'],
+    ['LAUDO LINHA DE VIDA – COBERTURA DAS DOCAS B2', 'ORÇ. MIRIAD'],
+    ['LAUDO LINHA DE VIDA – COBERTURA DO AMZ B2', 'ORÇ. MIRIAD'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ A', 'ORÇ. PROSSALTER'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ B2', 'ORÇ. PROSSALTER'],
+    ['INSTALAÇÃO DE MAQUINA RENTBRELLA ARMAZÉM A', 'CONTRATO'],
+    ['INSTALAÇÃO DE MAQUINA RENTBRELLA ARMAZÉM B', 'CONTRATO'],
+    ['JUNTA DE DILATAÇÃO TERRAE – AMZ A (T1, T3, T7)', 'ORÇ. ADS/CSM'],
+    ['JUNTA DE DILATAÇÃO TERRAE – AMZ B (T5, T6)', 'ORÇ. ADS/CSM'],
+    ['PROVISÃO PARA MANUTENÇÃO NÃO PREVISTA (3%)', 'PREMISSA'],
+    ['KIT ESTAÇÃO DE MONITORAMENTO CANAL DE DRENAGEM', 'ORÇ. CAS TECNOLOGIA'],
+    ['KIT SONDA – RESERVATÓRIO POTÁVEL E HIDRANTE (AMZ A)', 'ORÇ. CAS TECNOLOGIA'],
+    ['KIT MONITORAMENTO RESERVATÓRIO SPK (ARMAZÉM A)', 'ORÇ. CAS TECNOLOGIA'],
+    ['KIT MONITORAMENTO RESERVATÓRIO ARMAZÉM B1', 'ORÇ. CAS TECNOLOGIA'],
+    ['KIT MONITORAMENTO RESERVATÓRIO ARMAZÉM B2', 'ORÇ. CAS TECNOLOGIA'],
+    ['KIT MONITORAMENTO CANAL DE DRENAGEM', 'ORÇ. CAS TECNOLOGIA'],
+    ['COMPRA DE INSUMOS DE MATERIAIS DE CONSTRUÇÃO ZELADORIA', 'HISTÓRICO'],
+    ['SUBSTITUIÇÃO POR VIDA ÚTIL DA LONA DO MEGA (POSTO)', 'ORÇ. FILBER'],
+    ['MANUTENÇÃO PREVENTIVA ANUAL DA COMPORTA AMZ A', 'ORÇ. ARC'],
+    ['MANUTENÇÃO PREVENTIVA ANUAL DA COMPORTA AMZ B', 'ORÇ. ARC'],
+    ['PONTO DE ÁGUA PARA BEBEDOURO (FIM DOS GALÕES)', 'ORÇ. ADS'],
+    ['DEMARCAÇÃO SEMESTRAL – PORTARIAS A E B (MATERIAL)', 'HISTÓRICO'],
+    ['DEMARCAÇÃO ANUAL – FRENTE DE DOCAS (MATERIAL)', 'HISTÓRICO'],
+    ['SUBSTITUIÇÃO E MANUTENÇÃO DE PISO PODOTÁTIL (PORTARIA A)', 'HISTÓRICO'],
+    ['REVISÃO DOS AR-CONDICIONADOS (PMOC)', 'ORÇ. CLIMATIZAR'],
+    ['PURIFICADOR DE ÁGUA – SALA ADMINISTRATIVA', 'ORÇ. MAGAZINE'],
+    ['LIMPEZA DA GALERIA DA COMPORTA B2 (RETIRADO)', 'ORÇ. ADS']
+  ],
+  'Mega Itajaí': [
+    ['CONTRATO — ARCA AGRO (ÁREA VERDE)', 'CONTRATO'],
+    ['DEMARCAÇÃO ANUAL – VIAS DE CARRO (1.060 M²)', 'ORÇ ELETROSINAL'],
+    ['DEMARCAÇÃO ANUAL – CALÇADA', 'ORÇ ELETROSINAL'],
+    ['DEMARCAÇÃO ANUAL – BOLSÃO (300 M²)', 'ORÇ ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – ÁREA DE ACESSOS (100 M²)', 'ORÇ ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – PONTE (22 M²)', 'ORÇ ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – EMBARQUE/DESEMBARQUE', 'ORÇ ELETROSINAL'],
+    ['CONTRATO — RODRIGO ROHDE (ELÉTRICA)', 'CONTRATO'],
+    ['CONTRATO — MG GERADORES', 'CONTRATO'],
+    ['MANUTENÇÃO SEGURANÇA ELETRÔNICA – FM SECURITY', 'PROPOSTA FM'],
+    ['LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS (450 M³)', 'ORÇ. ESGOMIL'],
+    ['ANÁLISE LABORATORIAL SEMESTRAL – 20 STE', 'ORÇ. FREITAG'],
+    ['PROVISÃO PARA MANUTENÇÃO NÃO PREVISTA (3%)', 'PREMISSA'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ 1', 'ORÇ. PROSSALTER'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ 2', 'ORÇ. PROSSALTER'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ 3', 'ORÇ. PROSSALTER'],
+    ['LINHA DE VIDA – ESCADA MARINHEIRO AMZ 4', 'ORÇ. PROSSALTER'],
+    ['SUBSTITUIÇÃO DE PAVIMENTO PINTADO', 'ORÇ. BRONZE'],
+    ['TROCA DOS AR-CONDICIONADOS – PORTARIA E ADM', 'ORÇ. MAGAZINE'],
+    ['CONTRATO — AR-CONDICIONADO (PMOC)', 'CONTRATO'],
+    ['MATERIAIS DE CONSTRUÇÃO PARA PEQUENOS REPAROS', 'HISTÓRICO'],
+    ['MÁQUINA DE GUARDA-CHUVA (RENTBRELLA)', 'CONTRATO'],
+    ['REPOSIÇÃO E SUBSTITUIÇÃO DE PLACAS DE SINALIZAÇÃO', 'VERBA'],
+    ['SUBSTITUIÇÃO DA GELADEIRA DA COPA', 'ORÇ. MAGAZINE'],
+    ['INFRA ELÉTRICA E LÓGICA – MONITORAMENTO', 'HISTÓRICO']
+  ],
+  'Mega Curitiba': [
+    ['RS2000 SUM NG MODBUS - PROJETO DE AUTOMAÇÃO DE LEITURAS', 'ORÇ. CAS'],
+    ['COMPRA DE 22 MEDIDORES DE ENERGIA TRIFASICO DIRETO 100A…', 'ORÇ. CAS'],
+    ['MÃO DE OBRA DA TROCA DE ENERGIA', 'ORÇ. CAS'],
+    ['HIDRÔMETRO DE ÁGUA - PROJETO DE AUTOMAÇÃO DE LEITURAS', 'ORÇ. CAS'],
+    ['INSTALAÇÃO E CONFIGURAÇÃO MEDIDORES CAS - PROJETO AUTOM…', 'ORÇ. CAS'],
+    ['DEMARCAÇÃO ANUAL – FRENTE DOS AMZ 1 A 7 (540 M²)', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO – BOLSÃO DE PESADOS (300 M²)', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – ÁREA DE ACESSOS (122 M²)', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – DESCIDA (114 M²)', 'ORÇ. ELETROSINAL'],
+    ['RECUPERAÇÃO DE VIGA + LOMBADAS DE CONCRETO – AMZ 4', 'ORÇ. KOKOT'],
+    ['RECUPERAÇÃO DE VIGA + LOMBADA DE CONCRETO – AMZ 3', 'ORÇ. KOKOT'],
+    ['DEMARCAÇÃO SEMESTRAL – ROTATÓRIA (34 M²)', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – LOMBADAS (28 M²)', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – RUA LATERAL AMZ 1 E 2', 'ORÇ. ELETROSINAL'],
+    ['DEMARCAÇÃO SEMESTRAL – EMBARQUE/DESEMBARQUE', 'ORÇ. ELETROSINAL'],
+    ['COMPRA DE TORNIQUETE DIGICON INOX TX1500', 'ORÇ. DIGICON'],
+    ['MANUTENÇÃO SEGURANÇA ELETRÔNICA – FM SECURITY', 'PROPOSTA FM'],
+    ['PROVISÃO PARA MANUTENÇÃO NÃO PREVISTA (3%)', 'PREMISSA'],
+    ['CONTRATO — EQUILÍBRIO (CONSULTORIA AMBIENTAL)', 'CONTRATO'],
+    ['MATERIAIS DE CONSTRUÇÃO PARA PEQUENOS REPAROS', 'HISTÓRICO'],
+    ['MÃO DE OBRA – INSTALAÇÃO DO 4º TORNIQUETE', 'ORÇAMENTO DIGICON'],
+    ['CONTRATO — AR-CONDICIONADO (PMOC)', 'CONTRATO'],
+    ['LAVAGEM DAS TELAS E ESTRUTURAS DO CAMPO SOCIETY', 'ORÇ. KTV'],
+    ['LAVAGEM TOTEM MEGA', 'ORÇ. KTV'],
+    ['KIT SONDA – RESERVATÓRIO SPK', 'ORÇ. CAS'],
+    ['KIT SONDA – RESERVATÓRIO POTÁVEL + HIDRANTE', 'ORÇ. CAS'],
+    ['TV + SUPORTE NO QUIOSQUE', 'ORÇ. MAGAZINE']
+  ]
+};
+
+// As dos prints como lista de _orcGuardarFontes_.
+function _orcFontesDosPrints_() {
+  const out = [];
+  Object.keys(ORC_FONTES_PRINTS).forEach(mega => ORC_FONTES_PRINTS[mega].forEach(l =>
+    out.push({ mega: mega, item: l[0], fonte: l[1], onde: 'print de 12/10/2026 (Demais categorias)' })));
+  return out;
+}
+
 function salvarFontes() {
   const lista = [];
   const ler = (id, nome) => {
@@ -31,6 +135,8 @@ function salvarFontes() {
   };
   ler(ORC_DECK_VERSAO_GESTOR_ID, 'v3 do gestor');
   ler(_orcIdFacilities_(), 'Deck de Facilities');   // depois da v3: o que está no deck vale
+  const p = _orcGuardarFontes_(_orcFontesDosPrints_(), true);   // as dos prints: só as que a aba ainda não tem
+  Logger.log('Prints de 12/10: ' + p.novas + ' fontes novas na aba (' + p.iguais + ' já estavam)');
   const r = _orcGuardarFontes_(lista);
   Logger.log('Fontes na aba "' + ORC_FONTES_ABA + '" da planilha de textos: ' + r.novas + ' novas, ' + r.trocadas +
              ' trocadas, ' + r.iguais + ' iguais — https://docs.google.com/spreadsheets/d/' + ORC_TEXTOS_ID + '/edit');
@@ -83,8 +189,9 @@ function _orcChaveFonte_(mega, item) {
   return _orcNorm_(mega) + '|' + _orcNorm_(String(item).replace(/…\s*$/, ''));
 }
 
-// Grava na aba: linha nova para item novo; troca a FONTE quando mudou. Devolve { novas, trocadas, iguais }.
-function _orcGuardarFontes_(lista) {
+// Grava na aba: linha nova para item novo; troca a FONTE quando mudou (soNovas: não troca — conta como igual).
+// Devolve { novas, trocadas, iguais }.
+function _orcGuardarFontes_(lista, soNovas) {
   const r = { novas: 0, trocadas: 0, iguais: 0 };
   if (!lista.length || !ORC_TEXTOS_ID) return r;
   const ss = SpreadsheetApp.openById(ORC_TEXTOS_ID);
@@ -101,7 +208,7 @@ function _orcGuardarFontes_(lista) {
   const novas = [];
   lista.forEach(f => {
     const k = _orcChaveFonte_(f.mega, f.item), ja = linha[k];
-    if (ja && ja.fonte === f.fonte) { r.iguais++; return; }
+    if (ja && (ja.fonte === f.fonte || soNovas)) { r.iguais++; return; }
     if (ja && ja.n > 0) { sh.getRange(ja.n, 3, 1, 3).setValues([[f.fonte, f.onde, quando]]); ja.fonte = f.fonte; r.trocadas++; return; }
     if (ja) { ja.linha[2] = f.fonte; ja.fonte = f.fonte; r.trocadas++; return; }   // repetida nesta mesma lista
     const nova = [f.mega, f.item, f.fonte, f.onde, quando];
@@ -116,6 +223,11 @@ function _orcGuardarFontes_(lista) {
 function _orcLerFontes_() {
   if (_ORC_FONTES) return _ORC_FONTES;
   _ORC_FONTES = { exatas: {}, cortadas: [] };
+  const por = (mega, item, fonte) => {
+    _ORC_FONTES.exatas[_orcChaveFonte_(mega, item)] = fonte;
+    if (/…\s*$/.test(item)) _ORC_FONTES.cortadas.unshift({ mega: _orcNorm_(mega), inicio: _orcNorm_(item.replace(/…\s*$/, '')), fonte: fonte });
+  };
+  _orcFontesDosPrints_().forEach(x => por(x.mega, x.item, x.fonte));   // base: os prints; a aba vale por cima
   if (!ORC_TEXTOS_ID) return _ORC_FONTES;
   try {
     const sh = SpreadsheetApp.openById(ORC_TEXTOS_ID).getSheetByName(ORC_FONTES_ABA);
@@ -123,8 +235,7 @@ function _orcLerFontes_() {
     sh.getDataRange().getValues().slice(1).forEach(l => {
       const mega = String(l[0] || '').trim(), item = String(l[1] || '').trim(), fonte = String(l[2] || '').trim();
       if (!mega || !item || !fonte) return;
-      _ORC_FONTES.exatas[_orcChaveFonte_(mega, item)] = fonte;
-      if (/…\s*$/.test(item)) _ORC_FONTES.cortadas.push({ mega: _orcNorm_(mega), inicio: _orcNorm_(item.replace(/…\s*$/, '')), fonte: fonte });
+      por(mega, item, fonte);
     });
   } catch (e) { Logger.log('Aba de fontes indisponível — a coluna FONTE sai com "—": ' + e.message); }
   return _ORC_FONTES;

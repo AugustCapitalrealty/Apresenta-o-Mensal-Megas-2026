@@ -1041,7 +1041,9 @@ ok(textos(slides[iCat0]).indexOf('PREVISÃO DE ENTREGA') >= 0 && textos(slides[i
    'categoria: card e coluna de previsão de entrega');
 
 // Coluna FONTE: uma célula "—" por item, nas linhas de total não.
-const nFonte = sl => sl.shapes.filter(x => x.texto === '—').length;
+// Células da coluna FONTE: "—" ou a fonte guardada (32_Fontes.gs), na coluna do cabeçalho FONTE.
+const nFonte = sl => { const h = sl.shapes.filter(x => x.texto === 'FONTE')[0];
+  return h ? sl.shapes.filter(x => x !== h && x.texto && Math.abs(x.x - h.x) < 1.5 && x.y > h.y + 2).length : 0; };
 ok(textos(slides[iCat0]).indexOf('FONTE') >= 0, 'categoria: coluna FONTE');
 ok(nFonte(slides[iCat0]) === 11, 'PPCI: 11 itens (10 do modelo + Firecam), 11 células de fonte (veio ' +
    nFonte(slides[iCat0]) + ')');
@@ -2531,6 +2533,8 @@ console.log('Fontes guardadas (32_Fontes.gs)');
   caixa(172, 118, 'REVISÃO SEMESTRAL DOS BEBEDOUROS (AMZ A E B)'); caixa(560, 118, '—');
   caixa(172, 140, 'COMPRA DE 22 MEDIDORES DE ENERGIA TRIFASICO DIRETO 100A…'); caixa(560, 140, 'ORÇ. CAS');
   caixa(44, 385, 'Orçamento 2027 · Mega Esteio · Manutenção de Imóveis · categorias abaixo de 5% do total');
+  const abaVelha = PLANILHA_TEXTOS.getSheetByName('Fontes');   // a das gerações acima: este teste começa sem ela
+  if (abaVelha) PLANILHA_TEXTOS.deleteSheet(abaVelha);
   const lidas = G._orcFontesDoSlide_(s, null);
   ok(lidas.length === 2 && lidas[0].mega === 'Mega Esteio' && lidas[0].fonte === 'ORÇ. PROSSALTER',
      'fontes: lê a coluna FONTE digitada, sem o "—" (' + JSON.stringify(lidas) + ')');
@@ -2576,8 +2580,14 @@ console.log('Fontes guardadas (32_Fontes.gs)');
   ok(!!demais && !!cat, 'fontes: há slides de Demais e de categoria nos decks do teste');
   digitar(demais); digitar(cat);
   const a = G._orcFontesDoSlide_(demais, 'Mega Teste'), b = G._orcFontesDoSlide_(cat, 'Mega Teste');
-  ok(a.length === 1 && a[0].fonte === 'ORÇ. TESTE' && a[0].item.length > 5 && b.length === 1 && b[0].fonte === 'ORÇ. TESTE',
-     'fontes: lidas nos slides gerados (' + JSON.stringify(a.concat(b)) + ')');
+  const teste = l => l.filter(x => x.fonte === 'ORÇ. TESTE');
+  ok(teste(a).length === 1 && teste(a)[0].item.length > 5 && teste(b).length === 1,
+     'fontes: lidas nos slides gerados (' + JSON.stringify(teste(a).concat(teste(b))) + ')');
+  // As fontes dos prints de 12/10 já saem na geração (antes de qualquer salvarFontes()).
+  const comPrint = gerados.filter(s => /^Demais categorias/.test(textos(s)[0] || '') && textos(s).some(t => /Mega Esteio/.test(t)))
+    .reduce((acc, s) => acc.concat(textos(s)), []);
+  ok(comPrint.indexOf('ORÇ. MIRIAD') >= 0 || comPrint.indexOf('ORÇ. PROSSALTER') >= 0 || comPrint.indexOf('PREMISSA') >= 0,
+     'fontes: as dos prints saem nas Demais categorias do Esteio gerado');
 }
 
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que

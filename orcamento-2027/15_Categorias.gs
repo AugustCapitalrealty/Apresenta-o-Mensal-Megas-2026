@@ -18,7 +18,8 @@ const ORC_DEMAIS_POR_PAGINA = 18;
  * linhas:  [{ celulas: [{ texto, bold, cor, fs, pill, span, aba, original }], total: bool,
  *            faixa: 0|1, separador: bool }]
  *   fonte     → fixa por célula (cel.fs ou op.fs): o que não cabe é cortado,
- *               nunca encolhido — a tabela inteira com uma letra só.
+ *               nunca encolhido — a tabela inteira com uma letra só. Exceção:
+ *               cel.fsMin (a coluna FONTE, digitada pelo gestor, encolhe até ele).
  *   aba       → descrição longa: texto curto e registro pela planilha de
  *               textos (06_TextosTabelas.gs).
  *   span      → a célula ocupa esta linha e as span-1 seguintes (que trazem
@@ -80,7 +81,7 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
         const f = cel.fs || fs;
         _orcUmaLinha_(slide, cx, ry, ws[i], rowH, cel.texto,
           { align: c.align || 'L', fs: f, bold: !!(cel.bold || ln.total),
-            cor: cel.cor || DS.colors.textMain, fonte: DS.typography.body, fsMin: f, folga: 6, cortar: true,
+            cor: cel.cor || DS.colors.textMain, fonte: DS.typography.body, fsMin: cel.fsMin || f, folga: 6, cortar: true,
             aba: cel.aba, original: cel.original });
       }
       cx += ws[i];
@@ -99,7 +100,8 @@ function _orcTabela_(slide, x, y, w, colunas, linhas, rowH, op) {
 const ORC_FONTE_VAZIA = '—';
 function _orcCelulaFonte_(cid, descricao) {
   const f = cid && descricao ? _orcFonteSalva_(cid.nome, descricao) : '';
-  return { texto: f || ORC_FONTE_VAZIA, cor: CR_DESIGN_SYSTEM.colors.textMuted, fs: 7.5 };
+  // A fonte guardada pode ser mais longa que a coluna ("ORÇ. CAS TECNOLOGIA"): encolhe até 5,5 pt antes de cortar.
+  return { texto: f || ORC_FONTE_VAZIA, cor: CR_DESIGN_SYSTEM.colors.textMuted, fs: 7.5, fsMin: 5.5 };
 }
 
 // Mini gráfico de 12 colunas (sem rótulo de valor), usado no painel lateral.
