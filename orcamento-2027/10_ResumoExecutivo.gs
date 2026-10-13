@@ -9,20 +9,23 @@
 // ==========================================
 // RESUMO EXECUTIVO
 // ==========================================
-function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
+function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj, modelos, contratos) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
   const r = _orcResumoExecutivo_(rel, classManut);
   const a = rel.anos;
-  _orcHeader_(slide, W, 'Resumo executivo — Orçamento ' + ORC_ANO, cid.nome + ' · o que levar da reunião');
+  // O total e o R$/m² trazem IPTU e Seguro: o subtítulo avisa (os rótulos dos cards ficaram curtos com o quarto card).
+  _orcHeader_(slide, W, 'Resumo executivo — Orçamento ' + ORC_ANO, cid.nome + ' · o que levar da reunião · valores ' + ORC_COM_IPTU);
 
-  const ky = 74, kh = 56, gap = 10, kw = (W - MX * 2 - gap * 2) / 3;
-  const v = _orcVariacao_(r.ritmo, r.total);
-  // O total e o R$/m² trazem IPTU e Seguro: o rótulo avisa (12/10/2026).
+  // Quatro cards: o Orçamento do ano anterior entrou (Guilherme, 12/10/2026: "precisamos de um card com o orçado 2026").
+  const ky = 74, kh = 56, gap = 10, kw = (W - MX * 2 - gap * 3) / 4;
+  const v = _orcVariacao_(r.ritmo, r.total), orcAnt = rel.total.orcAnt || 0, vAnt = _orcVariacao_(orcAnt, r.total);
+  const corVar = d => d > 0.5 ? _ORC_COR_VAR.sobe : d < -0.5 ? _ORC_COR_VAR.desce : C.brandDark;
   const kpis = [
-    ['Orçamento ' + a.orc + ' ' + ORC_COM_IPTU, _orcMoeda_(r.total), 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
-    ['Variação × ritmo', (r.delta >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(r.delta)), v.texto + ' contra o Ritmo ' + a.ritmo],
-    ['R$/m² ao mês ' + ORC_COM_IPTU, r.m2Orc != null ? _orcM2_(r.m2Orc) : '–',
-     r.m2Rit != null ? _orcM2_(r.m2Rit) + ' no Ritmo ' + a.ritmo : '']
+    ['Orçamento ' + a.orc, _orcMoeda_(r.total), 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
+    ['Orçamento ' + a.orcAnt, orcAnt > 0.5 ? _orcMoeda_(orcAnt) : '–',
+     orcAnt > 0.5 ? 'Orç ' + a.orc + ' ' + vAnt.texto + ' (' + (r.total - orcAnt >= 0 ? '+' : '−') + _orcCompacto_(Math.abs(r.total - orcAnt)) + ')' : ''],
+    ['Variação × Ritmo ' + a.ritmo, (r.delta >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(r.delta)), v.texto + ' contra o Ritmo ' + a.ritmo, corVar(r.delta)],
+    ['R$/m² ao mês', r.m2Orc != null ? _orcM2_(r.m2Orc) : '–', r.m2Rit != null ? _orcM2_(r.m2Rit) + ' no Ritmo ' + a.ritmo : '']
   ];
   kpis.forEach((k, i) => {
     const x = MX + i * (kw + gap);
@@ -32,39 +35,13 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
       { align: 'L', fs: 7, bold: true, cor: claro ? C.brandSoft : C.textBody, fonte: DS.typography.titles });
     _orcUmaLinha_(slide, x + 12, ky + 18, kw - 24, 22, k[1],
       // A variação em R$ segue ▲ vermelho / ▼ verde, não a cor da marca (erro 1 da analista 4).
-      { align: 'L', fs: 15, bold: true, fonte: DS.typography.titles, fsMin: 9,
-        cor: claro ? '#FFFFFF' : i === 1 ? (r.delta > 0.5 ? _ORC_COR_VAR.sobe : r.delta < -0.5 ? _ORC_COR_VAR.desce : C.brandDark) : C.brandDark });
+      { align: 'L', fs: 15, bold: true, fonte: DS.typography.titles, fsMin: 9, cor: claro ? '#FFFFFF' : k[3] || C.brandDark });
     _orcUmaLinha_(slide, x + 12, ky + 39, kw - 24, 13, k[2],
       { align: 'L', fs: 7, cor: claro ? '#CBD5E1' : C.textBody, fonte: DS.typography.body, cortar: true });
   });
 
-  // Quatro mensagens, cada uma com o número na frente.
-  const manut = rel.contas.filter(c => c.chave === _orcChaveConta_('Manutenção de imóveis'))[0];
-  const msgs = [];
-  if (r.foco.length) {
-    msgs.push([_orcPct_(r.delta ? r.deltaFoco / r.delta : 0).replace(',0%', '%'),
-      'da alta vem das três contas em foco: ' + r.foco.map(f => f.nome.split(' ')[0] + ' ' +
-        (f.delta >= 0 ? '+' : '−') + _orcCompacto_(Math.abs(f.delta))).join(', ') + '.']);
-  }
-  if (r.efeitoArea != null) {
-    const pctArea = r.areaRit ? (r.areaOrc / r.areaRit - 1) : 0;
-    // Sinal certo e frase que segue o sinal (analista 3: "+-0,2% de área" e "fica maior" com a área caindo).
-    msgs.push([(pctArea >= 0 ? '+' : '−') + _orcPct_(Math.abs(pctArea)) + ' de área',
-      (Math.abs(pctArea) < 0.005 ? 'A área fica praticamente igual: ' : pctArea > 0 ? 'O Mega fica maior: ' : 'O Mega fica menor: ') +
-      _orcMilhar_(r.areaRit) + ' → ' + _orcMilhar_(r.areaOrc) + ' m² (área implícita). ' +
-      'Efeito área ' + _orcCompacto_(r.efeitoArea) + '; efeito custo por m² ' + _orcCompacto_(r.efeitoCusto) + '.']);
-  }
-  if (classManut && manut) {
-    const semProj = classManut.total - classManut.projetos.total;
-    msgs.push([_orcCompacto_(classManut.projetos.total),
-      'da manutenção são projetos pontuais. Sem eles a conta fica em ' + _orcCompacto_(semProj) + ', contra ' +
-      _orcCompacto_(manut.v.ritmo) + ' no Ritmo ' + a.ritmo + '.']);
-  }
-  if (reaj) {
-    msgs.push([_orcCompacto_(reaj.umPorCento),
-      'é o custo de cada 1% de reajuste nos ' + reaj.semReajuste.length + ' contratos que estão com o mesmo valor ' +
-      'o ano todo em ' + a.orc + ' (base ' + _orcCompacto_(reaj.baseSemReajuste) + ').']);
-  }
+  // Quatro mensagens, cada uma com o número na frente e o porquê (Guilherme, 12/10/2026: "ficou muito genérico").
+  const msgs = _orcMensagensResumo_(cid, rel, r, classManut, reaj, modelos, contratos);
   const my = ky + kh + gap, mh = (H - 28 - my - gap) / 2, mw = (W - MX * 2 - gap) / 2;
   msgs.slice(0, 4).forEach((m, i) => {
     const x = MX + (i % 2) * (mw + gap), y = my + Math.floor(i / 2) * (mh + gap);
@@ -75,7 +52,75 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj) {
     _orcParagrafo_(slide, x + 14, y + 34, mw - 24, mh - 40, m[1], { fs: 8.5, fsMin: 6.5, cor: C.textBody });
   });
 
-  _orcRodape_(slide, W, H, 'Fontes: METRAGEM-COND, modelos 070/090 e planilhas de contratos · área implícita = total ÷ R$/m² ÷ 12');
+  _orcRodape_(slide, W, H, 'Fontes: METRAGEM-COND, modelos 070/090 e cadastro de contratos · o porquê de cada conta: nota da gestão ' +
+    '(aba Ofensores) ou o maior item dos modelos · área implícita = total ÷ R$/m² ÷ 12');
+}
+
+// As mensagens do resumo, na ordem: [número, texto].
+//   1. as três contas que mais sobem, com o porquê de cada uma;
+//   2. a área e o R$/m² (com o motivo da área, cid.motivoArea);
+//   3. a manutenção pontual, se pesa (5% da conta ou mais); senão, as maiores reduções; senão, as altas seguintes
+//      (4ª e 5ª); senão, o Orçamento anterior;
+//   4. quanto do orçamento já é contrato e quanto custa 1% de reajuste.
+function _orcMensagensResumo_(cid, rel, r, classManut, reaj, modelos, contratos) {
+  const a = rel.anos, msgs = [];
+  const sinal = d => (d >= 0 ? '+' : '−') + _orcCompacto_(Math.abs(d));
+  // O porquê da conta: a nota da gestão (aba Ofensores, linha "MEGA X · CONTA") ou o maior item dos modelos.
+  const porque = c => {
+    if (!c.chave || /^(iptu|seguro)$/.test(_orcNorm_(c.nome))) return '';
+    const k = _orcChaveDetalheConta_(cid, c.nome), escrito = _orcTextoEscolhido_('Ofensores', k);
+    let t = _orcNorm_(escrito) !== _orcNorm_(k) ? escrito : '';
+    if (!t) { const it = _orcItensDaConta_(modelos || [], c.chave)[0]; t = it ? _orcTextoEscolhido_('Ofensores', it.descricao) : ''; }
+    t = String(t).trim();
+    return t.length > 60 ? t.slice(0, 58).replace(/\s+\S*$/, '') + '…' : t;
+  };
+
+  const q = _orcOfensores_(rel), top = q.ofensores.contas.slice(0, 3);
+  if (top.length && r.delta > 0.5) {
+    const soma = top.reduce((t, c) => t + c.delta, 0);
+    msgs.push([sinal(soma), 'nas ' + top.length + ' contas que mais sobem (' + _orcPct_(soma / r.delta).replace(',0%', '%') + ' da alta): ' +
+      top.map(c => { const p = porque(c); return c.nome + ' ' + sinal(c.delta) + (p ? ' — ' + p : ''); }).join('; ') + '.']);
+  }
+
+  if (r.areaRit && r.areaOrc && r.m2Orc != null && r.m2Rit != null) {
+    const pctArea = r.areaOrc / r.areaRit - 1, igual = Math.abs(pctArea) < 0.005;
+    const m2 = 'R$ ' + _orcM2_(r.m2Rit) + ' → R$ ' + _orcM2_(r.m2Orc) + ' por m² ao mês';
+    msgs.push([igual ? m2.split(' por')[0] : (pctArea > 0 ? '+' : '−') + _orcPct_(Math.abs(pctArea)) + ' de área',
+      igual ? 'por m² ao mês, com a área praticamente igual (' + _orcMilhar_(r.areaOrc) + ' m²): a alta é de custo, não de tamanho.'
+            : _orcMilhar_(r.areaRit) + ' → ' + _orcMilhar_(r.areaOrc) + ' m²' + (cid.motivoArea ? ' (' + cid.motivoArea + ')' : '') + '. ' + m2 +
+              (r.m2Orc < r.m2Rit - 0.005 ? ': o Mega gasta mais, mas cada m² custa menos.' : '.')]);
+  }
+
+  const manut = rel.contas.filter(c => c.chave === _orcChaveConta_('Manutenção de imóveis'))[0];
+  const red = q.defensores.contas.filter(c => c.delta < -10000).slice(0, 2);
+  if (classManut && manut && classManut.projetos.total >= 0.05 * classManut.total) {
+    const semProj = classManut.total - classManut.projetos.total;
+    msgs.push([_orcCompacto_(classManut.projetos.total), 'da manutenção são projetos pontuais (' +
+      _orcPct_(classManut.projetos.total / classManut.total).replace(',0%', '%') + ' da conta). Sem eles, a manutenção fica em ' +
+      _orcCompacto_(semProj) + ', contra ' + _orcCompacto_(manut.v.ritmo) + ' no Ritmo ' + a.ritmo + '.']);
+  } else if (red.length) {
+    msgs.push([sinal(red.reduce((t, c) => t + c.delta, 0)), 'nas contas que mais caem: ' +
+      red.map(c => { const p = porque(c); return c.nome + ' ' + sinal(c.delta) + (p ? ' — ' + p : ''); }).join('; ') + '.']);
+  } else if (q.ofensores.contas.length > 3 && r.delta > 0.5) {
+    // Sem projeto que pese e sem redução: as contas que vêm depois das três maiores altas.
+    const mais = q.ofensores.contas.slice(3, 5);
+    msgs.push([sinal(mais.reduce((t, c) => t + c.delta, 0)), 'nas contas que vêm a seguir: ' +
+      mais.map(c => { const p = porque(c); return c.nome + ' ' + sinal(c.delta) + (p ? ' — ' + p : ''); }).join('; ') + '.']);
+  } else if (rel.total.orcAnt > 0.5) {
+    const d = r.total - rel.total.orcAnt;
+    msgs.push([sinal(d), 'contra o Orçamento ' + a.orcAnt + ' (' + _orcCompacto_(rel.total.orcAnt) + '): ' +
+      _orcVariacao_(rel.total.orcAnt, r.total).texto + '.']);
+  }
+
+  const totContratos = (contratos || []).reduce((t, c) => t + (c.total || 0), 0);
+  if (reaj && totContratos > 0.5) {
+    msgs.push([_orcCompacto_(totContratos), 'do orçamento (' + _orcPct_(totContratos / r.total).replace(',0%', '%') + ') já são contratos. ' +
+      'Cada 1% de reajuste nos ' + reaj.semReajuste.length + ' com valor fixo no ano custa ' + _orcCompacto_(reaj.umPorCento) + '.']);
+  } else if (reaj) {
+    msgs.push([_orcCompacto_(reaj.umPorCento), 'é o custo de cada 1% de reajuste nos ' + reaj.semReajuste.length +
+      ' contratos com o mesmo valor o ano todo em ' + a.orc + ' (base ' + _orcCompacto_(reaj.baseSemReajuste) + ').']);
+  }
+  return msgs;
 }
 
 // ==========================================

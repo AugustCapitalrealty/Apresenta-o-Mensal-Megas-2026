@@ -120,7 +120,8 @@ function obterRelatorioAnual_(chaveCidade, modelos) {
 // R$ 146.046 e R$ 1.200 exatos).
 const ORC_CONTAS_SINONIMOS = {
   'Manutenção de bens móveis': 'Manutenção de máquinas e equipamentos',
-  'Quilometragem / Estacionamento': 'KM, estacionamento e pedágio'
+  'Quilometragem / Estacionamento': 'KM, estacionamento e pedágio',
+  'Quilometragem, estacionamento e pedágio': 'KM, estacionamento e pedágio'   // planilha RITMO-ATUAL (12/10/2026)
 };
 
 // Conta dos modelos que SOMA numa conta da METRAGEM que os modelos não montam
@@ -310,6 +311,12 @@ function _orcRotuloColuna_(k, anos) {
 function obterRelatorioMensal_(chaveCidade, modelos) {
   const mensal = _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
   const cid = ORC_CIDADES[chaveCidade];
+  // O 2026 mês a mês (Orç e Real/Ritmo) da planilha "RITMO-ATUAL" quando houver (12/10/2026): ela é exportada junto
+  // com a METRAGEM e fecha com ela; o Despesas-Mensal é mais antigo e o mês a mês precisava de ajuste.
+  if (cid.relatorios.ritmoId) {
+    try { _orcAplicarRitmo_(mensal, _orcLerRitmo_(_orcLerPrimeiraAba_(cid.relatorios.ritmoId)), cid.nome); }
+    catch (e) { Logger.log(cid.nome + ': RITMO-ATUAL não lido — fica o Despesas-Mensal: ' + e.message); }
+  }
   if (cid.relatorios.orcDosModelos) {
     // Mesmas contas que o anual troca: os 12 meses continuam somando o anual
     // (o que é de ORC_CONTAS_SOMAR soma por cima dos meses da conta; o de
@@ -453,6 +460,47 @@ function _orcLerFinanceiroMegas_(dados, ano) {
   const serie = r => col.map(c => r ? -_orcNum_(r[c]) : 0);
   const total = serie(tot), ip = serie(iptu), sg = serie(seg);
   return { ano: ano, total: total, ac: total.map((v, i) => v - ip[i] - sg[i]) };
+}
+
+// Planilha "MEGA X - RITMO-ATUAL": por conta, "Orç Jan/26 | Real Jan/26 | Variação R$" … "Orç Out/26 | Ritmo Out/26 |
+// Variação R$" … "Orç Ano/26 | Ritmo Ano/26". Devolve { [chave]: { nome, orcAnt[12], real[12] } } (valores positivos;
+// real = realizado até o último mês fechado e o ritmo depois). O "Orç Fev/25" do cabeçalho é erro de digitação: vale
+// o mês, com o ano que tiver.
+function _orcLerRitmo_(dados) {
+  const cab = (dados[0] || []).map(_orcNorm_), aa = String(ORC_ANO - 1).slice(-2);
+  const achar = (pref, m) => {
+    let i = cab.indexOf(pref + ' ' + m + '/' + aa);
+    if (i < 0) i = cab.findIndex(h => new RegExp('^' + pref + ' ' + m + '/\\d\\d$').test(h));
+    return i;
+  };
+  const orc = _ORC_MES_ABREV.map(m => achar('orc', m));
+  const real = _ORC_MES_ABREV.map(m => { const i = achar('real', m); return i >= 0 ? i : achar('ritmo', m); });
+  const faltam = _ORC_MES_ABREV.filter((m, i) => orc[i] < 0 || real[i] < 0);
+  if (faltam.length) throw new Error('RITMO-ATUAL: cabeçalho inesperado, faltam os meses ' + faltam.join(', '));
+  const sin = {};
+  Object.keys(ORC_CONTAS_SINONIMOS).forEach(k => { sin[_orcChaveConta_(k)] = _orcChaveConta_(ORC_CONTAS_SINONIMOS[k]); });
+  const out = {};
+  for (let i = 1; i < dados.length; i++) {
+    const nome = String(dados[i][0] === null || dados[i][0] === undefined ? '' : dados[i][0]).replace(/ /g, ' ').trim();
+    if (!nome || /^(total|r\$)/.test(_orcNorm_(nome))) continue;
+    const k0 = _orcChaveConta_(nome), k = sin[k0] || k0;
+    out[k] = { nome: nome, orcAnt: orc.map(c => -_orcNum_(dados[i][c])), real: real.map(c => -_orcNum_(dados[i][c])) };
+  }
+  return out;
+}
+
+// Troca o Orç e o Real/Ritmo do ano anterior das contas do mensal pelos da planilha RITMO-ATUAL. Conta que o mensal
+// não tem não entra (o Orç do ano é o do mensal ou dos modelos).
+function _orcAplicarRitmo_(mensal, ritmo, quem) {
+  let n = 0;
+  Object.keys(ritmo).forEach(k => {
+    const m = mensal.contas[k];
+    if (!m) return;
+    m.orcAnt = ritmo[k].orcAnt.slice();
+    m.real = ritmo[k].real.slice();
+    n++;
+  });
+  Logger.log(quem + ': ' + n + ' contas com o 2026 mês a mês da planilha RITMO-ATUAL');
 }
 
 function _orcLerMensal_(dados) {

@@ -1009,7 +1009,7 @@ slides.forEach((sl, i) => {
 ok(textos(slides[0]).indexOf('Mega Curitiba') >= 0 && textos(slides[0]).indexOf('Manutenção de Imóveis') < 0,
    'capa: título é a cidade, não a conta');
 const tCapa = textos(slides[0]);
-ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m²', 'vs. ritmo 2026', 'Orçamento 2027, com IPTU e seguro',
+ok(['ORÇAMENTO 2027', G._orcCompacto_(rel.total.orc), '/m²', 'Ritmo 2026', G._orcCompacto_(rel.total.ritmo), 'Orçamento 2027, com IPTU e seguro',
     'R$ ' + G._orcM2_(rel.total.orc / G._orcAreaImplicita_(rel, 'orc') / 12)].every(t => tCapa.indexOf(t) >= 0),
    'capa: total do orçamento em dinheiro e em m² (' + tCapa.join(' | ') + ')');
 // Curitiba é Demercado (ORC_MARCAS): nome e rodapé da marca, sem o slogan da
@@ -1977,7 +1977,7 @@ console.log('Capa como imagem');
      'capa: imagem do slide inteiro');
   ok(tc.indexOf('ORÇAMENTO 2027') < 0 && tc.indexOf('Mega Esteio') < 0 && tc.indexOf('Expandir Eficiência') < 0,
      'capa em imagem: títulos e rodapé ficam na imagem, não repetidos em texto');
-  ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m²') >= 0 && tc.indexOf('vs. ritmo 2026') >= 0,
+  ok(tc.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tc.indexOf('/m²') >= 0 && tc.indexOf('Ritmo 2026') >= 0 && !tc.some(t => /vs\. ritmo/.test(t)),
      'capa em imagem: os números da METRAGEM por cima, em texto (' + tc.join(' | ') + ')');
   // Sub capa em imagem: só a 04 tem imagem no dublê; as outras ficam com formas.
   const slE = decks[ESTEIO.deckId].getSlides();
@@ -2154,6 +2154,10 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
       G._orcGerar_([chave]);
       const sl = decks[cid.deckId].getSlides();
       ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))), c + ' (19h56): nenhum slide com falha ou texto cortado');
+      // Resumo executivo: o card do Orçamento do ano anterior e as mensagens com o porquê (12/10/2026).
+      const re = sl.filter(x => titulo(x) === 'Resumo executivo — Orçamento 2027')[0], tre = re ? textos(re) : [];
+      ok(tre.indexOf('ORÇAMENTO 2026') >= 0 && tre.some(t => /contas que mais sobem/.test(t)) && tre.some(t => /já são contratos/.test(t)) &&
+         !tre.some(t => /…$/.test(t)), c + ' (19h56): resumo com o Orçamento 2026 e as mensagens novas (' + tre.slice(-8).join(' / ') + ')');
       // O asterisco da Despesa de pessoal: na DRE e nos ofensores do Esteio, com a nota no rodapé (a tabela não
       // encolhe — a moldura continua a mesma); nos outros Megas, nada.
       const nota = '* Despesa de pessoal: inclui R$ 90.000 da assistente de facilities, como consultoria até o RH aprovar.';
@@ -2170,6 +2174,27 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
       cid.relatorios.orcDosModelos = antes.o;
     }
   });
+  // RITMO-ATUAL (20h43): o 2026 mês a mês fecha com a METRAGEM — os ajustes do mês a mês quase somem.
+  {
+    const cid = G.ORC_CIDADES.ESTEIO, antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
+    cid.despesasGeraisId = G.ORC_MODELO_090_ID; cid.servicosTerceirosId = G.ORC_MODELO_070_ID; cid.relatorios.orcDosModelos = true;
+    porId[cid.relatorios.metragemId] = fixture('fixture_metragem_esteio_1956.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_esteio.json');
+    const rit = G._orcLerRitmo_(fixture('fixture_ritmo_esteio_1956.json'));
+    const manutR = rit[G._orcChaveConta_('Manutenção de imóveis')], kmR = rit[G._orcChaveConta_('KM, estacionamento e pedágio')];
+    ok(manutR && Math.round(manutR.real.reduce((a, v) => a + v, 0)) === 601837 && !!kmR && !!rit[G._orcChaveConta_('Manutenção de máquinas e equipamentos')],
+       'RITMO-ATUAL: lido conta a conta, Manutenção de imóveis com Ritmo 2026 = R$ 601.837 (METRAGEM), KM e bens móveis pelo sinônimo');
+    const semR = G._orcLerVisaoGeral_('ESTEIO').rel.mensalConciliado || [];
+    cid.relatorios.ritmoId = 'teste-ritmo-esteio';
+    porId['teste-ritmo-esteio'] = fixture('fixture_ritmo_esteio_1956.json');
+    const comR = G._orcLerVisaoGeral_('ESTEIO').rel.mensalConciliado || [];
+    const grande = l => l.filter(a => Math.abs(a.dif) >= 1000 && a.k !== 'orc' && !/IPTU|Seguro/.test(a.nome));
+    ok(grande(semR).length >= 4 && grande(comR).length === 0,
+       'esteio: com a RITMO-ATUAL o 2026 mês a mês fecha com a DRE (ajustes de R$ 1 mil ou mais: ' + grande(semR).length + ' → ' +
+       grande(comR).map(a => a.nome + ' ' + Math.round(a.dif)).join(', ') + ')');
+    delete cid.relatorios.ritmoId;
+    Object.assign(cid, { despesasGeraisId: antes.d, servicosTerceirosId: antes.s }); cid.relatorios.orcDosModelos = antes.o;
+  }
   porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_ANTES;
   porId[G.ORC_MODELO_090_ID] = M090_ANTES;
   porId[G.ORC_MODELO_070_ID] = M070_ANTES;

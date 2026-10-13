@@ -181,7 +181,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
   if (visao) {
     const rel = visao.rel;
     secao('Resumo Executivo');
-    comSelo('Resumo executivo', null, s => gerarSlideResumoExecutivo_(s, W, H, cid, rel, calc.cls, calc.reaj));
+    comSelo('Resumo executivo', null, s => gerarSlideResumoExecutivo_(s, W, H, cid, rel, calc.cls, calc.reaj, visao.modelos, calc.contratos));
     comSelo('Ponte', null, s => gerarSlidePonte_(s, W, H, cid, rel, visao.mensal));
 
     secao('DRE');

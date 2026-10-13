@@ -368,10 +368,26 @@ function _orcLogMolduras_(quem) {
   Logger.log(quem + ' · molduras: ' + _ORC_MOLD_CONTA.com + ' slides com a moldura em imagem, ' + n + ' com as formas de antes' +
              (faltam.length ? ' — faltam na pasta ' + ORC_PASTA_IMAGENS + ': ' +
                faltam.map(h => 'MOLDURA - ' + h + '.png (' + _ORC_MOLD_CONTA.sem[h].join(', ') + ')').join('; ') +
-               '. Rode o teste com PREVIA e ferramentas/molduras_imagem.py, ou espere o Drive subir a pasta.' : ''));
+               '. As especificações foram para ' + ORC_MOLDURAS_PENDENTES + ': node ferramentas/molduras_imagem.js com ele ' +
+               '(sem Python) e gere de novo.' : ''));
+  // As que faltaram vão para MOLDURAS PENDENTES.json na pasta de imagens (somadas às que já estavam), como os gráficos.
+  if (faltam.length) {
+    try {
+      _orcImagemDaPasta_('');
+      if (_ORC_PASTA_IMG) {
+        const it = _ORC_PASTA_IMG.getFilesByName(ORC_MOLDURAS_PENDENTES), arq = it.hasNext() ? it.next() : null;
+        let pend = {};
+        try { pend = arq ? JSON.parse(arq.getBlob().getDataAsString()) : {}; } catch (e) { pend = {}; }
+        faltam.forEach(h => { pend[h] = _ORC_MOLDURAS_USADAS[h]; });
+        const txt = JSON.stringify(pend, null, 1);
+        if (arq) arq.setContent(txt); else _ORC_PASTA_IMG.createFile(ORC_MOLDURAS_PENDENTES, txt, MimeType.PLAIN_TEXT);
+      }
+    } catch (e) { Logger.log('Não gravei ' + ORC_MOLDURAS_PENDENTES + ': ' + e.message); }
+  }
   _ORC_MOLD_CONTA = { com: 0, sem: {} };
   _orcLogGraficos_(quem);
 }
+const ORC_MOLDURAS_PENDENTES = 'MOLDURAS PENDENTES.json';
 
 function _orcAbrirMoldura_() {
   _ORC_MOLD = ORC_USAR_MOLDURAS ? { cards: [], tabelas: [], header: false, secao: 0 } : null;

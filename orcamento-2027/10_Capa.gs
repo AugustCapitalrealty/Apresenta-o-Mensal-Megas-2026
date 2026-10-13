@@ -159,8 +159,9 @@ function _orcCapaNumeros_(slide, k, rel) {
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
   _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', ' + ORC_COM_IPTU,
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+  // O Ritmo do ano anterior em R$ no lugar do "▲ 92% vs. ritmo" (Guilherme, 12/10/2026: "coloque o número mesmo de 2026").
   const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m²'] : null,
-                vT.texto !== '–' ? [vT.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
+                rel.total.ritmo > 0.5 ? [_orcCompacto_(rel.total.ritmo), 'Ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);
   kpis.forEach((kp, i) => {
     const x = (546 + i * 80) * k;
     _orcUmaLinha_(slide, x, 252 * k, 76 * k, 22 * k, kp[0],
