@@ -229,7 +229,9 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   }
 
   // 4. Subtítulo e rodapé com o Mega da seção.
-  const sub = shapes.filter(sh => /^Subtítulo:/.test(txt(sh).trim()))[0];
+  // O subtítulo-molde, ou o que ficou só com o nome do Mega (o gestor apagou o molde na v4, 13/10/2026).
+  const sub = shapes.filter(sh => /^Subtítulo:/.test(txt(sh).trim()))[0] ||
+              shapes.filter(sh => /^Mega (Esteio|Itajaí|Curitiba)$/.test(txt(sh).trim()) && sh.getTop() > 25 && sh.getTop() < 60)[0];
   const seguranca = /^substituicao seguranca/.test(nt);   // subtítulo "Segurança e vigilância · Mega"
   if (sub) {
     const partes = (seguranca ? ['Segurança e vigilância'] : [conta, lugar]).filter(p => p && p !== mega).concat([mega]);   // LOCAL = o próprio Mega não repete (13/10/2026)
