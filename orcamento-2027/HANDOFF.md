@@ -9,6 +9,25 @@ reinício). O que importa sobre o projeto está aqui, no
 
 ## 0. COMECE AQUI — onde parou (12/10/2026, ~18h30; apresentação em 13/10)
 
+**>>> 13/10/2026, fim do dia — V1 FECHADA (Guilherme: "fechamos a apresentação; tudo o que fizemos é a V1, já
+apresentada à diretoria na 1ª rodada"). <<<**
+- **V1 = git tag `v1`** (este commit) = o deck de Facilities gerado por `00_Gerar.gs` (gerarComeco + gerarMega*),
+  com os slides do gestor (Esteio e Curitiba da v4, Itajaí da v3 — `ORC_GESTOR_FONTE`, 03_Exportar.gs), Premissas
+  novas, sub capas, ORC_SECOES, IPTU em 1 mês e seguro em 8 no custo do condomínio, selo ⚠ REVISAR nos 3 do Curitiba,
+  e à parte `gerarSlidesM2ComIptu()`.
+- **Congelar:** o Guilherme roda `congelarV1()` (35_Versoes.gs) uma vez → cópia do deck na pasta VERSÕES
+  ("FACILITIES - ORÇAMENTO 2027 · V1 (apresentada à diretoria em 13-10-2026)") + "ORÇAMENTO 2027 - BASE V1.json" na
+  pasta do orçamento (METRAGEM e linhas dos modelos 070/090 + contratos, item a item, por Mega). Não refaz.
+- **Apontamentos da diretoria** (28 linhas: G1–G4, E1–E5, C1–C8, I1–I9): planilha "ORÇAMENTO 2027 - AJUSTES PEDIDOS
+  PELO DIRETOR (13-10-2026)" (`1kbDZfe0I_dNTDZ-oWijm-YG7q_5XhL2n-OnqyP377Hc`, pasta do orçamento). Simulado no chat:
+  Curitiba posto noturno 6 meses (−234.103), paisagismo Sodexo 64 mil (−136.000), jardim vertical fora (−16.000) →
+  total 4,71 → ~4,47/m²; Itajaí meta 4,80 (hoje 5,12, falta ~R$ 500 mil/ano). NADA disso está no código/planilhas.
+- **V2 — só quando o Guilherme confirmar:** `ORC_VERSAO_ATUAL` (35_Versoes.gs) vira 'V2' e entra um slide "O que
+  mudou desde a V1" por Mega (e no começo): compara a base V1 com a geração de agora — total e R$/m² antes/depois e as
+  linhas dos modelos que mudaram (conta · item · V1 → V2 · Δ R$ · Δ R$/m²), ligando cada mudança ao apontamento da
+  planilha. Ainda não feito.
+- **Sem Python no trabalho** (CrowdStrike): só Node — `node teste/teste_orcamento.js`, `node ferramentas/molduras_imagem.js`.
+
 **13/10/2026 (de casa, Python liberado pelo Guilherme):** reinstalados Python 3.12 (+ openpyxl, Pillow, numpy), Git,
 Node e clasp. `python ferramentas/graficos_imagem.py` desenhou os **131 gráficos** do `GRAFICOS PENDENTES.json` de
 12/10 22h48 (251 especificações). Teste 4851/4851; `main` = `origin/main` (`a316e20`). Falta o Guilherme gerar de
