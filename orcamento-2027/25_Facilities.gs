@@ -24,6 +24,8 @@ const ORC_FACILITIES = {
 
 // Durante a geração no deck único: { deckId, parte, ids, indice, alvo } (00_Helpers.gs, _orcNovoSlide_).
 let _ORC_UNICO = null;
+// Geração do Mega completo (00_Gerar.gs): sem o "Revisar" e sem os moldes de fotos; os slides do gestor entram depois.
+let _ORC_COMPLETO = false;
 
 function gerarFacilitiesAbertura() { _orcGerarFacilities_('ABERTURA'); }
 function gerarFacilitiesCuritiba() { _orcGerarFacilities_('CURITIBA'); }
@@ -72,7 +74,10 @@ function _orcPosicaoFacilities_(idsDeck, parte, fotos) {
   return idsDeck.length;
 }
 
-function _orcGerarFacilities_(parte) {
+// completo (00_Gerar.gs): o Mega com os slides do gestor da v3 dentro (_orcGestorNaParte_, 31_VersaoFinal.gs).
+function _orcGerarFacilities_(parte, completo) {
+  const inicio = Date.now();
+  completo = !!completo && parte !== 'ABERTURA';
   const deckId = _orcIdFacilities_();
   if (!deckId) throw new Error('Falta o deck de Facilities: rode criarDeckFacilities() (25_Facilities.gs) uma vez.');
   _orcTextosReiniciar_();
@@ -96,6 +101,7 @@ function _orcGerarFacilities_(parte) {
   sair.forEach(id => { const s = deck.getSlideById(id); if (s) s.remove(); });
   props.deleteProperty('ORC_FAC_INICIAL');
   props.setProperty('ORC_FAC_' + parte, '[]');
+  props.setProperty('ORC_FAC_GESTOR_FEITOS_' + parte, '[]');   // as cópias dos slides do gestor estavam na lista e saíram
   if (sair.length) {
     _orcSalvarDeck_(deck, 'a limpeza dos slides antigos de ' + parte);
     deck = SlidesApp.openById(deckId);
@@ -103,6 +109,7 @@ function _orcGerarFacilities_(parte) {
 
   // 2) Gera a parte na posição dela.
   _ORC_UNICO = { deckId: deckId, parte: parte, ids: [], indice: indice - antes, alvo: null };
+  _ORC_COMPLETO = completo;
   try {
     if (parte === 'ABERTURA') {
       _orcAplicarMarca_(null);
@@ -115,8 +122,11 @@ function _orcGerarFacilities_(parte) {
   } finally {
     _orcFacilitiesGuardarIds_();
     _ORC_UNICO = null;
+    _ORC_COMPLETO = false;
     _orcAplicarMarca_(null);
   }
+  // 2b) Mega completo: os slides do gestor da v3 dentro da parte, no lugar em que ele pôs.
+  if (completo) _orcGestorNaParte_(deckId, parte, inicio);
 
   // 3) Links (sumários → seções, sumário de Facilities → capa de cada Mega) e o provisório.
   const final = SlidesApp.openById(deckId);

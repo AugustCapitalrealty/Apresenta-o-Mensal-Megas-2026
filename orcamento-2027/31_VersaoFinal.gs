@@ -184,3 +184,104 @@ function _orcMegaDoSlide_(slide) {
   }
   return null;
 }
+
+// ==========================================
+// MEGA COMPLETO (00_Gerar.gs): os slides do gestor da v3 dentro da parte do Mega no deck de Facilities
+// ==========================================
+// Cada slide do gestor do Mega na v3 (Moked, substituição da segurança, obras…) é copiado logo depois do slide gerado
+// que vem antes dele lá (a âncora: mesmo título; sem o "(1/2)" se a paginação mudou; sem achar, no fim do Mega),
+// revisado como em 29_GestorRevisado.gs, e entra na lista da parte — a próxima geração do Mega troca também esses. Os
+// moldes de fotos vazios do Mega saem. Perto dos 6 min do Apps Script, para e agenda completarSlidesDoGestor().
+function _orcGestorNaParte_(deckId, parte, inicio) {
+  const cid = ORC_CIDADES[parte], props = PropertiesService.getScriptProperties();
+  const propLista = 'ORC_FAC_' + parte, propFeitos = 'ORC_FAC_GESTOR_FEITOS_' + parte;
+  const feitos = JSON.parse(props.getProperty(propFeitos) || '[]');
+  props.setProperty('ORC_FAC_GESTOR_PENDENTE', parte);
+  const deck = SlidesApp.openById(deckId), W = deck.getPageWidth(), H = deck.getPageHeight();
+  const textosDe = s => s.getShapes().map(sh => { try { return sh.getText().asString(); } catch (e) { return ''; } });
+  const megaDe = ts => {
+    for (let i = 0; i < ts.length; i++) {
+      const m = ts[i].match(/(?:^|·\s*)(Mega (?:Esteio|Itajaí|Curitiba))(?![A-Za-zÀ-ú])/);
+      if (m) return m[1];
+    }
+    return null;
+  };
+  const tituloDe = ts => ts.map(t => t.trim()).filter(String)[0] || '';
+
+  // 1. Os moldes de fotos vazios do Mega saem (no Mega completo os slides do gestor vêm da v3).
+  let nMoldes = 0;
+  (_orcFotosPorParte_(deck)[parte] || []).forEach(id => {
+    const s = deck.getSlideById(id);
+    if (s && /Título do assunto/.test(_orcTituloGestor_(s))) { s.remove(); nMoldes++; }
+  });
+
+  // 2. O plano: os slides do gestor deste Mega na v3, cada um com a âncora. A seção do Mega vai do sumário dele ao
+  //    sumário do Mega seguinte.
+  const v3 = SlidesApp.openById(ORC_DECK_VERSAO_GESTOR_ID);
+  const plano = [];
+  let mega = null, ancora = null, dentro = false;
+  const sv3 = v3.getSlides();
+  for (let i = 0; i < sv3.length; i++) {
+    const s = sv3[i];
+    if (!_orcDonoFotos_(s)) {
+      const ts = textosDe(s), t = tituloDe(ts);
+      mega = megaDe(ts) || mega;
+      if (t === 'Sumário') { if (dentro && mega !== cid.nome) break; if (mega === cid.nome) dentro = true; }
+      ancora = { mega: mega, titulo: t };
+      continue;
+    }
+    if ((mega || 'Mega Esteio') !== cid.nome) continue;
+    const titulo = _orcTituloGestor_(s);
+    if (/Título do assunto/.test(titulo)) continue;                                  // molde vazio
+    plano.push({ ancora: ancora, origem: s, n: i + 1, titulo: titulo, feito: feitos.indexOf(s.getObjectId()) >= 0 });
+  }
+
+  // 3. A posição de cada âncora entre os slides gerados da parte.
+  const lista = JSON.parse(props.getProperty(propLista) || '[]');
+  const slides = deck.getSlides(), ids = slides.map(s => s.getObjectId());
+  const daParte = lista.map(id => ids.indexOf(id)).filter(i => i >= 0).sort((a, b) => a - b);
+  const titulos = {};
+  daParte.forEach(i => { titulos[i] = _orcNorm_(tituloDe(textosDe(slides[i]))); });
+  const semPag = t => t.replace(/\s*\(\d+\/\d+\)\s*$/, '');
+  const ultimo = daParte.length ? daParte[daParte.length - 1] : ids.length - 1;
+  const log = [];
+  const posicao = a => {
+    const t = _orcNorm_((a && a.titulo) || '');
+    let e = daParte.filter(i => titulos[i] === t)[0];
+    if (e === undefined) e = daParte.filter(i => semPag(titulos[i]) === semPag(t))[0];
+    if (e !== undefined) return e;
+    log.push('âncora "' + ((a && a.titulo) || '—') + '" não está no ' + cid.nome + ': o slide do gestor foi para o fim do Mega');
+    return ultimo;
+  };
+
+  // 4. Insere de baixo para cima (as posições de cima não mudam), na ordem da v3 em cada âncora; os já copiados numa
+  //    rodada que parou contam na posição.
+  const grupos = {};
+  plano.forEach(p => { p.pos = posicao(p.ancora); (grupos[p.pos] = grupos[p.pos] || []).push(p); });
+  let n = 0, parou = false;
+  Object.keys(grupos).map(Number).sort((a, b) => b - a).forEach(pos => {
+    grupos[pos].forEach((p, k) => {
+      if (parou || p.feito) return;
+      if (Date.now() - inicio > 5 * 60 * 1000) { parou = true; return; }
+      const novo = deck.insertSlide(pos + 1 + k, p.origem);
+      const r = _orcRevisarSlideGestor_(novo, W, H, cid.nome, p.n, p.ancora);
+      if (r.avisos.length) log.push('slide ' + p.n + ' da v3 — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
+      lista.push(novo.getObjectId());
+      feitos.push(p.origem.getObjectId());
+      n++;
+      props.setProperty(propLista, JSON.stringify(lista));
+      props.setProperty(propFeitos, JSON.stringify(feitos));
+    });
+  });
+  _orcSalvarDeck_(deck, 'os slides do gestor do ' + cid.nome);
+  log.forEach(l => Logger.log(cid.nome + ' · ' + l));
+  const nMoked = plano.filter(p => /^Implantação Moked/i.test(p.titulo)).length;
+  Logger.log(cid.nome + ' · slides do gestor da v3: ' + (plano.filter(p => p.feito).length + n) + ' de ' + plano.length +
+             ' no Mega (' + nMoked + ' da Moked) · ' + nMoldes + ' moldes de fotos vazios saíram');
+  if (parou) {
+    ScriptApp.newTrigger('completarSlidesDoGestor').timeBased().after(60 * 1000).create();
+    Logger.log('Sem tempo para todos os slides do gestor do ' + cid.nome + ': continua sozinho em 1 minuto — se não começar, ' +
+               'rode completarSlidesDoGestor() (00_Gerar.gs).');
+  } else props.deleteProperty('ORC_FAC_GESTOR_PENDENTE');
+  return { n: n, total: plano.length, parou: parou };
+}

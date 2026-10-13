@@ -2393,6 +2393,63 @@ console.log('Slides do gestor revisados (29_GestorRevisado.gs)');
   ok(sl.every(s => s.shapes.some(r => r.nome === 'foto')), 'gestor revisado: as fotos do gestor ficam');
 }
 
+console.log('Mega completo (00_Gerar.gs)');
+// 13/10/2026: cada Mega sai no deck de Facilities com os slides do gestor da v3 dentro, logo depois do slide em que
+// ele pôs; gerar o Mega de novo troca também esses (sem duplicar). Sem "Revisar" e sem moldes de fotos.
+{
+  const idAntes = G.ORC_FACILITIES.deckId;
+  G.ORC_FACILITIES.deckId = 'FACILITIES-COMPLETO';
+  decks = {};
+  ['ABERTURA', 'ESTEIO', 'ITAJAI', 'CURITIBA'].forEach(p => { delete PROPS_DADOS['ORC_FAC_' + p]; delete PROPS_DADOS['ORC_FAC_GESTOR_FEITOS_' + p]; });
+  const fac = G.SlidesApp.openById('FACILITIES-COMPLETO');
+  PROPS_DADOS.ORC_FAC_INICIAL = JSON.stringify([fac.getSlides()[0].getObjectId()]);
+  const v3 = novoDeck(); v3._slides = [];
+  const ger = (titulo, sub) => { const s = v3.appendSlide();
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo }, { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: sub }); };
+  const gest = (titulo, mega) => { const s = v3.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';   // o Itajaí também veio com a marca do Esteio (cópia)
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Subtítulo: conta, local ou obra · ' + mega },
+                  { tipo: 'TEXT_BOX', x: 30, y: 385, w: 660, h: 14, texto: 'Fotos e textos preenchidos pelo gestor · ' + mega }); };
+  ger('Sumário', 'Facilities · Orçamento 2027');
+  ger('Sumário', 'Mega Esteio · Orçamento 2027');
+  ger('Segurança e vigilância', 'Orç 2027 · Mega Esteio');
+  gest('Implantação Moked | Rotina de Segurança', 'Mega Esteio');
+  gest('Substituição Segurança | Cenário Hoje', 'Mega Esteio');
+  ger('Manutenção: os itens de cada grupo (1/2)', '62 itens · Mega Esteio');
+  gest('Instalação de Linha de Vida Vertical | Fase 1', 'Mega Esteio');
+  ger('Sumário', 'Mega Itajaí · Orçamento 2027');
+  ger('Manutenção: os itens de cada grupo (1/2)', '50 itens · Mega Itajaí');
+  gest('Pintura dos Prédios de Apoio', 'Mega Itajaí');
+  decks[G.ORC_DECK_VERSAO_GESTOR_ID] = v3;
+  G.gerarComeco(); G.gerarMegaEsteio(); G.gerarMegaItajai();
+  const lista = p => JSON.parse(PROPS_DADOS['ORC_FAC_' + p] || '[]');
+  const tit = s => textos(s)[0] || '';
+  const daParte = p => fac.getSlides().filter(s => lista(p).indexOf(s.getObjectId()) >= 0);
+  const titE = daParte('ESTEIO').map(tit), titI = daParte('ITAJAI').map(tit);
+  const iSeg = titE.findIndex(t => /^Segurança e vigilância/.test(t)), iItE = titE.indexOf('Manutenção: os itens de cada grupo (1/2)');
+  ok(iSeg > 0 && titE[iSeg + 1] === 'Implantação Moked | Rotina de Segurança' && titE[iSeg + 2] === 'Substituição Segurança | Cenário Hoje' &&
+     iItE > 0 && titE[iItE + 1] === 'Instalação de Linha de Vida Vertical | Fase 1',
+     'Mega completo: Moked e substituição depois de "Segurança e vigilância", a obra depois dos itens (1/2) (' +
+     titE.slice(Math.max(0, iSeg), iSeg + 3).join(' / ') + ')');
+  const iItI = titI.findIndex(t => /^Manutenção: os itens de cada grupo/.test(t));
+  ok(iItI > 0 && titI[iItI + 1] === 'Pintura dos Prédios de Apoio' && titE.indexOf('Pintura dos Prédios de Apoio') < 0,
+     'Mega completo: o slide do gestor do Itajaí só no Itajaí, depois dos itens de cada grupo');
+  const copias = daParte('ESTEIO').concat(daParte('ITAJAI')).filter(s => /^\[REGISTRO FOTOGRÁFICO/.test(s.notas || ''));
+  ok(copias.length === 4 && daParte('ITAJAI').filter(s => /^\[REGISTRO FOTOGRÁFICO · ITAJAI\]/.test(s.notas || '')).length === 1 &&
+     !copias.some(s => textos(s).some(t => /^Subtítulo:/.test(t))),
+     'Mega completo: 4 slides do gestor copiados e revisados (marca do Mega certo, subtítulo preenchido)');
+  ok(!fac.getSlides().some(s => /^Revisar antes da versão final/.test(tit(s)) || /Título do assunto/.test(tit(s))),
+     'Mega completo: sem o "Revisar" e sem moldes de fotos');
+  const n1 = fac.getSlides().length;
+  G.gerarMegaEsteio();
+  ok(fac.getSlides().length === n1 && daParte('ESTEIO').filter(s => tit(s) === 'Implantação Moked | Rotina de Segurança').length === 1,
+     'Mega completo: gerar o Esteio de novo troca também os slides do gestor, sem duplicar (' + fac.getSlides().length + ' slides)');
+  ok(!PROPS_DADOS.ORC_FAC_GESTOR_PENDENTE, 'Mega completo: nada pendente para completarSlidesDoGestor()');
+  delete decks[G.ORC_DECK_VERSAO_GESTOR_ID];
+  G.ORC_FACILITIES.deckId = idAntes;
+}
+
 console.log('Versão final (31_VersaoFinal.gs)');
 // Cópia do deck de Facilities + os slides do gestor da v3 no lugar deles, a Moked no lugar dos slides dela.
 {

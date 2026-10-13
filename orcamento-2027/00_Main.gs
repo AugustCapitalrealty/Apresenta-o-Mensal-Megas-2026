@@ -180,7 +180,10 @@ function _orcGerarCidade_(deck, W, H, chave) {
   _ORC_TRILHA = 0;   // capa, revisão e sumário ficam sem a trilha do topo
   _orcPasso_(deck, W, H, 'Capa — ' + cid.nome, s => gerarSlideCapa_(s, W, H, cid, visao ? visao.rel : null));
   if (visao && (visao.rel.avisos.length || visao.rel.pendencias.length)) {
-    _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
+    // No Mega completo (00_Gerar.gs) o slide interno não entra: os avisos ficam no log.
+    if (_ORC_COMPLETO) Logger.log(cid.nome + ' · fora da apresentação (slide "Revisar"): ' +
+      visao.rel.avisos.concat(visao.rel.pendencias.map(p => p.nome + ' — ' + p.tipo + ': ' + p.texto)).join(' | '));
+    else _orcPasso_(deck, W, H, 'Revisar antes da versão final', s => gerarSlideRevisar_(s, W, H, cid, visao.rel));
   }
   _orcPasso_(deck, W, H, 'Sumário', s => gerarSlideSumario_(s, W, H, cid, secoes));
   secao('Premissas');
@@ -287,8 +290,9 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
     comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
     // Os moldes de fotos do gestor (criados uma vez; 26_Fotos.gs), no fim do Mega: desde 13/10/2026 sem seção
-    // própria — as fotos do gestor ficam na seção do assunto delas.
-    _orcSecaoFotos_(deck, W, H, cid, chave);
+    // própria — as fotos do gestor ficam na seção do assunto delas. No Mega completo (00_Gerar.gs) não entram: os
+    // slides do gestor vêm da v3.
+    if (!_ORC_COMPLETO) _orcSecaoFotos_(deck, W, H, cid, chave);
   }
   gravar(false);   // a última seção; a remoção dos antigos fica em _orcGerar_
 }

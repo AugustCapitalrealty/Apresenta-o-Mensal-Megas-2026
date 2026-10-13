@@ -22,15 +22,12 @@ const ORC_COMPLETA = {
   prop: 'ORC_COMPLETA_PASSO', propSeq: 'ORC_COMPLETA_SEQUENCIA', propParar: 'ORC_COMPLETA_PARAR',
   gatilho: 'continuarApresentacaoCompleta',
   sequencias: {
-    TODOS: [['abertura de Facilities', () => gerarFacilitiesAbertura()],
-            ['Mega Esteio', () => gerarFacilitiesEsteio()],
-            ['Mega Itajaí', () => gerarFacilitiesItajai()],
-            ['Mega Curitiba', () => gerarFacilitiesCuritiba()],
-            ['slides da Moked', () => gerarSlidesMoked()],
-            ['versão final', () => gerarVersaoFinal()]],
-    ESTEIO: [['Mega Esteio', () => gerarFacilitiesEsteio()],
-             ['slides da Moked', () => gerarSlidesMoked()],
-             ['versão final do Mega Esteio', () => gerarVersaoFinalEsteio()]]
+    // Desde 13/10/2026 cada Mega sai completo (00_Gerar.gs), com os slides do gestor e da Moked dentro.
+    TODOS: [['começo', () => gerarComeco()],
+            ['Mega Esteio completo', () => gerarMegaEsteio()],
+            ['Mega Itajaí completo', () => gerarMegaItajai()],
+            ['Mega Curitiba completo', () => gerarMegaCuritiba()]],
+    ESTEIO: [['Mega Esteio completo', () => gerarMegaEsteio()]]
   }
 };
 
