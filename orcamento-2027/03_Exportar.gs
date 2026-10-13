@@ -73,6 +73,66 @@ function _orcExportarVersaoGestor_(deckId, nomePasta, parte) {
              ': ' + (desta.length - semTempo.length) + ' PNG do gestor, ' + linhas.length + ' slides em ordem.txt — ' + pasta.getUrl());
 }
 
+// Fotos dos slides do gestor na v3, no arquivo original (o PNG do slide é 960 px e comprime as fotos), para refazer
+// os slides dele (12/10/2026). Pasta "_fotos-gestor": slide_078_1.jpg… (fora a moldura do slide inteiro) e
+// fotos.json com, por slide, o Mega, o título, os textos e as imagens com posição e tamanho no slide. Os da Moked
+// (já refeitos) e o molde vazio ficam de fora. exportarFotosGestor() limpa a pasta e começa; sem tempo, o log pede
+// exportarFotosGestorContinuar(), que segue de onde parou (não regrava o que já está na pasta).
+function exportarFotosGestor()          { _orcExportarFotosGestor_(true); }
+function exportarFotosGestorContinuar() { _orcExportarFotosGestor_(false); }
+
+function _orcExportarFotosGestor_(limpar) {
+  const inicio = Date.now();
+  const deck = SlidesApp.openById(ORC_DECK_VERSAO_GESTOR_ID), W = deck.getPageWidth(), H = deck.getPageHeight();
+  const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
+  const it = pai.getFoldersByName('_fotos-gestor');
+  const pasta = it.hasNext() ? it.next() : pai.createFolder('_fotos-gestor');
+  const ja = {};
+  const arqs = pasta.getFiles();
+  while (arqs.hasNext()) { const f = arqs.next(); if (limpar) f.setTrashed(true); else ja[f.getName()] = true; }
+  const r = n => Math.round(n * 10) / 10;
+  const slides = [];
+  let mega = null, gravadas = 0;
+  const faltam = [];
+  deck.getSlides().forEach((s, i) => {
+    if (!_orcDonoFotos_(s)) { mega = _orcMegaDoSlide_(s) || mega; return; }
+    const titulo = _orcTituloGestor_(s);
+    if (/^Implantação Moked/i.test(titulo) || /Título do assunto/.test(titulo)) return;
+    const n = String(i + 1).padStart(3, '0');
+    const textos = s.getShapes().map(sh => {
+      let t = '';
+      try { t = sh.getText().asString().replace(/\n$/, ''); } catch (e) { /* forma sem texto */ }
+      return { x: r(sh.getLeft()), y: r(sh.getTop()), w: r(sh.getWidth()), h: r(sh.getHeight()), texto: t };
+    }).filter(t => t.texto.trim());
+    const imagens = [];
+    s.getImages().forEach((img, k) => {
+      if (img.getWidth() >= W * 0.9 && img.getHeight() >= H * 0.9) return;   // a moldura
+      const item = { x: r(img.getLeft()), y: r(img.getTop()), w: r(img.getWidth()), h: r(img.getHeight()) };
+      const base = 'slide_' + n + '_' + (k + 1);
+      const feito = Object.keys(ja).filter(a => a.indexOf(base + '.') === 0)[0];
+      if (feito) item.arquivo = feito;
+      else if (Date.now() - inicio > 5 * 60 * 1000) faltam.push(base);
+      else {
+        try {
+          const b = img.getBlob(), ext = (b.getContentType() || 'image/png').split('/')[1].replace('jpeg', 'jpg');
+          item.arquivo = base + '.' + ext;
+          pasta.createFile(b.setName(item.arquivo));
+          gravadas++;
+        } catch (e) { item.erro = e.message; Logger.log(base + ': não deu para salvar — ' + e.message); }
+      }
+      imagens.push(item);
+    });
+    let notas = '';
+    try { notas = s.getNotesPage().getSpeakerNotesShape().getText().asString(); } catch (e) { /* sem anotações */ }
+    slides.push({ v3: i + 1, id: s.getObjectId(), mega: mega || 'Mega Esteio', titulo: titulo, textos: textos, imagens: imagens, notas: notas });
+  });
+  const velho = pasta.getFilesByName('fotos.json');
+  while (velho.hasNext()) velho.next().setTrashed(true);
+  pasta.createFile('fotos.json', JSON.stringify({ largura: W, altura: H, slides: slides }, null, 1), MimeType.PLAIN_TEXT);
+  if (faltam.length) Logger.log('Sem tempo para ' + faltam.length + ' imagens (a partir de ' + faltam[0] + ') — rode exportarFotosGestorContinuar().');
+  Logger.log('Pronto: ' + gravadas + ' imagens gravadas agora, ' + slides.length + ' slides do gestor em fotos.json — ' + pasta.getUrl());
+}
+
 function _orcExportarSlides_(deckId, nomePasta) {
   const deck = SlidesApp.openById(deckId);
   const pai = DriveApp.getFolderById(ORC_PASTA_ORCAMENTO_ID);
