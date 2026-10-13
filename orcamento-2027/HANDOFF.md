@@ -9,6 +9,11 @@ reinício). O que importa sobre o projeto está aqui, no
 
 ## 0. COMECE AQUI — onde parou (12/10/2026, ~18h30; apresentação em 13/10)
 
+**13/10/2026 (de casa, Python liberado pelo Guilherme):** reinstalados Python 3.12 (+ openpyxl, Pillow, numpy), Git,
+Node e clasp. `python ferramentas/graficos_imagem.py` desenhou os **131 gráficos** do `GRAFICOS PENDENTES.json` de
+12/10 22h48 (251 especificações). Teste 4851/4851; `main` = `origin/main` (`a316e20`). Falta o Guilherme gerar de
+novo as quatro partes de Facilities (25_Facilities.gs) com as imagens no Drive e rodar `gerarVersaoFinal()`.
+
 Tudo commitado/pushado (último código: `ac18e31`) e publicado (clasp 18:24). A próxima sessão
 **não tem o conector do Drive**: leia os arquivos pelo G: (os `.gsheet/.gslides` são atalhos e
 não abrem — peça ao Guilherme para rodar as funções de exportação, que gravam no G:).
