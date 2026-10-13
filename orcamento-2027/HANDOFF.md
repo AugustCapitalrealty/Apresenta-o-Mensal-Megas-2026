@@ -14,6 +14,18 @@ Node e clasp. `python ferramentas/graficos_imagem.py` desenhou os **131 gráfico
 12/10 22h48 (251 especificações). Teste 4851/4851; `main` = `origin/main` (`a316e20`). Falta o Guilherme gerar de
 novo as quatro partes de Facilities (25_Facilities.gs) com as imagens no Drive e rodar `gerarVersaoFinal()`.
 
+**13/10/2026, manhã — a ordem do gestor vira o padrão (v3 baixada em .pptx; ele organizou só o Esteio, Curitiba
+começou):** `ORC_SECOES` (01_Config.gs) = 01 Premissas · 02 Resumo Executivo · 03 DRE · 04 Segurança · 05 Manutenção ·
+06 Limpeza e Conservação · 07 Contratos (saiu da DRE) · 08 Análise de Custos (era "Custo por m²"); sem a seção
+"Registro fotográfico" (as fotos do gestor ficam na seção do assunto; os moldes continuam no fim do Mega). Na
+Manutenção, as categorias antes de "Demais". No deck de Facilities voltam as **sub capas** onde o gestor pôs "capa?"
+(DRE em diante; Premissas e Resumo sem — `ORC_SECOES_SEM_SUBCAPA`). Trilha (trilha_imagem.py), sub capas
+(capas_imagem.py) e molduras (`tv: 2` na especificação) redesenhadas com os nomes novos; Moked na trilha 04; slides do
+gestor na 04 (Segurança: substituição e os que vêm depois de "Segurança e vigilância") ou 05. Capa do Mega com o R$/m²
+do Ritmo 2026 embaixo do valor dele. "implícita" saiu dos textos (os rodapés ficam). **`gerarApresentacaoCompleta()`**
+(34_ApresentacaoCompleta.gs): abertura → Esteio → Itajaí → Curitiba → Moked → versão final, um passo por execução,
+encadeados por gatilho de 1 min (escopo `script.scriptapp` novo: pede autorização na 1ª vez). Teste 4855/4855.
+
 Tudo commitado/pushado (último código: `ac18e31`) e publicado (clasp 18:24). A próxima sessão
 **não tem o conector do Drive**: leia os arquivos pelo G: (os `.gsheet/.gslides` são atalhos e
 não abrem — peça ao Guilherme para rodar as funções de exportação, que gravam no G:).

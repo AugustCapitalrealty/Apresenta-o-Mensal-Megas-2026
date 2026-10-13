@@ -29,7 +29,7 @@ const ORC_MOKED = {
   nome: 'MOKED - SLIDES PARA A v3 (Implantação Moked · Mega Esteio)',
   prop: 'ORC_MOKED_DECK_ID',
   titulo: 'Implantação Moked | Rotina de Segurança',
-  secao: 5,   // trilha do topo: 05 Segurança
+  secao: 4,   // trilha do topo: 04 Segurança (ORC_SECOES, 13/10/2026)
   rodape: 'Fonte: Moked do Brasil — relatório de 09/10/2026 (2CONTROL RS|RD e MokLog CheckTest) · Mega Esteio',
 
   // 1. Registros no 2CONTROL RS|RD, do primeiro registro de cada projeto até 09/10/2026.

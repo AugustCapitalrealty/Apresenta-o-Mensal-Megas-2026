@@ -17,9 +17,8 @@ SAIDA = os.path.abspath(os.path.join(AQUI, '..', '..', '..', 'IMAGENS - SLIDES')
 FONTES = os.path.join(AQUI, 'fontes')
 W, H = 1920, 32
 K = W / 720
-# = ORC_SUBCAPAS (01_Config.gs), nomes curtos para caber
-# 7 seções desde 07/10/2026 ("Projetos × Recorrente" entrou na Manutenção)
-SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza', 'Custo por m²', 'Fotos']   # 08 desde 09/10/2026
+# = ORC_SECOES (01_Config.gs), nomes curtos para caber — a ordem do gestor no Mega Esteio da v3 (13/10/2026)
+SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Segurança', 'Manutenção', 'Limpeza', 'Contratos', 'Análise de Custos']
 # = ORC_MARCAS (01_Config.gs): cor de destaque, cor do título, texto, apagado, filete
 MARCAS = {
     'CAPITAL':   dict(light='#065CA9', dark='#151E49', body='#475569', muted='#94A3B8', linha='#E2E8F0'),

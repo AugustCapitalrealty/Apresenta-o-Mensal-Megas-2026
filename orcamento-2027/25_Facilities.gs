@@ -323,7 +323,7 @@ function gerarSlideComparativoM2_(slide, W, H, rels) {
   const grupos = cols.map((k, i) => ({ titulo: k === 'FACILITIES' ? 'FACILITIES' : ORC_CIDADES[k].nome.toUpperCase(), c0: 1 + i * 2, n: 2,
                                         cor: k === 'FACILITIES' ? '#475569' : undefined }));
   _orcTabelaNum_(slide, MX, 72, tw, H - 30 - 72, colunas, linhas, grupos);
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano' + _orcNotaAreaMegas_(cmp));
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área de cada ano' + _orcNotaAreaMegas_(cmp));
 }
 
 // Mega com a área mudando mais de 10% do ritmo para o Orç: o R$/m² cai mesmo com a despesa subindo.
@@ -422,7 +422,7 @@ function gerarSlideMegasGrafico_(slide, W, H, rels) {
         { align: 'L', fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body, folga: 4 });
     }
   });
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área implícita de cada ano · a tabela conta a conta vem a seguir' +
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² pela área de cada ano · a tabela conta a conta vem a seguir' +
     _orcNotaAreaMegas_(cmp));
 }
 
@@ -483,5 +483,5 @@ function gerarSlideRankingM2_(slide, W, H, rels) {
   });
   // O ranking (das siglas à última linha) num card com sombra, como as tabelas.
   _orcSombraTabela_(MX, top - 16, W - MX * 2, linhas.length * rowH + 20);
-  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² ao mês do Orç ' + ORC_ANO + ' pela área implícita de cada Mega');
+  _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND de cada Mega · R$/m² ao mês do Orç ' + ORC_ANO + ' pela área de cada Mega');
 }

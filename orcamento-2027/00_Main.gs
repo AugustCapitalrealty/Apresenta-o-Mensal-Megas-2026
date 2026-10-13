@@ -85,11 +85,12 @@ function _orcSalvarDeck_(deck, etapa) {
 }
 
 /**
- * Ordem do deck, por seções (revisão do gestor em 30/09/2026):
- *   Capa → 01 Premissas → 02 Resumo Executivo (resumo + ponte) →
- *   03 DRE (DRE, ofensores, defensores) → 04 Manutenção (linha a linha,
- *   resumo, mensal, categorias) → 05 Segurança → 06 Limpeza →
- *   07 Projetos × Recorrente → 08 Custo por m².
+ * Ordem do deck, por seções (ORC_SECOES — a que o gestor montou no Mega Esteio da v3, 13/10/2026):
+ *   Capa → Sumário → 01 Premissas → 02 Resumo Executivo (resumo + ponte) →
+ *   03 DRE (DRE, ofensores, defensores) → 04 Segurança → 05 Manutenção (resumo,
+ *   linha a linha, por que sobe, projetos × recorrente, itens de cada grupo,
+ *   categorias, demais, mensal) → 06 Limpeza e Conservação → 07 Contratos →
+ *   08 Análise de Custos (custo por m², m² mês a mês).
  * Seção sem dado não ganha sub capa: o aviso de falha fica logo após as
  * Premissas, e a numeração das seções seguintes não pula.
  * Relatórios que divergem entre si abrem o deck com o slide "Revisar antes
@@ -123,14 +124,14 @@ function _orcGerarCidade_(deck, W, H, chave) {
     if (nSecao > 0) gravar(true);
     parte = nSecao === 0 ? 'capa e ' + titulo : titulo;
     const n = ++nSecao;
-    _ORC_TRILHA = secoes.length === Object.keys(ORC_SUBCAPAS).length ? n : 0;
+    _ORC_TRILHA = secoes.length === ORC_SECOES.length ? n : 0;
     let dest = null;
     try { dest = visao ? _orcDestaqueSecao_(titulo, visao.rel, contas) : null; }
     catch (e) { Logger.log('Número da sub capa ' + titulo + ' indisponível: ' + e.message); }
     if (secoes[n - 1] !== titulo) Logger.log('Sumário fora de ordem: seção ' + n + ' é "' + titulo + '", o sumário diz "' + secoes[n - 1] + '"');
-    // Deck único (v2): sem sub capa — a trilha do topo marca a seção, e o link
-    // do sumário vai para o primeiro slide dela (_orcNovoSlide_).
-    if (_ORC_UNICO) { _ORC_UNICO.alvo = titulo; return; }
+    // Deck de Facilities: sub capa nas seções em que o gestor pôs uma na v3 (13/10/2026); Premissas e Resumo
+    // Executivo abrem sem ela — o link do sumário vai para o primeiro slide da seção (_orcNovoSlide_).
+    if (_ORC_UNICO && ORC_SECOES_SEM_SUBCAPA.indexOf(titulo) >= 0) { _ORC_UNICO.alvo = titulo; return; }
     _orcPasso_(deck, W, H, 'Sub capa — ' + titulo, s => gerarSlideSubcapa_(s, W, H, cid, n, titulo, dest, secoes));
   };
 
@@ -148,19 +149,31 @@ function _orcGerarCidade_(deck, W, H, chave) {
     catch (e) { falhas.push(['Linha a linha — ' + cid.nome, e]); }
   }
   const calc = visao ? _orcCalculosCompartilhados_(cid, visao, dados) : null;
-  // As seções que este deck vai ter, na ordem das chamadas secao() abaixo:
-  // o sumário e a trilha das sub capas listam só estas.
-  const secoes = ['Premissas'].concat(
-    visao ? ['Resumo Executivo', 'DRE'] : [],
-    contas || dados ? ['Manutenção'] : [],
-    contas ? ['Segurança', 'Limpeza e Conservação'] : [],
-    visao ? ['Custo por m²', ORC_FOTOS_TITULO] : []);
   // Pendências de dados (contratos que faltam, modelos acima da METRAGEM):
   // alerta no slide de revisão e selo nos slides da conta (19_Revisar.gs).
   if (visao) {
     try { visao.rel.pendencias = _orcPendencias_(cid, visao.rel, visao.mensal, visao.modelos); }
     catch (e) { Logger.log('Pendências não conferidas: ' + e.message); visao.rel.pendencias = []; }
   }
+  // Todos os contratos, ano anterior × ano (pedido do gestor, 07/10/2026): seção própria desde 13/10/2026 — lidos
+  // antes do desenho para o sumário saber se a seção existe.
+  let cmpTodos = null;
+  if (visao) {
+    let modelosAnt = null;
+    try { modelosAnt = _orcModelosAnoAnterior_(); }
+    catch (e) { Logger.log('Modelos do ano anterior indisponíveis (contrato lançado no modelo fica sem par): ' + e.message); }
+    try { cmpTodos = _orcCompararTodosContratos_(visao.rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos, modelosAnt); }
+    catch (e) { Logger.log('Contratos de todas as contas indisponíveis: ' + e.message); }
+  }
+  // As seções que este deck vai ter, na ordem das chamadas secao() abaixo (a de ORC_SECOES):
+  // o sumário e a trilha das sub capas listam só estas.
+  const secoes = ['Premissas'].concat(
+    visao ? ['Resumo Executivo', 'DRE'] : [],
+    contas ? ['Segurança'] : [],
+    contas || dados ? ['Manutenção'] : [],
+    contas ? ['Limpeza e Conservação'] : [],
+    cmpTodos && cmpTodos.n ? ['Contratos'] : [],
+    visao ? ['Análise de Custos'] : []);
   Logger.log(cid.nome + ' · leitura das planilhas: ' + seg(Date.now() - t0) + ' s');
   tParte = Date.now();
 
@@ -189,18 +202,6 @@ function _orcGerarCidade_(deck, W, H, chave) {
     comSelo('DRE', null, s => gerarSlideDRE_(s, W, H, cid, rel));
     comSelo('Ofensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'ofensores'));
     comSelo('Defensores', null, s => gerarSlideOfensores_(s, W, H, cid, rel, visao.modelos, 'defensores'));
-    // Todos os contratos, ano anterior × ano (pedido do gestor, 07/10/2026).
-    let cmpTodos = null;
-    let modelosAnt = null;
-    try { modelosAnt = _orcModelosAnoAnterior_(); }
-    catch (e) { Logger.log('Modelos do ano anterior indisponíveis (contrato lançado no modelo fica sem par): ' + e.message); }
-    try { cmpTodos = _orcCompararTodosContratos_(rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos, modelosAnt); }
-    catch (e) { Logger.log('Contratos de todas as contas indisponíveis: ' + e.message); }
-    if (cmpTodos && cmpTodos.n) {
-      const pags = _orcPaginasContratos_(cmpTodos);
-      pags.forEach((pag, i) => comSelo('Contratos — todas as contas', null,
-        s => gerarSlideContratosTodos_(s, W, H, cid, rel, cmpTodos, pag, i, pags.length)));
-    }
   }
 
   // Linha a linha da conta i de ORC_CONTAS_DETALHE (0 manutenção, 1 segurança,
@@ -231,6 +232,11 @@ function _orcGerarCidade_(deck, W, H, chave) {
   //   categorias grandes → distribuição mensal. O slide "contratos e avulsos"
   //   saiu (gestor, 08/10/2026: "Tirar este slide"); os contratos da conta estão
   //   no slide de contratos de todas as contas.
+  // A Segurança vem antes da Manutenção (v3 do Esteio, 13/10/2026).
+  if (contas) {
+    secao('Segurança');
+    linhaALinha(1);
+  }
   if (contas || dados) {
     secao('Manutenção');
     const areaOrcManut = visao ? _orcAreaImplicita_(visao.rel, 'orc') : null;
@@ -265,36 +271,41 @@ function _orcGerarCidade_(deck, W, H, chave) {
     if (dados) _orcGerarManutencao_(deck, W, H, cid, dados, areaOrcManut);
   }
   if (contas) {
-    secao('Segurança');
-    linhaALinha(1);
     secao('Limpeza e Conservação');
     linhaALinha(2);
   }
+  // Contratos: seção própria depois da Limpeza (era o fim da DRE até 13/10/2026).
+  if (cmpTodos && cmpTodos.n) {
+    secao('Contratos');
+    const pags = _orcPaginasContratos_(cmpTodos);
+    pags.forEach((pag, i) => comSelo('Contratos — todas as contas', null,
+      s => gerarSlideContratosTodos_(s, W, H, cid, visao.rel, cmpTodos, pag, i, pags.length)));
+  }
 
   if (visao) {
-    secao('Custo por m²');
+    secao('Análise de Custos');
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
     comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
-    // 08 · Registro fotográfico: os slides do gestor (criados uma vez; 26_Fotos.gs).
-    secao(ORC_FOTOS_TITULO);
+    // Os moldes de fotos do gestor (criados uma vez; 26_Fotos.gs), no fim do Mega: desde 13/10/2026 sem seção
+    // própria — as fotos do gestor ficam na seção do assunto delas.
     _orcSecaoFotos_(deck, W, H, cid, chave);
   }
   gravar(false);   // a última seção; a remoção dos antigos fica em _orcGerar_
 }
 
-// Manutenção por categoria: resumo, as páginas de Demais logo depois da barra
-// que as agrupa (item 14), um slide por categoria grande e, fechando, a
-// distribuição mensal.
+// Manutenção por categoria: um slide por categoria grande, depois as páginas de
+// Demais (v3 do Esteio, 13/10/2026: o gestor pôs as categorias antes) e, fechando,
+// a distribuição mensal.
 // area: área implícita do Orç (METRAGEM) para o R$/m² — null sem o relatório.
 function _orcGerarManutencao_(deck, W, H, cid, dados, area) {
 
   const div = _orcDividirCategorias_(dados);
+  div.proprias.forEach(c =>
+    _orcPasso_(deck, W, H, 'Categoria ' + c.nome, s => gerarSlideCategoria_(s, W, H, cid, dados, c)));
+
   const paginas = _orcPaginasDemais_(div.demais);
   paginas.forEach((pag, i) =>
     _orcPasso_(deck, W, H, 'Demais categorias', s => gerarSlideDemais_(s, W, H, cid, dados, div.demais, pag, i, paginas.length)));
-
-  div.proprias.forEach(c =>
-    _orcPasso_(deck, W, H, 'Categoria ' + c.nome, s => gerarSlideCategoria_(s, W, H, cid, dados, c)));
 
   _orcPasso_(deck, W, H, 'Distribuição mensal', s => gerarSlideMensal_(s, W, H, cid, dados, area));
 }

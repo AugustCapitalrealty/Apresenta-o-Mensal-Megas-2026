@@ -105,7 +105,7 @@ function _orcMontarVersaoFinal_(deck, v3, moked) {
     porPos[pos].forEach((p, k) => {
       const novo = deck.insertSlide(pos + 1 + k, p.origem);
       if (p.moked) { nMoked++; return; }
-      const r = _orcRevisarSlideGestor_(novo, W, H, p.mega, p.n);
+      const r = _orcRevisarSlideGestor_(novo, W, H, p.mega, p.n, p.ancora);
       nGestor++;
       if (r.avisos.length) log.push('Slide ' + p.n + ' da v3 (' + p.mega + ') — ' + r.titulo + ': CONFERIR ' + r.avisos.join('; '));
     });

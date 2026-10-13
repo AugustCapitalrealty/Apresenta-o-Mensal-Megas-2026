@@ -364,7 +364,7 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
     const it = maiorItem(c.chave, c.v.orc);
     return it ? Object.assign(it, { tambem: chave }) : { texto: '', aba: 'Ofensores', tambem: chave };
   };
-  // R$/m² ao mês pela área implícita de cada ano (a mesma da DRE e do custo
+  // R$/m² ao mês pela área de cada ano (a mesma da DRE e do custo
   // por m²): Ritmo e Orç — pedido do gestor, 06/10/2026; o Δ saiu em 08/10/2026.
   const areaRit = _orcAreaImplicita_(rel, 'ritmo'), areaOrc = _orcAreaImplicita_(rel, 'orc');
   const m2 = (v, area) => area ? v / area / 12 : null;
@@ -421,5 +421,5 @@ function gerarSlideOfensores_(slide, W, H, cid, rel, linhasModelo, lado) {
   if (comAsterisco) { _orcRodape_(slide, W, H, _orcRodapeComAsterisco_(W, 'Fonte: METRAGEM-COND — ' + cid.nome, nota, _orcNotaAsterisco_(rel))); return; }
   _orcRodape_(slide, W, H, nota ? 'Fonte: METRAGEM-COND — ' + cid.nome + '; ' + fonteDet + ' de ' + a.orc + ' · ' + nota
     : 'Fonte: METRAGEM-COND — ' + cid.nome + ' (controladoria); ' + fonteDet + ' 070 e 090 de ' +
-      a.orc + ' · R$/m² pela área implícita de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' fica só no total');
+      a.orc + ' · R$/m² pela área de cada ano · variação abaixo de ' + _orcCompacto_(ORC_OFENSOR_MINIMO) + ' fica só no total');
 }

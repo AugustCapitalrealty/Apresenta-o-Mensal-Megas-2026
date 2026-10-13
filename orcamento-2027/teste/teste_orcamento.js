@@ -734,7 +734,10 @@ const titulo = sl => textos(sl)[0];
 // Seções: a sub capa escreve o número ("01") e o nome logo depois.
 // 7 seções desde 07/10/2026: "Projetos × Recorrente" virou parte da Manutenção (roteiro dos itens 13 e 14).
 // 8 desde 09/10/2026: a 08 é o Registro fotográfico (slides do gestor, 26_Fotos.gs).
-const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Manutenção', 'Segurança', 'Limpeza e Conservação', 'Custo por m²', 'Registro fotográfico'];
+// 13/10/2026: a ordem do gestor no Mega Esteio da v3 (ORC_SECOES) — Segurança antes da Manutenção, Contratos com
+// seção própria, "Análise de Custos" no lugar de "Custo por m²" e os moldes de fotos sem seção.
+const SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Segurança', 'Manutenção', 'Limpeza e Conservação', 'Contratos', 'Análise de Custos'];
+ok(SECOES.join('|') === G.ORC_SECOES.join('|'), 'seções do deck = ORC_SECOES (ordem do gestor, 13/10/2026)');
 const iSub = SECOES.map((nome, k) => slides.findIndex(sl => textos(sl)[0] === '0' + (k + 1) && textos(sl)[1] === nome));
 ok(iSub.every(i => i > 0) && iSub.every((i, k) => k === 0 || i > iSub[k - 1]),
    'sub capas 01–07 na ordem ' + SECOES.join(', ') + ' (posições ' + iSub.join(',') + ')');
@@ -748,12 +751,12 @@ SECOES.forEach(nome => {
 });
 iSub.forEach((i, k) => ok(slides[i] && SECOES.every(n => textos(slides[i]).indexOf(n) >= 0),
   'sub capa ' + SECOES[k] + ': trilha com as 7 seções'));
-const tMan = textos(slides[iSub[3]]);
+const tMan = textos(slides[iSub[4]]);
 ok(tMan.some(t => /^R\$ [\d,]+ (mil|mi)$/.test(t)) && tMan.indexOf('Orçamento 2027 da conta') >= 0 &&
    tMan.some(t => /^R\$ [\d,]+$/.test(t)) && tMan.indexOf('/m²') >= 0 && tMan.indexOf('/m² ao mês') < 0 && tMan.indexOf('vs. ritmo 2026') >= 0,
    'sub capa Manutenção: valor da conta, R$/m² ao mês e variação contra o ritmo (' + tMan.slice(0, 9).join(' | ') + ')');
-ok(textos(slides[iSub[6]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[6]]).indexOf('por m², com IPTU e seguro') >= 0,
-   'sub capa Custo por m²: abre com o R$/m² ao mês');
+ok(textos(slides[iSub[7]]).some(t => /^R\$ [\d,]+$/.test(t)) && textos(slides[iSub[7]]).indexOf('por m², com IPTU e seguro') >= 0,
+   'sub capa Análise de Custos: abre com o R$/m² ao mês');
 ok(!textos(slides[iSub[0]]).some(t => /^R\$/.test(t)), 'sub capa Premissas: sem número');
 // Sumário logo depois da capa, com as 8 seções; número e nome são link para a sub capa.
 const tSum = textos(slides[1]);
@@ -762,7 +765,7 @@ ok(titulo(slides[1]) === 'Sumário' && SECOES.every((n, k) => tSum.indexOf(n) >=
 const linkDe = (sl, txt) => (sl.shapes.filter(sh => sh.texto === txt)[0] || {}).link;
 ok(SECOES.every((n, k) => linkDe(slides[1], n) === slides[iSub[k]].id && linkDe(slides[1], '0' + (k + 1)) === slides[iSub[k]].id),
    'Sumário: cada seção leva à sua sub capa');
-ok(linkDe(slides[iSub[3]], 'Segurança') === slides[iSub[4]].id && !linkDe(slides[iSub[3]], 'Manutenção'),
+ok(linkDe(slides[iSub[4]], 'Segurança') === slides[iSub[3]].id && !linkDe(slides[iSub[4]], 'Manutenção'),
    'trilha da sub capa: as outras seções são link, a atual não');
 const nPagDemais = G._orcPaginasDemais_(div.demais).length;
 // Páginas do linha a linha de cada conta: o slide da conta + as dos itens
@@ -775,8 +778,8 @@ const N_POR_QUE = 1;   // desde 09/10/2026 sai em todo Mega (sem obra adiada: Or
 const N_VAR = G.ORC_DECISOES_GESTOR['Mega Curitiba'].semPar ? 1 : 0;
 // Projetos × recorrente: o slide e as páginas dos itens de cada grupo (dentro da Manutenção).
 const nGrupos = G._orcPaginasGrupos_(G._orcClassificarManutencao_(d)).length;
-// resumo, a conta, por que sobe, avulsos abertos + item a item, demais, categorias, mensal (08/10/2026: o resumo
-// abre a seção e o "contratos e avulsos" saiu)
+// resumo, a conta, por que sobe, avulsos abertos + item a item, categorias, demais, mensal (08/10/2026: o resumo
+// abre a seção e o "contratos e avulsos" saiu; 13/10/2026: as categorias antes de Demais, como na v3 do gestor)
 const N_MANUT = 1 + nLL[0] + N_POR_QUE + N_VAR + 1 + nGrupos + nPagDemais + div.proprias.length + 1;
 // Curitiba diverge de verdade (mensal × METRAGEM em IPTU e Seguro), mas a
 // contabilidade mandou usar a METRAGEM (valeMetragem): sem slide de revisão.
@@ -817,7 +820,7 @@ ok(!tOf.concat(tDf).some(t => /^Demais contas/.test(t)), 'ofensores/defensores: 
 ok(['Material de consumo', 'Representação e refeição', 'Cursos e seminários', 'Despesa com combustíveis'].every(n => tOf.indexOf(n) >= 0),
    'ofensores: conta com variação visível tem linha própria (cursos, refeição, consumo, combustíveis)');
 
-ok(iSub[3] === iDRE + 3 + nTodos, 'Manutenção logo depois dos defensores e dos contratos');
+ok(iSub[3] === iDRE + 3, 'Segurança logo depois dos defensores (13/10/2026: os contratos saíram da DRE)');
 const grupoDe = n => cmpTodos.grupos.filter(g => G._orcChaveConta_(g.conta) === G._orcChaveConta_(n))[0];
 const vig = grupoDe('Segurança e vigilância').linhas.filter(l => /VIGILÂNCIA \(EMPRESA AUXILIAR\)/.test(l.nome))[0];
 const port = grupoDe('Segurança e vigilância').linhas.filter(l => /PORTARIA/.test(l.nome))[0];
@@ -843,19 +846,23 @@ ok(!cmpTodos.grupos.some(g => /iptu|seguro/i.test(g.conta)), 'contratos: IPTU e 
 perto(grupoDe('Manutenção de imóveis').atual, G._orcCompararContratos_(contasLL[0].v,
   G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026),
   G._orcClassificarManutencao_(d).grupos[0].itens).contratos.atual, 'contratos: manutenção igual ao slide da manutenção');
-const tTodos = textos(slides[iDRE + 3]);
+// Seção Contratos (13/10/2026): logo depois da sub capa dela, depois da Limpeza.
+const iTodos = iSub[6] + 1;
+const tTodos = textos(slides[iTodos]);
 ok(/^Contratos — 2026 × Orçamento 2027 \(1\/\d\)$/.test(tTodos[0]) && tTodos.indexOf('TODOS OS CONTRATOS') >= 0,
-   'contratos de todas as contas depois dos defensores (' + tTodos[0] + ')');
-ok(textos(slides[iDRE + 2 + nTodos]).indexOf('TOTAL DOS CONTRATOS') >= 0, 'última página fecha com o total dos contratos');
+   'contratos de todas as contas na seção Contratos, depois da sub capa (' + tTodos[0] + ')');
+ok(textos(slides[iTodos + nTodos - 1]).indexOf('TOTAL DOS CONTRATOS') >= 0, 'última página fecha com o total dos contratos');
 for (let k = 0; k < nTodos; k++) {
-  const tt = textos(slides[iDRE + 3 + k]);
+  const tt = textos(slides[iTodos + k]);
   ok(!tt.some(t => /…$/.test(t)), 'contratos ' + (k + 1) + '/' + nTodos + ': nenhum texto cortado (' + tt.filter(t => /…$/.test(t)).join(' | ') + ')');
 }
 // Roteiro da Manutenção (08/10/2026): resumo (KPIs, categorias, maiores itens) → a conta → por que sobe → avulsos
-// abertos (projetos × recorrente) e item a item → Demais → categorias grandes → distribuição mensal.
-const iResManut = iSub[3] + 1, iLLManut = iResManut + 1, iPorQue = iLLManut + 1;
+// abertos (projetos × recorrente) e item a item → categorias grandes → Demais → distribuição mensal (13/10/2026).
+const iResManut = iSub[4] + 1, iLLManut = iResManut + 1, iPorQue = iLLManut + 1;
 const iVar = iPorQue + N_POR_QUE, iInv = iVar + N_VAR;
-const iDemais = iInv + 1 + nGrupos, iCat0 = iDemais + nPagDemais, iMensal = iCat0 + div.proprias.length;
+const iCat0 = iInv + 1 + nGrupos, iDemais = iCat0 + div.proprias.length, iMensal = iDemais + nPagDemais;
+ok(div.proprias.every((c, k) => titulo(slides[iCat0 + k]) === c.nome) && /^Demais categorias/.test(titulo(slides[iDemais])),
+   'Manutenção: as categorias grandes antes de Demais (v3 do gestor, 13/10/2026)');
 // Por que a manutenção sobe: ponte Ritmo → Orç com o degrau das obras adiadas
 // e a tabela das obras, com o valor de hoje no modelo 090.
 {
@@ -886,20 +893,23 @@ ok(textos(slides[iLLManut]).some(t => t === '+ ' + foraManut.length + ' itens me
 ok(!slides.some(sl => titulo(sl) === 'Manutenção de imóveis — contratos e avulsos') &&
    titulo(slides[iInv]) === 'Manutenção: projetos × custo recorrente',
    'sem o slide "contratos e avulsos" (gestor, 08/10/2026); os avulsos abertos vêm depois do "por que sobe"');
-ok(/^Manutenção de Imóveis — Orçamento 2027/.test(titulo(slides[iResManut])) && iResManut === iSub[3] + 1 &&
+ok(/^Manutenção de Imóveis — Orçamento 2027/.test(titulo(slides[iResManut])) && iResManut === iSub[4] + 1 &&
    /^Demais categorias/.test(titulo(slides[iDemais])) && textos(slides[iResManut]).some(t => / e mais \d+$/.test(t)),
    'o resumo da manutenção abre a seção (gestor, 08/10/2026) e a barra DEMAIS diz quais são');
 ok(textos(slides[iResManut]).indexOf('DEMAIS (' + div.demais.length + ')') >= 0,
    'barra DEMAIS do resumo = as ' + div.demais.length + ' categorias do slide de Demais (mesmo corte — gestor, 08/10/2026)');
-ok(titulo(slides[iMensal]) === 'Distribuição mensal' && iSub[4] === iMensal + 1, 'distribuição mensal fecha a Manutenção');
-const iSeg = iSub[4] + 1, iLimp = iSub[5] + 1;
+ok(titulo(slides[iMensal]) === 'Distribuição mensal' && iSub[5] === iMensal + 1, 'distribuição mensal fecha a Manutenção');
+const iSeg = iSub[3] + 1, iLimp = iSub[5] + 1;
 const tituloLL = k => contasLL[k].nome + (nLL[k] > 1 ? ' (1/' + nLL[k] + ')' : '');
-ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2),
-   'Segurança e Limpeza: linha a linha depois da sub capa');
-ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 3, 'Custo por m² depois da sua sub capa, antes do Registro fotográfico');
-// 08 · Registro fotográfico: os três moldes (1, 2 e 3 fotos) fecham o deck, marcados nas anotações como do gestor.
+ok(titulo(slides[iSeg]) === tituloLL(1) && titulo(slides[iLimp]) === tituloLL(2) && iSub[4] === iSeg + nLL[1],
+   'Segurança e Limpeza: linha a linha depois da sub capa; a Manutenção logo depois da Segurança');
+ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 1 + nTodos &&
+   titulo(slides[iSub[7] + 1]) === 'Custo por m² ao mês, 2025 → 2027',
+   'Contratos depois da Limpeza; Análise de Custos (custo por m²) depois dos contratos');
+// Os três moldes de fotos do gestor (1, 2 e 3 fotos) fecham o deck, marcados nas anotações como do gestor — desde
+// 13/10/2026 sem a seção "Registro fotográfico" (logo depois dos dois slides de custo por m²).
 {
-  const fotos = slides.slice(iSub[7] + 1);
+  const fotos = slides.slice(iSub[7] + 3);
   const espacos = sl => sl.shapes.filter(f => f.tipo === 'RECTANGLE' && f.cor === '#E8EEF5').length;
   ok(fotos.length === 3 && fotos.every(sl => titulo(sl) === 'Registro fotográfico — Título do assunto' && sl.notas.indexOf('[REGISTRO FOTOGRÁFICO · CURITIBA]') === 0) &&
      fotos.map(espacos).join() === '1,2,3' && fotos.every(sl => textos(sl).some(t => /^Escreva aqui a descrição/.test(t))),
@@ -949,7 +959,7 @@ ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 3, 'Custo por m² depois 
   ok(lv.length === 1 && lv[0].juntos === 9 && /^LINHA DE VIDA .*— AMZ 1 a 9 \(9×\)$/.test(lv[0].descricao) && tG.indexOf(lv[0].descricao) >= 0,
      'as 9 linhas de vida iguais (AMZ 1 a 9) numa linha só (' + (lv[0] && lv[0].descricao) + ')');
 }
-const iM2 = iSub[6] + 1;
+const iM2 = iSub[7] + 1;   // Análise de Custos (13/10/2026: a 08)
 // Contratos de manutenção 2026 × 2027, fornecedor a fornecedor.
 const ant = G._orcLerCadastroContratos_(FIX_CAD_2026, 'Mega Curitiba', 'Manutenção de imóveis', 2026);
 
@@ -996,7 +1006,7 @@ ok(tMes[0] === 'Distribuição mensal' && tMes.filter(t => /^\d+,\d{2}\/m²$/.te
 const tM2m = textos(slides[iM2 + 1]);
 ok(tM2m[0] === 'Custo por m² mês a mês — Orçamento 2027', 'custo por m² mês a mês depois do custo por m²');
 ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOMÍNIO', 'Área comum (sem IPTU e seguro)', 'IPTU', 'Seguro',
-    'Total de despesas', 'REAL 2025', 'Área (m², implícita)', G._orcMoeda_(rel.total.orc), G._orcM2_(serie('orc').media),
+    'Total de despesas', 'REAL 2025', 'Área (m²)', G._orcMoeda_(rel.total.orc), G._orcM2_(serie('orc').media),
     'R$ ' + G._orcM2_(serie('orc').media) + '/m²'].every(t => tM2m.indexOf(t) >= 0),
    'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
 ok(!tM2m.some(t => /…$/.test(t)), 'm² mês a mês: nenhum texto cortado (' + tM2m.filter(t => /…$/.test(t)).join(' | ') + ')');
@@ -1153,7 +1163,7 @@ ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t))
 ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
 const SELO = '⚠ REVISAR · IPTU, Seguro';
 const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1]
-  .concat(Array.from({ length: nTodos }, (_, k) => iDRE + 3 + k)).map(iR);
+  .concat(Array.from({ length: nTodos }, (_, k) => iTodos + k)).map(iR);
 ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e os dois de custo por m²');
 ok(slidesRev.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
    'selo só nesses (linha a linha, investimento e manutenção não passam por IPTU/Seguro)');
@@ -1363,7 +1373,7 @@ const ESTADO_CIDADES = {};
   const tPonteC = textos(sl[titulos.indexOf('Ponte Ritmo 2026 → Orçamento 2027')] || { shapes: [] });
   const tPQC = textos(sl[titulos.indexOf('Por que a manutenção sobe — Orçamento 2027')] || { shapes: [] });
   ok(tPonteC.indexOf('ORÇ 2026') >= 0 && tPonteC.indexOf('ORÇ 2026 → ORÇ 2027') >= 0 && tPQC.indexOf('ORÇ 2026') >= 0 &&
-     (c !== 'esteio' || (tPQC.indexOf('VARIAÇÃO') >= 0 && tPQC.indexOf('R$/M² AO MÊS') >= 0 && tPQC.some(t => /área implícita muda/.test(t)))),
+     (c !== 'esteio' || (tPQC.indexOf('VARIAÇÃO') >= 0 && tPQC.indexOf('R$/M² AO MÊS') >= 0 && tPQC.some(t => /A área muda de/.test(t)))),
      c + ': ponte e "por que sobe" com o Orç 2026' + (c === 'esteio' ? ' (sem obra adiada: quadro Orç × Ritmo × Orç e o aviso da área)' : ''));
   ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m²') >= 0, c + ': capa com o Mega e o R$/m²');
   // Os relatórios fecham entre si; o slide de revisão só traz as pendências
@@ -1809,8 +1819,20 @@ console.log('Deck único de Facilities');
        'Facilities: ranking dos Megas depois do comparativo, Segurança no topo, sem variação (V4, aprovado 08/10/2026)');
   }
   const capaCur = fac.getSlideById(lista('CURITIBA')[0]);
-  ok(capaCur && textos(capaCur).indexOf('Mega Curitiba') >= 0 && !lista('CURITIBA').some(id => textos(fac.getSlideById(id)).indexOf('Manutenção') >= 0 &&
-     textos(fac.getSlideById(id))[0] === '04'), 'Facilities: cada Mega abre com a capa dele e não tem sub capas');
+  // Sub capas no deck de Facilities (13/10/2026, "capa?" do gestor na v3): da DRE em diante; Premissas e Resumo sem.
+  const subDe = p => lista(p).map(id => fac.getSlideById(id))
+    .filter(x => x && /^0\d$/.test(textos(x)[0] || '') && G.ORC_SECOES.indexOf(textos(x)[1]) >= 0).map(x => textos(x)[1]);
+  ok(capaCur && textos(capaCur).indexOf('Mega Curitiba') >= 0 &&
+     subDe('CURITIBA').join('|') === G.ORC_SECOES.filter(s => G.ORC_SECOES_SEM_SUBCAPA.indexOf(s) < 0).join('|'),
+     'Facilities: cada Mega abre com a capa dele e tem as sub capas da DRE em diante (' + subDe('CURITIBA').join(', ') + ')');
+  {
+    const sumCur = fac.getSlideById(lista('CURITIBA').filter(id => textos(fac.getSlideById(id))[0] === 'Sumário')[0]);
+    const alvo = n => (sumCur.shapes.filter(sh => sh.texto === n)[0] || {}).link;
+    const slAlvo = n => fac.getSlideById(alvo(n));
+    ok(sumCur && slAlvo('DRE') && textos(slAlvo('DRE'))[1] === 'DRE' && slAlvo('Premissas') &&
+       textos(slAlvo('Premissas'))[0] === 'Premissas — Orçamento 2027',
+       'Facilities: sumário do Mega leva à sub capa (DRE…) ou ao primeiro slide da seção sem sub capa (Premissas)');
+  }
   const linksCapa = sl[1].shapes.filter(f => f.link).map(f => f.link);
   ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(p => linksCapa.indexOf(lista(p)[0]) >= 0) && linksCapa.indexOf(ids[2]) >= 0,
      'Facilities: sumário com link para o comparativo e para a capa de cada Mega');
@@ -2004,7 +2026,7 @@ console.log('Capa como imagem');
      ts4.indexOf('/m²') >= 0, 'sub capa em imagem: só os números da seção por cima (' + ts4.join(' | ') + ')');
   const areas = sub4 ? sub4.shapes.filter(s => s.link) : [];
   ok(areas.length === 7 && areas.every(s => s.alpha === 0.01), 'sub capa em imagem: 7 áreas clicáveis na trilha (8 seções), com link');
-  ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Segurança'), 'sub capa sem imagem continua com formas');
+  ok(slE.some(x => textos(x)[0] === '05' && textos(x)[1] === 'Manutenção'), 'sub capa sem imagem continua com formas');
   // Moldura em imagem: no fundo (primeira forma), sem os cards e sem barra/linha do cabeçalho em formas.
   const comMold = slE.filter(x => x.shapes[0] && /^MOLDURA - /.test(x.shapes[0].nome || ''));
   const llM = slE.filter(x => textos(x)[0] === 'Manutenção de imóveis')[0];
@@ -2116,8 +2138,8 @@ console.log('Gravação no Slides');
   G.gerarCuritiba();
   const s2 = d.getSlides(), f2 = s2.filter(marca);
   ok(f2.length === 3 && f2.map(x => x.id).join() === f1.map(x => x.id).join() && s2.slice(-3).every(marca) &&
-     textos(f2[1]).indexOf('FOTO DO GESTOR') >= 0 && s2.length === n1 && textos(s2[s2.length - 4])[1] === 'Registro fotográfico',
-     'deck por Mega: gerar de novo mantém os 3 slides de fotos do gestor, no fim, depois da sub capa 08 (' + s2.length + ' slides)');
+     textos(f2[1]).indexOf('FOTO DO GESTOR') >= 0 && s2.length === n1 && textos(s2[s2.length - 4])[0] === 'Custo por m² mês a mês — Orçamento 2027',
+     'deck por Mega: gerar de novo mantém os 3 slides de fotos do gestor, no fim, depois do m² mês a mês (' + s2.length + ' slides)');
 }
 // Sombra (Guilherme, 09/10/2026: "esse tem que ser o padrão"): todo slide com
 // cabeçalho tem o conteúdo em card da moldura — tabela solta no fundo ganha o
@@ -2307,11 +2329,12 @@ console.log('Slides da Moked (28_Moked.gs)');
      'Moked: as ocorrências por ano somam a área Ocorrência de cada Mega');
   ok(M.painel.linhas.every(l => l[1].length === M.painel.semanas.length && /^[OPI-]+$/.test(l[1])),
      'Moked: painel com um estado por semana em cada dispositivo');
-  // Moldura: a do molde de fotos do gestor, com a trilha em 05 Segurança (a imagem foi montada a partir da 08).
+  // Moldura: a do molde de fotos do gestor, com a trilha em 04 Segurança (ORC_SECOES, 13/10/2026; até então
+  // 05, MOLDURA - 4c4ed339ecdc.png montada a partir da 08).
   const mold = G._ORC_MOLDURAS_PASSOS.slice(nMold).filter(p => /^Moked/.test(p[1])).map(p => p[2]);
   const spec = mold.length ? JSON.parse(G._ORC_MOLDURAS_USADAS[mold[0]]) : {};
-  ok(mold.length === 18 && mold.every(x => x === mold[0]) && spec.secao === 5 && spec.cards.length === 1 &&
-     mold[0] === '4c4ed339ecdc', 'Moked: uma moldura só (MOLDURA - 4c4ed339ecdc.png), trilha em 05 Segurança (' + mold[0] + ')');
+  ok(mold.length === 18 && mold.every(x => x === mold[0]) && spec.secao === 4 && spec.tv === 2 && spec.cards.length === 1,
+     'Moked: uma moldura só (MOLDURA - ' + mold[0] + '.png), trilha em 04 Segurança');
   ok(G._ORC_TRILHA === trilhaAntes && G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark,
      'Moked: trilha e marca voltam ao que eram');
   // Sem a v3 (o slide não está lá): 28 e 29 saem com o lugar das fotos marcado, e o resto igual.

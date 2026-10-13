@@ -80,7 +80,7 @@ function _orcQuadroBasesManut_(slide, x, y, w, h, rel, v, areas) {
   let texto = 'Sem obras de ' + a.ritmo + ' adiadas para ' + a.orc + ' neste Mega (planilha de comparação do gestor). ' +
               'A alta aberta item a item está no próximo slide.';
   if (areas.area && areas.aRit && Math.abs(areas.area / areas.aRit - 1) > 0.1) {
-    texto += ' A área implícita muda de ' + _orcMilhar_(Math.round(areas.aRit / 1000)) + ' mil para ' +
+    texto += ' A área muda de ' + _orcMilhar_(Math.round(areas.aRit / 1000)) + ' mil para ' +
              _orcMilhar_(Math.round(areas.area / 1000)) + ' mil m² entre o Ritmo e o Orç: por isso o R$ e o R$/m² não andam juntos.';
   }
   _orcParagrafo_(slide, x + 12, yFim + 10, w - 24, 50, texto, { fs: 7.5, fsMin: 6, cor: C.textBody, fonte: T.body });
@@ -164,7 +164,7 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adiOuNull) {
   const tx = cx + cw + 12, tw = W - MX - tx;
   if (!comAdi) {
     _orcQuadroBasesManut_(slide, tx, cy, tw, ch, rel, v, { area: area, aRit: aRit, aAnt: aAnt });
-    _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · área implícita = total ÷ R$/m² ÷ 12 · ' + cid.nome);
+    _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · área = total ÷ R$/m² ÷ 12 · ' + cid.nome);
     return;
   }
   // ---- As obras (direita) ----

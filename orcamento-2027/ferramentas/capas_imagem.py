@@ -52,15 +52,15 @@ FOCO = {'MEGA CURITIBA': 0.26, 'MEGA ITAJAÍ': 0.30, 'MEGA ESTEIO': 0.52}   # = 
 FOCO_Y = {'MEGA CURITIBA': 0.12, 'MEGA ITAJAÍ': 0.0, 'MEGA ESTEIO': 0.5}  # altura do recorte: 0 = topo da foto
 RECUO = 7.2                                     # pt: recuo interno da caixa de texto do Slides
 FOLGA_Y = 3.6                                   # pt: recuo de cima da caixa de texto do Slides
-# = ORC_SUBCAPAS (01_Config.gs), na ordem do deck: título, foto, frase
+# = ORC_SECOES e ORC_SUBCAPAS (01_Config.gs), na ordem do deck: título, foto, frase (ordem do gestor, 13/10/2026)
 SECOES = [('Premissas', 'DOCUMENTACAO', 'Como este orçamento foi construído'),
           ('Resumo Executivo', 'MEGA', 'O orçamento do ano em uma página'),
           ('DRE', 'OPERACIONAL', 'Conta a conta, do ritmo ao orçamento'),
-          ('Manutenção', 'CORRETIVA', 'O custo para manter o Mega rodando'),
           ('Segurança', 'PATRIMONIAL', 'Vigilância, portaria e monitoramento'),
+          ('Manutenção', 'CORRETIVA', 'O custo para manter o Mega rodando'),
           ('Limpeza e Conservação', 'INTERNOS', 'O Mega limpo e conservado o ano inteiro'),
-          ('Custo por m²', 'CONTRATADOS', 'Quanto custa cada m² por mês'),
-          ('Registro fotográfico', 'PREVENTIVA', 'O que o gestor quer mostrar, em fotos')]   # 08 desde 09/10/2026
+          ('Contratos', 'PREVENTIVA', 'Cada contrato, de 2026 para 2027'),
+          ('Análise de Custos', 'CONTRATADOS', 'Quanto custa cada m² por mês')]
 # = ORC_FOTO_FOCO (onde está o assunto, fração da largura)
 FOCO_X = {'CORRETIVA': 0.40, 'PATRIMONIAL': 0.45, 'INTERNOS': 0.65, 'PREVENTIVA': 0.68, 'CONTRATADOS': 0.47,
           'DOCUMENTACAO': 0.58, 'OPERACIONAL': 0.47, 'MEGA CURITIBA': 0.26, 'MEGA ITAJAÍ': 0.30, 'MEGA ESTEIO': 0.52}

@@ -21,7 +21,7 @@ function gerarSlideCustoM2_(slide, W, H, cid, rel) {
       { texto: _orcM2_(l.m2.orc), bold: true }, { texto: v.texto, sentido: v.sentido }] };
   };
   const linhas = [linha(d.total, 'total')].concat(d.linhas.map(l => linha(l, 'item')));
-  linhas.push({ tipo: 'm2', nome: 'Área implícita (m²)', celulas: ['real', 'orcAnt', 'ritmo', 'orc'].map(k =>
+  linhas.push({ tipo: 'm2', nome: 'Área (m²)', celulas: ['real', 'orcAnt', 'ritmo', 'orc'].map(k =>
     ({ texto: d.area[k] ? _orcMilhar_(d.area[k]) : '–' })).concat([
     { texto: vArea != null ? (vArea >= 0 ? '▲ ' : '▼ ') + Math.round(Math.abs(vArea) * 100) + '%' : '–' }]) });
 
@@ -40,8 +40,8 @@ function gerarSlideCustoM2_(slide, W, H, cid, rel) {
     _orcRet_(slide, MX, ny, tw, nh, C.cardBg, { redondo: true, borda: C.lines });
     _orcRet_(slide, MX, ny, 4, nh, C.brandLight);
     _orcParagrafo_(slide, MX + 14, ny + 6, tw - 24, nh - 12,
-      'A área implícita cresce ' + _orcPct_(vArea) + ' e o custo por m² ' + vt.texto.replace('▲ ', 'sobe ').replace('▼ ', 'cai ') +
-      ' contra o Ritmo ' + a.ritmo + '. Área implícita = total ÷ R$/m² ÷ 12 da METRAGEM — confirmar com a ABL oficial antes de usar.',
+      'A área cresce ' + _orcPct_(vArea) + ' e o custo por m² ' + vt.texto.replace('▲ ', 'sobe ').replace('▼ ', 'cai ') +
+      ' contra o Ritmo ' + a.ritmo + '. Área = total ÷ R$/m² ÷ 12 da METRAGEM — confirmar com a ABL oficial antes de usar.',
       { fs: 8.5, fsMin: 6.5, cor: C.textBody, meio: true });
   }
 

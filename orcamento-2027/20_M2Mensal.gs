@@ -128,7 +128,7 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
   };
   const vArea = d.area.ritmo && d.area.orc ? d.area.orc / d.area.ritmo - 1 : null;
   const m2Txt = v => v ? _orcMilhar_(Math.round(v)) + ' m²' : '–';
-  const linhaArea = { tipo: 'item', nome: 'Área (m², implícita)', celulas: [
+  const linhaArea = { tipo: 'item', nome: 'Área (m²)', celulas: [
     { texto: m2Txt(d.area.real) }, null, { texto: m2Txt(d.area.ritmo) }, null, { texto: m2Txt(d.area.orc), bold: true }, null,
     { texto: vArea === null ? '–' : (vArea >= 0 ? '+' : '−') + _orcPct_(Math.abs(vArea)) }] };
   const by = yFim + 8;
@@ -149,7 +149,7 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt) {
     (d.fora.length > 1 ? ' e mais ' + (d.fora.length - 1) : '');
   // Curto para caber numa linha (o nome do Mega já está no subtítulo).
   _orcRodape_(slide, W, H, 'Fontes: METRAGEM-COND, Despesas-Mensal' + (S.real ? ', Financeiro ' + a.real : '') +
-    ' · área implícita = total ÷ R$/m² ÷ 12' + fora + ' · ritmo ' + a.ritmo + ' fechado até ' +
+    ' · área = total ÷ R$/m² ÷ 12' + fora + ' · ritmo ' + a.ritmo + ' fechado até ' +
     ORC_MESES[ORC_RITMO_ULTIMO_MES_FECHADO - 1].toLowerCase());
 }
 

@@ -143,14 +143,16 @@ function _orcTituloGestor_(slide) {
 
 // Com a marca do Mega do slide (Demercado em Curitiba): a moldura da trilha nova, o selo e as tabelas redesenhadas
 // saem no padrão dele — antes saía a moldura da Capital nos slides de Curitiba (12/10/2026).
-function _orcRevisarSlideGestor_(slide, W, H, mega, nV3) {
+// ancora (opcional, 31_VersaoFinal.gs): o slide gerado logo antes deste na v3 — depois de "Segurança e vigilância" a
+// trilha marca a Segurança.
+function _orcRevisarSlideGestor_(slide, W, H, mega, nV3, ancora) {
   const chave = Object.keys(ORC_CIDADES).filter(k => ORC_CIDADES[k].nome === mega)[0];
   _orcAplicarMarca_(chave ? ORC_CIDADES[chave] : null);
-  try { return _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3); }
+  try { return _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora); }
   finally { _orcAplicarMarca_(null); }
 }
 
-function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3) {
+function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   const feito = [], avisos = [];
   const txt = sh => { try { return sh.getText().asString().replace(/\n$/, ''); } catch (e) { return ''; } };
   const shapes = slide.getShapes();
@@ -212,8 +214,10 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3) {
     feito.push('rodapé com o ' + mega);
   }
 
-  // 5. Trilha: a moldura da seção do assunto no lugar da de 08 Fotos.
-  const secao = seguranca ? 5 : 4;
+  // 5. Trilha: a moldura da seção do assunto no lugar da do molde de fotos (ORC_SECOES desde 13/10/2026:
+  // 04 Segurança, 05 Manutenção).
+  const naSeguranca = seguranca || !!(ancora && /^Segurança e vigilância/i.test(ancora.titulo || ''));
+  const secao = ORC_SECOES.indexOf(naSeguranca ? 'Segurança' : 'Manutenção') + 1;
   if (_orcTrocarMolduraGestor_(slide, W, H, secao)) feito.push('trilha em 0' + secao);
 
   // 5b. Tabela em print ou tabela simples → tabela no padrão do deck (33_GestorRedesenho.gs).
@@ -254,6 +258,7 @@ function _orcTrocarMolduraGestor_(slide, W, H, secao) {
   const DS = CR_DESIGN_SYSTEM, MX = DS.layout.marginX;
   const spec = _orcSpecMoldura_({ header: true, secao: secao,
     cards: [{ x: MX, y: 74, w: W - MX * 2, h: H - 31 - 74, cor: DS.colors.cardBg, borda: DS.colors.lines, peso: 0.75 }] }, W, H);
+  _ORC_MOLDURAS_USADAS[_orcAssinatura_(spec)] = spec;   // vai para o manifesto do teste (ferramentas/molduras_imagem.py)
   const img = _orcImagemDaPasta_('MOLDURA - ' + _orcAssinatura_(spec) + '.png');
   if (!img) { Logger.log('Moldura da seção ' + secao + ' (' + _orcAssinatura_(spec) + ') não está na pasta — fica a de antes.'); return false; }
   const velha = slide.getPageElements().filter(el => el.getPageElementType() === SlidesApp.PageElementType.IMAGE &&

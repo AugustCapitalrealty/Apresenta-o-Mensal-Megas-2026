@@ -53,7 +53,7 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj, mod
   });
 
   _orcRodape_(slide, W, H, 'Fontes: METRAGEM-COND, modelos 070/090 e cadastro de contratos · o porquê de cada conta: nota da gestão ' +
-    '(aba Ofensores) ou o maior item dos modelos · área implícita = total ÷ R$/m² ÷ 12');
+    '(aba Ofensores) ou o maior item dos modelos · área = total ÷ R$/m² ÷ 12');
 }
 
 // As mensagens do resumo, na ordem: [número, texto].

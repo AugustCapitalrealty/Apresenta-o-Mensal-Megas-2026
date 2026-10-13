@@ -169,6 +169,13 @@ function _orcCapaNumeros_(slide, k, rel) {
     _orcUmaLinha_(slide, x, 274 * k, 76 * k, 14 * k, kp[1],
       { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
   });
+  // O R$/m² ao mês do Ritmo embaixo do valor dele (Guilherme, 13/10/2026: "coloque o metro quadrado também, meu
+  // diretor gosta de metro quadrado").
+  const aRit = _orcAreaImplicita_(rel, 'ritmo');
+  if (rel.total.ritmo > 0.5 && aRit) {
+    _orcUmaLinha_(slide, (546 + (kpis.length - 1) * 80) * k, 286 * k, 76 * k, 14 * k,
+      'R$ ' + _orcM2_(rel.total.ritmo / aRit / 12) + '/m²', { align: 'L', fs: 8.5, bold: true, cor: C.brandDark, fonte: T.body, fsMin: 6.5 });
+  }
 }
 
 // Cor do número de destaque: variação de gasto segue a convenção ▲ vermelho
@@ -225,8 +232,8 @@ function gerarSlideSubcapa_(slide, W, H, cid, numero, titulo, destaque, secoes) 
   // Sub capa desenhada como imagem (ferramentas/capas_imagem.py, 07/10/2026):
   // foto, número, título, frase, trilha e rodapé vêm na imagem; por cima, os
   // números da seção e as áreas clicáveis da trilha. Só para o deck com as 8
-  // seções — o número da seção está desenhado na imagem.
-  const padrao = Object.keys(ORC_SUBCAPAS);
+  // seções de ORC_SECOES — o número da seção está desenhado na imagem.
+  const padrao = ORC_SECOES;
   const fundo = secoes && secoes.join('|') === padrao.join('|')
     ? _orcImagemDaPasta_('SUBCAPA - ' + cid.nome.toUpperCase() + ' - ' + ('0' + numero).slice(-2) + '.jpg') : null;
   if (fundo) {
@@ -345,7 +352,7 @@ function _orcFotoEmBloco_(slide, W, H, fotoId, x, y, w, h, foco) {
 function _orcDestaqueSecao_(titulo, rel, contas) {
   const area = _orcAreaImplicita_(rel, 'orc'), aRit = _orcAreaImplicita_(rel, 'ritmo');
   const contra = vr => vr.texto !== '–' ? [vr.texto, 'vs. ritmo ' + (ORC_ANO - 1)] : null;
-  if (titulo === 'Custo por m²') {
+  if (titulo === 'Análise de Custos') {
     if (!area) return null;
     const m2 = rel.total.orc / area / 12;
     return { valor: 'R$ ' + _orcM2_(m2), rotulo: 'por m², ' + ORC_COM_IPTU,

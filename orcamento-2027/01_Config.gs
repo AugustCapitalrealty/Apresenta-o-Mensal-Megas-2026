@@ -325,13 +325,22 @@ const ORC_SUBCAPAS = {
   'Premissas':             { foto: 'DOCUMENTACAO', frase: 'Como este orçamento foi construído' },
   'Resumo Executivo':      { foto: 'MEGA',         frase: 'O orçamento do ano em uma página' },
   'DRE':                   { foto: 'OPERACIONAL',  frase: 'Conta a conta, do ritmo ao orçamento' },
-  'Manutenção':            { foto: 'CORRETIVA',    frase: 'O custo para manter o Mega rodando' },
   'Segurança':             { foto: 'PATRIMONIAL',  frase: 'Vigilância, portaria e monitoramento' },
+  'Manutenção':            { foto: 'CORRETIVA',    frase: 'O custo para manter o Mega rodando' },
   'Limpeza e Conservação': { foto: 'INTERNOS',     frase: 'O Mega limpo e conservado o ano inteiro' },
-  'Custo por m²':          { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' },
-  // Seção 08 (09/10/2026): slides do gestor com 1 a 3 fotos e a descrição (26_Fotos.gs).
+  'Contratos':             { foto: 'PREVENTIVA',   frase: 'Cada contrato, de 2026 para 2027' },
+  'Análise de Custos':     { foto: 'CONTRATADOS',  frase: 'Quanto custa cada m² por mês' },
+  // Moldes de fotos do gestor (26_Fotos.gs): desde 13/10/2026 sem seção própria no sumário.
   'Registro fotográfico':  { foto: 'PREVENTIVA',   frase: 'O que o gestor quer mostrar, em fotos' }
 };
+// Seções do deck, na ordem que o gestor montou no Mega Esteio da v3 (13/10/2026) — o padrão dos três Megas:
+// Contratos saiu da DRE e virou seção; Segurança antes da Manutenção; "Custo por m²" virou "Análise de Custos";
+// as fotos do gestor ficam dentro da seção delas (Segurança, Manutenção), sem a seção "Registro fotográfico".
+// Sumário, trilha do topo e sub capas seguem esta lista (ferramentas/trilha_imagem.py e capas_imagem.py também).
+const ORC_SECOES = ['Premissas', 'Resumo Executivo', 'DRE', 'Segurança', 'Manutenção', 'Limpeza e Conservação',
+                    'Contratos', 'Análise de Custos'];
+// No deck de Facilities, seções que abrem sem sub capa (o gestor não pôs: vêm logo depois do sumário do Mega).
+const ORC_SECOES_SEM_SUBCAPA = ['Premissas', 'Resumo Executivo'];
 // Perguntas em aberto com o gestor ou a controladoria, por Mega (nome em
 // ORC_CIDADES): entram no slide "Revisar antes da versão final" junto com as
 // pendências de dados e põem o selo ⚠ PENDENTE nos slides da conta. Resolvida

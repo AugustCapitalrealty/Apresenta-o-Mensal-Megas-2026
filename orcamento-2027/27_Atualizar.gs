@@ -18,27 +18,27 @@ const ORC_ATUALIZAR_AGORA = ['Ponte', 'Por que sobe', 'Demais variações'];
 
 // titulos: começo do título dos slides do grupo (como o gerador escreve);
 // depoisDe: título do slide depois do qual o grupo entra quando ainda não existe;
-// secao: número da seção (trilha do topo); slides(x): o que desenhar, com os dados do Mega.
+// secao: número da seção (trilha do topo, ORC_SECOES: 05 = Manutenção desde 13/10/2026); slides(x): o que desenhar.
 const ORC_GRUPOS_ATUALIZAVEIS = {
   'Revisar': { titulos: ['Revisar antes da versão final'], secao: 0, depoisDe: null,
     slides: x => x.rel.avisos.length || x.rel.pendencias.length
       ? [{ nome: 'Revisar antes da versão final', fn: s => gerarSlideRevisar_(s, x.W, x.H, x.cid, x.rel) }] : [] },
   'Ponte': { titulos: ['Ponte Ritmo '], secao: 2, depoisDe: 'Resumo executivo',
     slides: x => [{ nome: 'Ponte', selo: true, chaves: null, fn: s => gerarSlidePonte_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal) }] },
-  'Por que sobe': { titulos: ['Por que a manutenção sobe — '], secao: 4, depoisDe: 'Manutenção de imóveis',
+  'Por que sobe': { titulos: ['Por que a manutenção sobe — '], secao: 5, depoisDe: 'Manutenção de imóveis',
     slides: x => x.contas && x.dados ? [{ nome: 'Por que a manutenção sobe', selo: true, chaves: [x.contas[0].chave],
       fn: s => gerarSlidePorQueSobe_(s, x.W, x.H, x.cid, x.rel, x.contas[0], x.adi) }] : [] },
-  'Demais variações': { titulos: ['Por que a manutenção sobe:'], secao: 4, depoisDe: 'Por que a manutenção sobe — ',
+  'Demais variações': { titulos: ['Por que a manutenção sobe:'], secao: 5, depoisDe: 'Por que a manutenção sobe — ',
     slides: x => x.vi ? [{ nome: 'Por que a manutenção sobe — item a item', selo: true, chaves: [x.contas[0].chave],
       fn: s => gerarSlideDemaisVariacoes_(s, x.W, x.H, x.cid, x.rel, x.contas[0], x.vi) }] : [] },
-  'Itens de cada grupo': { titulos: ['Manutenção: os itens de cada grupo'], secao: 4, depoisDe: 'Manutenção: projetos × custo recorrente',
+  'Itens de cada grupo': { titulos: ['Manutenção: os itens de cada grupo'], secao: 5, depoisDe: 'Manutenção: projetos × custo recorrente',
     slides: x => {
       if (!x.calc || !x.calc.cls) return [];
       const pags = _orcPaginasGrupos_(x.calc.cls, x.H), ch = [_orcChaveConta_('Manutenção de imóveis')];
       return pags.map((pag, i) => ({ nome: 'Projetos × recorrente — itens (' + (i + 1) + '/' + pags.length + ')', selo: true, chaves: ch,
         fn: s => gerarSlideGruposManut_(s, x.W, x.H, x.cid, x.rel, x.calc.cls, pag, i, pags.length) }));
     } },
-  'Demais categorias': { titulos: ['Demais categorias'], secao: 4, depoisDe: null,
+  'Demais categorias': { titulos: ['Demais categorias'], secao: 5, depoisDe: null,
     slides: x => {
       if (!x.dados) return [];
       const div = _orcDividirCategorias_(x.dados), pags = _orcPaginasDemais_(div.demais);
