@@ -401,6 +401,16 @@ function obterSerieFluxoAcessos_(maxMeses) {
   return uniq.slice(-maxMeses);
 }
 
+// Mês da apresentação como ord (ano*100+mes), o mesmo de obterMesReferencia_.
+// Infinity se não der para ler — aí vale o mês mais recente, como antes.
+function _acessoOrdRef_() {
+  try { const r = obterMesReferencia_(); return r.ano * 100 + (r.index + 1); } catch (e) { return Infinity; }
+}
+
+function _acessoLabelOrd_(ord) {
+  return String(ord % 100).padStart(2, '0') + '/' + Math.floor(ord / 100);
+}
+
 // "05:45" → "5m45s"; segundos (345) → "5m45s"; vazio → ''.
 function _fmtTempoAcesso_(v) {
   const s = String(v == null ? '' : v).trim();
@@ -442,14 +452,25 @@ function obterKpisAcessos_() {
     }
     if (hRow < 0 || c.mes < 0) return null;
 
+    // A linha é a do MÊS DA APRESENTAÇÃO, não a mais recente da planilha:
+    // no deck de SET/26 a aba Dados só ia até 08/2026 e o card "Visão
+    // mensal" saiu com o fluxo e o tempo de agosto sob o título de setembro.
+    // Sem linha do mês → null, e o card mostra "—" (ver obterDadosTempo).
+    const ordRef = _acessoOrdRef_();
     let melhor = null, melhorOrd = -1;
     for (let i = hRow + 1; i < data.length; i++) {
       const row = data[i];
       if (_histEmpChave_(row[c.emp]) !== alvoEmp) continue;
       const mes = _histParseMes_(row[c.mes]);
-      if (mes && mes.ord > melhorOrd) { melhorOrd = mes.ord; melhor = row; }
+      if (!mes || mes.ord > ordRef) continue;
+      if (mes.ord > melhorOrd) { melhorOrd = mes.ord; melhor = row; }
     }
     if (!melhor) return null;
+    if (ordRef !== Infinity && melhorOrd !== ordRef) {
+      Logger.log('Acessos: ' + _acessoLabelOrd_(ordRef) + ' sem linha de ' + getProjetoAtivo().nome +
+                 ' na aba Dados do Controle de Acessos (última: ' + _acessoLabelOrd_(melhorOrd) + ').');
+      return null;
+    }
 
     const fluxoM = c.fluxo  >= 0 ? _histNum_(melhor[c.fluxo])  : NaN;
     let fluxoA   = c.fluxoA >= 0 ? _histNum_(melhor[c.fluxoA]) : NaN;
@@ -1677,11 +1698,17 @@ function obterDadosTempo() {
     let tempoAnual  = (acc && acc.anual  && acc.anual.tempo)  ? acc.anual.tempo  : kpis.aTempoAcesso;
 
     // Se o Controle de Acessos não retornou o fluxo, tenta o Histórico Validado
+    // — só se ele tiver o mês da apresentação (o último ponto pode ser de outro
+    // mês, o mesmo erro que obterKpisAcessos_ deixou de cometer).
     if (!fluxoMensal || fluxoMensal === '-') {
-      const hv = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
-      if (hv && hv.length) {
-        fluxoMensal = formatarNumeroBR(Math.round(hv[hv.length - 1].valor));
-        fluxoAnual  = formatarNumeroBR(Math.round(hv.reduce((s, x) => s + (x.valor || 0), 0)));
+      const ordRef = _acessoOrdRef_();
+      const hv  = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
+      const doMes = (hv || []).find(x => x.ord === ordRef);
+      if (doMes) {
+        fluxoMensal = formatarNumeroBR(Math.round(doMes.valor));
+        fluxoAnual  = formatarNumeroBR(Math.round(hv
+          .filter(x => Math.floor(x.ord / 100) === Math.floor(ordRef / 100) && x.ord <= ordRef)
+          .reduce((s, x) => s + (x.valor || 0), 0)));
       }
     }
 

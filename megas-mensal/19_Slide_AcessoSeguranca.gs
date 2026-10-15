@@ -35,16 +35,19 @@ function gerarSlideTempo() {
   // Série de acessos — alimenta o gráfico E o comparativo do card.
   // Fonte autoritativa: planilha de Controle de Acessos (Fluxo Total);
   // se indisponível, cai no histórico validado (Fluxo de VISITANTES).
-  let serieAcessos = obterSerieFluxoAcessos_(13);
+  let serieAcessos = obterSerieFluxoAcessos_(24);
   let fonte = 'Controle de Acessos';
   if (!serieAcessos || serieAcessos.length < 2) {
     serieAcessos = lerHistoricoValidado('Fluxo de VISITANTES', { aba: 'DADOS' });
     fonte = 'Histórico validado';
   }
+  serieAcessos = _acessoAncorarNoMes_(serieAcessos, 13);
 
   // Comparativo vs mês anterior vai no CARD (Fluxo de pessoas mensal), não no gráfico
-  if (serieAcessos.length >= 2 && dados.mensal && dados.mensal.kpis) {
-    const dFlux = serieAcessos[serieAcessos.length - 1].valor - serieAcessos[serieAcessos.length - 2].valor;
+  const nS = serieAcessos.length;
+  if (nS >= 2 && serieAcessos[nS - 1].valor != null && serieAcessos[nS - 2].valor != null &&
+      dados.mensal && dados.mensal.kpis) {
+    const dFlux = serieAcessos[nS - 1].valor - serieAcessos[nS - 2].valor;
     const kFlux = dados.mensal.kpis.find(k => /fluxo/i.test(k.l));
     if (kFlux) kFlux.delta = dFlux;   // fluxo subindo = mais atividade (verde)
   }
@@ -67,6 +70,20 @@ function gerarSlideTempo() {
 
   Logger.log('Slide 04 (Acesso/Segurança) — série de acessos: ' +
              serieAcessos.length + ' mes(es), fonte: ' + fonte + '.');
+}
+
+// O gráfico termina no MÊS DA APRESENTAÇÃO, não no último mês da planilha.
+// No deck de SET/26 a aba Dados do Controle de Acessos ia só até 08/2026 e o
+// gráfico simplesmente acabava em agosto, sem sinal de que faltava setembro.
+// Agora o mês sem linha entra com valor null e o gráfico desenha "sem dado"
+// — não zero: zero diria que ninguém entrou no Mega naquele mês.
+function _acessoAncorarNoMes_(serie, n) {
+  const ordRef = _acessoOrdRef_();
+  let s = (serie || []).filter(p => p.ord <= ordRef);
+  if (ordRef !== Infinity && (!s.length || s[s.length - 1].ord !== ordRef)) {
+    s = s.concat([{ mes: _acessoLabelOrd_(ordRef), ord: ordRef, valor: null }]);
+  }
+  return s.slice(-n);
 }
 
 // Função Auxiliar Local (CORRIGIDA PARA EVITAR ERRO DE TEXTO)

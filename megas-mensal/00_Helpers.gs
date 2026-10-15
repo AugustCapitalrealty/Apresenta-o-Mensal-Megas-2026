@@ -433,7 +433,9 @@ function desenharGraficoHistorico(slide, x, y, w, h, serie, opts) {
   const mL = 44, mR = 16, mT = 40, mB = 22;
   const px = x + mL, py = y + mT, pw = w - mL - mR, ph = h - mT - mB;
 
-  const vMax = Math.max(...serie.map(s => s.valor), 1);
+  // valor null = mês sem dado: entra no eixo com o rótulo "sem dado" e sem
+  // barra (ver _acessoAncorarNoMes_). Não conta na escala.
+  const vMax = Math.max(...serie.filter(s => s.valor != null).map(s => s.valor), 1);
   const esc  = vMax * 1.18;
   const vToY = v => py + ph - (v / esc) * ph;
 
@@ -455,17 +457,29 @@ function desenharGraficoHistorico(slide, x, y, w, h, serie, opts) {
   const baseY = py + ph;
 
   serie.forEach((s, i) => {
-    const bh    = Math.max((s.valor / esc) * ph, 2);
     const bx    = px + i * slotW + (slotW - barW) / 2;
     const ultimo = opts.destacarUltimo !== false && i === n - 1;
     const barCor = ultimo ? DS.colors.brandDark : cor;
 
+    if (s.valor == null) {
+      const sd = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY - 18, slotW * 1.3, 12);
+      sd.getText().setText('sem dado').getTextStyle()
+        .setFontSize(6).setBold(true).setForegroundColor('#94A3B8').setFontFamily(DS.typography.titles);
+      sd.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      const mlv = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY + 3, slotW * 1.3, 12);
+      mlv.getText().setText(s.mes).getTextStyle()
+        .setFontSize(6).setBold(ultimo).setForegroundColor(ultimo ? DS.colors.textMain : CORES.textGray).setFontFamily(DS.typography.body);
+      mlv.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      return;
+    }
+
+    const bh    = Math.max((s.valor / esc) * ph, 2);
     const bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bx, baseY - bh, barW, bh);
     bar.getFill().setSolidFill(barCor); bar.getBorder().setTransparent();
 
     // Valor no topo da barra (com respiro). Na última barra (mês atual),
     // 2ª linha com a tendência vs o mês anterior (▲ subiu · ▼ caiu).
-    const temDelta = ultimo && i >= 1 && opts.deltaMesAnterior !== false;
+    const temDelta = ultimo && i >= 1 && opts.deltaMesAnterior !== false && serie[i - 1].valor != null;
     const boxH = temDelta ? 28 : 12;
     const vl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, px + i * slotW - slotW * 0.15, baseY - bh - boxH - 6, slotW * 1.3, boxH);
     const vt = vl.getText();
