@@ -57,9 +57,12 @@ function gerarSlideEnergiaSolar() {
   });
 
   // ── Gráfico ──────────────────────────────────────────────────────────
+  // Só os últimos 12 meses (o mês de referência e os 11 anteriores): com a
+  // planilha inteira o eixo crescia todo mês e o rótulo "06/2025" quebrava
+  // em duas linhas. Os cards acima continuam vindo de atual/anterior.
   const chartY = topY + cardH + gap;
   const chartH = H - chartY - 16;
-  _solarGrafico(slide, marginX, chartY, W - marginX * 2, chartH, meses, COR_GER, COR_CON);
+  _solarGrafico(slide, marginX, chartY, W - marginX * 2, chartH, meses.slice(-12), COR_GER, COR_CON);
 
   Logger.log('Slide Energia Solar gerado → ' + atual.mes);
 }
