@@ -75,13 +75,13 @@ function gerarSlideTempo() {
 // O gráfico termina no MÊS DA APRESENTAÇÃO, não no último mês da planilha.
 // No deck de SET/26 a aba Dados do Controle de Acessos ia só até 08/2026 e o
 // gráfico simplesmente acabava em agosto, sem sinal de que faltava setembro.
-// Agora o mês sem linha entra com valor null e o gráfico desenha "sem dado"
-// — não zero: zero diria que ninguém entrou no Mega naquele mês.
+// Agora o mês sem linha entra com valor 0 (decisão do Guilherme, 15/10/2026:
+// o mês aparece sempre, mesmo zerado, em vez de "sem dado").
 function _acessoAncorarNoMes_(serie, n) {
   const ordRef = _acessoOrdRef_();
   let s = (serie || []).filter(p => p.ord <= ordRef);
   if (ordRef !== Infinity && (!s.length || s[s.length - 1].ord !== ordRef)) {
-    s = s.concat([{ mes: _acessoLabelOrd_(ordRef), ord: ordRef, valor: null }]);
+    s = s.concat([{ mes: _acessoLabelOrd_(ordRef), ord: ordRef, valor: 0 }]);
   }
   return s.slice(-n);
 }

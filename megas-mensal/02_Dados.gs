@@ -455,7 +455,9 @@ function obterKpisAcessos_() {
     // A linha é a do MÊS DA APRESENTAÇÃO, não a mais recente da planilha:
     // no deck de SET/26 a aba Dados só ia até 08/2026 e o card "Visão
     // mensal" saiu com o fluxo e o tempo de agosto sob o título de setembro.
-    // Sem linha do mês → null, e o card mostra "—" (ver obterDadosTempo).
+    // Sem linha do mês → fluxo 0 no mês (pedido do Guilherme, 15/10/2026: o
+    // mês da apresentação aparece sempre, mesmo zerado) e o acumulado do ano
+    // fica o do último mês lançado.
     const ordRef = _acessoOrdRef_();
     let melhor = null, melhorOrd = -1;
     for (let i = hRow + 1; i < data.length; i++) {
@@ -466,11 +468,14 @@ function obterKpisAcessos_() {
       if (mes.ord > melhorOrd) { melhorOrd = mes.ord; melhor = row; }
     }
     if (!melhor) return null;
-    if (ordRef !== Infinity && melhorOrd !== ordRef) {
+    const semMes = ordRef !== Infinity && melhorOrd !== ordRef;
+    if (semMes) {
       Logger.log('Acessos: ' + _acessoLabelOrd_(ordRef) + ' sem linha de ' + getProjetoAtivo().nome +
-                 ' na aba Dados do Controle de Acessos (última: ' + _acessoLabelOrd_(melhorOrd) + ').');
-      return null;
+                 ' na aba Dados do Controle de Acessos (última: ' + _acessoLabelOrd_(melhorOrd) +
+                 ') — mês sai com fluxo 0.');
     }
+    // Acumulado de outro ano não serve: em janeiro sem linha, o ano começa do zero.
+    const mesmoAno = !semMes || Math.floor(melhorOrd / 100) === Math.floor(ordRef / 100);
 
     const fluxoM = c.fluxo  >= 0 ? _histNum_(melhor[c.fluxo])  : NaN;
     let fluxoA   = c.fluxoA >= 0 ? _histNum_(melhor[c.fluxoA]) : NaN;
@@ -489,6 +494,18 @@ function obterKpisAcessos_() {
         }
       }
       if (count > 0) fluxoA = soma;
+    }
+
+    if (semMes) {
+      // Tempo médio de zero acessos não existe: '-' (não-vazio, para o
+      // obterDadosTempo não cair na aba TEMPO local, que pode estar velha).
+      return {
+        mensal: { fluxo: '0', tempo: '-' },
+        anual: {
+          fluxo: !mesmoAno ? '0' : (isNaN(fluxoA) ? '' : formatarNumeroBR(Math.round(fluxoA))),
+          tempo: (mesmoAno && c.tempoA >= 0 && _fmtTempoAcesso_(melhor[c.tempoA])) || '-'
+        }
+      };
     }
 
     return {
@@ -544,15 +561,20 @@ function obterAcessosDashboard_() {
       const mes = _histParseMes_(row[c.mes]);
       if (mes) porOrd[mes.ord] = row;
     }
-    const ords = Object.keys(porOrd).map(Number).sort((a, b) => a - b);
+    // "Atual" é o MÊS DA APRESENTAÇÃO, não o último da planilha (no deck de
+    // SET/26 a aba ia só até 08/2026 e agosto saía como o mês atual).
+    const ordRef = _acessoOrdRef_();
+    const ords = Object.keys(porOrd).map(Number).filter(o => o <= ordRef).sort((a, b) => a - b);
     if (!ords.length) return null;
 
-    const ordAtual = ords[ords.length - 1];
-    // Mês anterior = penúltimo mês PRESENTE na planilha (não ordAtual-1, que
+    const ordAtual = ordRef !== Infinity ? ordRef : ords[ords.length - 1];
+    const semMes   = !porOrd[ordAtual];
+    // Mês anterior = último mês PRESENTE antes do atual (não ordAtual-1, que
     // quebraria em janeiro e em meses com lacuna) — mesmo critério já usado
     // em obterSerieFluxoAcessos_/Slide04.
-    const rowAtual  = porOrd[ordAtual];
-    const rowMesAnt = ords.length >= 2 ? porOrd[ords[ords.length - 2]] : null;
+    const anteriores = ords.filter(o => o < ordAtual);
+    const rowAtual  = porOrd[ordAtual] || null;
+    const rowMesAnt = anteriores.length ? porOrd[anteriores[anteriores.length - 1]] : null;
     // Mesmo mês do ano anterior: subtrair 100 no ord (ano*100+mes) sempre
     // preserva o mês e decrementa o ano em 1, sem casos especiais.
     const rowAnoAnt = porOrd[ordAtual - 100] || null;
@@ -570,7 +592,7 @@ function obterAcessosDashboard_() {
 
     return {
       'Fluxo de VISITANTES': {
-        atual:  fluxoStr(rowAtual),
+        atual:  semMes ? '0' : fluxoStr(rowAtual),   // mês sem linha sai 0
         mesAnt: fluxoStr(rowMesAnt),
         anoAnt: fluxoStr(rowAnoAnt)
       },
