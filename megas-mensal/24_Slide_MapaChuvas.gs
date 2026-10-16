@@ -129,16 +129,183 @@ function gerarSlideMapaChuvas() {
 
 
 // ==========================================
+// SLIDE — CHAMADOS LIGADOS À CHUVA (logo depois do mapa)
+// ==========================================
+// A lista por trás dos ✕ do anel: quando, quanto chovia naquele turno, o
+// chamado e a situação dele. A coluna "termo" diz qual palavra pôs o chamado
+// na lista — é por ela que se acha falso positivo antes da reunião. Sem
+// nenhum chamado no mês, não gera slide.
+const CHUVA_TERMO_ROTULO = {
+  chuva: 'chuva', infiltr: 'infiltração', goteir: 'goteira', alag: 'alagamento', inund: 'inundação',
+  enchent: 'enchente', calha: 'calha', temporal: 'temporal', vendaval: 'vendaval', transbord: 'transbordo'
+};
+
+function gerarSoChamadosChuvaCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosChuva(); }
+function gerarSoChamadosChuvaItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosChuva(); }
+function gerarSoChamadosChuvaEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosChuva(); }
+
+function gerarSlideChamadosChuva() {
+  if (!_projetoAtivoChave) setProjetoAtivo('CURITIBA');
+  const projeto = getProjetoAtivo();
+  const dados   = obterMapaChuvas_();
+  if (!dados || !dados.impactos.length) {
+    Logger.log('Chamados de chuva: ' + projeto.nome + ' sem chamado ligado à chuva no mês — nenhum slide.');
+    return;
+  }
+
+  const deck = getDeckAtivo();
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  const mX = 30, topo = 72;
+  const cardH = H - topo - 10;
+  const rowH = 27, cabH = 18;
+  // criarCardPainel devolve o topo do conteúdo 32pt abaixo do card.
+  const porPagina = Math.max(1, Math.floor((cardH - 32 - cabH - 8) / rowH));
+  const lista = dados.impactos;
+  const paginas = Math.ceil(lista.length / porPagina);
+
+  for (let p = 0; p < paginas; p++) {
+    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    slide.getBackground().setSolidFill(CORES.bgSlide);
+    criarHeaderPadrao(slide, 'CHAMADOS LIGADOS À CHUVA',
+      projeto.nome + ' · ' + dados.ref.curto + '/' + dados.ref.ano +
+      ' · BD-CORRETIVAS, descrição com termo de chuva' + (paginas > 1 ? ' · ' + (p + 1) + '/' + paginas : ''));
+    const fatia = lista.slice(p * porPagina, (p + 1) * porPagina);
+    try {
+      // Card da altura do conteúdo: com poucos chamados, o card cheio da
+      // página ficava com dois terços vazios.
+      const alturaUsada = Math.min(cardH, 32 + cabH + 3 + fatia.length * rowH + 10);
+      _chuvaTabelaChamados_(slide, mX, topo, W - mX * 2, alturaUsada, fatia, dados, lista.length, rowH, cabH);
+    } catch (e) {
+      Logger.log('Chamados de chuva — falha ao desenhar: ' + e.message);
+      _chuvaAviso_(slide, mX, topo, W - mX * 2, cardH, 'Falha ao desenhar a tabela: ' + e.message);
+    }
+  }
+  Logger.log('Chamados de chuva: ' + lista.length + ' chamado(s) em ' + paginas + ' slide(s).');
+}
+
+function _chuvaTabelaChamados_(slide, x, y, w, h, fatia, dados, total, rowH, cabH) {
+  const DS = CR_DESIGN_SYSTEM;
+  const abertos = dados.impactos.filter(i => !i.fechado).length;
+  const titulo = total + ' CHAMADO' + (total === 1 ? '' : 'S') + ' · ' +
+                 (total - abertos) + ' FECHADO' + (total - abertos === 1 ? '' : 'S') + ' · ' +
+                 abertos + ' EM ABERTO';
+  const y0 = criarCardPainel(slide, x, y, w, h, titulo, CORES.lightBlue);
+
+  const ix = x + 14, iw = w - 24;
+  const cols = [
+    { k: 'quando', t: 'QUANDO',          w: 62 },
+    { k: 'chuva',  t: 'CHUVA NO TURNO',  w: 68 },
+    { k: 'id',     t: 'Nº',              w: 44 },
+    { k: 'desc',   t: 'DESCRIÇÃO',       w: 0 },    // o que sobrar
+    { k: 'local',  t: 'LOCAL / CLIENTE', w: 112 },
+    { k: 'pri',    t: 'PRIORIDADE',      w: 62 },
+    { k: 'sit',    t: 'SITUAÇÃO',        w: 78 }
+  ];
+  const fixo = cols.reduce((s, c) => s + c.w, 0);
+  cols.find(c => c.k === 'desc').w = iw - fixo;
+  let cx = ix;
+  cols.forEach(c => { c.x = cx; cx += c.w; });
+  const col = k => cols.find(c => c.k === k);
+
+  // Cabeçalho das colunas.
+  cols.forEach(c => _gUmaLinha_(slide, c.x, y0, c.w - 4, cabH, c.t,
+    { align: 'L', fs: 6.3, bold: true, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 2, fsMin: 5 }));
+  const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, y0 + cabH, iw, 1);
+  linha.getFill().setSolidFill(DS.colors.lines);
+  linha.getBorder().setTransparent();
+
+  const corta = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s; };
+  const ddmm = dt => String(dt.getUTCDate()).padStart(2, '0') + '/' + String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const um = (cx, cy, cw, ch, txt, op) => _gUmaLinha_(slide, cx, cy, cw - 4, ch, txt,
+    Object.assign({ align: 'L', fs: 7, cor: DS.colors.textMain, fonte: DS.typography.body, folga: 2, fsMin: 5.5 }, op || {}));
+
+  fatia.forEach((im, i) => {
+    const ry = y0 + cabH + 3 + i * rowH;
+    if (i % 2 === 1) {
+      const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, ry, iw, rowH);
+      zebra.getFill().setSolidFill(DS.colors.bgSlide);
+      zebra.getBorder().setTransparent();
+    }
+    const l1 = ry + 3, l2 = ry + 14;
+
+    // QUANDO — dia e turno, com a hora do reporte.
+    um(col('quando').x, l1, col('quando').w, 11, String(im.dia).padStart(2, '0') + '/' + dados.ref.mes,
+      { fs: 8, bold: true, fonte: DS.typography.titles });
+    um(col('quando').x, l2, col('quando').w, 10,
+      CHUVA_TURNOS[im.turno].nome + (im.semHora ? ' · sem hora' :
+        ' · ' + String(im.dtReporte.getUTCHours()).padStart(2, '0') + ':' + String(im.dtReporte.getUTCMinutes()).padStart(2, '0')),
+      { fs: 6.3, cor: DS.colors.textBody });
+
+    // CHUVA NO TURNO — o mesmo ponto do anel.
+    const v = dados.turnos ? dados.turnos.celulas[im.dia - 1][im.turno] : null;
+    const cls = _chuvaClasse_(v);
+    const bola = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, col('chuva').x, ry + (rowH - 7) / 2, 7, 7);
+    if (v === null) {
+      bola.getFill().setSolidFill(DS.colors.cardBg);
+      bola.getBorder().getLineFill().setSolidFill(CHUVA_COR_SEM_DADO);
+      bola.getBorder().setWeight(0.75);
+    } else {
+      bola.getFill().setSolidFill(cls ? cls.cor : CHUVA_COR_SECO);
+      bola.getBorder().setTransparent();
+    }
+    um(col('chuva').x + 10, l1, col('chuva').w - 10, 11, v === null ? '—' : (cls ? _chuvaMmh_(v) + ' mm/h' : 'seco'),
+      { fs: 7, bold: !!cls, cor: cls ? cls.cor : DS.colors.textBody });
+    um(col('chuva').x + 10, l2, col('chuva').w - 10, 10, v === null ? 'sem dado' : (cls ? cls.nome.toLowerCase() : 'abaixo de 0,5 mm/h'),
+      { fs: 6, cor: DS.colors.textBody });
+
+    // Nº
+    um(col('id').x, ry, col('id').w, rowH, im.id || '—', { fs: 7.5, bold: true, cor: DS.colors.brandMed });
+
+    // DESCRIÇÃO + termo que pôs o chamado na lista.
+    _gParagrafo_(slide, col('desc').x, ry + 1, col('desc').w - 6, 15, corta(im.descricao, 120),
+      { fs: 7, fsMin: 5.5, espac: 100, cor: DS.colors.textMain });
+    um(col('desc').x, l2 + 1, col('desc').w, 9, 'termo: ' + (CHUVA_TERMO_ROTULO[im.termo] || im.termo),
+      { fs: 5.8, italic: true, cor: DS.colors.textBody });
+
+    // LOCAL / CLIENTE
+    um(col('local').x, l1, col('local').w, 11, corta(im.local, 30) || '—', { fs: 7 });
+    um(col('local').x, l2, col('local').w, 10, corta(im.cliente, 32), { fs: 6.3, cor: DS.colors.textBody });
+
+    // PRIORIDADE
+    const corPri = im.prioridade === 'Emergencial' ? DS.colors.accentRed
+                 : im.prioridade === 'Alta' ? DS.colors.accentOrange : DS.colors.textBody;
+    um(col('pri').x, ry, col('pri').w, rowH, im.prioridade || '—', { fs: 7, bold: corPri !== DS.colors.textBody, cor: corPri });
+
+    // SITUAÇÃO — pílula verde (fechado) ou laranja (aberto, com o estado).
+    const pw = col('sit').w - 6, ph = 15, py = ry + (rowH - ph) / 2;
+    const pil = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, col('sit').x, py, pw, ph);
+    pil.getFill().setSolidFill(im.fechado ? '#D1FAE5' : '#FFEDD5');
+    pil.getBorder().setTransparent();
+    // Estado "Fechado" sem data de fechamento conta como aberto (regra do
+    // backlog, _bdChamadoFechado_) — a pílula diz isso em vez de "Fechado"
+    // em laranja, que pareceria contradição.
+    const fechadoSemData = !im.fechado && /^fechad|^conclu|^finaliz/.test(_histNorm_(im.estado));
+    const txtSit = im.fechado ? 'Fechado ' + ddmm(im.dtFechado)
+                 : fechadoSemData ? 'Fechado sem data'
+                 : corta(im.estado || 'Em aberto', 22);
+    _gUmaLinha_(slide, col('sit').x, py, pw, ph, txtSit,
+      { fs: 6.5, bold: true, cor: im.fechado ? '#047857' : '#C2410C', fonte: DS.typography.body, folga: 0, fsMin: 5 });
+  });
+}
+
+
+// ==========================================
 // DADOS
 // ==========================================
 // Devolve null só quando o Mega não tem coordenadas. Cada bloco que falhar
 // fica null e o painel dele mostra o aviso.
+// Cache por Mega e mês: o slide dos chamados (logo depois do mapa) usa a
+// mesma leitura, sem consultar a Open-Meteo e a BD de novo.
+let _mapaChuvasCache = {};
+
 function obterMapaChuvas_() {
   const projeto = getProjetoAtivo();
   const c = projeto.coordenadas;
   if (!c) return null;
 
   const ref   = obterMesReferencia_();
+  const chave = projeto.nome + '|' + ref.ano + '|' + ref.index;
+  if (_mapaChuvasCache[chave]) return _mapaChuvasCache[chave];
   const nDias = new Date(Date.UTC(ref.ano, ref.index + 1, 0)).getUTCDate();
   const ontem = _chuvaIsoMais_(_chuvaHojeIso_(), -1);   // o arquivo histórico não tem "hoje"
   const local = '?latitude=' + c.lat + '&longitude=' + c.lon + '&timezone=America%2FSao_Paulo';
@@ -192,6 +359,9 @@ function obterMapaChuvas_() {
     }
   }
 
+  // Só guarda leitura boa: Open-Meteo fora do ar num slide não pode grudar
+  // no seguinte.
+  if (r.mes && r.turnos) _mapaChuvasCache[chave] = r;
   return r;
 }
 
@@ -330,7 +500,8 @@ function _chuvaImpactos_(ref) {
     let dt = it.dtReporte;
     if (!dt) return;
     const txt = _histNorm_(it.descricao);
-    if (!CHUVA_TERMOS_IMPACTO.some(p => txt.indexOf(p) >= 0)) return;
+    const termo = CHUVA_TERMOS_IMPACTO.find(p => txt.indexOf(p) >= 0);
+    if (!termo) return;
 
     // As datas da BD vêm como hora de parede em UTC (_histParseDataHora_).
     const h = dt.getUTCHours();
@@ -341,8 +512,12 @@ function _chuvaImpactos_(ref) {
     else            turno = h < 12 ? 0 : (h < 18 ? 1 : 2);
 
     if (dt.getUTCFullYear() !== ref.ano || dt.getUTCMonth() !== ref.index) return;
-    saida.push({ dia: dt.getUTCDate(), turno: turno, id: it.id, descricao: it.descricao });
+    saida.push({ dia: dt.getUTCDate(), turno: turno, id: it.id, descricao: it.descricao, termo: termo,
+                 dtReporte: it.dtReporte, semHora: semHora, local: it.local || '', cliente: it.cliente || '',
+                 prioridade: it.prioridade || '', estado: it.estado || '',
+                 fechado: _bdChamadoFechado_(it.estadoSistema || it.estado, it.dtFechado), dtFechado: it.dtFechado || null });
   });
+  saida.sort((a, b) => (a.dia - b.dia) || (a.turno - b.turno) || (a.dtReporte - b.dtReporte));
   if (saida.length) {
     Logger.log('Mapa de Chuvas: ' + saida.length + ' chamado(s) ligado(s) à chuva — ' +
                saida.map(s => s.id + ' (' + s.dia + '/' + CHUVA_TURNOS[s.turno].sigla + ')').join(', '));
@@ -436,7 +611,7 @@ function _chuvaKpis_(slide, x, y, w, h, d) {
                   (classePico ? ' · chuva ' + classePico.nome.toLowerCase() : '')
                 : 'sem chuva registrada', cor: classePico ? classePico.cor : DS.textBody },
     { label: 'CHAMADOS LIGADOS À CHUVA', valor: String(nImp),
-      sub: nImp ? 'infiltração, goteira, alagamento (✕ no anel)' : 'nenhum chamado no mês',
+      sub: nImp ? '✕ no anel · lista no slide seguinte' : 'nenhum chamado no mês',
       cor: nImp ? DS.accentRed : DS.accentGreen }
   ];
 

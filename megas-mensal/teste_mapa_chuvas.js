@@ -99,17 +99,24 @@ for (const f of ['00_Helpers.gs', '01_Config.gs', '02_Dados.gs', '13_Slide_Metas
 global.getDeckAtivo = () => ({ getPageWidth: () => 720, getPageHeight: () => 405, appendSlide: () => { slidesCriados++; return slide; } });
 global.obterMesReferencia_ = () => ({ index: 8, nome: 'SETEMBRO', curto: 'Setembro', sigla: 'SET', mes: '09', ano: 2026, siglaAno: 'SET/26' });
 const U = (a, m, d, h, mi, s) => new Date(Date.UTC(a, m - 1, d, h || 0, mi || 0, s || 0));
-global._lerBdCorretivasCru_ = () => [
-  { id: '101', descricao: 'Infiltração no telhado do galpão 3', dtReporte: U(2026, 9, 23, 16, 10) },
-  { id: '102', descricao: 'GOTEIRA sobre a doca', dtReporte: U(2026, 9, 12, 3, 40) },
+const BD_PADRAO = [
+  { id: '101', descricao: 'Infiltração no telhado do galpão 3', dtReporte: U(2026, 9, 23, 16, 10),
+    estado: 'Fechado', estadoSistema: 'Fechado', dtFechado: U(2026, 9, 25, 9), local: 'GALPÃO 3', cliente: 'Locatária Alfa Logística S.A.', prioridade: 'Alta' },
+  { id: '102', descricao: 'GOTEIRA sobre a doca', dtReporte: U(2026, 9, 12, 3, 40),
+    estado: 'Aguardando material', estadoSistema: 'Pausado', dtFechado: null, local: 'DOCA 12', cliente: '', prioridade: 'Emergencial' },
   { id: '103', descricao: 'Troca de chuveiro no vestiário', dtReporte: U(2026, 9, 14, 10) },
-  { id: '104', descricao: 'Alagamento na portaria', dtReporte: U(2026, 9, 7) },
+  { id: '104', descricao: 'Alagamento na portaria', dtReporte: U(2026, 9, 7),
+    estado: 'Fechado', estadoSistema: 'Fechado', dtFechado: null, local: 'PORTARIA', cliente: '', prioridade: 'Média' },
   { id: '105', descricao: 'Chuva forte derrubou placa', dtReporte: U(2026, 8, 30, 15) },
-  { id: '106', descricao: 'Calha entupida', dtReporte: U(2026, 9, 23, 17, 5) }
+  { id: '106', descricao: 'Calha entupida', dtReporte: U(2026, 9, 23, 17, 5),
+    estado: 'Em atendimento', estadoSistema: 'Em atendimento', dtFechado: null, local: 'GALPÃO 3', cliente: 'Locatária Alfa', prioridade: 'Baixa' }
 ];
+let bd = BD_PADRAO;
+global._lerBdCorretivasCru_ = () => bd;
 setProjetoAtivo('ESTEIO');
 
-function rodar() { shapes = []; logs.length = 0; urls = []; gerarSlideMapaChuvas(); return shapes.filter(s => s.texto !== null).map(s => s.texto); }
+// Limpa o cache entre cenários — trocar o dublê sem limpar não teria efeito.
+function rodar(fn) { shapes = []; logs.length = 0; urls = []; _mapaChuvasCache = {}; slidesCriados = 0; (fn || gerarSlideMapaChuvas)(); return shapes.filter(s => s.texto !== null).map(s => s.texto); }
 
 // ── Cenário 1: setembro/2026 completo ───────────────────────────────────────
 console.log('Cenário 1: SET/26, Mega Esteio, tudo respondendo');
@@ -134,7 +141,7 @@ t(_chuvaClasse_(14.2).nome === 'Forte' && _chuvaClasse_(10).nome === 'Forte', 'f
 t(_chuvaClasse_(9.99).nome === 'Moderada' && _chuvaClasse_(2.5).nome === 'Moderada', 'moderada 2,5–10');
 t(_chuvaClasse_(0.5).nome === 'Leve' && _chuvaClasse_(0.49) === null && _chuvaClasse_(0) === null, 'leve a partir de 0,5; abaixo é seco');
 const imp = d.impactos.map(i => i.id + ':' + i.dia + '/' + i.turno).join(' ');
-t(imp === '101:23/1 102:11/2 104:7/0 106:23/1', 'impactos (chuveiro e agosto fora; madrugada → noite anterior; sem hora → manhã) → ' + imp);
+t(imp === '104:7/0 102:11/2 101:23/1 106:23/1', 'impactos (chuveiro e agosto fora; madrugada → noite anterior; sem hora → manhã) → ' + imp);
 const daily = urls.find(u => u.indexOf('daily=precipitation_sum') >= 0);
 t(/start_date=2015-01-01/.test(daily) && /end_date=2026-09-30/.test(daily), 'diário de 2015-01-01 a 2026-09-30 → ' + daily);
 const hourly = urls.find(u => u.indexOf('hourly=') >= 0);
@@ -195,7 +202,46 @@ t(tx.includes('SET/26*'), 'mês parcial marcado com * no painel de 12 meses');
 t(/end_date=2026-09-19/.test(urls.find(u => u.indexOf('hourly=') >= 0)), 'horário não pede além de ontem');
 hoje = '2026-10-16';
 
-// ── Cenário 4: Mega Curitiba fica em Campina Grande do Sul ──────────────────
+// ── Cenário 4: slide dos chamados ligados à chuva ───────────────────────────
+console.log('Cenário 4: slide dos chamados');
+tx = rodar(gerarSlideChamadosChuva);
+t(slidesCriados === 1, 'um slide para 4 chamados');
+t(tx.includes('4 CHAMADOS · 1 FECHADO · 3 EM ABERTO'), 'título com a contagem (104 tem estado Fechado mas sem data → aberto, regra do backlog) → ' + tx.find(s => /CHAMADO/.test(s) && /ABERTO/.test(s)));
+const ordem = tx.filter(s => /^10[1-6]$/.test(s)).join(',');
+t(ordem === '104,102,101,106', 'ordem por dia e turno → ' + ordem);
+t(tx.includes('Fechado 25/09'), 'pílula fechado com data');
+t(tx.includes('Fechado sem data'), '104: estado Fechado sem data de fechamento');
+t(tx.includes('Aguardando material'), 'aberto mostra o estado');
+t(tx.includes('manhã · sem hora'), 'reporte sem hora');
+t(tx.includes('noite · 03:40'), 'madrugada aparece como noite do dia anterior, com a hora real');
+t(tx.includes('11/09'), 'goteira das 3h40 do dia 12 cai no dia 11');
+t(tx.includes('14,2 mm/h') && tx.includes('forte'), 'chuva do turno do 101/106 = 14,2 forte');
+t(tx.includes('termo: infiltração') && tx.includes('termo: goteira') && tx.includes('termo: calha'), 'termo que pôs na lista');
+t(tx.includes('Emergencial') && tx.includes('GALPÃO 3'), 'prioridade e local');
+t(!tx.some(s => /chuveiro|placa/.test(s)), 'chuveiro e agosto fora');
+const fora2 = shapes.filter(s => !(s.tipo === 'ELLIPSE' && s.w === 450) && (s.x < -14 || s.y < 0 || s.x + s.w > 734 || s.y + s.h > 405));
+t(fora2.length === 0, 'tabela dentro da página → ' + fora2.map(s => s.tipo + ' ' + (s.texto || '')).slice(0, 3).join(' | '));
+if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'chamados_chuva.svg'), svg(shapes));
+
+const muitos = [];
+for (let i = 0; i < 25; i++) muitos.push({ id: String(500 + i), descricao: 'Infiltração na cobertura, trecho ' + i + ', água escorrendo pela parede até o piso do mezanino e molhando paletes armazenados',
+  dtReporte: U(2026, 9, 1 + i, 9), estado: 'Aberto', estadoSistema: 'Aberto', dtFechado: null, local: 'GALPÃO COM NOME MUITO COMPRIDO DE VERDADE ' + i, cliente: 'Cliente', prioridade: 'Alta' });
+bd = muitos;
+tx = rodar(gerarSlideChamadosChuva);
+t(slidesCriados === 3, '25 chamados → 3 slides de 9 → ' + slidesCriados);
+t(tx.some(s => /· 3\/3$/.test(s)), 'subtítulo com a página');
+t(shapes.every(s => s.tipo !== 'TEXT_BOX' || !s.texto || !/^Falha/.test(s.texto)), 'sem aviso de falha');
+bd = [];
+rodar(gerarSlideChamadosChuva);
+t(slidesCriados === 0, 'sem chamado de chuva → nenhum slide');
+bd = BD_PADRAO;
+
+// Cache: o slide dos chamados reaproveita a leitura do mapa.
+_mapaChuvasCache = {}; urls = [];
+obterMapaChuvas_(); const n1 = urls.length; obterMapaChuvas_();
+t(n1 === 3 && urls.length === 3, 'segunda leitura vem do cache → ' + n1 + '/' + urls.length);
+
+// ── Cenário 5: Mega Curitiba fica em Campina Grande do Sul ──────────────────
 setProjetoAtivo('CURITIBA');
 rodar();
 t(urls.every(u => /latitude=-25.3047&longitude=-49.0553/.test(u)), 'Curitiba consulta Campina Grande do Sul');

@@ -87,7 +87,8 @@ dos 10 anos anteriores.
   turno), mas registra no Logger a diferença entre os dois.
 - Usa `UrlFetchApp`: na primeira execução depois do push o Apps Script pede
   autorização nova.
-- Slide avulso: `gerarSoMapaChuvasCuritiba()` / `...Itajai()` / `...Esteio()`.
+- Logo depois vem **Chamados Ligados à Chuva**: a lista por trás dos ✕ (quando, chuva no turno, nº, descrição, termo que pôs na lista, local/cliente, prioridade, situação), 9 por slide. Sem chamado no mês, não gera slide.
+- Slides avulsos: `gerarSoMapaChuvasCuritiba()` / `...Itajai()` / `...Esteio()` e `gerarSoChamadosChuvaCuritiba()` / `...Itajai()` / `...Esteio()`.
 - Teste: `node megas-mensal/teste_mapa_chuvas.js`. Com `PREVIA=<pasta>` ele grava uma prévia em SVG
   do slide.
 

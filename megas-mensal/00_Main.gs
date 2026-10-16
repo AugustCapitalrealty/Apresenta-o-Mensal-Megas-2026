@@ -206,7 +206,7 @@ const _MEGAS_DEPENDENCIAS_ = [
   ['21_Slide_DREBridge.gs',   ['gerarSlideBridge', 'gerarSlideBridgeGrafico', 'gerarSlideDRE', 'gerarSlideDREComRitmo']],
   ['22_Slide_CustoM2.gs',     ['gerarSlideCustoM2', 'gerarSlideCustoM2Quadrimestre', 'gerarSoCustoM2Curitiba', 'gerarSoCustoM2Itajai', 'gerarSoCustoM2Esteio']],
   ['23_Slide_Utilities.gs',   ['gerarSlideEnergiaSolar', 'gerarSlidesUtilities_', 'gerarSlidesMonitoramentoEsteio_']],
-  ['24_Slide_MapaChuvas.gs',  ['gerarSlideMapaChuvas', 'obterMapaChuvas_', 'gerarSoMapaChuvasCuritiba', 'gerarSoMapaChuvasItajai', 'gerarSoMapaChuvasEsteio']],
+  ['24_Slide_MapaChuvas.gs',  ['gerarSlideMapaChuvas', 'gerarSlideChamadosChuva', 'obterMapaChuvas_', 'gerarSoMapaChuvasCuritiba', 'gerarSoMapaChuvasItajai', 'gerarSoMapaChuvasEsteio']],
   ['25_Slide_Documentos.gs',  ['gerarSlideDocumentos']],
   ['26_Slide_Encerramento.gs',['gerarSlideEncerramento']]
 ];
@@ -305,6 +305,7 @@ function gerarApresentacaoCompleta_() {
     // Mapa de Chuvas — os três Megas (Open-Meteo + chamados de chuva da
     // BD-CORRETIVAS). Ver 24_Slide_MapaChuvas.gs.
     { nome: 'Mapa de Chuvas',                      fn: gerarSlideMapaChuvas },
+    { nome: 'Chamados Ligados à Chuva',            fn: gerarSlideChamadosChuva },
     { nome: 'Capa Seção - Documentação',           fn: () => gerarCapaSecao('DOCUMENTAÇÃO', 'LEGAL', 'DOCUMENTACAO') },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
     { nome: 'Encerramento',                        fn: gerarSlideEncerramento }

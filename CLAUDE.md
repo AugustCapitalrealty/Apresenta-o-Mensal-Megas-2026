@@ -294,7 +294,7 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Oito suítes hoje, 454 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Oito suítes hoje, 473 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -305,7 +305,7 @@ Oito suítes hoje, 454 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_dashboard.js` | 45 |
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
-| `megas-mensal/teste_mapa_chuvas.js` | 49 |
+| `megas-mensal/teste_mapa_chuvas.js` | 68 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
 

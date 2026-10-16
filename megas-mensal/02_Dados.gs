@@ -3990,6 +3990,7 @@ function _lerBdCorretivasCru_() {
       saida.push({
         id:            _idChamadoNormaliza_(cId >= 0 ? row[cId] : ''),
         cliente:       cCliente >= 0 ? String(row[cCliente] || '').trim() : '',
+        local:         cLocal   >= 0 ? String(row[cLocal] || '').trim() : '',   // Chamados de chuva (24_Slide_MapaChuvas.gs)
         descricao:     cDesc   >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         estado:        estadoOp,
         estadoSistema: rawEstado,
