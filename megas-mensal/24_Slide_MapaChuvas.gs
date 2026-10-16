@@ -105,7 +105,7 @@ function gerarSlideMapaChuvas() {
   const largura = W - mX * 2;
   const painelY = topo + kpiH + gap;
   const painelH = H - painelY - 10;
-  const wAnel = 228, wMeses = 150;
+  const wAnel = 213, wMeses = 180;   // 180: com menos, "OUT/25" quebrava em duas linhas no Slides
   const wPrev = largura - wAnel - wMeses - gap * 2;
 
   const partes = [
@@ -700,7 +700,7 @@ function _chuvaMesesPainel_(slide, x, y, w, h, meses, ref) {
 
   const topo = y0 + 16;
   const rowH = (y + h - 8 - topo) / meses.length;
-  const lblW = 30, valW = 26;
+  const lblW = 40, valW = 28;
   const barX = ix + lblW + 2, barW = iw - lblW - valW - 4;
   const escala = meses.reduce((m, r) => Math.max(m, r.real || 0, r.media || 0), 0) || 1;
 
