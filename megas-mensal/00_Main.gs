@@ -183,7 +183,7 @@ function regerarTodosOsMegas() {
 // ==========================================
 
 // ==========================================
-// MATRIZ DE DEPENDÊNCIAS DO PROJETO (22 ARQUIVOS)
+// MATRIZ DE DEPENDÊNCIAS DO PROJETO (23 ARQUIVOS)
 // ==========================================
 const _MEGAS_DEPENDENCIAS_ = [
   ['00_Helpers.gs',           ['criarHeaderPadrao', 'criarCardKPI', 'criarCardPainel', 'formatarNumeroBR', 'padronizarRubrica_', 'formatarReaisM2_', 'desenharGraficoHistorico', '_desenharAreaReservada', '_gUmaLinha_', '_gParagrafo_']],
@@ -206,8 +206,9 @@ const _MEGAS_DEPENDENCIAS_ = [
   ['21_Slide_DREBridge.gs',   ['gerarSlideBridge', 'gerarSlideBridgeGrafico', 'gerarSlideDRE', 'gerarSlideDREComRitmo']],
   ['22_Slide_CustoM2.gs',     ['gerarSlideCustoM2', 'gerarSlideCustoM2Quadrimestre', 'gerarSoCustoM2Curitiba', 'gerarSoCustoM2Itajai', 'gerarSoCustoM2Esteio']],
   ['23_Slide_Utilities.gs',   ['gerarSlideEnergiaSolar', 'gerarSlidesUtilities_', 'gerarSlidesMonitoramentoEsteio_']],
-  ['24_Slide_Documentos.gs',  ['gerarSlideDocumentos']],
-  ['25_Slide_Encerramento.gs',['gerarSlideEncerramento']]
+  ['24_Slide_MapaChuvas.gs',  ['gerarSlideMapaChuvas', 'obterMapaChuvas_', 'gerarSoMapaChuvasCuritiba', 'gerarSoMapaChuvasItajai', 'gerarSoMapaChuvasEsteio']],
+  ['25_Slide_Documentos.gs',  ['gerarSlideDocumentos']],
+  ['26_Slide_Encerramento.gs',['gerarSlideEncerramento']]
 ];
 
 function _megasConferirProjeto_() {
@@ -301,6 +302,9 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Monitoramento Pluviométrico',         fn: () => {
         if (getProjetoAtivo().nome === 'Mega Esteio') gerarSlidesMonitoramentoEsteio_();
       } },
+    // Mapa de Chuvas — os três Megas (Open-Meteo + chamados de chuva da
+    // BD-CORRETIVAS). Ver 24_Slide_MapaChuvas.gs.
+    { nome: 'Mapa de Chuvas',                      fn: gerarSlideMapaChuvas },
     { nome: 'Capa Seção - Documentação',           fn: () => gerarCapaSecao('DOCUMENTAÇÃO', 'LEGAL', 'DOCUMENTACAO') },
     { nome: 'Documentação Legal',                  fn: gerarSlideDocumentos },
     { nome: 'Encerramento',                        fn: gerarSlideEncerramento }

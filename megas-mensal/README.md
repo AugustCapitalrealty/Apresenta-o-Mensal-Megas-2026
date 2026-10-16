@@ -57,6 +57,7 @@ está no array `passos` do `00_Main.gs`. Arquivos:
 | `Slide08_FinanceiroAnual.gs` | Resultado operacional anual acumulado | `FINANCEIRO ANUAL` |
 | `Slide09_CustoM2.gs` | Custo do m² | `CUSTO M2` |
 | `Slide10_EnergiaSolar.gs` | Energia solar (só Curitiba) | `ENERGIA SOLAR` (planilha própria) |
+| `24_Slide_MapaChuvas.gs` | Mapa de Chuvas (os três Megas) — ver abaixo | Open-Meteo + BD-CORRETIVAS |
 | `Slide11_Documentos.gs` | Documentação legal dos inquilinos (paginado) | `DOCUMENTOS INQUILINOS` |
 | `Slide12_Encerramento.gs` | Capa final / contatos por cidade | `contatos` em `01_Config.gs` |
 | `Slide_CapaSecao.gs` | Componente: capa de seção (chamado 6× pelo Main) | — |
@@ -69,6 +70,26 @@ está no array `passos` do `00_Main.gs`. Arquivos:
 | `Suporte_RegistroDados.gs` | Grava os indicadores de cada geração na aba `HISTORICO` (histórico consultável) |
 | `Suporte_Historico.gs` | Versionamento visual no Drive + cópias "VERSÃO FINAL" sob demanda |
 | `Suporte_SetupPlanilha.gs` | Setup inicial (uso único): duplica abas-modelo por cidade |
+
+### Mapa de Chuvas (`24_Slide_MapaChuvas.gs`, desde 16/10/2026)
+
+Um slide por Mega, depois do Monitoramento Pluviométrico: KPIs do mês, anel
+dia × turno (manhã 6–12h, tarde 12–18h, noite 18–6h) na cor da maior
+intensidade horária, previsão de 14 dias e os 12 últimos meses contra a média
+dos 10 anos anteriores.
+
+- **Fonte:** Open-Meteo, sem chave (arquivo histórico ERA5 + previsão). O
+  ponto de cada Mega é `coordenadas` em `PROJETOS`. **O Mega Curitiba fica
+  em Campina Grande do Sul**, e é lá que ele consulta.
+- **✕ no anel:** chamado da BD-CORRETIVAS do mês cuja descrição tem
+  chuva/infiltração/goteira/alagamento/calha… (`CHUVA_TERMOS_IMPACTO`).
+- **Esteio:** o slide não usa o pluviômetro de campo (que não tem hora nem
+  turno), mas registra no Logger a diferença entre os dois.
+- Usa `UrlFetchApp`: na primeira execução depois do push o Apps Script pede
+  autorização nova.
+- Slide avulso: `gerarSoMapaChuvasCuritiba()` / `...Itajai()` / `...Esteio()`.
+- Teste: `node megas-mensal/teste_mapa_chuvas.js`. Com `PREVIA=<pasta>` ele grava uma prévia em SVG
+  do slide.
 
 ## Design system
 

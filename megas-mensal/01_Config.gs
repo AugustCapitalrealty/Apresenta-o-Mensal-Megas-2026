@@ -177,6 +177,11 @@ const PROJETOS = {
     // do mês as subpastas de serviço com as fotos. Sem pasta-raiz, cai no slide
     // manual. Ver gerarSlidesFotosDrive_ em Slide_ServicosContratados.gs.
     fotosRaizId    : '196ZBgMBAv3lLOjebEu2c37UaZIDHjBxb',
+    // Ponto consultado na Open-Meteo pelo Mapa de Chuvas (24_Slide_MapaChuvas.gs).
+    // O Mega Curitiba fica em CAMPINA GRANDE DO SUL, não em Curitiba — o ponto
+    // é o centro de lá. A grade da reanálise tem ~10–25 km, então o endereço
+    // exato do Mega não muda o número; a cidade errada mudaria.
+    coordenadas    : { lat: -25.3047, lon: -49.0553 },
     contatos       : [
       { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
@@ -199,6 +204,7 @@ const PROJETOS = {
     fotosRaizId    : '1OaPX5AC9jk5rXHcCbF1SFFfYVwA-RB5e',
     logoEnergiaId  : '1QLHR8LPZ_VGeCitL4n0hy4wcpFjfCKkk',
     logoAguaId     : '1xF9sj8CRfUsLe_5BMaZCtRWNpPz8IaOp',
+    coordenadas    : { lat: -26.9078, lon: -48.6619 },   // Mapa de Chuvas (Open-Meteo)
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -235,6 +241,7 @@ const PROJETOS = {
     // Só Mega Esteio tem monitoramento de Pluviômetro e Canal de Drenagem
     // por enquanto. Ver obterDadosMonitoramentoEsteio_ em 02_Dados.gs.
     monitoramentoId: '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo',
+    coordenadas    : { lat: -29.8519, lon: -51.1842 },   // Mapa de Chuvas (Open-Meteo)
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]

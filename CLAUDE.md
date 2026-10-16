@@ -6,7 +6,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 
 | Pasta | Projeto | Arquivos |
 |---|---|---|
-| `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 23 `.gs` (sobe com `clasp`) |
+| `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 24 `.gs` (sobe com `clasp`) |
 | `boletim/` | Boletim 2026 | 18 `.gs` |
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 18 `.gs` |
 | `financeiro-mensal/` | Apresentação Mensal — Financeiro | 14 `.gs` |
@@ -294,7 +294,7 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Sete suítes hoje, 405 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Oito suítes hoje, 454 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -305,6 +305,7 @@ Sete suítes hoje, 405 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_dashboard.js` | 45 |
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
+| `megas-mensal/teste_mapa_chuvas.js` | 49 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
 
