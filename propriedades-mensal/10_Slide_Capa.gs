@@ -18,12 +18,20 @@
 function gerarSlideCapa() {
   const deck  = getDeckMensal_();
 
+  // A capa volta para onde estava (1º slide, se não havia): appendSlide joga no fim.
+  let lugar = 0;
+  const antigas = deck.getSlides().filter(s => _capasNotas_(s).indexOf(TAG_CAPA) >= 0);
+  if (antigas.length) lugar = _capasIndice_(deck, antigas[0]);
   _slideLimpar_(deck, TAG_CAPA);
   const slide = _slideNovo_(deck, TAG_CAPA);  // sem header: a capa pinta o próprio fundo
 
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
   const ref = obterMesReferencia_();
+  try { slide.move(Math.max(0, lugar)); } catch (e) { Logger.log('Capa: não voltou ao lugar (' + e.message + ').'); }
+
+  // Imagem do C verde (21_Slide_Capas.gs, ferramentas/capas_mensal.py); sem ela, o desenho em formas abaixo.
+  if (_capaImagem_(slide, W, H, ref)) { Logger.log('✓ Capa (imagem) gerada → ' + ref.label); return; }
 
   // Fundo sólido institucional
   slide.getBackground().setSolidFill(DS.colors.brandDark);

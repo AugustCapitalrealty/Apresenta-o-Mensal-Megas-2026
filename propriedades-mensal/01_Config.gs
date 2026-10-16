@@ -359,6 +359,25 @@ const DRE_TORRE_DIVERGENCIA = {
   'Demercado':      { ritmoTorre: -161957.30, orcTorre: -183515.0 }
 };
 
+// REALIZADO DO MÊS QUE A CONTROLADORIA AINDA NÃO LANÇOU NA PLANILHA.
+//
+// A aba RITMO da PLANILHA PROPRIEDADES chega com o mês de referência zerado
+// enquanto a controladoria não fecha (16/10/2026: SET zerado). Os lançamentos
+// do mês já estão nas planilhas REAL-* (as mesmas do Orçamento 2027 de
+// Propriedades, PROP_FONTES_2026). Conferido em 16/10/2026: JUL e AGO das
+// REAL-* batem centavo a centavo com a aba RITMO nos centros de DRE_EMPRESAS.
+//
+// Só preenche os meses do FIM que estão zerados na linha 06.04.15.01 e só
+// os centros de DRE_EMPRESAS. Centro com lançamento fora da lista (SET/2026:
+// COLOMBO 27.500 — perícia jurídica lançada em manutenção; AR 3000 sob o
+// código 11.01.01.018) NÃO entra calado: vai para o aviso do slide.
+// Quando a controladoria lançar o mês na planilha, isto deixa de agir sozinho.
+const DRE_REAL_FONTES = [
+  { id: '1LyIOvXPSplvq-kHXjObBpMXwhmBtyh1jEKZEraDsFTI', nome: 'REAL-CR-MANUTENCAO-PROPRIEDADES-2026' },
+  { id: '1vdPWX0iGHVq8VpOivlhN_6kRqp_qhjEBJvPbnjiJzPg', nome: 'REAL-DM-MANUTENCAO-PROPRIEDADES-2026' }
+];
+const DRE_REAL_CONTA = '3.30.01.15.01.031';   // MANUTENÇÃO PREDIAL → gerencial 06.04.15.01
+
 
 const TORRE_MANUTENCAO_CR_REF = [
   ['ARMAZÉM MONOUSUÁRIO COLOMBO', 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],

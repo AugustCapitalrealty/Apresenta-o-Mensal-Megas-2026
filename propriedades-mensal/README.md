@@ -21,6 +21,18 @@ ou execute uma das funções de `00_Main.gs`:
 | `gerarSoChamadosPendentes()` / `gerarSoBacklogClientes()` | Gera os slides de motivos de pausa ou chamados de clientes |
 | `gerarSoTorreManutencao()` | Gera os slides da **Torre de Manutenção** (Capital Realty & Demercado) |
 | `diagnosticarPropriedades()` | Valida acesso a planilhas, bases brutas e deck de destino |
+| `gerarSoCapas()` | Capa, capas de seção e encerramento (`21_Slide_Capas.gs`) |
+
+**Mês do deck** = célula B1 da aba CONFIG da PLANILHA PROPRIEDADES (não o calendário).
+
+**16/10/2026:**
+- **Realizado do mês ainda zerado na PLANILHA PROPRIEDADES** → `_dreCompletarComReal_` (05_DadosSlides.gs) completa
+  com os lançamentos das planilhas REAL-* (`DRE_REAL_FONTES`, 01_Config.gs). Centro de custo com lançamento fora de
+  `DRE_EMPRESAS` vai para o aviso do slide, não é somado. Ferramentas de conferência em `ferramentas/` (`real_mes.js`,
+  `orc_mes.js`, `gerar_fixture_real.js`).
+- **Capas em imagem** (`21_Slide_Capas.gs`, sem trilha): a capa (C verde), as 6 capas de seção que o time já tem no
+  deck (trocadas no mesmo lugar) e o encerramento. As imagens saem de `ferramentas/capas_mensal.py` (Pillow) para a pasta
+  IMAGENS - SLIDES; sem elas, tudo sai em formas.
 
 ## Gerenciamento por Tags
 

@@ -38,6 +38,7 @@ function onOpen() {
     .addItem('📋 Gerar Só Tabelas (Obras + Contratações)', 'gerarTabelasPropriedades')
     .addSeparator()
     .addSubMenu(ui.createMenu('⚡ Slide Avulso')
+      .addItem('Capa, Capas de Seção e Encerramento', 'gerarSoCapas')
       .addItem('Dashboard Operacional', 'gerarSoDashboard')
       .addItem('Preventivas', 'gerarSoPreventivas')
       .addItem('Corretivas', 'gerarSoCorretivas')
@@ -97,6 +98,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
   ['19_Slide_DREBridge.gs',         ['gerarSlideDREPropriedades', 'gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
+  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_']],
 ];
 
 function _propConferirProjeto_() {
@@ -151,6 +153,8 @@ function gerarApresentacaoPropriedades() {
   //
   const passos = [
     { nome: 'Capa',                          fn: gerarSlideCapa },
+    // As capas de seção ficam no lugar das feitas à mão (21_Slide_Capas.gs) — não mudam a ordem.
+    { nome: 'Capas de Seção',                fn: gerarCapasSecoes },
     { nome: 'Indicadores Gerais',            fn: gerarSlideIndicadoresGerais },
     { nome: 'Preventivas',                   fn: gerarSlidePreventivas },
     { nome: 'Corretivas',                    fn: gerarSlideCorretivas },
@@ -165,9 +169,9 @@ function gerarApresentacaoPropriedades() {
     { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
     { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
     { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
-    { nome: 'Farol de Metas',                fn: gerarSlidesMetas }
+    { nome: 'Farol de Metas',                fn: gerarSlidesMetas },
     // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
-    // { nome: 'Encerramento',            fn: gerarSlideEncerramento }
+    { nome: 'Encerramento',                  fn: gerarSlideEncerramento }   // por último: fica no fim do deck
   ];
 
   return _rodarPassos_(passos);
@@ -199,6 +203,13 @@ function gerarTabelasPropriedades() {
 // ==========================================
 // PONTOS DE ENTRADA — SLIDES AVULSOS
 // ==========================================
+function gerarSoCapas() {
+  return _rodarPassos_([
+    { nome: 'Capa',           fn: gerarSlideCapa },
+    { nome: 'Capas de Seção', fn: gerarCapasSecoes },
+    { nome: 'Encerramento',   fn: gerarSlideEncerramento }
+  ]);
+}
 function gerarSoDashboard()           { return _rodarPassos_([{ nome: 'Dashboard Operacional',          fn: gerarSlideIndicadoresGerais }]); }
 function gerarSoPreventivas()         { return _rodarPassos_([{ nome: 'Preventivas',                   fn: gerarSlidePreventivas }]); }
 function gerarSoCorretivas()          { return _rodarPassos_([{ nome: 'Corretivas',                    fn: gerarSlideCorretivas }]); }

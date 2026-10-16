@@ -414,7 +414,13 @@ function _drePosicionarNaSecao_(deck, slide, tituloReservado, offsetNaSecao) {
 
     const slides = deck.getSlides();
     let capa = -1;
-    for (let i = 0; i < slides.length; i++) {
+    // A capa da seção gerada em 21_Slide_Capas.gs tem o título desenhado na imagem: acha pela tag.
+    for (let i = 0; i < slides.length && capa < 0; i++) {
+      try {
+        if (slides[i].getNotesPage().getSpeakerNotesShape().getText().asString().indexOf(_capaTagSecao_(1)) >= 0) capa = i;
+      } catch (e) {}
+    }
+    for (let i = 0; i < slides.length && capa < 0; i++) {
       const t = _dreTextoDoSlide_(slides[i]);
       // Capa de SEÇÃO, não o quadrante "GESTÃO FINANCEIRA · ORÇAMENTO" do
       // Dashboard: só a capa traz "APRESENTAÇÃO MENSAL" junto.

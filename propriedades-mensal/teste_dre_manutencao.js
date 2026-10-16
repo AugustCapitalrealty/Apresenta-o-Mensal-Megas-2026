@@ -203,5 +203,57 @@ ok('JUL gastou menos que o plano → variação positiva', jul.variacao > 0,
 const ago = dd.meses[7];
 ok('AGO estourou → variação negativa', ago.variacao < 0);
 
+console.log('\n== Mês ainda zerado na planilha → completa com as REAL-* ==');
+// SET/2026: a aba RITMO (fixture) traz SET zerado; os lançamentos de SET
+// estão nas REAL-*. teste_dre_real_fixtures.json é o recorte de AGO e SET das
+// duas planilhas de verdade (baixadas em 16/10/2026), nos dois formatos de
+// cabeçalho (CR com código e nome juntos, DM separados).
+const REAL = JSON.parse(fs.readFileSync(path.join(DIR, 'teste_dre_real_fixtures.json'), 'utf8'));
+let realAbre = true;
+global.SpreadsheetApp = {
+  openById: id => {
+    const f = DRE_REAL_FONTES.find(x => x.id === id);
+    if (f) {
+      if (!realAbre) throw new Error('sem acesso');
+      const m = REAL[f.nome];
+      return { getName: () => f.nome, getSheets: () => [{ getDataRange: () => ({ getDisplayValues: () => m }) }] };
+    }
+    return { getName: () => 'planilha', getSheets: () => Object.keys(ABAS).map(n => aba(n)),
+             getSheetByName: n => (ABAS[n] ? aba(n) : null) };
+  }
+};
+_ssCacheLimpar_();
+global.obterMesReferencia_ = () => ({ index: 8, nome: 'SETEMBRO', curto: 'Set', ano: 2026 });
+const set = obterDREManutencao_();
+const crS = set.empresas.find(e => e.nome === 'Capital Realty');
+const dmS = set.empresas.find(e => e.nome === 'Demercado');
+const cc  = (emp, cod) => emp.centros.find(c => c.codigo === cod);
+ok('SET CR = 213.969 (Cubatão + Esteio II + Mega Esteio + Itajaí)', perto(crS.total.mes.real, 213969.23, 0.01),
+   'veio ' + crS.total.mes.real);
+ok('SET Demercado = 6.070 (Mega Curitiba)', perto(dmS.total.mes.real, 6070, 0.01), 'veio ' + dmS.total.mes.real);
+ok('Cubatão SET = 113.130,72 (DLB Metal)', perto(cc(crS, '14.01.01.003').mes.real, 113130.72, 0.01));
+ok('Mega Esteio SET = 52.614,70 (provisão do talude + Saltitec)', perto(cc(crS, '14.02.01.999').mes.real, 52614.70, 0.01));
+ok('acumulado JAN–SET = 272.958 + 220.039', perto(set.total.acum.real, 272957.57 + 220039.23, 1),
+   'veio ' + set.total.acum.real);
+ok('AGO (que a planilha tem) não foi mexido', perto(set.meses[7].real, 133680.93, 0.01), 'veio ' + set.meses[7].real);
+ok('SET entra como REAL no Bridge', set.meses[8].tipo === 'REAL' && perto(set.meses[8].real, 220039.23, 0.01));
+ok('o aviso do REAL-* é o primeiro (é o que o slide mostra)', /REAL-\*/.test(set.avisos[0]), set.avisos.join(' | '));
+ok('Colombo fora da lista aparece no aviso, não somado', /COLOMBO 27\.500/.test(set.avisos[0]), set.avisos[0]);
+ok('AR 3000 (11.01.01.018) também', /AR 3000 380/.test(set.avisos[0]), set.avisos[0]);
+ok('sem aviso de "último mês com realizado é AGO"', !set.avisos.some(a => /último mês com realizado/.test(a)));
+ok('linhas continuam somando a raiz', !set.avisos.some(a => /falta centro de custo/.test(a)), set.avisos.join(' | '));
+ok('Guaratuba sem lançamento em SET segue sem plano (null)', cc(dmS, '64.03.10.001').ano.plan === null);
+
+realAbre = false; _ssCacheLimpar_();
+const semReal = obterDREManutencao_();
+ok('REAL-* não abre → avisa, e SET fica zerado como na planilha',
+   /não abriram/.test(semReal.avisos.join(' ')) && perto(semReal.total.mes.real, 0, 0.01), semReal.avisos.join(' | '));
+realAbre = true; _ssCacheLimpar_();
+
+global.obterMesReferencia_ = () => ({ index: 7, nome: 'AGOSTO', curto: 'Ago', ano: 2026 });
+const agoDeNovo = obterDREManutencao_();
+ok('com a referência em AGO nada é lido das REAL-*', !agoDeNovo.avisos.some(a => /REAL-\*/.test(a)) &&
+   perto(agoDeNovo.total.acum.real, 272958, 3));
+
 console.log('\n' + (falhas ? '✗ ' + falhas + ' de ' + testes + ' falharam' : '✓ ' + testes + '/' + testes + ' passaram') + '\n');
 process.exit(falhas ? 1 : 0);

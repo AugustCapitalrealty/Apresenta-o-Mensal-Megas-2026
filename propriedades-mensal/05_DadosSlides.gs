@@ -668,6 +668,108 @@ function _dreLerAba_(nomeAba) {
 }
 
 
+// Lançamentos das REAL-* (DRE_REAL_FONTES) → { porCC: {codigo: [12]}, nomes:
+// {codigo: nome} }, só a conta DRE_REAL_CONTA e só o ano pedido. Valores com o
+// sinal da planilha (despesa negativa), como na aba RITMO. As duas planilhas
+// não têm o mesmo cabeçalho: a da DM traz "Código Conta" / "Código Centro de
+// custo" separados; a da CR traz "3.30… - NOME" e "1|4.01… - NOME" juntos.
+function _dreLerReal_(ano) {
+  const porCC = {}, nomes = {};
+  let lidas = 0;
+  DRE_REAL_FONTES.forEach(f => {
+    let v;
+    try {
+      v = _abrirPlanilha_(f.id, f.nome).getSheets()[0].getDataRange().getDisplayValues();
+    } catch (e) { return; }
+    let lh = -1, h = [];
+    for (let i = 0; i < Math.min(10, v.length); i++) {
+      const n = v[i].map(_norm_);
+      if (n.indexOf('competencia') >= 0 && n.indexOf('valor') >= 0) { lh = i; h = n; break; }
+    }
+    if (lh < 0) { Logger.log('DRE Manutenção: ' + f.nome + ' sem cabeçalho Competência/Valor.'); return; }
+    const col = (...ks) => { for (const k of ks) { const i = h.indexOf(k); if (i >= 0) return i; } return -1; };
+    const iComp = col('competencia'), iVal = col('valor');
+    const iConta = col('codigo conta', 'conta');
+    const iCod = col('codigo centro de custo'), iCC = col('centro de custo');
+    if (iConta < 0 || iCC < 0) { Logger.log('DRE Manutenção: ' + f.nome + ' sem Conta/Centro de custo.'); return; }
+    lidas++;
+    const MES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    for (let i = lh + 1; i < v.length; i++) {
+      const r = v[i];
+      if (String(r[iConta]).indexOf(DRE_REAL_CONTA) !== 0) continue;
+      const comp = _norm_(r[iComp]);
+      const a = comp.match(/(\d{4})/);
+      if (!a || +a[1] !== ano) continue;
+      let m = -1;
+      const mn = comp.match(/^(\d{1,2})\//);
+      if (mn) m = +mn[1] - 1; else m = MES.indexOf(comp.slice(0, 3));
+      if (m < 0 || m > 11) continue;
+      const val = _num_(r[iVal]);
+      if (val == null) continue;
+      const bruto = String(iCod >= 0 ? r[iCod] : r[iCC]).split(' - ')[0].replace(/\|/g, '').trim();
+      const nome  = iCod >= 0 ? String(r[iCC]).trim() : String(r[iCC]).split(' - ').slice(1).join(' - ').trim();
+      (porCC[bruto] = porCC[bruto] || [0,0,0,0,0,0,0,0,0,0,0,0])[m] += val;
+      nomes[bruto] = nome;
+    }
+  });
+  return lidas ? { porCC: porCC, nomes: nomes } : null;
+}
+
+// Completa na aba RITMO (mapa já lido) os meses do FIM, até a referência, que
+// a linha 06.04.15.01 traz zerados — ver DRE_REAL_FONTES no 01_Config.gs.
+// Mexe só no realizado (coluna ímpar) dos centros de DRE_EMPRESAS, das linhas
+// das empresas e da raiz, para a conferência "linhas × raiz" continuar valendo.
+function _dreCompletarComReal_(ritmoMapa, refIndex, ano, avisos) {
+  if (!ritmoMapa || !ritmoMapa[DRE_CONTA_RAIZ]) return;
+  const raiz = ritmoMapa[DRE_CONTA_RAIZ];
+  const vazios = [];
+  for (let m = refIndex; m >= 0; m--) {
+    const r = raiz[2 * m + 1];
+    if (r != null && r !== 0) break;
+    vazios.unshift(m);
+  }
+  if (!vazios.length) return;
+
+  const NOMES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const rot = vazios.map(m => NOMES[m]).join('/');
+  const lido = _dreLerReal_(ano);
+  if (!lido) {
+    avisos.push('Realizado de ' + rot + ' zerado na PLANILHA PROPRIEDADES e as planilhas REAL-* não abriram.');
+    return;
+  }
+
+  const listados = {};
+  DRE_EMPRESAS.forEach(e => e.centros.forEach(c => { listados[c.codigo] = true; }));
+  const linha = cod => (ritmoMapa[cod] = ritmoMapa[cod] || new Array(26).fill(null));
+
+  vazios.forEach(m => {
+    let totRaiz = 0;
+    DRE_EMPRESAS.forEach(e => {
+      let totEmp = 0;
+      e.centros.forEach(c => {
+        const v = lido.porCC[c.codigo] ? Math.round(lido.porCC[c.codigo][m] * 100) / 100 : 0;
+        // Centro que a aba não tem e não lançou nada continua sem linha (null ≠ 0).
+        if (!ritmoMapa[c.codigo] && !v) return;
+        linha(c.codigo)[2 * m + 1] = v;
+        totEmp += v;
+      });
+      linha(e.codigo)[2 * m + 1] = totEmp;
+      totRaiz += totEmp;
+    });
+    raiz[2 * m + 1] = totRaiz;
+  });
+
+  const fora = [];
+  Object.keys(lido.porCC).forEach(cod => {
+    if (listados[cod]) return;
+    const s = vazios.reduce((t, m) => t + lido.porCC[cod][m], 0);
+    if (Math.abs(s) >= 1) fora.push(_dreLimparNome_(lido.nomes[cod] || cod) + ' ' + _milhar_(Math.abs(s)));
+  });
+  avisos.unshift('Realizado de ' + rot + ' tirado dos lançamentos REAL-* (a PLANILHA PROPRIEDADES ainda não tem o mês)' +
+                 (fora.length ? '. Fora de DRE_EMPRESAS, não somado: ' + fora.join('; ') : '') + '.');
+}
+
+
 // Soma tratando null como "não tem": se NENHUMA parcela existir devolve null,
 // e não zero. Sem isso um centro de custo ausente zeraria o subtotal do grupo.
 function _dreSoma_(valores) {
@@ -694,6 +796,10 @@ function obterDREManutencao_() {
   const ref      = obterMesReferencia_();
   const refIndex = ref.index;
   const avisos   = [];
+
+  // Mês de referência ainda zerado na planilha → completa com as REAL-*.
+  // Antes da conferência abaixo, senão ela avisaria do mês que já foi completado.
+  _dreCompletarComReal_(ritmoMapa, refIndex, ref.ano, avisos);
 
   // O último mês com realizado deveria casar com o mês de referência. Quando
   // não casa, o slide sairia com um acumulado que não é o do mês anunciado —
