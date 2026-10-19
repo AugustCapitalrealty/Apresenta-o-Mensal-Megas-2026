@@ -46,6 +46,9 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
    Node (`teste_*.js`) iriam para o editor junto.
 4. Clone de novo e confira que ficou igual ao git.
 
+Última publicação: 19/10/2026 15:45 — rebrand dos 11 slides + Webdox (14
+arquivos, conferidos com `clasp clone` depois do push).
+
 | Arquivo | Papel |
 |---|---|
 | `Config.gs` | IDs das planilhas, `UNITS` (uma entrada por TV) e o design system |
