@@ -57,6 +57,7 @@ está no array `passos` do `00_Main.gs`. Arquivos:
 | `Slide08_FinanceiroAnual.gs` | Resultado operacional anual acumulado | `FINANCEIRO ANUAL` |
 | `Slide09_CustoM2.gs` | Custo do m² | `CUSTO M2` |
 | `Slide10_EnergiaSolar.gs` | Energia solar (só Curitiba) | `ENERGIA SOLAR` (planilha própria) |
+| `17_Slide_Solicitacoes.gs` | Kanban de Solicitações em andamento (os três Megas) — ver abaixo | API `kanban-megas` do Portal de Solicitações |
 | `24_Slide_MapaChuvas.gs` | Mapa de Chuvas (os três Megas) — ver abaixo | Open-Meteo + BD-CORRETIVAS |
 | `Slide11_Documentos.gs` | Documentação legal dos inquilinos (paginado) | `DOCUMENTOS INQUILINOS` |
 | `Slide12_Encerramento.gs` | Capa final / contatos por cidade | `contatos` em `01_Config.gs` |
@@ -91,6 +92,39 @@ dos 10 anos anteriores.
 - Slides avulsos: `gerarSoMapaChuvasCuritiba()` / `...Itajai()` / `...Esteio()` e `gerarSoChamadosChuvaCuritiba()` / `...Itajai()` / `...Esteio()`.
 - Teste: `node megas-mensal/teste_mapa_chuvas.js`. Com `PREVIA=<pasta>` ele grava uma prévia em SVG
   do slide.
+
+### Kanban de Solicitações (`17_Slide_Solicitacoes.gs`, desde 19/10/2026)
+
+Um slide por Mega, logo depois do Backlog Facilities: as solicitações de
+**Facilities** em andamento no Portal de Solicitações (app Lovable, repo
+`AugustCapitalrealty/megas-adc1ba20`), separadas por com quem estão paradas:
+**Com o solicitante** (correção/informação) · **Com o backoffice** (análise,
+lançamento, aprovação) · **Emitidas** (OC emitida, falta liberar) ·
+**Liberadas** (com o fornecedor até a NF).
+
+- **Fonte:** função `kanban-megas` do portal
+  (`PORTAL_KANBAN_URL` em `01_Config.gs`), que já devolve os cards separados
+  por coluna com a regra das telas do portal. O slide não reclassifica nada.
+  Propriedades também abre solicitação para os Megas e **não** entra.
+- **Chave:** nas Propriedades do script como `PORTAL_API_KEY` (a mesma do
+  secret `RELATORIOS_API_KEY` no portal). Nunca no código nem no git. Depois
+  de reiniciar o computador nada muda: a propriedade fica no Apps Script.
+- É uma **foto do momento** da geração (o subtítulo diz a posição), não um
+  recorte do mês.
+- Cada card: protocolo, selo de dias na etapa atual (verde/laranja/vermelho
+  pela mesma régua do portal — com prazo de 5 dias em análise e 3 no
+  lançamento; sem prazo, até 3 dias ok e até 5 atenção), descrição, quem age
+  ou o fornecedor, valor. `EMERG.` = emergencial; `Contrato ·` = precisa de
+  instrumento jurídico além da OC.
+- Cabem 6 cards por coluna; as mais paradas aparecem e o pé diz quantas mais
+  recentes ficaram de fora.
+- Falhou a leitura (sem chave, chave recusada, função fora do ar)? O slide sai
+  com o aviso do motivo, não vazio. `diagnosticarSolicitacoes()` mostra o
+  detalhe dos três Megas sem gerar slide.
+- Slides avulsos: `gerarSoSolicitacoesCuritiba()` / `...Itajai()` / `...Esteio()`.
+- Teste: `node megas-mensal/teste_solicitacoes.js`. Com `PREVIA=<pasta>` grava
+  uma prévia SVG; com `REAL=<arquivo.json>` a prévia usa uma resposta de
+  verdade da API — salve esse JSON **fora do repositório** (tem nome de gente).
 
 ## Design system
 

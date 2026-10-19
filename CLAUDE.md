@@ -162,6 +162,12 @@ tinha os 44 arquivos antigos. Para ligar outro projeto ao clasp: `clasp pull`
 numa pasta **temporária** (pull direto na pasta do repo sobrescreve o que
 foi editado aqui), compare com o repo, junte, e só então `push`.
 
+**`clasp push` não percebe arquivo apagado.** Se o único efeito do push seria
+remover um arquivo do editor, ele responde "Script is already up to date" e
+não faz nada (visto no clasp 3.4.1, 19/10/2026). Quando algum conteúdo muda,
+o push substitui o projeto inteiro e aí o arquivo some. Depois de um push,
+confira com `clasp clone` numa pasta temporária.
+
 ## Design system
 
 `CR_DESIGN_SYSTEM` existe em cinco das seis pastas (falta só em
@@ -294,7 +300,7 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Nove suítes hoje, 485 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Onze suítes hoje, 546 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -307,6 +313,8 @@ Nove suítes hoje, 485 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
 | `megas-mensal/teste_mapa_chuvas.js` | 68 |
+| `megas-mensal/teste_solicitacoes.js` | 46 |
+| `megas-mensal/teste_acessos.js` | 15 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
 

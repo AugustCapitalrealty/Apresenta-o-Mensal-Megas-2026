@@ -134,6 +134,14 @@ const GESTAO_TV_METAS_SPREADSHEET_ID = '1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1
 // a Evolução dos Acessos. Se indisponível, cai no HISTORICO_VALIDADO_ID.
 const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
 
+// Portal de Solicitações (app Lovable, repo AugustCapitalrealty/megas-adc1ba20):
+// função `kanban-megas` que devolve as solicitações em andamento de um Mega,
+// já separadas nas quatro colunas do kanban. A chave NÃO fica no código: vai
+// nas Propriedades do script como PORTAL_API_KEY (Configurações do projeto →
+// Propriedades do script), a mesma do secret RELATORIOS_API_KEY no portal.
+// Ver 17_Slide_Solicitacoes.gs.
+const PORTAL_KANBAN_URL = 'https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/kanban-megas';
+
 // capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
 // capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
 //
@@ -182,8 +190,9 @@ const PROJETOS = {
     // é o centro de lá. A grade da reanálise tem ~10–25 km, então o endereço
     // exato do Mega não muda o número; a cidade errada mudaria.
     coordenadas    : { lat: -25.3047, lon: -49.0553 },
+    portalEmpreendimento: 'mega_curitiba',   // Kanban de Solicitações (17_Slide_Solicitacoes.gs)
     contatos       : [
-      { nome: 'Mauro Coelho',          cargo: 'Supervisor de Facilities' },
+      { nome: 'Mauro Coelho',         cargo: 'Supervisor de Facilities' },
       { nome: 'Felipe Eduardo Campos', cargo: 'Analista de Facilities' }
     ]
   },
@@ -205,6 +214,7 @@ const PROJETOS = {
     logoEnergiaId  : '1QLHR8LPZ_VGeCitL4n0hy4wcpFjfCKkk',
     logoAguaId     : '1xF9sj8CRfUsLe_5BMaZCtRWNpPz8IaOp',
     coordenadas    : { lat: -26.9078, lon: -48.6619 },   // Mapa de Chuvas (Open-Meteo)
+    portalEmpreendimento: 'mega_itajai',     // Kanban de Solicitações
     contatos       : [
       { nome: 'Dionatan Rek',     cargo: 'Supervisor de Facilities' },
       { nome: 'Amanda de Campos', cargo: 'Analista de Facilities' }
@@ -242,6 +252,7 @@ const PROJETOS = {
     // por enquanto. Ver obterDadosMonitoramentoEsteio_ em 02_Dados.gs.
     monitoramentoId: '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo',
     coordenadas    : { lat: -29.8519, lon: -51.1842 },   // Mapa de Chuvas (Open-Meteo)
+    portalEmpreendimento: 'mega_esteio',     // Kanban de Solicitações
     contatos       : [
       { nome: 'José Ernesto', cargo: 'Responsável Facilities' }
     ]

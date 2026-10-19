@@ -11,7 +11,7 @@
 function diagnosticarArquivos() {
   if (typeof _megasConferirProjeto_ === 'function') {
     if (_megasConferirProjeto_()) {
-      Logger.log('✓ Todos os 22 arquivos e símbolos essenciais estão no editor.');
+      Logger.log('✓ Todos os ' + _MEGAS_DEPENDENCIAS_.length + ' arquivos e símbolos essenciais estão no editor.');
     }
   } else {
     Logger.log('⚠ Função _megasConferirProjeto_ não encontrada em 00_Main.gs');

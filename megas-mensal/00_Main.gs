@@ -94,7 +94,8 @@ function onOpen() {
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesCuritiba')
       .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesCuritiba')
       .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaCuritiba')
-      .addItem('Custo M²', 'gerarSoCustoM2Curitiba'))
+      .addItem('Custo M²', 'gerarSoCustoM2Curitiba')
+      .addItem('Solicitações (Kanban)', 'gerarSoSolicitacoesCuritiba'))
     .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Itajaí')
       .addItem('Dashboard', 'gerarSoDashboardItajai')
       .addItem('Preventivas', 'gerarSoPreventivasItajai')
@@ -102,7 +103,8 @@ function onOpen() {
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesItajai')
       .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesItajai')
       .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaItajai')
-      .addItem('Custo M²', 'gerarSoCustoM2Itajai'))
+      .addItem('Custo M²', 'gerarSoCustoM2Itajai')
+      .addItem('Solicitações (Kanban)', 'gerarSoSolicitacoesItajai'))
     .addSubMenu(ui.createMenu('⚡ Slide Avulso — Mega Esteio')
       .addItem('Dashboard', 'gerarSoDashboardEsteio')
       .addItem('Preventivas', 'gerarSoPreventivasEsteio')
@@ -110,11 +112,13 @@ function onOpen() {
       .addItem('Backlog Facilities', 'gerarSoBacklogFacilitiesEsteio')
       .addItem('Chamados Pendentes', 'gerarSoBacklogPendentesEsteio')
       .addItem('Acesso e Segurança', 'gerarSoAcessoSegurancaEsteio')
-      .addItem('Custo M²', 'gerarSoCustoM2Esteio'))
+      .addItem('Custo M²', 'gerarSoCustoM2Esteio')
+      .addItem('Solicitações (Kanban)', 'gerarSoSolicitacoesEsteio'))
     .addSeparator()
     .addSubMenu(ui.createMenu('🔍 Diagnósticos & Auditoria')
-      .addItem('Conferir 22 arquivos no editor', 'diagnosticarArquivos')
+      .addItem('Conferir arquivos no editor', 'diagnosticarArquivos')
       .addItem('Diagnosticar Backlog (Estoque × Fluxo)', 'diagnosticarBacklog')
+      .addItem('Diagnosticar Solicitações (Portal)', 'diagnosticarSolicitacoes')
       .addItem('Check de Consistência (Slide Descartável)', 'gerarSlideCheckConsistencia')
       .addItem('Conferir Ícones das Capas no Drive', 'conferirIconesCapas'))
     .addToUi();
@@ -183,7 +187,7 @@ function regerarTodosOsMegas() {
 // ==========================================
 
 // ==========================================
-// MATRIZ DE DEPENDÊNCIAS DO PROJETO (23 ARQUIVOS)
+// MATRIZ DE DEPENDÊNCIAS DO PROJETO (um item por arquivo)
 // ==========================================
 const _MEGAS_DEPENDENCIAS_ = [
   ['00_Helpers.gs',           ['criarHeaderPadrao', 'criarCardKPI', 'criarCardPainel', 'formatarNumeroBR', 'padronizarRubrica_', 'formatarReaisM2_', 'desenharGraficoHistorico', '_desenharAreaReservada', '_gUmaLinha_', '_gParagrafo_']],
@@ -200,6 +204,7 @@ const _MEGAS_DEPENDENCIAS_ = [
   ['15_Slide_Corretivas.gs',  ['gerarSlideCorretivas']],
   ['16_Slide_BacklogOperacao.gs', ['gerarSlideChamadosPrioridade', 'gerarSlideBacklogPendentes', 'gerarSlideBacklogEmergencialDetalhe', 'gerarSlideBacklogFacilities']],
   ['17_Slide_BacklogClientes.gs', ['gerarSlideChamadosClientes', 'gerarSlideBacklogClientesDetalhes', 'gerarSlideBacklogClientesFacilities', 'gerarSlideBacklogClientesProperties', 'LOGOS_CLIENTES']],
+  ['17_Slide_Solicitacoes.gs',   ['gerarSlideSolicitacoes', 'obterKanbanSolicitacoes_', 'diagnosticarSolicitacoes', 'gerarSoSolicitacoesCuritiba', 'gerarSoSolicitacoesItajai', 'gerarSoSolicitacoesEsteio']],
   ['18_Slide_FotosServicos.gs',   ['gerarSlidesServicosContratados_', 'gerarSlidesServicosInternos_', 'gerarSlideRegistroFotos']],
   ['19_Slide_AcessoSeguranca.gs', ['gerarSlideTempo', 'gerarSoAcessoSegurancaCuritiba', 'gerarSoAcessoSegurancaItajai', 'gerarSoAcessoSegurancaEsteio']],
   ['20_Slide_Financeiro.gs',  ['gerarSlideFinanceiro', 'gerarSlideFinanceiroAnual']],
@@ -260,6 +265,9 @@ function gerarApresentacaoCompleta_() {
     { nome: 'Backlog de Clientes — Properties',    fn: gerarSlideBacklogClientesProperties },
     { nome: 'Chamados Pendentes (Backlog)',        fn: gerarSlideBacklogPendentes },
     { nome: 'Backlog Facilities',                  fn: gerarSlideBacklogFacilities },
+    // Kanban de Solicitações — posição do momento no Portal de Solicitações
+    // (API kanban-megas). Ver 17_Slide_Solicitacoes.gs.
+    { nome: 'Solicitações em Andamento (Kanban)',  fn: gerarSlideSolicitacoes },
     { nome: 'Capa Seção - Serviços Contratados',   fn: () => gerarCapaSecao('SERVIÇOS', 'CONTRATADOS', 'CONTRATADOS') },
     { nome: 'Fotos - Serviços Contratados',        fn: gerarSlidesServicosContratados_ },
     { nome: 'Capa Seção - Serviços Internos',      fn: () => gerarCapaSecao('SERVIÇOS', 'INTERNOS', 'INTERNOS') },
