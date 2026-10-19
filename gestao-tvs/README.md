@@ -20,6 +20,7 @@ própria entrada.
 | `ATUALIZAR_SOLICITACOES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só o kanban de solicitações |
 | `ATUALIZAR_WEBDOX()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só os contratos no Webdox |
 | `ATUALIZAR_CHUVA_MES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só a chuva do mês |
+| `ATUALIZAR_FLUIG()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só as aprovações no Fluig |
 | `CRIAR_GATILHO_CHUVA()` | Rode 1 vez: acionador da chuva do mês a cada 3 horas |
 | `diagnosticarBasesBrutas()` | Mostra o dado bruto das bases — rode antes de discutir número |
 | `diagnosticarSolicitacoes()` | Confere a chave e chama o portal para as três TVs, sem mexer em slide |
@@ -68,6 +69,7 @@ arquivos, conferidos com `clasp clone` depois do push).
 | `09_Slide_Solicitacoes.gs` | Kanban do Portal de Solicitações |
 | `10_Slide_Webdox.gs` | Contratos no Webdox |
 | `11_Slide_Chuva.gs` | Chuva do mês — o anel da apresentação mensal (acionador próprio) |
+| `12_Slide_Fluig.gs` | Aprovações no Fluig |
 | `Visual.gs` | Marcas, medição de texto, cartões, foto da capa |
 
 `teste_bases.js` **não vai para o editor** — é um teste de Node, roda com
@@ -85,13 +87,36 @@ arquivos, conferidos com `clasp clone` depois do push).
 | depois | Monitoramento de Cheias — só Esteio |
 | depois | Kanban de Solicitações |
 | depois | Contratos no Webdox |
-| último | Chuva do mês |
+| depois | Chuva do mês |
+| último | Aprovações no Fluig |
 
 **Slide novo entra sempre no fim do deck.** Tempo, Metas e Cheias são achados
 pela posição; um slide no meio empurraria todos eles e o conteúdo de um iria
 parar no outro. A ordem em que a TV **mostra** é outra: é a do
 `Painel_<Unidade>.txt`, e lá a Chuva do mês vem logo depois da Previsão do
-tempo (`gerarArquivosPainelTV` reordena).
+tempo e o Fluig entre o Kanban e o Webdox — solicitação → aprovação no Fluig
+→ contrato (`gerarArquivosPainelTV` reordena).
+
+### Aprovações no Fluig (`12_Slide_Fluig.gs`, desde 19/10/2026)
+
+Faixa de KPIs (em aprovação, com o valor · parados há mais de 5 dias · tempo
+médio desde o lançamento · aprovados em 7 dias) e os chamados por etapa:
+**Correção · Ger. Facilities · Ger. Financeira · Diretoria · Aprovados**
+(aprovados que ainda estão em execução ou avaliação final no Fluig). Fonte:
+função `fluig-megas` do portal (`PORTAL_FLUIG_URL`), mesma chave; só entram
+chamados ligados a uma solicitação de Facilities do Mega, e o portal decide a
+etapa com a regra do Painel Fluig dele (`src/lib/fluig-utils.ts`).
+
+- **Selo:** nas colunas de aprovação, dias desde o lançamento no Fluig (até 5
+  verde, até 10 laranja, acima vermelho — régua proposta, o portal não tem
+  prazo para elas); nos aprovados, dias em execução. Não é "dias na etapa"
+  porque essa conta parte da última movimentação registrada numa importação
+  e zera no dia em que a planilha sobe (19/10/2026: todos em 0).
+- **O Fluig não é ao vivo:** o portal importa um relatório. O canto do
+  cabeçalho diz de quando é a importação.
+- Redesenhado em todo `gerarApresentacao()`; `ATUALIZAR_FLUIG()` (e as por
+  unidade) só este slide; `diagnosticarSolicitacoes()` confere os três do
+  portal.
 
 ### Capa com a foto do Mega (desde 19/10/2026)
 
@@ -176,7 +201,7 @@ as cores da marca mudaram; colunas, fontes e tamanhos seguem iguais aos da
 apresentação mensal (`teste_metas_igual_megas.js`).
 
 Prévia sem abrir o Slides:
-`KANBAN=<json> WEBDOX=<json> PREVIA=<pasta> node gestao-tvs/teste_rebrand.js` e
+`KANBAN=<json> WEBDOX=<json> FLUIG=<json> PREVIA=<pasta> node gestao-tvs/teste_rebrand.js` e
 `node ferramentas/previa_slides.js <pasta>/formas_tv.json <pasta>` (PNG com as
 fontes reais, pelo Chrome). Os JSON reais têm nome de gente: fora do repositório.
 

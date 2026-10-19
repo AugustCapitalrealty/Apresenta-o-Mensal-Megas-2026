@@ -6,8 +6,8 @@
 // Prévia: PREVIA=<pasta> node gestao-tvs/teste_rebrand.js → grava
 //   <pasta>/formas_tv.json; as imagens saem com
 //   node ferramentas/previa_slides.js <pasta>/formas_tv.json <pasta>
-// Com KANBAN=<json> e WEBDOX=<json> (respostas reais das APIs, salvas FORA do
-// repositório — têm nome de gente) os slides usam elas.
+// Com KANBAN=<json>, WEBDOX=<json> e FLUIG=<json> (respostas reais das APIs,
+// salvas FORA do repositório — têm nome de gente) os slides usam elas.
 const fs = require('fs'), path = require('path'), D = __dirname + '/';
 let ok = 0, falha = 0;
 const t = (c, m) => { c ? ok++ : (falha++, console.log('FALHOU: ' + m)); };
@@ -118,9 +118,22 @@ const ARQUIVO = { time: [], precipitation_sum: [] };
 for (let a = 2016; a <= 2025; a++) for (let dia = 1; dia <= 31; dia++) {
   ARQUIVO.time.push(a + '-10-' + String(dia).padStart(2, '0')); ARQUIVO.precipitation_sum.push(1.5);
 }
+const FLUIG = process.env.FLUIG ? JSON.parse(fs.readFileSync(process.env.FLUIG, 'utf8')) : {
+  gerado_em: '2026-10-19T20:00:00Z', importado_em: '2026-10-19T14:35:10Z',
+  totais: { correcao: 1, facilities: 1, financeiro: 6, diretoria: 0, aprovado: 2 },
+  kpis: { em_aprovacao: 8, valor_em_aprovacao: 161693.63, parados_mais_5_dias: 1, tempo_medio_dias: 7, aprovados_7d: 1 },
+  colunas: {
+    correcao: [{ numero_fluig: '164425', protocolo: '2026001036', servico: 'Referente a substituição completa de 02 (duas) cancelas veiculares no Mega', fornecedor: 'GMA SISTEMAS DE SEGURANCA E INSTALACOES LTDA', valor: 57690, etapa: 'Retornado para correção', responsavel_atual: 'Pessoa A', dias_na_etapa: 0, dias_total: 3, devolvido: true, vezes_devolvido: 1 }],
+    facilities: [{ numero_fluig: '163212', protocolo: '2026000966', servico: 'REFERENTE A COMPRA E INSTALAÇÃO DE SISTEMA DE CONTROLE DE ACESSO', fornecedor: 'FM SECURITY SYSTEM LTDA', valor: 39753.63, etapa: 'Gerência de Facilities', responsavel_atual: 'Para o Papel Gestor Condomínio', dias_na_etapa: 0, dias_total: 21, devolvido: false, vezes_devolvido: 2 }],
+    financeiro: Array.from({ length: 6 }, (_, i) => ({ numero_fluig: String(164480 + i), protocolo: '20260010' + (50 + i), servico: 'Referente à realização do Treinamento de Formação de Brigadista ' + i, fornecedor: i ? 'MEDICLASS - MEDICINA E SEGURANCA DO TRABALHO LTDA' : null, valor: 5250 + i, etapa: 'Gerência Financeira', dias_na_etapa: 0, dias_total: i * 2, devolvido: false, vezes_devolvido: 0 })),
+    diretoria: [],
+    aprovado: [{ numero_fluig: '151871', protocolo: '2026000232', servico: 'Referente a execução de limpeza e manutenção preventiva das 5 maquinas de ar', fornecedor: 'CLIMATIZAR ASSIST TECN E MAN DE AR COND CENTRAL LTDA', valor: 4000, etapa: 'Execução Serviço Contratado', dias_na_etapa: 208, dias_total: 214, devolvido: false, vezes_devolvido: 0 },
+               { numero_fluig: '160001', protocolo: '2026000900', servico: 'Referente a pintura da faixa de pedestres', fornecedor: 'PINTA LTDA', valor: 1200, etapa: 'Avaliação Final Contratação', dias_na_etapa: 3, dias_total: 30, devolvido: false, vezes_devolvido: 0 }]
+  }
+};
 global.UrlFetchApp = { fetch: url => {
   if (url.indexOf('googleapis.com/drive') >= 0) return { getResponseCode: () => 404, getContentText: () => '{}' };
-  let j = url.indexOf('webdox-megas') >= 0 ? WEBDOX : KANBAN;
+  let j = url.indexOf('webdox-megas') >= 0 ? WEBDOX : (url.indexOf('fluig-megas') >= 0 ? FLUIG : KANBAN);
   if (url.indexOf('api.open-meteo.com/v1/forecast') >= 0) j = { hourly: { time: HORAS.map(x => x.t), precipitation: HORAS.map(x => x.v) } };
   if (url.indexOf('archive-api.open-meteo.com') >= 0) j = { daily: ARQUIVO };
   return { getResponseCode: () => 200, getContentText: () => JSON.stringify(j) };
@@ -131,7 +144,7 @@ let src = '';
 for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '01_Slide_Corretivas.gs',
                  '02_Slide_Corretivas_Acao.gs', '03_Slide_Preventivas.gs', '04_Slide_Preventivas_Acao.gs',
                  '05_Slide_Capa.gs', '06_Slide_Tempo.gs', '07_Slide_Metas.gs', '08_Slide_Cheias.gs',
-                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs', '12_Slide_Fluig.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
 FOTOS = UNITS.map(u => u.fotoCapaId);
@@ -202,7 +215,8 @@ const SLIDES = {
   'Cheias': u => atualizarSlideCheias(slide, Object.assign({}, EST, { marca: u.marca })),
   'Solicitações': u => atualizarSlideSolicitacoes(slide, u),
   'Webdox': u => atualizarSlideWebdox(slide, u),
-  'Chuva do mês': u => atualizarSlideChuva(slide, u)
+  'Chuva do mês': u => atualizarSlideChuva(slide, u),
+  'Fluig': u => atualizarSlideFluig(slide, u)
 };
 
 const saida = { W: 720, H: 405, slides: [] };
@@ -299,17 +313,33 @@ t(linhasCh.length === 3 && /nº 48230/.test(linhasCh[0]) && /nº 48302/.test(lin
 t(chv.some(f => f.texto === 'Fechado 14/10'), 'Chuva: fechado com a data');
 
 // Arquivo do painel: Chuva logo depois da Previsão do tempo
-// Itajaí: capa, 4 operacionais, tempo, 2 metas, kanban, Webdox, chuva = 11
-const ids = Array.from({ length: 11 }, (_, i) => 'p' + i);
+// Itajaí: capa, 4 operacionais, tempo, 2 metas, kanban, Webdox, chuva, Fluig = 12
+const ids = Array.from({ length: 12 }, (_, i) => 'p' + i);
 let gravado = {};
 global.SlidesApp.openById = () => ({ getSlides: () => ids.map(id => ({ getObjectId: () => id })) });
 global.DriveApp.getRootFolder = () => ({ getFilesByName: () => ({ hasNext: () => false }),
   createFile: (nome, txt) => { gravado[nome] = JSON.parse(txt); return { getUrl: () => 'url' }; } });
 gerarArquivosPainelTV();
 const urlsItj = gravado['Painel_Itajai.txt'].websites.map(w => w.url.split('id.')[1]);
-t(urlsItj.length === 11 && urlsItj[6] === 'p10' && urlsItj[5] === 'p5' && urlsItj[7] === 'p6',
-  'Painel: Chuva (último slide do deck) entra logo depois do Tempo → ' + urlsItj.join(','));
+t(urlsItj.join(',') === 'p0,p1,p2,p3,p4,p5,p10,p6,p7,p8,p11,p9',
+  'Painel: Chuva logo depois do Tempo; Fluig entre o Kanban e o Webdox → ' + urlsItj.join(','));
 t(gravado['Painel_Itajai.txt'].websites[0].duration === 20, 'Painel: capa continua com 20 s');
+
+// Aprovações no Fluig
+const flu = rodar('Fluig', ITJ);
+const totalFlu = Object.values(FLUIG.colunas).reduce((s, l) => s + Math.min(l.length, 4), 0);
+const cardsFlu = flu.filter(f => f.texto && /^#\d/.test(f.texto));
+t(cardsFlu.length === totalFlu, `Fluig: até 4 cards por coluna (${cardsFlu.length} de ${totalFlu})`);
+t(flu.some(f => f.texto === 'Fluig: importado em 19/10/2026 14:00'), 'Fluig: cabeçalho diz de quando é a importação');
+t(!flu.some(f => f.texto && /^referente/i.test(f.texto)), 'Fluig: tira o "Referente a" do começo do serviço');
+if (!process.env.FLUIG) {
+  t(flu.some(f => f.texto === '8 em aprovação · R$ 162 mil · 1 aprovado em 7 dias · Mega Itajaí'), 'Fluig: subtítulo');
+  t(flu.some(f => f.texto === '+ 2 chamados'), 'Fluig: 6 na Financeira → 4 cards e "+ 2 chamados"');
+  t(flu.some(f => f.texto === 'R$ 40 mil  ·  devolvido 2×' && f.corTexto === '#F97316'), 'Fluig: devoluções em laranja');
+  t(flu.some(f => f.texto === 'R$ 4 mil  ·  em execução') && flu.some(f => f.texto === '208d'), 'Fluig: aprovado mostra dias em execução');
+  t(flu.some(f => f.texto === '21d') && flu.some(f => f.cor === '#EF4444' && f.w === 3), 'Fluig: 21 dias desde o lançamento em vermelho');
+  t(flu.some(f => f.texto === 'Nenhum chamado aqui'), 'Fluig: Diretoria vazia avisa');
+}
 
 if (process.env.PREVIA) {
   fs.mkdirSync(process.env.PREVIA, { recursive: true });

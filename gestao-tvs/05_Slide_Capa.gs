@@ -53,7 +53,7 @@ function gerarSlideCapa(slide, dataGlobal, unit) {
   // Trilha do que vem a seguir na TV (na ordem do Painel_<Mega>.txt)
   const secoes = ['Corretivas', 'Preventivas', 'Tempo e chuva', 'Metas'];
   if (unit.cheiasSheetId) secoes.push('Cheias');
-  if (unit.portalEmpreendimento) secoes.push('Solicitações', 'Webdox');
+  if (unit.portalEmpreendimento) secoes.push('Solicitações', 'Fluig', 'Webdox');
   const tx = 40, tw = 650, ty = 322, passo = tw / secoes.length;
   const linha = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, tx, ty, tx + tw, ty);
   linha.getLineFill().setSolidFill(c.lines);

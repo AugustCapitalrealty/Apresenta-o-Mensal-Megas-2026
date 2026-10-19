@@ -11,7 +11,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 | `propriedades-mensal/` | Apresentação Mensal de Propriedades | 18 `.gs` |
 | `financeiro-mensal/` | Apresentação Mensal — Financeiro | 14 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
-| `gestao-tvs/` | Gestão à Vista — TVs | 15 `.gs` |
+| `gestao-tvs/` | Gestão à Vista — TVs | 16 `.gs` |
 
 Além desses seis, há mais duas pastas na raiz que **não** são projetos Apps
 Script mensais e não entram nas regras de namespace abaixo do mesmo jeito:
@@ -315,7 +315,7 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Doze suítes hoje, 818 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Doze suítes hoje, 847 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -328,8 +328,8 @@ Doze suítes hoje, 818 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
 | `megas-mensal/teste_mapa_chuvas.js` | 68 |
-| `gestao-tvs/teste_solicitacoes.js` | 58 |
-| `gestao-tvs/teste_rebrand.js` | 260 |
+| `gestao-tvs/teste_solicitacoes.js` | 57 |
+| `gestao-tvs/teste_rebrand.js` | 290 |
 | `megas-mensal/teste_acessos.js` | 15 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:

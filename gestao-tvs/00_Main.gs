@@ -41,7 +41,9 @@ function _tvConferirProjeto_() {
     { fn: '_tvVeu_',                      args: 9, arquivo: 'Visual.gs' },
     { fn: '_tvLogoChip_',                 args: 6, arquivo: 'Visual.gs' },
     { fn: 'atualizarSlideChuva',          args: 2, arquivo: '11_Slide_Chuva.gs' },
-    { fn: '_chuvaIndice_',                args: 1, arquivo: '11_Slide_Chuva.gs' }
+    { fn: '_chuvaIndice_',                args: 1, arquivo: '11_Slide_Chuva.gs' },
+    { fn: 'atualizarSlideFluig',          args: 2, arquivo: '12_Slide_Fluig.gs' },
+    { fn: '_fluigIndice_',                args: 1, arquivo: '12_Slide_Fluig.gs' }
   ];
 
   const problemas = [];
@@ -150,14 +152,15 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   // depois (apenas unidades com cheiasSheetId): monitoramento de cheias
   // por último (unidades com portalEmpreendimento): kanban de solicitações e
   // contratos no Webdox, nessa ordem
-  // por último, em todas: chuva do mês (11_Slide_Chuva.gs)
+  // depois, em todas: chuva do mês (11_Slide_Chuva.gs)
+  // por último (unidades com portalEmpreendimento): aprovações no Fluig
   // Slide novo entra SEMPRE no fim: Tempo, Metas e Cheias são achados pela
   // posição, e um slide no meio empurraria todos eles. A ordem em que a TV
   // MOSTRA é outra coisa — é a do Painel_<Mega>.txt (gerarArquivosPainelTV).
   const numMetas = (unit.metas || []).length;
   const temCheias = !!unit.cheiasSheetId;
   const temKanban = !!unit.portalEmpreendimento;
-  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 2 : 0) + 1;
+  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 2 : 0) + 1 + (temKanban ? 1 : 0);
 
   // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
   // Os novos slides são SEMPRE acrescentados no fim, então os slides já
@@ -225,6 +228,12 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
     try { atualizarSlideChuva(slides[iChuva], unit); }
     catch (e) { Logger.log(`⚠️ Chuva do mês (${unit.name}): ${e.message}`); }
   }
+
+  // 10. APROVAÇÕES NO FLUIG — mesmo portal, mesma regra de segurança.
+  if (temKanban) {
+    try { atualizarSlideFluig(slides[_fluigIndice_(unit)], unit); }
+    catch (e) { Logger.log(`⚠️ Fluig (${unit.name}): ${e.message}`); }
+  }
 }
 
 
@@ -249,13 +258,20 @@ function gerarArquivosPainelTV() {
     if (unit.cheiasSheetId) rotulos.push('Monitoramento de Cheias');
     if (unit.portalEmpreendimento) rotulos.push('Kanban de Solicitações', 'Contratos no Webdox');
     rotulos.push('Chuva do Mês');
+    if (unit.portalEmpreendimento) rotulos.push('Aprovações no Fluig');
 
-    // Ordem da TV ≠ ordem do deck: a Chuva do mês é o último slide do deck
-    // (slide novo vai sempre para o fim), mas na TV ela vem logo depois da
-    // Previsão do tempo (posição 5).
+    // Ordem da TV ≠ ordem do deck: slide novo vai sempre para o fim do deck,
+    // mas na TV a Chuva do mês vem logo depois da Previsão do tempo (posição
+    // 5) e o Fluig entre o Kanban e o Webdox — a ordem do processo:
+    // solicitação → aprovação no Fluig → contrato.
     const ordem = slides.map((s, i) => i);
-    const iChuva = _chuvaIndice_(unit);
-    if (iChuva < slides.length) { ordem.splice(ordem.indexOf(iChuva), 1); ordem.splice(6, 0, iChuva); }
+    const mover = (de, depoisDe) => {
+      if (de >= slides.length || ordem.indexOf(depoisDe) < 0) return;
+      ordem.splice(ordem.indexOf(de), 1);
+      ordem.splice(ordem.indexOf(depoisDe) + 1, 0, de);
+    };
+    mover(_chuvaIndice_(unit), 5);
+    if (unit.portalEmpreendimento) mover(_fluigIndice_(unit), _solIndice_(unit));
 
     // Mesmos parâmetros dos arquivos que a TI já usa (19/10/2026): capa 20 s,
     // demais 30 s, cada aba recarrega a cada 10 min.

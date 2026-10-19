@@ -20,6 +20,8 @@ const HISTORICO_VALIDADO_ID = "1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI";
 const PORTAL_KANBAN_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/kanban-megas";
 // Mesmo portal, mesma chave: contratos em andamento no Webdox (10_Slide_Webdox.gs).
 const PORTAL_WEBDOX_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/webdox-megas";
+// E as aprovações no Fluig (12_Slide_Fluig.gs).
+const PORTAL_FLUIG_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/fluig-megas";
 
 // ==========================================
 // MAPEAMENTO DAS UNIDADES (TVs E LOGOMARCAS)

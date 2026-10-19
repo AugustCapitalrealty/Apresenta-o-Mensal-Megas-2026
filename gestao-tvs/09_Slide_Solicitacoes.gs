@@ -449,5 +449,15 @@ function diagnosticarSolicitacoes() {
     } catch (e) {
       Logger.log('   ✗ WEBDOX: ' + e.message);
     }
+
+    // Fluig (12_Slide_Fluig.gs), mesma chave
+    try {
+      const f = obterFluig_(unit);
+      Logger.log('   FLUIG (slide nº ' + (_fluigIndice_(unit) + 1) + ', importado em ' +
+                 (f.importadoEm ? f.importadoEm.toISOString() : '?') + '): ' + f.kpis.emAprovacao + ' em aprovação · ' +
+                 _FLU_COLUNAS_.map(col => col.titulo + ' ' + f.colunas[col.chave].length).join(' · '));
+    } catch (e) {
+      Logger.log('   ✗ FLUIG: ' + e.message);
+    }
   });
 }
