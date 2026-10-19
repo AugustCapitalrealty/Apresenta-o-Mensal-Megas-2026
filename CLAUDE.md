@@ -8,7 +8,7 @@ separado** — a pasta organiza o código no git, não junta os projetos.
 |---|---|---|
 | `megas-mensal/` | Apresentação Mensal dos Megas (Curitiba, Itajaí, Esteio) | 24 `.gs` (sobe com `clasp`) |
 | `boletim/` | Boletim 2026 | 18 `.gs` |
-| `propriedades-mensal/` | Apresentação Mensal de Propriedades | 20 `.gs` |
+| `propriedades-mensal/` | Apresentação Mensal de Propriedades | 19 `.gs` |
 | `financeiro-mensal/` | Apresentação Mensal — Financeiro | 14 `.gs` |
 | `controle-acessos/` | Boletim de Controle de Acessos | 13 `.gs` |
 | `gestao-tvs/` | Gestão à Vista — TVs | 18 `.gs` |
@@ -315,8 +315,8 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Catorze suítes hoje, 1.033 asserções ao todo (contadas em 20/10/2026), cada
-uma rodando com `node <arquivo>`:
+Treze suítes hoje, 961 asserções ao todo (contadas em 20/10/2026), cada uma
+rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -329,7 +329,6 @@ uma rodando com `node <arquivo>`:
 | `propriedades-mensal/teste_slides.js` | 67 |
 | `propriedades-mensal/teste_metas.js` | 25 |
 | `propriedades-mensal/teste_capas.js` | 24 |
-| `propriedades-mensal/teste_rebrand.js` | 72 |
 | `megas-mensal/teste_mapa_chuvas.js` | 68 |
 | `gestao-tvs/teste_solicitacoes.js` | 57 |
 | `gestao-tvs/teste_rebrand.js` | 343 |

@@ -206,9 +206,8 @@ pasta lê a apresentação de cima para baixo.
 | `03_Tabelas.gs` | 441 | motor de tabela: cabeçalho, zebra, badges, paginação, rodapé |
 | `04_Diagnosticos.gs` | 632 | nove diagnósticos, incluindo as 28 dependências do Backlog de Clientes |
 | `05_DadosSlides.gs` | 1.068 | agregação por slide + DRE/Bridge + Farol de Metas |
-| `06_Visual.gs` | 520 | visual do Orçamento 2027 (marcas, medição de texto, cabeçalho, KPI, painel, tabela, rodapé) — ver "Visual" |
 | `10_Slide_Capa.gs` | 73 | capa |
-| `11_Slide_IndicadoresGerais.gs` | 153 | Dashboard Operacional — **já no visual novo** |
+| `11_Slide_IndicadoresGerais.gs` | 258 | Dashboard Operacional, 4 quadrantes |
 | `12_Slide_Preventivas.gs` | 164 | preventivas: cards, SLA, fora de SLA |
 | `13_Slide_Corretivas.gs` | 138 | corretivas: KPIs e gráfico de emergenciais |
 | `14_Slide_Backlog.gs` | 254 | **três slides**: backlog por CC, detalhe dos emergenciais, motivos de pausa |
@@ -261,42 +260,9 @@ Ainda no rascunho do deck, sem gerador: CAPEX, Vistorias de Entrada,
 Monitoramento de Pendências, Monitoramento de Documentos e Status de Projetos
 Aprovados.
 
-## Visual (rebrand de 20/10/2026, em andamento)
-
-O mesmo rebrand das TVs (`../gestao-tvs/README.md`, seção "Visual"): o
-padrão do Orçamento 2027 (`../orcamento-2027/IDEIAS-DESIGN.md`), sem imagens
-em Python. Tudo em `06_Visual.gs`, **copiado** de `../gestao-tvs/Visual.gs`
-com o prefixo trocado de `_tv` para `_pv` — ao corrigir algo num, confira o
-outro.
-
-- **Cabeçalho** (`_pvCabecalho_`): barra de destaque, título na fonte da
-  marca, subtítulo com o número que importa do slide, logos à direita, canto
-  com a referência e linha fina embaixo.
-- **Faixa de KPIs** (`_pvKpi_`): cartões arredondados, um só cheio na cor
-  escura da marca; nele a variação usa tons claros (#FCA5A5, #6EE7B7,
-  #FDBA74) e qualquer outra cor vira branco.
-- **Painéis** (`_pvCard_`), **tabelas** com cabeçalho escuro e zebra
-  (`_pvTabela_` — um tamanho de letra por coluna, o maior que cabe em todas
-  as linhas) e **rodapé** "Fonte: …" (`_pvRodape_`).
-- Verde e vermelho só para variação; laranja só para pendência.
-- **Medição de texto** com a largura real de cada letra (`_pvTexto_`,
-  `_pvParagrafo_`): o texto encolhe e corta com "…", nunca quebra sozinho.
-- **Marcas** (`PV_MARCAS`): Capital Realty por padrão; Demercado (#00594F /
-  #AF9800, título em EB Garamond) onde o conteúdo for da Demercado. A marca
-  vale **só durante o desenho do slide** (`_pvComMarca_`): ela parte da
-  Capital e, no fim, o `CR_DESIGN_SYSTEM` volta à paleta original — os slides
-  que ainda não foram convertidos seguem iguais, mesmo rodando depois.
-
-**Convertidos:** Dashboard Operacional. Capas em imagem (`21_Slide_Capas.gs`)
-e Farol de Metas ficam como estão.
-
-Prévia sem abrir o Slides:
-`PREVIA=<pasta> node propriedades-mensal/teste_rebrand.js` e
-`node ferramentas/previa_slides.js <pasta>/formas_propriedades.json <pasta>`.
-
 ## Testes
 
-Seis suítes, `node <arquivo>` (contadas em 20/10/2026):
+Cinco suítes, `node <arquivo>` (contadas em 20/10/2026):
 
 | Arquivo | Asserções | O que trava |
 |---|---|---|
@@ -305,9 +271,8 @@ Seis suítes, `node <arquivo>` (contadas em 20/10/2026):
 | `teste_slides.js` | 67 | todo slide desenha, nada fora da página, DRE e Farol na grade de Facilities |
 | `teste_metas.js` | 25 | o status do farol e as linhas digitadas à mão |
 | `teste_capas.js` | 24 | as capas em imagem e a posição do DRE depois da capa 01 |
-| `teste_rebrand.js` | 72 | o visual novo: fonte e cor da marca, texto que cabe (medido), nada fora da página nem sobre o rodapé, marca que não vaza, const de topo só literal (lição 7) |
 
-`teste_slides.js` é o que cobre a reorganização: carrega os 20 `.gs`, dubla
+`teste_slides.js` é o que cobre a reorganização: carrega os 19 `.gs`, dubla
 `SlidesApp`/`SpreadsheetApp` e roda os 15 slides. Ele falha se um arquivo
 sumir, se um nome for declarado duas vezes ou se um shape sair dos 720×405.
 
