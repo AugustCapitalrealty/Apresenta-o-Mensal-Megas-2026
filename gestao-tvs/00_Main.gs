@@ -43,7 +43,10 @@ function _tvConferirProjeto_() {
     { fn: 'atualizarSlideChuva',          args: 2, arquivo: '11_Slide_Chuva.gs' },
     { fn: '_chuvaIndice_',                args: 1, arquivo: '11_Slide_Chuva.gs' },
     { fn: 'atualizarSlideFluig',          args: 2, arquivo: '12_Slide_Fluig.gs' },
-    { fn: '_fluigIndice_',                args: 1, arquivo: '12_Slide_Fluig.gs' }
+    { fn: '_fluigIndice_',                args: 1, arquivo: '12_Slide_Fluig.gs' },
+    { fn: 'atualizarSlideRecados',        args: 2, arquivo: '13_Slide_Recados.gs' },
+    { fn: '_recadosIndice_',              args: 1, arquivo: '13_Slide_Recados.gs' },
+    { fn: '_tvParagrafo_',                args: 7, arquivo: 'Visual.gs' }
   ];
 
   const problemas = [];
@@ -153,14 +156,15 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   // por último (unidades com portalEmpreendimento): kanban de solicitações e
   // contratos no Webdox, nessa ordem
   // depois, em todas: chuva do mês (11_Slide_Chuva.gs)
-  // por último (unidades com portalEmpreendimento): aprovações no Fluig
+  // depois (unidades com portalEmpreendimento): aprovações no Fluig
+  // por último, em todas: recados (13_Slide_Recados.gs, conteúdo em Recados.gs)
   // Slide novo entra SEMPRE no fim: Tempo, Metas e Cheias são achados pela
   // posição, e um slide no meio empurraria todos eles. A ordem em que a TV
   // MOSTRA é outra coisa — é a do Painel_<Mega>.txt (gerarArquivosPainelTV).
   const numMetas = (unit.metas || []).length;
   const temCheias = !!unit.cheiasSheetId;
   const temKanban = !!unit.portalEmpreendimento;
-  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 2 : 0) + 1 + (temKanban ? 1 : 0);
+  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 2 : 0) + 1 + (temKanban ? 1 : 0) + 1;
 
   // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
   // Os novos slides são SEMPRE acrescentados no fim, então os slides já
@@ -234,6 +238,11 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
     try { atualizarSlideFluig(slides[_fluigIndice_(unit)], unit); }
     catch (e) { Logger.log(`⚠️ Fluig (${unit.name}): ${e.message}`); }
   }
+
+  // 11. RECADOS — redesenhado sempre: é assim que um recado com data de
+  // início/fim entra e sai sozinho.
+  try { atualizarSlideRecados(slides[_recadosIndice_(unit)], unit); }
+  catch (e) { Logger.log(`⚠️ Recados (${unit.name}): ${e.message}`); }
 }
 
 
@@ -260,28 +269,33 @@ function gerarArquivosPainelTV() {
     rotulos.push('Chuva do Mês');
     const numMetasP = (unit.metas || []).length;
     if (unit.portalEmpreendimento) rotulos.push('Aprovações no Fluig');
+    rotulos.push('Recados');
 
     // Ordem da TV ≠ ordem do deck (slide novo vai sempre para o fim do deck).
     // Na TV, pedido do Guilherme em 19/10/2026: capa → os 4 operacionais →
     // Solicitações → Fluig → Webdox (a ordem do processo: solicitação →
-    // aprovação → contrato) → Tempo → Chuva → Cheias → Metas por último.
-    // Slide do deck que não estiver em nenhum grupo (deck com slide a mais)
-    // vai para o fim, para não sumir da TV sem ninguém ver.
+    // aprovação → contrato) → Tempo → Chuva → Cheias → Metas → Recados por
+    // último. Slide do deck que não estiver em nenhum grupo (deck com slide a
+    // mais) vai antes dos Recados, para não sumir da TV sem ninguém ver; as
+    // páginas extras (planilha do Esteio) também.
     const portal = unit.portalEmpreendimento
       ? [_solIndice_(unit), _fluigIndice_(unit), _webIndice_(unit)] : [];
     const clima = [5, _chuvaIndice_(unit)].concat(unit.cheiasSheetId ? [6 + numMetasP] : []);
     const metas = (unit.metas || []).map((m, i) => 6 + i);
+    const iRecados = _recadosIndice_(unit);
     const ordem = [0, 1, 2, 3, 4].concat(portal, clima, metas).filter(i => i < slides.length);
-    slides.forEach((s, i) => { if (ordem.indexOf(i) < 0) ordem.push(i); });
+    slides.forEach((s, i) => { if (ordem.indexOf(i) < 0 && i !== iRecados) ordem.push(i); });
 
     // Mesmos parâmetros dos arquivos que a TI já usa (19/10/2026): capa 20 s,
     // demais 30 s, cada aba recarrega a cada 10 min.
-    const sites = ordem.map(i => ({
+    const site = i => ({
       url: 'https://docs.google.com/presentation/d/' + unit.deckId + '/present?slide=id.' + slides[i].getObjectId(),
       duration: i === 0 ? 20 : 30,
       tabReloadIntervalSeconds: 600
-    }));
+    });
+    const sites = ordem.map(site);
     (unit.painelExtras || []).forEach(url => sites.push({ url: url, duration: 30, tabReloadIntervalSeconds: 600 }));
+    if (iRecados < slides.length) { sites.push(site(iRecados)); ordem.push(iRecados); }
 
     const json = JSON.stringify({
       settingsReloadIntervalMinutes: 60, fullscreen: true, autoStart: true, lazyLoadTabs: true,

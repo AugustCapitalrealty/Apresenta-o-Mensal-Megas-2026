@@ -64,7 +64,7 @@ const slide = {
 let FOTOS = [];
 global.SlidesApp = {
   ShapeType: new Proxy({}, { get: (o, k) => k }), LineCategory: { STRAIGHT: 'STRAIGHT' },
-  ContentAlignment: { MIDDLE: 'MIDDLE' }, ParagraphAlignment: { CENTER: 'CENTER', START: 'START', END: 'END' },
+  ContentAlignment: { MIDDLE: 'MIDDLE', TOP: 'TOP' }, ParagraphAlignment: { CENTER: 'CENTER', START: 'START', END: 'END' },
   PredefinedLayout: { BLANK: 'BLANK' }
 };
 global.DriveApp = { getFileById: id => ({ getBlob: () => ({ id }) }) };
@@ -144,7 +144,7 @@ let src = '';
 for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '01_Slide_Corretivas.gs',
                  '02_Slide_Corretivas_Acao.gs', '03_Slide_Preventivas.gs', '04_Slide_Preventivas_Acao.gs',
                  '05_Slide_Capa.gs', '06_Slide_Tempo.gs', '07_Slide_Metas.gs', '08_Slide_Cheias.gs',
-                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs', '12_Slide_Fluig.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs', '12_Slide_Fluig.gs', '13_Slide_Recados.gs', 'Recados.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
 FOTOS = UNITS.map(u => u.fotoCapaId);
@@ -216,7 +216,8 @@ const SLIDES = {
   'Solicitações': u => atualizarSlideSolicitacoes(slide, u),
   'Webdox': u => atualizarSlideWebdox(slide, u),
   'Chuva do mês': u => atualizarSlideChuva(slide, u),
-  'Fluig': u => atualizarSlideFluig(slide, u)
+  'Fluig': u => atualizarSlideFluig(slide, u),
+  'Recados': u => atualizarSlideRecados(slide, u)
 };
 
 const saida = { W: 720, H: 405, slides: [] };
@@ -316,16 +317,16 @@ t(linhasCh.length === 3 && /nº 48230/.test(linhasCh[0]) && /nº 48302/.test(lin
 t(chv.some(f => f.texto === 'Fechado 14/10'), 'Chuva: fechado com a data');
 
 // Arquivo do painel: Chuva logo depois da Previsão do tempo
-// Itajaí: capa, 4 operacionais, tempo, 2 metas, kanban, Webdox, chuva, Fluig = 12
-const ids = Array.from({ length: 12 }, (_, i) => 'p' + i);
+// Itajaí: capa, 4 operacionais, tempo, 2 metas, kanban, Webdox, chuva, Fluig, Recados = 13
+const ids = Array.from({ length: 13 }, (_, i) => 'p' + i);
 let gravado = {};
 global.SlidesApp.openById = () => ({ getSlides: () => ids.map(id => ({ getObjectId: () => id })) });
 global.DriveApp.getRootFolder = () => ({ getFilesByName: () => ({ hasNext: () => false }),
   createFile: (nome, txt) => { gravado[nome] = JSON.parse(txt); return { getUrl: () => 'url' }; } });
 gerarArquivosPainelTV();
 const urlsItj = gravado['Painel_Itajai.txt'].websites.map(w => w.url.split('id.')[1]);
-t(urlsItj.join(',') === 'p0,p1,p2,p3,p4,p8,p11,p9,p5,p10,p6,p7',
-  'Painel: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Metas → ' + urlsItj.join(','));
+t(urlsItj.join(',') === 'p0,p1,p2,p3,p4,p8,p11,p9,p5,p10,p6,p7,p12',
+  'Painel: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Metas → Recados → ' + urlsItj.join(','));
 t(gravado['Painel_Itajai.txt'].websites[0].duration === 20, 'Painel: capa continua com 20 s');
 
 // Aprovações no Fluig
@@ -342,6 +343,69 @@ if (!process.env.FLUIG) {
   t(flu.some(f => f.texto === 'R$ 4 mil  ·  em execução') && flu.some(f => f.texto === '208d'), 'Fluig: aprovado mostra dias em execução');
   t(flu.some(f => f.texto === '21d') && flu.some(f => f.cor === '#EF4444' && f.w === 3), 'Fluig: 21 dias desde o lançamento em vermelho');
   t(flu.some(f => f.texto === 'Nenhum chamado aqui'), 'Fluig: Diretoria vazia avisa');
+}
+
+// Recados (o conteúdo vem de Recados.gs; aqui cada caso que ele permite)
+{
+  const ORIGINAL = RECADOS;
+  const r = (o) => Object.assign({ ativo: true, megas: 'TODOS', etiqueta: 'Aviso', titulo: 'Título', texto: 'Texto', destaque: '', fotoId: '', de: '', ate: '' }, o);
+  // Parágrafo de várias linhas: cada linha cabe na largura e o bloco na altura.
+  const NL = String.fromCharCode(10);
+  const paragrafoRuim = v => v.filter(f => f.texto && (f.texto.indexOf(NL) >= 0 || f.h > 36) && f.fs).filter(f => {
+    const ls = f.texto.split(NL);
+    return ls.some(l => _tvLargura_(l, f.fs, f.fonte, f.negrito) > f.w - _TV_RECUO_ + 0.5) || ls.length * f.fs * 1.25 + 8 > f.h + 0.5;
+  });
+  const conferir = (rot, v) => {
+    t(!logs.some(l => /✗|falha/i.test(l)), rot + ': sem falha');
+    t(!paragrafoRuim(v).length, rot + ': parágrafos cabem → ' + paragrafoRuim(v).map(f => JSON.stringify(f.texto)).join(' | '));
+    const fora = v.filter(f => f.rotulo !== 'foto do Mega' && (f.x < 0 || f.y < 0 || f.x + f.w > 720.01 || f.y + f.h > 405.01));
+    t(!fora.length, rot + ': nada fora da página');
+  };
+
+  RECADOS = [r({ ativo: false, titulo: 'Desligado' })];
+  let v = rodar('Recados', ITJ);
+  t(v.some(f => f.texto === RECADO_PADRAO.titulo) && !v.some(f => f.texto === 'Desligado'), 'Recados: nenhum ativo → recado padrão');
+  t(v.some(f => f.texto === 'Comunicados internos · Mega Itajaí'), 'Recados: subtítulo do padrão');
+  conferir('Recados padrão', v);
+
+  RECADOS = [r({ etiqueta: 'Evento', titulo: 'Simulado de abandono de área', texto: 'Ao ouvir o alarme, siga a brigada até o ponto de encontro.' + NL + 'Leve o crachá.', destaque: '23/10 · 10h', fotoId: FOTOS[1] })];
+  v = rodar('Recados', ITJ);
+  const fotoR = v.find(f => f.rotulo === 'foto do Mega');
+  t(fotoR && v.indexOf(fotoR) === 0 && fotoR.x <= 410 && fotoR.x + fotoR.w >= 690 && fotoR.y <= 84 && fotoR.y + fotoR.h >= 378, 'Recados: 1 com foto → foto primeiro, cobrindo o bloco da direita');
+  t(v.some(f => f.texto === 'EVENTO') && v.some(f => f.texto === '23/10 · 10h'), 'Recados: etiqueta e destaque');
+  t(v.some(f => f.texto && f.texto.indexOf('Leve o crachá.') >= 0 && f.texto.indexOf(NL) >= 0), 'Recados: quebra de linha no texto vira linha nova');
+  conferir('Recados 1 com foto', v);
+
+  RECADOS = [r({ titulo: 'Inventário anual', texto: 'Contagem nos módulos 1 a 4.', destaque: '28/10' })];
+  v = rodar('Recados', CWB);
+  t(v.some(f => f.cor === '#00594F' && f.x === 410 && f.w === 280) && v.some(f => f.texto === '28/10' && f.corTexto === '#FFFFFF'), 'Recados: sem foto, destaque no bloco na cor da marca');
+  t(v.some(f => f.texto === 'Inventário anual' && f.fonte === 'EB Garamond'), 'Recados: título na fonte da marca (Demercado)');
+  conferir('Recados 1 sem foto', v);
+
+  logs.length = 0;
+  RECADOS = [r({ titulo: 'Um' }), r({ titulo: 'Dois', destaque: '01/11' }), r({ titulo: 'Três' }), r({ titulo: 'Quatro' })];
+  v = rodar('Recados', ITJ);
+  t(['Um', 'Dois', 'Três'].every(s => v.some(f => f.texto === s)) && !v.some(f => f.texto === 'Quatro'), 'Recados: mais de 3 → os 3 primeiros');
+  t(logs.some(l => l.indexOf('cabem 3') >= 0), 'Recados: avisa no Logger que sobrou recado');
+  t(v.some(f => f.texto === '3 comunicados · Mega Itajaí'), 'Recados: subtítulo conta os comunicados da tela');
+
+  RECADOS = [r({ titulo: 'Futuro', de: '20/10/2026' }), r({ titulo: 'Vencido', ate: '18/10/2026' }), r({ titulo: 'Hoje', de: '19/10/2026', ate: '19/10/2026' }),
+             r({ titulo: 'Só Esteio', megas: ['ESTEIO'] }), r({ titulo: 'Itajaí sem acento', megas: ['itajai'] })];
+  v = rodar('Recados', ITJ);
+  t(!v.some(f => f.texto === 'Futuro') && !v.some(f => f.texto === 'Vencido') && v.some(f => f.texto === 'Hoje'), 'Recados: período de/até (inclui o dia)');
+  t(!v.some(f => f.texto === 'Só Esteio') && v.some(f => f.texto === 'Itajaí sem acento'), 'Recados: filtro por Mega, sem acento nem caixa');
+
+  logs.length = 0;
+  RECADOS = [r({ titulo: 'Data torta', de: '20-10-26' })];
+  v = rodar('Recados', ITJ);
+  t(v.some(f => f.texto === 'Data torta') && logs.some(l => l.indexOf('use dd/mm/aaaa') >= 0), 'Recados: data ilegível é ignorada, com aviso');
+
+  RECADOS = [r({ titulo: 'Um título enorme que não cabe de jeito nenhum em duas linhas e precisa ser cortado com reticências no fim para não estourar a caixa do slide', texto: Array(600).fill('palavra').join(' ') })];
+  v = rodar('Recados', ITJ);
+  t(v.some(f => f.texto && /…$/.test(f.texto)), 'Recados: texto longo demais é cortado com …');
+  conferir('Recados texto longo', v);
+
+  RECADOS = ORIGINAL;
 }
 
 if (process.env.PREVIA) {

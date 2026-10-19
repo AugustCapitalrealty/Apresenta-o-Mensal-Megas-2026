@@ -88,7 +88,7 @@ global.UrlFetchApp = { fetch: (url, op) => {
 
 // ── Carrega o projeto ───────────────────────────────────────────────────────
 let src = '';
-for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs', '12_Slide_Fluig.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs', '12_Slide_Fluig.gs', '13_Slide_Recados.gs', 'Recados.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
 
@@ -198,8 +198,8 @@ global.DriveApp = {
     createFile: (nome, conteudo) => { criados[nome] = JSON.parse(conteudo); return { getUrl: () => 'https://drive/' + nome }; }
   })
 };
-// 12 slides: … kanban, Webdox e, no fim do deck, a Chuva do mês e o Fluig
-const nSlides = { [CWB.deckId]: 12, [ITJ.deckId]: 12, [EST.deckId]: 12 };
+// 13 slides: … kanban, Webdox e, no fim do deck, Chuva do mês, Fluig e Recados
+const nSlides = { [CWB.deckId]: 13, [ITJ.deckId]: 13, [EST.deckId]: 13 };
 SlidesApp.openById = id => ({ getSlides: () => Array.from({ length: nSlides[id] }, (_, i) => novoSlide('ID_' + i)) });
 logs.length = 0;
 gerarArquivosPainelTV();
@@ -207,21 +207,21 @@ t(Object.keys(criados).sort().join(',') === 'Painel_Curitiba.txt,Painel_Esteio.t
   'um arquivo por TV, com o nome que a TI já usa → ' + Object.keys(criados).join(','));
 const est = criados['Painel_Esteio.txt'];
 const idsEst = est ? est.websites.map(w => (w.url.split('id.')[1] || 'extra')).join(',') : '';
-t(est && est.websites.length === 13, 'Esteio: 12 slides + a planilha extra');
-t(idsEst === 'ID_0,ID_1,ID_2,ID_3,ID_4,ID_8,ID_11,ID_9,ID_5,ID_10,ID_7,ID_6,extra',
-  'Esteio: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Cheias → Metas; planilha no fim → ' + idsEst);
-t(est && est.websites[12].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
+t(est && est.websites.length === 14, 'Esteio: 13 slides + a planilha extra');
+t(idsEst === 'ID_0,ID_1,ID_2,ID_3,ID_4,ID_8,ID_11,ID_9,ID_5,ID_10,ID_7,ID_6,extra,ID_12',
+  'Esteio: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Cheias → Metas → planilha → Recados por último → ' + idsEst);
+t(est && est.websites[12].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada vem antes dos Recados');
 t(est && est.websites[0].duration === 20 && est.websites[1].duration === 30, 'capa 20 s, demais 30 s');
 t(est && est.fullscreen === true && est.settingsReloadIntervalMinutes === 60 && est.websites[0].tabReloadIntervalSeconds === 600,
   'mesmas configurações gerais do arquivo antigo');
 const itj = criados['Painel_Itajai.txt'];
-t(itj && itj.websites.length === 12 && itj.websites[11].url.endsWith('id.ID_7') && itj.websites[10].url.endsWith('id.ID_6'),
-  'Itajaí: Metas por último, Supervisor e Analista');
+t(itj && itj.websites.length === 13 && itj.websites[11].url.endsWith('id.ID_7') && itj.websites[10].url.endsWith('id.ID_6') && itj.websites[12].url.endsWith('id.ID_12'),
+  'Itajaí: Metas (Supervisor e Analista) e Recados por último');
 t(itj && itj.websites[0].url === 'https://docs.google.com/presentation/d/' + ITJ.deckId + '/present?slide=id.ID_0', 'URL no formato do painel');
-t(logs.some(l => l.indexOf('6. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('7. Aprovações no Fluig') >= 0) && logs.some(l => l.indexOf('8. Contratos no Webdox') >= 0) && logs.some(l => l.indexOf('10. Chuva do Mês') >= 0) && logs.some(l => l.indexOf('12. Metas ANALISTA') >= 0),
+t(logs.some(l => l.indexOf('6. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('7. Aprovações no Fluig') >= 0) && logs.some(l => l.indexOf('8. Contratos no Webdox') >= 0) && logs.some(l => l.indexOf('10. Chuva do Mês') >= 0) && logs.some(l => l.indexOf('12. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('13. Recados') >= 0),
   'Logger lista cada slide com o nome');
-nSlides[CWB.deckId] = 11; logs.length = 0; gerarArquivosPainelTV();
-t(logs.some(l => l.indexOf('tem 11 slides e o esperado são 12') >= 0), 'avisa quando o deck ainda não tem o Fluig');
+nSlides[CWB.deckId] = 12; logs.length = 0; gerarArquivosPainelTV();
+t(logs.some(l => l.indexOf('tem 12 slides e o esperado são 13') >= 0), 'avisa quando o deck ainda não tem os Recados');
 
 // ── Ordem de carga do Apps Script ───────────────────────────────────────────
 // O Apps Script carrega os .gs em ordem alfabética: "09_…" vem ANTES de

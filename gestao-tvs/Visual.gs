@@ -137,6 +137,61 @@ function _tvTexto_(slide, x, y, w, h, texto, op) {
 }
 
 
+// Parágrafo de várias linhas: quebra as palavras pela largura REAL (as
+// mesmas medidas do _tvTexto_), encolhe a fonte até o bloco caber na altura
+// (até fsMin) e, se ainda não couber, corta a última linha com "…". As
+// quebras são feitas aqui, com "\n", para o Slides não decidir outra.
+// Quebra de linha no texto original (\n) é respeitada.
+// op: { fs, fsMin, bold, italic, cor, fonte, align: 'L'|'C' }
+// Devolve { caixa, altura, linhas, fs } — ou null se o texto for vazio.
+function _tvParagrafo_(slide, x, y, w, h, texto, op) {
+  const m = _tvMedirParagrafo_(w, h, texto, op);
+  if (!m) return null;
+  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
+  box.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+  box.getText().setText(m.texto).getTextStyle()
+    .setFontSize(m.fs).setBold(!!op.bold).setItalic(!!op.italic)
+    .setForegroundColor(op.cor || CR_DESIGN_SYSTEM.colors.textMain).setFontFamily(op.fonte || CR_DESIGN_SYSTEM.typography.body);
+  box.getText().getParagraphStyle().setParagraphAlignment(
+    op.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER : SlidesApp.ParagraphAlignment.START);
+  return { caixa: box, altura: m.altura, linhas: m.linhas, fs: m.fs };
+}
+
+// O mesmo cálculo, sem desenhar: quem quer centralizar um bloco de vários
+// parágrafos mede antes. Devolve { texto, fs, linhas, altura } ou null.
+function _tvMedirParagrafo_(w, h, texto, op) {
+  if (h < 12 || w < _TV_RECUO_ + 10) return null;   // sem espaço: não desenha (nem estoura)
+  const fonte = op.fonte || CR_DESIGN_SYSTEM.typography.body;
+  const util = w - _TV_RECUO_, alturaLinha = 1.25;
+  const quebrar = fs => {
+    const linhas = [];
+    String(texto == null ? '' : texto).split('\n').forEach(par => {
+      let atual = '';
+      par.split(/\s+/).filter(Boolean).forEach(p => {
+        const tenta = atual ? atual + ' ' + p : p;
+        if (!atual || _tvLargura_(tenta, fs, fonte, op.bold) <= util) atual = tenta;
+        else { linhas.push(atual); atual = p; }
+      });
+      linhas.push(atual);
+    });
+    return linhas;
+  };
+  let fs = op.fs, linhas = quebrar(fs);
+  while (fs > (op.fsMin || fs) && linhas.length * fs * alturaLinha + 8 > h) { fs -= 0.5; linhas = quebrar(fs); }
+  const cabem = Math.max(1, Math.floor((h - 8) / (fs * alturaLinha)));
+  if (linhas.length > cabem) {
+    linhas = linhas.slice(0, cabem);
+    linhas[cabem - 1] = _tvCortar_(linhas[cabem - 1] + ' …', w, fs, fonte, op.bold);
+  }
+  // Palavra sozinha mais larga que a caixa (um link, um código) é cortada.
+  linhas = linhas.map(l => _tvLargura_(l, fs, fonte, op.bold) > util ? _tvCortar_(l, w, fs, fonte, op.bold) : l);
+  const t = linhas.join('\n');
+  if (!t.trim()) return null;
+  // A altura que o texto ocupa de fato: quem chama põe o próximo bloco logo abaixo.
+  return { texto: t, fs: fs, linhas: linhas.length, altura: Math.min(h, linhas.length * fs * alturaLinha + 8) };
+}
+
+
 // ==========================================
 // COMPONENTES
 // ==========================================

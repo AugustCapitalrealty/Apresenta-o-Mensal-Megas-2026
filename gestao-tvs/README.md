@@ -21,6 +21,7 @@ própria entrada.
 | `ATUALIZAR_WEBDOX()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só os contratos no Webdox |
 | `ATUALIZAR_CHUVA_MES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só a chuva do mês |
 | `ATUALIZAR_FLUIG()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só as aprovações no Fluig |
+| `ATUALIZAR_RECADOS()` | Só os recados, nas três TVs — rode depois de editar `Recados.gs` |
 | `CRIAR_GATILHO_CHUVA()` | Rode 1 vez: acionador da chuva do mês a cada 3 horas |
 | `diagnosticarBasesBrutas()` | Mostra o dado bruto das bases — rode antes de discutir número |
 | `diagnosticarSolicitacoes()` | Confere a chave e chama o portal para as três TVs, sem mexer em slide |
@@ -45,6 +46,9 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
 2. Compare cada `.js` dela com o `.gs` daqui (`sed 's/\r$//'` nos dois
    lados; o editor não guarda a quebra de linha final). Diferença de código
    = alguém mexeu no editor: junte antes de seguir.
+   **`Recados.gs` é editado no editor de propósito** (os recados da TV):
+   diferença nele é esperada — traga a versão do editor para cá e faça
+   commit ANTES do push, senão o push apaga os recados.
 3. Copie os `.gs` alterados para a pasta temporária como `.js` e rode
    `clasp push --force` **de lá**. Não rode push desta pasta: os testes de
    Node (`teste_*.js`) iriam para o editor junto.
@@ -71,6 +75,8 @@ push). Antes: 15:45, rebrand dos 11 slides + Webdox.
 | `10_Slide_Webdox.gs` | Contratos no Webdox |
 | `11_Slide_Chuva.gs` | Chuva do mês — o anel da apresentação mensal (acionador próprio) |
 | `12_Slide_Fluig.gs` | Aprovações no Fluig |
+| `13_Slide_Recados.gs` | Recados — o desenho |
+| `Recados.gs` | Recados — **o conteúdo, editado à mão no editor** |
 | `Visual.gs` | Marcas, medição de texto, cartões, foto da capa |
 
 `teste_bases.js` **não vai para o editor** — é um teste de Node, roda com
@@ -89,7 +95,8 @@ push). Antes: 15:45, rebrand dos 11 slides + Webdox.
 | depois | Kanban de Solicitações |
 | depois | Contratos no Webdox |
 | depois | Chuva do mês |
-| último | Aprovações no Fluig |
+| depois | Aprovações no Fluig |
+| último | Recados |
 
 **Slide novo entra sempre no fim do deck.** Tempo, Metas e Cheias são achados
 pela posição; um slide no meio empurraria todos eles e o conteúdo de um iria
@@ -99,7 +106,25 @@ parar no outro. A ordem em que a TV **mostra** é outra: é a do
 
 > Capa → 4 operacionais → Solicitações → Fluig → Webdox (solicitação →
 > aprovação → contrato) → Previsão do tempo → Chuva do mês → Cheias (Esteio)
-> → Metas por último
+> → Metas → (planilha do Esteio) → Recados por último
+
+### Recados (`13_Slide_Recados.gs` + `Recados.gs`, desde 19/10/2026)
+
+Avisos, notícias e eventos da empresa, no último slide. O conteúdo fica em
+`Recados.gs`, que **se edita direto no editor do Apps Script** (pedido do
+Guilherme: nada de planilha): muda o recado, salva e roda
+`ATUALIZAR_RECADOS()`. Cada recado tem `ativo`, `megas` ('TODOS' ou alguns),
+`etiqueta`, `titulo`, `texto`, `destaque` (data/número grande), `fotoId` e
+`de`/`ate` (dd/mm/aaaa — entra e sai sozinho, porque o `gerarApresentacao()`
+redesenha os recados toda vez).
+
+- 1 recado valendo → página inteira, centralizada na altura, com a foto à
+  direita (ou o destaque num bloco na cor da marca); 2 ou 3 → lado a lado;
+  mais de 3 → os 3 primeiros da lista, com aviso no Logger.
+- **Nenhum valendo → `RECADO_PADRAO`.** O slide nunca some: a TV abre uma
+  lista fixa de links, e tirar o slide exigiria mandar outro arquivo à TI.
+- Texto longo encolhe até 9 pt e, se ainda não couber, é cortado com "…"
+  (`_tvParagrafo_` em `Visual.gs`, que quebra as linhas pela largura real).
 
 A trilha da capa segue a mesma ordem.
 
