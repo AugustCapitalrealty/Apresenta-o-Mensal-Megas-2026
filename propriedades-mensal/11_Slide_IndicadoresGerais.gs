@@ -2,257 +2,152 @@
  * ARQUIVO: 11_Slide_IndicadoresGerais.gs
  * SLIDE — DASHBOARD OPERACIONAL
  *
- * Grid flexível de painéis (criarCardPainel) com suporte a 2, 3 ou 4 quadrantes
- * via motor _dashGrade_ (mesmo padrão refinado de megas-mensal/Slide01_Dashboard.gs).
+ * Visual do Orçamento 2027 (06_Visual.gs), rebrand de 20/10/2026. Os números
+ * são os mesmos de antes, de obterDashboardPropriedades_ (05_DadosSlides.gs);
+ * só o desenho mudou:
  *
- * QUADRANTES DO PORTFÓLIO DE PROPRIEDADES:
- *   1. MANUTENÇÃO PREVENTIVA (Série mensal: SLA, Em dia, Rotinas Agendadas, Realizadas)
- *   2. MANUTENÇÃO CORRETIVA: CHAMADOS (Série mensal: Backlog, % Conclusão histórico, Tempo de aprovação, Criados)
- *   3. RECEBIMENTO DE OBRAS & PROJETOS (Posição atual: Concluídas %, Pendências, Total de obras, Projetos em análise)
- *   4. GESTÃO DE CONTRATAÇÕES (Posição atual: Em andamento, Em edital, Em atraso, Concluídas histórico)
+ *   - cabeçalho com o SLA de preventivas e a variação no subtítulo;
+ *   - faixa de KPIs: SLA de preventivas (o cartão cheio), backlog em aberto,
+ *     % de conclusão histórico e orçamento 2026 com a economia projetada;
+ *   - painéis: Manutenção nos três meses (mês, mês anterior, mesmo mês do ano
+ *     anterior), Gestão de contratações, Orçamento 2026 e Vistorias e
+ *     adequações — os mesmos quatro quadrantes do slide anterior.
  *
- * RECURSOS IMPLEMENTADOS:
- *   - Gerenciamento por Tag (TAG_DASHBOARD): substituição limpa sem duplicar slides.
- *   - Layout _dashGrade_: ajusta proporções e centralização vertical automaticamente.
- *   - Anti-Text-Break (Skill slides-caixa-texto-sem-quebra): folga simétrica para evitar quebra indevida da API do Slides.
- *   - Comparativo temporal ▲/▼ com coloração semântica (verde melhorou / vermelho piorou).
- *   - Régua de coloração por natureza do indicador (SLA, Inverso, Orçamento, Padrão).
+ * Cor só para variação (▲/▼ no cartão e a economia projetada); os valores das
+ * tabelas ficam na cor do texto.
  */
 
 function gerarSlideIndicadoresGerais() {
   const dados = obterDashboardPropriedades_();
-  const valoresMap = dados.map;
-  const dynamicHeaders = dados.headers;
-
   const deck = getDeckMensal_();
-  
+
   _slideLimpar_(deck, TAG_DASHBOARD);
-
   const slide = _slideNovo_(deck, TAG_DASHBOARD);
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const DS = CR_DESIGN_SYSTEM;
 
-  criarHeaderPadrao(
-    slide,
-    'DASHBOARD OPERACIONAL',
-    'Indicadores do Portfólio de Propriedades · Performance: ' + dynamicHeaders[0] + (dados.parcial ? ' (mês em andamento)' : '')
-  );
+  _pvComMarca_('CAPITAL', () => _dashDesenhar_(slide, dados));
 
-  // Configuração dos quadrantes
-  const structure = [
-    { title: 'MANUTENÇÃO', color: DS.colors.themePrev, rows: [
-      { label: 'SLA Preventivas (%)',         lookup: 'SLA Preventivas',                   sentido: 'maior', sla: true },
-      { label: 'Backlog em aberto (Qtd)',     lookup: 'Backlog em aberto',                 sentido: 'menor' },
-      { label: '% Conclusão histórico',       lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
-    ] },
-    { title: 'GESTÃO FINANCEIRA · ORÇAMENTO', color: DS.colors.themeCorr, semComparativo: true, headerTexto: 'ORÇAMENTO 2026', rows: [
-      { label: 'Orçamento Total 2026',        lookup: 'Orçamento 2026 (Total)' },
-      { label: 'Ritmo 2025 (Base)',           lookup: 'Ritmo 2025 (Base)' },
-      { label: 'Capital Realty (CR)',         lookup: 'Orçamento Capital Realty' },
-      { label: 'Demercado',                   lookup: 'Orçamento Demercado' },
-      { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' },
-      { label: 'CAPEX',                       lookup: 'CAPEX' }
-    ] },
-    { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', colNameW: 0.72, rows: [
-      { label: 'VISTORIAS', isGrupo: true },
-      { label: 'entrada/saida de clientes',        lookup: 'Vistorias - Entrada/saída' },
-      { label: 'recebimento de obras',             lookup: 'Vistorias - Recebimento obras' },
-      { label: 'monitoramento',                    lookup: 'Vistorias - Monitoramento' },
-      { label: 'Documentação',                     lookup: 'Vistorias - Documentação' },
-      { label: 'ADEQUAÇÕES CLIENTES', isGrupo: true },
-      { label: 'Quantidade',                       lookup: 'Adequações - Quantidade' },
-      { label: 'Prazo medio de atendimento (dias)',lookup: 'Adequações - Prazo médio' },
-      { label: 'Percentual de conclusão',          lookup: 'Adequações - Conclusão (%)' }
-    ] },
-    { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, headerTexto: 'TOTAL', rows: [
-      { label: 'Processos em andamento',     lookup: 'Contratações em andamento' },
-      { label: 'Percentual de conclusão',    lookup: 'Contratações conclusão (%)' },
-      { label: 'Prazo médio de contratação', lookup: 'Contratações prazo médio' }
-    ] }
+  Logger.log('✓ Dashboard Operacional gerado com sucesso');
+}
+
+function _dashDesenhar_(slide, dados) {
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
+  const meses = dados.headers;   // [mês, mês anterior, mesmo mês do ano anterior]
+  const val = k => dados.map.get(k) || { atual: null, mesAnt: null, anoAnt: null };
+  const pct = v => (_dashNum_(v) == null ? '—' : formatarNumeroBR(v) + '%');
+  const qtd = v => (v == null || v === '' ? '—' : formatarNumeroBR(v));
+  // Variação contra o mês anterior, ou null se faltar um dos dois.
+  const variacao = (linha, maiorRuim, op) => {
+    const a = _dashNum_(linha.atual), b = _dashNum_(linha.mesAnt);
+    return (a == null || b == null) ? null : _pvVariacao_(a - b, maiorRuim, op);
+  };
+
+  const sla = val('SLA Preventivas');
+  const backlog = val('Backlog em aberto');
+  const conclusao = val('Percentual de conclusão histórico');
+  const varSla = variacao(sla, false, { casas: 1, unidade: 'p.p.' });
+  const varBacklog = variacao(backlog, true);
+  const varConclusao = variacao(conclusao, false, { casas: 1, unidade: 'p.p.' });
+
+  // ── Cabeçalho: o número que importa é o SLA de preventivas ──
+  const subtitulo = _dashNum_(sla.atual) == null
+    ? 'Indicadores do portfólio de Propriedades'
+    : 'SLA de preventivas ' + pct(sla.atual) + (varSla ? ' · ' + varSla.txt + ' vs ' + meses[1] : '');
+  _pvCabecalho_(slide, 'Dashboard Operacional', subtitulo,
+    { canto: 'Performance: ' + meses[0] + (dados.parcial ? ' · mês em andamento' : '') });
+
+  // ── Faixa de KPIs ──
+  const economia = String(val('Economia Projetada (26/25)').atual || '—');
+  const kpis = [
+    { rotulo: 'SLA preventivas', valor: pct(sla.atual), destaque: true,
+      sub: varSla ? varSla.txt + ' vs ' + meses[1] : null, corSub: varSla && varSla.cor },
+    { rotulo: 'Backlog em aberto', valor: qtd(backlog.atual),
+      sub: varBacklog ? varBacklog.txt + ' vs ' + meses[1] : null, corSub: varBacklog && varBacklog.cor },
+    { rotulo: '% conclusão histórico', valor: pct(conclusao.atual),
+      sub: varConclusao ? varConclusao.txt + ' vs ' + meses[1] : null, corSub: varConclusao && varConclusao.cor },
+    { rotulo: 'Orçamento 2026', valor: String(val('Orçamento 2026 (Total)').atual || '—'),
+      sub: economia === '—' ? null : 'economia ' + economia, corSub: _dashCorVariacao_(economia) }
   ];
+  // 72 de altura: com a linha de variação embaixo, sobram 34 para o número de
+  // 26 pt (com 62 sobravam 24 e o número invadia a variação).
+  const kx = 30, ky = 82, kh = 72, kgap = 10, kw = (660 - kgap * (kpis.length - 1)) / kpis.length;
+  kpis.forEach((k, i) => _pvKpi_(slide, kx + i * (kw + kgap), ky, kw, kh, k));
 
-  const headerH = DS.layout.headerH || 64;
-  const marginX = DS.layout.marginX || 30;
-  const marginY = headerH + 14;
-  const gap = 16;
-  const footerMargin = 15;
-  const areaW = W - (2 * marginX);
-  const areaH = H - marginY - footerMargin;
-  const caixas = _dashGrade_(structure.length, marginX, marginY, areaW, areaH, gap);
+  // ── Painéis ──
+  const topo = ky + kh + 10, base = 378;
 
-  structure.forEach((cat, i) => {
-    const { x, y, w: cardW, h: cardH } = caixas[i];
+  // Esquerda: Manutenção nos três meses, e Gestão de contratações embaixo.
+  const xEsq = 30, wEsq = 236, hManut = 106;
+  let y = _pvCard_(slide, xEsq, topo, wEsq, hManut, 'Manutenção · três meses');
+  _pvTabela_(slide, xEsq + 10, y, wEsq - 18,
+    [{ rotulo: 'Indicador', peso: 2.1 }, { rotulo: meses[0], align: 'C' },
+     { rotulo: meses[1], align: 'C' }, { rotulo: meses[2], align: 'C' }],
+    [['SLA preventivas', pct(sla.atual), pct(sla.mesAnt), pct(sla.anoAnt)],
+     ['Backlog em aberto', qtd(backlog.atual), qtd(backlog.mesAnt), qtd(backlog.anoAnt)],
+     ['% conclusão histórico', pct(conclusao.atual), pct(conclusao.mesAnt), pct(conclusao.anoAnt)]]
+      .map(l => ({ celulas: l.map((t, i) => (i === 1 ? { texto: t, bold: true } : { texto: t, cor: i ? c.textBody : c.textMain })) })),
+    { altLinha: 19 });
 
-    const tableY = criarCardPainel(slide, x, y, cardW, cardH, cat.title, cat.color) + 2;
+  const yContr = topo + hManut + 10;
+  y = _pvCard_(slide, xEsq, yContr, wEsq, base - yContr, 'Gestão de contratações');
+  _pvTabela_(slide, xEsq + 10, y, wEsq - 18,
+    [{ rotulo: 'Indicador', peso: 2.4 }, { rotulo: 'Total', align: 'C' }],
+    _dashLinhas_(val, [['Processos em andamento', 'Contratações em andamento'],
+                       ['Percentual de conclusão', 'Contratações conclusão (%)'],
+                       ['Prazo médio de contratação', 'Contratações prazo médio']]),
+    { altLinha: 17 });
 
-    const colNameW = cat.colNameW ? (cardW * cat.colNameW) : (cardW * 0.46);
-    const seloW = cat.semComparativo ? 0 : 14;
-    const dataX0 = x + 10 + colNameW + seloW;
-    const colDataW = cat.semComparativo ? (cardW - 20 - colNameW) : ((cardW - 20 - colNameW - seloW) / 3);
+  // Meio: Orçamento 2026 (Torre de Manutenção).
+  const xMeio = 278, wMeio = 200;
+  y = _pvCard_(slide, xMeio, topo, wMeio, base - topo, 'Orçamento 2026');
+  const linhasOrc = _dashLinhas_(val, [['Orçamento total 2026', 'Orçamento 2026 (Total)'],
+                                       ['Ritmo 2025 (base)', 'Ritmo 2025 (Base)'],
+                                       ['Capital Realty (CR)', 'Orçamento Capital Realty'],
+                                       ['Demercado', 'Orçamento Demercado'],
+                                       ['Economia projetada 26/25', 'Economia Projetada (26/25)'],
+                                       ['CAPEX', 'CAPEX']]);
+  // A economia é variação (2026 contra o ritmo de 2025): verde ou vermelho.
+  const celEconomia = linhasOrc[4].celulas[1];
+  celEconomia.cor = _dashCorVariacao_(celEconomia.texto) || celEconomia.cor;
+  _pvTabela_(slide, xMeio + 10, y, wMeio - 18,
+    [{ rotulo: 'Item', peso: 1.25 }, { rotulo: 'Valor', align: 'R' }], linhasOrc, { altLinha: 25, fs: 8.5 });
 
-    if (cat.semComparativo) {
-      if (cat.headerTexto) {
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, tableY, colDataW, 18);
-        t.getText().setText(cat.headerTexto).getTextStyle()
-          .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
-        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      }
-    } else {
-      dynamicHeaders.forEach((h, idx) => {
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (idx * colDataW) - 6, tableY, colDataW + 12, 18);
-        t.getText().setText(h).getTextStyle()
-          .setFontSize(8).setBold(true).setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.titles);
-        t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      });
-    }
+  // Direita: Vistorias e adequações de clientes.
+  const xDir = 490, wDir = 200;
+  y = _pvCard_(slide, xDir, topo, wDir, base - topo, 'Vistorias e adequações');
+  _pvTabela_(slide, xDir + 10, y, wDir - 18,
+    [{ rotulo: 'Indicador', peso: 2.2 }, { rotulo: 'Total', align: 'C' }],
+    [{ grupo: 'Vistorias' }]
+      .concat(_dashLinhas_(val, [['Entrada/saída de clientes', 'Vistorias - Entrada/saída'],
+                                 ['Recebimento de obras', 'Vistorias - Recebimento obras'],
+                                 ['Monitoramento', 'Vistorias - Monitoramento'],
+                                 ['Documentação', 'Vistorias - Documentação']]))
+      .concat([{ grupo: 'Adequações de clientes' }])
+      .concat(_dashLinhas_(val, [['Quantidade', 'Adequações - Quantidade'],
+                                 ['Prazo médio de atendimento (dias)', 'Adequações - Prazo médio'],
+                                 ['Percentual de conclusão', 'Adequações - Conclusão (%)']])),
+    { altLinha: 18, fs: 8 });
 
-    const ROW_H_MAX = 24;
-    const headerOffset = cat.headerTexto || !cat.semComparativo ? 18 : 6;
-    const areaDados = (y + cardH - (tableY + headerOffset) - 6);
-    const rowH = Math.min(areaDados / cat.rows.length, ROW_H_MAX);
-    const startDataY = tableY + headerOffset + (areaDados - rowH * cat.rows.length) / 2;
+  _pvRodape_(slide, 'Fonte: BD - PREVENTIVAS e BD-CORRETIVAS (equipe Propriedades) · Torre de Manutenção (orçamento) · ' +
+                    'planilha PROPRIEDADES (contratações)');
+}
 
-    cat.rows.forEach((r, rIdx) => {
-      const ry = startDataY + (rIdx * rowH);
-
-      // Tratamento especial para subgrupos (faixa/divisor de seção)
-      if (r.isGrupo) {
-        _sRet_(slide, x + 6, ry + 1, cardW - 12, rowH - 1, '#F1F5F9');
-        const gBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, ry - 1, cardW - 20, rowH + 2);
-        gBox.getText().setText(r.label).getTextStyle()
-          .setFontSize(6.8).setBold(true).setForegroundColor(DS.colors.brandDark).setFontFamily(DS.typography.titles);
-        gBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        return;
-      }
-
-      if (rIdx < cat.rows.length - 1 && !cat.rows[rIdx + 1].isGrupo) {
-        _sRet_(slide, x + 10, ry + rowH - 1, cardW - 20, 1, '#F1F5F9');
-      }
-
-      const temGrupos = cat.rows.some(row => row.isGrupo);
-      const labelX = temGrupos ? (x + 18) : (x + 10);
-      const labelW = temGrupos ? (colNameW - 8) : colNameW;
-
-      // Rótulo com folga simétrica para não quebrar texto
-      const nBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, labelX, ry - 1, labelW, rowH + 2);
-      nBox.getText().setText((temGrupos ? '• ' : '') + r.label).getTextStyle()
-        .setFontSize(temGrupos ? 6.5 : 7.5)
-        .setBold(!temGrupos)
-        .setForegroundColor(temGrupos ? DS.colors.textBody : DS.colors.textMain)
-        .setFontFamily(DS.typography.titles);
-      nBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-      const vals = valoresMap.get(r.lookup) || { atual: null, mesAnt: null, anoAnt: null };
-      const nAtual = _dashNum_(vals.atual);
-      const nAnt = _dashNum_(vals.mesAnt);
-
-      // Comparativo vs mês anterior: seta ▲/▼
-      if (!cat.semComparativo && nAtual != null && nAnt != null && nAtual !== nAnt) {
-        const subiu = nAtual > nAnt;
-        const melhorou = (r.sentido === 'menor') ? !subiu : subiu;
-        const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10 + colNameW, ry, seloW + 8, rowH);
-        selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        selo.getText().setText(subiu ? '▲' : '▼').getTextStyle()
-          .setFontSize(11).setBold(true)
-          .setForegroundColor(melhorou ? DS.colors.accentGreen : DS.colors.accentRed)
-          .setFontFamily(DS.typography.titles);
-        selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-      }
-
-      const corDoValor = (valStr, isAtual) => isAtual ? _dashCor_(valStr, r, cat.color) : DS.colors.textBody;
-
-      if (cat.semComparativo) {
-        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0, ry - 1, colDataW, rowH + 2);
-        const valStr = formatarNumeroBR(vals.atual);
-        const vText = vBox.getText();
-        vText.setText(valStr);
-        vText.getTextStyle()
-          .setFontSize(temGrupos ? 7.5 : 8.5).setBold(true).setFontFamily(DS.typography.titles)
-          .setForegroundColor(corDoValor(valStr, true));
-        vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-        vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        return;
-      }
-
-      [vals.atual, vals.mesAnt, vals.anoAnt].forEach((val, vIdx) => {
-        const vBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dataX0 + (vIdx * colDataW) - 8, ry, colDataW + 16, rowH);
-        const valStr = formatarNumeroBR(val);
-        const vText = vBox.getText();
-        vText.setText(valStr);
-        vText.getTextStyle()
-          .setFontSize(8.5).setBold(true).setFontFamily(DS.typography.titles)
-          .setForegroundColor(corDoValor(valStr, vIdx === 0));
-        vText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-        vBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      });
-    });
+// Linhas rótulo | valor atual, a partir de pares [rótulo, chave do mapa].
+// Valor que falta sai como "—", na cor apagada.
+function _dashLinhas_(val, pares) {
+  const c = CR_DESIGN_SYSTEM.colors;
+  return pares.map(([rotulo, chave]) => {
+    const v = val(chave).atual;
+    const texto = (v == null || v === '' || v === '-') ? '—' : formatarNumeroBR(v);
+    return { celulas: [{ texto: rotulo, cor: c.textMain },
+                       { texto: texto, bold: texto !== '—', cor: texto === '—' ? c.textMuted : c.brandDark }] };
   });
-
-  Logger.log('✓ Dashboard Operacional gerado com sucesso (' + structure.length + ' quadrantes)');
 }
 
-/**
- * Grade flexível para 1, 2, 3, 4 ou N painéis.
- */
-function _dashGrade_(n, x0, y0, areaW, areaH, gap) {
-  const caixa = (x, y, w, h) => ({ x: x, y: y, w: w, h: h });
-
-  if (n <= 1) return [caixa(x0, y0, areaW, areaH)];
-
-  if (n === 2) {
-    const w = (areaW - gap) / 2;
-    return [caixa(x0, y0, w, areaH), caixa(x0 + w + gap, y0, w, areaH)];
-  }
-
-  const linhas = Math.ceil(n / 2);
-  const h = (areaH - gap * (linhas - 1)) / linhas;
-  const w = (areaW - gap) / 2;
-
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const linha = Math.floor(i / 2);
-    const y = y0 + linha * (h + gap);
-    const sozinhoNaLinha = (i === n - 1) && (n % 2 === 1);
-    out.push(sozinhoNaLinha ? caixa(x0, y, areaW, h)
-                            : caixa(x0 + (i % 2) * (w + gap), y, w, h));
-  }
-  return out;
+// Cor de um texto de variação já formatado ("+R$ 12.826 (−2,1%)"): verde se
+// positivo, vermelho se negativo, null se não der para dizer.
+function _dashCorVariacao_(texto) {
+  const c = CR_DESIGN_SYSTEM.colors, s = String(texto || '').trim();
+  if (/^\+/.test(s)) return c.accentGreen;
+  if (/^[−-]/.test(s)) return c.accentRed;
+  return null;
 }
-
-/**
- * Cor semântica por natureza do indicador.
- */
-function _dashCor_(valStr, rowDef, corPadrao) {
-  const DS = CR_DESIGN_SYSTEM;
-  if (!valStr || valStr === '-' || valStr === '—') return DS.colors.textMuted;
-  
-  if (rowDef.regua === 'economia') {
-    const s = String(valStr);
-    if (s.includes('+')) return DS.colors.accentGreen;
-    if (s.includes('−') || s.includes('-')) return DS.colors.accentRed;
-    return DS.colors.textMain;
-  }
-
-  const num = parseFloat(String(valStr).replace('%', '').replace(',', '.'));
-  if (isNaN(num)) return corPadrao || DS.colors.textMain;
-
-  if (rowDef.sla) {
-    return corPorSLA(num, corPadrao);
-  }
-
-  if (rowDef.regua === 'inverso') {
-    // Menor é melhor (ex: pendências, atrasos)
-    if (num === 0) return DS.colors.accentGreen;
-    if (num <= 2) return DS.colors.accentOrange;
-    return DS.colors.accentRed;
-  }
-
-  if (rowDef.regua === 'orcamento') {
-    return num <= 100 ? DS.colors.accentGreen : DS.colors.accentRed;
-  }
-
-  return corPadrao || DS.colors.textMain;
-}
-
