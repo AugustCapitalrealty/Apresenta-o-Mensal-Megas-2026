@@ -208,16 +208,17 @@ t(Object.keys(criados).sort().join(',') === 'Painel_Curitiba.txt,Painel_Esteio.t
 const est = criados['Painel_Esteio.txt'];
 const idsEst = est ? est.websites.map(w => (w.url.split('id.')[1] || 'extra')).join(',') : '';
 t(est && est.websites.length === 13, 'Esteio: 12 slides + a planilha extra');
-t(idsEst === 'ID_0,ID_1,ID_2,ID_3,ID_4,ID_5,ID_10,ID_6,ID_7,ID_8,ID_11,ID_9,extra',
-  'Esteio: Chuva depois do Tempo; Cheias; Kanban → Fluig → Webdox; planilha no fim → ' + idsEst);
+t(idsEst === 'ID_0,ID_1,ID_2,ID_3,ID_4,ID_8,ID_11,ID_9,ID_5,ID_10,ID_7,ID_6,extra',
+  'Esteio: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Cheias → Metas; planilha no fim → ' + idsEst);
 t(est && est.websites[12].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
 t(est && est.websites[0].duration === 20 && est.websites[1].duration === 30, 'capa 20 s, demais 30 s');
 t(est && est.fullscreen === true && est.settingsReloadIntervalMinutes === 60 && est.websites[0].tabReloadIntervalSeconds === 600,
   'mesmas configurações gerais do arquivo antigo');
 const itj = criados['Painel_Itajai.txt'];
-t(itj && itj.websites.length === 12 && itj.websites[8].url.endsWith('id.ID_7'), 'Itajaí: inclui as Metas do Analista');
+t(itj && itj.websites.length === 12 && itj.websites[11].url.endsWith('id.ID_7') && itj.websites[10].url.endsWith('id.ID_6'),
+  'Itajaí: Metas por último, Supervisor e Analista');
 t(itj && itj.websites[0].url === 'https://docs.google.com/presentation/d/' + ITJ.deckId + '/present?slide=id.ID_0', 'URL no formato do painel');
-t(logs.some(l => l.indexOf('7. Chuva do Mês') >= 0) && logs.some(l => l.indexOf('9. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('10. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('11. Aprovações no Fluig') >= 0) && logs.some(l => l.indexOf('12. Contratos no Webdox') >= 0),
+t(logs.some(l => l.indexOf('6. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('7. Aprovações no Fluig') >= 0) && logs.some(l => l.indexOf('8. Contratos no Webdox') >= 0) && logs.some(l => l.indexOf('10. Chuva do Mês') >= 0) && logs.some(l => l.indexOf('12. Metas ANALISTA') >= 0),
   'Logger lista cada slide com o nome');
 nSlides[CWB.deckId] = 11; logs.length = 0; gerarArquivosPainelTV();
 t(logs.some(l => l.indexOf('tem 11 slides e o esperado são 12') >= 0), 'avisa quando o deck ainda não tem o Fluig');

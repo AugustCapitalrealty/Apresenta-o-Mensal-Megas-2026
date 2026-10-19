@@ -258,20 +258,21 @@ function gerarArquivosPainelTV() {
     if (unit.cheiasSheetId) rotulos.push('Monitoramento de Cheias');
     if (unit.portalEmpreendimento) rotulos.push('Kanban de Solicitações', 'Contratos no Webdox');
     rotulos.push('Chuva do Mês');
+    const numMetasP = (unit.metas || []).length;
     if (unit.portalEmpreendimento) rotulos.push('Aprovações no Fluig');
 
-    // Ordem da TV ≠ ordem do deck: slide novo vai sempre para o fim do deck,
-    // mas na TV a Chuva do mês vem logo depois da Previsão do tempo (posição
-    // 5) e o Fluig entre o Kanban e o Webdox — a ordem do processo:
-    // solicitação → aprovação no Fluig → contrato.
-    const ordem = slides.map((s, i) => i);
-    const mover = (de, depoisDe) => {
-      if (de >= slides.length || ordem.indexOf(depoisDe) < 0) return;
-      ordem.splice(ordem.indexOf(de), 1);
-      ordem.splice(ordem.indexOf(depoisDe) + 1, 0, de);
-    };
-    mover(_chuvaIndice_(unit), 5);
-    if (unit.portalEmpreendimento) mover(_fluigIndice_(unit), _solIndice_(unit));
+    // Ordem da TV ≠ ordem do deck (slide novo vai sempre para o fim do deck).
+    // Na TV, pedido do Guilherme em 19/10/2026: capa → os 4 operacionais →
+    // Solicitações → Fluig → Webdox (a ordem do processo: solicitação →
+    // aprovação → contrato) → Tempo → Chuva → Cheias → Metas por último.
+    // Slide do deck que não estiver em nenhum grupo (deck com slide a mais)
+    // vai para o fim, para não sumir da TV sem ninguém ver.
+    const portal = unit.portalEmpreendimento
+      ? [_solIndice_(unit), _fluigIndice_(unit), _webIndice_(unit)] : [];
+    const clima = [5, _chuvaIndice_(unit)].concat(unit.cheiasSheetId ? [6 + numMetasP] : []);
+    const metas = (unit.metas || []).map((m, i) => 6 + i);
+    const ordem = [0, 1, 2, 3, 4].concat(portal, clima, metas).filter(i => i < slides.length);
+    slides.forEach((s, i) => { if (ordem.indexOf(i) < 0) ordem.push(i); });
 
     // Mesmos parâmetros dos arquivos que a TI já usa (19/10/2026): capa 20 s,
     // demais 30 s, cada aba recarrega a cada 10 min.

@@ -278,7 +278,10 @@ t(foto && foto.x <= 0 && foto.y <= 0 && foto.x + foto.w >= 720 && foto.y + foto.
 t(foto && Math.abs(foto.w / foto.h - 1600 / 1067) < 0.01, 'Capa: proporção da foto mantida → ' + (foto && foto.w + '×' + foto.h));
 t(capa.some(f => f.cor === '#151E49' && f.alpha > 0 && f.alpha < 1 && f.y === 0), 'Capa: véu semitransparente sobre a foto');
 t(capa.filter(f => f.rotulo === 'logo').length === 2, 'Capa: os dois logos, em chips');
-t(capa.some(f => f.texto === 'Tempo e chuva'), 'Capa: trilha cita "Tempo e chuva"');
+const trilha = ['Corretivas', 'Preventivas', 'Solicitações', 'Fluig', 'Webdox', 'Tempo e chuva', 'Metas']
+  .map(s => capa.find(f => f.texto === s));
+t(trilha.every(Boolean) && trilha.every((f, i) => !i || f.x > trilha[i - 1].x),
+  'Capa: trilha na ordem da TV, com Metas por último');
 // Foto que não carrega (Drive fora): faixa lisa na cor da marca
 const driveOk = global.DriveApp.getFileById;
 global.DriveApp.getFileById = id => { if (FOTOS.indexOf(id) >= 0) throw new Error('sem acesso'); return driveOk(id); };
@@ -321,8 +324,8 @@ global.DriveApp.getRootFolder = () => ({ getFilesByName: () => ({ hasNext: () =>
   createFile: (nome, txt) => { gravado[nome] = JSON.parse(txt); return { getUrl: () => 'url' }; } });
 gerarArquivosPainelTV();
 const urlsItj = gravado['Painel_Itajai.txt'].websites.map(w => w.url.split('id.')[1]);
-t(urlsItj.join(',') === 'p0,p1,p2,p3,p4,p5,p10,p6,p7,p8,p11,p9',
-  'Painel: Chuva logo depois do Tempo; Fluig entre o Kanban e o Webdox → ' + urlsItj.join(','));
+t(urlsItj.join(',') === 'p0,p1,p2,p3,p4,p8,p11,p9,p5,p10,p6,p7',
+  'Painel: operacionais → Kanban → Fluig → Webdox → Tempo → Chuva → Metas → ' + urlsItj.join(','));
 t(gravado['Painel_Itajai.txt'].websites[0].duration === 20, 'Painel: capa continua com 20 s');
 
 // Aprovações no Fluig
