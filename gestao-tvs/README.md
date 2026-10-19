@@ -106,7 +106,7 @@ parar no outro. A ordem em que a TV **mostra** é outra: é a do
 
 > Capa → 4 operacionais → Solicitações → Fluig → Webdox (solicitação →
 > aprovação → contrato) → Previsão do tempo → Chuva do mês → Cheias (Esteio)
-> → Metas → (planilha do Esteio) → Recados por último
+> → Metas → Recados por último
 
 ### Recados (`13_Slide_Recados.gs` + `Recados.gs`, desde 19/10/2026)
 
@@ -252,8 +252,9 @@ Depois de mudar a quantidade de slides: rode `gerarApresentacao()` (para o
 slide novo existir e ter ID), depois `gerarArquivosPainelTV()`. Ele grava os
 três arquivos na raiz do Drive, substituindo os anteriores, e lista no
 Logger cada slide com o nome. Capa 20 s, demais 30 s, como os arquivos
-antigos; páginas que não são slide (a planilha publicada do Esteio) ficam em
-`UNITS[].painelExtras` e entram no fim.
+antigos. Páginas que não são slide entrariam por `UNITS[].painelExtras`,
+antes dos Recados; hoje não há nenhuma (a planilha publicada que o
+Painel_Esteio.txt antigo tinha saiu em 19/10/2026 — "não precisa").
 
 ### O slide de Metas é cópia do da Apresentação Mensal
 

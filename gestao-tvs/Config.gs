@@ -98,12 +98,9 @@ const UNITS = [
     // Itajaí), mas a fonte é a mesma planilha externa.
     reaberturaId: "18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0",
     portalEmpreendimento: "mega_esteio",
-    // Páginas que a TV mostra além dos slides do deck, no fim do ciclo (ver
-    // gerarArquivosPainelTV em 00_Main.gs). Esta é a planilha publicada que
-    // já estava no Painel_Esteio.txt da TI em 19/10/2026.
-    painelExtras: [
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRcFqOeXTslc2rgT-WfWHA4rOTYcr4lJ62VikE3keWL6oUoNj3nOwn00y5hII3npQq17msCw3ngfYtz/pubhtml?urp=gmail_link"
-    ],
+    // painelExtras: [url, …] — páginas que a TV mostraria além dos slides do
+    // deck (gerarArquivosPainelTV). A planilha publicada que estava no
+    // Painel_Esteio.txt antigo saiu em 19/10/2026: "não precisa" (Guilherme).
     metas: [
       { papel: "SUPERVISOR" }
     ]
