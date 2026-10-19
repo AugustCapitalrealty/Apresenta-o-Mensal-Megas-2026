@@ -30,7 +30,13 @@ function _tvConferirProjeto_() {
     { fn: 'obterMetaAuto',                args: 4, arquivo: 'Dados.gs' },
     { fn: 'obterCorretivasTV_',           args: 1, arquivo: 'Dados.gs' },
     { fn: 'atualizarSlideSolicitacoes',   args: 2, arquivo: '09_Slide_Solicitacoes.gs' },
-    { fn: '_solIndice_',                  args: 1, arquivo: '09_Slide_Solicitacoes.gs' }
+    { fn: '_solIndice_',                  args: 1, arquivo: '09_Slide_Solicitacoes.gs' },
+    { fn: '_portalBuscar_',               args: 2, arquivo: '09_Slide_Solicitacoes.gs' },
+    { fn: 'atualizarSlideWebdox',         args: 2, arquivo: '10_Slide_Webdox.gs' },
+    { fn: '_webIndice_',                  args: 1, arquivo: '10_Slide_Webdox.gs' },
+    { fn: '_tvAplicarMarca_',             args: 1, arquivo: 'Visual.gs' },
+    { fn: '_tvTexto_',                    args: 7, arquivo: 'Visual.gs' },
+    { fn: '_tvKpi_',                      args: 6, arquivo: 'Visual.gs' }
   ];
 
   const problemas = [];
@@ -137,13 +143,14 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   // 0: capa | 1-4: corretivas/preventivas | 5: previsão do tempo
   // 6...: slides de Metas (1 por papel em unit.metas)
   // depois (apenas unidades com cheiasSheetId): monitoramento de cheias
-  // último (unidades com portalEmpreendimento): kanban de solicitações
+  // por último (unidades com portalEmpreendimento): kanban de solicitações e
+  // contratos no Webdox, nessa ordem
   // Slide novo entra SEMPRE no fim: Tempo, Metas e Cheias são achados pela
   // posição, e um slide no meio empurraria todos eles.
   const numMetas = (unit.metas || []).length;
   const temCheias = !!unit.cheiasSheetId;
   const temKanban = !!unit.portalEmpreendimento;
-  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 1 : 0);
+  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 2 : 0);
 
   // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
   // Os novos slides são SEMPRE acrescentados no fim, então os slides já
@@ -198,6 +205,9 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   if (temKanban) {
     try { atualizarSlideSolicitacoes(slides[_solIndice_(unit)], unit); }
     catch (e) { Logger.log(`⚠️ Solicitações (${unit.name}): ${e.message}`); }
+    // 8. CONTRATOS NO WEBDOX — mesmo portal, mesma regra de segurança.
+    try { atualizarSlideWebdox(slides[_webIndice_(unit)], unit); }
+    catch (e) { Logger.log(`⚠️ Webdox (${unit.name}): ${e.message}`); }
   }
 }
 
@@ -221,7 +231,7 @@ function gerarArquivosPainelTV() {
     const rotulos = nomes.slice();
     (unit.metas || []).forEach(m => rotulos.push('Metas ' + m.papel));
     if (unit.cheiasSheetId) rotulos.push('Monitoramento de Cheias');
-    if (unit.portalEmpreendimento) rotulos.push('Kanban de Solicitações');
+    if (unit.portalEmpreendimento) rotulos.push('Kanban de Solicitações', 'Contratos no Webdox');
 
     // Mesmos parâmetros dos arquivos que a TI já usa (19/10/2026): capa 20 s,
     // demais 30 s, cada aba recarrega a cada 10 min.
@@ -275,41 +285,34 @@ function insertLogoProportional(slide, blob, targetX, targetY, maxW, maxH) {
   } catch(e) {}
 }
 
+// Cabeçalho de todo slide de conteúdo — padrão do Orçamento 2027 (ver
+// Visual.gs): barra de destaque, título na fonte da marca, subtítulo com o
+// número que importa e o nome do Mega, logos à direita e uma linha fina
+// embaixo (y = 72). O conteúdo começa em y = 84. Aplica a marca da unidade
+// (Curitiba = Demercado) antes de desenhar qualquer coisa.
 function applyBrandHeaderAndBackground(slide, titleText, subtitleText, dataGlobal, unit, opts) {
-  const ds = CR_DESIGN_SYSTEM;
+  _tvAplicarMarca_(unit);
+  const ds = CR_DESIGN_SYSTEM, c = ds.colors;
   opts = opts || {};
-  slide.getBackground().setSolidFill(ds.colors.bgSlide);
+  slide.getBackground().setSolidFill(c.bgSlide);
 
-  const circle1 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 480, -150, 450, 450);
-  circle1.getFill().setSolidFill('#F1F5F9');
-  circle1.getBorder().setTransparent();
-
-  const circle2 = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -100, 250, 300, 300);
-  circle2.getFill().setSolidFill('#F1F5F9');
-  circle2.getBorder().setTransparent();
-
-  const txtTit = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, ds.layout.marginY, 400, 35);
-  txtTit.getText().setText(titleText)
-    .getTextStyle().setFontSize(22).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-  const txtSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, ds.layout.marginY + 30, 400, 25);
-  txtSub.getText().setText(`${subtitleText} • ${unit.name}`)
-    .getTextStyle().setFontSize(14).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
-
-  const startX = 720 - ds.layout.marginX - 230;
+  _tvRet_(slide, 30, 16, 5, 46, c.brandLight);
+  const serifa = ds.typography.heading !== ds.typography.titles;   // Garamond é menor no mesmo corpo
+  _tvTexto_(slide, 40, 10, 420, 34, titleText,
+    { fs: serifa ? 28 : 24, fsMin: 14, bold: true, cor: c.brandDark, fonte: ds.typography.heading, cortar: true });
+  _tvTexto_(slide, 40, 42, 420, 20, `${subtitleText} · ${_tvNomeUnidade_(unit)}`,
+    { fs: 11.5, fsMin: 8, cor: c.textBody, fonte: ds.typography.body, cortar: true });
 
   try {
-    const unitBlob = DriveApp.getFileById(unit.unitLogoId).getBlob();
-    insertLogoProportional(slide, unitBlob, startX, ds.layout.marginY, 100, 40);
-  } catch(e) {}
-
+    insertLogoProportional(slide, DriveApp.getFileById(unit.unitLogoId).getBlob(), 470, 12, 95, 34);
+  } catch (e) {}
   try {
-    const brandBlob = DriveApp.getFileById(unit.brandLogoId).getBlob();
-    insertLogoProportional(slide, brandBlob, startX + 110, ds.layout.marginY, 120, 40);
-  } catch(e) {}
+    insertLogoProportional(slide, DriveApp.getFileById(unit.brandLogoId).getBlob(), 575, 14, 115, 30);
+  } catch (e) {}
+  _tvTexto_(slide, 470, 50, 220, 16, opts.dataLabel || `Atualizado: ${dataGlobal}`,
+    { fs: 8.5, fsMin: 7, bold: true, cor: c.textMuted, fonte: ds.typography.body, align: 'R' });
 
-  const txtData = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, startX, ds.layout.marginY + 40, 230, 20);
-  txtData.getText().setText(opts.dataLabel || `Atualizado: ${dataGlobal}`)
-    .getTextStyle().setFontSize(10).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody).setBold(true);
-  txtData.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  const linha = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, 30, 72, 690, 72);
+  linha.getLineFill().setSolidFill(c.lines);
+  linha.setWeight(1);
 }

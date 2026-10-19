@@ -36,13 +36,14 @@ function novoSlide(id) {
     getObjectId: () => id,
     getPageElements: () => conteudoAnterior.concat(shapes.filter(s => !s.removido).map(s => ({ remove: () => { s.removido = true; } }))),
     insertShape: (tipo, x, y, w, h) => novoShape(tipo, x, y, w, h),
+    insertLine: (cat, x1, y1, x2, y2) => novoShape('LINE', Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)),
     insertImage: () => { throw new Error('sem imagem no teste'); },
     getBackground: () => ({ setSolidFill: () => {} })
   };
 }
 global.SlidesApp = {
   ShapeType: new Proxy({}, { get: (o, k) => k }),
-  ContentAlignment: { MIDDLE: 'MIDDLE' }, ParagraphAlignment: { CENTER: 'CENTER', START: 'START', END: 'END' },
+  ContentAlignment: { MIDDLE: 'MIDDLE' }, LineCategory: { STRAIGHT: 'STRAIGHT' }, ParagraphAlignment: { CENTER: 'CENTER', START: 'START', END: 'END' },
   PredefinedLayout: { BLANK: 'BLANK' }
 };
 global.DriveApp = { getFileById: () => { throw new Error('sem Drive'); } };
@@ -87,7 +88,7 @@ global.UrlFetchApp = { fetch: (url, op) => {
 
 // ── Carrega o projeto ───────────────────────────────────────────────────────
 let src = '';
-for (const f of ['Config.gs', 'Dados.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
 
@@ -108,7 +109,7 @@ console.log('Cenário 1: Mega Curitiba, 1 / 2 / 9 / 0');
 let textos = rodar();
 t(urls[0] === PORTAL_KANBAN_URL + '?empreendimento=mega_curitiba', 'chama a URL da unidade → ' + urls[0]);
 t(headers[0] && headers[0]['x-api-key'] === 'chave-de-teste', 'manda a chave no header x-api-key');
-t(textos.indexOf('Solicitações') >= 0 && textos.some(x => x.indexOf('12 de Facilities') >= 0), 'cabeçalho da TV com o total (12)');
+t(textos.indexOf('Solicitações em andamento') >= 0 && textos.indexOf('12 de Facilities · Mega Curitiba') >= 0, 'cabeçalho da TV com o total (12) e o Mega');
 t(textos.indexOf('Posição: 19/10/2026 14:00') >= 0, 'canto do cabeçalho diz de quando é a posição');
 ['COM O SOLICITANTE', 'COM O BACKOFFICE', 'EMITIDAS', 'LIBERADAS'].forEach(c => t(textos.indexOf(c) >= 0, 'coluna ' + c));
 t(textos.indexOf('Nenhuma no momento') >= 0, 'coluna vazia avisa "Nenhuma no momento"');
@@ -120,12 +121,12 @@ t(textos.indexOf('153d') >= 0, 'selo de 153 dias');
 const cortada = textos.find(x => x.indexOf('Referente a contratação') === 0);
 t(cortada && cortada.slice(-1) === '…', 'descrição longa cortada com "…" → ' + cortada);
 const cabem = textos.filter(x => /^E\d+$/.test(x)).length;
-t(cabem >= 4 && cabem < 9, 'emitidas: só os cards que cabem (' + cabem + ')');
+t(cabem === 4, 'emitidas: só os cards que cabem (' + cabem + ')');
 t(textos.indexOf('+ ' + (9 - cabem) + ' mais recentes') >= 0, '"+ ' + (9 - cabem) + ' mais recentes" no pé da coluna');
 t(textos.indexOf('E1') >= 0 && textos.indexOf('E9') < 0, 'o corte esconde as mais RECENTES, não as mais paradas');
 conferirGeometria('cenário 1');
 const estouro = vivas().filter(s => s.texto && s.fs && s.texto.indexOf('\n') < 0 && s.h <= 16 &&
-  _solLargura_(s.texto, s.fs, s.fonte, s.bold) > s.w - _SOL_RECUO_ + 0.5);
+  _tvLargura_(s.texto, s.fs, s.fonte, s.bold) > s.w - _TV_RECUO_ + 0.5);
 t(estouro.length === 0, 'texto de linha única cabe na caixa → ' + estouro.map(s => s.texto + '@' + s.fs).join(' | '));
 const seloTexto = vivas().find(s => s.texto === '153d');
 t(seloTexto && seloTexto.fs >= 6.5, 'selo "153d" sem encolher demais (fonte ' + (seloTexto && seloTexto.fs) + ')');
@@ -138,13 +139,13 @@ http = { codigo: 200, corpo: resposta(9) }; textos = rodar();
 
 // Medição: os textos que QUEBRARAM na TV de 19/10/2026 com a conta antiga
 // (nº de letras × fator fixo) têm que ser vistos como "não cabe" agora.
-// Largura útil do card: coluna (720 − 32 − 24)/4 = 166 → card 158 → texto 154.
-const wTexto = 154;
-t(_solLargura_('Emissão de Ordem de Compra para pagam…', 7, 'Open Sans', false) > wTexto - _SOL_RECUO_,
+// Largura útil do card: coluna (720 − 60 − 30)/4 = 157,5 → texto 151,5.
+const wTexto = 151.5;
+t(_tvLargura_('Emissão de Ordem de Compra para pagam…', 7, 'Open Sans', false) > wTexto - _TV_RECUO_,
   'descrição que quebrou na TV agora não cabe (é cortada antes)');
-t(_solLargura_('T IANKOSKI CONSTRUCOES E…', 6.5, 'Open Sans', true) > wTexto - 50 - _SOL_RECUO_,
+t(_tvLargura_('T IANKOSKI CONSTRUCOES E…', 6.5, 'Open Sans', true) > wTexto - 50 - _TV_RECUO_,
   'fornecedor em maiúscula que quebrou na TV agora não cabe');
-t(_solLargura_('2026000962', 8, 'Montserrat', true) < wTexto - 28 - _SOL_RECUO_, 'protocolo cabe com folga');
+t(_tvLargura_('2026000962', 8, 'Montserrat', true) < wTexto - 28 - _TV_RECUO_, 'protocolo cabe com folga');
 
 // ── Régua de tempo (mesma do portal) ────────────────────────────────────────
 t(_solTom_({ status: 'em_analise', dias: 3 }) === 'ok' && _solTom_({ status: 'em_analise', dias: 4 }) === 'atencao' &&
@@ -197,26 +198,26 @@ global.DriveApp = {
     createFile: (nome, conteudo) => { criados[nome] = JSON.parse(conteudo); return { getUrl: () => 'https://drive/' + nome }; }
   })
 };
-const nSlides = { [CWB.deckId]: 9, [ITJ.deckId]: 9, [EST.deckId]: 9 };
+const nSlides = { [CWB.deckId]: 10, [ITJ.deckId]: 10, [EST.deckId]: 10 };
 SlidesApp.openById = id => ({ getSlides: () => Array.from({ length: nSlides[id] }, (_, i) => novoSlide('ID_' + i)) });
 logs.length = 0;
 gerarArquivosPainelTV();
 t(Object.keys(criados).sort().join(',') === 'Painel_Curitiba.txt,Painel_Esteio.txt,Painel_Itajai.txt',
   'um arquivo por TV, com o nome que a TI já usa → ' + Object.keys(criados).join(','));
 const est = criados['Painel_Esteio.txt'];
-t(est && est.websites.length === 10, 'Esteio: 9 slides + a planilha extra');
-t(est && est.websites[7].url.endsWith('id.ID_7') && est.websites[8].url.endsWith('id.ID_8'), 'Esteio: Cheias (8º) e Kanban (9º) entram');
-t(est && est.websites[9].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
+t(est && est.websites.length === 11, 'Esteio: 10 slides + a planilha extra');
+t(est && est.websites[7].url.endsWith('id.ID_7') && est.websites[8].url.endsWith('id.ID_8') && est.websites[9].url.endsWith('id.ID_9'), 'Esteio: Cheias (8º), Kanban (9º) e Webdox (10º) entram');
+t(est && est.websites[10].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
 t(est && est.websites[0].duration === 20 && est.websites[1].duration === 30, 'capa 20 s, demais 30 s');
 t(est && est.fullscreen === true && est.settingsReloadIntervalMinutes === 60 && est.websites[0].tabReloadIntervalSeconds === 600,
   'mesmas configurações gerais do arquivo antigo');
 const itj = criados['Painel_Itajai.txt'];
-t(itj && itj.websites.length === 9 && itj.websites[7].url.endsWith('id.ID_7'), 'Itajaí: inclui as Metas do Analista (8º)');
+t(itj && itj.websites.length === 10 && itj.websites[7].url.endsWith('id.ID_7'), 'Itajaí: inclui as Metas do Analista (8º)');
 t(itj && itj.websites[0].url === 'https://docs.google.com/presentation/d/' + ITJ.deckId + '/present?slide=id.ID_0', 'URL no formato do painel');
-t(logs.some(l => l.indexOf('8. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('9. Kanban de Solicitações') >= 0),
+t(logs.some(l => l.indexOf('8. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('9. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('10. Contratos no Webdox') >= 0),
   'Logger lista cada slide com o nome');
-nSlides[CWB.deckId] = 8; logs.length = 0; gerarArquivosPainelTV();
-t(logs.some(l => l.indexOf('tem 8 slides e o esperado são 9') >= 0), 'avisa quando o deck ainda não tem o kanban');
+nSlides[CWB.deckId] = 9; logs.length = 0; gerarArquivosPainelTV();
+t(logs.some(l => l.indexOf('tem 9 slides e o esperado são 10') >= 0), 'avisa quando o deck ainda não tem o kanban');
 
 // ── Ordem de carga do Apps Script ───────────────────────────────────────────
 // O Apps Script carrega os .gs em ordem alfabética: "09_…" vem ANTES de
@@ -231,9 +232,6 @@ console.log('Ordem de carga');
   let erro = null;
   try { vm.runInContext(arqs.map(f => fs.readFileSync(D + f, 'utf8')).join('\n'), ctx); } catch (e) { erro = e.message; }
   t(!erro, 'projeto carrega na ordem alfabética do editor → ' + erro);
-  t(!erro && vm.runInContext('_SOL_COLUNAS_[1].cor === CR_DESIGN_SYSTEM.colors.brandLight && ' +
-                             '_SOL_COLUNAS_[3].cor === CR_DESIGN_SYSTEM.colors.accentGreen', ctx),
-    'cores das colunas escritas à mão iguais às do design system');
 }
 
 // ── Prévia em SVG ───────────────────────────────────────────────────────────

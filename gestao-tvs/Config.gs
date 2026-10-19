@@ -18,6 +18,8 @@ const HISTORICO_VALIDADO_ID = "1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI";
 // nas Propriedades do script como PORTAL_API_KEY (a mesma do secret
 // RELATORIOS_API_KEY no portal). Ver 09_Slide_Solicitacoes.gs.
 const PORTAL_KANBAN_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/kanban-megas";
+// Mesmo portal, mesma chave: contratos em andamento no Webdox (10_Slide_Webdox.gs).
+const PORTAL_WEBDOX_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/webdox-megas";
 
 // ==========================================
 // MAPEAMENTO DAS UNIDADES (TVs E LOGOMARCAS)
@@ -37,8 +39,12 @@ const UNITS = [
     // Planilha "MEGA CURITIBA FACILITIES 2026" — só para "Taxa de
     // Reabertura" (Analista), aba TAXA DE ABERTURA.
     reaberturaId: "1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0",
-    // Mega no Portal de Solicitações — liga o kanban (último slide da TV).
+    // Mega no Portal de Solicitações — liga o kanban e o Webdox (os dois
+    // últimos slides da TV).
     portalEmpreendimento: "mega_curitiba",
+    // O Mega Curitiba é Demercado: verde petróleo e ouro, título em
+    // EB Garamond (TV_MARCAS em Visual.gs). Sem `marca`, é Capital Realty.
+    marca: "DEMERCADO",
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }

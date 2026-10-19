@@ -30,22 +30,18 @@
 // Colunas na ordem do kanban. `status` só serve para o diagnóstico conferir;
 // quem decide a coluna é o portal.
 //
-// As cores são escritas aqui, e não lidas de CR_DESIGN_SYSTEM, DE PROPÓSITO:
-// o Apps Script carrega os arquivos em ordem alfabética, "09_…" vem antes de
-// "Config.gs", e um `const` de topo que lê CR_DESIGN_SYSTEM daria
-// "Cannot access 'CR_DESIGN_SYSTEM' before initialization" — e derrubaria o
-// projeto inteiro, não só este slide. (Dentro de função pode usar à vontade:
-// ela só roda depois que tudo carregou.) brandLight = #065CA9,
-// accentGreen = #10B981.
+// Nada aqui lê CR_DESIGN_SYSTEM: o Apps Script carrega os arquivos em ordem
+// alfabética, "09_…" vem antes de "Config.gs", e um `const` de topo que o
+// lesse derrubaria o projeto inteiro (CLAUDE.md, lição 7). As cores saem do
+// design system dentro das funções de desenho.
 const _SOL_COLUNAS_ = [
   { chave: 'solicitante', titulo: 'COM O SOLICITANTE', sub: 'Correção ou informação pendente',
-    cor: '#F59E0B', status: ['pendente_correcao', 'aguardando_informacoes'] },
+    status: ['pendente_correcao', 'aguardando_informacoes'] },
   { chave: 'backoffice',  titulo: 'COM O BACKOFFICE',  sub: 'Análise, lançamento e aprovação',
-    cor: '#065CA9', status: ['recebido', 'em_analise', 'aprovado', 'em_processamento'] },
+    status: ['recebido', 'em_analise', 'aprovado', 'em_processamento'] },
   { chave: 'emitida',     titulo: 'EMITIDAS',          sub: 'OC emitida, aguardando liberação',
-    cor: '#9333EA', status: ['oc_ac_emitida', 'aguardando_aceite'] },
+    status: ['oc_ac_emitida', 'aguardando_aceite'] },
   { chave: 'liberada',    titulo: 'LIBERADAS',         sub: 'Com o fornecedor até a NF',
-    cor: '#10B981',
     status: ['liberado_fornecedor', 'enviado_fornecedor', 'aguardando_execucao', 'aguardando_nf_boleto', 'nf_boleto_enviados'] }
 ];
 
@@ -103,6 +99,15 @@ function _tvSolicitacoes_(unidades) {
  * unidade. Lança erro com a causa legível quando não dá para ler.
  */
 function obterKanbanSolicitacoes_(unit) {
+  return _solNormalizar_(_portalBuscar_(PORTAL_KANBAN_URL, unit));
+}
+
+/**
+ * Chama uma função do Portal de Solicitações (kanban-megas, webdox-megas)
+ * para a unidade e devolve o JSON. Lança erro com a causa legível: sem chave,
+ * chave recusada, função não publicada, resposta que não é JSON.
+ */
+function _portalBuscar_(urlBase, unit) {
   const emp = unit.portalEmpreendimento;
   if (!emp) throw new Error(unit.name + ' sem portalEmpreendimento em UNITS (Config.gs).');
 
@@ -112,7 +117,8 @@ function obterKanbanSolicitacoes_(unit) {
                     'Propriedades do script (a mesma do secret RELATORIOS_API_KEY no portal).');
   }
 
-  const url = PORTAL_KANBAN_URL + '?empreendimento=' + encodeURIComponent(emp);
+  const funcao = urlBase.split('/').pop();
+  const url = urlBase + '?empreendimento=' + encodeURIComponent(emp);
   const resp = UrlFetchApp.fetch(url, {
     method: 'get', headers: { 'x-api-key': chave }, muteHttpExceptions: true
   });
@@ -123,16 +129,14 @@ function obterKanbanSolicitacoes_(unit) {
                     'não é a mesma do secret RELATORIOS_API_KEY do portal.');
   }
   if (codigo === 404) {
-    throw new Error('Função kanban-megas não encontrada (HTTP 404) — ela está publicada no portal? ' + url);
+    throw new Error('Função ' + funcao + ' não encontrada (HTTP 404) — ela está publicada no portal? ' + url);
   }
   if (codigo !== 200) {
-    throw new Error('O portal respondeu HTTP ' + codigo + ': ' + String(corpo).slice(0, 200));
+    throw new Error('O portal respondeu HTTP ' + codigo + ' (' + funcao + '): ' + String(corpo).slice(0, 200));
   }
 
-  let dados;
-  try { dados = JSON.parse(corpo); }
-  catch (e) { throw new Error('Resposta do portal não é JSON: ' + String(corpo).slice(0, 120)); }
-  return _solNormalizar_(dados);
+  try { return JSON.parse(corpo); }
+  catch (e) { throw new Error('Resposta do portal (' + funcao + ') não é JSON: ' + String(corpo).slice(0, 120)); }
 }
 
 // Confere o formato e deixa os cards prontos para desenhar. Coluna faltando
@@ -239,64 +243,6 @@ function _solMoeda_(v) {
 
 
 // ==========================================
-// MEDIÇÃO DE TEXTO (caixa estreita quebra sozinha — lição 1 do CLAUDE.md)
-// ==========================================
-// Mede o texto ANTES de desenhar. Toda TEXT_BOX tem ~7pt de recuo interno de
-// cada lado que a API não deixa desligar.
-//
-// Letra a letra, e não "nº de letras × fator fixo" (o método de
-// megas-mensal/00_Helpers.gs): na TV de 19/10/2026 o fator fixo deixou passar
-// "T IANKOSKI CONSTRUCOES E…" e "Emissão de Ordem de Compra para pagam…", que
-// quebraram em duas linhas. Maiúscula, "m" e "w" são bem mais largos que a
-// média, e nome de fornecedor vem todo em maiúscula. Os pesos são em "em" da
-// Open Sans, arredondados para cima; Montserrat é ~10% mais larga.
-const _SOL_RECUO_ = 14;
-
-function _solLargura_(texto, fs, fonte, bold) {
-  let em = 0;
-  for (const ch of String(texto)) {
-    if (ch === ' ')                          em += 0.28;
-    else if (/[iljI|.,:;'!·]/.test(ch))      em += 0.28;
-    else if (/[ftr\-()\/]/.test(ch))         em += 0.37;
-    else if (/[mwMW]/.test(ch))              em += 0.88;
-    else if (/[A-ZÀ-ÖØ-Þ]/.test(ch))         em += 0.69;
-    else if (/[0-9]/.test(ch))               em += 0.58;
-    else                                     em += 0.56;
-  }
-  return em * fs * (fonte === 'Montserrat' ? 1.1 : 1) * (bold ? 1.07 : 1);
-}
-
-// Corta com "…" até caber numa linha de largura `w` — descrição pode ter
-// qualquer tamanho, e encolher a fonte até caber deixaria ilegível na TV.
-function _solCortar_(texto, w, fs, fonte, bold) {
-  const t = String(texto || '');
-  const util = w - _SOL_RECUO_;
-  if (_solLargura_(t, fs, fonte, bold) <= util) return t;
-  let n = t.length;
-  while (n > 1 && _solLargura_(t.slice(0, n) + '…', fs, fonte, bold) > util) n--;
-  return t.slice(0, n).replace(/\s+$/, '') + '…';
-}
-
-// Texto de uma linha só: encolhe a fonte (até o mínimo) se não couber.
-// op: { fs, fsMin, bold, italic, cor, fonte, align: 'L'|'C' }
-function _solTexto_(slide, x, y, w, h, texto, op) {
-  const t = String(texto == null ? '' : texto);
-  if (t === '') return null;   // caixa vazia: estilizar lançaria "object has no text"
-  const fonte = op.fonte || CR_DESIGN_SYSTEM.typography.body;
-  let fs = op.fs;
-  while (fs > (op.fsMin || fs) && _solLargura_(t, fs, fonte, op.bold) > w - _SOL_RECUO_) fs -= 0.25;
-  const box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
-  box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  box.getText().setText(t).getTextStyle()
-    .setFontSize(fs).setBold(!!op.bold).setItalic(!!op.italic)
-    .setForegroundColor(op.cor || CR_DESIGN_SYSTEM.colors.textMain).setFontFamily(fonte);
-  box.getText().getParagraphStyle().setParagraphAlignment(
-    op.align === 'C' ? SlidesApp.ParagraphAlignment.CENTER : SlidesApp.ParagraphAlignment.START);
-  return box;
-}
-
-
-// ==========================================
 // DESENHO
 // ==========================================
 
@@ -327,125 +273,111 @@ function atualizarSlideSolicitacoes(slide, unit) {
   }
 }
 
+// Visual do Orçamento 2027 (Visual.gs): cabeçalho padrão, cada coluna com um
+// cartão-título (rótulo, explicação e a contagem grande) e os cards brancos
+// arredondados embaixo. Cor só com função: a faixa lateral e o selo de dias
+// dizem o tempo na etapa (verde no prazo, laranja atenção, vermelho atrasado).
 function _solDesenhar_(slide, unit, k) {
   const DS = CR_DESIGN_SYSTEM;
-  const W = 720, H = 405;
-  const fonteT = DS.typography.titles, fonteB = DS.typography.body;
-
   const quando = k.geradoEm || new Date();
   const posicao = Utilities.formatDate(quando, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm');
-  applyBrandHeaderAndBackground(slide, 'Solicitações',
-    'Em andamento • ' + k.total + ' de Facilities', posicao, unit,
-    { dataLabel: 'Posição: ' + posicao });
+  applyBrandHeaderAndBackground(slide, 'Solicitações em andamento',
+    k.total + ' de Facilities', posicao, unit, { dataLabel: 'Posição: ' + posicao });
+  const c = DS.colors, fonteT = DS.typography.titles, fonteB = DS.typography.body;
 
-  const mX = 16, gap = 8;
-  const topo = 100, base = H - 8;
-  const colW = (W - 2 * mX - 3 * gap) / 4;
-  const cabH = 24, subH = 14;
-  const cardH = 54, cardGap = 5;
-  const maisH = 13;
-  const yCards = topo + cabH + subH + 2;
+  const mX = 30, gap = 10;
+  const topo = 84, base = 378;
+  const colW = (720 - 2 * mX - 3 * gap) / 4;
+  const cabH = 40;
+  const cardH = 54, cardGap = 6;
+  const maisH = 12;
+  const yCards = topo + cabH + 8;
   const cabem = Math.max(1, Math.floor((base - maisH - yCards + cardGap) / (cardH + cardGap)));
 
   _SOL_COLUNAS_.forEach((col, i) => {
     const x = mX + i * (colW + gap);
     const cards = k.colunas[col.chave];
 
-    const fundo = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, topo, colW, base - topo);
-    fundo.getFill().setSolidFill('#EEF2F7');
-    fundo.getBorder().setTransparent();
-
-    const cab = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, topo, colW, cabH);
-    cab.getFill().setSolidFill(col.cor);
-    cab.getBorder().setTransparent();
-    _solTexto_(slide, x + 2, topo, colW - 38, cabH, col.titulo,
-      { fs: 8, fsMin: 6.5, bold: true, cor: '#FFFFFF', fonte: fonteT });
-    _solTexto_(slide, x + colW - 40, topo, 40, cabH, String(cards.length),
-      { fs: 13, fsMin: 9, bold: true, cor: '#FFFFFF', fonte: fonteT, align: 'C' });
-    _solTexto_(slide, x + 2, topo + cabH, colW - 4, subH, col.sub,
-      { fs: 7, fsMin: 6, cor: DS.colors.textBody, fonte: fonteB });
+    // Cartão-título da coluna
+    _tvRet_(slide, x, topo, colW, cabH, c.cardBg, { redondo: true, borda: c.lines });
+    _tvRet_(slide, x, topo + 8, 4, cabH - 16, c.brandLight);
+    _tvTexto_(slide, x + 8, topo + 3, colW - 46, 16, col.titulo,
+      { fs: 8.5, fsMin: 6.5, bold: true, cor: c.textBody, fonte: fonteT, cortar: true });
+    _tvTexto_(slide, x + 8, topo + 19, colW - 46, 15, col.sub,
+      { fs: 7, fsMin: 6, cor: c.textMuted, fonte: fonteB, cortar: true });
+    _tvTexto_(slide, x + colW - 42, topo, 40, cabH, String(cards.length),
+      { fs: 22, fsMin: 12, bold: true, cor: c.brandDark, fonte: fonteT, align: 'C' });
 
     if (!cards.length) {
-      _solTexto_(slide, x + 4, yCards + 6, colW - 8, 16, 'Nenhuma no momento',
-        { fs: 8, fsMin: 6.5, italic: true, cor: DS.colors.textBody, fonte: fonteB, align: 'C' });
+      _tvTexto_(slide, x, yCards + 6, colW, 18, 'Nenhuma no momento',
+        { fs: 8.5, fsMin: 7, italic: true, cor: c.textMuted, fonte: fonteB, align: 'C' });
       return;
     }
 
     cards.slice(0, cabem).forEach((card, j) => {
-      _solDesenharCard_(slide, x + 4, yCards + j * (cardH + cardGap), colW - 8, cardH, card, col.chave);
+      _solDesenharCard_(slide, x, yCards + j * (cardH + cardGap), colW, cardH, card, col.chave);
     });
 
     const resto = cards.length - cabem;
     if (resto > 0) {
-      _solTexto_(slide, x + 2, base - maisH, colW - 4, maisH,
+      _tvTexto_(slide, x, base - maisH, colW, maisH,
         '+ ' + resto + (resto === 1 ? ' mais recente' : ' mais recentes'),
-        { fs: 7, fsMin: 6, bold: true, cor: DS.colors.textBody, fonte: fonteB, align: 'C' });
+        { fs: 7.5, fsMin: 6, bold: true, cor: c.textBody, fonte: fonteB, align: 'C' });
     }
   });
+
+  _tvRodape_(slide, 'Fonte: Portal de Solicitações (Facilities) · selo = dias na etapa atual, ' +
+                    'na cor do prazo da etapa · as mais paradas primeiro');
 }
 
 function _solDesenharCard_(slide, x, y, w, h, card, coluna) {
-  const DS = CR_DESIGN_SYSTEM;
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
   const fonteT = DS.typography.titles, fonteB = DS.typography.body;
   const corTom = _solCorTom_(_solTom_(card));
 
-  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(DS.colors.cardBg);
-  bg.getBorder().setWeight(1).getLineFill().setSolidFill(DS.colors.lines);
+  _tvRet_(slide, x, y, w, h, c.cardBg, { redondo: true, borda: c.lines });
+  _tvRet_(slide, x, y + 6, 3, h - 12, corTom);   // faixa na cor do tempo na etapa
 
-  // Faixa lateral na cor do tempo na etapa
-  const faixa = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, 3, h);
-  faixa.getFill().setSolidFill(corTom);
-  faixa.getBorder().setTransparent();
-
-  // As caixas de texto começam 2pt depois da faixa; o recuo interno do Slides
-  // (~7pt) faz o texto aparecer a ~12pt da borda do card.
-  const xi = x + 2, wi = w - 4;
+  // As caixas de texto começam 3pt depois da faixa; o recuo interno do Slides
+  // (~7pt) põe o texto a ~13pt da borda do card.
+  const xi = x + 3, wi = w - 6;
 
   // Linha 1: protocolo · EMERG. · selo de dias
-  const seloW = 28, seloX = x + w - seloW - 4;
+  const seloW = 30, seloX = x + w - seloW - 6;
   const emergW = card.emergencial ? 38 : 0;
-  _solTexto_(slide, xi, y + 2, seloX - emergW - xi, 13, card.protocolo,
-    { fs: 8, fsMin: 6, bold: true, cor: DS.colors.textMain, fonte: fonteT });
+  _tvTexto_(slide, xi, y + 2, seloX - emergW - xi, 13, card.protocolo,
+    { fs: 8, fsMin: 6, bold: true, cor: c.textMain, fonte: fonteT });
   if (card.emergencial) {
     // Caixa 12pt mais larga que o espaço (6 de cada lado): devolve o recuo
     // interno. Sem isso o "." de "EMERG." caía na linha de baixo.
-    _solTexto_(slide, seloX - emergW - 6, y + 2, emergW + 12, 13, 'EMERG.',
-      { fs: 6.5, fsMin: 5.5, bold: true, cor: DS.colors.accentRed, fonte: fonteT, align: 'C' });
+    _tvTexto_(slide, seloX - emergW - 6, y + 2, emergW + 12, 13, 'EMERG.',
+      { fs: 6.5, fsMin: 5.5, bold: true, cor: c.accentRed, fonte: fonteT, align: 'C' });
   }
-  const selo = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, seloX, y + 4, seloW, 10);
-  selo.getFill().setSolidFill(corTom);
-  selo.getBorder().setTransparent();
+  _tvRet_(slide, seloX, y + 4, seloW, 10, corTom, { redondo: true });
   const dias = card.dias === null ? '—' : (card.dias < 1 ? '<1d' : card.dias + 'd');
-  // Caixa do selo mais larga que a pílula (folga simétrica): devolve o recuo
-  // interno e o "153d" não quebra.
-  _solTexto_(slide, seloX - 6, y + 3, seloW + 12, 12, dias,
+  _tvTexto_(slide, seloX - 6, y + 3, seloW + 12, 12, dias,
     { fs: 7, fsMin: 5.5, bold: true, cor: '#FFFFFF', fonte: fonteT, align: 'C' });
 
   // Linha 2: descrição, cortada com "…" numa linha só
-  const descFs = 7;
-  const desc = card.descricao ? _solCortar_(card.descricao, wi, descFs, fonteB, false) : '(sem descrição)';
-  _solTexto_(slide, xi, y + 15, wi, 13, desc,
-    { fs: descFs, fsMin: descFs, cor: DS.colors.textMain, fonte: fonteB });
+  _tvTexto_(slide, xi, y + 15, wi, 13, card.descricao || '(sem descrição)',
+    { fs: 7, fsMin: 7, cor: c.textMain, fonte: fonteB, cortar: true });
 
-  // Linha 3: fornecedor (esquerda) · valor (direita) — andam juntos: é o
-  // "quem vai receber quanto". Sem fornecedor ainda, diz isso.
+  // Linha 3: fornecedor · valor — andam juntos: é o "quem vai receber quanto".
   const valor = _solMoeda_(card.valor);
-  const valorW = valor ? 50 : 0;
-  const fornecedor = card.fornecedor || 'Fornecedor a definir';
-  _solTexto_(slide, xi, y + 27, wi - valorW, 13, _solCortar_(fornecedor, wi - valorW, 6.5, fonteB, !!card.fornecedor),
+  const valorW = valor ? 52 : 0;
+  _tvTexto_(slide, xi, y + 27, wi - valorW, 13, card.fornecedor || 'Fornecedor a definir',
     { fs: 6.5, fsMin: 6.5, bold: !!card.fornecedor, italic: !card.fornecedor,
-      cor: card.fornecedor ? DS.colors.textMain : DS.colors.textBody, fonte: fonteB });
+      cor: card.fornecedor ? c.textMain : c.textMuted, fonte: fonteB, cortar: true });
   if (valor) {
-    _solTexto_(slide, x + w - valorW - 2, y + 27, valorW + 2, 13, valor,
-      { fs: 7, fsMin: 5.5, bold: true, cor: DS.colors.textMain, fonte: fonteT, align: 'C' });
+    _tvTexto_(slide, x + w - valorW - 6, y + 27, valorW + 4, 13, valor,
+      { fs: 7, fsMin: 5.5, bold: true, cor: c.brandDark, fonte: fonteT, align: 'R' });
   }
 
   // Linha 4: quem age / o passo que falta
   const info = _solInfoCard_(card, coluna);
   if (info) {
-    _solTexto_(slide, xi, y + 39, wi, 13, _solCortar_(info, wi, 6.5, fonteB, false),
-      { fs: 6.5, fsMin: 6.5, cor: DS.colors.textBody, fonte: fonteB });
+    _tvTexto_(slide, xi, y + 39, wi, 13, info,
+      { fs: 6.5, fsMin: 6.5, cor: c.textBody, fonte: fonteB, cortar: true });
   }
 }
 
@@ -505,6 +437,17 @@ function diagnosticarSolicitacoes() {
       });
     } catch (e) {
       Logger.log('✗ ' + unit.name + ': ' + e.message);
+    }
+
+    // Webdox (10_Slide_Webdox.gs), mesma chave
+    try {
+      const w = obterWebdox_(unit);
+      Logger.log('   WEBDOX (slide nº ' + (_webIndice_(unit) + 1) + ', importado em ' +
+                 (w.importadoEm ? w.importadoEm.toISOString() : '?') + '): ' + w.kpis.andamento + ' em andamento, ' +
+                 w.kpis.aguardandoMegas + ' aguardando os Megas, ' + w.kpis.atrasados + ' atrasados · ' +
+                 _WEB_COLUNAS_.map(col => col.titulo + ' ' + w.colunas[col.chave].length).join(' · '));
+    } catch (e) {
+      Logger.log('   ✗ WEBDOX: ' + e.message);
     }
   });
 }

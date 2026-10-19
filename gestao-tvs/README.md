@@ -74,7 +74,8 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
 | 6 | Previsão do Tempo |
 | 7… | Metas, um por papel em `unit.metas` (Curitiba e Itajaí: Supervisor e Analista; Esteio: Supervisor) |
 | depois | Monitoramento de Cheias — só Esteio |
-| último | Kanban de Solicitações |
+| penúltimo | Kanban de Solicitações |
+| último | Contratos no Webdox |
 
 **Slide novo entra sempre no fim.** Tempo, Metas e Cheias são achados pela
 posição; um slide no meio empurraria todos eles e o conteúdo de um iria
@@ -105,6 +106,35 @@ paradas: **Com o solicitante** (correção/informação) · **Com o backoffice**
   na primeira vez, com o slide vazio, aparece o aviso do motivo.
 - Redesenhado em todo `gerarApresentacao()`; `ATUALIZAR_SOLICITACOES()` serve
   para um acionador próprio, mais frequente.
+
+### Contratos no Webdox (`10_Slide_Webdox.gs`, desde 19/10/2026)
+
+Faixa de KPIs (em andamento · aguardando os Megas · atrasados no passo ·
+tempo médio em aberto) e os contratos por área com o passo atual nas mãos:
+**Jurídico · Facilities · Backoffice · Outra parte**. Fonte: função
+`webdox-megas` do portal (`PORTAL_WEBDOX_URL`), mesma chave do kanban; o
+portal decide a área com a regra dele (`src/lib/webdox-areas.ts`).
+
+**O Webdox não é ao vivo**: o portal importa uma planilha exportada dele. O
+canto do cabeçalho diz de quando é a importação. `ATUALIZAR_WEBDOX()` (e as
+por unidade) redesenha só este slide; `diagnosticarSolicitacoes()` confere
+os dois.
+
+### Visual (rebrand de 19/10/2026 — em andamento)
+
+O padrão é o do Orçamento 2027 (`orcamento-2027/IDEIAS-DESIGN.md`), sem as
+imagens em Python. Tudo em `Visual.gs`: as duas marcas (`TV_MARCAS` —
+**Curitiba é Demercado**, `UNITS[].marca`), cartão de KPI, painel, rodapé e a
+medição de texto com a largura real de cada letra (tabela gerada por
+`ferramentas/medir_fontes.html`). O cabeçalho novo
+(`applyBrandHeaderAndBackground`) vale para todos os slides; o corpo já está
+no visual novo em: Visão Geral Corretiva, Solicitações e Webdox. Os outros
+ainda têm o corpo antigo.
+
+Prévia sem abrir o Slides:
+`KANBAN=<json> WEBDOX=<json> PREVIA=<pasta> node gestao-tvs/teste_rebrand.js` e
+`node ferramentas/previa_slides.js <pasta>/formas_tv.json <pasta>` (PNG com as
+fontes reais, pelo Chrome). Os JSON reais têm nome de gente: fora do repositório.
 
 ### Links das TVs (arquivo da TI)
 

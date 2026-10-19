@@ -315,7 +315,7 @@ Não há framework. O padrão é um script Node que lê os `.gs` como texto, dub
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Onze suítes hoje, 558 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Doze suítes hoje, 627 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -328,7 +328,8 @@ Onze suítes hoje, 558 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
 | `megas-mensal/teste_mapa_chuvas.js` | 68 |
-| `gestao-tvs/teste_solicitacoes.js` | 58 |
+| `gestao-tvs/teste_solicitacoes.js` | 57 |
+| `gestao-tvs/teste_rebrand.js` | 70 |
 | `megas-mensal/teste_acessos.js` | 15 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:
@@ -340,6 +341,12 @@ Onze suítes hoje, 558 asserções ao todo, cada uma rodando com `node <arquivo>
   nenhum e o teste falha por motivo errado.
 - **Teste o zero falso**: base com linhas mas sem coluna de data legível tem
   que devolver `null`, não 0 (ver lição 3).
+
+**Prévia em imagem sem o Slides:** `ferramentas/previa_slides.js` transforma as
+formas que um teste registra (formato `{ W, H, slides: [{ fundo, formas }] }`,
+o mesmo do `formas_<cidade>.json` do orçamento) em PNG, com as fontes reais
+do deck, pelo Chrome headless. Foi assim que as quebras de linha do rebrand
+das TVs apareceram antes de ir para a parede.
 
 Ao dublar `SlidesApp`, vale registrar cada shape inserida e conferir a
 geometria depois — foi assim que as quebras de caixa do Farol apareceram sem

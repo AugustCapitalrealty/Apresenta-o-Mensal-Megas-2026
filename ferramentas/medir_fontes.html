@@ -1,0 +1,21 @@
+<!doctype html><!-- Mede a largura real de cada caractere nas fontes do deck (Montserrat, Open Sans, EB Garamond;
+     normal e negrito) e escreve o resultado na página, em milésimos de "em". Usado para gerar
+     _TV_LARGURAS_ em gestao-tvs/Visual.gs. Rodar:
+     chrome --headless=new --allow-file-access-from-files --virtual-time-budget=5000 --dump-dom ferramentas/medir_fontes.html -->
+<meta charset="utf-8"><style>
+@font-face { font-family: 'Montserrat'; src: url('../orcamento-2027/ferramentas/fontes/Montserrat[wght].ttf'); font-weight: 100 900; }
+@font-face { font-family: 'Open Sans'; src: url('../orcamento-2027/ferramentas/fontes/OpenSans[wdth,wght].ttf'); font-weight: 300 800; }
+@font-face { font-family: 'EB Garamond'; src: url('../orcamento-2027/ferramentas/fontes/EBGaramond[wght].ttf'); font-weight: 400 800; }
+</style><body><span style="font-family:Montserrat">a</span><span style="font-family:'Open Sans';font-weight:700">a</span><span style="font-family:'EB Garamond'">a</span><span style="font-family:Montserrat;font-weight:700">a</span><span style="font-family:'Open Sans'">a</span><pre id="r"></pre>
+<script>
+document.fonts.ready.then(async () => {
+  for (const f of ['400 10px Montserrat','700 10px Montserrat','400 10px "Open Sans"','700 10px "Open Sans"','400 10px "EB Garamond"','700 10px "EB Garamond"']) await document.fonts.load(f);
+  const c = document.createElement('canvas').getContext('2d');
+  const chars = []; for (let i = 32; i < 127; i++) chars.push(String.fromCharCode(i));
+  for (const ch of 'ÁÀÂÃÉÊÍÓÔÕÚÇáàâãéêíóôõúç·…▲▼—−–²ºª') chars.push(ch);
+  const out = {};
+  for (const [nome, css] of [['Montserrat',"Montserrat"],['Open Sans','"Open Sans"'],['EB Garamond','"EB Garamond"']])
+    for (const w of [400, 700]) { c.font = w + ' 1000px ' + css; out[nome + '|' + w] = chars.map(ch => [ch, Math.round(c.measureText(ch).width)]); }
+  document.getElementById('r').textContent = 'MEDIDAS' + JSON.stringify(out);
+});
+</script>
