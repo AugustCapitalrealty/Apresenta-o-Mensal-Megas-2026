@@ -49,6 +49,7 @@ function onOpen() {
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
+      .addItem('Monitoramento de Pendências (VistoriaPro)', 'gerarSoPendencias')
       .addItem('DRE — Propriedades (Desp. Operacionais)', 'gerarSoDREPropriedades')
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
       .addItem('Bridge — Manutenção (Tabela)', 'gerarSoBridgeManutencao')
@@ -86,7 +87,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['02_Dados.gs',                   ['obterMesReferencia_', 'obterIndicadoresPropriedades_', '_propLerCorretivas_', '_histNorm_', '_bdChamadoFechado_']],
   ['03_Tabelas.gs',                 ['_tabRemoverPorTag_', '_tabMarcarSlide_', '_tabLerAba_', '_tabRotuloReferencia_']],
   ['04_Diagnosticos.gs',            ['diagnosticarPropriedades', 'conferirIdentidadeBacklog', 'diagnosticarBacklogClientes']],
-  ['05_DadosSlides.gs',             ['obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterDREPropriedades_', 'obterMetasCalculadas_']],
+  ['05_DadosSlides.gs',             ['obterIndicadoresVistorias_', 'obterDashboardPropriedades_', 'obterBacklogPorCC_', 'obterDadosTorreManutencao_', 'obterDREManutencao_', 'obterDREPropriedades_', 'obterMetasCalculadas_']],
   ['10_Slide_Capa.gs',              ['gerarSlideCapa']],
   ['11_Slide_IndicadoresGerais.gs', ['gerarSlideIndicadoresGerais', '_dashGrade_']],
   ['12_Slide_Preventivas.gs',       ['gerarSlidePreventivas']],
@@ -98,7 +99,8 @@ const _PROP_DEPENDENCIAS_ = [
   ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
   ['19_Slide_DREBridge.gs',         ['gerarSlideDREPropriedades', 'gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
-  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_']],
+  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_']],
+  ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
 ];
 
 function _propConferirProjeto_() {
@@ -165,6 +167,8 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
     { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
+    // Vai para depois da capa da seção 5 (VISTORIAS) sozinho — a posição no pipeline não importa.
+    { nome: 'Monitoramento de Pendências',   fn: gerarSlidePendenciasVistorias },
     { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
     { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
     { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
@@ -220,6 +224,7 @@ function gerarSoBacklogClientes()     { return _rodarPassos_([{ nome: 'Backlog d
 function gerarSoRecebimentoObras()    { return _rodarPassos_([{ nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras }]); }
 function gerarSoContratacoes()        { return _rodarPassos_([{ nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes }]); }
 function gerarSoTorreManutencao()     { return _rodarPassos_([{ nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao }]); }
+function gerarSoPendencias()          { return _rodarPassos_([{ nome: 'Monitoramento de Pendências',   fn: gerarSlidePendenciasVistorias }]); }
 function gerarSoDREPropriedades()     { return _rodarPassos_([{ nome: 'DRE de Propriedades',            fn: gerarSlideDREPropriedades }]); }
 function gerarSoDREManutencao()       { return _rodarPassos_([{ nome: 'DRE de Manutenção',              fn: gerarSlideDREManutencao }]); }
 function gerarSoBridgeManutencao()    { return _rodarPassos_([{ nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao }]); }

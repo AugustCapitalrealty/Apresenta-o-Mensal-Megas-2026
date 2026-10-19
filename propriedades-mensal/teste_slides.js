@@ -138,6 +138,11 @@ global.SpreadsheetApp = {
                      getSheetByName: n => (FIX[n] ? aba(n) : VAZIA) })
 };
 global.DriveApp = { getFileById: () => ({ getBlob: () => null }) };
+// VistoriaPro (22_Slide_Pendencias.gs e o grupo VISTORIAS do Dashboard): a
+// resposta da função indicators-export, no formato de public.indicadores_mes.
+const VISTORIAS = JSON.parse(fs.readFileSync(path.join(DIR, 'teste_vistorias_fixture.json'), 'utf8'));
+global.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'token-de-teste' }) };
+global.UrlFetchApp = { fetch: () => ({ getResponseCode: () => 200, getContentText: () => JSON.stringify(VISTORIAS) }) };
 
 // ── Carrega o projeto ───────────────────────────────────────────────────
 // `const`/`let` de topo não escapam do eval indireto; viram `var` para irem
@@ -215,6 +220,7 @@ const PASSOS = [
   ['Recebimento de Obras',   () => gerarSlideRecebimentoObras()],
   ['Gestão de Contratações', () => gerarSlideContratacoes()],
   ['Torre de Manutenção',    () => gerarSlideTorreManutencao()],
+  ['Monitoramento de Pendências', () => gerarSlidePendenciasVistorias()],
   ['DRE de Propriedades',    () => gerarSlideDREPropriedades()],
   ['DRE de Manutenção',      () => gerarSlideDREManutencao()],
   ['Bridge (tabela)',        () => gerarSlideBridgeManutencao()],
@@ -224,7 +230,8 @@ const PASSOS = [
 
 // Os slides sem fixture leem planilha vazia e saem pelo "sem dados" — o que
 // interessa neles é não EXPLODIR e não escrever o aviso de falha.
-const COM_FIXTURE = ['DRE de Propriedades', 'DRE de Manutenção', 'Bridge (tabela)', 'Bridge (gráfico)', 'Farol de Metas'];
+const COM_FIXTURE = ['DRE de Propriedades', 'DRE de Manutenção', 'Bridge (tabela)', 'Bridge (gráfico)', 'Farol de Metas',
+                     'Monitoramento de Pendências'];
 
 const porSlide = {};   // shapes de cada passo, para as conferências de layout
 PASSOS.forEach(([nome, fn]) => {

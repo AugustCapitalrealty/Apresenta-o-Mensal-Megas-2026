@@ -78,6 +78,15 @@ const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 // É de onde saem as tabelas de 03_Tabelas.gs.
 const PROPRIEDADES_SPREADSHEET_ID = '1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF4';
 
+// VistoriaPro — o app de vistorias e não conformidades (repo
+// AugustCapitalrealty/vistoriascr-f5eedf86, Lovable + Supabase). A função
+// `indicators-export` devolve os indicadores do mês na posição do último dia
+// (SQL public.indicadores_mes). Alimenta o grupo VISTORIAS do Dashboard e o
+// slide Monitoramento de Pendências (22_Slide_Pendencias.gs).
+// O token fica nas Propriedades do script como VISTORIAS_API_TOKEN — nunca no
+// código nem no git. Ver README, "Indicadores do VistoriaPro".
+const VISTORIAS_API_URL = 'https://klaaeqoaqfuhepjoznad.supabase.co/functions/v1/indicators-export';
+
 
 // ==========================================
 // DECK DE DESTINO
@@ -121,6 +130,7 @@ const TAG_DRE_PROPRIEDADES          = '【PROP_DRE_PROPRIEDADES_AUTO】';
 const TAG_DRE_MANUTENCAO            = '【PROP_DRE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_MANUTENCAO         = '【PROP_BRIDGE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_GRAFICO            = '【PROP_BRIDGE_GRAFICO_AUTO】';
+const TAG_PENDENCIAS                = '【PROP_PENDENCIAS_AUTO】';
 
 // ==========================================
 // TORRE DE MANUTENÇÃO — CONFIGURAÇÃO E DADOS BASE

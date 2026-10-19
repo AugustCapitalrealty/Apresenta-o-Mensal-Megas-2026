@@ -171,6 +171,53 @@ function obterAprovacaoEConclusao_(ano, mesIndex) {
 }
 
 
+// ==========================================
+// VISTORIAPRO (app de vistorias)
+// ==========================================
+// Indicadores do mês da apresentação (CONFIG B1), na posição do último dia do
+// mês: os mesmos números saem se o deck for regerado depois. Uma chamada por
+// execução (o Dashboard e o slide de Pendências usam a mesma resposta).
+//
+// Devolve null — e diz o motivo no Logger — se faltar o token, o app não
+// responder ou a resposta vier de outro mês. Quem usa mostra "—" (Dashboard)
+// ou o aviso no slide (Pendências); nunca um zero que não existe (lição 3).
+let _vistoriasCache_ = undefined;
+let _vistoriasMotivo_ = '';
+
+function obterIndicadoresVistorias_() {
+  if (_vistoriasCache_ !== undefined) return _vistoriasCache_;
+  _vistoriasCache_ = null;
+  try {
+    const token = PropertiesService.getScriptProperties().getProperty('VISTORIAS_API_TOKEN');
+    if (!token) {
+      _vistoriasMotivo_ = 'falta VISTORIAS_API_TOKEN nas Propriedades do script';
+      Logger.log('VistoriaPro: ' + _vistoriasMotivo_ + '.');
+      return null;
+    }
+    const ref = obterMesReferencia_();
+    const mes = ref.ano + '-' + ('0' + (ref.index + 1)).slice(-2);
+    const resp = UrlFetchApp.fetch(VISTORIAS_API_URL + '?mes=' + mes,
+      { method: 'get', headers: { 'x-api-key': token }, muteHttpExceptions: true });
+    const cod = resp.getResponseCode();
+    let corpo = {};
+    try { corpo = JSON.parse(resp.getContentText() || '{}'); } catch (e) {}
+    if (cod !== 200) {
+      _vistoriasMotivo_ = 'o app respondeu HTTP ' + cod + (corpo.error ? ' (' + corpo.error + ')' : '');
+    } else if (!corpo.atual || corpo.mes !== mes) {
+      _vistoriasMotivo_ = 'a resposta não trouxe o mês ' + mes;
+    } else {
+      _vistoriasCache_ = corpo;
+      _vistoriasMotivo_ = '';
+      return corpo;
+    }
+  } catch (e) {
+    _vistoriasMotivo_ = 'app indisponível (' + e.message + ')';
+  }
+  Logger.log('VistoriaPro: ' + _vistoriasMotivo_ + '.');
+  return null;
+}
+
+
 function obterDashboardPropriedades_() {
   const ref    = obterMesReferencia_();
   const mesAnt = _propMesAnterior_(ref.ano, ref.index);
@@ -254,10 +301,16 @@ function obterDashboardPropriedades_() {
   map.set('CAPEX',                      linha3('—', null, null));
 
   // Quadrante 3: Vistorias & Análises de Projetos (subgrupos)
-  map.set('Vistorias - Entrada/saída',     linha3('—', null, null));
-  map.set('Vistorias - Recebimento obras', linha3('—', null, null));
-  map.set('Vistorias - Monitoramento',     linha3('—', null, null));
-  map.set('Vistorias - Documentação',      linha3('—', null, null));
+  // VISTORIAS vem do VistoriaPro, no mês da apresentação. Entrada/saída,
+  // recebimento de obras e documentação saíram: o app não tem esses tipos, e
+  // a linha ficava em "—" para sempre. Sem o app (token ou rede), "—".
+  const vist = obterIndicadoresVistorias_();
+  const va = vist ? vist.atual : null;
+  const vv = k => (va && va[k] != null ? va[k] : '—');
+  map.set('Vistorias - Periódicas',           linha3(vv('vistorias_periodicas'), null, null));
+  map.set('Vistorias - Visitas mensais',      linha3(va ? va.visitas_mensais + ' de ' + va.visitas_programadas : '—', null, null));
+  map.set('Vistorias - NCs abertas no mês',    linha3(vv('ncs_abertas_no_mes'), null, null));
+  map.set('Vistorias - NCs resolvidas no mês', linha3(vv('ncs_resolvidas_no_mes'), null, null));
   map.set('Adequações - Quantidade',       linha3('—', null, null));
   map.set('Adequações - Prazo médio',      linha3('—', null, null));
   map.set('Adequações - Conclusão (%)',    linha3('—', null, null));

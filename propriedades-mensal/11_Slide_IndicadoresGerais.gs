@@ -54,11 +54,12 @@ function gerarSlideIndicadoresGerais() {
       { label: 'CAPEX',                       lookup: 'CAPEX' }
     ] },
     { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', colNameW: 0.72, rows: [
+      // Do VistoriaPro, no mês da apresentação (obterIndicadoresVistorias_, 05_DadosSlides.gs).
       { label: 'VISTORIAS', isGrupo: true },
-      { label: 'entrada/saida de clientes',        lookup: 'Vistorias - Entrada/saída' },
-      { label: 'recebimento de obras',             lookup: 'Vistorias - Recebimento obras' },
-      { label: 'monitoramento',                    lookup: 'Vistorias - Monitoramento' },
-      { label: 'Documentação',                     lookup: 'Vistorias - Documentação' },
+      { label: 'vistorias periódicas concluídas',    lookup: 'Vistorias - Periódicas' },
+      { label: 'visitas mensais (feitas de prog.)',  lookup: 'Vistorias - Visitas mensais' },
+      { label: 'NCs abertas no mês',                 lookup: 'Vistorias - NCs abertas no mês' },
+      { label: 'NCs resolvidas no mês',              lookup: 'Vistorias - NCs resolvidas no mês' },
       { label: 'ADEQUAÇÕES CLIENTES', isGrupo: true },
       { label: 'Quantidade',                       lookup: 'Adequações - Quantidade' },
       { label: 'Prazo medio de atendimento (dias)',lookup: 'Adequações - Prazo médio' },

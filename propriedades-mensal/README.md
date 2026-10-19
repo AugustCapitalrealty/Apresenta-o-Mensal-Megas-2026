@@ -22,6 +22,8 @@ ou execute uma das funções de `00_Main.gs`:
 | `gerarSoTorreManutencao()` | Gera os slides da **Torre de Manutenção** (Capital Realty & Demercado) |
 | `diagnosticarPropriedades()` | Valida acesso a planilhas, bases brutas e deck de destino |
 | `gerarSoCapas()` | Capa, capas de seção e encerramento (`21_Slide_Capas.gs`) |
+| `gerarSoPendencias()` | **Monitoramento de Pendências** do VistoriaPro (`22_Slide_Pendencias.gs`) |
+| `diagnosticarVistorias()` | Confere o token do VistoriaPro e mostra os indicadores do mês |
 
 **Mês do deck** = célula B1 da aba CONFIG da PLANILHA PROPRIEDADES (não o calendário).
 
@@ -33,6 +35,53 @@ ou execute uma das funções de `00_Main.gs`:
 - **Capas em imagem** (`21_Slide_Capas.gs`, sem trilha): a capa (C verde), as 6 capas de seção que o time já tem no
   deck (trocadas no mesmo lugar) e o encerramento. As imagens saem de `ferramentas/capas_mensal.py` (Pillow) para a pasta
   IMAGENS - SLIDES; sem elas, tudo sai em formas.
+
+## Indicadores do VistoriaPro (desde 20/10/2026)
+
+O **VistoriaPro** é o app de vistorias e não conformidades (repo
+`AugustCapitalrealty/vistoriascr-f5eedf86`, Lovable + Supabase). A função
+`indicators-export` do app devolve os indicadores do **mês da apresentação**
+(CONFIG B1) na **posição do último dia do mês** — regerar um deck antigo dá os
+mesmos números. A conta é toda no banco do app (SQL `public.indicadores_mes`);
+aqui só se lê e desenha.
+
+| Onde aparece | O quê |
+|---|---|
+| Dashboard Operacional, grupo **VISTORIAS** | vistorias periódicas concluídas, visitas mensais feitas de programadas, NCs abertas e resolvidas no mês |
+| **Monitoramento de Pendências** (`22_Slide_Pendencias.gs`), logo depois da capa da seção 5 | NCs em aberto, vencidas, resolvidas, tempo de resolução e visitas, com ▲/▼ contra o mês anterior; imóveis com mais pendências (índice de saúde do app); disciplinas; idade das pendências |
+
+As linhas antigas do grupo VISTORIAS (entrada/saída de clientes, recebimento
+de obras, documentação) saíram: o app não tem esses tipos de vistoria e a linha
+ficava em "—" para sempre. Decisão do usuário.
+
+**"Vencida"** = passou do prazo da NC ou, sem prazo próprio, do SLA do app
+(dias a partir da constatação, nunca antes da data de corte do histórico do
+app). É a mesma regra do painel do app.
+
+### Como ligar
+
+1. No SQL Editor do app, gere o token (aparece **uma vez**; o banco guarda só
+   o hash, em `integration_tokens`):
+   ```sql
+   WITH t AS (SELECT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '') AS token),
+   ins AS (INSERT INTO public.integration_tokens (name, token_hash)
+           SELECT 'Apresentação Mensal de Propriedades', encode(sha256(convert_to(token, 'UTF8')), 'hex') FROM t RETURNING id)
+   SELECT t.token AS copie_este_token FROM t, ins;
+   ```
+2. No editor do Apps Script: Configurações do projeto › Propriedades do script ›
+   `VISTORIAS_API_TOKEN` = o token. **Nunca no código nem no git.**
+3. Rode `diagnosticarVistorias()`: confere o token, chama o app e mostra os
+   números do mês. A primeira vez pede autorização nova (o projeto passa a
+   acessar a internet — `UrlFetchApp`).
+
+Revogar: `UPDATE integration_tokens SET revoked_at = now() WHERE name = '…'`.
+
+### Quando o app não responde
+
+O Dashboard mostra "—" no grupo VISTORIAS e o slide de Pendências sai com o
+aviso do motivo (sem token, HTTP de erro, mês errado, rede) — nunca com zeros
+(lição 3). `obterIndicadoresVistorias_` faz **uma** chamada por execução; o
+Dashboard e o slide usam a mesma resposta.
 
 ## Gerenciamento por Tags
 
@@ -217,6 +266,8 @@ pasta lê a apresentação de cima para baixo.
 | `18_Slide_TorreManutencao.gs` | 223 | Torre CR e Torre Demercado |
 | `19_Slide_DREBridge.gs` | 538 | **três slides**: DRE, Bridge tabela, Bridge cascata |
 | `20_Slide_Metas.gs` | 660 | Farol de Metas (método oficial dos Megas — aba METAS da TV, um slide por analista) |
+| `21_Slide_Capas.gs` | 235 | capas em imagem: capa, capas de seção, encerramento |
+| `22_Slide_Pendencias.gs` | 242 | Monitoramento de Pendências (VistoriaPro) + `diagnosticarVistorias()` |
 
 ### Por que alguns arquivos têm mais de um slide
 
@@ -262,18 +313,19 @@ Aprovados.
 
 ## Testes
 
-Cinco suítes, `node <arquivo>` (contadas em 20/10/2026):
+Seis suítes, `node <arquivo>` (contadas em 20/10/2026):
 
 | Arquivo | Asserções | O que trava |
 |---|---|---|
 | `teste_dre_manutencao.js` | 63 | o recorte realizado × ritmo e o splice da projeção anual |
-| `teste_dashboard.js` | 45 | as definições de "% conclusão" e "tempo médio de aprovação" |
-| `teste_slides.js` | 67 | todo slide desenha, nada fora da página, DRE e Farol na grade de Facilities |
+| `teste_dashboard.js` | 46 | as definições de "% conclusão" e "tempo médio de aprovação" |
+| `teste_slides.js` | 70 | todo slide desenha, nada fora da página, DRE e Farol na grade de Facilities |
 | `teste_metas.js` | 25 | o status do farol e as linhas digitadas à mão |
 | `teste_capas.js` | 24 | as capas em imagem e a posição do DRE depois da capa 01 |
+| `teste_vistorias.js` | 37 | VistoriaPro: leitura (sem token, erro, mês errado, uma chamada só), Dashboard, slide de Pendências, aviso, posição, texto medido |
 
-`teste_slides.js` é o que cobre a reorganização: carrega os 19 `.gs`, dubla
-`SlidesApp`/`SpreadsheetApp` e roda os 15 slides. Ele falha se um arquivo
+`teste_slides.js` é o que cobre a reorganização: carrega os 20 `.gs`, dubla
+`SlidesApp`/`SpreadsheetApp` e roda os 16 slides. Ele falha se um arquivo
 sumir, se um nome for declarado duas vezes ou se um shape sair dos 720×405.
 
 ## Tabelas: Recebimento de Obras e Gestão de Contratações

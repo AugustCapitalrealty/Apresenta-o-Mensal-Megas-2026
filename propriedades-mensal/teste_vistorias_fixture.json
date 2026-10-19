@@ -1,0 +1,37 @@
+{
+  "gerado_em": "2026-09-02T12:00:00.000Z",
+  "mes": "2026-08",
+  "posicao_em": "2026-08-31",
+  "data_corte": "2026-08-01",
+  "atual": {
+    "mes": "2026-08", "vistorias_periodicas": 2, "visitas_mensais": 9, "visitas_programadas": 11,
+    "imoveis_visitados": 9, "imoveis_ativos": 12, "ncs_abertas_no_mes": 14, "ncs_resolvidas_no_mes": 18,
+    "ncs_em_aberto": 41, "ncs_vencidas": 7, "ncs_alta_vencidas": 2, "mttr_dias": 23.5, "pct_resolvidas_no_prazo": 83.3
+  },
+  "anterior": {
+    "mes": "2026-07", "vistorias_periodicas": 1, "visitas_mensais": 10, "visitas_programadas": 11,
+    "imoveis_visitados": 10, "imoveis_ativos": 12, "ncs_abertas_no_mes": 12, "ncs_resolvidas_no_mes": 11,
+    "ncs_em_aberto": 45, "ncs_vencidas": 5, "ncs_alta_vencidas": 1, "mttr_dias": 31, "pct_resolvidas_no_prazo": 72.7
+  },
+  "idade": { "0-30": 16, "31-60": 11, "61-90": 6, "91-180": 5, ">180": 3 },
+  "imoveis": [
+    { "imovel": "Mega Curitiba", "em_aberto": 12, "vencidas": 3, "alta_vencidas": 1, "idade_max_dias": 214, "indice_saude": 41 },
+    { "imovel": "Mega Esteio", "em_aberto": 9, "vencidas": 2, "alta_vencidas": 1, "idade_max_dias": 130, "indice_saude": 58 },
+    { "imovel": "Brado Cubatão — Armazém Frigorificado Principal", "em_aberto": 6, "vencidas": 1, "alta_vencidas": 0, "idade_max_dias": 75, "indice_saude": 72 },
+    { "imovel": "AR 3000", "em_aberto": 5, "vencidas": 1, "alta_vencidas": 0, "idade_max_dias": 64, "indice_saude": 80 },
+    { "imovel": "Garoto", "em_aberto": 4, "vencidas": 0, "alta_vencidas": 0, "idade_max_dias": 40, "indice_saude": 88 },
+    { "imovel": "Posto Curitiba", "em_aberto": 2, "vencidas": 0, "alta_vencidas": 0, "idade_max_dias": 22, "indice_saude": 94 },
+    { "imovel": "Posto Esteio", "em_aberto": 1, "vencidas": 0, "alta_vencidas": 0, "idade_max_dias": 12, "indice_saude": 97 },
+    { "imovel": "Galpão Itajaí", "em_aberto": 1, "vencidas": 0, "alta_vencidas": 0, "idade_max_dias": 8, "indice_saude": 97 },
+    { "imovel": "Loja Centro", "em_aberto": 1, "vencidas": 0, "alta_vencidas": 0, "idade_max_dias": 5, "indice_saude": 99 }
+  ],
+  "disciplinas": [
+    { "disciplina": "Cobertura", "em_aberto": 11, "vencidas": 3, "resolvidas_no_mes": 4 },
+    { "disciplina": "Elétrica", "em_aberto": 9, "vencidas": 2, "resolvidas_no_mes": 5 },
+    { "disciplina": "Civil", "em_aberto": 8, "vencidas": 1, "resolvidas_no_mes": 3 },
+    { "disciplina": "Hidráulica", "em_aberto": 6, "vencidas": 1, "resolvidas_no_mes": 2 },
+    { "disciplina": "Pavimentação", "em_aberto": 4, "vencidas": 0, "resolvidas_no_mes": 1 },
+    { "disciplina": "Sistema Preventivo de Incêndio", "em_aberto": 3, "vencidas": 0, "resolvidas_no_mes": 2 },
+    { "disciplina": "Fachada", "em_aberto": 0, "vencidas": 0, "resolvidas_no_mes": 1 }
+  ]
+}

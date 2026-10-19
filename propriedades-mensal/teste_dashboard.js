@@ -247,10 +247,13 @@ ok('tem Economia Projetada positiva (+R$ 12.826)', dash.get('Economia Projetada 
 ok('tem CAPEX', dash.has('CAPEX'));
 ok('tem Contratações conclusão (%)', dash.has('Contratações conclusão (%)'));
 ok('tem Contratações prazo médio', dash.has('Contratações prazo médio'));
-ok('tem Vistorias - Entrada/saída', dash.has('Vistorias - Entrada/saída'));
-ok('tem Vistorias - Recebimento obras', dash.has('Vistorias - Recebimento obras'));
-ok('tem Vistorias - Monitoramento', dash.has('Vistorias - Monitoramento'));
-ok('tem Vistorias - Documentação', dash.has('Vistorias - Documentação'));
+// Grupo VISTORIAS: do VistoriaPro. Aqui não há o app (sem PropertiesService/
+// UrlFetchApp no dublê): as linhas existem e mostram "—", nunca 0 (lição 3).
+// Com o app, ver teste_vistorias.js.
+['Vistorias - Periódicas', 'Vistorias - Visitas mensais', 'Vistorias - NCs abertas no mês', 'Vistorias - NCs resolvidas no mês']
+  .forEach(k => ok('tem ' + k + ' — "—" sem o app', dash.has(k) && dash.get(k).atual === '—', dash.has(k) ? dash.get(k).atual : 'ausente'));
+ok('sem as linhas que o app não tem (entrada/saída, recebimento, documentação)',
+   !dash.has('Vistorias - Entrada/saída') && !dash.has('Vistorias - Recebimento obras') && !dash.has('Vistorias - Documentação'));
 ok('tem Adequações - Quantidade', dash.has('Adequações - Quantidade'));
 ok('tem Adequações - Prazo médio', dash.has('Adequações - Prazo médio'));
 ok('tem Adequações - Conclusão (%)', dash.has('Adequações - Conclusão (%)'));
