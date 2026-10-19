@@ -17,7 +17,10 @@ própria entrada.
 | `ATUALIZAR_METAS_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só as Metas de uma |
 | `ATUALIZAR_MONITORAMENTO_CHEIAS()` | Só o slide de cheias (Esteio) |
 | `ATUALIZAR_PREVISAO_TEMPO()` | Só o slide do tempo |
+| `ATUALIZAR_SOLICITACOES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só o kanban de solicitações (último slide) |
 | `diagnosticarBasesBrutas()` | Mostra o dado bruto das bases — rode antes de discutir número |
+| `diagnosticarSolicitacoes()` | Confere a chave e chama o portal para as três TVs, sem mexer em slide |
+| `gerarArquivosPainelTV()` | Grava no Drive um `Painel_<Unidade>.txt` por TV, com o link de cada slide, para mandar à TI |
 
 Prefira a entrada de **uma** unidade ao conferir um ajuste: são ~30s por TV,
 e mexer nas três multiplica o risco de deixar as outras num estado
@@ -55,11 +58,65 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
 | `05_Slide_Capa.gs` | Slide 0 — capa |
 | `06_Slide_Tempo.gs` | Slide 5 — previsão do tempo (acionador próprio) |
 | `07_Slide_Metas.gs` | Slides 6+ — um por papel em `unit.metas` |
-| `08_Slide_Cheias.gs` | Último slide, só Mega Esteio (acionador próprio) |
+| `08_Slide_Cheias.gs` | Depois das Metas, só Mega Esteio (acionador próprio) |
+| `09_Slide_Solicitacoes.gs` | Último slide — kanban do Portal de Solicitações |
 
 `teste_bases.js` **não vai para o editor** — é um teste de Node, roda com
 `node gestao-tvs/teste_bases.js`. O mesmo vale para
-`teste_metas_igual_megas.js`.
+`teste_metas_igual_megas.js` e `teste_solicitacoes.js`.
+
+### Ordem dos slides de cada TV
+
+| Posição | Slide |
+|---|---|
+| 1 | Capa |
+| 2–5 | Visão Geral Corretiva · Backlog Corretivo · Visão Geral Preventiva · Backlog Preventivo |
+| 6 | Previsão do Tempo |
+| 7… | Metas, um por papel em `unit.metas` (Curitiba e Itajaí: Supervisor e Analista; Esteio: Supervisor) |
+| depois | Monitoramento de Cheias — só Esteio |
+| último | Kanban de Solicitações |
+
+**Slide novo entra sempre no fim.** Tempo, Metas e Cheias são achados pela
+posição; um slide no meio empurraria todos eles e o conteúdo de um iria
+parar no outro.
+
+### Kanban de Solicitações (`09_Slide_Solicitacoes.gs`, desde 19/10/2026)
+
+As solicitações de **Facilities** em andamento no Portal de Solicitações (app
+Lovable, repo `AugustCapitalrealty/megas-adc1ba20`), por com quem estão
+paradas: **Com o solicitante** (correção/informação) · **Com o backoffice**
+(análise, lançamento, aprovação) · **Emitidas** (OC emitida, falta liberar)
+· **Liberadas** (com o fornecedor até a NF).
+
+- **Fonte:** função `kanban-megas` do portal (`PORTAL_KANBAN_URL` em
+  `Config.gs`; o Mega em `UNITS[].portalEmpreendimento`). O portal decide a
+  coluna com a regra das telas dele; o slide só desenha.
+- **Chave:** nas Propriedades do script como `PORTAL_API_KEY` (a mesma do
+  secret `RELATORIOS_API_KEY` no portal). Nunca no código nem no git.
+- Cada card: protocolo, selo de dias na etapa (verde/laranja/vermelho pela
+  régua do portal: 5 dias em análise, 3 no lançamento; sem prazo, até 3 ok e
+  até 5 atenção), descrição, quem age ou o fornecedor, valor. `EMERG.` =
+  emergencial; `Contrato ·` = precisa de instrumento jurídico além da OC.
+  Cabem 5 por coluna — as mais paradas; o pé diz quantas mais recentes
+  ficaram de fora.
+- **Portal fora do ar:** o slide atual fica na TV (mesma regra das Metas). Só
+  na primeira vez, com o slide vazio, aparece o aviso do motivo.
+- Redesenhado em todo `gerarApresentacao()`; `ATUALIZAR_SOLICITACOES()` serve
+  para um acionador próprio, mais frequente.
+
+### Links das TVs (arquivo da TI)
+
+Cada TV roda um painel que abre os slides **um a um pelo ID**
+(`…/present?slide=id.<ID>`), configurado num `Painel_<Unidade>.txt` que vai
+para a TI. **Slide que não está no arquivo não aparece na TV** — em 19/10/2026
+faltavam as Metas do Analista (Itajaí) e as Cheias (Esteio).
+
+Depois de mudar a quantidade de slides: rode `gerarApresentacao()` (para o
+slide novo existir e ter ID), depois `gerarArquivosPainelTV()`. Ele grava os
+três arquivos na raiz do Drive, substituindo os anteriores, e lista no
+Logger cada slide com o nome. Capa 20 s, demais 30 s, como os arquivos
+antigos; páginas que não são slide (a planilha publicada do Esteio) ficam em
+`UNITS[].painelExtras` e entram no fim.
 
 ### O slide de Metas é cópia do da Apresentação Mensal
 

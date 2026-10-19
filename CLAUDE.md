@@ -294,13 +294,28 @@ se dependesse delas, quebraria junto e o slide voltaria a ficar vazio. Só
 `insertShape` e `CR_DESIGN_SYSTEM`. De brinde, o `catch` por página impede que
 a primeira falha aborte as outras.
 
+### 7. `const` de topo não pode ler outro arquivo
+
+O Apps Script carrega os `.gs` em ordem alfabética, e número vem antes de
+letra: no `gestao-tvs`, `09_Slide_Solicitacoes.gs` carrega **antes** de
+`Config.gs`. Um `const` de topo que lê `CR_DESIGN_SYSTEM` (ou qualquer
+`const` de outro arquivo) dá `Cannot access 'CR_DESIGN_SYSTEM' before
+initialization` e **derruba o projeto inteiro** — não só o slide novo, a
+atualização das TVs junto. Dentro de função pode: ela só roda depois que
+tudo carregou. Os projetos com `01_Config.gs` escapam por sorte da
+numeração; o `gestao-tvs` (`Config.gs`, sem número) não.
+
+O teste que pega isso avalia todos os `.gs` em ordem alfabética com `const`
+de verdade (sem trocar por `var`) — ver o fim de
+`gestao-tvs/teste_solicitacoes.js`.
+
 ## Testes
 
 Não há framework. O padrão é um script Node que lê os `.gs` como texto, dubla
 `SpreadsheetApp` / `SlidesApp` / `Logger` e roda asserções. Serve porque as
 funções de dados são puras o bastante depois que a planilha vira matriz.
 
-Onze suítes hoje, 546 asserções ao todo, cada uma rodando com `node <arquivo>`:
+Onze suítes hoje, 553 asserções ao todo, cada uma rodando com `node <arquivo>`:
 
 | Arquivo | Asserções |
 |---|---|
@@ -313,7 +328,7 @@ Onze suítes hoje, 546 asserções ao todo, cada uma rodando com `node <arquivo>
 | `propriedades-mensal/teste_slides.js` | 50 |
 | `propriedades-mensal/teste_metas.js` | 20 |
 | `megas-mensal/teste_mapa_chuvas.js` | 68 |
-| `megas-mensal/teste_solicitacoes.js` | 46 |
+| `gestao-tvs/teste_solicitacoes.js` | 53 |
 | `megas-mensal/teste_acessos.js` | 15 |
 
 `gestao-tvs/teste_bases.js` é o exemplo a copiar. O que vale levar dele:

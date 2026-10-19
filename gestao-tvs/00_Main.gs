@@ -28,7 +28,9 @@ function _tvConferirProjeto_() {
     { fn: 'gerarSlidePreventivas',        args: 3, arquivo: '03_Slide_Preventivas.gs' },
     { fn: 'gerarSlidePreventivasDetalhe', args: 3, arquivo: '04_Slide_Preventivas_Acao.gs' },
     { fn: 'obterMetaAuto',                args: 4, arquivo: 'Dados.gs' },
-    { fn: 'obterCorretivasTV_',           args: 1, arquivo: 'Dados.gs' }
+    { fn: 'obterCorretivasTV_',           args: 1, arquivo: 'Dados.gs' },
+    { fn: 'atualizarSlideSolicitacoes',   args: 2, arquivo: '09_Slide_Solicitacoes.gs' },
+    { fn: '_solIndice_',                  args: 1, arquivo: '09_Slide_Solicitacoes.gs' }
   ];
 
   const problemas = [];
@@ -134,10 +136,14 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   // Estrutura por unidade:
   // 0: capa | 1-4: corretivas/preventivas | 5: previsão do tempo
   // 6...: slides de Metas (1 por papel em unit.metas)
-  // último slide (apenas unidades com cheiasSheetId): monitoramento de cheias
+  // depois (apenas unidades com cheiasSheetId): monitoramento de cheias
+  // último (unidades com portalEmpreendimento): kanban de solicitações
+  // Slide novo entra SEMPRE no fim: Tempo, Metas e Cheias são achados pela
+  // posição, e um slide no meio empurraria todos eles.
   const numMetas = (unit.metas || []).length;
   const temCheias = !!unit.cheiasSheetId;
-  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0);
+  const temKanban = !!unit.portalEmpreendimento;
+  const totalSlides = 6 + numMetas + (temCheias ? 1 : 0) + (temKanban ? 1 : 0);
 
   // 1. GARANTE A QUANTIDADE DE SLIDES (sem deletar a apresentação inteira).
   // Os novos slides são SEMPRE acrescentados no fim, então os slides já
@@ -186,6 +192,65 @@ function _tvAtualizarUnidade_(unit, planilha, dataSincronizacao) {
   if (temCheias && slides[6 + numMetas].getPageElements().length === 0) {
     try { atualizarSlideCheias(slides[6 + numMetas], unit); } catch (e) {}
   }
+
+  // 7. KANBAN DE SOLICITAÇÕES (Portal de Solicitações). Se o portal falhar,
+  // o slide atual é preservado — ver 09_Slide_Solicitacoes.gs.
+  if (temKanban) {
+    try { atualizarSlideSolicitacoes(slides[_solIndice_(unit)], unit); }
+    catch (e) { Logger.log(`⚠️ Solicitações (${unit.name}): ${e.message}`); }
+  }
+}
+
+
+// ==========================================
+// ARQUIVOS DO PAINEL DA TV (para a TI)
+// ==========================================
+// Cada TV roda um painel que abre os slides UM A UM pelo ID
+// (…/present?slide=id.<ID>). Slide que não está no arquivo não aparece na TV —
+// foi assim que as Metas do Analista (Itajaí) e as Cheias (Esteio) ficaram de
+// fora. Esta função lê os decks e grava no Drive um Painel_<Unidade>.txt por
+// TV, com TODOS os slides na ordem, pronto para mandar para a TI.
+//
+// Rode DEPOIS de gerarApresentacao(): slide que ainda não existe não tem ID.
+function gerarArquivosPainelTV() {
+  const nomes = ['Capa', 'Visão Geral Corretiva', 'Backlog Corretivo', 'Visão Geral Preventiva',
+                 'Backlog Preventivo', 'Previsão do Tempo'];
+  const pasta = DriveApp.getRootFolder();
+  UNITS.forEach(unit => {
+    const slides = SlidesApp.openById(unit.deckId).getSlides();
+    const rotulos = nomes.slice();
+    (unit.metas || []).forEach(m => rotulos.push('Metas ' + m.papel));
+    if (unit.cheiasSheetId) rotulos.push('Monitoramento de Cheias');
+    if (unit.portalEmpreendimento) rotulos.push('Kanban de Solicitações');
+
+    // Mesmos parâmetros dos arquivos que a TI já usa (19/10/2026): capa 20 s,
+    // demais 30 s, cada aba recarrega a cada 10 min.
+    const sites = slides.map((s, i) => ({
+      url: 'https://docs.google.com/presentation/d/' + unit.deckId + '/present?slide=id.' + s.getObjectId(),
+      duration: i === 0 ? 20 : 30,
+      tabReloadIntervalSeconds: 600
+    }));
+    (unit.painelExtras || []).forEach(url => sites.push({ url: url, duration: 30, tabReloadIntervalSeconds: 600 }));
+
+    const json = JSON.stringify({
+      settingsReloadIntervalMinutes: 60, fullscreen: true, autoStart: true, lazyLoadTabs: true,
+      websites: sites
+    }, null, 2);
+
+    const cidade = _histNorm_(unit.name).replace(/^mega\s+/, '').replace(/\s+/g, '_');
+    const nome = 'Painel_' + cidade.charAt(0).toUpperCase() + cidade.slice(1) + '.txt';
+    const antigos = pasta.getFilesByName(nome);
+    while (antigos.hasNext()) antigos.next().setTrashed(true);
+    const arq = pasta.createFile(nome, json, MimeType.PLAIN_TEXT);
+
+    Logger.log(`📺 ${unit.name}: ${slides.length} slide(s) → ${nome}  ${arq.getUrl()}`);
+    slides.forEach((s, i) => Logger.log(`   ${i + 1}. ${rotulos[i] || '(slide extra — confira)'}  id.${s.getObjectId()}`));
+    if (slides.length !== rotulos.length) {
+      Logger.log(`   ⚠️ O deck tem ${slides.length} slides e o esperado são ${rotulos.length}. ` +
+                 'Rode gerarApresentacao() antes, para acertar a contagem.');
+    }
+    (unit.painelExtras || []).forEach(url => Logger.log('   + página extra: ' + url));
+  });
 }
 
 

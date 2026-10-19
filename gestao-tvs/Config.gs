@@ -12,6 +12,13 @@ const ID_PLANILHA = "1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1WiRA";
 // simplesmente não aparece).
 const HISTORICO_VALIDADO_ID = "1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI";
 
+// Portal de Solicitações (app Lovable, repo AugustCapitalrealty/megas-adc1ba20):
+// função `kanban-megas` que devolve as solicitações em andamento de um Mega,
+// já separadas nas quatro colunas do kanban. A chave NÃO fica no código: vai
+// nas Propriedades do script como PORTAL_API_KEY (a mesma do secret
+// RELATORIOS_API_KEY no portal). Ver 09_Slide_Solicitacoes.gs.
+const PORTAL_KANBAN_URL = "https://wcxybuietfmaaqzmcmnq.supabase.co/functions/v1/kanban-megas";
+
 // ==========================================
 // MAPEAMENTO DAS UNIDADES (TVs E LOGOMARCAS)
 // ==========================================
@@ -30,6 +37,8 @@ const UNITS = [
     // Planilha "MEGA CURITIBA FACILITIES 2026" — só para "Taxa de
     // Reabertura" (Analista), aba TAXA DE ABERTURA.
     reaberturaId: "1Xudsnn7KEkgGWSZ_kJ4cXpx6CjrJ0UzORHkyUvuCUc0",
+    // Mega no Portal de Solicitações — liga o kanban (último slide da TV).
+    portalEmpreendimento: "mega_curitiba",
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -43,6 +52,7 @@ const UNITS = [
     weather: { lat: -26.9101, lon: -48.6705, cidade: "Itajaí - SC" },
     metasAutoSpreadsheetId: "1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4",
     reaberturaId: "1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc",
+    portalEmpreendimento: "mega_itajai",
     metas: [
       { papel: "SUPERVISOR" },
       { papel: "ANALISTA" }
@@ -70,6 +80,13 @@ const UNITS = [
     // Esteio essa meta é do Supervisor (não do Analista como em Curitiba/
     // Itajaí), mas a fonte é a mesma planilha externa.
     reaberturaId: "18d5bbTGm1_P3BiRsnfqqdh6MfDqiFvGbRI7gB1G4ZL0",
+    portalEmpreendimento: "mega_esteio",
+    // Páginas que a TV mostra além dos slides do deck, no fim do ciclo (ver
+    // gerarArquivosPainelTV em 00_Main.gs). Esta é a planilha publicada que
+    // já estava no Painel_Esteio.txt da TI em 19/10/2026.
+    painelExtras: [
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRcFqOeXTslc2rgT-WfWHA4rOTYcr4lJ62VikE3keWL6oUoNj3nOwn00y5hII3npQq17msCw3ngfYtz/pubhtml?urp=gmail_link"
+    ],
     metas: [
       { papel: "SUPERVISOR" }
     ]
