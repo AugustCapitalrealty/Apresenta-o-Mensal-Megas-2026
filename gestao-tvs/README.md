@@ -43,7 +43,22 @@ Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
 | `08_Slide_Cheias.gs` | Último slide, só Mega Esteio (acionador próprio) |
 
 `teste_bases.js` **não vai para o editor** — é um teste de Node, roda com
-`node gestao-tvs/teste_bases.js`.
+`node gestao-tvs/teste_bases.js`. O mesmo vale para
+`teste_metas_igual_megas.js`.
+
+### O slide de Metas é cópia do da Apresentação Mensal
+
+O desenho da tabela de Metas (`renderSlideMetas`) é o mesmo de
+`megas-mensal/13_Slide_Metas.gs`: mesmas colunas, fontes, cores, a linha
+composta do Supervisor (Custo M² + % das manutenções planejadas) em duas
+sublinhas e o selo ▲/▼ com uma cor por parte. A única diferença é o
+cabeçalho: o da TV é mais alto, então a tabela começa em y=96 (na mensal,
+y=66) e as linhas ficam um pouco mais baixas.
+
+Mexeu no Metas de um? Leve para o outro e rode
+`node gestao-tvs/teste_metas_igual_megas.js`: ele desenha a mesma tabela com
+os dois códigos e reprova se qualquer forma divergir (texto, fonte, tamanho,
+cor, x, largura).
 
 ## Se o editor não tiver exatamente esses arquivos
 

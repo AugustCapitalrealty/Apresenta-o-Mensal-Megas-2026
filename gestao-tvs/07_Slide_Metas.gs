@@ -145,18 +145,26 @@ function lerMetas(planilha, unit, papel) {
     // para Custo M², também a Meta) com o valor calculado ao vivo, e guarda
     // a tendência vs período anterior (linha._trendMes/_trendAcum) para
     // desenhar como selo ▲/▼. Sem match/erro, a linha digitada não muda.
+    //
+    // O Status manual da linha é limpo quando o Real é sobrescrito: ele foi
+    // digitado olhando o Real DIGITADO, que acabou de ser trocado. Mantê-lo
+    // deixava, por exemplo, Check-list/SLA verde com 89,13% contra meta de
+    // 90% na tela. Limpo, o status sai do Real que está de fato no slide —
+    // mesma regra da Apresentação Mensal (13_Slide_Metas.gs).
     try {
       const autoMes = obterMetaAuto(unit, descricao, linha[5], 'mes');
       if (autoMes) {
         if (autoMes.metaValor != null) linha[5] = autoMes.metaValor;
         linha[6] = autoMes.valor;
-        linha._trendMes = autoMes.trend;
+        linha[7] = '';
+        linha._trendMes = _metasTrend_(autoMes);
       }
       const autoAcum = obterMetaAuto(unit, descricao, linha[8], 'acum');
       if (autoAcum) {
         if (autoAcum.metaValor != null) linha[8] = autoAcum.metaValor;
         linha[9] = autoAcum.valor;
-        linha._trendAcum = autoAcum.trend;
+        linha[10] = '';
+        linha._trendAcum = _metasTrend_(autoAcum);
       }
     } catch (e) {
       Logger.log(`⚠️ Metas auto (${unit.name}/${descricao}): ${e.message}`);
@@ -165,6 +173,14 @@ function lerMetas(planilha, unit, papel) {
     return linha;
   });
   return { titulo: titulo, papel: papel, linhas: linhas };
+}
+
+// Tendência de uma célula como lista de segmentos, cada um com a sua cor:
+// um só no indicador simples, dois (R$ e %) no Custo M² composto — ver
+// obterMetaAuto() em Dados.gs. null = sem selo.
+function _metasTrend_(auto) {
+  const segs = auto.segmentos || (auto.trend ? [auto.trend] : null);
+  return segs && segs.some(s => s && s.txt) ? { segmentos: segs } : null;
 }
 
 // Converte texto de status em cor
@@ -272,9 +288,10 @@ function renderSlideMetas(slide, unit, metas) {
   applyBrandHeaderAndBackground(slide, "Metas", `Objetivos e Resultados • ${metas.papel}`, dataGlobal, unit);
 
   // Layout IDÊNTICO ao slide de Metas da Apresentação Mensal dos Megas
-  // (AugustCapitalrealty/Apresenta-o-Mensal-Megas-2026, Slide_Metas.gs):
-  // mesmos pesos de coluna, mesmas cores (brandMed/brandDark), mesmos
-  // tamanhos de fonte e o selo de tendência no TOPO da célula do valor.
+  // (megas-mensal/13_Slide_Metas.gs): mesmos pesos de coluna, mesmas cores
+  // (brandMed/brandDark), mesmos tamanhos de fonte, a linha composta em duas
+  // sublinhas e o selo de tendência no TOPO da célula do valor.
+  // teste_metas_igual_megas.js confere forma por forma.
   const pesos = [114, 54, 76, 62, 46, 68, 66, 44, 68, 66, 44]; // 11 colunas
   const totalW = W - 12;
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
@@ -320,9 +337,35 @@ function renderSlideMetas(slide, unit, metas) {
   const dispH = resumoY - 6 - y;
   const rowH = Math.max(20, Math.min(78, Math.floor(dispH / Math.max(1, n))));
 
+  // Texto de uma célula: caixa com fonte do corpo, centralizada na vertical.
+  const _txtCelula_ = (txt, x, ty, w, h, tam, negrito, alinhar) => {
+    const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, ty, w, h);
+    t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    t.getText().setText(txt)
+      .getTextStyle().setFontSize(tam).setBold(negrito).setFontFamily(ds.typography.body)
+      .setForegroundColor(ds.colors.textMain);
+    t.getText().getParagraphStyle().setParagraphAlignment(alinhar);
+    return t;
+  };
+
   metas.linhas.forEach((linha, i) => {
     const ry = y + i * rowH;
     const fundo = (i % 2 === 0) ? ds.colors.cardBg : '#F8FAFC';
+
+    // Linha composta do Supervisor: Custo M² + % das manutenções
+    // planejadas na mesma meta ("R$ 4,21 / 80%"). Em vez de espremer as duas
+    // medidas numa célula, ela é desenhada em DUAS sublinhas (R$ em cima,
+    // % embaixo), cada uma com o seu selo de tendência — mesmo desenho da
+    // Apresentação Mensal (13_Slide_Metas.gs).
+    const d0 = _histNorm_(linha[0]);
+    const ehComposta = normPapel(metas.papel) === 'SUPERVISOR' &&
+                       d0.indexOf('custo') >= 0 &&
+                       (d0.indexOf('m2') >= 0 || d0.indexOf('m²') >= 0) &&
+                       String(linha[5] || '').indexOf('/') >= 0;
+
+    const subH = Math.floor(rowH / 2);
+    const y1 = ry, y2 = ry + subH;
+    const h1 = subH, h2 = rowH - subH;
 
     for (let c = 0; c < METAS_COLS.length; c++) {
       const ehStatus = (c === 7 || c === 10);
@@ -334,38 +377,85 @@ function renderSlideMetas(slide, unit, metas) {
         cell.getFill().setSolidFill(fundo);
       }
       cell.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
+      if (ehStatus) continue;
 
-      if (!ehStatus) {
-        // Metas/valores compostos ("R$ 4,21 / 80%") compactados para não
-        // quebrar linha nas colunas de Meta/Real.
-        let valStr = (linha[c] || "").toString();
-        if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
+      let valStr = String(linha[c] == null ? '' : linha[c]).trim();
+      const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
 
-        // Valor na caixa padrão da célula (célula inteira, centralizado) —
-        // o comparativo de tendência NÃO entra junto, para nunca quebrar o valor.
-        // Nas colunas centralizadas a caixa de texto é alargada além da
-        // célula (folga simétrica, sem alterar o retângulo visível nem a
-        // largura da coluna) só para vencer o recuo interno padrão do
-        // Slides, que faz valores como "R$ 6,46/100%" quebrarem linha
-        // mesmo cabendo de sobra no espaço visual da célula.
-        const folga = c === 0 ? 0 : 10;
-        const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH);
-        t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-        t.getText().setText(valStr)
-          .getTextStyle().setFontSize(c === 0 ? 7 : 7.5).setBold(c === 0).setFontFamily(ds.typography.body)
-          .setForegroundColor(ds.colors.textMain);
-        t.getText().getParagraphStyle().setParagraphAlignment(c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+      if (ehComposta && (c === 0 || c === 3 || c === 4 || c === 5 || c === 6 || c === 8 || c === 9)) {
+        // Divisória sutil entre as duas sublinhas
+        const div = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, xs[c], ry + subH, larg[c], 1);
+        div.getFill().setSolidFill('#E2E8F0');
+        div.getBorder().setTransparent();
 
-        // Selo de tendência (▲/▼ vs período anterior) para Real Mês [6] /
-        // Real Acum. [9] — vindo de indicadores automáticos (Dados.gs).
-        // Caixa própria sobreposta, centralizada no TOPO da célula.
-        const trend = c === 6 ? linha._trendMes : (c === 9 ? linha._trendAcum : null);
-        if (trend && trend.txt) {
-          const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], ry + 2, larg[c], 11);
-          selo.getText().setText(trend.txt).getTextStyle()
-            .setFontSize(6.5).setBold(true).setForegroundColor(trend.cor).setFontFamily(ds.typography.titles);
-          selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        let val1, val2;
+        if (c === 0)      { val1 = 'CUSTO M² MEGAS'; val2 = '80% DAS MANUT PLANEJADAS'; }
+        else if (c === 3) { val1 = 'R$'; val2 = '%'; }
+        else if (c === 4) { val1 = '<='; val2 = '>='; }
+        else {
+          const partes = valStr.split('/').map(s => s.trim());
+          val1 = partes[0] || '-';
+          val2 = partes[1] || (c === 5 || c === 8 ? '80%' : '0%');
         }
+
+        if (c === 0) {
+          _txtCelula_(val1, xs[c] + 4, y1, larg[c] - 6, h1, 7, true, SlidesApp.ParagraphAlignment.START);
+          _txtCelula_(val2, xs[c] + 4, y2, larg[c] - 6, h2, 7, true, SlidesApp.ParagraphAlignment.START);
+        } else if (c === 6 || c === 9) {
+          // Real: cada sublinha com o seu selo ▲/▼ no topo e o valor logo abaixo
+          const segs = (trend && trend.segmentos) || [];
+          [[val1, y1, h1, segs[0]], [val2, y2, h2, segs[1]]].forEach(([val, sy, sh, seg]) => {
+            const temSelo = !!(seg && seg.txt);
+            if (temSelo) {
+              const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], sy + 1, larg[c], 9);
+              selo.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+              selo.getText().setText(seg.txt).getTextStyle()
+                .setFontSize(5.5).setBold(true).setForegroundColor(seg.cor).setFontFamily(ds.typography.titles);
+              selo.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+            }
+            _txtCelula_(val, xs[c] + 1, sy + (temSelo ? 6 : 0), larg[c] - 2, sh - (temSelo ? 6 : 0),
+              7, false, SlidesApp.ParagraphAlignment.CENTER);
+          });
+        } else {
+          _txtCelula_(val1, xs[c] + 1, y1, larg[c] - 2, h1, 7, false, SlidesApp.ParagraphAlignment.CENTER);
+          _txtCelula_(val2, xs[c] + 1, y2, larg[c] - 2, h2, 7, false, SlidesApp.ParagraphAlignment.CENTER);
+        }
+        continue;
+      }
+
+      // Indicador simples
+      if (!valStr || valStr === 'undefined' || valStr === 'null') valStr = (c === 0 ? '—' : '-');
+      // Meta/Real com "/" fora da linha composta: compacta para não quebrar.
+      if (c === 5 || c === 6 || c === 8 || c === 9) valStr = valStr.replace(/\s*\/\s*/g, '/');
+
+      // Valor na caixa da célula inteira, centralizado — o selo de tendência
+      // NÃO entra junto, para nunca quebrar o valor. Nas colunas centralizadas
+      // a caixa é alargada além da célula (folga simétrica, sem mexer no
+      // retângulo visível) só para vencer o recuo interno de ~7pt do Slides,
+      // que faz "R$ 6,46/100%" quebrar mesmo cabendo no espaço visual.
+      const folga = c === 0 ? 0 : 10;
+      _txtCelula_(valStr, xs[c] + 3 - folga, ry, larg[c] - 6 + folga * 2, rowH,
+        c === 0 ? 8 : 7.5, c === 0,
+        c === 0 ? SlidesApp.ParagraphAlignment.START : SlidesApp.ParagraphAlignment.CENTER);
+
+      // Selo ▲/▼ vs período anterior no TOPO da célula do Real, cada
+      // segmento com a sua cor e o " / " entre eles em cinza.
+      const segs = (trend && trend.segmentos || []).filter(s => s && s.txt);
+      if (segs.length && valStr !== '-' && valStr !== '—') {
+        const selo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, xs[c], ry + 2, larg[c], 11);
+        const ts = selo.getText();
+        ts.setText(segs.map(s => s.txt).join(' / '));
+        ts.getTextStyle().setFontSize(6.5).setBold(true).setFontFamily(ds.typography.titles);
+        let offset = 0;
+        segs.forEach((seg, si) => {
+          ts.getRange(offset, offset + seg.txt.length).getTextStyle().setForegroundColor(seg.cor);
+          offset += seg.txt.length;
+          if (si < segs.length - 1) {
+            ts.getRange(offset, offset + 3).getTextStyle().setForegroundColor(ds.colors.textBody);
+            offset += 3;
+          }
+        });
+        ts.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
       }
     }
   });

@@ -1775,17 +1775,17 @@ function obterMetaAuto(unit, descricao, metaAtual, qual) {
         }
       }
 
-      // Tendência composta: R$ (menor = melhor) + % planejado (maior = melhor),
-      // dois selos unidos por "/" — mesmo formato da Apresentação Mensal.
+      // Tendência composta: R$ (menor = melhor) + % planejado (maior = melhor).
+      // Vai em SEGMENTOS separados, cada um com a sua cor, igual à
+      // Apresentação Mensal: uma parte pode melhorar e a outra piorar no
+      // mesmo mês, e pintar as duas com a cor da primeira escondia a ruim.
+      // A posição importa: [0] é sempre o R$ e [1] o %, porque a linha
+      // composta desenha cada selo na sua sublinha (07_Slide_Metas.gs).
       const t1 = tendenciaTexto(delta, true);
       const t2 = tendenciaTexto(delta2, false);
-      let trend = t1;
-      if (t2) {
-        trend = t1
-          ? { txt: [t1.txt, t2.txt].filter(Boolean).join(' / '), cor: t1.cor || t2.cor }
-          : t2;
-      }
-      return { valor: valor, metaValor: metaValor, trend: trend };
+      const vazio = { txt: '', cor: null };
+      const segmentos = barra >= 0 ? [t1 || vazio, t2 || vazio] : (t1 ? [t1] : null);
+      return { valor: valor, metaValor: metaValor, trend: t1, segmentos: segmentos };
     }
   } catch (e) {
     Logger.log(`⚠️ obterMetaAuto("${descricao}", ${unit.name}, ${qual}): ${e.message}`);
