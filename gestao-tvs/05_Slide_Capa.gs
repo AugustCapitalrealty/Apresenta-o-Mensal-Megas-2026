@@ -2,10 +2,15 @@
  * ARQUIVO: 05_Slide_Capa.gs
  * DESCRIÇÃO: Slide de abertura da TV.
  *
- * Visual do Orçamento 2027 (Visual.gs, rebrand de 19/10/2026) — a sub capa
- * "relatório claro": fundo claro, logos, o nome do Mega grande, a frase, a
- * data de sincronização, um bloco na cor da marca à direita e, no pé, a
- * trilha com o que a TV mostra em seguida.
+ * Visual da capa do Orçamento 2027 (orcamento-2027/10_Capa.gs): a foto real
+ * do Mega numa faixa larga em cima, com a cor escura da marca à esquerda
+ * sumindo até a foto limpa à direita, os logos em chips brancos e um filete
+ * na cor de destaque. Embaixo, no fundo claro, o nome do Mega grande, a data
+ * de sincronização e a trilha do que a TV mostra em seguida. Sem foto (Drive
+ * fora, ID errado), a faixa sai lisa na cor da marca — a capa nunca quebra.
+ *
+ * A foto é a MESMA da capa da apresentação mensal e do Orçamento
+ * (UNITS[].fotoCapaId, em Config.gs).
  */
 
 function gerarSlideCapa(slide, dataGlobal, unit) {
@@ -18,34 +23,38 @@ function gerarSlideCapa(slide, dataGlobal, unit) {
   const serifa = DS.typography.heading !== DS.typography.titles;
   slide.getBackground().setSolidFill(c.bgSlide);
 
-  // Logos
-  try { insertLogoProportional(slide, DriveApp.getFileById(unit.unitLogoId).getBlob(), 40, 34, 120, 48); } catch (e) {}
-  try { insertLogoProportional(slide, DriveApp.getFileById(unit.brandLogoId).getBlob(), 172, 38, 130, 40); } catch (e) {}
+  // Faixa da foto. A foto entra ANTES de tudo: o que sobra dela é coberto
+  // com a cor do fundo (_tvFotoEmBloco_), e isso apagaria o que já estivesse ali.
+  const fh = 200;
+  if (!_tvFotoEmBloco_(slide, unit.fotoCapaId, 0, 0, 720, fh, unit.fotoFoco, c.bgSlide)) {
+    _tvRet_(slide, 0, 0, 720, fh, c.brandDark);
+  }
+  _tvVeu_(slide, 0, 0, 720, fh, c.brandDark, 0.9, 0, 36);
+  _tvRet_(slide, 0, fh, 720, 4, c.brandLight);
 
-  // Título, frase e sincronização
-  _tvTexto_(slide, 33, 110, 400, 22, 'GESTÃO À VISTA',
-    { fs: 11, fsMin: 9, bold: true, cor: c.brandLight, fonte: DS.typography.titles });
-  _tvTexto_(slide, 33, 130, 400, 64, _tvNomeUnidade_(unit),
-    { fs: serifa ? 50 : 44, fsMin: 24, bold: true, cor: c.brandDark, fonte: DS.typography.heading });
-  _tvTexto_(slide, 33, 194, 400, 22, 'Facilities e Property · o que está aberto, atrasado e parado',
-    { fs: 12, fsMin: 9, cor: c.textBody, fonte: DS.typography.body, cortar: true });
-  _tvRet_(slide, 40, 228, 60, 4, c.brandLight);
-  _tvTexto_(slide, 33, 240, 400, 20, `Sincronizado: ${dataGlobal}`,
+  // Logos em chips brancos (sobre a foto, o logo colorido some)
+  const w1 = _tvLogoChip_(slide, unit.unitLogoId, 40, 24, 96, 30);
+  _tvLogoChip_(slide, unit.brandLogoId, 40 + (w1 ? w1 + 10 : 0), 24, 120, 30);
+
+  // Sobre o véu, em branco
+  _tvTexto_(slide, 33, 112, 420, 20, 'GESTÃO À VISTA',
+    { fs: 11, fsMin: 9, bold: true, cor: c.brandAccent, fonte: DS.typography.titles });
+  _tvTexto_(slide, 33, 130, 420, 36, 'Painel de gestão à vista',
+    { fs: serifa ? 26 : 22, fsMin: 14, bold: true, cor: '#FFFFFF', fonte: DS.typography.heading });
+  _tvTexto_(slide, 33, 164, 420, 20, 'Facilities e Property · o que está aberto, atrasado e parado',
+    { fs: 10.5, fsMin: 8, cor: '#F1F5F9', fonte: DS.typography.body, cortar: true });
+
+  // Nome do Mega e sincronização, no fundo claro
+  _tvTexto_(slide, 33, 214, 460, 56, _tvNomeUnidade_(unit),
+    { fs: serifa ? 46 : 40, fsMin: 24, bold: true, cor: c.brandDark, fonte: DS.typography.heading });
+  _tvTexto_(slide, 33, 278, 460, 20, `Sincronizado: ${dataGlobal}`,
     { fs: 10.5, fsMin: 8, bold: true, cor: c.textBody, fonte: DS.typography.body });
 
-  // Bloco da marca à direita (onde o Orçamento põe a foto)
-  _tvRet_(slide, 452, 34, 4, 262, c.brandLight);
-  _tvRet_(slide, 456, 34, 234, 262, c.brandDark);
-  _tvTexto_(slide, 470, 200, 210, 30, _tvNomeUnidade_(unit).toUpperCase(),
-    { fs: 13, fsMin: 9, bold: true, cor: c.brandAccent, fonte: DS.typography.titles, cortar: true });
-  _tvTexto_(slide, 470, 226, 210, 56, 'Painel de\ngestão à vista',
-    { fs: 20, fsMin: 14, bold: true, cor: '#FFFFFF', fonte: DS.typography.heading });
-
-  // Trilha do que vem a seguir na TV
-  const secoes = ['Corretivas', 'Preventivas', 'Previsão do tempo', 'Metas'];
+  // Trilha do que vem a seguir na TV (na ordem do Painel_<Mega>.txt)
+  const secoes = ['Corretivas', 'Preventivas', 'Tempo e chuva', 'Metas'];
   if (unit.cheiasSheetId) secoes.push('Cheias');
   if (unit.portalEmpreendimento) secoes.push('Solicitações', 'Webdox');
-  const tx = 40, tw = 650, ty = 318, passo = tw / secoes.length;
+  const tx = 40, tw = 650, ty = 322, passo = tw / secoes.length;
   const linha = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, tx, ty, tx + tw, ty);
   linha.getLineFill().setSolidFill(c.lines);
   linha.setWeight(1);

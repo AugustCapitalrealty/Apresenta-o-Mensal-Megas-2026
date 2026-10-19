@@ -141,12 +141,14 @@ function _tvTexto_(slide, x, y, w, h, texto, op) {
 // COMPONENTES
 // ==========================================
 
-// Retângulo (arredondado com op.redondo), com ou sem borda.
+// Retângulo (arredondado com op.redondo), com ou sem borda. op.alpha =
+// opacidade (1 = sólido), usada no véu sobre a foto da capa.
 function _tvRet_(slide, x, y, w, h, cor, op) {
   const o = op || {};
   const s = slide.insertShape(o.redondo ? SlidesApp.ShapeType.ROUND_RECTANGLE : SlidesApp.ShapeType.RECTANGLE,
                               x, y, Math.max(0.5, w), Math.max(0.5, h));
-  s.getFill().setSolidFill(cor);
+  if (o.alpha === undefined) s.getFill().setSolidFill(cor);
+  else s.getFill().setSolidFill(cor, o.alpha);
   if (o.borda) s.getBorder().setWeight(o.peso || 0.75).getLineFill().setSolidFill(o.borda);
   else s.getBorder().setTransparent();
   return s;
@@ -169,10 +171,15 @@ function _tvKpi_(slide, x, y, w, h, k) {
     { fs: k.fsValor || 26, fsMin: 12, bold: true, cor: cheio ? '#FFFFFF' : c.brandDark, fonte: DS.typography.titles });
   if (temSub) {
     // Verde/vermelho cheios somem sobre o fundo escuro: no cartão cheio a
-    // variação usa os tons claros (mesma leitura, contraste de TV).
+    // variação usa os tons claros (mesma leitura, contraste de TV). Qualquer
+    // outra cor vira branco: o "— 0" em textBody sumia no verde de Curitiba.
     let corSub = k.corSub || (cheio ? '#FFFFFF' : c.textBody);
-    if (cheio && k.corSub === c.accentRed) corSub = '#FCA5A5';
-    if (cheio && k.corSub === c.accentGreen) corSub = '#6EE7B7';
+    if (cheio) {
+      if (k.corSub === c.accentRed) corSub = '#FCA5A5';
+      else if (k.corSub === c.accentGreen) corSub = '#6EE7B7';
+      else if (k.corSub === c.accentOrange) corSub = '#FDBA74';
+      else corSub = '#FFFFFF';
+    }
     _tvTexto_(slide, x + 8, y + h - 20, w - 12, 15, k.sub,
       { fs: 8.5, fsMin: 6.5, bold: !!k.corSub, cor: corSub, fonte: DS.typography.body, cortar: true });
   }
@@ -191,6 +198,102 @@ function _tvCard_(slide, x, y, w, h, rotulo) {
     { fs: 9, fsMin: 7, bold: true, cor: c.textBody, fonte: DS.typography.titles, cortar: true });
   return y + 28;
 }
+
+// ==========================================
+// FOTOS (capa)
+// ==========================================
+// Foto cobrindo o bloco (x, y, w, h) sem deformar, com o ponto de interesse
+// (foco, fração da largura) no centro quando dá. O Apps Script não recorta
+// imagem: o que passa do bloco é coberto com `fundo` — por isso a foto entra
+// ANTES de todo o resto do slide. Mesma técnica de _orcFotoEmBloco_
+// (orcamento-2027/10_Capa.gs). false se a foto não carregou.
+function _tvFotoEmBloco_(slide, fotoId, x, y, w, h, foco, fundo) {
+  if (!fotoId) return false;
+  try {
+    const img = slide.insertImage(_tvFotoReduzida_(fotoId));
+    const ar = img.getWidth() / img.getHeight();
+    const iw = ar > w / h ? h * ar : w, ih = ar > w / h ? h : w / ar;
+    const f = foco == null ? 0.5 : foco;
+    const ix = Math.min(x, Math.max(x + w - iw, x + w / 2 - f * iw)), iy = y + (h - ih) / 2;
+    img.setWidth(iw).setHeight(ih).setLeft(ix).setTop(iy);
+    // 2 pt além da borda da foto: borda com borda, o Slides deixa um fio cinza.
+    const W = 720, H = 405, f2 = 2, sobra = 0.01, mascaras = [];
+    if (x - ix > sobra) mascaras.push([ix - f2, iy - f2, x - ix + f2, ih + 2 * f2]);
+    if (ix + iw - x - w > sobra) mascaras.push([x + w, iy - f2, ix + iw - x - w + f2, ih + 2 * f2]);
+    if (y - iy > sobra) mascaras.push([x, iy - f2, w, y - iy + f2]);
+    if (iy + ih - y - h > sobra) mascaras.push([x, y + h, w, iy + ih - y - h + f2]);
+    mascaras.forEach(m => {
+      const x0 = Math.max(0, m[0]), y0 = Math.max(0, m[1]);
+      const x1 = Math.min(W, m[0] + m[2]), y1 = Math.min(H, m[1] + m[3]);
+      if (x1 - x0 > 0.5 && y1 - y0 > 0.5) _tvRet_(slide, x0, y0, x1 - x0, y1 - y0, fundo);
+    });
+    return true;
+  } catch (e) {
+    Logger.log('Foto da capa indisponível (' + fotoId + '): ' + e.message);
+    return false;
+  }
+}
+
+// Miniatura de 1600 px pela API do Drive no lugar do original: foto de
+// câmera tem vários MB (no Orçamento isso levou a geração ao "Service timed
+// out"). Se algo falhar, vai o arquivo original.
+function _tvFotoReduzida_(id) {
+  try {
+    const cab = { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true };
+    const meta = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + id +
+                                   '?fields=thumbnailLink&supportsAllDrives=true', cab);
+    if (meta.getResponseCode() !== 200) throw new Error('metadados HTTP ' + meta.getResponseCode());
+    const link = JSON.parse(meta.getContentText()).thumbnailLink;
+    if (!link) throw new Error('o Drive não tem miniatura');
+    const resp = UrlFetchApp.fetch(link.replace(/=s\d+$/, '=s1600'), cab);
+    const b = resp.getBlob();
+    if (resp.getResponseCode() !== 200 || !/^image\/(png|jpeg|gif)$/.test(String(b.getContentType() || ''))) {
+      throw new Error('miniatura HTTP ' + resp.getResponseCode());
+    }
+    return b;
+  } catch (e) {
+    Logger.log('Foto ' + id + ': sem versão reduzida (' + e.message + '), vai o original.');
+    return DriveApp.getFileById(id).getBlob();
+  }
+}
+
+// Véu da cor `cor` que vai de opacidade aDe (à esquerda) a aAte (à direita).
+// Camadas EMPILHADAS a partir do lado opaco, cada uma mais curta: faixas lado
+// a lado semitransparentes deixam listras onde se encostam (visto no
+// Orçamento, 07/10/2026). A camada j cobre do lado opaco até o fim da faixa
+// j, e a transparência dela faz o acumulado bater com a reta de aDe a aAte.
+function _tvVeu_(slide, x, y, w, h, cor, aDe, aAte, passos) {
+  const n = passos || 20;
+  const alvo = j => aDe + (aAte - aDe) * (n === 1 ? 0 : j / (n - 1));
+  let transDepois = 1;
+  for (let j = n - 1; j >= 0; j--) {
+    const trans = 1 - Math.max(0, Math.min(1, alvo(j)));
+    const a = transDepois > 0 ? 1 - trans / transDepois : 0;
+    transDepois = trans;
+    if (a < 0.004) continue;
+    _tvRet_(slide, x, y, w * (j + 1) / n, h, cor, { alpha: a });
+  }
+}
+
+// Logo num chip branco (contraste sobre a foto). Devolve a largura usada.
+function _tvLogoChip_(slide, id, x, y, maxW, maxH) {
+  if (!id) return 0;
+  try {
+    const img = slide.insertImage(DriveApp.getFileById(id).getBlob());
+    const ar = img.getWidth() / img.getHeight();
+    let w = maxW, h = maxW / ar;
+    if (h > maxH) { h = maxH; w = maxH * ar; }
+    const pad = 9;
+    _tvRet_(slide, x, y, w + 2 * pad, maxH + 2 * pad, '#FFFFFF', { redondo: true, alpha: 0.95 });
+    img.setWidth(w).setHeight(h).setLeft(x + pad).setTop(y + pad + (maxH - h) / 2);
+    img.bringToFront();
+    return w + 2 * pad;
+  } catch (e) {
+    Logger.log('Capa: logo indisponível (' + id + '): ' + e.message);
+    return 0;
+  }
+}
+
 
 // Rodapé discreto com a fonte do dado.
 function _tvRodape_(slide, texto) {

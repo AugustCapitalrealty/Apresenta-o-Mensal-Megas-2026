@@ -30,6 +30,11 @@ const UNITS = [
     deckId: "1Q1WGQy34pmspwFjE_F82_zJXKQSxSlVr0RXADLvyyX0",
     brandLogoId: '168kVyD9dXiZctYNl27f_-Ic9S1W3wm-T', // Demercado
     unitLogoId: '14shFW_8eNUMdc6MBsrg9IvDMerQsTVv7',  // Mega Curitiba
+    // Foto da capa (05_Slide_Capa.gs): o MESMO arquivo da capa da
+    // apresentação mensal e do Orçamento 2027. fotoFoco = onde fica o ponto de
+    // interesse, em fração da largura (o mesmo do Orçamento, ORC_FOTO_FOCO).
+    fotoCapaId: '1F3tWOxcemRJUcf5di6DygCu7s5KHH_NC',
+    fotoFoco: 0.26,
     weather: { lat: -25.4284, lon: -49.2733, cidade: "Curitiba - PR" },
     // Planilha "Mega Curitiba - Planilha 2026" (mesma fonte da Apresentação
     // Mensal) — usada só para auto-preencher no slide de Metas os
@@ -55,6 +60,8 @@ const UNITS = [
     deckId: "1gWC55FL41TTJ4Ysi3M26PGtU5XfvARdscSZ7JpDKqQQ",
     brandLogoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4', // Capital Realty
     unitLogoId: '1MADm_n6K200Bij43OcIf1pLo3fKt3UDm',  // Mega Itajaí
+    fotoCapaId: '1TwANLdubJUHjcW8WpWRRR5gRv2Sty10K',
+    fotoFoco: 0.30,
     weather: { lat: -26.9101, lon: -48.6705, cidade: "Itajaí - SC" },
     metasAutoSpreadsheetId: "1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4",
     reaberturaId: "1phOgA2wsbKsGTOMAoytqbpJbUseYQqSZONeap_vOKBc",
@@ -69,6 +76,8 @@ const UNITS = [
     deckId: "1lbYlsLrnBk5nLuE3a278Um9I_M9t1OfcEPKRRRGFobs",
     brandLogoId: '1XzLbDtTYUTj0AIMuKUUyALJxC4MxU7z4', // Capital Realty
     unitLogoId: '1bYPL_-57T8G8o-rATfSX1LL8J6WLiLpB',  // Mega Esteio
+    fotoCapaId: '1ed2NujxpCBkk6tMDBC0h3LwB9wu6NEVA',
+    fotoFoco: 0.52,
     weather: { lat: -29.8617, lon: -51.1850, cidade: "Esteio - RS" },
     cheiasSheetId: "1fzVDxlUYbWGqu1ok9wo3TByA2ckstoK0xySK_GPIj74",
     // Cota de inundação (em metros) de cada ponto de monitoramento, na MESMA

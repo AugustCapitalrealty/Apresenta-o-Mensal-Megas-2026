@@ -424,6 +424,9 @@ function _tvLerBase_(nomeAba) {
     //   PREVENTIVAS: "Data agendamento" / "Fechada em"
     const cIni = col('data de reporte', 'data agendamento', 'data de agendamento');
     const cFim = col('fechado em', 'fechada em');
+    // Número do chamado (slide de chuva, 11_Slide_Chuva.gs). "id" só exato:
+    // col('id') casaria com "prIorIDade" e "cIDade".
+    const cId  = hdr.findIndex(h => h.indexOf('id chamado') >= 0 || h.indexOf('id agendamento') >= 0 || h === 'id');
 
     if (cCC < 0) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode diagnosticarBasesBrutas().');
@@ -442,6 +445,7 @@ function _tvLerBase_(nomeAba) {
       if (!cc) continue;
       saida.push({
         cc         : cc,
+        id         : cId     >= 0 ? String(data[r][cId] || '').trim() : '',
         estado     : cEstado >= 0 ? String(data[r][cEstado] || '').trim() : '',
         sla        : cSla    >= 0 ? String(data[r][cSla]    || '').trim() : '',
         fechadoPor : cQuem   >= 0 ? String(data[r][cQuem]   || '').trim() : '',

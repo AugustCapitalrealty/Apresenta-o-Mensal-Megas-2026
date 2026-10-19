@@ -17,7 +17,10 @@ própria entrada.
 | `ATUALIZAR_METAS_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só as Metas de uma |
 | `ATUALIZAR_MONITORAMENTO_CHEIAS()` | Só o slide de cheias (Esteio) |
 | `ATUALIZAR_PREVISAO_TEMPO()` | Só o slide do tempo |
-| `ATUALIZAR_SOLICITACOES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só o kanban de solicitações (último slide) |
+| `ATUALIZAR_SOLICITACOES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só o kanban de solicitações |
+| `ATUALIZAR_WEBDOX()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só os contratos no Webdox |
+| `ATUALIZAR_CHUVA_MES()` / `_CURITIBA()` / `_ITAJAI()` / `_ESTEIO()` | Só a chuva do mês |
+| `CRIAR_GATILHO_CHUVA()` | Rode 1 vez: acionador da chuva do mês a cada 3 horas |
 | `diagnosticarBasesBrutas()` | Mostra o dado bruto das bases — rode antes de discutir número |
 | `diagnosticarSolicitacoes()` | Confere a chave e chama o portal para as três TVs, sem mexer em slide |
 | `gerarArquivosPainelTV()` | Grava no Drive um `Painel_<Unidade>.txt` por TV, com o link de cada slide, para mandar à TI |
@@ -62,11 +65,14 @@ arquivos, conferidos com `clasp clone` depois do push).
 | `06_Slide_Tempo.gs` | Slide 5 — previsão do tempo (acionador próprio) |
 | `07_Slide_Metas.gs` | Slides 6+ — um por papel em `unit.metas` |
 | `08_Slide_Cheias.gs` | Depois das Metas, só Mega Esteio (acionador próprio) |
-| `09_Slide_Solicitacoes.gs` | Último slide — kanban do Portal de Solicitações |
+| `09_Slide_Solicitacoes.gs` | Kanban do Portal de Solicitações |
+| `10_Slide_Webdox.gs` | Contratos no Webdox |
+| `11_Slide_Chuva.gs` | Chuva do mês — o anel da apresentação mensal (acionador próprio) |
+| `Visual.gs` | Marcas, medição de texto, cartões, foto da capa |
 
 `teste_bases.js` **não vai para o editor** — é um teste de Node, roda com
 `node gestao-tvs/teste_bases.js`. O mesmo vale para
-`teste_metas_igual_megas.js` e `teste_solicitacoes.js`.
+`teste_metas_igual_megas.js`, `teste_solicitacoes.js` e `teste_rebrand.js`.
 
 ### Ordem dos slides de cada TV
 
@@ -77,12 +83,45 @@ arquivos, conferidos com `clasp clone` depois do push).
 | 6 | Previsão do Tempo |
 | 7… | Metas, um por papel em `unit.metas` (Curitiba e Itajaí: Supervisor e Analista; Esteio: Supervisor) |
 | depois | Monitoramento de Cheias — só Esteio |
-| penúltimo | Kanban de Solicitações |
-| último | Contratos no Webdox |
+| depois | Kanban de Solicitações |
+| depois | Contratos no Webdox |
+| último | Chuva do mês |
 
-**Slide novo entra sempre no fim.** Tempo, Metas e Cheias são achados pela
-posição; um slide no meio empurraria todos eles e o conteúdo de um iria
-parar no outro.
+**Slide novo entra sempre no fim do deck.** Tempo, Metas e Cheias são achados
+pela posição; um slide no meio empurraria todos eles e o conteúdo de um iria
+parar no outro. A ordem em que a TV **mostra** é outra: é a do
+`Painel_<Unidade>.txt`, e lá a Chuva do mês vem logo depois da Previsão do
+tempo (`gerarArquivosPainelTV` reordena).
+
+### Capa com a foto do Mega (desde 19/10/2026)
+
+Como a capa do Orçamento 2027: a foto real do Mega numa faixa em cima, com a
+cor escura da marca sumindo da esquerda para a direita, os logos em chips
+brancos e, embaixo, o nome do Mega, a sincronização e a trilha do que a TV
+mostra. A foto é a **mesma** da capa da apresentação mensal e do Orçamento
+(`UNITS[].fotoCapaId`; `fotoFoco` = onde fica o ponto de interesse, em fração
+da largura). Vai a miniatura de 1600 px do Drive, não o original de vários MB.
+Sem acesso à foto, a faixa sai lisa na cor da marca.
+
+### Chuva do mês (`11_Slide_Chuva.gs`, desde 19/10/2026)
+
+O anel do slide "Mapa de chuvas" da apresentação mensal, para o mês
+**corrente**: um ponto por dia × turno (manhã 6–12h, tarde 12–18h, noite
+18–6h) na cor da maior intensidade da hora, ✕ vermelho onde abriu chamado
+ligado à chuva (descrição com chuva, infiltração, goteira, alagamento… — a
+mesma lista do mensal), turnos que ainda não chegaram vazados. Ao lado:
+chuva no mês × média de 10 anos **no mesmo período** (dia 1 até hoje), dias
+com ≥ 1 mm, pico de intensidade e a lista dos chamados, em aberto primeiro.
+
+- **Fonte:** Open-Meteo. Anel, total e pico saem da API de previsão com
+  `past_days` (hora a hora até agora — o arquivo ERA5 do slide mensal chega
+  com ~5 dias de atraso); só a média de 10 anos vem do arquivo histórico.
+  Chamados: BD-CORRETIVAS (número em "Id chamado").
+- **Atualização:** `ATUALIZAR_CHUVA_MES()` (e as por unidade), num acionador
+  próprio — `CRIAR_GATILHO_CHUVA()` cria um a cada 3 horas. O
+  `gerarApresentacao()` só preenche quando o slide está vazio (o anel tem
+  ~150 formas; redesenhar as três TVs ali encostaria no limite de 6 min).
+- **Open-Meteo fora:** o slide atual fica na TV.
 
 ### Kanban de Solicitações (`09_Slide_Solicitacoes.gs`, desde 19/10/2026)
 

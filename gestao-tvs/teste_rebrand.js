@@ -32,7 +32,8 @@ function novaForma(tipo, x, y, w, h) {
   const texto = { setText: v => { if (tipo !== 'TEXT_BOX') throw new Error('texto em ' + tipo); f.texto = String(v); return texto; },
                   getTextStyle: () => estilo, getParagraphStyle: () => par };
   return {
-    getFill: () => ({ setSolidFill: (c, a) => { if (!c) throw new Error('setSolidFill(' + c + ')'); f.cor = c; if (a !== undefined) f.alpha = a; } }),
+    getFill: () => ({ setSolidFill: (c, a) => { if (!c) throw new Error('setSolidFill(' + c + ')'); f.cor = c; if (a !== undefined) f.alpha = a; },
+                     setTransparent: () => { delete f.cor; } }),
     getBorder: () => borda, getText: () => texto,
     setContentAlignment: a => { f.meio = a === 'MIDDLE'; },
     getLineFill: () => ({ setSolidFill: c => { f.cor = c; } }), setWeight: p => { f.peso = p; },
@@ -49,23 +50,32 @@ const slide = {
     Object.assign(formas[formas.length - 1], { x1, y1, x2, y2 });
     return o;
   },
-  insertImage: () => {
-    const f = { tipo: 'IMAGE', x: 0, y: 0, w: 300, h: 100, rotulo: 'logo', texto: null };
+  insertImage: blob => {
+    // A foto da capa é 3:2 (como as de câmera); os logos, 3:1.
+    const foto = !!(blob && FOTOS.indexOf(blob.id) >= 0), iw = foto ? 1600 : 300, ih = foto ? 1067 : 100;
+    const f = { tipo: 'IMAGE', x: 0, y: 0, w: iw, h: ih, rotulo: foto ? 'foto do Mega' : 'logo', texto: null };
     formas.push(f);
-    return { getWidth: () => 300, getHeight: () => 100, setLeft: v => { f.x = v; }, setTop: v => { f.y = v; },
-             setWidth: v => { f.w = v; }, setHeight: v => { f.h = v; } };
+    // Os set* devolvem a própria imagem, como no Slides (o código encadeia).
+    const img = { getWidth: () => iw, getHeight: () => ih, setLeft: v => { f.x = v; return img; }, setTop: v => { f.y = v; return img; },
+                  setWidth: v => { f.w = v; return img; }, setHeight: v => { f.h = v; return img; }, bringToFront: () => img };
+    return img;
   }
 };
+let FOTOS = [];
 global.SlidesApp = {
   ShapeType: new Proxy({}, { get: (o, k) => k }), LineCategory: { STRAIGHT: 'STRAIGHT' },
   ContentAlignment: { MIDDLE: 'MIDDLE' }, ParagraphAlignment: { CENTER: 'CENTER', START: 'START', END: 'END' },
   PredefinedLayout: { BLANK: 'BLANK' }
 };
-global.DriveApp = { getFileById: () => ({ getBlob: () => ({}) }) };
+global.DriveApp = { getFileById: id => ({ getBlob: () => ({ id }) }) };
 global.SpreadsheetApp = { openById: () => { throw new Error('sem planilha'); } };
+global.ScriptApp = { getOAuthToken: () => 'token' };
+global.MimeType = { PLAIN_TEXT: 'text/plain' };
 const logs = [];
 global.Logger = { log: m => logs.push(String(m)) };
-global.Utilities = { formatDate: () => '19/10/2026 14:00' };
+// "Agora" fixo: 19/10/2026 14:00, em qualquer padrão de data pedido.
+global.Utilities = { sleep: () => {}, formatDate: (d, tz, p) => p.replace(/'/g, '')
+  .replace('yyyy', '2026').replace('MM', '10').replace('dd', '19').replace('HH', '14').replace('mm', '00') };
 global.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'chave' }) };
 
 // ── Dados: fixtures pequenas, ou as respostas reais das APIs ────────────────
@@ -89,17 +99,57 @@ const WEBDOX = process.env.WEBDOX ? JSON.parse(fs.readFileSync(process.env.WEBDO
     outros: []
   }
 };
-global.UrlFetchApp = { fetch: url => ({ getResponseCode: () => 200,
-  getContentText: () => JSON.stringify(url.indexOf('webdox-megas') >= 0 ? WEBDOX : KANBAN) }) };
+// Open-Meteo: hora a hora de 30/09 a 19/10 (a API de previsão devolve o dia
+// inteiro de hoje; o slide tem que ignorar o que passa das 14h). Chove na
+// tarde dos dias múltiplos de 4 (3,2 mm/h, moderada), na noite dos múltiplos
+// de 7 (12 mm/h, forte — a das 3h do dia 15 é a noite do dia 14) e de leve na
+// manhã do dia 19.
+const HORAS = [];
+for (let d = new Date(Date.UTC(2026, 8, 30)); d < Date.UTC(2026, 9, 20); d = new Date(d.getTime() + 36e5)) {
+  const dia = d.getUTCDate(), h = d.getUTCHours(), mes = d.getUTCMonth();
+  let v = 0;
+  if (mes === 9 && dia % 4 === 0 && h === 15) v = 3.2;
+  if (mes === 9 && dia % 7 === 1 && dia > 1 && h === 3) v = 12;
+  if (mes === 9 && dia === 19 && h === 9) v = 0.8;
+  if (mes === 9 && dia === 19 && h === 20) v = 40;   // previsão para a noite: não pode contar
+  HORAS.push({ t: d.toISOString().slice(0, 13) + ':00', v });
+}
+const ARQUIVO = { time: [], precipitation_sum: [] };
+for (let a = 2016; a <= 2025; a++) for (let dia = 1; dia <= 31; dia++) {
+  ARQUIVO.time.push(a + '-10-' + String(dia).padStart(2, '0')); ARQUIVO.precipitation_sum.push(1.5);
+}
+global.UrlFetchApp = { fetch: url => {
+  if (url.indexOf('googleapis.com/drive') >= 0) return { getResponseCode: () => 404, getContentText: () => '{}' };
+  let j = url.indexOf('webdox-megas') >= 0 ? WEBDOX : KANBAN;
+  if (url.indexOf('api.open-meteo.com/v1/forecast') >= 0) j = { hourly: { time: HORAS.map(x => x.t), precipitation: HORAS.map(x => x.v) } };
+  if (url.indexOf('archive-api.open-meteo.com') >= 0) j = { daily: ARQUIVO };
+  return { getResponseCode: () => 200, getContentText: () => JSON.stringify(j) };
+} };
 
 // ── Carrega o projeto ───────────────────────────────────────────────────────
 let src = '';
 for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '01_Slide_Corretivas.gs',
                  '02_Slide_Corretivas_Acao.gs', '03_Slide_Preventivas.gs', '04_Slide_Preventivas_Acao.gs',
                  '05_Slide_Capa.gs', '06_Slide_Tempo.gs', '07_Slide_Metas.gs', '08_Slide_Cheias.gs',
-                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+                 '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
+FOTOS = UNITS.map(u => u.fotoCapaId);
+
+// Chamados da BD-CORRETIVAS (a planilha não abre no teste). Dois caem no
+// mesmo ponto do anel (noite do dia 7: 21h10 do dia 7 e 3h do dia 8).
+global._tvItensUnidade_ = () => [
+  { id: '48211', descricao: 'Infiltração na cobertura do módulo 3 depois da chuva forte', estado: 'Em andamento', prioridade: 'Alta',
+    dtReporte: new Date(Date.UTC(2026, 9, 7, 21, 10)), dtFechado: null },
+  { id: '48302', descricao: 'Goteira na doca 12', estado: 'Fechado', prioridade: 'Normal',
+    dtReporte: new Date(Date.UTC(2026, 9, 12, 14, 0)), dtFechado: new Date(Date.UTC(2026, 9, 14, 10, 0)) },
+  { id: '48230', descricao: 'Alagamento no estacionamento dos caminhões', estado: 'Aberto', prioridade: 'Emergencial',
+    dtReporte: new Date(Date.UTC(2026, 9, 8, 3, 0)), dtFechado: null },
+  { id: '47001', descricao: 'Chuveiro do vestiário sem água quente', estado: 'Aberto', prioridade: 'Normal',
+    dtReporte: new Date(Date.UTC(2026, 9, 9, 10, 0)), dtFechado: null },   // "chuveiro" não é chuva
+  { id: '46000', descricao: 'Infiltração no forro', estado: 'Fechado', prioridade: 'Normal',
+    dtReporte: new Date(Date.UTC(2026, 8, 28, 10, 0)), dtFechado: new Date(Date.UTC(2026, 8, 29)) }   // setembro
+];
 
 // Dados de exemplo dos slides que leem planilha/API de clima (dublês globais)
 const DIAS = ['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23'];
@@ -151,7 +201,8 @@ const SLIDES = {
   'Metas': u => renderSlideMetas(slide, u, METAS),
   'Cheias': u => atualizarSlideCheias(slide, Object.assign({}, EST, { marca: u.marca })),
   'Solicitações': u => atualizarSlideSolicitacoes(slide, u),
-  'Webdox': u => atualizarSlideWebdox(slide, u)
+  'Webdox': u => atualizarSlideWebdox(slide, u),
+  'Chuva do mês': u => atualizarSlideChuva(slide, u)
 };
 
 const saida = { W: 720, H: 405, slides: [] };
@@ -177,7 +228,9 @@ for (const unit of [CWB, ITJ, CWB]) {   // Curitiba de novo no fim: a marca volt
     t(titulo && titulo.fonte === (demercado ? 'EB Garamond' : 'Montserrat'), rot + ': título na fonte da marca → ' + (titulo && titulo.fonte));
     t(titulo && titulo.corTexto === (demercado ? '#00594F' : '#151E49'), rot + ': título na cor da marca → ' + (titulo && titulo.corTexto));
     t(fundo === (demercado ? '#F8FAF9' : '#F8FAFC'), rot + ': fundo da marca → ' + fundo);
-    const fora = vivas.filter(f => f.x < 0 || f.y < 0 || f.x + f.w > 720.01 || f.y + f.h > 405.01);
+    // A foto da capa passa da página de propósito (é coberta onde sobra).
+    const fora = vivas.filter(f => f.rotulo !== 'foto do Mega' &&
+      (f.x < 0 || f.y < 0 || f.x + f.w > 720.01 || f.y + f.h > 405.01));
     t(!fora.length, rot + ': forma fora da página → ' + JSON.stringify(fora[0]));
     // As Metas ficam fora destas duas: a tabela é a MESMA da apresentação
     // mensal (teste_metas_igual_megas.js), sem rodapé, com a pontuação no pé.
@@ -202,6 +255,61 @@ const cor = rodar('Visão geral corretiva', ITJ);
 t(cor.some(f => f.texto === '74 chamados em aberto · ▼ −6 em 7 dias · Mega Itajaí'), 'Corretivas: subtítulo com o número e a variação');
 t(cor.some(f => f.texto === '▼ −6 (−7,5%) em 7 dias' && f.corTexto === '#6EE7B7'), 'Corretivas: queda da fila em verde claro no cartão cheio');
 t(cor.some(f => f.texto === '▲ +1 (+3,7%) em 7 dias' && f.corTexto === '#EF4444'), 'Corretivas: Property subiu, em vermelho');
+
+// Capa com a foto real do Mega
+const capa = rodar('Capa', ITJ);
+const foto = capa.find(f => f.rotulo === 'foto do Mega');
+t(foto && capa.indexOf(foto) === 0, 'Capa: a foto é a primeira forma (o resto vai por cima)');
+t(foto && foto.x <= 0 && foto.y <= 0 && foto.x + foto.w >= 720 && foto.y + foto.h >= 200, 'Capa: a foto cobre a faixa inteira, sem deformar');
+t(foto && Math.abs(foto.w / foto.h - 1600 / 1067) < 0.01, 'Capa: proporção da foto mantida → ' + (foto && foto.w + '×' + foto.h));
+t(capa.some(f => f.cor === '#151E49' && f.alpha > 0 && f.alpha < 1 && f.y === 0), 'Capa: véu semitransparente sobre a foto');
+t(capa.filter(f => f.rotulo === 'logo').length === 2, 'Capa: os dois logos, em chips');
+t(capa.some(f => f.texto === 'Tempo e chuva'), 'Capa: trilha cita "Tempo e chuva"');
+// Foto que não carrega (Drive fora): faixa lisa na cor da marca
+const driveOk = global.DriveApp.getFileById;
+global.DriveApp.getFileById = id => { if (FOTOS.indexOf(id) >= 0) throw new Error('sem acesso'); return driveOk(id); };
+const semFoto = rodar('Capa', CWB);
+global.DriveApp.getFileById = driveOk;
+t(!semFoto.some(f => f.rotulo === 'foto do Mega') && semFoto.some(f => f.cor === '#00594F' && f.w === 720 && f.h === 200 && f.alpha === undefined),
+  'Capa: sem foto, a faixa sai lisa na cor da marca');
+
+// Chuva do mês
+const chv = rodar('Chuva do mês', ITJ);
+const noAnel = chv.filter(f => f.tipo === 'ELLIPSE' && f.w < 12 && f.y > 100 && f.y < 340 && f.x < 320);
+t(noAnel.length === 31 * 3, 'Chuva: um ponto por dia × turno (' + noAnel.length + ')');
+const futuros = noAnel.filter(f => f.cor === '#FFFFFF');
+t(futuros.length === 12 * 3 + 1, 'Chuva: 20 a 31 e a noite de hoje vazados (' + futuros.length + ')');
+t(noAnel.filter(f => f.cor === '#1E3A8A').length === 2, 'Chuva: noites fortes dos dias 7 e 14 (a das 3h vai para o dia anterior)');
+t(noAnel.filter(f => f.cor === '#0284C7').length === 4, 'Chuva: tardes moderadas dos dias 4, 8, 12 e 16');
+t(noAnel.filter(f => f.cor === '#7DD3FC').length === 1, 'Chuva: manhã leve do dia 19');
+const xis = chv.filter(f => f.tipo === 'LINE' && f.cor === '#EF4444' && f.y > 100 && f.y < 340);
+t(xis.length === 2 * 2, 'Chuva: ✕ em 2 pontos (dois chamados na mesma noite contam um) → ' + xis.length / 2);
+// Total = 4 tardes × 3,2 + 2 madrugadas × 12 + 0,8 = 37,6 mm (os 40 mm previstos
+// para a noite de hoje não contam); média do período = 19 dias × 1,5 = 28,5 mm.
+t(chv.some(f => f.texto === '38 mm em outubro · ▲ 32% acima da média de 10 anos · Mega Itajaí'),
+  'Chuva: subtítulo com o total e a comparação no mesmo período');
+t(chv.some(f => f.texto === '38 mm') && chv.some(f => f.texto === 'média 1 a 19: 29 mm'), 'Chuva: cartão do mês = subtítulo');
+t(chv.some(f => f.texto === '5 de 19'), 'Chuva: dias com ≥ 1 mm no calendário (4, 8, 12, 15, 16; o 19 teve 0,8) → ' +
+  (chv.find(f => /^\d+ de 19$/.test(f.texto || '')) || {}).texto);
+t(chv.some(f => f.texto === '12,0 mm/h') && chv.some(f => f.texto === '07/10 · noite · forte'), 'Chuva: pico com dia, turno e classe');
+t(chv.some(f => f.texto === '2 em aberto') && chv.some(f => f.texto === '3' && f.fs >= 12), 'Chuva: 3 chamados (o chuveiro e o de setembro ficam fora), 2 em aberto');
+const linhasCh = chv.filter(f => f.texto && /^\d\d\/10 · .* nº /.test(f.texto)).map(f => f.texto);
+t(linhasCh.length === 3 && /nº 48230/.test(linhasCh[0]) && /nº 48302/.test(linhasCh[2]),
+  'Chuva: lista com os em aberto primeiro, o mais recente antes → ' + linhasCh.join(' | '));
+t(chv.some(f => f.texto === 'Fechado 14/10'), 'Chuva: fechado com a data');
+
+// Arquivo do painel: Chuva logo depois da Previsão do tempo
+// Itajaí: capa, 4 operacionais, tempo, 2 metas, kanban, Webdox, chuva = 11
+const ids = Array.from({ length: 11 }, (_, i) => 'p' + i);
+let gravado = {};
+global.SlidesApp.openById = () => ({ getSlides: () => ids.map(id => ({ getObjectId: () => id })) });
+global.DriveApp.getRootFolder = () => ({ getFilesByName: () => ({ hasNext: () => false }),
+  createFile: (nome, txt) => { gravado[nome] = JSON.parse(txt); return { getUrl: () => 'url' }; } });
+gerarArquivosPainelTV();
+const urlsItj = gravado['Painel_Itajai.txt'].websites.map(w => w.url.split('id.')[1]);
+t(urlsItj.length === 11 && urlsItj[6] === 'p10' && urlsItj[5] === 'p5' && urlsItj[7] === 'p6',
+  'Painel: Chuva (último slide do deck) entra logo depois do Tempo → ' + urlsItj.join(','));
+t(gravado['Painel_Itajai.txt'].websites[0].duration === 20, 'Painel: capa continua com 20 s');
 
 if (process.env.PREVIA) {
   fs.mkdirSync(process.env.PREVIA, { recursive: true });

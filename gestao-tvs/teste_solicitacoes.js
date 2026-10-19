@@ -88,7 +88,7 @@ global.UrlFetchApp = { fetch: (url, op) => {
 
 // ── Carrega o projeto ───────────────────────────────────────────────────────
 let src = '';
-for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
+for (const f of ['Config.gs', 'Dados.gs', 'Visual.gs', '00_Main.gs', '09_Slide_Solicitacoes.gs', '10_Slide_Webdox.gs', '11_Slide_Chuva.gs']) src += fs.readFileSync(D + f, 'utf8') + '\n';
 (0, eval)(src.replace(/^(const|let) /gm, 'var '));
 const CWB = _tvUnidade_('CURITIBA'), ITJ = _tvUnidade_('ITAJA'), EST = _tvUnidade_('ESTEIO');
 
@@ -198,26 +198,28 @@ global.DriveApp = {
     createFile: (nome, conteudo) => { criados[nome] = JSON.parse(conteudo); return { getUrl: () => 'https://drive/' + nome }; }
   })
 };
-const nSlides = { [CWB.deckId]: 10, [ITJ.deckId]: 10, [EST.deckId]: 10 };
+// 11 slides: … kanban, Webdox e, por último no deck, a Chuva do mês
+const nSlides = { [CWB.deckId]: 11, [ITJ.deckId]: 11, [EST.deckId]: 11 };
 SlidesApp.openById = id => ({ getSlides: () => Array.from({ length: nSlides[id] }, (_, i) => novoSlide('ID_' + i)) });
 logs.length = 0;
 gerarArquivosPainelTV();
 t(Object.keys(criados).sort().join(',') === 'Painel_Curitiba.txt,Painel_Esteio.txt,Painel_Itajai.txt',
   'um arquivo por TV, com o nome que a TI já usa → ' + Object.keys(criados).join(','));
 const est = criados['Painel_Esteio.txt'];
-t(est && est.websites.length === 11, 'Esteio: 10 slides + a planilha extra');
-t(est && est.websites[7].url.endsWith('id.ID_7') && est.websites[8].url.endsWith('id.ID_8') && est.websites[9].url.endsWith('id.ID_9'), 'Esteio: Cheias (8º), Kanban (9º) e Webdox (10º) entram');
-t(est && est.websites[10].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
+t(est && est.websites.length === 12, 'Esteio: 11 slides + a planilha extra');
+t(est && est.websites[6].url.endsWith('id.ID_10'), 'Esteio: a Chuva do mês (último do deck) vem logo depois do Tempo');
+t(est && est.websites[8].url.endsWith('id.ID_7') && est.websites[9].url.endsWith('id.ID_8') && est.websites[10].url.endsWith('id.ID_9'), 'Esteio: Cheias, Kanban e Webdox entram, na ordem');
+t(est && est.websites[11].url.indexOf('pubhtml') >= 0, 'Esteio: a planilha publicada continua no fim');
 t(est && est.websites[0].duration === 20 && est.websites[1].duration === 30, 'capa 20 s, demais 30 s');
 t(est && est.fullscreen === true && est.settingsReloadIntervalMinutes === 60 && est.websites[0].tabReloadIntervalSeconds === 600,
   'mesmas configurações gerais do arquivo antigo');
 const itj = criados['Painel_Itajai.txt'];
-t(itj && itj.websites.length === 10 && itj.websites[7].url.endsWith('id.ID_7'), 'Itajaí: inclui as Metas do Analista (8º)');
+t(itj && itj.websites.length === 11 && itj.websites[8].url.endsWith('id.ID_7'), 'Itajaí: inclui as Metas do Analista');
 t(itj && itj.websites[0].url === 'https://docs.google.com/presentation/d/' + ITJ.deckId + '/present?slide=id.ID_0', 'URL no formato do painel');
-t(logs.some(l => l.indexOf('8. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('9. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('10. Contratos no Webdox') >= 0),
+t(logs.some(l => l.indexOf('7. Chuva do Mês') >= 0) && logs.some(l => l.indexOf('9. Metas ANALISTA') >= 0) && logs.some(l => l.indexOf('10. Kanban de Solicitações') >= 0) && logs.some(l => l.indexOf('11. Contratos no Webdox') >= 0),
   'Logger lista cada slide com o nome');
-nSlides[CWB.deckId] = 9; logs.length = 0; gerarArquivosPainelTV();
-t(logs.some(l => l.indexOf('tem 9 slides e o esperado são 10') >= 0), 'avisa quando o deck ainda não tem o kanban');
+nSlides[CWB.deckId] = 10; logs.length = 0; gerarArquivosPainelTV();
+t(logs.some(l => l.indexOf('tem 10 slides e o esperado são 11') >= 0), 'avisa quando o deck ainda não tem a Chuva do mês');
 
 // ── Ordem de carga do Apps Script ───────────────────────────────────────────
 // O Apps Script carrega os .gs em ordem alfabética: "09_…" vem ANTES de
