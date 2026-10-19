@@ -26,7 +26,22 @@ intermediário se algo falhar no meio.
 ## Arquivos do projeto
 
 Esta é a lista **completa** do que deve existir no editor do Apps Script.
-Não há `clasp`: o código é copiado à mão (ver o CLAUDE.md da raiz).
+A pasta não tem `.clasp.json`: o código é copiado à mão (ver o CLAUDE.md da
+raiz) ou publicado com `clasp` a partir de uma pasta **temporária**.
+
+ID do script (o projeto é vinculado à planilha, então `clasp list-scripts`
+não o mostra): `1EEDv2jAfRHO8HVeLnNydXcA2cKuLhGYMjM3WhYfmzV5oT-PIeTMdH-L5`.
+
+Para publicar sem colar à mão (foi assim em 19/10/2026):
+
+1. `clasp clone <ID>` numa pasta temporária — é o que está no editor.
+2. Compare cada `.js` dela com o `.gs` daqui (`sed 's/\r$//'` nos dois
+   lados; o editor não guarda a quebra de linha final). Diferença de código
+   = alguém mexeu no editor: junte antes de seguir.
+3. Copie os `.gs` alterados para a pasta temporária como `.js` e rode
+   `clasp push --force` **de lá**. Não rode push desta pasta: os testes de
+   Node (`teste_*.js`) iriam para o editor junto.
+4. Clone de novo e confira que ficou igual ao git.
 
 | Arquivo | Papel |
 |---|---|
