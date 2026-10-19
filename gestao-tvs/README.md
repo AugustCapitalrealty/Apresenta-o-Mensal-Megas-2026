@@ -54,7 +54,7 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
    Node (`teste_*.js`) iriam para o editor junto.
 4. Clone de novo e confira que ficou igual ao git.
 
-Última publicação: 19/10/2026 — slide Recados e Aprovados do Fluig pelos mais recentes. Antes: ordem nova da TV; 17:24, capa com foto, Chuva do mês e
+Última publicação: 19/10/2026 — Webdox só com contratos ligados a solicitação. Antes: Recados, Aprovados do Fluig pelos mais recentes, ordem nova da TV; 17:24, capa com foto, Chuva do mês e
 Aprovações no Fluig (16 arquivos, conferidos com `clasp clone` depois do
 push). Antes: 15:45, rebrand dos 11 slides + Webdox.
 
@@ -212,6 +212,11 @@ tempo médio em aberto) e os contratos por área com o passo atual nas mãos:
 **Jurídico · Facilities · Backoffice · Outra parte**. Fonte: função
 `webdox-megas` do portal (`PORTAL_WEBDOX_URL`), mesma chave do kanban; o
 portal decide a área com a regra dele (`src/lib/webdox-areas.ts`).
+
+**Só contratos ligados a uma solicitação**, como no painel Webdox do portal.
+A função manda todos os do Mega; o slide filtra pelo `protocolo_solicitacao`
+e recalcula os KPIs com os que ficaram (em 19/10/2026 a TV de Curitiba
+mostrava 7 contratos e o painel 2). O Logger diz quantos ficaram de fora.
 
 **O Webdox não é ao vivo**: o portal importa uma planilha exportada dele. O
 canto do cabeçalho diz de quando é a importação. `ATUALIZAR_WEBDOX()` (e as

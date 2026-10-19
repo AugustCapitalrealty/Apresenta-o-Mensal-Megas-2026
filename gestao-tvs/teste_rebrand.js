@@ -93,9 +93,9 @@ const WEBDOX = process.env.WEBDOX ? JSON.parse(fs.readFileSync(process.env.WEBDO
   gerado_em: '2026-10-19T17:00:00Z', importado_em: '2026-10-16T14:36:36Z',
   kpis: { andamento: 5, aguardando_megas: 2, atrasados: 4, tempo_medio_dias: 74 },
   colunas: {
-    juridico: Array.from({ length: 4 }, (_, i) => ({ numero: String(230 + i), objeto: 'DEMERCADO_MAFESA_INSTALAÇÕES_MCTBA-F7', fase: 'Elaboração da minuta', passo_atual: 'Jurídico: análise', responsavel: 'Pessoa Jurídica', dias_no_passo: 66.8 - i * 10, sla_passo_dias: 5, sla_status: i < 3 ? 'atrasado' : 'no_prazo', retrabalhos: i, aguardando_megas: false, protocolo_solicitacao: i === 0 ? '2026000787' : null })),
+    juridico: Array.from({ length: 4 }, (_, i) => ({ numero: String(230 + i), objeto: 'DEMERCADO_MAFESA_INSTALAÇÕES_MCTBA-F7', fase: 'Elaboração da minuta', passo_atual: 'Jurídico: análise', responsavel: 'Pessoa Jurídica', dias_no_passo: 66.8 - i * 10, sla_passo_dias: 5, sla_status: i < 3 ? 'atrasado' : 'no_prazo', retrabalhos: i, aguardando_megas: false, dias_em_aberto: 90 - i * 10, protocolo_solicitacao: i < 2 ? '202600078' + i : null })),
     facilities: [],
-    backoffice: [{ numero: '240', objeto: 'CONTRATO DE MANUTENÇÃO PREDIAL', fase: 'Validação do solicitante', responsavel: 'Pessoa C', dias_no_passo: 3, sla_passo_dias: 4, sla_status: 'atencao', aguardando_megas: true, retrabalhos: 0 }],
+    backoffice: [{ numero: '240', objeto: 'CONTRATO DE MANUTENÇÃO PREDIAL', fase: 'Validação do solicitante', responsavel: 'Pessoa C', dias_no_passo: 3, sla_passo_dias: 4, sla_status: 'atencao', aguardando_megas: true, retrabalhos: 0, dias_em_aberto: 21, protocolo_solicitacao: '2026000942' }],
     outros: []
   }
 };
@@ -261,8 +261,18 @@ for (const unit of [CWB, ITJ, CWB]) {   // Curitiba de novo no fim: a marca volt
 // Conteúdo específico
 const est = rodar('Webdox', CWB);
 const cardsWeb = est.filter(f => f.texto && /^#\d/.test(f.texto));
-const totalWeb = Object.values(WEBDOX.colunas).reduce((s, l) => s + l.length, 0);
-t(cardsWeb.length === totalWeb, `Webdox: todos os ${totalWeb} contratos aparecem (${cardsWeb.length})`);
+// Só os ligados a uma solicitação, como no painel Webdox do portal.
+const ligadosWeb = Object.values(WEBDOX.colunas).reduce((s, l) => s.concat(l), []).filter(x => x.protocolo_solicitacao);
+t(cardsWeb.length === ligadosWeb.length, `Webdox: só os ${ligadosWeb.length} ligados a solicitação aparecem (${cardsWeb.length})`);
+t(cardsWeb.every(f => /·\s+\d{10}$/.test(f.texto)), 'Webdox: todo card mostra o protocolo da solicitação → ' + cardsWeb.map(f => f.texto).join(' | '));
+const kWeb = obterWebdox_(CWB).kpis;
+t(kWeb.andamento === ligadosWeb.length && kWeb.aguardandoMegas === ligadosWeb.filter(x => x.aguardando_megas).length &&
+  kWeb.atrasados === ligadosWeb.filter(x => x.sla_status === 'atrasado').length,
+  'Webdox: KPIs recalculados só com os ligados → ' + JSON.stringify(kWeb));
+if (!process.env.WEBDOX) {
+  t(Math.round(kWeb.tempoMedio) === Math.round((90 + 80 + 21) / 3), 'Webdox: tempo médio só dos ligados');
+  t(logs.some(l => l.indexOf('2 contrato(s) sem solicitação ligada ficaram fora') >= 0), 'Webdox: avisa no Logger quantos ficaram fora');
+}
 t(est.some(f => f.texto === 'Webdox: importado em 19/10/2026 14:00'), 'Webdox: cabeçalho diz de quando é a importação');
 t(est.some(f => f.texto === 'Aguardando os Megas'), 'Webdox: "Aguardando os Megas" no card');
 t(!est.some(f => f.texto && f.texto.indexOf('_') >= 0 && /^[A-Z]/.test(f.texto)), 'Webdox: objeto sem "_" do nome do arquivo');

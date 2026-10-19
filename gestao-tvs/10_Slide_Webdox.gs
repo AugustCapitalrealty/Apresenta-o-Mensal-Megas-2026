@@ -11,7 +11,9 @@
  *
  * FONTE: função `webdox-megas` do Portal de Solicitações (PORTAL_WEBDOX_URL em
  * Config.gs), mesma chave PORTAL_API_KEY do kanban. O portal decide a área
- * (src/lib/webdox-areas.ts) e a fase do passo; o slide só desenha.
+ * (src/lib/webdox-areas.ts) e a fase do passo. Só entram contratos LIGADOS A
+ * UMA SOLICITAÇÃO (protocolo_solicitacao), como no painel Webdox do portal; os
+ * KPIs são recalculados com eles (obterWebdox_).
  *
  * O WEBDOX NÃO É AO VIVO: o portal importa uma planilha exportada do Webdox.
  * Por isso o canto do cabeçalho diz de quando é a importação, e não a hora
@@ -70,23 +72,36 @@ function obterWebdox_(unit) {
   if (!d || !d.colunas || typeof d.colunas !== 'object' || !d.kpis) {
     throw new Error('Resposta do webdox-megas sem "colunas"/"kpis" — o formato da função mudou?');
   }
+  // SÓ CONTRATO LIGADO A UMA SOLICITAÇÃO — a regra do painel Webdox do portal
+  // ("sem solicitação ligada, não aparece"). A função manda todos os do Mega:
+  // em 19/10/2026 a TV de Curitiba mostrava 7, o painel 2 (#477 e #487).
   const colunas = {};
-  let total = 0;
+  let total = 0, fora = 0;
   _WEB_COLUNAS_.forEach(c => {
     const lista = d.colunas[c.chave];
     // Coluna faltando é erro, não coluna vazia (zero falso, lição 3).
     if (!Array.isArray(lista)) throw new Error('Resposta do webdox-megas sem a coluna "' + c.chave + '".');
-    colunas[c.chave] = lista.map(_webCard_).sort((a, b) => (b.diasPasso || 0) - (a.diasPasso || 0));
-    total += lista.length;
+    const ligados = lista.filter(x => x && String(x.protocolo_solicitacao || '').trim());
+    fora += lista.length - ligados.length;
+    colunas[c.chave] = ligados.map(_webCard_).sort((a, b) => (b.diasPasso || 0) - (a.diasPasso || 0));
+    total += ligados.length;
   });
+  if (fora) Logger.log('Webdox (' + unit.name + '): ' + fora + ' contrato(s) sem solicitação ligada ficaram fora, como no painel do portal.');
+
+  // Os KPIs da função também contam os sem solicitação: recalculados aqui
+  // com os mesmos cards que o slide mostra (mesmas contas do painel).
+  const cards = _WEB_COLUNAS_.reduce((s, c) => s.concat(colunas[c.chave]), []);
+  const abertos = cards.map(x => x.diasAberto).filter(v => v !== null);
   const quando = s => { const x = s ? new Date(s) : null; return x && !isNaN(x) ? x : null; };
-  const n = v => (v === null || v === undefined || isNaN(Number(v))) ? null : Number(v);
   return {
     importadoEm: quando(d.importado_em),
     geradoEm: quando(d.gerado_em),
-    kpis: { andamento: n(d.kpis.andamento), aguardandoMegas: n(d.kpis.aguardando_megas),
-            atrasados: n(d.kpis.atrasados), tempoMedio: n(d.kpis.tempo_medio_dias) },
+    kpis: { andamento: cards.length,
+            aguardandoMegas: cards.filter(x => x.aguardandoMegas).length,
+            atrasados: cards.filter(x => x.sla === 'atrasado').length,
+            tempoMedio: abertos.length ? abertos.reduce((s, v) => s + v, 0) / abertos.length : null },
     total: total,
+    semSolicitacao: fora,
     colunas: colunas
   };
 }
@@ -163,7 +178,7 @@ function _webDesenhar_(slide, unit, w) {
   // Faixa de KPIs (o primeiro cheio: é o número do slide)
   const kx = 30, ky = 84, kh = 62, kg = 10, kw = (660 - 3 * kg) / 4;
   _tvKpi_(slide, kx, ky, kw, kh, { rotulo: 'Em andamento', valor: k.andamento != null ? k.andamento : w.total,
-    sub: 'contratos de Facilities', destaque: true, fsValor: 22 });
+    sub: 'ligados a solicitações', destaque: true, fsValor: 22 });
   _tvKpi_(slide, kx + (kw + kg), ky, kw, kh, { rotulo: 'Aguardando os Megas', valor: k.aguardandoMegas || 0,
     sub: 'passo com o Administrativo Megas', corSub: k.aguardandoMegas ? c.accentOrange : null, fsValor: 22 });
   _tvKpi_(slide, kx + 2 * (kw + kg), ky, kw, kh, { rotulo: 'Atrasados no passo', valor: k.atrasados || 0,
