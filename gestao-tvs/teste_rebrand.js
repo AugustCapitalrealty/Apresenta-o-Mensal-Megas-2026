@@ -343,6 +343,12 @@ if (!process.env.FLUIG) {
   t(flu.some(f => f.texto === 'R$ 4 mil  ·  em execução') && flu.some(f => f.texto === '208d'), 'Fluig: aprovado mostra dias em execução');
   t(flu.some(f => f.texto === '21d') && flu.some(f => f.cor === '#EF4444' && f.w === 3), 'Fluig: 21 dias desde o lançamento em vermelho');
   t(flu.some(f => f.texto === 'Nenhum chamado aqui'), 'Fluig: Diretoria vazia avisa');
+  const iMaisNovo = flu.findIndex(f => f.texto === '#160001'), iMaisVelho = flu.findIndex(f => f.texto === '#151871');
+  t(iMaisNovo >= 0 && iMaisVelho > iMaisNovo, 'Fluig: Aprovados com o mais recente (3 dias) antes do mais antigo (208)');
+}
+{
+  const ap = obterFluig_(ITJ).colunas.aprovado.map(c => c.diasEtapa);
+  t(ap.every((d, i) => !i || (ap[i - 1] === null ? Infinity : ap[i - 1]) <= (d === null ? Infinity : d)), 'Fluig: Aprovados em ordem crescente de dias → ' + ap.join(','));
 }
 
 // Recados (o conteúdo vem de Recados.gs; aqui cada caso que ele permite)

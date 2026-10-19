@@ -54,7 +54,7 @@ Para publicar sem colar à mão (foi assim em 19/10/2026):
    Node (`teste_*.js`) iriam para o editor junto.
 4. Clone de novo e confira que ficou igual ao git.
 
-Última publicação: 19/10/2026 — ordem nova da TV (Metas por último). Antes, 17:24: capa com foto, Chuva do mês e
+Última publicação: 19/10/2026 — slide Recados e Aprovados do Fluig pelos mais recentes. Antes: ordem nova da TV; 17:24, capa com foto, Chuva do mês e
 Aprovações no Fluig (16 arquivos, conferidos com `clasp clone` depois do
 push). Antes: 15:45, rebrand dos 11 slides + Webdox.
 

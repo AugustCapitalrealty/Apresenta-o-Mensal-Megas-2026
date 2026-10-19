@@ -79,9 +79,14 @@ function obterFluig_(unit) {
     const lista = d.colunas[c.chave];
     // Coluna faltando é erro, não coluna vazia (zero falso, lição 3).
     if (!Array.isArray(lista)) throw new Error('Resposta do fluig-megas sem a coluna "' + c.chave + '".');
+    // Em aprovação: os mais parados primeiro (é o que pede ação). Aprovados:
+    // os MAIS RECENTES primeiro (pedido do Guilherme, 19/10/2026) — os de
+    // 200+ dias "em execução" são chamado esquecido aberto no Fluig e
+    // tomavam a coluna inteira.
     const aprovado = c.chave === 'aprovado';
+    const dias = v => (v === null || v === undefined ? Infinity : v);
     colunas[c.chave] = lista.map(_fluCard_).sort((a, b) =>
-      aprovado ? (b.diasEtapa || 0) - (a.diasEtapa || 0) : (b.diasTotal || 0) - (a.diasTotal || 0));
+      aprovado ? dias(a.diasEtapa) - dias(b.diasEtapa) : (b.diasTotal || 0) - (a.diasTotal || 0));
   });
   const quando = s => { const x = s ? new Date(s) : null; return x && !isNaN(x) ? x : null; };
   const n = v => (v === null || v === undefined || isNaN(Number(v))) ? null : Number(v);
@@ -202,14 +207,15 @@ function _fluDesenhar_(slide, unit, f) {
     });
     const resto = cards.length - cabem;
     if (resto > 0) {
-      _tvTexto_(slide, x, base - maisH, colW, maisH, '+ ' + resto + (resto === 1 ? ' chamado' : ' chamados'),
+      _tvTexto_(slide, x, base - maisH, colW, maisH,
+        '+ ' + resto + (aprovado ? (resto === 1 ? ' mais antigo' : ' mais antigos') : (resto === 1 ? ' chamado' : ' chamados')),
         { fs: 7.5, fsMin: 6, bold: true, cor: c.textBody, fonte: fonteB, align: 'C' });
     }
   });
 
   _tvRodape_(slide, 'Fonte: Fluig, importado no Portal de Solicitações em ' + importado +
                     ' · selo = dias desde o lançamento (verde até ' + _FLU_DIAS_OK_ + ', laranja até ' + _FLU_DIAS_ATENCAO_ +
-                    '); nos aprovados, dias em execução');
+                    '); nos aprovados, dias em execução, os mais recentes primeiro');
 }
 
 function _fluDesenharCard_(slide, x, y, w, h, card, aprovado) {
