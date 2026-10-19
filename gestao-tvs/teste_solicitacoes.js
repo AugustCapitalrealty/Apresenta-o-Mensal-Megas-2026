@@ -130,6 +130,22 @@ t(estouro.length === 0, 'texto de linha única cabe na caixa → ' + estouro.map
 const seloTexto = vivas().find(s => s.texto === '153d');
 t(seloTexto && seloTexto.fs >= 6.5, 'selo "153d" sem encolher demais (fonte ' + (seloTexto && seloTexto.fs) + ')');
 
+// Fornecedor em linha própria, em todas as colunas
+t(textos.indexOf('Fornecedor B1') >= 0 && textos.indexOf('Fornecedor 2026000962') >= 0, 'fornecedor aparece também no backoffice e no solicitante');
+http = { codigo: 200, corpo: (() => { const r = resposta(1); r.colunas.backoffice[0].fornecedor = null; return r; })() };
+t(rodar().indexOf('Fornecedor a definir') >= 0, 'sem fornecedor: "Fornecedor a definir"');
+http = { codigo: 200, corpo: resposta(9) }; textos = rodar();
+
+// Medição: os textos que QUEBRARAM na TV de 19/10/2026 com a conta antiga
+// (nº de letras × fator fixo) têm que ser vistos como "não cabe" agora.
+// Largura útil do card: coluna (720 − 32 − 24)/4 = 166 → card 158 → texto 154.
+const wTexto = 154;
+t(_solLargura_('Emissão de Ordem de Compra para pagam…', 7, 'Open Sans', false) > wTexto - _SOL_RECUO_,
+  'descrição que quebrou na TV agora não cabe (é cortada antes)');
+t(_solLargura_('T IANKOSKI CONSTRUCOES E…', 6.5, 'Open Sans', true) > wTexto - 50 - _SOL_RECUO_,
+  'fornecedor em maiúscula que quebrou na TV agora não cabe');
+t(_solLargura_('2026000962', 8, 'Montserrat', true) < wTexto - 28 - _SOL_RECUO_, 'protocolo cabe com folga');
+
 // ── Régua de tempo (mesma do portal) ────────────────────────────────────────
 t(_solTom_({ status: 'em_analise', dias: 3 }) === 'ok' && _solTom_({ status: 'em_analise', dias: 4 }) === 'atencao' &&
   _solTom_({ status: 'em_analise', dias: 6 }) === 'atrasado', 'em análise: prazo 5');

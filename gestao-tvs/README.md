@@ -97,7 +97,9 @@ paradas: **Com o solicitante** (correção/informação) · **Com o backoffice**
   régua do portal: 5 dias em análise, 3 no lançamento; sem prazo, até 3 ok e
   até 5 atenção), descrição, quem age ou o fornecedor, valor. `EMERG.` =
   emergencial; `Contrato ·` = precisa de instrumento jurídico além da OC.
-  Cabem 5 por coluna — as mais paradas; o pé diz quantas mais recentes
+  O fornecedor tem linha própria em todas as colunas, junto com o valor
+  ("Fornecedor a definir" quando ainda não há).
+  Cabem 4 por coluna — as mais paradas; o pé diz quantas mais recentes
   ficaram de fora.
 - **Portal fora do ar:** o slide atual fica na TV (mesma regra das Metas). Só
   na primeira vez, com o slide vazio, aparece o aviso do motivo.

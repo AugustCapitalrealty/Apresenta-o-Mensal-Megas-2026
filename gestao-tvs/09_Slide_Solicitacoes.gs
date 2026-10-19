@@ -216,13 +216,12 @@ function _solCorTom_(tom) {
 }
 
 // Linha de baixo do card: o que importa para a coluna. Na do solicitante e
-// na das emitidas, QUEM tem que agir (o solicitante do Mega); no backoffice,
-// o passo que falta; nas liberadas, o fornecedor.
+// na das emitidas, QUEM tem que agir (o solicitante do Mega); no backoffice
+// e nas liberadas, o passo que falta. O fornecedor tem linha própria.
 function _solInfoCard_(card, coluna) {
   let info;
-  if (coluna === 'backoffice')    info = card.proximo || card.quem;
-  else if (coluna === 'liberada') info = card.fornecedor || card.proximo;
-  else                            info = card.solicitante || card.quem;
+  if (coluna === 'backoffice' || coluna === 'liberada') info = card.proximo || card.quem;
+  else                                                  info = card.solicitante || card.quem;
   // "Contrato" vai NA FRENTE: a linha é cortada com "…" no fim, e no fim a
   // marca sumia justamente nos textos longos.
   if (card.contrato) info = info ? 'Contrato · ' + info : 'Contrato';
@@ -242,14 +241,29 @@ function _solMoeda_(v) {
 // ==========================================
 // MEDIÇÃO DE TEXTO (caixa estreita quebra sozinha — lição 1 do CLAUDE.md)
 // ==========================================
-// Mesmo método de megas-mensal/00_Helpers.gs (_gLarguraTexto_/_gUmaLinha_):
-// mede o texto ANTES de desenhar. Toda TEXT_BOX tem ~7pt de recuo interno de
+// Mede o texto ANTES de desenhar. Toda TEXT_BOX tem ~7pt de recuo interno de
 // cada lado que a API não deixa desligar.
-const _SOL_FATOR_FONTE_ = { 'Montserrat': 0.58, 'Open Sans': 0.52 };
+//
+// Letra a letra, e não "nº de letras × fator fixo" (o método de
+// megas-mensal/00_Helpers.gs): na TV de 19/10/2026 o fator fixo deixou passar
+// "T IANKOSKI CONSTRUCOES E…" e "Emissão de Ordem de Compra para pagam…", que
+// quebraram em duas linhas. Maiúscula, "m" e "w" são bem mais largos que a
+// média, e nome de fornecedor vem todo em maiúscula. Os pesos são em "em" da
+// Open Sans, arredondados para cima; Montserrat é ~10% mais larga.
 const _SOL_RECUO_ = 14;
 
 function _solLargura_(texto, fs, fonte, bold) {
-  return String(texto).length * fs * (_SOL_FATOR_FONTE_[fonte] || 0.55) * (bold ? 1.04 : 1);
+  let em = 0;
+  for (const ch of String(texto)) {
+    if (ch === ' ')                          em += 0.28;
+    else if (/[iljI|.,:;'!·]/.test(ch))      em += 0.28;
+    else if (/[ftr\-()\/]/.test(ch))         em += 0.37;
+    else if (/[mwMW]/.test(ch))              em += 0.88;
+    else if (/[A-ZÀ-ÖØ-Þ]/.test(ch))         em += 0.69;
+    else if (/[0-9]/.test(ch))               em += 0.58;
+    else                                     em += 0.56;
+  }
+  return em * fs * (fonte === 'Montserrat' ? 1.1 : 1) * (bold ? 1.07 : 1);
 }
 
 // Corta com "…" até caber numa linha de largura `w` — descrição pode ter
@@ -328,7 +342,7 @@ function _solDesenhar_(slide, unit, k) {
   const topo = 100, base = H - 8;
   const colW = (W - 2 * mX - 3 * gap) / 4;
   const cabH = 24, subH = 14;
-  const cardH = 43, cardGap = 5;
+  const cardH = 54, cardGap = 5;
   const maisH = 13;
   const yCards = topo + cabH + subH + 2;
   const cabem = Math.max(1, Math.floor((base - maisH - yCards + cardGap) / (cardH + cardGap)));
@@ -390,11 +404,13 @@ function _solDesenharCard_(slide, x, y, w, h, card, coluna) {
 
   // Linha 1: protocolo · EMERG. · selo de dias
   const seloW = 28, seloX = x + w - seloW - 4;
-  const emergW = card.emergencial ? 40 : 0;
+  const emergW = card.emergencial ? 38 : 0;
   _solTexto_(slide, xi, y + 2, seloX - emergW - xi, 13, card.protocolo,
     { fs: 8, fsMin: 6, bold: true, cor: DS.colors.textMain, fonte: fonteT });
   if (card.emergencial) {
-    _solTexto_(slide, seloX - emergW, y + 2, emergW, 13, 'EMERG.',
+    // Caixa 12pt mais larga que o espaço (6 de cada lado): devolve o recuo
+    // interno. Sem isso o "." de "EMERG." caía na linha de baixo.
+    _solTexto_(slide, seloX - emergW - 6, y + 2, emergW + 12, 13, 'EMERG.',
       { fs: 6.5, fsMin: 5.5, bold: true, cor: DS.colors.accentRed, fonte: fonteT, align: 'C' });
   }
   const selo = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, seloX, y + 4, seloW, 10);
@@ -412,17 +428,24 @@ function _solDesenharCard_(slide, x, y, w, h, card, coluna) {
   _solTexto_(slide, xi, y + 15, wi, 13, desc,
     { fs: descFs, fsMin: descFs, cor: DS.colors.textMain, fonte: fonteB });
 
-  // Linha 3: quem/o quê (esquerda) · valor (direita)
+  // Linha 3: fornecedor (esquerda) · valor (direita) — andam juntos: é o
+  // "quem vai receber quanto". Sem fornecedor ainda, diz isso.
   const valor = _solMoeda_(card.valor);
   const valorW = valor ? 50 : 0;
+  const fornecedor = card.fornecedor || 'Fornecedor a definir';
+  _solTexto_(slide, xi, y + 27, wi - valorW, 13, _solCortar_(fornecedor, wi - valorW, 6.5, fonteB, !!card.fornecedor),
+    { fs: 6.5, fsMin: 6.5, bold: !!card.fornecedor, italic: !card.fornecedor,
+      cor: card.fornecedor ? DS.colors.textMain : DS.colors.textBody, fonte: fonteB });
+  if (valor) {
+    _solTexto_(slide, x + w - valorW - 2, y + 27, valorW + 2, 13, valor,
+      { fs: 7, fsMin: 5.5, bold: true, cor: DS.colors.textMain, fonte: fonteT, align: 'C' });
+  }
+
+  // Linha 4: quem age / o passo que falta
   const info = _solInfoCard_(card, coluna);
   if (info) {
-    _solTexto_(slide, xi, y + 28, wi - valorW, 13, _solCortar_(info, wi - valorW, 6.5, fonteB, false),
+    _solTexto_(slide, xi, y + 39, wi, 13, _solCortar_(info, wi, 6.5, fonteB, false),
       { fs: 6.5, fsMin: 6.5, cor: DS.colors.textBody, fonte: fonteB });
-  }
-  if (valor) {
-    _solTexto_(slide, x + w - valorW - 2, y + 28, valorW + 2, 13, valor,
-      { fs: 7, fsMin: 5.5, bold: true, cor: DS.colors.textMain, fonte: fonteT, align: 'C' });
   }
 }
 
