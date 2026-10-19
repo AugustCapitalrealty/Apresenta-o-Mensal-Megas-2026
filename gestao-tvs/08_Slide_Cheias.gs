@@ -185,10 +185,13 @@ function condensarOscilacao(texto) {
 }
 
 // ==========================================
-// DESENHA O SLIDE (limpa e redesenha só o slide 8)
+// DESENHA O SLIDE
 // ==========================================
+// Visual do Orçamento 2027 (Visual.gs, rebrand de 19/10/2026): um cartão por
+// rio com a barra lateral na cor do risco (nível ÷ cota de inundação) e o
+// canal de drenagem numa faixa embaixo. A cor aqui É a informação: verde
+// abaixo de 70% da cota, laranja até 90%, vermelho acima.
 function atualizarSlideCheias(slide, unit) {
-  const ds = CR_DESIGN_SYSTEM;
   const dataHora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm");
 
   slide.getPageElements().forEach(el => el.remove());
@@ -201,93 +204,70 @@ function atualizarSlideCheias(slide, unit) {
     dados = null;
   }
 
-  applyBrandHeaderAndBackground(slide, "Monitoramento de Cheias", unit.weather.cidade, dataHora, unit,
-    { dataLabel: dados ? `🕒 Última medição: ${dados.ultimaMedicao}` : `🕒 Atualizado: ${dataHora}` });
+  const cotas = unit.cheiasCotas || [];
+  const leituras = dados ? dados.rios.map((r, i) => {
+    const nivel = parseNivelM(r.nivelAtual);
+    const cota = cotas[i] != null ? cotas[i] : null;
+    return { r, nivel, cota, ratio: (nivel != null && cota) ? nivel / cota : null };
+  }) : [];
+  const pior = leituras.filter(l => l.ratio != null).sort((a, b) => b.ratio - a.ratio)[0];
+  const nomeCurto = n => String(n || '').replace(/^RIO\s+/i, '').toLowerCase().replace(/(^|\s|-)(\S)/g, (m, e, l) => e + l.toUpperCase());
+
+  applyBrandHeaderAndBackground(slide, 'Monitoramento de cheias',
+    pior ? `${unit.weather.cidade} · maior nível: ${Math.round(pior.ratio * 100)}% da cota (${nomeCurto(pior.r.nome)})`
+         : unit.weather.cidade,
+    dataHora, unit, { dataLabel: dados ? `Última medição: ${dados.ultimaMedicao || '—'}` : `Atualizado: ${dataHora}` });
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
 
   if (!dados) {
-    const txtErro = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 180, 620, 50);
-    txtErro.getText().setText("⚠️ Dados de monitoramento de cheias indisponíveis no momento.")
-      .getTextStyle().setFontSize(16).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-    txtErro.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    _tvTexto_(slide, 30, 180, 660, 30, 'Dados de monitoramento de cheias indisponíveis no momento.',
+      { fs: 16, fsMin: 11, bold: true, cor: c.textBody, fonte: DS.typography.titles, align: 'C' });
     return;
   }
 
-  const cX = ds.layout.marginX;
-  const fullW = 720 - (ds.layout.marginX * 2);
+  const t = (x, y, w, h, valor, op) => _tvTexto_(slide, x, y, w, h, (String(valor == null ? '' : valor).trim() || '—'),
+    Object.assign({ cortar: true, fonte: DS.typography.body, cor: c.textBody }, op));
 
-  // Helper: cria uma caixa de texto já com alinhamento MIDDLE, com log do
-  // nome do campo em caso de falha (facilita localizar problemas pontuais
-  // de dados sem derrubar o slide inteiro).
-  const txt = (campo, x, y, w, h, valor, fontSize, family, color, bold, center) => {
-    try {
-      const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, Math.max(w, 1), Math.max(h, 1));
-      t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      // Texto vazio faz a API descartar o corpo de texto da forma, e a
-      // chamada a getTextStyle() em seguida falha com "has no text".
-      const texto = String(valor == null ? "" : valor).trim() || "—";
-      const style = t.getText().setText(texto).getTextStyle()
-        .setFontSize(fontSize).setFontFamily(family).setForegroundColor(color);
-      if (bold) style.setBold(true);
-      if (center) t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-      return t;
-    } catch (e) {
-      Logger.log(`⚠️ Falha ao criar texto "${campo}" (valor="${valor}"): ${e.message}`);
-      return null;
-    }
-  };
+  // Um cartão por rio
+  const startY = 84, gap = 10, cardW = (660 - 2 * gap) / 3, cardH = 236;
+  leituras.forEach((l, i) => {
+    const x = 30 + i * (cardW + gap);
+    const cor = corRiscoCheia(l.ratio, DS);
+    _tvRet_(slide, x, startY, cardW, cardH, c.cardBg, { redondo: true, borda: c.lines });
+    _tvRet_(slide, x, startY + 8, 4, cardH - 16, cor);
+    const ix = x + 10, iw = cardW - 18;
 
-  // ==================================================
-  // 1) NÍVEIS DOS RIOS (3 cards) — nível atual vs. cota de inundação
-  // ==================================================
-  const startY = 96, cardGap = 13, cardW = (fullW - cardGap * 2) / 3, cardH = 232;
-  const cotas = unit.cheiasCotas || [];
+    t(ix, startY + 6, iw, 30, l.r.nome, { fs: 9, fsMin: 7, bold: true, cor: c.textMain, fonte: DS.typography.titles });
+    t(ix, startY + 34, iw, 40, l.r.nivelAtual || 'N/D', { fs: 30, fsMin: 18, bold: true, cor: cor, fonte: DS.typography.titles });
+    t(ix, startY + 74, iw, 16, `Cota de inundação: ${fmtMetros(l.cota)}`, { fs: 9, fsMin: 7.5, bold: true });
 
-  dados.rios.forEach((r, i) => {
-    const x = cX + i * (cardW + cardGap);
-    const nivel = parseNivelM(r.nivelAtual);
-    const cota = (cotas[i] != null) ? cotas[i] : null;
-    const ratio = (nivel != null && cota) ? (nivel / cota) : null;
-    const cor = corRiscoCheia(ratio, ds);
+    const barY = startY + 94, barX = ix + 7, barW = iw - 14, barH = 10;
+    _tvRet_(slide, barX, barY, barW, barH, c.zebra, { redondo: true });
+    if (l.ratio != null) _tvRet_(slide, barX, barY, Math.max(4, Math.min(1, l.ratio) * barW), barH, cor, { redondo: true });
+    t(ix, barY + 12, iw, 15, l.ratio != null ? `${Math.round(l.ratio * 100)}% da cota` : '% da cota indisponível',
+      { fs: 8.5, fsMin: 7, bold: true, cor: cor });
 
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, cardW, cardH);
-    bg.getFill().setSolidFill(ds.colors.cardBg); bg.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
-    const acc = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, 5, cardH);
-    acc.getFill().setSolidFill(cor); acc.getBorder().setTransparent();
-
-    const ix = x + 16, iw = cardW - 30;
-
-    txt(`rio[${i}].nome`, ix, startY + 10, iw, 28, r.nome, 10, ds.typography.titles, ds.colors.textMain, true);
-    txt(`rio[${i}].nivelAtual`, ix, startY + 38, iw, 38, r.nivelAtual || "N/D", 30, ds.typography.titles, cor, true);
-    txt(`rio[${i}].cota`, ix, startY + 78, iw, 16, `Cota de inundação: ${fmtMetros(cota)}`, 9, ds.typography.body, ds.colors.textBody, true);
-
-    // Barra de risco: preenchimento proporcional ao nível / cota.
-    const barY = startY + 98, barW = iw, barH = 9;
-    const trilho = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, barY, barW, barH);
-    trilho.getFill().setSolidFill(ds.colors.lines); trilho.getBorder().setTransparent();
-    if (ratio != null) {
-      const fillW = Math.max(2, Math.min(1, ratio) * barW);
-      const preench = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, barY, fillW, barH);
-      preench.getFill().setSolidFill(cor); preench.getBorder().setTransparent();
-    }
-    txt(`rio[${i}].ratio`, ix, barY + 11, iw, 14,
-      ratio != null ? `${Math.round(ratio * 100)}% da cota` : "% da cota indisponível", 8, ds.typography.body, cor, true);
-
-    txt(`rio[${i}].anoPassado`, ix, startY + 138, iw, 16, `📅 Há 1 ano: ${r.anoPassado || "N/D"}`, 9, ds.typography.body, ds.colors.textBody, false);
-    txt(`rio[${i}].tend7`, ix, startY + 158, iw, 16, `Tend. 7h30: ${condensarTendencia(r.tendencia7h30)}`, 9, ds.typography.body, ds.colors.brandMed, true);
-    txt(`rio[${i}].tend3`, ix, startY + 176, iw, 16, `Tend. 3h: ${condensarTendencia(r.tendencia3h)}`, 9, ds.typography.body, ds.colors.brandMed, true);
-    txt(`rio[${i}].osc`, ix, startY + 196, iw, 28,
-      `Osc. última: ${condensarOscilacao(r.oscUltima)}\nDia anterior: ${condensarOscilacao(r.oscDiaAnterior)}`, 8, ds.typography.body, ds.colors.textBody, false);
+    const div = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, barX, startY + 132, barX + barW, startY + 132);
+    div.getLineFill().setSolidFill(c.lines);
+    div.setWeight(1);
+    t(ix, startY + 138, iw, 16, `Há 1 ano: ${l.r.anoPassado || 'N/D'}`, { fs: 9, fsMin: 7.5 });
+    t(ix, startY + 156, iw, 16, `Tendência 7h30: ${condensarTendencia(l.r.tendencia7h30)}`, { fs: 9, fsMin: 7.5, bold: true, cor: c.brandDark });
+    t(ix, startY + 174, iw, 16, `Tendência 3h: ${condensarTendencia(l.r.tendencia3h)}`, { fs: 9, fsMin: 7.5, bold: true, cor: c.brandDark });
+    t(ix, startY + 194, iw, 15, `Oscilação última: ${condensarOscilacao(l.r.oscUltima)}`, { fs: 8.5, fsMin: 7 });
+    t(ix, startY + 210, iw, 15, `Dia anterior: ${condensarOscilacao(l.r.oscDiaAnterior)}`, { fs: 8.5, fsMin: 7 });
   });
 
-  // ==================================================
-  // 2) CANAL DE DRENAGEM (Mega Esteio)
-  // ==================================================
-  const canalY = startY + cardH + 14, canalH = 40;
-  const bgCanal = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cX, canalY, fullW, canalH);
-  bgCanal.getFill().setSolidFill('#EFF6FF'); bgCanal.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.brandLight);
+  // Canal de drenagem
+  const canalY = startY + cardH + 10, canalH = 44;
+  _tvRet_(slide, 30, canalY, 660, canalH, c.brandTint, { redondo: true });
+  _tvRet_(slide, 30, canalY + 8, 4, canalH - 16, c.brandLight);
+  t(40, canalY, 260, canalH, 'CANAL DE DRENAGEM — MEGA ESTEIO',
+    { fs: 9.5, fsMin: 7.5, bold: true, cor: c.textBody, fonte: DS.typography.titles });
+  t(300, canalY, 160, canalH, dados.canalDrenagem || 'N/D',
+    { fs: 20, fsMin: 12, bold: true, cor: c.brandDark, fonte: DS.typography.titles, align: 'C' });
+  t(460, canalY, 225, canalH, dados.canalData ? `medição de ${dados.canalData}` : '',
+    { fs: 9.5, fsMin: 7.5, cor: c.textBody, align: 'R' });
 
-  const canalTxt = `🚰 CANAL DE DRENAGEM — MEGA ESTEIO:  ${dados.canalDrenagem || "N/D"}` +
-    (dados.canalData ? `     •     medição: ${dados.canalData}` : '');
-  txt('canalDrenagem', cX + 14, canalY, fullW - 28, canalH,
-    canalTxt, 13, ds.typography.titles, ds.colors.brandLight, true);
+  _tvRodape_(slide, 'Fonte: planilha de monitoramento de cheias (rios e canal) · cor = nível ÷ cota de inundação: ' +
+                    'verde < 70%, laranja < 90%, vermelho ≥ 90%');
 }

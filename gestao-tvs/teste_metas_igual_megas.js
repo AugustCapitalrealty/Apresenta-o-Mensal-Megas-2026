@@ -3,7 +3,7 @@
 // códigos num dublê do SlidesApp e compara forma por forma — tipo, texto,
 // fonte, tamanho, negrito, cores (inclusive por trecho do selo ▲/▼), x e
 // largura. A altura e o y NÃO entram: a TV tem cabeçalho próprio, mais alto
-// (tabela começa em y=96, na mensal em y=66), então as linhas ficam um pouco
+// (tabela começa em y=84, na mensal em y=66), então as linhas ficam um pouco
 // mais baixas de propósito.
 //
 // Também reprova se alguma forma sair da página ou tiver dimensão inválida.
@@ -141,7 +141,7 @@ confere(difs === 0, `${difs} forma(s) diferentes entre TV e Megas`);
 
 // Mesma diferença de y em todas as formas da tabela = mesmo desenho, só
 // deslocado pelo cabeçalho. Confere a barra de título e a de pontuação.
-confere(formasTV[0].y === 96 && formasMegas[0].y === 66, 'barra de título começa em 96 (TV) e 66 (Megas)');
+confere(formasTV[0].y === 84 && formasMegas[0].y === 66, 'barra de título começa em 84 (TV) e 66 (Megas)');
 confere(formasTV[formasTV.length - 4].y === formasMegas[formasMegas.length - 4].y, 'rodapé de pontuação no mesmo y');
 
 // Nada fora da página 720×405

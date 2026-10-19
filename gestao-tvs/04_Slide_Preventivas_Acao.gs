@@ -17,129 +17,59 @@ function gerarSlidePreventivasDetalhe(slide, dataGlobal, unit) {
     d.equipeLider, dataGlobal, d.emAbertoAntes, trend, diff, unit, d.diasComparacao);
 }
 
+// Visual do Orçamento 2027 (Visual.gs, rebrand de 19/10/2026): as atrasadas
+// no cartão cheio, a fila nos cartões ao lado e a lista das prioridades numa
+// tabela com cabeçalho escuro e linhas zebradas. Vermelho = atraso.
 function criarDashboardDetalhePreventivas(slide, countEmAberto, countEmCurso, lista, equipeLider, dataGlobal, prevEmAberto, trend, diff, unit, diasComp) {
-  const ds = CR_DESIGN_SYSTEM;
+  const quando = diasComp ? ` em ${diasComp} dias` : '';
+  const v = _tvVariacao_(countEmAberto - (prevEmAberto == null ? countEmAberto : prevEmAberto), true);
+  applyBrandHeaderAndBackground(slide, 'Backlog preventivo',
+    `${countEmAberto} atrasadas · ${countEmCurso} em curso · ${v.txt}${quando}`, dataGlobal, unit);
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
 
-  applyBrandHeaderAndBackground(slide, "Backlog Preventivo", "Rotinas atrasadas ou em execução", dataGlobal, unit);
+  const kx = 30, ky = 84, kh = 64, kg = 10, kw = (660 - 3 * kg) / 4;
+  _tvKpi_(slide, kx, ky, kw, kh, { rotulo: 'Atrasadas', valor: countEmAberto, destaque: true, fsValor: 28,
+    sub: v.txt + quando, corSub: v.cor });
+  _tvKpi_(slide, kx + (kw + kg), ky, kw, kh, { rotulo: 'Em curso', valor: countEmCurso, fsValor: 28,
+    sub: 'em execução agora' });
+  _tvKpi_(slide, kx + 2 * (kw + kg), ky, kw, kh, { rotulo: 'Total na fila', valor: countEmAberto + countEmCurso, fsValor: 28,
+    sub: 'atrasadas + em curso' });
+  _tvKpi_(slide, kx + 3 * (kw + kg), ky, kw, kh, { rotulo: 'Maior volume', valor: equipeLider || '—', fsValor: 15,
+    sub: 'equipe com mais rotinas na fila' });
 
-  if (countEmAberto > 0 || prevEmAberto > 0) {
-    const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${countEmAberto})${vs}`;
-    let badgeBgColor = ds.colors.bgSlide;
-    let badgeBorderColor = ds.colors.lines;
-    let badgeTxtColor = ds.colors.textBody;
+  // Tabela das prioridades
+  const px = 30, py = 158, pw = 660, ph = 218;
+  const cy = _tvCard_(slide, px, py, pw, ph, 'Prioridades · por volume');
+  const tx = px + 14, tw = pw - 28;
+  const cols = [
+    { t: 'QTD', w: 50, a: 'C' }, { t: 'DESCRIÇÃO DO SERVIÇO', w: tw - 50 - 150 - 110, a: 'L' },
+    { t: 'RESPONSÁVEL', w: 150, a: 'L' }, { t: 'DIAS EM ABERTO', w: 110, a: 'C' }];
+  const xs = []; let acc = tx; cols.forEach(col => { xs.push(acc); acc += col.w; });
 
-    if (trend === 'DOWN') {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
-      badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
-    } else if (trend === 'UP') {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
-      badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
-    }
-
-    const bannerW = 720 - (ds.layout.marginX * 2);
-    const badge = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, 95, bannerW, 20);
-    badge.getFill().setSolidFill(badgeBgColor);
-    badge.getBorder().setWeight(1).getLineFill().setSolidFill(badgeBorderColor);
-
-    const badgeTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 95, bannerW, 20);
-    badgeTxt.getText().setText(msgAcao).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(badgeTxtColor).setBold(true);
-    badgeTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  }
-
-  const startY = ds.layout.contentY;
-
-  const renderCard = (x, w, lbl, val, corHex, sizeVal, valAnt = null) => {
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, w, 60);
-    bg.getFill().setSolidFill(ds.colors.cardBg); bg.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
-    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, 4, 60);
-    barra.getFill().setSolidFill(corHex); barra.getBorder().setTransparent();
-    const tLbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, startY + 5, w - 15, 20);
-    tLbl.getText().setText(lbl).getTextStyle().setFontSize(10).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-    const tVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + 10, startY + 20, w - 15, 40);
-    tVal.getText().setText(val.toString()).getTextStyle().setFontSize(sizeVal).setFontFamily(ds.typography.titles).setForegroundColor(corHex).setBold(true);
-
-    if (valAnt !== null) {
-      const diferenca = val - valAnt;
-      if (diferenca !== 0) {
-        const isUp = diferenca > 0;
-        const arrow = isUp ? "▲" : "▼";
-        const dColor = isUp ? ds.colors.accentRed : ds.colors.accentGreen;
-        const sinal = isUp ? "+" : "";
-        const tDelta = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x + w - 75, startY + 25, 65, 30);
-        tDelta.getText().setText(`${arrow} ${sinal}${diferenca}`).getTextStyle().setFontSize(14).setFontFamily(ds.typography.titles).setForegroundColor(dColor).setBold(true);
-        tDelta.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-      }
-    }
-  };
-
-  renderCard(ds.layout.marginX, 180, "🔴 EM ABERTO", countEmAberto, ds.colors.accentRed, 30, prevEmAberto);
-  renderCard(240, 150, "⚪ TOTAL NA FILA", countEmAberto + countEmCurso, ds.colors.brandDark, 26);
-  renderCard(400, 150, "🟠 EM CURSO", countEmCurso, ds.colors.accentOrange, 26);
-
-  const bgEq = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 560, startY, 110, 60);
-  bgEq.getFill().setSolidFill(ds.colors.bgSlide); bgEq.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
-  const tEqL = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 565, startY + 5, 100, 20);
-  tEqL.getText().setText("MAIOR VOLUME").getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-  const tEqV = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 565, startY + 25, 100, 30);
-  tEqV.getText().setText(equipeLider).getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-  const listYStart = startY + 75;
-  const lblTop = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, listYStart, 300, 20);
-  lblTop.getText().setText("TOP PRIORIDADES (POR VOLUME)").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-  const addHeaderCol = (x, w, texto) => {
-    const txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, listYStart + 22, w, 20);
-    txt.getText().setText(texto).getTextStyle().setFontSize(9).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody).setBold(true);
-  };
-  addHeaderCol(55, 45, "QTD");
-  addHeaderCol(100, 340, "DESCRIÇÃO DO SERVIÇO");
-  addHeaderCol(450, 100, "RESPONSÁVEL");
-  addHeaderCol(560, 110, "DIAS EM ABERTO");
-
-  const hdrSep = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, listYStart + 42, 620, 2);
-  hdrSep.getFill().setSolidFill(ds.colors.lines); hdrSep.getBorder().setTransparent();
-
-  let currY = listYStart + 48;
-  const rowH = 22;
-  if (lista.length === 0) {
-    const txtEmpty = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, currY + 10, 620, 50);
-    txtEmpty.getText().setText("Nenhuma preventiva pendente ou atrasada na fila.")
-      .getTextStyle().setFontSize(14).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.accentGreen).setBold(true);
-    txtEmpty.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  if (!lista.length) {
+    _tvTexto_(slide, px, cy + 60, pw, 26, 'Nenhuma preventiva atrasada ou em curso na fila.',
+      { fs: 14, fsMin: 10, bold: true, cor: c.accentGreen, fonte: DS.typography.titles, align: 'C' });
   } else {
-    lista.forEach((item, idx) => {
-      const isTopCritical = idx < 3 && item.isEmAberto;
-
-      const bgRow = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, currY, 620, rowH);
-      bgRow.getFill().setSolidFill(isTopCritical ? '#FFF5F5' : ds.colors.cardBg);
-      bgRow.getBorder().setTransparent();
-
-      if (isTopCritical) {
-        const bordRow = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, currY, 3, rowH);
-        bordRow.getFill().setSolidFill(ds.colors.accentRed); bordRow.getBorder().setTransparent();
-      } else {
-        const sep = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, currY + rowH - 1, 620, 1);
-        sep.getFill().setSolidFill(ds.colors.lines); sep.getBorder().setTransparent();
-      }
-
-      const tQtd = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 55, currY + 1, 45, rowH);
-      tQtd.getText().setText(item.qtd.toString() + "x").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(item.isEmAberto ? ds.colors.accentRed : ds.colors.textMain).setBold(true);
-
-      const tDesc = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 100, currY + 1, 340, rowH);
-      tDesc.getText().setText(item.desc).getTextStyle().setFontSize(10).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textMain).setBold(isTopCritical);
-
-      const tEq = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 450, currY + 2, 100, rowH);
-      tEq.getText().setText(item.equipe).getTextStyle().setFontSize(9).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
-
-      const isAtraso = item.isEmAberto;
-      const tDt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 560, currY + 2, 110, rowH);
-      tDt.getText().setText(item.dataLabel).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(isAtraso ? ds.colors.accentRed : ds.colors.textBody).setBold(isAtraso);
-      currY += rowH + 2;
+    const cabH = 20, rowH = Math.min(26, (py + ph - 10 - cy - cabH) / lista.length);
+    _tvRet_(slide, tx, cy, tw, cabH, c.brandDark);
+    cols.forEach((col, i) => _tvTexto_(slide, xs[i], cy, col.w, cabH, col.t,
+      { fs: 8, fsMin: 6.5, bold: true, cor: '#FFFFFF', fonte: DS.typography.titles, align: col.a, cortar: true }));
+    lista.forEach((item, r) => {
+      const y = cy + cabH + r * rowH;
+      const atraso = !!item.isEmAberto;
+      if (r % 2 === 1) _tvRet_(slide, tx, y, tw, rowH, c.zebra);
+      if (r < 3 && atraso) _tvRet_(slide, tx, y + 3, 3, rowH - 6, c.accentRed);
+      _tvTexto_(slide, xs[0], y, cols[0].w, rowH, item.qtd + 'x',
+        { fs: 10, fsMin: 8, bold: true, cor: atraso ? c.accentRed : c.textMain, fonte: DS.typography.titles, align: 'C' });
+      _tvTexto_(slide, xs[1], y, cols[1].w, rowH, item.desc,
+        { fs: 9.5, fsMin: 9.5, bold: r < 3 && atraso, cor: c.textMain, fonte: DS.typography.body, cortar: true });
+      _tvTexto_(slide, xs[2], y, cols[2].w, rowH, item.equipe,
+        { fs: 9, fsMin: 9, cor: c.textBody, fonte: DS.typography.body, cortar: true });
+      _tvTexto_(slide, xs[3], y, cols[3].w, rowH, item.dataLabel,
+        { fs: 9, fsMin: 7.5, bold: atraso, cor: atraso ? c.accentRed : c.textBody, fonte: DS.typography.titles, align: 'C' });
     });
   }
 
-  const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: BD-PREVENTIVAS (Infraspeak) • Fila em aberto na data da atualização.")
-    .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
+  _tvRodape_(slide, 'Fonte: BD-PREVENTIVAS (Infraspeak) · fila em aberto na data da atualização' +
+                    (diasComp ? `, comparada com ${diasComp} dias atrás` : '') + ' · vermelho = atrasada');
 }

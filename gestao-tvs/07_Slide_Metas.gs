@@ -175,6 +175,12 @@ function lerMetas(planilha, unit, papel) {
   return { titulo: titulo, papel: papel, linhas: linhas };
 }
 
+// "SUPERVISOR" → "Supervisor", para o subtítulo do cabeçalho.
+function _metasPapelTitulo_(papel) {
+  const s = String(papel || '').toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // Tendência de uma célula como lista de segmentos, cada um com a sua cor:
 // um só no indicador simples, dois (R$ e %) no Custo M² composto — ver
 // obterMetaAuto() em Dados.gs. null = sem selo.
@@ -285,7 +291,7 @@ function renderSlideMetas(slide, unit, metas) {
   const W = 720, H = 405;
 
   slide.getPageElements().forEach(el => el.remove());
-  applyBrandHeaderAndBackground(slide, "Metas", `Objetivos e Resultados • ${metas.papel}`, dataGlobal, unit);
+  applyBrandHeaderAndBackground(slide, "Metas", `Objetivos e resultados · ${_metasPapelTitulo_(metas.papel)}`, dataGlobal, unit);
 
   // Layout IDÊNTICO ao slide de Metas da Apresentação Mensal dos Megas
   // (megas-mensal/13_Slide_Metas.gs): mesmos pesos de coluna, mesmas cores
@@ -300,9 +306,9 @@ function renderSlideMetas(slide, unit, metas) {
   const xs = []; let acc = x0;
   larg.forEach(w => { xs.push(acc); acc += w; });
 
-  // Tabela começa logo abaixo do cabeçalho desta planilha (a Apresentação
-  // Mensal usa um cabeçalho mais baixo — aqui mantemos o nosso, y=96).
-  let y = 96;
+  // Tabela começa logo abaixo do cabeçalho da TV, que termina em y=72 desde o
+  // rebrand de 19/10/2026 (a Apresentação Mensal usa um cabeçalho mais baixo).
+  let y = 84;
 
   // --- Barra de título ---
   const tituloH = 22;

@@ -275,178 +275,98 @@ function fmtMm(v) {
   return n.toFixed(1).replace('.', ',');
 }
 
+// Visual do Orçamento 2027 (Visual.gs, rebrand de 19/10/2026): a condição de
+// agora no cartão cheio; chuva hoje, vento e umidade ao lado; embaixo os
+// próximos dias e as próximas horas, cada um num painel.
 function atualizarSlideTempo(slide, unit) {
-  const ds = CR_DESIGN_SYSTEM;
   const hora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "HH:mm");
   const dataHora = Utilities.formatDate(new Date(), "America/Sao_Paulo", "dd/MM/yyyy HH:mm");
 
   slide.getPageElements().forEach(el => el.remove());
 
   const clima = obterClima(unit.weather.lat, unit.weather.lon);
-
   const dataLabel = clima && clima.__fromCache
-    ? `🕒 Última atualização: ${Utilities.formatDate(new Date(clima.__cacheTs), "America/Sao_Paulo", "HH:mm")} (cache)`
-    : `🕒 Última atualização: ${hora}`;
-  applyBrandHeaderAndBackground(slide, "Previsão do Tempo", unit.weather.cidade, dataHora, unit,
-    { dataLabel });
+    ? `Última atualização: ${Utilities.formatDate(new Date(clima.__cacheTs), "America/Sao_Paulo", "HH:mm")} (cache)`
+    : `Última atualização: ${hora}`;
 
-  if (!clima || !clima.current || !clima.daily) {
-    const txtErro = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 180, 620, 50);
-    txtErro.getText().setText("⚠️ Previsão do tempo indisponível no momento.")
-      .getTextStyle().setFontSize(16).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-    txtErro.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  const ok = !!(clima && clima.current && clima.daily);
+  const atual = ok ? clima.current : null;
+  const infoAtual = ok ? descricaoTempo(atual.weather_code) : null;
+  applyBrandHeaderAndBackground(slide, 'Previsão do tempo',
+    ok ? `${unit.weather.cidade} · ${infoAtual.desc.toLowerCase()} · ${Math.round(atual.temperature_2m)}°C agora`
+       : unit.weather.cidade,
+    dataHora, unit, { dataLabel });
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
+
+  if (!ok) {
+    _tvTexto_(slide, 30, 180, 660, 30, 'Previsão do tempo indisponível no momento.',
+      { fs: 16, fsMin: 11, bold: true, cor: c.textBody, fonte: DS.typography.titles, align: 'C' });
     return;
   }
 
-  const cX = ds.layout.marginX;
-  const fullW = 720 - (ds.layout.marginX * 2);
-  const atual = clima.current;
-  const infoAtual = descricaoTempo(atual.weather_code);
   const nomesDias = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
-
-  // ==================================================
-  // 1) CONDIÇÃO ATUAL: AGORA + CHUVA HOJE + VENTO + UMIDADE
-  // ==================================================
-  const startY = 96, cH = 96, cW = 300;
-  const bgAtual = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cX, startY, cW, cH);
-  bgAtual.getFill().setSolidFill(ds.colors.cardBg); bgAtual.getBorder().setWeight(1).getLineFill().setSolidFill(ds.colors.lines);
-  const accAtual = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cX, startY, 5, cH);
-  accAtual.getFill().setSolidFill(ds.colors.brandLight); accAtual.getBorder().setTransparent();
-
-  const lblAgora = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+15, startY+8, cW-20, 18);
-  lblAgora.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  lblAgora.getText().setText("AGORA").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-  const valTemp = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+15, startY+22, 170, 48);
-  valTemp.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  valTemp.getText().setText(`${Math.round(atual.temperature_2m)}°C`)
-    .getTextStyle().setFontSize(38).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.brandDark).setBold(true);
-
-  const valIcone = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+185, startY+22, 100, 48);
-  valIcone.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  valIcone.getText().setText(infoAtual.emoji).getTextStyle().setFontSize(34);
-  valIcone.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-  const valDesc = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX+15, startY+72, cW-25, 18);
-  valDesc.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  valDesc.getText().setText(`${infoAtual.desc} • Sensação: ${Math.round(atual.apparent_temperature)}°C`)
-    .getTextStyle().setFontSize(11).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody).setBold(true);
-
-  // Cards menores. O de Chuva Hoje fica em destaque (fundo azul claro).
-  const renderInfoCard = (x, w, lbl, val, destaque) => {
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, w, cH);
-    bg.getFill().setSolidFill(destaque ? '#EFF6FF' : ds.colors.cardBg);
-    bg.getBorder().setWeight(1).getLineFill().setSolidFill(destaque ? ds.colors.brandLight : ds.colors.lines);
-    const tLbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x+10, startY+10, w-15, 18);
-    tLbl.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tLbl.getText().setText(lbl).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-    const tVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x+10, startY+36, w-15, 45);
-    tVal.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tVal.getText().setText(val).getTextStyle().setFontSize(22).setFontFamily(ds.typography.titles).setForegroundColor(destaque ? ds.colors.brandLight : ds.colors.textMain).setBold(true);
-  };
-
   const probHoje = clima.daily.precipitation_probability_max[0];
-  renderInfoCard(360, 110, "🌧️ CHUVA HOJE", `${probHoje != null ? probHoje : 0}%`, true);
-  renderInfoCard(479, 110, "💨 VENTO", `${Math.round(atual.wind_speed_10m)} km/h`, false);
-  renderInfoCard(598, 110, "💧 UMIDADE", `${Math.round(atual.relative_humidity_2m)}%`, false);
+  const mmHoje = clima.daily.precipitation_sum ? clima.daily.precipitation_sum[0] : null;
 
-  // ==================================================
-  // 2) PRÓXIMOS DIAS (compacto: máx/mín + % + mm)
-  // ==================================================
-  const diasY = 198;
-  const lblDias = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX, diasY, 300, 16);
-  lblDias.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  lblDias.getText().setText("PRÓXIMOS DIAS").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
+  // Faixa de KPIs
+  const kx = 30, ky = 84, kh = 64, kg = 10, kw = (660 - 3 * kg) / 4;
+  _tvKpi_(slide, kx, ky, kw, kh, { rotulo: 'Agora ' + infoAtual.emoji, valor: `${Math.round(atual.temperature_2m)}°C`,
+    destaque: true, fsValor: 28, sub: `sensação de ${Math.round(atual.apparent_temperature)}°C` });
+  _tvKpi_(slide, kx + (kw + kg), ky, kw, kh, { rotulo: 'Chuva hoje', valor: `${probHoje != null ? probHoje : 0}%`,
+    fsValor: 28, sub: mmHoje != null ? `${fmtMm(mmHoje)} mm previstos` : 'chance de chuva' });
+  _tvKpi_(slide, kx + 2 * (kw + kg), ky, kw, kh, { rotulo: 'Vento', valor: `${Math.round(atual.wind_speed_10m)} km/h`,
+    fsValor: 24, sub: 'a 10 m do chão' });
+  _tvKpi_(slide, kx + 3 * (kw + kg), ky, kw, kh, { rotulo: 'Umidade', valor: `${Math.round(atual.relative_humidity_2m)}%`,
+    fsValor: 28, sub: 'umidade relativa do ar' });
 
+  // Próximos dias
+  const dx = 30, dy = 158, dw = 660, dh = 116;
+  const dcy = _tvCard_(slide, dx, dy, dw, dh, 'Próximos dias');
   const nDias = Math.min(5, clima.daily.time.length);
-  const cardW = 115; const cardGap = (fullW - (nDias * cardW)) / Math.max(1, nDias - 1);
-  const cardY = diasY + 17; const cardH = 82;
-
+  const passoD = (dw - 28) / nDias;
   for (let i = 0; i < nDias; i++) {
-    const x = cX + i * (cardW + cardGap);
-    const infoDia = descricaoTempo(clima.daily.weather_code[i]);
+    const x = dx + 14 + i * passoD;
+    const info = descricaoTempo(clima.daily.weather_code[i]);
     const p = clima.daily.time[i].split('-');
-    const nomeDia = i === 0 ? "HOJE" : nomesDias[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()];
+    const nome = i === 0 ? 'HOJE' : nomesDias[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()];
     const prob = clima.daily.precipitation_probability_max[i];
     const mm = clima.daily.precipitation_sum[i];
-
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, cardY, cardW, cardH);
-    bg.getFill().setSolidFill(i === 0 ? '#EFF6FF' : ds.colors.cardBg);
-    bg.getBorder().setWeight(1).getLineFill().setSolidFill(i === 0 ? ds.colors.brandLight : ds.colors.lines);
-
-    const tDia = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, cardY+3, cardW, 14);
-    tDia.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tDia.getText().setText(nomeDia).getTextStyle().setFontSize(10).setFontFamily(ds.typography.titles).setForegroundColor(i === 0 ? ds.colors.brandLight : ds.colors.textBody).setBold(true);
-    tDia.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    const tIco = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, cardY+16, cardW, 24);
-    tIco.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tIco.getText().setText(infoDia.emoji).getTextStyle().setFontSize(18);
-    tIco.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    const tMaxMin = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, cardY+40, cardW, 16);
-    tMaxMin.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tMaxMin.getText().setText(`${Math.round(clima.daily.temperature_2m_max[i])}° / ${Math.round(clima.daily.temperature_2m_min[i])}°`)
-      .getTextStyle().setFontSize(12).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-    tMaxMin.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    const tProb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, cardY+55, cardW, 14);
-    tProb.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tProb.getText().setText(`🌧️ ${prob != null ? prob : 0}%`)
-      .getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.brandMed).setBold(true);
-    tProb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-    const tMm = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, cardY+67, cardW, 14);
-    tMm.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    tMm.getText().setText(`${fmtMm(mm)} mm`)
-      .getTextStyle().setFontSize(9).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
-    tMm.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    if (i === 0) _tvRet_(slide, x + 2, dcy - 2, passoD - 4, dy + dh - dcy - 6, c.brandTint, { redondo: true });
+    _tvTexto_(slide, x, dcy, passoD, 16, nome,
+      { fs: 10, fsMin: 8, bold: true, cor: i === 0 ? c.brandDark : c.textBody, fonte: DS.typography.titles, align: 'C' });
+    const ico = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, dcy + 15, passoD, 24);
+    ico.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    ico.getText().setText(info.emoji).getTextStyle().setFontSize(17);
+    ico.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    _tvTexto_(slide, x, dcy + 39, passoD, 18, `${Math.round(clima.daily.temperature_2m_max[i])}° / ${Math.round(clima.daily.temperature_2m_min[i])}°`,
+      { fs: 12.5, fsMin: 9, bold: true, cor: c.textMain, fonte: DS.typography.titles, align: 'C' });
+    _tvTexto_(slide, x, dcy + 57, passoD, 15, `chuva ${prob != null ? prob : 0}% · ${fmtMm(mm)} mm`,
+      { fs: 8.5, fsMin: 7, cor: c.textBody, fonte: DS.typography.body, align: 'C' });
   }
 
-  // ==================================================
-  // 3) PRÓXIMAS HORAS (faixa horária)
-  // ==================================================
+  // Próximas horas
+  const hx = 30, hy = 282, hw = 660, hh = 94;
+  const hcy = _tvCard_(slide, hx, hy, hw, hh, 'Próximas horas');
   if (clima.hourly && clima.hourly.time && clima.hourly.time.length) {
     const horaAtualStr = Utilities.formatDate(new Date(), "America/Sao_Paulo", "yyyy-MM-dd'T'HH:00");
     let idx = clima.hourly.time.findIndex(t => t >= horaAtualStr);
     if (idx < 0) idx = 0;
-
-    const horasY = 300;
-    const lblHoras = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cX, horasY, 300, 16);
-    lblHoras.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-    lblHoras.getText().setText("PRÓXIMAS HORAS").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-    const nCols = 7, passo = 2;
-    const colW = fullW / nCols;
-    const colY = horasY + 18, colH = 48;
-
-    for (let c = 0; c < nCols; c++) {
-      const hi = idx + c * passo;
+    const nCols = 7, passoH = 2, colW = (hw - 28) / nCols;
+    for (let k = 0; k < nCols; k++) {
+      const hi = idx + k * passoH;
       if (hi >= clima.hourly.time.length) break;
-      const x = cX + c * colW;
-      const tstr = clima.hourly.time[hi]; // "YYYY-MM-DDTHH:00"
-      const horaLbl = tstr.substring(11, 13) + "h";
-      const infoH = descricaoTempo(clima.hourly.weather_code[hi]);
-      const temp = Math.round(clima.hourly.temperature_2m[hi]);
-
-      const box = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, colY, colW - 6, colH);
-      box.getFill().setSolidFill(c === 0 ? '#EFF6FF' : ds.colors.cardBg);
-      box.getBorder().setWeight(1).getLineFill().setSolidFill(c === 0 ? ds.colors.brandLight : ds.colors.lines);
-
-      const th = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, colY+3, colW-6, 13);
-      th.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      th.getText().setText(horaLbl).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textBody).setBold(true);
-      th.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-      const ti = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, colY+14, colW-6, 20);
-      ti.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      ti.getText().setText(infoH.emoji).getTextStyle().setFontSize(15);
-      ti.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-
-      const tt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, colY+34, colW-6, 14);
-      tt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-      tt.getText().setText(`${temp}°`).getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-      tt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      const x = hx + 14 + k * colW;
+      const info = descricaoTempo(clima.hourly.weather_code[hi]);
+      _tvTexto_(slide, x, hcy - 2, colW, 15, clima.hourly.time[hi].substring(11, 13) + 'h',
+        { fs: 9, fsMin: 7, bold: true, cor: k === 0 ? c.brandDark : c.textBody, fonte: DS.typography.titles, align: 'C' });
+      const ico = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, hcy + 12, colW, 22);
+      ico.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      ico.getText().setText(info.emoji).getTextStyle().setFontSize(14);
+      ico.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      _tvTexto_(slide, x, hcy + 34, colW, 16, `${Math.round(clima.hourly.temperature_2m[hi])}°`,
+        { fs: 11, fsMin: 8, bold: true, cor: c.textMain, fonte: DS.typography.titles, align: 'C' });
     }
   }
+
+  _tvRodape_(slide, `Fonte: ${clima.__fonte === 'metno' ? 'MET Norway' : 'Open-Meteo'} · previsão para ${unit.weather.cidade}`);
 }

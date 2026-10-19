@@ -12,112 +12,62 @@ function gerarSlideCorretivasDetalhe(slide, dataGlobal, unit) {
     d.topAreas, dataGlobal, unit, d.totalAnterior, d.diasComparacao);
 }
 
+// Visual do Orçamento 2027 (Visual.gs, rebrand de 19/10/2026): a fila no
+// cartão cheio, as prioridades nos cartões ao lado e, embaixo, as disciplinas
+// com mais chamados em barras. Vermelho/verde só na variação da fila.
 function criarDashboardCorretivasDetalhe(slide, pEmergencial, pAlta, pNormal, pBaixa, topAreas, dataGlobal, unit, prevBacklog, diasComp) {
-  const ds = CR_DESIGN_SYSTEM;
-  const totalBacklog = pEmergencial + pAlta + pNormal + pBaixa;
-  let topAreaName = topAreas.length > 0 ? topAreas[0].area.toUpperCase() : "N/D";
-
-  if (topAreaName.includes("PREVENTIVO DE INCÊNDIO")) topAreaName = "SISTEMA DE INCÊNDIO";
-
+  const total = pEmergencial + pAlta + pNormal + pBaixa;
   // prevBacklog vem CALCULADO da base (fila de N dias atrás), não de um
   // retrato guardado no ScriptProperties entre execuções.
-  if (prevBacklog == null) prevBacklog = totalBacklog;
-  const diff = totalBacklog - prevBacklog;
-  const vs = diasComp ? ` vs ${diasComp}d atrás` : '';
-
-  applyBrandHeaderAndBackground(slide, "Backlog Corretivo", "Matriz de Prioridade e Disciplinas", dataGlobal, unit);
-
-  if (totalBacklog > 0 || prevBacklog > 0) {
-    let msgAcao = `🎯 ESTÁVEL: Fila mantida (${totalBacklog})${vs}`;
-    let badgeBgColor = ds.colors.bgSlide;
-    let badgeBorderColor = ds.colors.lines;
-    let badgeTxtColor = ds.colors.textBody;
-
-    if (diff > 0) {
-      msgAcao = `📈 ATENÇÃO: Fila subiu (+${diff})${vs}`;
-      badgeBgColor = '#FFF5F5'; badgeBorderColor = ds.colors.accentRed; badgeTxtColor = ds.colors.accentRed;
-    } else if (diff < 0) {
-      msgAcao = `📉 REDUÇÃO: Fila diminuiu (${diff})${vs}`;
-      badgeBgColor = '#ECFDF5'; badgeBorderColor = ds.colors.accentGreen; badgeTxtColor = ds.colors.accentGreen;
-    }
-
-    const bannerW = 720 - (ds.layout.marginX * 2);
-    const badge = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, 95, bannerW, 20);
-    badge.getFill().setSolidFill(badgeBgColor);
-    badge.getBorder().setWeight(1).getLineFill().setSolidFill(badgeBorderColor);
-
-    const badgeTxt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 95, bannerW, 20);
-    badgeTxt.getText().setText(msgAcao)
-      .getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(badgeTxtColor).setBold(true);
-    badgeTxt.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  }
-
-  const startY = ds.layout.contentY;
-
-  const lblPrio = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, startY, 300, 20);
-  lblPrio.getText().setText(`MATRIZ DE PRIORIDADE`).getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
-
-  const renderPrioCard = (y, lbl, val, corHex, isCritico) => {
-    const perc = totalBacklog > 0 ? Math.round((val / totalBacklog) * 100) : 0;
-
-    const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, y, 290, 50);
-    bg.getFill().setSolidFill(ds.colors.cardBg);
-    bg.getBorder().setWeight(isCritico ? 2 : 1).getLineFill().setSolidFill(isCritico ? corHex : ds.colors.lines);
-
-    const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ds.layout.marginX, y, 6, 50);
-    barra.getFill().setSolidFill(corHex); barra.getBorder().setTransparent();
-
-    const tLbl = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX + 15, y + 15, 150, 20);
-    tLbl.getText().setText(`${lbl} | ${perc}%`).getTextStyle().setFontSize(10).setFontFamily(ds.typography.titles).setForegroundColor(isCritico ? corHex : ds.colors.textBody).setBold(true);
-
-    const tVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 200, y + 5, 110, 40);
-    tVal.getText().setText(val.toString()).getTextStyle().setFontSize(isCritico ? 26 : 22).setFontFamily(ds.typography.titles).setForegroundColor(corHex).setBold(true);
-    tVal.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  if (prevBacklog == null) prevBacklog = total;
+  const v = _tvVariacao_(total - prevBacklog, true);
+  const quando = diasComp ? ` em ${diasComp} dias` : '';
+  const nomeArea = a => {
+    const s = String(a || '').toUpperCase();
+    return s.indexOf('PREVENTIVO DE INCÊNDIO') >= 0 ? 'SISTEMA DE INCÊNDIO' : s;
   };
+  const maior = topAreas.length ? nomeArea(topAreas[0].area) : null;
 
-  renderPrioCard(startY + 25, "EMERGENCIAL", pEmergencial, ds.colors.accentRed, true);
-  renderPrioCard(startY + 85, "ALTA", pAlta, ds.colors.accentOrange, true);
-  renderPrioCard(startY + 145, "NORMAL", pNormal, ds.colors.textBody, false);
-  renderPrioCard(startY + 205, "BAIXA", pBaixa, ds.colors.lines, false);
+  applyBrandHeaderAndBackground(slide, 'Backlog corretivo',
+    `${total} na fila · ${v.txt}${quando}` + (maior ? ` · mais chamados: ${maior.toLowerCase()}` : ''), dataGlobal, unit);
+  const DS = CR_DESIGN_SYSTEM, c = DS.colors;
+  const pct = n => total > 0 ? Math.round(n / total * 100) + '% da fila' : '—';
 
-  const rX = 390; const rW = 280;
-  const lblArea = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, startY, rW, 20);
-  lblArea.getText().setText("DISCIPLINAS").getTextStyle().setFontSize(11).setFontFamily(ds.typography.titles).setForegroundColor(ds.colors.textMain).setBold(true);
+  const kx = 30, ky = 84, kh = 64, kg = 10, kw = (660 - 3 * kg) / 4;
+  _tvKpi_(slide, kx, ky, kw, kh, { rotulo: 'Fila em aberto', valor: total, destaque: true, fsValor: 28,
+    sub: v.txt + quando, corSub: v.cor });
+  _tvKpi_(slide, kx + (kw + kg), ky, kw, kh, { rotulo: 'Emergencial', valor: pEmergencial, fsValor: 28,
+    sub: pct(pEmergencial), corSub: pEmergencial ? c.accentRed : null });
+  _tvKpi_(slide, kx + 2 * (kw + kg), ky, kw, kh, { rotulo: 'Alta', valor: pAlta, fsValor: 28,
+    sub: pct(pAlta), corSub: pAlta ? c.accentOrange : null });
+  _tvKpi_(slide, kx + 3 * (kw + kg), ky, kw, kh, { rotulo: 'Normal + baixa', valor: pNormal + pBaixa, fsValor: 28,
+    sub: `normal ${pNormal} · baixa ${pBaixa}` });
 
-  if (topAreas.length > 0) {
-    const maxAreaVal = Math.max(...topAreas.map(a => a.count), 1);
-    let currY = startY + 30;
-    const barH = 16; const gap = 20;
-
-    topAreas.forEach((item, index) => {
-      const perc = totalBacklog > 0 ? Math.round((item.count / totalBacklog) * 100) : 0;
-      let displayArea = item.area.toUpperCase();
-      if (displayArea.includes("PREVENTIVO DE INCÊNDIO")) displayArea = "SISTEMA DE INCÊNDIO";
-
-      let barColor = ds.colors.lines; let textColor = ds.colors.textBody; let isTop = false;
-
-      if (index === 0) { barColor = ds.colors.accentRed; textColor = ds.colors.accentRed; isTop = true; }
-      else if (index === 1) { barColor = ds.colors.accentOrange; textColor = ds.colors.accentOrange; isTop = true; }
-
-      const tArea = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX, currY, rW - 60, 20);
-      tArea.getText().setText(displayArea).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(textColor).setBold(true);
-
-      const tVal = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rX + rW - 60, currY, 60, 20);
-      tVal.getText().setText(`${item.count} | ${perc}%`).getTextStyle().setFontSize(9).setFontFamily(ds.typography.titles).setForegroundColor(textColor).setBold(true);
-      tVal.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-
-      const bgBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rX, currY + 18, rW, barH);
-      bgBar.getFill().setSolidFill(ds.colors.cardBg); bgBar.getBorder().setTransparent();
-
-      const actW = Math.max((item.count / maxAreaVal) * rW, 2);
-      const actBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rX, currY + 18, actW, barH);
-      actBar.getFill().setSolidFill(barColor); actBar.getBorder().setTransparent();
-
-      currY += barH + gap;
+  // Disciplinas: uma barra por disciplina, a maior na cor escura da marca
+  const px = 30, py = 158, pw = 660, ph = 218;
+  const cy = _tvCard_(slide, px, py, pw, ph, 'Disciplinas com mais chamados na fila');
+  if (!topAreas.length) {
+    _tvTexto_(slide, px, cy + 60, pw, 24, 'Nenhum chamado corretivo em aberto.',
+      { fs: 14, fsMin: 10, bold: true, cor: c.accentGreen, fonte: DS.typography.titles, align: 'C' });
+  } else {
+    const maxVal = Math.max(...topAreas.map(a => a.count), 1);
+    const n = topAreas.length;
+    const linhaH = Math.min(30, (py + ph - 10 - cy) / n);
+    const nomeW = 210, valW = 90, barX = px + 20 + nomeW, barW = pw - 40 - nomeW - valW;
+    topAreas.forEach((item, i) => {
+      const y = cy + i * linhaH;
+      const forte = i === 0;
+      _tvTexto_(slide, px + 14, y, nomeW, linhaH, nomeArea(item.area),
+        { fs: 9.5, fsMin: 7, bold: true, cor: forte ? c.brandDark : c.textBody, fonte: DS.typography.titles, cortar: true });
+      const bh = Math.min(14, linhaH - 10);
+      _tvRet_(slide, barX, y + (linhaH - bh) / 2, barW, bh, c.zebra);
+      _tvRet_(slide, barX, y + (linhaH - bh) / 2, Math.max(2, item.count / maxVal * barW), bh, forte ? c.brandDark : c.brandTint2);
+      _tvTexto_(slide, barX + barW + 4, y, valW, linhaH,
+        `${item.count} · ${total > 0 ? Math.round(item.count / total * 100) : 0}%`,
+        { fs: 10, fsMin: 8, bold: true, cor: forte ? c.brandDark : c.textBody, fonte: DS.typography.titles, align: 'R' });
     });
   }
 
-  const txtFooter = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ds.layout.marginX, 380, 600, 20);
-  txtFooter.getText().setText("Fonte: BD-CORRETIVAS (Infraspeak) • Fila em aberto na data da atualização.")
-    .getTextStyle().setFontSize(8).setFontFamily(ds.typography.body).setForegroundColor(ds.colors.textBody);
+  _tvRodape_(slide, 'Fonte: BD-CORRETIVAS (Infraspeak) · fila em aberto na data da atualização' +
+                    (diasComp ? `, comparada com ${diasComp} dias atrás` : '') + ' · ▲ vermelho = fila maior');
 }

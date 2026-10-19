@@ -120,16 +120,18 @@ canto do cabeçalho diz de quando é a importação. `ATUALIZAR_WEBDOX()` (e as
 por unidade) redesenha só este slide; `diagnosticarSolicitacoes()` confere
 os dois.
 
-### Visual (rebrand de 19/10/2026 — em andamento)
+### Visual (rebrand de 19/10/2026)
 
 O padrão é o do Orçamento 2027 (`orcamento-2027/IDEIAS-DESIGN.md`), sem as
 imagens em Python. Tudo em `Visual.gs`: as duas marcas (`TV_MARCAS` —
 **Curitiba é Demercado**, `UNITS[].marca`), cartão de KPI, painel, rodapé e a
 medição de texto com a largura real de cada letra (tabela gerada por
 `ferramentas/medir_fontes.html`). O cabeçalho novo
-(`applyBrandHeaderAndBackground`) vale para todos os slides; o corpo já está
-no visual novo em: Visão Geral Corretiva, Solicitações e Webdox. Os outros
-ainda têm o corpo antigo.
+(`applyBrandHeaderAndBackground`) vale para todos os slides, e todos estão no
+visual novo: faixa de KPIs com o principal no cartão cheio, painéis brancos,
+rodapé com a fonte do dado. **Metas é a exceção de propósito**: só o cabeçalho e
+as cores da marca mudaram; colunas, fontes e tamanhos seguem iguais aos da
+apresentação mensal (`teste_metas_igual_megas.js`).
 
 Prévia sem abrir o Slides:
 `KANBAN=<json> WEBDOX=<json> PREVIA=<pasta> node gestao-tvs/teste_rebrand.js` e
@@ -156,7 +158,7 @@ O desenho da tabela de Metas (`renderSlideMetas`) é o mesmo de
 `megas-mensal/13_Slide_Metas.gs`: mesmas colunas, fontes, cores, a linha
 composta do Supervisor (Custo M² + % das manutenções planejadas) em duas
 sublinhas e o selo ▲/▼ com uma cor por parte. A única diferença é o
-cabeçalho: o da TV é mais alto, então a tabela começa em y=96 (na mensal,
+cabeçalho: o da TV é mais alto, então a tabela começa em y=84 (na mensal,
 y=66) e as linhas ficam um pouco mais baixas.
 
 Mexeu no Metas de um? Leve para o outro e rode
