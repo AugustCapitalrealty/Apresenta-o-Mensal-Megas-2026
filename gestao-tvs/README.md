@@ -34,27 +34,27 @@ intermediário se algo falhar no meio.
 ## Arquivos do projeto
 
 Esta é a lista **completa** do que deve existir no editor do Apps Script.
-A pasta não tem `.clasp.json`: o código é copiado à mão (ver o CLAUDE.md da
-raiz) ou publicado com `clasp` a partir de uma pasta **temporária**.
+Desde 20/10/2026 a pasta tem `.clasp.json` e sobe com `clasp push` **daqui
+mesmo** — o `.claspignore` só deixa passar `*.gs` e `appsscript.json`, então
+os testes de Node (`teste_*.js`) não vão para o editor.
 
-ID do script (o projeto é vinculado à planilha, então `clasp list-scripts`
+ID do script (o projeto é vinculado à planilha, então `clasp list`
 não o mostra): `1EEDv2jAfRHO8HVeLnNydXcA2cKuLhGYMjM3WhYfmzV5oT-PIeTMdH-L5`.
 
-Para publicar sem colar à mão (foi assim em 19/10/2026):
+Para publicar:
 
-1. `clasp clone <ID>` numa pasta temporária — é o que está no editor.
+1. `clasp clone <ID>` numa pasta **temporária** — é o que está no editor
+   (`clasp pull` aqui sobrescreveria o que foi editado no git).
 2. Compare cada `.js` dela com o `.gs` daqui (`sed 's/\r$//'` nos dois
    lados; o editor não guarda a quebra de linha final). Diferença de código
    = alguém mexeu no editor: junte antes de seguir.
    **`Recados.gs` é editado no editor de propósito** (os recados da TV):
    diferença nele é esperada — traga a versão do editor para cá e faça
    commit ANTES do push, senão o push apaga os recados.
-3. Copie os `.gs` alterados para a pasta temporária como `.js` e rode
-   `clasp push --force` **de lá**. Não rode push desta pasta: os testes de
-   Node (`teste_*.js`) iriam para o editor junto.
+3. `clasp push` desta pasta.
 4. Clone de novo e confira que ficou igual ao git.
 
-Última publicação: 19/10/2026 — Webdox só com contratos ligados a solicitação. Antes: Recados, Aprovados do Fluig pelos mais recentes, ordem nova da TV; 17:24, capa com foto, Chuva do mês e
+Última publicação: 20/10/2026 — painel da TI com `closeExistingTabs: true` e `lazyLoadTabs: false` (primeiro push direto desta pasta, conferido com `clasp clone`). Antes: 19/10/2026 — Webdox só com contratos ligados a solicitação. Antes: Recados, Aprovados do Fluig pelos mais recentes, ordem nova da TV; 17:24, capa com foto, Chuva do mês e
 Aprovações no Fluig (16 arquivos, conferidos com `clasp clone` depois do
 push). Antes: 15:45, rebrand dos 11 slides + Webdox.
 

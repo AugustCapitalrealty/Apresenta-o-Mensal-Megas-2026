@@ -145,14 +145,17 @@ arquivos num `Dados.gs` a duplicata apareceu; foi o que motivou juntar.
 
 ## Como isso vai pro ar
 
-Nos seis projetos mensais não há `clasp` nem `.clasp.json`. O código é
+Nos projetos mensais sem `.clasp.json` o código é
 copiado à mão para o editor do Apps Script de cada projeto. **`git push` não
 publica nada** — se o comportamento não mudou depois de um commit, a
 primeira coisa a verificar é se os arquivos foram copiados para o editor.
 
 As exceções são `orcamento-2027/` (ver o [`README`](orcamento-2027/README.md)
-dela) e `megas-mensal/`, que sobem com `clasp push` de dentro da pasta. Lá,
-editar direto no editor é que perde trabalho: o próximo push sobrescreve.
+dela), `megas-mensal/` e `gestao-tvs/` (desde 20/10/2026), que sobem com
+`clasp push` de dentro da pasta. Lá, editar direto no editor é que perde
+trabalho: o próximo push sobrescreve. Nas TVs o `Recados.gs` é editado no
+editor de propósito — antes de cada push, `clasp clone` numa pasta temporária
+e traga os recados para o git (ver o README da pasta).
 
 A `megas-mensal` foi ligada ao clasp em 06/10/2026, e aconteceu de novo o
 problema acima: o editor rodava uma versão reorganizada (23 arquivos no
