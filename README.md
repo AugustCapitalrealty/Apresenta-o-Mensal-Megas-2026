@@ -15,6 +15,7 @@ apresentações no Google Slides.
 | [`financeiro-mensal/`](financeiro-mensal/) | Apresentação Mensal do Financeiro — **em construção** |
 | [`orcamento-2027/`](orcamento-2027/) | Orçamento 2027 dos Megas — Manutenção de Imóveis por categoria (usa `clasp`) |
 | [`rateio-energia/`](rateio-energia/) | Entrega do Rateio de Energia do Hub dos Megas — reunião geral 10/2026 (usa `clasp`) |
+| [`housekeeping/`](housekeeping/) | Entrega do Housekeeping do Hub dos Megas — reunião geral 10/2026 (usa `clasp`) |
 | [`tabelas/`](tabelas/) | Apresentações semanais — Mega Curitiba, Mega Itajaí, Previsão do Tempo, Propriedades |
 
 Cada pasta é um **projeto Apps Script independente**, com seu próprio arquivo
