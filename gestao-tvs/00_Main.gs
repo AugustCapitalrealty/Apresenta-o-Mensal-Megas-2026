@@ -297,8 +297,13 @@ function gerarArquivosPainelTV() {
     (unit.painelExtras || []).forEach(url => sites.push({ url: url, duration: 30, tabReloadIntervalSeconds: 600 }));
     if (iRecados < slides.length) { sites.push(site(iRecados)); ordem.push(iRecados); }
 
+    // closeExistingTabs: a cada 60 min o painel relê o arquivo e abre as abas
+    // de novo; sem fechar as antigas, cada slide passava 2x e a sequência
+    // embaralhava (20/10/2026). lazyLoadTabs: false porque aba carregada só na
+    // hora de aparecer ficava em branco na TV.
     const json = JSON.stringify({
-      settingsReloadIntervalMinutes: 60, fullscreen: true, autoStart: true, lazyLoadTabs: true,
+      settingsReloadIntervalMinutes: 60, fullscreen: true, autoStart: true,
+      lazyLoadTabs: false, closeExistingTabs: true,
       websites: sites
     }, null, 2);
 

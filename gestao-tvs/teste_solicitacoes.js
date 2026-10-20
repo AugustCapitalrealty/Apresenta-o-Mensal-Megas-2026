@@ -213,6 +213,8 @@ t(idsEst === 'ID_0,ID_1,ID_2,ID_3,ID_4,ID_8,ID_11,ID_9,ID_5,ID_10,ID_7,ID_6,ID_1
 t(est && est.websites[0].duration === 20 && est.websites[1].duration === 30, 'capa 20 s, demais 30 s');
 t(est && est.fullscreen === true && est.settingsReloadIntervalMinutes === 60 && est.websites[0].tabReloadIntervalSeconds === 600,
   'mesmas configurações gerais do arquivo antigo');
+t(est && est.closeExistingTabs === true && est.lazyLoadTabs === false,
+  'fecha as abas antigas ao reler (senão cada slide passa 2x) e carrega todas de início (senão tela em branco)');
 const itj = criados['Painel_Itajai.txt'];
 t(itj && itj.websites.length === 13 && itj.websites[11].url.endsWith('id.ID_7') && itj.websites[10].url.endsWith('id.ID_6') && itj.websites[12].url.endsWith('id.ID_12'),
   'Itajaí: Metas (Supervisor e Analista) e Recados por último');

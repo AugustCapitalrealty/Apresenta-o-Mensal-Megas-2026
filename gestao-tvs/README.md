@@ -252,7 +252,11 @@ Depois de mudar a quantidade de slides: rode `gerarApresentacao()` (para o
 slide novo existir e ter ID), depois `gerarArquivosPainelTV()`. Ele grava os
 três arquivos na raiz do Drive, substituindo os anteriores, e lista no
 Logger cada slide com o nome. Capa 20 s, demais 30 s, como os arquivos
-antigos. Páginas que não são slide entrariam por `UNITS[].painelExtras`,
+antigos. Duas chaves que não podem faltar (20/10/2026): `closeExistingTabs:
+true` — o painel relê o arquivo a cada 60 min e, sem fechar as abas antigas,
+abria tudo de novo: cada slide passava 2x e a sequência embaralhava — e
+`lazyLoadTabs: false`, porque aba carregada só na hora de aparecer ficava em
+branco. Páginas que não são slide entrariam por `UNITS[].painelExtras`,
 antes dos Recados; hoje não há nenhuma (a planilha publicada que o
 Painel_Esteio.txt antigo tinha saiu em 19/10/2026 — "não precisa").
 
