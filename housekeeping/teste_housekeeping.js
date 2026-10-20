@@ -1,6 +1,6 @@
 // Roda Housekeeping.gs num deck dublado: a 1ª execução cria a apresentação (sem HK_DECK_ID), a 2ª reabre a mesma
-// com um slide feito à mão no meio. Confere se algo sai da página, se algum slide escreveu o aviso de falha, se o
-// slide vazio do deck novo saiu e se rodar 2x não duplica nem tira do lugar o slide feito à mão.
+// com slides feitos à mão antes e depois dos dois gerados. Confere se algo sai da página, se algum slide escreveu o
+// aviso de falha, se o slide vazio do deck novo saiu e se rodar 2x não duplica nem tira os dois do lugar.
 // Uso: node housekeeping/teste_housekeeping.js
 // Prévia em PNG: PREVIA=<pasta> node housekeeping/teste_housekeeping.js  e depois
 //   node ferramentas/previa_slides.js <pasta>/formas_housekeeping.json <pasta>
@@ -63,7 +63,7 @@ deck.forEach((s, i) => {
   const ruins = s.formas.filter(f => f.tipo !== 'ELLIPSE' && f.tipo !== 'TRIANGLE' && (f.x < -1 || f.y < -1 || f.x + f.w > 721 || f.y + f.h > 406));
   fora += ruins.length;
   const falha = s.formas.some(f => /Falha ao desenhar/.test(f.texto || ''));
-  console.log((i + 1) + '. ' + (s.nome || (s.formas.find(f => f.fs === 18 || f.fs === 50 || f.fs === 34) || {}).texto) +
+  console.log((i + 1) + '. ' + (s.nome || (s.formas.find(f => f.fs === 18) || {}).texto) +
     ' (' + s.formas.length + ' formas' + (ruins.length ? ' · FORA: ' + ruins.map(r => r.tipo + ' ' + JSON.stringify(r.texto || '')).join(', ') : '') +
     ')' + (falha ? ' ✗ FALHA' : ''));
 });
@@ -74,19 +74,20 @@ if (saida) fs.writeFileSync(saida, JSON.stringify({ W: 720, H: 405, slides: deck
   if (o.tipo === 'TRIANGLE') o.tipo = 'ELLIPSE';
   return o; }) })) }));
 
-// Alguém põe um print do Hub à mão depois de "Como funciona" e roda de novo.
-const feitoAMao = slide('PRINT DO HUB (feito à mão)');
-deck.splice(3, 0, feitoAMao);
+// Os dois vão para o meio de outro deck (slide à mão antes e depois) e roda de novo: têm que voltar no mesmo lugar.
+const antes = slide('ANTES (feito à mão)'), depois = slide('DEPOIS (feito à mão)');
+deck.unshift(antes); deck.push(depois);
 gerarApresentacaoHousekeeping();
-console.log('2ª execução:', logs.slice(-2).join(' · '), '· slides:', deck.length, '· feito à mão na posição', deck.indexOf(feitoAMao) + 1);
+const ordem = deck.map(s => s === antes ? 'A' : s === depois ? 'D' : s.nota === TAG_HOUSEKEEPING ? 'H' : '?').join('');
+console.log('2ª execução:', logs.slice(-2).join(' · '), '· ordem:', ordem);
 
 const falhas = deck.filter(s => s.formas.some(f => /Falha ao desenhar/.test(f.texto || ''))).length;
 const erros = [];
 if (fora) erros.push(fora + ' formas fora da página');
 if (falhas) erros.push(falhas + ' slides com aviso de falha');
-if (primeira.slides !== 8 || primeira.vazio) erros.push('1ª execução: ' + primeira.slides + ' slides, vazio ficou=' + primeira.vazio);
+if (primeira.slides !== 2 || primeira.vazio) erros.push('1ª execução: ' + primeira.slides + ' slides, vazio ficou=' + primeira.vazio);
 if (criados !== 1 || abertos.join() !== 'DECK_HK' || props.HK_DECK_ID !== 'DECK_HK') erros.push('criou ' + criados + ', abriu ' + abertos);
-if (deck.length !== 9 || deck.indexOf(feitoAMao) !== 3) erros.push('2ª execução: ' + deck.length + ' slides, feito à mão em ' + (deck.indexOf(feitoAMao) + 1));
-if (/Garante/.test(fs.readFileSync(arq, 'utf8').replace(/\/\/.*$/gm, ''))) erros.push('"Garante" ainda aparece num slide (o papel saiu da Matriz)');
+if (ordem !== 'AHHD') erros.push('2ª execução saiu na ordem ' + ordem + ' (esperado AHHD)');
+if (deck.some(s => s.formas.some(f => /Garante/.test(f.texto || '')))) erros.push('"Garante" ainda aparece num slide (o papel saiu da Matriz)');
 if (erros.length) { console.log('✗ reprovado: ' + erros.join('; ')); process.exitCode = 1; }
 else console.log('✓ aprovado');

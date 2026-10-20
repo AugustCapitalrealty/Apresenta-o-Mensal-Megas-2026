@@ -1,6 +1,6 @@
-# Housekeeping — apresentação de entrega
+# Housekeeping — dois slides do módulo do Hub
 
-Gera os slides de entrega do módulo **Housekeeping** do Hub dos Megas (gestão de
+Gera dois slides sobre o módulo **Housekeeping** do Hub dos Megas (gestão de
 terceiros: rotina de limpeza e zeladoria), para a reunião geral de outubro/2026.
 É a irmã de [`rateio-energia/`](../rateio-energia/): mesmo desenho, mesma regra
 de rodar de novo.
@@ -16,20 +16,21 @@ Para gerar numa apresentação que já existe, ponha o ID dela em `HK_DECK_ID`
 
 ## O que gera
 
-Oito slides, no design system dos Megas (cabeçalho de `criarHeaderPadrao`,
-capas de `megas-mensal/10_Slide_Capas.gs` e `26_Slide_Encerramento.gs`):
+Dois slides, com o cabeçalho padrão dos Megas (`criarHeaderPadrao`):
 
-| Onde | Slide |
-|---|---|
-| Começo do deck | Capa · A meta 2026 · Como funciona |
-| Fim do deck | Matriz de responsabilidade · Indicadores (95%) · Controle · Resultado · Encerramento |
-
-Slides feitos **à mão** (prints das telas do Hub, por exemplo) não são tocados e
-caem entre os dois blocos — logo depois de "Como funciona".
+1. **O que faz** — Biblioteca → Matriz do Mega → Agenda e checklist →
+   Indicadores, com a meta de 95%, as 36 áreas de Curitiba e o quadro impresso.
+2. **Exemplo de cronograma** — a semana atual (segunda a domingo, calculada na
+   hora de rodar, com a coluna de hoje destacada) do Mega Curitiba: atividades
+   da biblioteca do Hub com os horários sugeridos, nas áreas do Infraspeak, uma
+   bolinha por horário no dia. É um **exemplo montado no script**
+   (`HK_EXEMPLO`), não a agenda lida do Hub — o próprio slide diz isso.
 
 Cada slide gerado leva a marca `【HOUSEKEEPING_HUB_2026】` na nota. Rodar de novo
-apaga só os marcados e refaz, sem duplicar. Cada slide é desenhado dentro de um
-`try/catch`: se um quebrar, o aviso aparece nele e os outros saem.
+apaga só os marcados e põe os novos **no lugar do primeiro antigo**: dá para
+mover os dois para o meio de outro deck e regenerar sem que pulem para o fim.
+Cada slide é desenhado dentro de um `try/catch`: se um quebrar, o aviso aparece
+nele e o outro sai.
 
 ## De onde vêm os números
 
@@ -42,10 +43,9 @@ escritos direto nos slides:
 - 60 atividades na biblioteca de referência, em 8 categorias.
 - 36 áreas do Mega Curitiba, da árvore de ativos do Infraspeak. Itajaí e Esteio
   ainda sem áreas.
-- Ronda: alerta depois de 30 dias sem ronda (`PRAZO_RONDA_DIAS`).
 - Matriz com **Executa, Apoia e Gestão**. "Propõe / Questiona" saiu em 20/10 e
   "Garante" saiu depois (confirmado pelo usuário em 20/10/2026; a cópia local
-  do Hub ainda tinha o Garante). O teste reprova se "Garante" voltar a um slide.
+  do Hub ainda tinha o Garante). O teste reprova se "Garante" aparecer num slide.
 
 ## Testar
 
@@ -56,7 +56,7 @@ node ferramentas/previa_slides.js /tmp/hk/formas_housekeeping.json /tmp/hk
 ```
 
 O teste dubla `SlidesApp` e `PropertiesService`: a primeira execução tem que
-criar a apresentação (e tirar o slide vazio que ela traz), a segunda tem que
-reabrir a mesma com um slide feito à mão no meio sem duplicar nem tirá-lo do
-lugar. Reprova também se alguma forma sair da página ou algum slide escrever o
-aviso de falha.
+criar a apresentação (e tirar o slide vazio que ela traz); na segunda, com um
+slide feito à mão antes e outro depois dos dois gerados, eles têm que voltar no
+mesmo lugar, sem duplicar. Reprova também se alguma forma sair da página, se
+algum slide escrever o aviso de falha ou se "Garante" aparecer.
