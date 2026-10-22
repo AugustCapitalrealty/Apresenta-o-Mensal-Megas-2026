@@ -793,7 +793,8 @@ const N_MANUT = 1 + nLL[0] + N_POR_QUE + N_VAR + 1 + nGrupos + nPagDemais + div.
 // Contratos de todas as contas (22_ContratosTodos.gs), depois dos defensores.
 const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos, FIX_MOD_2026);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
-const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 2 + 3;   // + os 3 moldes de fotos
+// Análise de Custos: custo por m², m² mês a mês e m² mês a mês com IPTU e seguro (22/10/2026); + os 3 moldes de fotos
+const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3 + 3;
 ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 7 sub capas, premissas, resumo + ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, custo por m² (veio ' +
    slides.length + ')');
@@ -915,9 +916,9 @@ ok(iSub[6] === iLimp + nLL[2] && iSub[7] === iSub[6] + 1 + nTodos &&
    titulo(slides[iSub[7] + 1]) === 'Custo por m² ao mês, 2025 → 2027',
    'Contratos depois da Limpeza; Análise de Custos (custo por m²) depois dos contratos');
 // Os três moldes de fotos do gestor (1, 2 e 3 fotos) fecham o deck, marcados nas anotações como do gestor — desde
-// 13/10/2026 sem a seção "Registro fotográfico" (logo depois dos dois slides de custo por m²).
+// 13/10/2026 sem a seção "Registro fotográfico" (logo depois dos três slides de custo por m²).
 {
-  const fotos = slides.slice(iSub[7] + 3);
+  const fotos = slides.slice(iSub[7] + 4);
   const espacos = sl => sl.shapes.filter(f => f.tipo === 'RECTANGLE' && f.cor === '#E8EEF5').length;
   ok(fotos.length === 3 && fotos.every(sl => titulo(sl) === 'Registro fotográfico — Título do assunto' && sl.notas.indexOf('[REGISTRO FOTOGRÁFICO · CURITIBA]') === 0) &&
      fotos.map(espacos).join() === '1,2,3' && fotos.every(sl => textos(sl).some(t => /^Escreva aqui a descrição/.test(t))),
@@ -1018,6 +1019,11 @@ ok(['Real 2025', 'Orç 2026', 'Ritmo 2026', 'Orç 2027', 'MÉDIA', 'CUSTO CONDOM
     'R$ ' + G._orcM2_(serie('orc').media) + '/m²'].every(t => tM2m.indexOf(t) >= 0),
    'm² mês a mês: linhas, tabela dos meses com média, custo do condomínio e área');
 ok(!tM2m.some(t => /…$/.test(t)), 'm² mês a mês: nenhum texto cortado (' + tM2m.filter(t => /…$/.test(t)).join(' | ') + ')');
+// Logo depois, o mesmo pelo total com IPTU e seguro (era só a apresentação "para colar") — 22/10/2026.
+const tM2i = textos(slides[iM2 + 2]);
+ok(tM2i[0] === 'Custo por m² mês a mês com IPTU e seguro — Orçamento 2027' && tM2i.some(t => /^Total com IPTU \(no mês previsto\) e seguro/.test(t)) &&
+   !tM2i.some(t => /…$/.test(t)),
+   'm² mês a mês com IPTU e seguro: no deck, logo depois do de área comum, sem texto cortado');
 ok(!textos(slides[iSeg]).some(t => /^Não detalhado nos modelos/.test(t)) &&
    textos(slides[iSeg]).some(t => /^CONTRATO — EMPRESA AUXILIAR DE SEGURANÇA/.test(t)),
    'linha a linha da segurança lista os contratos, sem "não detalhado"');
@@ -1170,7 +1176,7 @@ ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t))
    tRev.filter(t => /^DRE/.test(t)).join(' | ') + ')');
 ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
 const SELO = '⚠ REVISAR · IPTU, Seguro';
-const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1]
+const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1, iM2 + 2]
   .concat(Array.from({ length: nTodos }, (_, k) => iTodos + k)).map(iR);
 ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e os dois de custo por m²');
 ok(slidesRev.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
@@ -2155,7 +2161,8 @@ console.log('Gravação no Slides');
   G.gerarCuritiba();
   const s2 = d.getSlides(), f2 = s2.filter(marca);
   ok(f2.length === 3 && f2.map(x => x.id).join() === f1.map(x => x.id).join() && s2.slice(-3).every(marca) &&
-     textos(f2[1]).indexOf('FOTO DO GESTOR') >= 0 && s2.length === n1 && textos(s2[s2.length - 4])[0] === 'Custo por m² mês a mês — Orçamento 2027',
+     textos(f2[1]).indexOf('FOTO DO GESTOR') >= 0 && s2.length === n1 && textos(s2[s2.length - 5])[0] === 'Custo por m² mês a mês — Orçamento 2027' &&
+     textos(s2[s2.length - 4])[0] === 'Custo por m² mês a mês com IPTU e seguro — Orçamento 2027',
      'deck por Mega: gerar de novo mantém os 3 slides de fotos do gestor, no fim, depois do m² mês a mês (' + s2.length + ' slides)');
 }
 // Sombra (Guilherme, 09/10/2026: "esse tem que ser o padrão"): todo slide com

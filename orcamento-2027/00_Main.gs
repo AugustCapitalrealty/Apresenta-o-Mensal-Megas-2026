@@ -90,7 +90,7 @@ function _orcSalvarDeck_(deck, etapa) {
  *   03 DRE (DRE, ofensores, defensores) → 04 Segurança → 05 Manutenção (resumo,
  *   linha a linha, por que sobe, projetos × recorrente, itens de cada grupo,
  *   categorias, demais, mensal) → 06 Limpeza e Conservação → 07 Contratos →
- *   08 Análise de Custos (custo por m², m² mês a mês).
+ *   08 Análise de Custos (custo por m², m² mês a mês, m² mês a mês com IPTU e seguro).
  * Seção sem dado não ganha sub capa: o aviso de falha fica logo após as
  * Premissas, e a numeração das seções seguintes não pula.
  * Relatórios que divergem entre si abrem o deck com o slide "Revisar antes
@@ -290,6 +290,9 @@ function _orcGerarCidade_(deck, W, H, chave) {
     secao('Análise de Custos');
     comSelo('Custo por m²', null, s => gerarSlideCustoM2_(s, W, H, cid, visao.rel));
     comSelo('Custo por m² mês a mês', null, s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt));
+    // O mesmo pelo total com IPTU e seguro (era só a apresentação "para colar", 00_Gerar.gs) — Guilherme, 22/10/2026.
+    comSelo('Custo por m² mês a mês com IPTU e seguro', null,
+      s => gerarSlideM2Mensal_(s, W, H, cid, visao.rel, visao.mensal, visao.realAnt, true));
     // Os moldes de fotos do gestor (criados uma vez; 26_Fotos.gs), no fim do Mega: desde 13/10/2026 sem seção
     // própria — as fotos do gestor ficam na seção do assunto delas. No Mega completo (00_Gerar.gs) não entram: os
     // slides do gestor vêm da v3.

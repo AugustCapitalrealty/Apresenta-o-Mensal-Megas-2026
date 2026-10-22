@@ -19,6 +19,9 @@ reinício). O que importa sobre o projeto está aqui, no
 - Diferenças só de arredondamento: obras excluídas do Itajaí (677.605, não 677.604); subtotal Esteio antes do Pátio
   R$ 4.107.901.
 - Teste: 4.920/4.920 (fixture nova `teste/fixture_base_v1.json` = a BASE V1). `clasp push --force` feito.
+- Pedido do Guilherme: o "Custo por m² mês a mês com IPTU e seguro" (antes só na apresentação "para colar",
+  `gerarSlidesM2ComIptu()`) agora sai também em cada Mega, logo depois do "Custo por m² mês a mês" (título próprio,
+  com selo como o outro). `gerarSlidesM2ComIptu()` continua existindo. Teste: 5.143/5.143.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
 

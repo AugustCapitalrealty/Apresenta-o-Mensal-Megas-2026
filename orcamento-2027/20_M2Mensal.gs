@@ -103,11 +103,14 @@ function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
   return { series: series, fora: fora.map(c => c.nome), custo: custo, area: area, meses: meses };
 }
 
+// comIptu: o mesmo slide pelo total com IPTU (no mês previsto) e seguro — título próprio, porque no Mega ele vem
+// logo depois do de área comum (Guilherme, 22/10/2026) e o deck acha os slides pelo título.
 function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, MX = DS.layout.marginX;
   const a = rel.anos, tw = W - MX * 2;
+  const titulo = 'Custo por m² mês a mês' + (comIptu ? ' com IPTU e seguro' : '') + ' — Orçamento ' + a.orc;
   if (!mensal) {
-    _orcHeader_(slide, W, 'Custo por m² mês a mês — Orçamento ' + a.orc, cid.nome + ' · R$/m²');
+    _orcHeader_(slide, W, titulo, cid.nome + ' · R$/m²');
     _orcParagrafo_(slide, MX, 120, tw, 40, 'Sem o relatório Despesas-Mensal ' + a.ritmo + ' x ' + a.orc +
       ' não há o mês a mês desta cidade.', { fs: 10, cor: C.textMuted, align: 'C' });
     return;
@@ -121,7 +124,7 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
   // subtítulo são os da tabela de baixo (total ÷ área), para não aparecer
   // 3,38 no painel e 3,39 na tabela.
   const m = _orcM2Mensagem_(S, d, comIptu);
-  _orcHeader_(slide, W, 'Custo por m² mês a mês — Orçamento ' + a.orc,
+  _orcHeader_(slide, W, titulo,
     (comIptu ? 'Total com IPTU (no mês previsto) e seguro' : 'Área comum') + ' · Orç ' + a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
     (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') + ' · ' + cid.nome);
 
