@@ -1,0 +1,9913 @@
+{
+ "versao": "V1",
+ "quando": "13/10/2026 18:52",
+ "ano": 2027,
+ "megas": {
+  "ESTEIO": {
+   "nome": "Mega Esteio",
+   "area": {
+    "real": 24360.500850340133,
+    "ritmo": 24280.911458333332,
+    "orc": 53436.83280170122
+   },
+   "total": {
+    "real": 2005356.43,
+    "orcAnt": 2161788.99,
+    "ritmo": 2144490.1,
+    "orc": 4020587.06
+   },
+   "areaComum": {
+    "real": 1807165.26,
+    "orcAnt": 1939140.7,
+    "ritmo": 1931932.06,
+    "orc": 3478007.28
+   },
+   "iptu": {
+    "real": 92760.16,
+    "orcAnt": 106674.18,
+    "ritmo": 106674.16,
+    "orc": 328910.58
+   },
+   "seguro": {
+    "real": 105431.01,
+    "orcAnt": 115974.11,
+    "ritmo": 105883.88,
+    "orc": 213669.19999999998
+   },
+   "contas": [
+    {
+     "nome": "Despesa de pessoal",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 175601.86,
+      "orcAnt": 203065.84,
+      "ritmo": 221430.91,
+      "orc": 331387.47
+     }
+    },
+    {
+     "nome": "Assistência jurídica",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 4253.85,
+      "orcAnt": 4936.32,
+      "ritmo": 5141.91,
+      "orc": 4936.32
+     }
+    },
+    {
+     "nome": "Segurança e vigilância",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 471495.19,
+      "orcAnt": 492878.02,
+      "ritmo": 503234.67,
+      "orc": 1293068.12
+     }
+    },
+    {
+     "nome": "Assistência em informática",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 32190.24,
+      "orcAnt": 22295.42,
+      "ritmo": 35614.36,
+      "orc": 52813.29000000001
+     }
+    },
+    {
+     "nome": "Serviços diversos",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 8103.83,
+      "orcAnt": 0,
+      "ritmo": 80,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Limpeza e conservação",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 157862.11,
+      "orcAnt": 182241.71,
+      "ritmo": 186353.68,
+      "orc": 373237.47000000003
+     }
+    },
+    {
+     "nome": "Outras taxas e impostos",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 813.9,
+      "orcAnt": 0,
+      "ritmo": 2684.06,
+      "orc": 1200
+     }
+    },
+    {
+     "nome": "Material de expediente",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 0,
+      "orcAnt": 0,
+      "ritmo": 35.65,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Material de consumo",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 41993.04,
+      "orcAnt": 51240,
+      "ritmo": 51537.65,
+      "orc": 106269
+     }
+    },
+    {
+     "nome": "Telefone",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 11477.63,
+      "orcAnt": 11811.15,
+      "ritmo": 11701.4,
+      "orc": 12223.680000000002
+     }
+    },
+    {
+     "nome": "KM, estacionamento e pedágio",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 223.34,
+      "orcAnt": 0,
+      "ritmo": 193.84,
+      "orc": 1200
+     }
+    },
+    {
+     "nome": "Propaganda e publicidade",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 799.47,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Energia elétrica",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 110358.28,
+      "orcAnt": 117399,
+      "ritmo": 108791.64,
+      "orc": 133550
+     }
+    },
+    {
+     "nome": "Água",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 37163.47,
+      "orcAnt": 30000,
+      "ritmo": 15065.96,
+      "orc": 77950
+     }
+    },
+    {
+     "nome": "Despesa com passagens",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 12034.13,
+      "orcAnt": 12300,
+      "ritmo": 9685.75,
+      "orc": 26000
+     }
+    },
+    {
+     "nome": "Despesa com hospedagem",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 21945.94,
+      "orcAnt": 15430,
+      "ritmo": 10375.41,
+      "orc": 28000
+     }
+    },
+    {
+     "nome": "Representação e refeição",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 2566.77,
+      "orcAnt": 3200,
+      "ritmo": 1172.62,
+      "orc": 5200
+     }
+    },
+    {
+     "nome": "Despesa com taxi",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1828.96,
+      "orcAnt": 7210,
+      "ritmo": 1465.1,
+      "orc": 6800
+     }
+    },
+    {
+     "nome": "Locação de veículos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 12952.32,
+      "orcAnt": 0,
+      "ritmo": 1956.88,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Despesa com combustíveis",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 5263.27,
+      "orcAnt": 0,
+      "ritmo": 1357.35,
+      "orc": 700
+     }
+    },
+    {
+     "nome": "Manutenção de imóveis",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 493573.41,
+      "orcAnt": 711995.32,
+      "ritmo": 601837.29,
+      "orc": 847778.99
+     }
+    },
+    {
+     "nome": "Bens de pequeno valor",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 2513.34,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Cópias e reproduções",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 326.93,
+      "orcAnt": 0,
+      "ritmo": 299.1,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Cursos e seminários",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 496.44,
+      "orcAnt": 5334.92,
+      "ritmo": 1905.72,
+      "orc": 1489.3199999999997
+     }
+    },
+    {
+     "nome": "Fretes e Carretos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 76.6,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Manutenção de máquinas e equipamentos",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 166799.45,
+      "orcAnt": 0,
+      "ritmo": 134640.76,
+      "orc": 146045.62000000002
+     }
+    },
+    {
+     "nome": "Materiais de Informática",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 34451.49,
+      "orcAnt": 67803,
+      "ritmo": 25370.35,
+      "orc": 28158
+     }
+    }
+   ],
+   "itens": [
+    {
+     "conta": "Assistência Jurídica",
+     "item": "MEGA ESTEIO - ARMAZEM A- HONORÁRIOS (1 PROCESSO) - VOIGT",
+     "meses": [
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36,
+      411.36
+     ],
+     "total": 4936.32
+    },
+    {
+     "conta": "Assistência Jurídica",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO] - CONSULTORIA E GESTÃO DE SEGURANÇA MOKED",
+     "meses": [
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000,
+      7000
+     ],
+     "total": 84000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO] - ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÂNCIA ARMADA 24H RONDA",
+     "meses": [
+      0,
+      0,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000,
+      39000
+     ],
+     "total": 390000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO] - ALTERAÇÃO EMPRESA DE SEGURANÇA - VIGILÃNCIA 24H - PORTARIA A E B",
+     "meses": [
+      0,
+      0,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000,
+      66000
+     ],
+     "total": 660000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO] - POSTO EXTRA DE VIGILÂNCIA ARMADA 24H - EVENTOS FINAL DE ANO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19500,
+      19500
+     ],
+     "total": 39000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "REFERENTE A INSTALAÇÃO E CONFIGURAÇÃO DE CÂMERA ANALITICA COM IA HIKVISION EM ÁREAS TÉCNICAS",
+     "meses": [
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MENSALIDADE WEBDOX",
+     "meses": [
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2,
+      379.2
+     ],
+     "total": 4550.4
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Serviços Diversos",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - JARDIM EXTERNO PORTARIA",
+     "meses": [
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75,
+      31.75
+     ],
+     "total": 381
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - ESPAÇO LAZER",
+     "meses": [
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43,
+      112.43
+     ],
+     "total": 1349.16
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE FRENTE DE DOCAS (ARMAZÉM A)",
+     "meses": [
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56,
+      427.56
+     ],
+     "total": 5130.72
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - PÁTIO INTERNO - PRÓXIMO FERROVIA",
+     "meses": [
+      776.58,
+      0,
+      0,
+      776.58,
+      0,
+      0,
+      776.58,
+      0,
+      776.58,
+      0,
+      0,
+      407.91
+     ],
+     "total": 3514.23
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - T7 TALUDE PRÓXIMO A BACIA DE CONTENÇÃO",
+     "meses": [
+      407.91,
+      0,
+      0,
+      407.91,
+      0,
+      0,
+      407.91,
+      0,
+      407.91,
+      0,
+      0,
+      407.91
+     ],
+     "total": 2039.55
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - MURO FERROVIA (EXTERNO) T7",
+     "meses": [
+      0,
+      315.51,
+      0,
+      315.51,
+      0,
+      315.51,
+      0,
+      315.51,
+      0,
+      315.51,
+      0,
+      315.51
+     ],
+     "total": 1893.06
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE LATERAL M12",
+     "meses": [
+      185.79,
+      0,
+      185.79,
+      0,
+      185.79,
+      0,
+      185.79,
+      0,
+      185.79,
+      0,
+      185.79,
+      0
+     ],
+     "total": 1114.74
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE INTERNO T3",
+     "meses": [
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76,
+      681.76
+     ],
+     "total": 8181.12
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - FUNDOS ARMAZÉM A",
+     "meses": [
+      560.7,
+      560.7,
+      560.7,
+      0,
+      560.7,
+      0,
+      0,
+      0,
+      560.7,
+      560.7,
+      560.7,
+      560.7
+     ],
+     "total": 4485.6
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE T1",
+     "meses": [
+      0,
+      3500,
+      0,
+      0,
+      3500,
+      0,
+      0,
+      3500,
+      0,
+      0,
+      3500,
+      0
+     ],
+     "total": 14000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - ROÇADA COLCHÃO RHENO ARMAZÉM B",
+     "meses": [
+      2850.98,
+      0,
+      2850.98,
+      0,
+      2850.98,
+      0,
+      2850.98,
+      0,
+      2850.98,
+      0,
+      2850.98,
+      0
+     ],
+     "total": 17105.88
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - ROÇADA TALUDES FRENTE DE DOCAS ARMAZÉM B",
+     "meses": [
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02,
+      399.02
+     ],
+     "total": 4788.24
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE T4 + B1",
+     "meses": [
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45,
+      557.45
+     ],
+     "total": 6689.4
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE T5",
+     "meses": [
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300
+     ],
+     "total": 3600
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - TALUDE T6",
+     "meses": [
+      0,
+      809.09,
+      0,
+      809.09,
+      0,
+      809.09,
+      0,
+      809.09,
+      0,
+      809.09,
+      0,
+      809.09
+     ],
+     "total": 4854.54
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - CALÇADA MARGINAL BR 116 E CLUSIAS",
+     "meses": [
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46,
+      441.46
+     ],
+     "total": 5297.52
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - MANEJO DOS PODOCARPUS - SEMESTRAL",
+     "meses": [
+      0,
+      1400,
+      0,
+      0,
+      0,
+      0,
+      1400,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2800
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - APLICAÇÃO DE GRAMIX E ZARTAN (4 BOMBAS 20L)",
+     "meses": [
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0
+     ],
+     "total": 4000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - APLICAÇÃO DE ROUDUP CONTENÇÕES, TELAS, PATIO E GRADES (10 BOMBA",
+     "meses": [
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA - BACIA DE CONTENÇÃO",
+     "meses": [
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000
+     ],
+     "total": 36000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SACO 50KG NPK-10-10 (FERTILIZANTE)",
+     "meses": [
+      500,
+      0,
+      0,
+      500,
+      0,
+      0,
+      500,
+      0,
+      0,
+      500,
+      0,
+      0
+     ],
+     "total": 2000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU]  - REPOSIÇÃO DE GRAMA ESMERALDA R$ 34,00 M X 50 - SEMESTRAL)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1700,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1700
+     ],
+     "total": 3400
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO] - ZELADORIA EXTRA EM PERÍODO DE CHEIAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      8882.61,
+      0,
+      0,
+      8882.61,
+      0,
+      0,
+      0
+     ],
+     "total": 17765.22
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Seguros",
+     "item": "seguro esteio 2027",
+     "meses": [
+      0,
+      26708.65,
+      26708.65,
+      26708.65,
+      26708.65,
+      26708.65,
+      26708.65,
+      26708.65,
+      26708.65,
+      0,
+      0,
+      0
+     ],
+     "total": 213669.2
+    },
+    {
+     "conta": "Material de Expediente",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] - 2 KITS TRAVA QUEDAS INOX",
+     "meses": [
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - TRENA A LASER 50MTS COM BOLSA BOSCH",
+     "meses": [
+      0,
+      0,
+      514,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 514
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - NÍVEL IMANTADO ALUMÍNIO 14",
+     "meses": [
+      0,
+      0,
+      70,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 70
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - LUXÍMETRO BOSCH",
+     "meses": [
+      0,
+      0,
+      300,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[MATERIAL DE LIMPEZA E COPA] - COMPRA MENSAL DE MATERIAIS",
+     "meses": [
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000,
+      4000
+     ],
+     "total": 48000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[DIESEL] - COMPRA SEMESTRAL DE DIESEL (3 MIL LITROS X R$ 7,09)",
+     "meses": [
+      0,
+      21270,
+      0,
+      0,
+      0,
+      0,
+      0,
+      21270,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 42540
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[DIESEL] - REPOSIÇÃO DE ESTOQUE DE EMERGÊNCIA (25% DO VOLUME)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      5317.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5317.5,
+      0
+     ],
+     "total": 10635
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPIS] - COMPRA DE CINTO E TALABARTE RESERVA 4 PONTOS",
+     "meses": [
+      500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 500
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPIS] - SUBSTITUIÇÃO DE CINTO E TALABARTE 3 PONTOS PARA 4 PONTOS (SUPERVISOR)",
+     "meses": [
+      500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 500
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPCS] - REVISÃO E COMPLEMENTOS DO ESTOQUE DE BRIGADA DE CHEIAS",
+     "meses": [
+      0,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPCS] - REPOSIÇÃO DE SACOS DE AREIAS MÉDIO (100 SACOS)",
+     "meses": [
+      0,
+      0,
+      800,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 800
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] - COMPRA DE CHAPÉU PESCADOR E BONÉS PERSONALIZADOS MEGA",
+     "meses": [
+      0,
+      410,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 410
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "telefone",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "[DESLOCAMENTO] - DESPESAS COM DESLOCAMENTO GESTOR (CORSAN, RGE, ETC)",
+     "meses": [
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50
+     ],
+     "total": 600
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "[DESLOCAMENTO] - MANUTENÇÕES PROGRAMADAS EM FINAIS DE SEMANA",
+     "meses": [
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50,
+      50
+     ],
+     "total": 600
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERENTE A CONSUMO DE ENERGIA ELÉTRICA DO TOTEM DO MEGA (POSTO) -COD. INSTALAÇÃO (3095446950)",
+     "meses": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      190,
+      190,
+      190,
+      190
+     ],
+     "total": 2200
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERENTE A CONSUMO DE ENERGIA ELÉTRICA DO TOTEM DO AMZ B (NOVO)",
+     "meses": [
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      180,
+      190,
+      190,
+      190,
+      190
+     ],
+     "total": 2200
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERENTE A CONSUMO DE ENERGIA ELÉTRICA DA CASA DE BOMBAS ARMAZÉM A - COD. INSTALAÇÃO (3095426869)",
+     "meses": [
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6600,
+      6600,
+      6600,
+      6600
+     ],
+     "total": 74400
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERNETE A CONSUMO DE ENERGIA ELÉTRICA ÁREA COMUM - ARMAZÉM - A COD. INSTALAÇÃO (3095485167)",
+     "meses": [
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      2000,
+      2000,
+      2000,
+      2000,
+      1750,
+      1750,
+      1750
+     ],
+     "total": 21750
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERENTE A CONSUMO DE ENERGIA ELÉTRICA ÁREA COMUM - ARMAZÉM B",
+     "meses": [
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000,
+      2000
+     ],
+     "total": 24000
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "REFERENTE A AUMENTO DE CONSUMO EM PERÍODOS CHUVOSOS (BOMBAS DAS ELEVATÓRIAS)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      0
+     ],
+     "total": 9000
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - CONSUMO DE ÁGUA DA ÁREA COMUM NO ARMAZÉM A",
+     "meses": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500
+     ],
+     "total": 18000
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - CONSUMO DE ÁGUA DA ÁREA COMUM NO ARMAZÉM B",
+     "meses": [
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000,
+      3000
+     ],
+     "total": 36000
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - CONSUMO DE ÁGUA PARA LIMPEZA DAS FACHADAS DO ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - CONSUMO DE ÁGUA PARA REABASTECIMENTO APÓS PROCEDIMENTO DE DRENO PPCI A E B",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4950,
+      0,
+      0
+     ],
+     "total": 4950
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - CONSUMO DE ÁGUA PARA LIMPEZA DAS FACHADAS DO ARMAZÉM B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "água",
+     "item": "[CORSAN] - LIMPEZA SEMESTRAL DOS RESERVATÓRIOS A E B (3 AO TODO)",
+     "meses": [
+      0,
+      4500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4500,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 9000
+    },
+    {
+     "conta": "água",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[TREINAMENTO] - DESPESAS COM DESLOCAMENTO GESTOR ITAJAÍ PARA TREINAMENTO ANUAL DE CHEIAS",
+     "meses": [
+      0,
+      0,
+      0,
+      700,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 700
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - LAUDO DE LINHA DE VIDA ARMAZÉM A - ALPENDRE",
+     "meses": [
+      0,
+      6500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - LAUDO DE LINHA DE VIDA ARMAZÉM A - COBERTURA",
+     "meses": [
+      0,
+      6500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - LAUDO DE LINHA DE VIDA ARMAZÉM B2 - ALPENDRE",
+     "meses": [
+      0,
+      6500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - LAUDO DE LINHA DE VIDA ARMAZÉM B2 - COBERTURA DO DOCAS - 125M2",
+     "meses": [
+      0,
+      6500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - LAUDO DE LINHA DE VIDA ARMAZÉM B2 - COBERTURA ARMAZÉM 400M2",
+     "meses": [
+      0,
+      6500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - REVISÃO E MANUTENÇÃO DOS ARES CONDICIONADOS CONFORME PMOC",
+     "meses": [
+      0,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700
+     ],
+     "total": 7700
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDROSSANITÁRIO] - SUCÇÃO E LIMPEZA DO STE (SEMESTRAL) - FOSSA E FILTRO - ARMAZÉM A",
+     "meses": [
+      8004.77,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8004.77,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 16009.54
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDROSSANITÁRIO] - SUCÇÃO E LIMPEZA DO STE (SEMESTRAL) - FOSSA E FILTRO - ARMAZÉM B",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8004.77,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 8004.77
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - RENOVAÇÃO DE CARGA DE EXTINTORES E LAUDO HIDROSTÁTICO DE MANGUEIRAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1260,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1260
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - REVISÃO ANUAL DA BOMBA DE SPK - ARMAZÉM A - RETIRADO DO ORÇAMENTO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - REVISÃO ANUAL DA BOMBA DE SPK - ARMAZÉM B1 E B2 - RETIRADO DO ORÇAMENTO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDROSSANITÁRIO] - SUCCÇÃO E LIMPEZA SEMESTRAL DAS ELEVATÓRIAS (ARMAZÉM A E B)",
+     "meses": [
+      29195.23,
+      0,
+      0,
+      0,
+      0,
+      0,
+      14597.61,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 43792.84
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - RENOVAÇÃO DO PLANO DE EMERGÊNCIA DO ARMAZÉM A COM ART",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1850,
+      0,
+      0,
+      0
+     ],
+     "total": 1850
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - RENOVAÇÃO DO PLANO DE EMERGÊNCIA DO ARMAZÉM B COM ART",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1850,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1850
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - TREINAMENTO ANUAL DE BRIGADA DE INCÊNDIO DO ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9150,
+      0,
+      0
+     ],
+     "total": 9150
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - VERBA PARA MANUTENÇÃO DE COMPONENTES NOS QUADROS (ELEVATÓRIAS)",
+     "meses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+     ],
+     "total": 2400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - VERBA PARA SUBSTITUIÇÃO DE LÂMPADAS NO CONDOMÍNIO",
+     "meses": [
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PUBLICIDADE] - SUBSTITUIÇÃO POR VIDA ÚTIL DA LONA DO MEGA (POSTO)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      15000,
+      0,
+      0,
+      0
+     ],
+     "total": 15000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - MANUTENÇÃO DE JUNTA DE DILATAÇÃO ENTRE PLACAS DE FECHAMENTO (LATERAL M12)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9000,
+      0,
+      0,
+      0
+     ],
+     "total": 9000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PLUVIAL] - LIMPEZA E DESASSOREAMENTO PERIÓDICO NAS CAIXAS DE PASSAGEM - ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - COMPRA DE 2 CAÇAMBAS METÁLICAS PARA CENTRALIZAÇÃO DOS RESÍDUOS  ARMAZÉM B",
+     "meses": [
+      17000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 17000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[METÁLICA] - SERVIÇO DE LIMPEZA DAS TELHAS METÁLICAS DE FECHAMENTO DO ARMAZÉM A E B2 (2 PARCELAS)",
+     "meses": [
+      0,
+      0,
+      25000,
+      25000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 50000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - COMPRA DE CONTENTORES DE LIXO CONTEMAR 1000 L (4 UND AMZ A)",
+     "meses": [
+      7160,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7160
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - COMPRA DE CONTENTORES DE LIXO CONTEMAR 1000L (2 UND AMZ B)",
+     "meses": [
+      3580,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3580
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - IMPERMEABILIZAÇÃO LAJE DA SUBESTAÇÃO DO ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      23800,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 23800
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - IMPERMEABILIZAÇÃO LAJE DA SUBESTAÇÃO DO ARMAZÉM B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      23800,
+      0,
+      0,
+      0
+     ],
+     "total": 23800
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - INSTALAÇÃO DE PONTO DE ÁGUA PARA BEBEDOURO (RETIRAR COMPRA GALÕES)",
+     "meses": [
+      630,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 630
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUPAMENTOS] - COMPRA DE PURIFICADOR DE ÁGUA PARA SALA ADMINISTRATIVA HE OXI TOP LIFE",
+     "meses": [
+      2699,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2699
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTRATO] - INSTALAÇÃO DE MAQUINA RENTBRELLA ARMAZÉM A",
+     "meses": [
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200
+     ],
+     "total": 14400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTRATO] - INSTALAÇÃO DE MAQUINA RENTBRELLA ARMAZÉM B",
+     "meses": [
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200
+     ],
+     "total": 14400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - RENOVAÇÃO DE DEMARCAÇÃO SEMESTRAL ENTRADA (PORTARIA A E B) - SOMENTE MATERIAL",
+     "meses": [
+      2556.21,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2556.21,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5112.42
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - RENOVAÇÃO DE DEMERCAÇÃO ANUAL FRENTE DE DOCAS (FAIXAS) - SOMENTE MATERIAL",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      2556.21,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2556.21
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - SUBSTITUIÇÃO E MANUTENÇÃO DE PISO PODOTÁTIL (PORTARIA A)",
+     "meses": [
+      500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      500,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - ALTERAÇÃO DO CONTRATO SDAI (RESCISÃO ARC) - ARMAZÉM A E B",
+     "meses": [
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96,
+      7561.96
+     ],
+     "total": 90743.52
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - MANUTENÇÃO PREVENTIVA ANUAL DA COMPORTA AMZ A",
+     "meses": [
+      0,
+      4419,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 4419
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - MANUTENÇÃO PREVENTIVA ANUAL DA COMPORTA AMZ B",
+     "meses": [
+      0,
+      4419,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 4419
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PLUVIAL] - LIMPEZA DA GALERIA PRÓXIMO A COMPORTA B2 - RETIRADO DO ORÇAMENTO",
+     "meses": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1464.57,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1465.57
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - MEDIÇÕES, AFERIÇÕES E LAUDO DO SPDA (ARMAZÉM A E B)",
+     "meses": [
+      0,
+      0,
+      5400,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTENÇÃO] - MANUTENÇÃO DE JUNTA DILATAÇÃO TERRAE ARMAZÉM B (T5 E T6)",
+     "meses": [
+      0,
+      10126.88,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 10126.88
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTENÇÃO] - MANUTENÇÃO DE JUNTA DILATAÇAÕ TERRAE AMRMAZÉM A (T1, T3 E T7)",
+     "meses": [
+      0,
+      13700.32,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 13700.32
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - REVISÃO SEMESTRAL DOS BEBEDOUROS (AMZ A E B)",
+     "meses": [
+      0,
+      0,
+      2960,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2960,
+      0,
+      0
+     ],
+     "total": 5920
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - REVISÃO E MANUTENÇÃO PREVENTIVA DAS VÁLVULAS DE GOVERNO (VGAS) | AMZ A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19455,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 19455
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - PINTURA ALVENARIA FACHADA LATERAL M1 E M12 - ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      41910
+     ],
+     "total": 41910
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - PINTURA EXTERNA ALVENARIA PRÉDIOS ÁREAS COMUNS (AMZ A)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      22442.72,
+      0
+     ],
+     "total": 22442.72
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - PINTURA DE TUBULAÇÃO DO SISTEMA DE INCÊNDIO (AMZ A)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9703.46,
+      0
+     ],
+     "total": 9703.46
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COBERTURA] - ADITIVO CONTRATO MANUTENÇÃO COBERTURA NO B1",
+     "meses": [
+      0,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370,
+      4370
+     ],
+     "total": 48070
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSUMOS] - COMPRA DE INSUMOS DE MATERIAIS DE CONSTRUÇÃO ZELADORIA",
+     "meses": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500
+     ],
+     "total": 18000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MANUTENÇÃO EMERGENCIAL] - PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS",
+     "meses": [
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61,
+      1733.61
+     ],
+     "total": 20803.32
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - PINTURA ALVENARIA SUBESTAÇÃO ARMAZÉM B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[RESERVATÓRIO] - MANUTENÇÃO DA ESTRUTURA METÁLICA DO RESERVATÓRIO B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[METÁLICA] - SUBSTITUIÇÃO DO PORTÃO E ESTRUTURA DE ENTRADA DO B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      19000,
+      0,
+      0
+     ],
+     "total": 19000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT MONITORAMENTO RESERVATÓRIO POTÁVEL E HIDRANTE (ARMAZÉM A)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      2790,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2790
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT MONITORAMENTO RESERVATÓRIO SPK (ARMAZÉM A)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      2790,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2790
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT MONITORAMENTO RESERVATÓRIO ARMAZÉM B1",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      2790,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2790
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT MONITORAMENTO RESERVATÓRIO ARMAZÉM B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      2790,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2790
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT ESTAÇÃO DE MONITORAMENTO CANAL DE DRENAGEM",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      6313,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6313
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT MONITORAMENTO CANAL DE DRENAGEM",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      2790,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2790
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cópias e reproduções",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[BOMBA DRENAGEM] - REVISÃO PREVENTIVA SEMESTRAL DAS BOMBAS DE DRENAGEM (AMZ A E B)",
+     "meses": [
+      0,
+      8590,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8590,
+      0,
+      0
+     ],
+     "total": 17180
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[BOMBA DRENAGEM] - PROVISÃO DE 2 REBOBINAGEM E MANUTENÇÃO DE BOMBA 4CV BETO",
+     "meses": [
+      0,
+      0,
+      1600,
+      0,
+      0,
+      0,
+      0,
+      1600,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3200
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[BOMBA DRENAGEM] - PROVISÃO DE 2 REBOBINAGEM E MANUTENÇÃO DE BOMBA 6VB LEORATO",
+     "meses": [
+      0,
+      3200,
+      0,
+      0,
+      0,
+      0,
+      3200,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6400
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[TRATOR] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO TRATOR 01",
+     "meses": [
+      0,
+      0,
+      0,
+      5468.15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5468.15
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[TRATOR] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO TRATOR 02",
+     "meses": [
+      0,
+      0,
+      0,
+      5999.65,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5999.65
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[TRATOR] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO TRATOR 03",
+     "meses": [
+      0,
+      0,
+      0,
+      8842.76,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 8842.76
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[TRATOR] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO TRATOR 04",
+     "meses": [
+      0,
+      0,
+      0,
+      5468.15,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5468.15
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[TRATOR] - SUBSTITUIÇÃO DO CHICOTE ELÉTRICO DO TRATOR 03",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      27489.28,
+      27489.28,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 54978.56
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[DILACERADORES] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO MOTOR DOS DILACERADORES (AMZ A)",
+     "meses": [
+      0,
+      3674.49,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3674.49,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7348.98
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[DILACERADORES] - MANUTENÇÃO PREVENTIVA SEMESTRAL DO MOTOR DOS DILACERADORES (AMZ B)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3674.49,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3674.49
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[BOMBA RECALQUE] - MANUTENÇÃO PREVENTIVA ANUAL DAS BOMBAS DE RECALQUE RESERVATÓRIOS A",
+     "meses": [
+      1840,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1840
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[BOMBA RECALQUE] - MANUTENÇÃO PREVENTIVA ANUAL DAS BOMBAS DE RECALQUE ARMAZÉM B",
+     "meses": [
+      1840,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1840
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[PPCI] - MANUTENÇÃO ANUAL PREVENTIVA DO MOTOR MWM DA CASA DE BOMBAS - AMZ A",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9006.84,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 9006.84
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MECANICA] - MANUTENÇÃO ANUAL PREVENTIVA DO MOTOR CUMMINS AMZ B1",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3500,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3500
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MECANICA] - MANUTENÇÃO ANUAL PREVENTIVA DO MOTOR CUMMINS CASA DE BOMBAS - AMZ B2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3500,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3500
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MECANICA] - MANUTENÇÃO ANUAL PREVENTIVA DO MOTOR SCANIA DO GERADOR SUB 1",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      3500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3500
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO EMERGENCIAL] - PROVISÃO DE 3% SOBRE MANUTENÇÕES NÃO PREVISTAS",
+     "meses": [
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17,
+      358.17
+     ],
+     "total": 4298.04
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "endomarketing",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "representação e Refeição",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A CÂMERA COM ANÁLITICO E IA HIKVISION NA SUBESTAÇÃO DO ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A CÂMERA COM ANALITICO E IA HIKVISION NA SUBESTAÇAO 1 E 2 DO ARMAZÉM B",
+     "meses": [
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A CÂMERA COM ANALITICO E IA HIKVISION NA CASA DE BOMBAS DO ARMAZÉM A",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A CÂMERA COM ANALÍTICO E IA HIKVISION NA CASA DE BOMBAS 1 E 2 DO ARMAZÉM B",
+     "meses": [
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "COMPRA DE IMPRESSORA COLORIDA PARA SUBSTITUIÇÃO",
+     "meses": [
+      0,
+      1820,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1820
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A COMPRA DE 2 MONITORES PARA ESTAÇÕES DA PORTARIA",
+     "meses": [
+      0,
+      938,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 938
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "COMPRA DE COMPUTADOR DELL + MONITOR",
+     "meses": [
+      8000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 8000
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A COMPRA DE PERIFÉRICOS",
+     "meses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+     ],
+     "total": 2400
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Assessoria de RH",
+     "item": "[DESPESAS COM PESSOAL] - CUSTO PARA ALOCAÇÃO DE CADEIRA DE ASSISTENTE DE FACILITIES",
+     "meses": [
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500,
+      7500
+     ],
+     "total": 90000
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — KEY ACCESS MEGA ESTEIO",
+     "meses": [
+      2881.02,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11,
+      3018.11
+     ],
+     "total": 36080.23
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — INFRASPEAK MEGA ESTEIO",
+     "meses": [
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      424.68,
+      442.52,
+      442.52,
+      442.52
+     ],
+     "total": 5149.68
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — LICENÇA MENSAL EMAIL GOOGLE",
+     "meses": [
+      124.9,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84,
+      130.84
+     ],
+     "total": 1564.14
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — SISTEMA PLANO MEGA ESTEIO",
+     "meses": [
+      25.11,
+      25.11,
+      25.11,
+      25.11,
+      25.11,
+      25.11,
+      25.11,
+      25.11,
+      26.22,
+      26.22,
+      26.22,
+      26.22
+     ],
+     "total": 305.76
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — LOVABLE",
+     "meses": [
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59,
+      13.59
+     ],
+     "total": 163.08
+    },
+    {
+     "conta": "CURSOS E SEMINÁRIOS",
+     "item": "CONTRATO — ALURA",
+     "meses": [
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11,
+      124.11
+     ],
+     "total": 1489.32
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — VOIGT ZELADORIA - SERVIÇO DE ZELADORIA",
+     "meses": [
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7,
+      9294.7
+     ],
+     "total": 111536.4
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — VOIGT LIMPEZA - SERVIÇO DE LIMPEZA CONDOMÍNIO ESTEIO",
+     "meses": [
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02,
+      6931.02
+     ],
+     "total": 83172.24
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — IMUNIZADORA RD - DEDETIZAÇÃO CONDOMÍNIO ESTEIO",
+     "meses": [
+      1815,
+      1815,
+      1815,
+      1815,
+      1815,
+      1815,
+      1815,
+      1886.77,
+      1886.77,
+      1886.77,
+      1886.77,
+      1886.77
+     ],
+     "total": 22138.85
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — ADS MANUTENÇÃO PREDIAL",
+     "meses": [
+      6084.74,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28,
+      6374.28
+     ],
+     "total": 76201.82
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — Subestação Energia",
+     "meses": [
+      5464.56,
+      5464.56,
+      5464.56,
+      5464.56,
+      5464.56,
+      5464.56,
+      5672.28,
+      5672.28,
+      5672.28,
+      5672.28,
+      5672.28,
+      5672.28
+     ],
+     "total": 66821.04
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — MANUTENÇÃO GERADOR",
+     "meses": [
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38,
+      2354.38
+     ],
+     "total": 28252.56
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — VOIGT - SEGURANÇA E VIGILANCIA",
+     "meses": [
+      60034.06,
+      60034.06,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 120068.12
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — Internet fixa",
+     "meses": [
+      756.07,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05,
+      792.05
+     ],
+     "total": 9468.62
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — CUSTO MENSAL DE INTERNET",
+     "meses": [
+      160.02,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63,
+      167.63
+     ],
+     "total": 2003.95
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — Linha de celular",
+     "meses": [
+      59.98,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83,
+      62.83
+     ],
+     "total": 751.11
+    }
+   ]
+  },
+  "ITAJAI": {
+   "nome": "Mega Itajaí",
+   "area": {
+    "real": 93589.77956238361,
+    "ritmo": 108274.80756843802,
+    "orc": 108131.44287109376
+   },
+   "total": {
+    "real": 4020616.93,
+    "orcAnt": 6091943.3,
+    "ritmo": 5379092.44,
+    "orc": 6643595.79
+   },
+   "areaComum": {
+    "real": 3135832.96,
+    "orcAnt": 4883283.09,
+    "ritmo": 4373574.56,
+    "orc": 5585522.9
+   },
+   "iptu": {
+    "real": 348656.05,
+    "orcAnt": 618919.49,
+    "ritmo": 455822.87,
+    "orc": 480893.13
+   },
+   "seguro": {
+    "real": 536127.92,
+    "orcAnt": 589740.72,
+    "ritmo": 549695.01,
+    "orc": 577179.7599999999
+   },
+   "contas": [
+    {
+     "nome": "Despesa de pessoal",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 355205.79,
+      "orcAnt": 429634.38,
+      "ritmo": 510149.51,
+      "orc": 535773.33
+     }
+    },
+    {
+     "nome": "Segurança e vigilância",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 1274386.53,
+      "orcAnt": 1547029.71,
+      "ritmo": 1577530.16,
+      "orc": 1732205.2999999998
+     }
+    },
+    {
+     "nome": "Consultoria e assessoria",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 0,
+      "orcAnt": 0,
+      "ritmo": 17040,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Assistência em informática",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 58729.65,
+      "orcAnt": 48889.09,
+      "ritmo": 72123.65,
+      "orc": 85157.99
+     }
+    },
+    {
+     "nome": "Serviços diversos",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 15200,
+      "orcAnt": 0,
+      "ritmo": 800,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Limpeza e conservação",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 259056.6,
+      "orcAnt": 488654.57,
+      "ritmo": 323329,
+      "orc": 406266.12
+     }
+    },
+    {
+     "nome": "Outras taxas e impostos",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 5551.05,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 2300
+     }
+    },
+    {
+     "nome": "Material de expediente",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1296.8,
+      "orcAnt": 0,
+      "ritmo": 739.48,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Material de consumo",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 67137.74,
+      "orcAnt": 73459.64,
+      "ritmo": 86447.78,
+      "orc": 70964
+     }
+    },
+    {
+     "nome": "Telefone",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 11525.54,
+      "orcAnt": 12066.78,
+      "ritmo": 12197.84,
+      "orc": 12351.5
+     }
+    },
+    {
+     "nome": "KM, estacionamento e pedágio",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 103.2,
+      "orcAnt": 0,
+      "ritmo": 213.81,
+      "orc": 1200
+     }
+    },
+    {
+     "nome": "Propaganda e publicidade",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 2527.58,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Energia elétrica",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 153926.44,
+      "orcAnt": 176420.92,
+      "ritmo": 255765.84,
+      "orc": 273500
+     }
+    },
+    {
+     "nome": "Água",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 31035.29,
+      "orcAnt": 39349.26,
+      "ritmo": 76225.42,
+      "orc": 73800
+     }
+    },
+    {
+     "nome": "Despesa com passagens",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 4889.32,
+      "orcAnt": 0,
+      "ritmo": 1849.2,
+      "orc": 8000
+     }
+    },
+    {
+     "nome": "Despesa com hospedagem",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 10325.54,
+      "orcAnt": 12800,
+      "ritmo": 16391,
+      "orc": 29850
+     }
+    },
+    {
+     "nome": "Representação e refeição",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1279.07,
+      "orcAnt": 2750,
+      "ritmo": 2467.79,
+      "orc": 4784
+     }
+    },
+    {
+     "nome": "Despesa com taxi",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 179.27,
+      "orcAnt": 1200,
+      "ritmo": 787.78,
+      "orc": 1200
+     }
+    },
+    {
+     "nome": "Locação de veículos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 8698.38,
+      "orcAnt": 11600,
+      "ritmo": 25586.93,
+      "orc": 18170
+     }
+    },
+    {
+     "nome": "Despesa com combustíveis",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1224.83,
+      "orcAnt": 0,
+      "ritmo": 2817.27,
+      "orc": 5500
+     }
+    },
+    {
+     "nome": "Manutenção de imóveis",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 734217.57,
+      "orcAnt": 1790938.02,
+      "ritmo": 1299064.75,
+      "orc": 2272480.38
+     }
+    },
+    {
+     "nome": "Bens de pequeno valor",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 29029.1,
+      "orcAnt": 0,
+      "ritmo": 2699,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Cópias e reproduções",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 334.62,
+      "orcAnt": 0,
+      "ritmo": 389.56,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Cursos e seminários",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1106.76,
+      "orcAnt": 8258.68,
+      "ritmo": 3412.38,
+      "orc": 3320.28
+     }
+    },
+    {
+     "nome": "Manutenção de máquinas e equipamentos",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 45455.98,
+      "orcAnt": 0,
+      "ritmo": 20878.19,
+      "orc": 11100
+     }
+    },
+    {
+     "nome": "Despesa com veículos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 0,
+      "orcAnt": 27462.6,
+      "ritmo": 7047,
+      "orc": 27600
+     }
+    },
+    {
+     "nome": "Materiais de Informática",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 63410.31,
+      "orcAnt": 212769.44,
+      "ritmo": 57621.21,
+      "orc": 10000
+     }
+    }
+   ],
+   "itens": [
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[MEGA ITAJAÍ] - PARCELA ALFA SENSE (FIBRA SENSITIVA)",
+     "meses": [
+      0,
+      0,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000,
+      15000
+     ],
+     "total": 150000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[MEGA ITAJAÍ] - REFORÇO FINAL DO ANO BOLSÃO 24H",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      37034.59,
+      37034.59
+     ],
+     "total": 74069.18
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "REFERENTE A SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE CÃMERAS ANALITICAS COM IA EM ÁREAS TÉCNICAS",
+     "meses": [
+      0,
+      0,
+      0,
+      6666,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6666
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MENSALIDADE DE WEBDOX",
+     "meses": [
+      766.8,
+      766.8,
+      766.8,
+      766.8,
+      766.8,
+      805.14,
+      805.14,
+      805.14,
+      805.14,
+      805.14,
+      805.14,
+      805.14
+     ],
+     "total": 9469.98
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MENSALIDADE KEY ACCESS FACIAIS (8 PADS HIVISION)",
+     "meses": [
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2
+     ],
+     "total": 3638.4
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - AMPLIAÇÃO MEGA ITAJAÍ E AUMENTO DE LICENÇA KEY ACCESS (REAJ 2026)",
+     "meses": [
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22,
+      1604.22
+     ],
+     "total": 19250.64
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Serviços Diversos",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO] - ALTERAÇÃO DE ESCALA AUX. LIMPEZA E ADIÇÃO DO POSTO OFICIAL DE MANUTENÇÃO",
+     "meses": [
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55,
+      15836.55
+     ],
+     "total": 190038.6
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Seguros",
+     "item": "seguro Itajai 2027",
+     "meses": [
+      0,
+      72147.47,
+      72147.47,
+      72147.47,
+      72147.47,
+      72147.47,
+      72147.47,
+      72147.47,
+      72147.47,
+      0,
+      0,
+      0
+     ],
+     "total": 577179.76
+    },
+    {
+     "conta": "Material de Expediente",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] 2 KITS TRAVA QUEDAS INOX",
+     "meses": [
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - TRENA A LASER 50MTS COM BOLSA BOSCH",
+     "meses": [
+      0,
+      0,
+      514,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 514
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - NÍVEL IMANTADO ALUMÍNIO 14",
+     "meses": [
+      0,
+      0,
+      70,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 70
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMETNOS] - LUXÍMETRO BOSCH",
+     "meses": [
+      0,
+      0,
+      300,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[CONTRATO LPU CANAVERAL] - MATERIAIS DE LIMPEZA E CONSUMO EM GERAL",
+     "meses": [
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500,
+      3500
+     ],
+     "total": 42000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[MATERIAL DE CONSUMO] - COMPRAS FORA DO CONTRATO",
+     "meses": [
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[COMBUSTÍVEL] - REABASTECIMENTO DE DIESEL SEMESTRAL DO MOTOR DA CASA DE BOMBAS (1.500L X R$ 6,89)",
+     "meses": [
+      10335,
+      0,
+      0,
+      0,
+      0,
+      0,
+      10335,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 20670
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] - COMPRA DE CHAPÉU PESCADOR E BONES PERSONALIZADOS MEGA",
+     "meses": [
+      0,
+      410,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 410
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "telefone",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "[GESTÃO] - DESPESAS DE DESLOCAMENTOS MENSAIS (CR-HANGAR-CR) VIAGEM ITAJAÍ",
+     "meses": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "[ENERGIA ELÉTRICA] - DESPESAS COM CELESC NA ÁREA COMUM",
+     "meses": [
+      20100,
+      20100,
+      20100,
+      20100,
+      20100,
+      20100,
+      20100,
+      22000,
+      22000,
+      22000,
+      22000,
+      22000
+     ],
+     "total": 250700
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "[ENERGIA ELÉTRICA]  - RESSARCIMENTO DE ENERGIA DA BOMBA DE DRENAGEM AURORA",
+     "meses": [
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900,
+      1900
+     ],
+     "total": 22800
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "água",
+     "item": "[SEMASA] - CONSUMO DE ÁGUA POTÁVEL",
+     "meses": [
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500,
+      5500
+     ],
+     "total": 66000
+    },
+    {
+     "conta": "água",
+     "item": "[PPCI] - CAMINHÃO PIPA PARA PARADA ANUAL DE DRENO DO SISTEMA (15M3)",
+     "meses": [
+      0,
+      7800,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7800
+    },
+    {
+     "conta": "água",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - TREINAMENTO QUADRIMESTRAL DE TTI E KRAV MAGA (FONSECA OU CHRISTIAN)",
+     "meses": [
+      100,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - ACOMPANHAMENTO PERIÓDICO DA SEGURANÇA (FONSECA OU CHRISTIAN)",
+     "meses": [
+      0,
+      0,
+      100,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - VISITA PARA DIAGNÓSTICO ANUAL DE SEGURANÇA (GAL E FONSECA)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 100
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[GESTÃO] - DESPESAS COM REEMBOLSO DA GESTÃO DE FACILITIES",
+     "meses": [
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300
+     ],
+     "total": 3600
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[COMBUSTÍVEIS] - DESPESAS COM COMBUSTÍVEL COM CARRO DO MEGA",
+     "meses": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - INSTALAÇÃO DE ILUMINAÇÃO ADICIONAL NA LATERAL DO AMZ 4 E 5 (PERÍMETRO)",
+     "meses": [
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - INSTALAÇÃO DE ILUMINAÇÃO PARA O BOLSÃO DE VEÍCULOS LEVES (ESTACIONAMENTO)",
+     "meses": [
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAVIMENTO] -  SUBSTITUIÇÃO DE PAVIMENTO PINTADO (MATERIAL E MÃO DE OBRA)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      30047.04
+     ],
+     "total": 30047.04
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CIVIL] - ADEQUAÇÃO E MELHORIA COPA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      18300,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 18300
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELETRO DOMÉSTICO] - SUBSTITUIÇÃO DA GELADEIRA DA COPA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2855,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2855
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[AVAC] - MÃO DE OBRA PRA SUBSTITUIÇÃO DE APARELHOS DE AR CONDICIONADO (PORTARIA E ADM)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9900,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 9900
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTOS] - IMPERMEABILIZAÇÃO DA LAJE DA CASA DE BOMBAS - A CADA 5 ANOS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      39426.11,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 39426.11
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTOS] - IMPERMEANILIZAÇÃO DA LAJE DA SUBESTAÇÃO 1 - A CADA 5 ANOS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      68110.9,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 68110.9
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTOS] - IMPERMEABILIZAÇÃO DA LAJE DA SUBESTAÇÃO 2 - A CADA 5 ANOS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      63658.65,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 63658.65
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - INFRA ELÉTRICA E LÓGICA PARA DISPOSITIVO DE MONITORAMENTO",
+     "meses": [
+      0,
+      0,
+      2000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTRATO] - MANUTENÇÃO PREVENTIVA E CORRETIVA DE SEGURANÇA ELETRÔNICA (FM SECURITY)",
+     "meses": [
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7,
+      5127.7
+     ],
+     "total": 61532.4
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - SUBS. DE ENCAMENAMENTO PVC POR PPR NO RESTAURANTE (ÁGUA QUENTE) - MATERIAL",
+     "meses": [
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - SUBS. DE ENCANAMENTO DE PVC POR PPR NO RESTAURANTE (ÁGUA QUENTE) - MÃO DE OBRA",
+     "meses": [
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ]  - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO AMZ 1",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 3",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SCPQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL NA ESCADA MARINHEIRO  AMZ 4",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - MANUTENÇÃO PREVENTIVA E REVISÃO DAS VÁLVULAS DE GOVERNO (FASE 1 A 3 VGAS)",
+     "meses": [
+      0,
+      0,
+      24318.7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 24318.7
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ESTRUTURA METÁLICA] - MANUTENÇÃO E PINTURA DO TOTEM MEGA",
+     "meses": [
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - COMPRA DE 3 TORNIQUETES TX1500 DIGICON INOX (PARCELADO 3X)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      68900,
+      68900,
+      68900,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 206700
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "MATERIAL DE CONSTRUÇÃO PARA USO PELO ZELADOR PARA PEQUENOS REPAROS",
+     "meses": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500
+     ],
+     "total": 18000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTRATO] - MAQUINA DE GUARDA-CHUVA RENTBRELLA",
+     "meses": [
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200
+     ],
+     "total": 14400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CIVIL] - INSTALAÇÃO DE 4 CAIXAS COM CALHAS PARSHALLS/ETE NAS SAÍDAS PLUVIAIS (2 PARCELAS)",
+     "meses": [
+      0,
+      53800,
+      53800,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 107600
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CIVIL] - INSTALAÇÃO E EXECUÇÃO DAS BANDEIRAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      30000,
+      0,
+      0,
+      0
+     ],
+     "total": 30000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ESTRUTURA METÁLICA] - LIMPEZA DAS ESTRUTURAS METÁLICAS DO ARMAZÉM 1, 2 E 3",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      45000,
+      45000
+     ],
+     "total": 90000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - PINTURA DA ALVENARIA DAS FACES EXTERNAS DO ARMAZÉM 1, 2 E 3",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      85500,
+      85500,
+      0,
+      0
+     ],
+     "total": 171000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[AVAC] - CONTRATO DE MANUTENÇÃO DE APARELHOS DE AR CONDICIONADO CONFORME PMOC",
+     "meses": [
+      760,
+      760,
+      760,
+      760,
+      760,
+      760,
+      760,
+      760,
+      940,
+      940,
+      940,
+      940
+     ],
+     "total": 9840
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - PLANO DE EMERGÊNCIA E CURSO DE BRIGADA DE INCÊNDIO NR 23 ANUAL",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      13300,
+      0,
+      0,
+      0
+     ],
+     "total": 13300
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDROSSANITÁRIO] - SERVIÇO DE LIMPEZA E SUCÇÃO ANUAL DAS FOSSAS (R$ 80 M3 X 450M3)",
+     "meses": [
+      0,
+      0,
+      0,
+      36000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 36000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDROSSANITÁRIO] - SERVIÇO DE ANÁLISE LABORATORIAL SEMESTRAL DOS 20 STE (ENTRADA E SAÍDA)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      10846.66,
+      0,
+      0,
+      0,
+      0,
+      10846.66,
+      0,
+      0
+     ],
+     "total": 21693.32
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - SERVIÇO DE RECARGA DE EXTINTORES E TESTE HIDROSTÁTICO DE MANGUEIRAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1260,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1260
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (ÁREA DE ACESSOS (100M2)",
+     "meses": [
+      0,
+      3900,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3900,
+      0,
+      0,
+      0
+     ],
+     "total": 7800
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇAO HORIZONTAL] - MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMERCAÇÃO EMB, E DESEMBARQUE (20M2)",
+     "meses": [
+      0,
+      780,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      780,
+      0,
+      0,
+      0
+     ],
+     "total": 1560
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA SEMESTRAL DA DEMARCAÇÃO (PONTE - 22,2 m2 x R$ 39)",
+     "meses": [
+      0,
+      865.8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      865.8,
+      0,
+      0,
+      0
+     ],
+     "total": 1731.6
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇAÕ PREVENTIVA ANUAL DA DEMARCAÇÃO DO BOLSÃO (300m2)",
+     "meses": [
+      11700,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 11700
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - REPOSIÇÃO DE TACHINHAS DE SINALIZAÇÃO (100 UND X R$ 55,00)",
+     "meses": [
+      0,
+      5500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAVIMENTAÇÃO] - NIVELAMENTO DAS DOCAS DO ARMAZÉM 4 E 5 (R$ 188,88/M2 X 800m2)",
+     "meses": [
+      0,
+      0,
+      0,
+      50368,
+      50368,
+      50368,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 151104
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - INSTALAÇÃO DE DEFENSAS METÁLICAS ANTI-EVASÃO (EST. LEVES 36M H2)",
+     "meses": [
+      0,
+      59497.2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 59497.2
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - INSTALAÇÃO DE DEFENSAS METÁLICAS ANTI-EVASÃO LATERAL 2/3 H2 (140M X R$ 509,8)",
+     "meses": [
+      0,
+      0,
+      71376.33,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 71376.33
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO VERTICAL] - REPOSIÇÃO E SUBSTITUIÇÃO DE PLACAS DE SINALIZAÇÃO",
+     "meses": [
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000
+     ],
+     "total": 12000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - ORGANIZAÇÃO, IDENTIFICAÇÃO E DESATIVAÇÃO DE CIRCUITOS INOPERANTES QUADRO PORTARIA",
+     "meses": [
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAVIMENTAÇÃO] - ELEVAÇÃO DE PAVIMENTO NA DOCA DOS MÓDULOS 12 E 13 (R$ 188,88/m2 x 315m2)",
+     "meses": [
+      59497.2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 59497.2
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - BEBEDOURO INDUSTRIAL 50L PARA O PÚBLICO EXTERNO",
+     "meses": [
+      0,
+      0,
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[HIDRÁULICA] - ALIMENTAÇÃO DO BEBEDOURO EXTERNO",
+     "meses": [
+      0,
+      0,
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ANUAL DA DEMARCAÇÃO DA CALÇADA (",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      26218.14
+     ],
+     "total": 26218.14
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ANUAL DAS VIAS DE CARRO (1.059,86 M2 X R$ 39)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      41334.54,
+      0,
+      0
+     ],
+     "total": 41334.54
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA SUBESTAÇÃO 1",
+     "meses": [
+      0,
+      0,
+      0,
+      34544,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 34544
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA SUBESTAÇÃO 2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      16398.92,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 16398.92
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA DA CASA DE BOMBAS",
+     "meses": [
+      0,
+      0,
+      0,
+      24233.43,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 24233.43
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA PORTARIA E PREDIO APOIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      20604.54,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 20604.54
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA ÁREA DE CONVIVÊNCIA",
+     "meses": [
+      0,
+      0,
+      0,
+      7344,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7344
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ESTRUTURA METÁLICA] - LIMPEZA, TRATAMENTO E PINTURA DO RESERVATÓRIO SPK",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      134079.97,
+      45463.19
+     ],
+     "total": 179543.16
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MANUTENÇÃO EMERGENCIAL] - PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS",
+     "meses": [
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17,
+      4506.17
+     ],
+     "total": 54074.04
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "bens de pequeno valor",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cópias e reproduções",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - DESPESAS COM MANUTENÇÃO PREVENTIVA SEMESTRAL DO TRATOR AGRALE",
+     "meses": [
+      2600,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2600,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5200
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - DESPESAS COM MANUTENÇÃO PREVENTIVA SEMESTRAL DO MOTOCULTIVADOR",
+     "meses": [
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0
+     ],
+     "total": 2000
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - DESPESAS COM MANUTENÇÃO PREVENTIVA DAS BOMBAS DE RECALQUE (ÁGUA DE REÚSO)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 500
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - DESPESAS COM MANUTENÇÃO PREVENTIVA DAS BOMBAS DE RECALQUE (HIDROSSANITÁRI)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1000
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO CORRETIVA] - DESPESAS COM MANUTENÇÃO CORRETIVA",
+     "meses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+     ],
+     "total": 2400
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "despesas c/ veículos",
+     "item": "[CONTRATO] - DESPESAS COM VEÍCULO LOCADOS DO MEGA",
+     "meses": [
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300,
+      2300
+     ],
+     "total": 27600
+    },
+    {
+     "conta": "endomarketing",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "representação e Refeição",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A AQUISIÇÃO DE CÂMERA+LICENÇA HIKVISION IA E ANALITICO PARA SUBESTAÇÃO 1",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A AQUISIÇÃO DE CÂMERA+LICENÇA HIKVISION IA E ANALITICO PARA SUBESTAÇÃO 2",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A AQUISIÇÃO DE CÂMERA+LICENÇA HIKVISION IA E ANALITICO PARA CASA DE BOMBAS",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "REFERENTE A AQUISIÇÃO DE CÂMERA+LICENÇA HIKVISION IA E ANALITICO PARA SUBESTAÇÃO 3",
+     "meses": [
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — PREVENTIVA E CORRETIVA DAS COBERTURAS",
+     "meses": [
+      10900,
+      10900,
+      10900,
+      10900,
+      10900,
+      10900,
+      10900,
+      10900,
+      11380.79,
+      11380.79,
+      11380.79,
+      11380.79
+     ],
+     "total": 132723.16
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — FIRECAM",
+     "meses": [
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000
+     ],
+     "total": 120000
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — ARCA AGRO - MANUTENÇÃO AREA VERDE",
+     "meses": [
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5,
+      7612.5
+     ],
+     "total": 91350
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — RODRIGO ROHDE",
+     "meses": [
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762,
+      3762
+     ],
+     "total": 45144
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — MG GERADORES",
+     "meses": [
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66,
+      2226.66
+     ],
+     "total": 26719.92
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — PORTOVIG SEGURANÇA - SERVIÇO SEGURANÇA E VIGILANCIA",
+     "meses": [
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77,
+      111103.77
+     ],
+     "total": 1333245.24
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — MOKED - SERVIÇO SEGURANÇA",
+     "meses": [
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24,
+      14574.24
+     ],
+     "total": 174890.88
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — PORTOVIG - SERVIÇO DE LIMPEZA E ZELADORIA",
+     "meses": [
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35,
+      13632.35
+     ],
+     "total": 163588.2
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — LAURI BATISTA - DEDETIZAÇÃO",
+     "meses": [
+      988.59,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63,
+      1035.63
+     ],
+     "total": 12380.52
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 06",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 04",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 05",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 01",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 02",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — AMBIENTAL LIMPEZA URBANA E SANEAMENTO - ARMAZÉM 03",
+     "meses": [
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15,
+      559.15
+     ],
+     "total": 6709.8
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — KEY ACCESS MEGA ITAJAÍ",
+     "meses": [
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2320.86,
+      2416.73
+     ],
+     "total": 27946.19
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — INFRASPEAK MEGA ITAJAÍ",
+     "meses": [
+      1075.68,
+      1075.68,
+      1075.68,
+      1075.68,
+      1075.68,
+      1075.68,
+      1075.68,
+      1075.68,
+      1123.13,
+      1123.13,
+      1123.13,
+      1123.13
+     ],
+     "total": 13097.96
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — IPNET SERVIÇOS",
+     "meses": [
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      272.85,
+      284.31,
+      284.31,
+      284.31
+     ],
+     "total": 3308.58
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — SISTEMA PLANO MEGA ITAJAÍ",
+     "meses": [
+      86.57,
+      86.57,
+      86.57,
+      86.57,
+      86.57,
+      86.57,
+      86.57,
+      86.57,
+      90.39,
+      90.39,
+      90.39,
+      90.39
+     ],
+     "total": 1054.12
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — LOVABLE",
+     "meses": [
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51,
+      60.51
+     ],
+     "total": 726.12
+    },
+    {
+     "conta": "CURSOS E SEMINÁRIOS",
+     "item": "CONTRATO — ALURA",
+     "meses": [
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69,
+      276.69
+     ],
+     "total": 3320.28
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — Internet fixa",
+     "meses": [
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07,
+      756.07
+     ],
+     "total": 9072.84
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — Telefone fixo",
+     "meses": [
+      267.4,
+      267.4,
+      267.4,
+      267.4,
+      267.4,
+      277.38,
+      277.38,
+      277.38,
+      277.38,
+      277.38,
+      277.38,
+      277.38
+     ],
+     "total": 3278.66
+    }
+   ]
+  },
+  "CURITIBA": {
+   "nome": "Mega Curitiba",
+   "area": {
+    "real": 105800.74002849004,
+    "ritmo": 120651.0695458232,
+    "orc": 133196.81475583863
+   },
+   "total": {
+    "real": 4456327.17,
+    "orcAnt": 6077594.05,
+    "ritmo": 5950510.75,
+    "orc": 7528283.91
+   },
+   "areaComum": {
+    "real": 3664525.18,
+    "orcAnt": 5068601.83,
+    "ritmo": 5000163.69,
+    "orc": 6430453.76
+   },
+   "iptu": {
+    "real": 348767.41,
+    "orcAnt": 430927.52,
+    "ritmo": 426559.8,
+    "orc": 494047.5
+   },
+   "seguro": {
+    "real": 443034.58,
+    "orcAnt": 578064.7,
+    "ritmo": 523787.26,
+    "orc": 603782.65
+   },
+   "contas": [
+    {
+     "nome": "Despesa de pessoal",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 419706.02,
+      "orcAnt": 490126.94,
+      "ritmo": 551679.14,
+      "orc": 588482.81
+     }
+    },
+    {
+     "nome": "Assistência jurídica",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 3182,
+      "orcAnt": 4936.32,
+      "ritmo": 27000,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Segurança e vigilância",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 1384284.2,
+      "orcAnt": 1867967.41,
+      "ritmo": 1881108.93,
+      "orc": 2403816.4999999995
+     }
+    },
+    {
+     "nome": "Consultoria e assessoria",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 579,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Assistência em informática",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 107443.53,
+      "orcAnt": 95961.61,
+      "ritmo": 114773.52,
+      "orc": 102138.65000000001
+     }
+    },
+    {
+     "nome": "Serviços diversos",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 2536.95,
+      "orcAnt": 14659.93,
+      "ritmo": 8333.29,
+      "orc": 14673.660000000003
+     }
+    },
+    {
+     "nome": "Limpeza e conservação",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 432073.99,
+      "orcAnt": 693009.28,
+      "ritmo": 542279.58,
+      "orc": 885960
+     }
+    },
+    {
+     "nome": "Outras taxas e impostos",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 0,
+      "orcAnt": 0,
+      "ritmo": 680.73,
+      "orc": 2454.84
+     }
+    },
+    {
+     "nome": "Material de expediente",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 21.3,
+      "orcAnt": 0,
+      "ritmo": 139.37,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Material de consumo",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 110833.58,
+      "orcAnt": 82433.28,
+      "ritmo": 117348.07,
+      "orc": 118598.6
+     }
+    },
+    {
+     "nome": "Telefone",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 12185.94,
+      "orcAnt": 12339.32,
+      "ritmo": 12002.32,
+      "orc": 18803.96
+     }
+    },
+    {
+     "nome": "KM, estacionamento e pedágio",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 672.82,
+      "orcAnt": 0,
+      "ritmo": 1093.44,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Propaganda e publicidade",
+     "grupo": "Serviços de Terceiros",
+     "v": {
+      "real": 3392.55,
+      "orcAnt": 0,
+      "ritmo": 1447.16,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Energia elétrica",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 270722.43,
+      "orcAnt": 293610.72,
+      "ritmo": 248380.43,
+      "orc": 205635.86999999997
+     }
+    },
+    {
+     "nome": "Água",
+     "grupo": "Utilities, Taxas e Consumo",
+     "v": {
+      "real": 0,
+      "orcAnt": 44801.88,
+      "ritmo": 10060.8,
+      "orc": 16339.24
+     }
+    },
+    {
+     "nome": "Despesa com passagens",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 4856.48,
+      "orcAnt": 2880,
+      "ritmo": 8329.89,
+      "orc": 8000
+     }
+    },
+    {
+     "nome": "Despesa com hospedagem",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 11079.37,
+      "orcAnt": 14820,
+      "ritmo": 3730.74,
+      "orc": 11100
+     }
+    },
+    {
+     "nome": "Representação e refeição",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 2041.21,
+      "orcAnt": 3300,
+      "ritmo": 671.53,
+      "orc": 1924
+     }
+    },
+    {
+     "nome": "Despesa com taxi",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1846.86,
+      "orcAnt": 1700,
+      "ritmo": 4475.35,
+      "orc": 3300
+     }
+    },
+    {
+     "nome": "Locação de veículos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 38395.53,
+      "orcAnt": 12600,
+      "ritmo": 24151.02,
+      "orc": 8970
+     }
+    },
+    {
+     "nome": "Despesa com combustíveis",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 2471.92,
+      "orcAnt": 0,
+      "ritmo": 151.12,
+      "orc": 700
+     }
+    },
+    {
+     "nome": "Manutenção de imóveis",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 798906.38,
+      "orcAnt": 1266241.34,
+      "ritmo": 1276089.03,
+      "orc": 1981317.23
+     }
+    },
+    {
+     "nome": "Cópias e reproduções",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 329.53,
+      "orcAnt": 0,
+      "ritmo": 402.94,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Correios",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 82.75,
+      "orcAnt": 0,
+      "ritmo": 0,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Cursos e seminários",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 1096.8,
+      "orcAnt": 8416.16,
+      "ritmo": 3381.84,
+      "orc": 4370.4
+     }
+    },
+    {
+     "nome": "Manutenção de máquinas e equipamentos",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 46213.16,
+      "orcAnt": 0,
+      "ritmo": 77433.15,
+      "orc": 15600
+     }
+    },
+    {
+     "nome": "Outras despesas administrativas",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 0,
+      "orcAnt": 0,
+      "ritmo": 350,
+      "orc": 0
+     }
+    },
+    {
+     "nome": "Despesa com veículos",
+     "grupo": "Despesas com Pessoal e Administrativas",
+     "v": {
+      "real": 0,
+      "orcAnt": 27480,
+      "ritmo": 6870,
+      "orc": 27480
+     }
+    },
+    {
+     "nome": "Materiais de Informática",
+     "grupo": "Manutenção e Conservação",
+     "v": {
+      "real": 9570.88,
+      "orcAnt": 131317.65,
+      "ritmo": 77800.29,
+      "orc": 10788
+     }
+    }
+   ],
+   "itens": [
+    {
+     "conta": "Assistência Jurídica",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO XDRONE] - VIGILÂNCIA COM DRONE AUTONÔMO + SOFTWARE DE ANÁLISE DE RISCO",
+     "meses": [
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910,
+      19910
+     ],
+     "total": 238920
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO AUXILIAR] - POSTO ADICIONAL (BOLSÃO E/OU CCO) 24H NOTURNO",
+     "meses": [
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17,
+      39017.17
+     ],
+     "total": 468206.04
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO XDRONE] - IMPLANTAÇÃO E CONFIGURAÇÃO XDRONE (SETUP)",
+     "meses": [
+      12000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 12000
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "[CONTRATO EMPRÉSTIMO ITAÚ] - PARCELAS MENSAIS DA FIBRA ÓPTICA A SENSE",
+     "meses": [
+      13866.09,
+      13721.76,
+      13563.72,
+      13407.49,
+      13258.02,
+      13110.22,
+      12959.22,
+      12809.96,
+      12657.68,
+      12516.57,
+      12381.66,
+      12234.48
+     ],
+     "total": 156486.87
+    },
+    {
+     "conta": "Segurança e Vigilância",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MENSALIDADE WEBDOX",
+     "meses": [
+      854,
+      854,
+      854,
+      854,
+      854,
+      896.7,
+      896.7,
+      896.7,
+      896.7,
+      896.7,
+      896.7,
+      896.7
+     ],
+     "total": 10546.9
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MENSALIDADE DE LICENLAS FACIAIS (8 PADS HIKVISION)",
+     "meses": [
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2,
+      303.2
+     ],
+     "total": 3638.4
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "[CONTRATO] - MONITORAMENTO E MENSALIDADE 150 MEDIÇÕES (CAS) 12 MESES",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      15300,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 15300
+    },
+    {
+     "conta": "Assistência Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Serviços Diversos",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO] - COLETA DE REJEITOS DO RESTAURANTE (TRANSRESÍDUOS)",
+     "meses": [
+      9350,
+      9350,
+      9350,
+      9350,
+      9350,
+      9350,
+      9350,
+      11220,
+      11220,
+      11220,
+      11220,
+      11220
+     ],
+     "total": 121550
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO] - COLETA DE ÔRGANICOS DO RESTAURANTE (SUINO VIVO)",
+     "meses": [
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6000,
+      6300,
+      6300,
+      6300,
+      6300
+     ],
+     "total": 73200
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - SERVIÇO DE ROÇADA",
+     "meses": [
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000,
+      10000
+     ],
+     "total": 120000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - ROÇADA QUIMICA ROUNDUP",
+     "meses": [
+      2850,
+      0,
+      2850,
+      0,
+      0,
+      0,
+      2850,
+      0,
+      2850,
+      0,
+      2850,
+      0
+     ],
+     "total": 14250
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - APLICAÇÃO DE HERBICIDAS GRAMIX EM ÁREAS PLANAS E TALUDES",
+     "meses": [
+      0,
+      2250,
+      0,
+      0,
+      2250,
+      0,
+      0,
+      2250,
+      0,
+      0,
+      2250,
+      0
+     ],
+     "total": 9000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - APLICAÇÃO DE ADUBO NPK-10-10-10",
+     "meses": [
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0,
+      1000,
+      0
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO LPU] - APLICAÇÃO DE ADUBO EM COROAS DE CRISTO",
+     "meses": [
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      1000,
+      0,
+      0
+     ],
+     "total": 4000
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[PAISAGISMO] - SERVIÇO DE PODA DA VEGETAÇÃO NO PERÍMETRO APP (SEMESTRAL)",
+     "meses": [
+      0,
+      0,
+      8700,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8700,
+      0,
+      0,
+      0
+     ],
+     "total": 17400
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "[CONTRATO] - SERVIÇO DE ALTERAÇÃO DE ESCALA DE 12X36 DIURNO PARA 24H",
+     "meses": [
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7,
+      14344.7
+     ],
+     "total": 172136.4
+    },
+    {
+     "conta": "Limpeza e Conservação",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Seguros",
+     "item": "seguro Curitiba 2027",
+     "meses": [
+      0,
+      76803.42,
+      76803.42,
+      76803.42,
+      76803.42,
+      76803.42,
+      76803.42,
+      76803.42,
+      76803.42,
+      0,
+      0,
+      0
+     ],
+     "total": 614427.36
+    },
+    {
+     "conta": "Material de Expediente",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - LUXÍMETRO PARA O MEGA",
+     "meses": [
+      0,
+      0,
+      300,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] - CONJUNTO TRAVA QUEDAS (2 KITS)",
+     "meses": [
+      0,
+      0,
+      1200,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - TRENA A LASER 50MTS COM BOLSA BOSCH",
+     "meses": [
+      0,
+      0,
+      514,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 514
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EQUIPAMENTOS] - NÍVEL IMANTADO ALUMÍNIO 14",
+     "meses": [
+      0,
+      0,
+      70,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 70
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "MATERIAL DE LIMPEZA, COPA E COZINHA (EXTRA CONTRATO)",
+     "meses": [
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700,
+      1700
+     ],
+     "total": 20400
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[COMBUSTÍVEL] - COMPRA DE GASOLINA PARA CARRO, TRATOR E MOTOCULTIVADOR",
+     "meses": [
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5,
+      552.5
+     ],
+     "total": 6630
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[CONTRATO] COMPRA DE SACO DE LIXO, PAPEL TOALHA E HIGIÊNICO",
+     "meses": [
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      4500
+     ],
+     "total": 54000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[COMBUSTÍVEL] - COMPRA SEMESTRAL DE DIESEL GERADOR (R$ 6,89 x 1.570 L)",
+     "meses": [
+      10817.3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      10817.3,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 21634.6
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[COMBUSTÍVEL] - COMPRA ADICIONAL POR USO DE DIESEL PARA GERADOR",
+     "meses": [
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870,
+      870
+     ],
+     "total": 10440
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[SINALIZAÇÃO VIÁRIA] - REPOSIÇÃO DE CONES, NJ PLASTICAS, ETC",
+     "meses": [
+      500,
+      0,
+      500,
+      0,
+      500,
+      0,
+      500,
+      0,
+      500,
+      0,
+      500,
+      0
+     ],
+     "total": 3000
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "[EPI] - COMPRA DE CHAPÉU PESCADOR E BONES PERSONALIZADOS MEGA",
+     "meses": [
+      0,
+      410,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 410
+    },
+    {
+     "conta": "Material de Consumo",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "telefone",
+     "item": "[LINK DE INTERNET] - LINK DEDICADO PARA OPERACIONALIZAÇÃO DO DRONE AEROSCAN",
+     "meses": [
+      0,
+      0,
+      0,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700,
+      700
+     ],
+     "total": 6300
+    },
+    {
+     "conta": "telefone",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Quilometragem / Estacionamento",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "propaganda e publicidade",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "[ENERGIA ELÉTRICA] - ÁREA EXISTENTE (ATÉ FASE 6)",
+     "meses": [
+      4500,
+      4500,
+      4500,
+      4500,
+      4500,
+      8500,
+      8500,
+      8500,
+      4500,
+      4500,
+      4500,
+      4500
+     ],
+     "total": 66000
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "[ENERGIA ELÉTRICA] - ÁREA EXPANDIDA (FASE 7A E 7B)",
+     "meses": [
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "energia eletrica",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "água",
+     "item": "[ESGOTO] - TAXA SANEPAR REFERENTE A ÀREA COMUM",
+     "meses": [
+      1500,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250,
+      1250
+     ],
+     "total": 15250
+    },
+    {
+     "conta": "água",
+     "item": "[POTÁVEL] - TAXA REFERENTE A ÁREA COMUM",
+     "meses": [
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77,
+      90.77
+     ],
+     "total": 1089.24
+    },
+    {
+     "conta": "água",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - REEMBOLSO DE COMBUSTÍVEIS TREINAMENTO QUADRIMESTRAL TTI E KRA MAGA",
+     "meses": [
+      100,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - REEMBOLSO DE COMBUSTÍVEIS VISITAS DE ACOMPANHAMENTO COM A SEGURANÇA",
+     "meses": [
+      0,
+      0,
+      100,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0
+     ],
+     "total": 300
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "[MOKED] - REEMBOLSO DE COMBUSTÍVEIS DA VISITA DO DIAGNÓSTICO DE SEGURANÇA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 100
+    },
+    {
+     "conta": "despesa com combustíveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO] - KIT SONDA DE MONITORAMENTO RESERVATÓRIO SPK",
+     "meses": [
+      0,
+      0,
+      0,
+      3729,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3729
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[MONITORAMENTO - KIT SONDA DE MONITORAMENTO RESERVATÓRIO POTÁVEL + HIDRANTE",
+     "meses": [
+      0,
+      0,
+      0,
+      3729,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3729
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - PINTURA DA TUBULAÇÃO DE INCÊNDIO DA FASE 1 (CASA DE BOMBAS + AMZ 1/2)",
+     "meses": [
+      0,
+      36297.04,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 36297.04
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[LIMPEZA] - SERVIÇO DE LAVAGEM DAS ESTRUTURAS METÁLICAS (PORTICO - CANCELAS)",
+     "meses": [
+      0,
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[LIMPEZA] - SERVIÇO DE LAVAGEM DAS ESTRUTURAS METÁLICAS DA PORTARIA",
+     "meses": [
+      0,
+      0,
+      0.01,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0.01
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA SUBESTAÇÃO 1",
+     "meses": [
+      0,
+      0,
+      0,
+      22442.72,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 22442.72
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA SUBESTAÇÃO 2",
+     "meses": [
+      0,
+      0,
+      0,
+      16398.92,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 16398.92
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA SUBESTAÇÃO 3",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20612.84
+     ],
+     "total": 20612.84
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA SUBESTAÇÃO 4",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      34544
+     ],
+     "total": 34544
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA ÁREA DE CONVIVÊNCIA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      24233.43,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 24233.43
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DA SALA ADM, PORTARIA E RECEPÇÃO",
+     "meses": [
+      0,
+      0,
+      0,
+      20604.54,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 20604.54
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - LIMPEZA, PREPARAÇÃO E PINTURA DO CUBÍCULO DE ENTRADA (COPEL)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      7684,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 7684
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - MELHORIA DE ILUMINAÇÃO PERIMETRAL NA LATERAL DO ARMAZÉM 6/7 (FACE BMR)",
+     "meses": [
+      0,
+      0,
+      23750.95,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 23750.95
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - MELHORIA DE ILUMINAÇÃO PERIMETRAL NA LATERAL DO ARMAZÉM 3/4 (FACE BMR)",
+     "meses": [
+      0,
+      0,
+      20782.08,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 20782.08
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA DO RESERVATÓRIO DE SPK (MÃO DE OBRA)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      45463.19,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 45463.19
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - SERVIÇO DE LIMPEZA, PREPARO E PINTURA DO RESERVATÓRIO DE SPK (MATERIAL)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      134079.87,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 134079.87
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ANUAL FRENTE DE ARMAZÉNS 1 A 7 (R$ 39/M2 X 539,5)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      21040.5,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 21040.5
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA DE DEMARCAÇÃO SEMESTRAL DESCIDA (113,65 M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      4432.35,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4432.35,
+      0
+     ],
+     "total": 8864.7
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ÁREA DE EMBARQUE E DESEMBARQUE (15M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      585,
+      0,
+      0,
+      0,
+      0,
+      0,
+      585,
+      0
+     ],
+     "total": 1170
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ÁREA DE ACESSOS (122,36 M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      4772.04,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4772.04,
+      0
+     ],
+     "total": 9544.08
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA ROTATÓRIA (33,96 M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      1324.44,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1324.44,
+      0
+     ],
+     "total": 2648.88
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA RUA LATERAL AMZ 1 E 2 (27,40 M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      1068.6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1068.6,
+      0
+     ],
+     "total": 2137.2
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - MANUTENÇÃO DE TACHINHAS REFLETIVAS (R$ 55 UND)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      5500,
+      0,
+      0,
+      5500,
+      0,
+      0,
+      5500,
+      0
+     ],
+     "total": 16500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ESTRUTURA METÁLICA] - LAVAGEM TOTEM MEGA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2500,
+      0,
+      0
+     ],
+     "total": 2500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - DEFENSAS METÁLICAS PLATO 1 E 2 #14839525",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      44823.85,
+      0,
+      0
+     ],
+     "total": 44823.85
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SINALIZAÇÃO VIÁRIA] - DEFENSAS METÁLICAS PLATO 2 E 3 #14839525",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      101206.44,
+      0,
+      0
+     ],
+     "total": 101206.44
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ESTRUTURA METÁLICA] - LAVAGEM DAS TELAS E ESTRUTURAS DO CAMPO SOCIETY",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5000,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CONTRATO] - MANUTENÇÃO PREVENTIVA E CORRETIVA DE SEGURANÇA ELETRÔNICA - FM SECURITY",
+     "meses": [
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9,
+      5307.9
+     ],
+     "total": 63694.8
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - RENOVAÇÃO DO PLANO DE AÇÃO E EMERGÊNCIA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1850,
+      0,
+      0,
+      0
+     ],
+     "total": 1850
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - BRIGADA DE INCÊNDIO - NR 23",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4850,
+      0,
+      0,
+      0
+     ],
+     "total": 4850
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - INSPEÇÃO ANUAL PREVENTIVA CONFORME NFPA 25 - RIEPING",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4024,
+      0,
+      0,
+      0
+     ],
+     "total": 4024
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - REFERENTE A RECARGA DE EXTINTORES E TESTE HIDROSTÁTICO DE MANGUEIRAS  ANUALMENTE",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      3751,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 3751
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAISAGISMO] - IMPLANTAÇÃO ÁREA DE PAISAGISMO EM 1500M2 AO LADO DO RESTAURANTE INDUSTRIAL",
+     "meses": [
+      0,
+      0,
+      0,
+      25000,
+      75000,
+      100000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 200000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAISAGISMO] - IMPLANTAÇÃO DE JARDIM VERTICAL FACHADA DO RESTAURANTE INDUSTRIAL",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      16000,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 16000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELÉTRICA] - CONTRATO DE MANUTENÇÃO PREVENTIVA BIMESTRAL EM QUADRO DE BT NAS ÁREAS COMUNS E MÓDULOS",
+     "meses": [
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000,
+      1000
+     ],
+     "total": 12000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - IMPLEMENTAÇÃO DE MANUTENÇÃO PREVENTIVA DA BOMBA DE INCÊNDIO - MECÂNICA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      11052,
+      0
+     ],
+     "total": 11052
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 1",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 2",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 3",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 4",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 5",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 6",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 7",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 8",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA VERTICAL ESCADA DE ACESSO - AMZ 9",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7635,
+      0
+     ],
+     "total": 7635
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMPLEMENTOS] - COMPRA DE MANTERIAIS DE CONSTRUÇÃO PARA O ZELADOR PARA PQ REPAROS",
+     "meses": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500
+     ],
+     "total": 18000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[SPCQ] - INSTALAÇÃO DE LINHA DE VIDA NO TALUDE DO PLATO 2/3 PARA SERVIÇO DE ROÇADA",
+     "meses": [
+      0,
+      0,
+      69900.21,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 69900.21
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[ELETRODOMÉSTICOS] - COMPRA E INSTALAÇÃO DE TV + SUPORTE NO QUIOSQUE",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3000,
+      0,
+      0,
+      0
+     ],
+     "total": 3000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[AVAC] - CONTRATO DE MANUTENÇÃO DE AR CONDICIONADO CONFORME PMOC",
+     "meses": [
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940,
+      940
+     ],
+     "total": 11280
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COBERTURA] - AMPLIAÇÃO CONTRATO MANUTENÇÃO COBERTURA MIRIAD 6, 7A E 7B",
+     "meses": [
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83,
+      2634.83
+     ],
+     "total": 31617.96
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - AMPLIAÇÃO CONTRATO MANUTENÇÃO SDAI FIRECAM 7A E 7B",
+     "meses": [
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133,
+      1133
+     ],
+     "total": 13596
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PPCI] - REVISÃO E MANUTENÇÃO PREVENTIVA DAS VGAS (LIMPEZA E LUBRIFICAÇÃO DE 20 VGAS)",
+     "meses": [
+      0,
+      47421.56,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 47421.56
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - RECUPERAÇÃO DE VIGA E INSTALAÇÃO DE LOMBADA DE CONCRETO AMZ 3",
+     "meses": [
+      6000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 6000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA DA DEMARCAÇÃO BOLSÃO DE PESADOS (R$ 39M2 X 300M2)",
+     "meses": [
+      11700,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 11700
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "PROVISÃO PARA MANUTENÇÃO NÃO PREVISTA (3% DO PACOTE DE MANUTENÇÃO)",
+     "meses": [
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250,
+      3250
+     ],
+     "total": 39000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - RECUPERAÇÃO DE VIGA E INSTALAÇÃO DE LOMBADAS DE CONCRETO AMZ 4",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7500,
+      0,
+      0,
+      0
+     ],
+     "total": 7500
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[COMUNICAÇÃO HORIZONTAL] - MANUTENÇÃO PREVENTIVA DA DEMARCAÇÃO DAS LOMBADAS SEMESTRALMENTE (27,6M2)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      1076.4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1076.4,
+      0
+     ],
+     "total": 2152.8
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[EQUIPAMENTOS] - COMPRA DE TORNQUETE DIGICON INOX TX1500",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      68900,
+      0,
+      0,
+      0
+     ],
+     "total": 68900
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[CIVIL] - MÃO DE OBRA PARA ADEQUAÇÃO, INSTALAÇÃO E ATIVAÇÃO DO 4º TORNIQUETE",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      17650,
+      0,
+      0
+     ],
+     "total": 17650
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[REVESTIMENTO] - MANUTENÇÃO DA PINTURA EPÓXI NOS CORRIMÕES DAS ESCADAS DOS PLATOS",
+     "meses": [
+      2000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 2000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAISAGISMO] - PLANTIO DE GRAMA EM 1.013,87 M2 (FUNDOS RESTAURANTE) - R$ 9,80/M2",
+     "meses": [
+      9935.93,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 9935.93
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAISAGISMO] - PLANTIO DE GRAMA EM 857,40 M2 (FRENTE BOSCH) - R$ 9,80",
+     "meses": [
+      8402.52,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 8402.52
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[PAISAGISMO] - PLANTIO DE GRAMA EM 2.492,81 M2 (FRENTE MELI AMZ 6) - R$ 9,80",
+     "meses": [
+      24429.54,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 24429.54
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSTALAÇÕES] - MÃO DE OBRA DA TROCA DE ENERGIA",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      11914,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 11914
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSTALAÇÕES] - HIDRÔMETRO DE ÁGUA - PROJETO DE AUTOMAÇÃO DE LEITURAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5957,
+      5957,
+      0,
+      0,
+      0
+     ],
+     "total": 11914
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSTALAÇÕES] - RS2000 SUM NG MODBUS - PROJETO DE AUTOMAÇÃO DE LEITURAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      20053.63,
+      20053.63,
+      0,
+      0,
+      0
+     ],
+     "total": 40107.26
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSTALAÇÕES] - COMPRA DE 22 MEDIDORES DE ENERGIA TRIFASICO DIRETO 100A - PROJETO AUTOMAÇÃO DE LEITU",
+     "meses": [
+      21582,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 21582
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[INSTALAÇÕES] - INSTALAÇÃO E CONFIGURAÇÃO MEDIDORES CAS - PROJETO AUTOMAÇÃO DE LEITURAS",
+     "meses": [
+      0,
+      4400,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 4400
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[LIMPEZA] - LAVAGEM DA ESTRUTURA METÁLICA DOS ARMAZÉNS 3 E 4",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      45000,
+      45000
+     ],
+     "total": 90000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "[LIMPEZA] - LAVAGEM DA COBERTURA PARTE 2 (ARMAZÉM 3 E 4)",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      50000
+     ],
+     "total": 50000
+    },
+    {
+     "conta": "manutenção imóveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cópias e reproduções",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "[TREINAMENTOS] - RENOVAÇÃO NR 10",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      360,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 360
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "[TREINAMENTOS] - RENOVAÇÃO NR 35",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      360,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 360
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "[TREINAMETNOS] - RENOVAÇÃO NR 33",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      360,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 360
+    },
+    {
+     "conta": "cursos e seminarios",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - MANUTENÇÃO SEMESTRAL DO TRATOR AGRALE 4100",
+     "meses": [
+      2600,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2600,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 5200
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO PREVENTIVA] - REVISÃO E MANUTENÇÃO PREVENTIVA DO MOTOCULTIVADOR",
+     "meses": [
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1000,
+      0,
+      0,
+      0
+     ],
+     "total": 2000
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO CORRETIVA] - REFERENTE A PROVISÃO PARA REPARO DE BOMBA PRESSURIZADORA",
+     "meses": [
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300,
+      300
+     ],
+     "total": 3600
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO CORRETIVA] - REFERENTE A PROVISÃO PARA REPARO NO TRATOR OU MOTOCULTIVADOR",
+     "meses": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MAUTENÇÃO CORRETIVA] - REFERENTE A PROVISÃO PARA REPARO NA BOMBA JOCKEY",
+     "meses": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "[MANUTENÇÃO CORRETIVA] - BOMBAS DA ELEVATÓRIAS",
+     "meses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+     ],
+     "total": 2400
+    },
+    {
+     "conta": "manutenção de bens móveis",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "outras despesas administrativas",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "despesas c/ veículos",
+     "item": "[CONTRATO] - LOCAÇÃO CARRO MEGA CURITIBA - BARIGUI",
+     "meses": [
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290,
+      2290
+     ],
+     "total": 27480
+    },
+    {
+     "conta": "endomarketing",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "representação e Refeição",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "MATERIAIS DIVERSOS DE T.I. (PERIFÉRICOS)",
+     "meses": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+     ],
+     "total": 1200
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "[INSTALAÇÕES] - RS2000 KIT BASICO MONITORAMENTO STANDARD ETH - PROJETO AUTOMAÇÃO DE LEITURAS",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      9588,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 9588
+    },
+    {
+     "conta": "Materiais de Informática",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Uniformes",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "Assessoria de RH",
+     "item": "RATEIO",
+     "meses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 0
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — KEY ACCESS MEGA CURITIBA",
+     "meses": [
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3233.92,
+      3367.51
+     ],
+     "total": 38940.63
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — EFFICIENZA SOLUÇÕES EM ENERGIA",
+     "meses": [
+      2750.68,
+      2750.68,
+      2750.68,
+      2750.68,
+      2750.68,
+      2750.68,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "total": 16504.08
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — INFRASPEAK MEGA CURITIBA",
+     "meses": [
+      1044.96,
+      1044.96,
+      1044.96,
+      1044.96,
+      1044.96,
+      1044.96,
+      1044.96,
+      1086.28,
+      1086.28,
+      1086.28,
+      1086.28,
+      1086.28
+     ],
+     "total": 12746.12
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — LICENÇA MENSAL EMAIL GOOGLE",
+     "meses": [
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21,
+      278.21
+     ],
+     "total": 3338.52
+    },
+    {
+     "conta": "ASSISTÊNCIA INFORMÁTICA",
+     "item": "CONTRATO — SISTEMA PLANO MEGA CURITIBA",
+     "meses": [
+      92.31,
+      92.31,
+      92.31,
+      92.31,
+      92.31,
+      92.31,
+      92.31,
+      92.31,
+      96.38,
+      96.38,
+      96.38,
+      96.38
+     ],
+     "total": 1124
+    },
+    {
+     "conta": "CURSOS E SEMINÁRIOS",
+     "item": "CONTRATO — ALURA",
+     "meses": [
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2,
+      274.2
+     ],
+     "total": 3290.4
+    },
+    {
+     "conta": "ENERGIA ELÉTRICA",
+     "item": "CONTRATO — ENERGIA ELÉTRICA -  HP FINANCIAL SERVICES ARRENDAMENTO MERCANTIL S.A - PROJETO DE ENERGIA SOLAR",
+     "meses": [
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      14848.43,
+      0,
+      0,
+      0
+     ],
+     "total": 133635.87
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — EMPRESA AUXILIAR",
+     "meses": [
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3,
+      26785.3
+     ],
+     "total": 321423.6
+    },
+    {
+     "conta": "LIMPEZA E CONSERVAÇÃO",
+     "item": "CONTRATO — PEST PATROL",
+     "meses": [
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250,
+      2250
+     ],
+     "total": 27000
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — FIRECAM",
+     "meses": [
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300,
+      11300
+     ],
+     "total": 135600
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — MIRIAD SERVIÇOS INDUSTRIAIS E COMERCIO",
+     "meses": [
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36,
+      8919.36
+     ],
+     "total": 107032.32
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — LEANDRO CARVALHO WEISS - LCW",
+     "meses": [
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06,
+      3482.06
+     ],
+     "total": 41784.72
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — FILTROIL",
+     "meses": [
+      2906.68,
+      2906.68,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26,
+      3043.26
+     ],
+     "total": 36245.96
+    },
+    {
+     "conta": "MANUTENÇÃO IMÓVEIS",
+     "item": "CONTRATO — EQUILIBRIO SOLUÇÕES AMBIENTAIS",
+     "meses": [
+      1850,
+      1850,
+      1850,
+      1850,
+      1850,
+      1850,
+      1850,
+      1850,
+      1931.6,
+      1931.6,
+      1931.6,
+      1931.6
+     ],
+     "total": 22526.4
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — EMPRESA AUXILIAR DE SEGURANÇA LTDA",
+     "meses": [
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33,
+      78034.33
+     ],
+     "total": 936411.96
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — EMPRESA AUXILIAR DE SERVIÇOS GERAIS",
+     "meses": [
+      30216.54,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39,
+      31654.39
+     ],
+     "total": 378414.83
+    },
+    {
+     "conta": "SEGURANÇA E VIGILÂNCIA",
+     "item": "CONTRATO — CONSULTORIA DE SEGURANÇA EMPRESARIAL",
+     "meses": [
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4,
+      17781.4
+     ],
+     "total": 213376.8
+    },
+    {
+     "conta": "SERVIÇOS DIVERSOS",
+     "item": "CONTRATO — RENTBRELLA - GUARDA-CHUVAS",
+     "meses": [
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1200,
+      1245.61,
+      1245.61,
+      1245.61,
+      1245.61,
+      1245.61,
+      1245.61
+     ],
+     "total": 14673.66
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — LIGGA TELECOM - TELEFONE/INTERNET",
+     "meses": [
+      700.01,
+      700.01,
+      700.01,
+      700.01,
+      700.01,
+      700.01,
+      726.62,
+      726.62,
+      726.62,
+      726.62,
+      726.62,
+      726.62
+     ],
+     "total": 8559.78
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — INNON",
+     "meses": [
+      144,
+      144,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77,
+      150.77
+     ],
+     "total": 1795.7
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — CLARO CELULAR",
+     "meses": [
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07,
+      95.07
+     ],
+     "total": 1140.84
+    },
+    {
+     "conta": "TELEFONE",
+     "item": "CONTRATO — 4IP TECNOLOGIA LTDA - TELEFONE FIXO",
+     "meses": [
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97,
+      83.97
+     ],
+     "total": 1007.64
+    }
+   ]
+  }
+ }
+}

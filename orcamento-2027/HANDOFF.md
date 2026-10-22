@@ -9,6 +9,19 @@ reinício). O que importa sobre o projeto está aqui, no
 
 ## 0. COMECE AQUI — onde parou (22/10/2026 — V2 / v5 da apresentação de Facilities)
 
+**>>> 22/10/2026, noite (Claude) — IMPACTO V1 → V2 CALCULADO DOS DADOS <<<**
+- Conferência item a item da base V1 × planilhas de 22/10: a lista de ajustes do Argon bate (cada Mega fecha no
+  total). Esteio: a Assessoria de RH (−90.000) saiu do 090 sem mexer no total (já estava na Despesa de pessoal).
+- Os slides de impacto tinham os valores digitados no código; agora `_orcImpactoMega_` (35_Versoes.gs) calcula cada
+  linha pela diferença item a item (`ORC_AJUSTES_V2`), Pátio/R$/m²/% vêm do relatório; a linha "contratos e RH" é o
+  resto que fecha no total. Valor diferente do de 22/10 → ⚠ na observação. Base V1 lida do Drive (`ORC_V1_BASE_ID`,
+  reserva `1-O6ybc4RZfJeoEviENdGqc_yi14Mgxyu`); sem ela, valores de 22/10 e aviso no rodapé.
+- Diferenças só de arredondamento: obras excluídas do Itajaí (677.605, não 677.604); subtotal Esteio antes do Pátio
+  R$ 4.107.901.
+- Teste: 4.920/4.920 (fixture nova `teste/fixture_base_v1.json` = a BASE V1). `clasp push --force` feito.
+- **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
+  (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
+
 **>>> 22/10/2026 — V2 (v5) CONCLUÍDA E SINCRONIZADA NO APPS SCRIPT <<<**
 - **Novas Bases de 22/10/2026 Integradas:**
   - `METRAGEM-COND` revisada dos 3 Megas (Curitiba, Itajaí, Esteio).
