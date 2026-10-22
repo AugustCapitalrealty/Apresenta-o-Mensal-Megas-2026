@@ -221,6 +221,14 @@ function _orcLinhasDRE_(rel) {
   const todas = rel.contas.concat([
     { nome: 'IPTU', chave: _orcChaveConta_('IPTU'), grupo: utilities, v: rel.iptu },
     { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), grupo: utilities, v: rel.seguro }]);
+  if (rel.patio && Math.abs(rel.patio.orc) > 0.5) {
+    todas.push({
+      nome: '(-) Pátio Mercado Livre',
+      chave: _orcChaveConta_('Patio Mercado Livre'),
+      grupo: utilities,
+      v: { real: -(rel.patio.real || 0), orcAnt: -(rel.patio.orcAnt || 0), ritmo: -(rel.patio.ritmo || 0), orc: -rel.patio.orc }
+    });
+  }
   const grupos = ORC_DRE_GRUPOS.map(g => g.nome).concat([ORC_DRE_OUTRAS]);
   grupos.forEach(nomeGrupo => {
     const doGrupo = todas.filter(c => c.grupo === nomeGrupo);
@@ -306,6 +314,13 @@ function _orcOfensores_(rel) {
   const todas = rel.contas.map(c => ({ nome: c.nome, chave: c.chave, v: c.v, asterisco: c.asterisco }))
     .concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
              { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
+  if (rel.patio && Math.abs(rel.patio.orc) > 0.5) {
+    todas.push({
+      nome: '(-) Pátio Mercado Livre',
+      chave: _orcChaveConta_('Patio Mercado Livre'),
+      v: { real: -(rel.patio.real || 0), orcAnt: -(rel.patio.orcAnt || 0), ritmo: -(rel.patio.ritmo || 0), orc: -rel.patio.orc }
+    });
+  }
   todas.forEach(c => { c.delta = c.v.orc - c.v.ritmo; });
   const bloco = (filtro, ordem) => {
     const lista = todas.filter(filtro).sort(ordem);

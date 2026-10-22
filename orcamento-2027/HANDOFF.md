@@ -7,7 +7,49 @@ reinício). O que importa sobre o projeto está aqui, no
 [`README.md`](README.md) (referência técnica completa) e no
 [`PASSO-A-PASSO.md`](PASSO-A-PASSO.md) (o que o usuário roda no editor).
 
-## 0. COMECE AQUI — onde parou (12/10/2026, ~18h30; apresentação em 13/10)
+## 0. COMECE AQUI — onde parou (22/10/2026 — V2 / v5 da apresentação de Facilities)
+
+**>>> 22/10/2026 — V2 (v5) CONCLUÍDA E SINCRONIZADA NO APPS SCRIPT <<<**
+- **Novas Bases de 22/10/2026 Integradas:**
+  - `METRAGEM-COND` revisada dos 3 Megas (Curitiba, Itajaí, Esteio).
+  - `090` (Despesas Gerais) e `070` (Serviços Terceiros) com os itens novos e excluídos.
+  - `Contratos-Ajustados.csv` (rev03) parseado em Latin1/Windows-1252.
+  - **IDs Oficiais em `01_Config.gs` e `02_Dados.gs`:**
+    - 090 Despesas Gerais: `1i1XFv1Xvmm5OumBykhTxO45Wr21462aA6rR1yBRwVFE`
+    - 070 Serviços Terceiros: `1U8cUr3PrFaDvzE-ziEyFMtUWpArnI__ffbyMe2SE8BA`
+    - Contratos rev03: `1Qg3V5YNC1q66YAncwloW_oE_1kNvHOIez_s_vq4N-0M`
+    - Curitiba Metragem: `1tawzpoCAEF3ftXZPhCW1FcboxxFPARKsLheBabaszkk`
+    - Curitiba Mensal: `1ZzmVcCmZTat8IGuqpq9IwtWEFyuWfeWDGxjL7xoAigI`
+    - Itajaí Metragem: `14j2urNQdd5hkypJJ5RlVjyora7-Y14m0rDjnBIF1XtY`
+    - Itajaí Mensal: `1A79qzCBlEvhvEc-W9pVTNVDI9PTPrGGmaZcwViUxcrA`
+    - Esteio Metragem (Pátio ML): `1RvWqP_wxSk2eJVsojIMpu3tjfRPpHg1UZWjjiql5vCU`
+    - Esteio Mensal: `1qkmBWvfikQ3wVLbcQkr0VQi8rRgBAVbkclF5bA1XxBk`
+    - v5 do gestor (pasta VERSÕES): `1QJee0lt1nAIQiANR0X-OhegU_m3WuI3lZL3a2-zN2Wo`
+- **Efeito Pátio Mercado Livre (Mega Esteio):**
+  - Abatimento de `−R$ 267.144,28` (`−R$ 0,42/m²`) na Área Comum + IPTU.
+  - Orçamento antes do Pátio: `R$ 4.107.901` (`R$ 6,40/m²`).
+  - Orçamento líquido pós-Pátio: `R$ 3.840.756` (`R$ 5,98/m²`, redução líquida de `-4,5%` vs. V1).
+  - Destaques implementados: Capa com valor antes/depois, Resumo Executivo com card dedicado, Ponte com degrau verde `Pátio ML`, DRE com dedução `(-) Pátio Mercado Livre` e M2 mensal líquido.
+- **Slides de Impacto V1 → V2 (Modelo exato da foto do Guilherme):**
+  - Tabelas elegantes: cabeçalho azul escuro, colunas `ITEM / MANUTENÇÃO` (165pt) | `EMPREENDIMENTO` (90pt) | `2027` (75pt, reduções em vermelho entre parênteses) | `Δ% ACUM.` (54pt) | `OBSERVAÇÃO` (280pt).
+  - Abertura de Facilities: slide consolidado após o Sumário (`_orcLinhasImpactoFacilities_`).
+  - Megas Individuais: slide de impacto entre o Resumo Executivo e a Ponte (`gerarSlideImpactoMega_`), com 4 cards de KPI no topo (`V1`, `Variação`, `Efeito Pátio ML`/`Redução por m²`, `V2 Final`).
+- **Valores Oficiais Fechados V1 → V2:**
+  - **TOTAL FACILITIES:** V1 `R$ 18.192.467` → V2 Antes Pátio `R$ 17.832.886` (`-2,0%`) → Pátio ML `(R$ 267.144)` → **V2 Final `R$ 17.565.742` (`-3,4%`)**.
+  - **Mega Esteio:** V1 `R$ 4.020.587` (`R$ 6,27/m²`) → Antes Pátio `R$ 4.107.901` (`R$ 6,40/m²`) → Pátio ML `(R$ 267.144)` → **V2 Final `R$ 3.840.756` (`R$ 5,98/m²`, `-4,5%`)**.
+  - **Mega Itajaí:** V1 `R$ 6.643.596` (`R$ 5,12/m²`) → **V2 Final `R$ 6.363.234` (`R$ 4,90/m²`, `-4,2%`)**.
+  - **Mega Curitiba:** V1 `R$ 7.528.284` (`R$ 4,71/m²`) → **V2 Final `R$ 7.361.752` (`R$ 4,61/m²`, `-2,2%`)**.
+- **Relatório Mensal e Slide "Custo por m² mês a mês" (Resolvido em 22/10 20h00):**
+  - **Problema relatado:** Erro *"Relatório mensal indisponível — cabeçalho inesperado, faltam as colunas orcAnt jan, orcAnt fev... Esperava 'Orç Jan/26', 'Real Jan/26', 'Orça Jan/27'"* e ausência do slide *"Custo por m² mês a mês — Orçamento 2027"*.
+  - **Causa raiz:** As novas planilhas mensais de 22/10 só possuíam `Real Jan/26`, `Orça Jan/27` e `Variação` (sem a coluna antiga `Orç Jan/26`). O parser `_orcLerMensal_` em `04_DadosRelatorios.gs` exigia `orcAnt` e lançava exceção, fazendo `visao.mensal` virar `null`. Em `00_Main.gs`, a geração de `Custo por m² mês a mês` depende de `visao && visao.mensal`.
+  - **Solução implementada:** `col.orcAnt` foi tornado opcional em `04_DadosRelatorios.gs` (preenche 0 se ausente), com `_orcAplicarRitmo_` assumindo a conciliação completa com a METRAGEM e o Ritmo oficial. Slide reabilitado e funcionando com 100% dos dados.
+- **Testes Locais (Node.js):**
+  - `node teste/teste_orcamento.js`: **4.917/4.917 asserções ok (100% verde)**, zero textos cortados com `…`.
+- **Apps Script:**
+  - Publicado via `clasp push --force` (38 arquivos atualizados).
+  - Para gerar a apresentação atualizada, rodar em `00_Gerar.gs`: `gerarComeco()`, `gerarMegaEsteio()`, `gerarMegaItajai()`, `gerarMegaCuritiba()` (ou `importarAtualizacao()` em `30_Importar.gs`).
+
+## 1. HISTÓRICO — V1 FECHADA (13/10/2026, apresentação à diretoria)
 
 **>>> 13/10/2026, fim do dia — V1 FECHADA (Guilherme: "fechamos a apresentação; tudo o que fizemos é a V1, já
 apresentada à diretoria na 1ª rodada"). <<<**

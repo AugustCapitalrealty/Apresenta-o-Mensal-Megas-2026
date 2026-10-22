@@ -56,7 +56,7 @@ function obterManutencao_(chaveCidade) {
 // 12/10/2026, 19h56: "rev02" (Contratos-Atualizado.csv, importarAtualizacao()) — rateio do Moked
 // corrigido (Curitiba 17.781,40/mês, Itajaí 14.574,25). A rev01 era 1KGL-w8J….
 const ORC_CONTRATOS_ANO_IDS = [
-  '1Np5cYV1hNu-AEB0RlkplE9snqmCJ2aBCkOKyf_dSzyU'    // MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (rev02, 12-10-2026 19h56)
+  '1Qg3V5YNC1q66YAncwloW_oE_1kNvHOIez_s_vq4N-0M'    // MESTRA - CONTRATOS 2027 - TODOS OS MEGAS (rev03, 22-10-2026)
 ];
 
 const _ORC_CADASTRO_ANO = {};   // cache da leitura por planilha (uma por execução)

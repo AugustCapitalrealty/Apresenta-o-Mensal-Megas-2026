@@ -311,6 +311,7 @@ const G = ctx;
 // O teste todo roda com a METRAGEM oficial (orcDosModelos desligado): é o
 // fluxo que volta quando a controladoria fechar a METRAGEM. O Orç calculado
 // pelos modelos tem a sua seção, "Orç 2027 calculado pelos modelos".
+G.ORC_VERSAO_ATUAL = 'V1';
 const ORC_DOS_MODELOS_CONFIG = {};
 Object.keys(G.ORC_CIDADES).forEach(k => {
   ORC_DOS_MODELOS_CONFIG[k] = !!G.ORC_CIDADES[k].relatorios.orcDosModelos;
@@ -2731,6 +2732,157 @@ console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
      'redesenho: tabela de Curitiba na cor da Demercado; a do Itajaí, na da Capital');
   ok(G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark, 'redesenho: a marca volta para a Capital no fim');
 }
+
+console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impacto V1 → V2');
+{
+  G.ORC_VERSAO_ATUAL = 'V2';
+  ok(G.ORC_VERSAO_ATUAL === 'V2', 'versão atual é V2');
+  ok(G.ORC_V1_VALORES.FACILITIES === 18192467.40 && G.ORC_V1_VALORES.ESTEIO === 4020586.74 &&
+     G.ORC_V1_VALORES.ITAJAI === 6643596.24 && G.ORC_V1_VALORES.CURITIBA === 7528284.42,
+     'valores oficiais da V1 (13/10) congelados em ORC_V1_VALORES');
+
+  // 1. Tabela de impacto consolidada de Facilities
+  const facLinhas = G._orcLinhasImpactoFacilities_({});
+  ok(facLinhas.length === 15, 'facilities: 15 linhas no slide de impacto (saldo V1, 11 ajustes, subtotal, pátio, saldo V2)');
+  ok(facLinhas[0].celulas[2].texto === 'R$ 18.192.467', 'facilities: saldo inicial V1 = R$ 18.192.467');
+  const subFac = facLinhas.filter(l => l.tipo === 'subtotal')[0];
+  ok(subFac && subFac.celulas[2].texto === 'R$ 17.832.886' && subFac.celulas[3].texto === '-1,98%',
+     'facilities: subtotal antes do pátio = R$ 17.832.886 (-1,98%)');
+  const patioFac = facLinhas.filter(l => l.celulas[0].texto === 'EFEITO PÁTIO MERCADO LIVRE')[0];
+  ok(patioFac && patioFac.celulas[2].texto === '(267.144)', 'facilities: abatimento Pátio Mercado Livre = (267.144)');
+  const fimFac = facLinhas[facLinhas.length - 1];
+  ok(fimFac.celulas[2].texto === 'R$ 17.565.742' && fimFac.celulas[3].texto === '-3,44%',
+     'facilities: saldo final V2 = R$ 17.565.742 (-3,44%)');
+
+  // 2. Tabelas de impacto por Mega
+  const estLinhas = G._orcLinhasImpactoMega_('ESTEIO');
+  ok(estLinhas.length === 7, 'esteio: 7 linhas no impacto (V1, 3 ajustes, subtotal, pátio ML, V2 final)');
+  ok(estLinhas[0].celulas[2].texto === 'R$ 4.020.587' && estLinhas[0].celulas[4].texto.indexOf('6,27') >= 0,
+     'esteio: saldo inicial V1 = R$ 4.020.587 (R$ 6,27/m²)');
+  const subEst = estLinhas.filter(l => l.tipo === 'subtotal')[0];
+  ok(subEst && subEst.celulas[2].texto === 'R$ 4.107.900' && subEst.celulas[3].texto === '+2,17%',
+     'esteio: subtotal antes do Pátio ML = R$ 4.107.900 (+2,17%)');
+  const patioEst = estLinhas.filter(l => l.celulas[0].texto === 'EFEITO PÁTIO MERCADO LIVRE')[0];
+  ok(patioEst && patioEst.celulas[2].texto === '(267.144)', 'esteio: Pátio ML = (267.144)');
+  const fimEst = estLinhas[estLinhas.length - 1];
+  ok(fimEst.celulas[2].texto === 'R$ 3.840.756' && fimEst.celulas[3].texto === '-4,47%' && fimEst.celulas[4].texto.indexOf('5,98') >= 0,
+     'esteio: saldo final V2 = R$ 3.840.756 (-4,47% · R$ 5,98/m²)');
+
+  const itjLinhas = G._orcLinhasImpactoMega_('ITAJAI');
+  ok(itjLinhas.length === 6, 'itajaí: 6 linhas no impacto (V1, 4 ajustes, V2 final)');
+  ok(itjLinhas[0].celulas[2].texto === 'R$ 6.643.596' && itjLinhas[itjLinhas.length - 1].celulas[2].texto === 'R$ 6.363.234' &&
+     itjLinhas[itjLinhas.length - 1].celulas[3].texto === '-4,22%',
+     'itajaí: V1 R$ 6.643.596 -> V2 R$ 6.363.234 (-4,22% · R$ 4,90/m²)');
+
+  const curLinhas = G._orcLinhasImpactoMega_('CURITIBA');
+  ok(curLinhas.length === 6, 'curitiba: 6 linhas no impacto (V1, 4 ajustes, V2 final)');
+  ok(curLinhas[0].celulas[2].texto === 'R$ 7.528.284' && curLinhas[curLinhas.length - 1].celulas[2].texto === 'R$ 7.361.752' &&
+     curLinhas[curLinhas.length - 1].celulas[3].texto === '-2,21%',
+     'curitiba: V1 R$ 7.528.284 -> V2 R$ 7.361.752 (-2,21% · R$ 4,61/m²)');
+
+  // 3. Renderização isolada dos slides de impacto (sem cortes com "…")
+  const s1 = novoSlide();
+  G.gerarSlideImpactoFacilities_(s1, W, H, {});
+  const txt1 = s1.shapes.map(r => r.texto).filter(Boolean);
+  ok(!txt1.some(t => /…$/.test(t)), 'slide impacto facilities: zero textos cortados com "…"');
+  ok(txt1.indexOf('Impacto das revisões — Facilities · V1 → V2') >= 0 && txt1.indexOf('EFEITO PÁTIO MERCADO LIVRE') >= 0,
+     'slide impacto facilities: título e Pátio Mercado Livre presentes');
+
+  const s2 = novoSlide();
+  G.gerarSlideImpactoMega_(s2, W, H, G.ORC_CIDADES.ESTEIO, { total: { orc: 3840756.41 }, m2Total: { orc: 5.98 } });
+  const txt2 = s2.shapes.map(r => r.texto).filter(Boolean);
+  ok(!txt2.some(t => /…$/.test(t)), 'slide impacto esteio: zero textos cortados com "…"');
+  ok(txt2.some(t => t.toUpperCase().indexOf('EFEITO PÁTIO ML') >= 0) && txt2.indexOf('−R$ 267.144') >= 0,
+     'slide impacto esteio: card do Pátio ML presente');
+
+  // 4. Geração completa com fixtures da rodada de 22/10/2026
+  const CAD_REV03 = fixture('fixture_contratos_2027_rev03.json');
+  const FIX_090_2210 = fixture('fixture_090_megas_2027_2210.json');
+  const FIX_070_2210 = fixture('fixture_070_megas_2027_2210.json');
+  const CAD_ANTES = porId[G.ORC_CONTRATOS_ANO_IDS[0]], M090_ANTES = porId[G.ORC_MODELO_090_ID], M070_ANTES = porId[G.ORC_MODELO_070_ID];
+  porId[G.ORC_MODELO_090_ID] = FIX_090_2210;
+  porId[G.ORC_MODELO_070_ID] = FIX_070_2210;
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_REV03;
+  Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
+
+  const esperado2210 = {
+    ESTEIO: { orc: 3840756, m2: 5.98 },
+    ITAJAI: { orc: 6363234, m2: 4.90 },
+    CURITIBA: { orc: 7361752, m2: 4.61 }
+  };
+
+  [['ESTEIO', 'esteio'], ['ITAJAI', 'itajai'], ['CURITIBA', 'curitiba']].forEach(([chave, c]) => {
+    const cid = G.ORC_CIDADES[chave];
+    const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
+    cid.despesasGeraisId = G.ORC_MODELO_090_ID;
+    cid.servicosTerceirosId = G.ORC_MODELO_070_ID;
+    cid.relatorios.orcDosModelos = true;
+    const met2210 = fixture('fixture_metragem_' + c + '_2210.json');
+    porId[cid.relatorios.metragemId] = met2210;
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '_2210.json');
+    try {
+      const visao = G._orcLerVisaoGeral_(chave), rel = visao.rel;
+      ok(Math.round(rel.total.orc) === esperado2210[chave].orc,
+         c + ' (22/10): Orç 2027 fechou em ' + G._orcMoeda_(rel.total.orc) + ' (esperado ' + G._orcMoeda_(esperado2210[chave].orc) + ')');
+
+      decks = {};
+      G._orcGerar_([chave]);
+      G.aplicarPropostasTextos();
+      decks = {};
+      G._orcGerar_([chave]);
+      const sl = decks[cid.deckId].getSlides();
+      ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))),
+         c + ' (22/10): deck completo gerado sem falhas e sem textos cortados ("…")');
+
+      const titulos = sl.map(titulo);
+      ok(titulos.some(t => /^Impacto das revisões/.test(t)), c + ' (22/10): slide de impacto V1 → V2 inserido no deck');
+
+      if (chave === 'ESTEIO') {
+        // Mega Esteio: validar destaque do Pátio Mercado Livre na Capa, Resumo Executivo, Ponte, DRE e M2 Mensal
+        const tCapa = textos(sl[0]);
+        ok(tCapa.some(t => /Antes Pátio ML: R\$ 4,11 mi/i.test(t)), 'esteio (22/10): capa exibe valor antes do Pátio ML');
+
+        const re = sl.filter(x => titulo(x) === 'Resumo executivo — Orçamento 2027')[0];
+        const tRe = re ? textos(re) : [];
+        ok(tRe.some(t => /Pátio Mercado Livre/i.test(t)) && tRe.some(t => /R\$ 4,11 mi/i.test(t)),
+           'esteio (22/10): resumo executivo destaca o abatimento do Pátio Mercado Livre');
+
+        const ponte = sl.filter(x => titulo(x) === 'Ponte Ritmo 2026 → Orçamento 2027')[0];
+        const tPonte = ponte ? textos(ponte) : [];
+        ok(tPonte.some(t => /Pátio ML/i.test(t)), 'esteio (22/10): ponte exibe degrau Pátio ML');
+
+        const dre = sl.filter(x => titulo(x) === 'DRE — Orçamento 2027')[0];
+        const tDre = dre ? textos(dre) : [];
+        ok(tDre.some(t => /\(-\) Pátio Mercado Livre/i.test(t)), 'esteio (22/10): DRE exibe dedução (-) Pátio Mercado Livre');
+      }
+    } finally {
+      cid.despesasGeraisId = antes.d;
+      cid.servicosTerceirosId = antes.s;
+      cid.relatorios.orcDosModelos = antes.o;
+    }
+  });
+
+  // 5. Geração de abertura de Facilities (V2)
+  const facDeck = novoDeck();
+  const facId = G._orcIdFacilities_() || 'fac-teste-id';
+  decks[facId] = facDeck;
+  G.ORC_FACILITIES.deckId = facId;
+  G._orcGerarFacilities_('ABERTURA');
+  const slFac = facDeck.getSlides();
+  const titFac = slFac.map(titulo);
+  ok(titFac.some(t => /^Impacto das revisões — Facilities/.test(t)),
+     'facilities abertura (22/10): slide de impacto consolidado inserido');
+  ok(!slFac.some(x => textos(x).some(t => /…$/.test(t))),
+     'facilities abertura (22/10): sem textos cortados ("…")');
+
+  // Restaurar fixtures anteriores
+  porId[G.ORC_MODELO_090_ID] = M090_ANTES;
+  porId[G.ORC_MODELO_070_ID] = M070_ANTES;
+  porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_ANTES;
+  G.ORC_VERSAO_ATUAL = 'V1';
+  Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
+}
+
 
 // Manifesto das molduras (v2): assinatura -> especificacao de toda moldura que
 // os tres Megas usaram; ferramentas/molduras_imagem.py desenha as imagens.

@@ -136,6 +136,9 @@ function _orcPonte_(rel, mensal) {
   });
   degraus.push({ nome: 'Outras altas (' + nAltas + ')', delta: altas, partes: [{ tipo: 'total', v: altas }] });
   degraus.push({ nome: 'Reduções (' + nRed + ')', delta: reducoes, partes: [{ tipo: 'total', v: reducoes }] });
+  if (rel.patio && Math.abs(rel.patio.orc) > 0.5) {
+    empurrar('Pátio ML', { orc: -rel.patio.orc, ritmo: -(rel.patio.ritmo || 0) }, _orcChaveConta_('Patio Mercado Livre'), false);
+  }
   return { inicio: rel.total.ritmo, fim: rel.total.orc, degraus: degraus };
 }
 

@@ -196,7 +196,19 @@ function _orcAplicarOrcDosModelos_(rel, calc) {
   // total e vira pendência, nunca some calada.
   const semConta = Object.keys(calc).filter(k => !usadas[k]).map(k => calc[k]);
   rel.areaComum.orc = rel.contas.reduce((a, c) => a + c.v.orc, 0);
-  rel.total.orc = rel.areaComum.orc + rel.iptu.orc + rel.seguro.orc;
+  const brutoOrc = rel.areaComum.orc + rel.iptu.orc + rel.seguro.orc;
+  const patioOrc = rel.patio && Math.abs(rel.patio.orc) > 0.5 ? rel.patio.orc : 0;
+  if (patioOrc) {
+    if (!rel.totalBruto) rel.totalBruto = Object.assign({}, rel.total);
+    rel.totalBruto.orc = brutoOrc;
+    rel.total.orc = brutoOrc - patioOrc;
+    if (areaT) {
+      if (!rel.m2TotalBruto) rel.m2TotalBruto = Object.assign({}, rel.m2Total);
+      rel.m2TotalBruto.orc = brutoOrc / areaT / 12;
+    }
+  } else {
+    rel.total.orc = brutoOrc;
+  }
   if (areaAC) rel.m2AreaComum.orc = rel.areaComum.orc / areaAC / 12;
   if (areaT) rel.m2Total.orc = rel.total.orc / areaT / 12;
   rel.orcCalculado = { mudou: mudou, semConta: semConta };
@@ -252,7 +264,10 @@ function _orcLerMetragem_(dados) {
       .replace(/ /g, ' ').trim();
     if (!nome) continue;
     const n = _orcNorm_(nome);
-    if (/^total area comum \+/.test(n)) out.total = valores(dados[i]);
+    if (/^total area comum \+ iptu$/.test(n)) out.areaComumComIptu = valores(dados[i]);
+    else if (/^patio mercado livre/.test(n)) out.patio = valores(dados[i]);
+    else if (/^total da area sem patio/.test(n)) out.areaSemPatio = valores(dados[i]);
+    else if (/^total area comum \+/.test(n)) out.total = valores(dados[i]);
     // Itajaí e Esteio escrevem o total geral com o mesmo rótulo do subtotal
     // ("TOTAL ÁREA COMUM" duas vezes): a segunda, depois de IPTU e Seguro, é
     // o total geral — a conferência abaixo confirma pela soma.
@@ -278,6 +293,17 @@ function _orcLerMetragem_(dados) {
   });
   if (!out.contas.length) throw new Error('Relatório de metragem: nenhuma conta antes de TOTAL ÁREA COMUM.');
 
+  if (out.patio && Math.abs(out.patio.orc) > 0.5) {
+    out.totalBruto = {};
+    out.m2TotalBruto = {};
+    ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => {
+      out.totalBruto[k] = out.areaComum[k] + out.iptu[k] + out.seguro[k];
+      const areaK = (out.m2Total && out.m2Total[k] > 0 ? out.total[k] / out.m2Total[k] / 12 : null) ||
+                    (out.m2AreaComum && out.m2AreaComum[k] > 0 ? out.areaComum[k] / out.m2AreaComum[k] / 12 : null);
+      out.m2TotalBruto[k] = areaK ? out.totalBruto[k] / areaK / 12 : (out.m2Total ? out.m2Total[k] : null);
+    });
+  }
+
   // Conferência das somas: diverge → aviso no slide e no log, nunca em
   // silêncio (é assim que o erro de digitação aparece antes da reunião).
   ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => {
@@ -286,9 +312,10 @@ function _orcLerMetragem_(dados) {
       out.avisos.push('Soma das contas (' + _orcMoeda_(soma) + ') ≠ TOTAL ÁREA COMUM (' + _orcMoeda_(out.areaComum[k]) +
                       ') em ' + _orcRotuloColuna_(k, out.anos));
     }
-    const geral = out.areaComum[k] + out.iptu[k] + out.seguro[k];
+    const patioK = out.patio ? (out.patio[k] || 0) : 0;
+    const geral = out.areaComum[k] + out.iptu[k] + out.seguro[k] - patioK;
     if (Math.abs(geral - out.total[k]) > 1) {
-      out.avisos.push('Área comum + IPTU + Seguro (' + _orcMoeda_(geral) + ') ≠ total geral (' +
+      out.avisos.push('Área comum + IPTU + Seguro' + (patioK ? ' − Pátio' : '') + ' (' + _orcMoeda_(geral) + ') ≠ total geral (' +
                       _orcMoeda_(out.total[k]) + ') em ' + _orcRotuloColuna_(k, out.anos));
     }
   });
@@ -514,11 +541,12 @@ function _orcLerMensal_(dados) {
     col.orc[i] = cab.indexOf('orca ' + m + '/' + aa(ORC_ANO));
     if (col.orc[i] < 0) col.orc[i] = cab.indexOf('orc ' + m + '/' + aa(ORC_ANO));
   });
+  // real e orc são obrigatórias; orcAnt é opcional (exportações novas trazem só Real e Orç 2027; o ritmo preenche depois)
   const faltam = [];
-  Object.keys(col).forEach(k => col[k].forEach((c, i) => { if (c < 0) faltam.push(k + ' ' + _ORC_MES_ABREV[i]); }));
+  ['real', 'orc'].forEach(k => col[k].forEach((c, i) => { if (c < 0) faltam.push(k + ' ' + _ORC_MES_ABREV[i]); }));
   if (faltam.length) {
     throw new Error('Relatório mensal: cabeçalho inesperado, faltam as colunas ' + faltam.slice(0, 6).join(', ') +
-                    (faltam.length > 6 ? '…' : '') + '. Esperava "Orç Jan/' + aa(ORC_ANO - 1) + '", "Real Jan/' +
+                    (faltam.length > 6 ? '…' : '') + '. Esperava "Real Jan/' +
                     aa(ORC_ANO - 1) + '", "Orça Jan/' + aa(ORC_ANO) + '"… na linha 1.');
   }
 
@@ -527,7 +555,7 @@ function _orcLerMensal_(dados) {
     const nome = String(dados[i][0] === null || dados[i][0] === undefined ? '' : dados[i][0])
       .replace(/ /g, ' ').trim();
     if (!nome || /^total/.test(_orcNorm_(nome))) continue;
-    const serie = k => col[k].map(c => -_orcNum_(dados[i][c]));
+    const serie = k => col[k].map(c => c < 0 ? 0 : -_orcNum_(dados[i][c]));
     contas[_orcChaveConta_(nome)] = { nome: nome, orcAnt: serie('orcAnt'), real: serie('real'), orc: serie('orc') };
   }
   if (!Object.keys(contas).length) throw new Error('Relatório mensal: nenhuma conta encontrada.');

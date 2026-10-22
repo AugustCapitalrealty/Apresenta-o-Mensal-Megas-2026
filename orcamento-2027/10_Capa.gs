@@ -159,6 +159,13 @@ function _orcCapaNumeros_(slide, k, rel) {
     { align: 'L', fs: 26, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 16 });
   _orcUmaLinha_(slide, 384 * k, 282 * k, 156 * k, 14 * k, 'Orçamento ' + ORC_ANO + ', ' + ORC_COM_IPTU,
     { align: 'L', fs: 8.5, cor: C.textBody, fonte: T.body, fsMin: 6.5 });
+  if (rel.patio && Math.abs(rel.patio.orc) > 0.5) {
+    const tB = rel.totalBruto ? rel.totalBruto.orc : rel.total.orc + rel.patio.orc;
+    const m2B = rel.m2TotalBruto ? rel.m2TotalBruto.orc : (area ? tB / area / 12 : null);
+    _orcUmaLinha_(slide, 384 * k, 296 * k, 156 * k, 12 * k,
+      'Antes Pátio ML: ' + _orcCompacto_(tB) + (m2B ? ' (R$ ' + _orcM2_(m2B) + ')' : ''),
+      { align: 'L', fs: 7, bold: true, cor: C.brandLight, fonte: T.body, fsMin: 6 });
+  }
   // O Ritmo do ano anterior em R$ no lugar do "▲ 92% vs. ritmo" (Guilherme, 12/10/2026: "coloque o número mesmo de 2026").
   const kpis = [area ? ['R$ ' + _orcM2_(rel.total.orc / area / 12), '/m²'] : null,
                 rel.total.ritmo > 0.5 ? [_orcCompacto_(rel.total.ritmo), 'Ritmo ' + (ORC_ANO - 1)] : null].filter(Boolean);

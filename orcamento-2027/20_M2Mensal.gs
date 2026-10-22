@@ -43,8 +43,10 @@ function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
   const semAc = comIptu ? [] : [_orcChaveConta_('IPTU'), _orcChaveConta_('Seguro')];
   const fora = rel.contas.filter(c => !mensal.contas[c.chave]);
   // IPTU e seguro não são contas de rel.contas: sem eles no mensal, 1/12 do anual da METRAGEM.
+  // Pátio Mercado Livre (Esteio): abatimento anual rateado nos 12 meses.
   const foraExtra = k => !comIptu ? 0 : (mensal.contas[_orcChaveConta_('IPTU')] ? 0 : (rel.iptu[k] || 0)) +
-                                        (mensal.contas[_orcChaveConta_('Seguro')] ? 0 : (rel.seguro[k] || 0));
+                                        (mensal.contas[_orcChaveConta_('Seguro')] ? 0 : (rel.seguro[k] || 0)) -
+                                        ((rel.patio && rel.patio[k]) || 0);
   const area = {};
   ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => { area[k] = _orcAreaImplicita_(rel, k); });
   if (!area.orcAnt) area.orcAnt = area.ritmo;

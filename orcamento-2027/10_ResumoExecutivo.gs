@@ -20,12 +20,17 @@ function gerarSlideResumoExecutivo_(slide, W, H, cid, rel, classManut, reaj, mod
   const ky = 74, kh = 56, gap = 10, kw = (W - MX * 2 - gap * 3) / 4;
   const v = _orcVariacao_(r.ritmo, r.total), orcAnt = rel.total.orcAnt || 0, vAnt = _orcVariacao_(orcAnt, r.total);
   const corVar = d => d > 0.5 ? _ORC_COR_VAR.sobe : d < -0.5 ? _ORC_COR_VAR.desce : C.brandDark;
+  const temPatio = rel.patio && Math.abs(rel.patio.orc) > 0.5;
+  const tBruto = rel.totalBruto ? rel.totalBruto.orc : r.total + (temPatio ? rel.patio.orc : 0);
+  const m2Bruto = rel.m2TotalBruto ? rel.m2TotalBruto.orc : (r.areaOrc ? tBruto / r.areaOrc / 12 : null);
   const kpis = [
-    ['Orçamento ' + a.orc, _orcMoeda_(r.total), 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
+    ['Orçamento ' + a.orc, _orcMoeda_(r.total),
+     temPatio ? 'Antes Pátio ML: ' + _orcCompacto_(tBruto) + ' · Ritmo: ' + _orcCompacto_(r.ritmo) : 'Ritmo ' + a.ritmo + ': ' + _orcMoeda_(r.ritmo)],
     ['Orçamento ' + a.orcAnt, orcAnt > 0.5 ? _orcMoeda_(orcAnt) : '–',
      orcAnt > 0.5 ? 'Orç ' + a.orc + ' ' + vAnt.texto + ' (' + (r.total - orcAnt >= 0 ? '+' : '−') + _orcCompacto_(Math.abs(r.total - orcAnt)) + ')' : ''],
     ['Variação × Ritmo ' + a.ritmo, (r.delta >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(r.delta)), v.texto + ' contra o Ritmo ' + a.ritmo, corVar(r.delta)],
-    ['R$/m² ao mês', r.m2Orc != null ? _orcM2_(r.m2Orc) : '–', r.m2Rit != null ? _orcM2_(r.m2Rit) + ' no Ritmo ' + a.ritmo : '']
+    ['R$/m² ao mês', r.m2Orc != null ? _orcM2_(r.m2Orc) : '–',
+     temPatio ? _orcM2_(m2Bruto) + ' sem Pátio ML · ' + _orcM2_(r.m2Rit) + ' no Ritmo' : (r.m2Rit != null ? _orcM2_(r.m2Rit) + ' no Ritmo ' + a.ritmo : '')]
   ];
   kpis.forEach((k, i) => {
     const x = MX + i * (kw + gap);
@@ -76,6 +81,14 @@ function _orcMensagensResumo_(cid, rel, r, classManut, reaj, modelos, contratos)
   };
 
   const q = _orcOfensores_(rel), top = q.ofensores.contas.slice(0, 3);
+  if (rel.patio && Math.abs(rel.patio.orc) > 0.5) {
+    const pOrc = rel.patio.orc, tB = rel.totalBruto ? rel.totalBruto.orc : r.total + pOrc;
+    const m2B = rel.m2TotalBruto ? rel.m2TotalBruto.orc : (r.areaOrc ? tB / r.areaOrc / 12 : null);
+    msgs.push(['−' + _orcCompacto_(pOrc), 'do Efeito Pátio Mercado Livre: reduz o orçamento de ' +
+      _orcCompacto_(tB) + ' (R$ ' + _orcM2_(m2B) + '/m²) para ' + _orcCompacto_(r.total) +
+      ' (R$ ' + _orcM2_(r.m2Orc) + '/m² ao mês) — abatimento de R$ ' + _orcM2_(r.areaOrc ? pOrc / r.areaOrc / 12 : 0) +
+      '/m² na Área Comum + IPTU.']);
+  }
   if (top.length && r.delta > 0.5) {
     const soma = top.reduce((t, c) => t + c.delta, 0);
     msgs.push([sinal(soma), 'nas ' + top.length + ' contas que mais sobem (' + _orcPct_(soma / r.delta).replace(',0%', '%') + ' da alta): ' +
