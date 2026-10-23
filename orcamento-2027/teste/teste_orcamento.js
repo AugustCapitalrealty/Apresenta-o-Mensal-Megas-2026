@@ -1421,7 +1421,7 @@ const ESTADO_CIDADES = {};
   // METRAGEM não tem — Itajaí: totem (jan) e iluminação (fev); Esteio: as
   // duas linhas de vida (out) — e fica a pendência com o valor e os meses.
   const excesso = { itajai: 'itens somam R$ 29.313 a mais · JAN R$ 11.500 · FEV R$ 17.813',
-                    esteio: 'itens somam R$ 13.800 a mais · OUT R$ 15.268' }[c];   // 13.800: sem a galeria "RETIRADO" (−1.468, jul)
+                    esteio: 'itens somam R$ 13.803 a mais · OUT R$ 15.268' }[c];   // 13.803: os 3 itens "RETIRADO" com R$ 1 cada (galeria: −1.465)
   ok(tRev.indexOf('Modelos acima da METRAGEM') >= 0 && tRev.indexOf('Contratos 2027 não informados') < 0,
      c + ': pendência só da manutenção acima da METRAGEM');
   ok(tRev.indexOf(excesso) >= 0, c + ': pendência com o valor e os meses (' + tRev.filter(t => /^itens somam/.test(t)).join() + ')');
@@ -1481,7 +1481,7 @@ const MODELO_SEC = {};
   limparCadastro();
   // O filtro deixa só a unidade do Mega (Capital Realty, Demercado, CR SP e as
   // comissões por módulo ficam de fora) e o total confere com a exportação.
-  const esperado = { CURITIBA: [60, 2521441, 1442635], ITAJAI: [19, 2907387, 453133], ESTEIO: [18, 1472578, 1355264] };   // Esteio sem os itens "RETIRADO DO ORÇAMENTO" (22/10/2026)
+  const esperado = { CURITIBA: [60, 2521441, 1442635], ITAJAI: [19, 2907387, 453133], ESTEIO: [18, 1472581, 1355264] };   // Esteio com os itens "RETIRADO DO ORÇAMENTO" a R$ 1 cada (23/10/2026)
   Object.keys(esperado).forEach(k => {
     const [u, t090, t070] = esperado[k];
     const l090 = G._orcLinhasModelo_(M090, u), l070 = G._orcLinhasModelo_(M070, u);
@@ -1624,7 +1624,7 @@ const MODELO_SEC = {};
 // área também, e o R$/m² é refeito com ela.
 console.log('Orç 2027 calculado pelos modelos');
 ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcDosModelos ligado nos três Megas no 01_Config.gs');
-[['CURITIBA', 'curitiba', 0], ['ITAJAI', 'itajai', 29313], ['ESTEIO', 'esteio', 13800]].forEach(([chave, c, degrau]) => {   // Esteio: 15.268 − 1.468 da galeria retirada
+[['CURITIBA', 'curitiba', 0], ['ITAJAI', 'itajai', 29313], ['ESTEIO', 'esteio', 13803]].forEach(([chave, c, degrau]) => {   // Esteio: 15.268 − 1.465 da galeria retirada (fica R$ 1)
   const cid = G.ORC_CIDADES[chave];
   porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '.json');
   porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '.json');
@@ -2211,7 +2211,7 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
   ok(Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Curitiba', 'Segurança e vigilância', 2027), /MOKED|CONSULTORIA DE SEGURAN/i)) === 213377 &&
      Math.round(tot(G._orcLerCadastroContratos_(REV02, 'Mega Itajaí', 'Segurança e vigilância', 2027), /MOKED/i)) === 174891,
      'cadastro rev02: Moked Curitiba R$ 213.377 (17.781,40/mês) e Itajaí R$ 174.891 (14.574,25/mês)');
-  const esperado = { CURITIBA: [7528284, 0], ITAJAI: [6643596, 0], ESTEIO: [4019119, -1468] };   // Esteio: a galeria "RETIRADO" (R$ 1.467,57) sai do Orç calculado
+  const esperado = { CURITIBA: [7528284, 0], ITAJAI: [6643596, 0], ESTEIO: [4019122, -1465] };   // Esteio: os itens "RETIRADO" ficam com R$ 1 cada (galeria: R$ 1.465,57 → R$ 1)
   [['CURITIBA', 'curitiba'], ['ITAJAI', 'itajai'], ['ESTEIO', 'esteio']].forEach(([chave, c]) => {
     const cid = G.ORC_CIDADES[chave];
     const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
@@ -2273,6 +2273,22 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
        grande(comR).map(a => a.nome + ' ' + Math.round(a.dif)).join(', ') + ')');
     delete cid.relatorios.ritmoId;
     Object.assign(cid, { despesasGeraisId: antes.d, servicosTerceirosId: antes.s }); cid.relatorios.orcDosModelos = antes.o;
+  }
+  // RITMO de 23/10/2026, 9h: jan–set iguais aos de 12/10 (meses fechados não mudam); out–dez novos, e o ano de cada
+  // conta fecha com a METRAGEM de 22/10 — fora o que já não fechava em 12/10: Material de consumo (Curitiba +139,
+  // Itajaí +739, Esteio +35, a conciliação leva para out–dez), IPTU Curitiba (+2.873) e Seguro Itajaí (−4.129).
+  [['curitiba', 'Material de consumo,IPTU'], ['itajai', 'Material de consumo,Seguro'], ['esteio', 'Material de consumo']].forEach(([c, foraDaMetragem]) => {
+    const velho = G._orcLerRitmo_(fixture('fixture_ritmo_' + c + '_1956.json')), novo = G._orcLerRitmo_(fixture('fixture_ritmo_' + c + '_2310.json'));
+    const fechadoMudou = Object.keys(novo).filter(k => velho[k] && novo[k].real.slice(0, 9).some((v, i) => Math.abs(v - velho[k].real[i]) > 0.5));
+    ok(Object.keys(novo).length >= 20 && !fechadoMudou.length, c + ' (ritmo 23/10): jan–set iguais aos de 12/10' + (fechadoMudou.length ? ' — mudou: ' + fechadoMudou.join(', ') : ''));
+    const met = G._orcLerMetragem_(fixture('fixture_metragem_' + c + '_2210.json'));
+    const naoFecha = met.contas.concat([{ nome: 'IPTU', chave: G._orcChaveConta_('IPTU'), v: met.iptu }, { nome: 'Seguro', chave: G._orcChaveConta_('Seguro'), v: met.seguro }])
+      .filter(x => novo[x.chave] && Math.abs(novo[x.chave].real.reduce((a, v) => a + v, 0) - x.v.ritmo) > 1).map(x => x.nome);
+    ok(naoFecha.join() === foraDaMetragem, c + ' (ritmo 23/10): ano de cada conta = Ritmo 2026 da METRAGEM de 22/10 (não fecha: ' + (naoFecha.join(', ') || 'nenhuma') + ')');
+  });
+  {
+    const m = G._orcLerRitmo_(fixture('fixture_ritmo_itajai_2310.json'))[G._orcChaveConta_('Manutenção de imóveis')].real.slice(9).map(Math.round);
+    ok(m.join() === '108928,295173,241710', 'itajaí (ritmo 23/10): Manutenção de imóveis out–dez = 108.928 / 295.173 / 241.710 (' + m.join(' / ') + ')');
   }
   porId[G.ORC_CONTRATOS_ANO_IDS[0]] = CAD_ANTES;
   porId[G.ORC_MODELO_090_ID] = M090_ANTES;
@@ -2815,7 +2831,7 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
   Object.keys(G._ORC_CADASTRO_ANO).forEach(k => { delete G._ORC_CADASTRO_ANO[k]; });
 
   const esperado2210 = {
-    ESTEIO: { orc: 3839289, m2: 5.98 },   // sem os itens "RETIRADO DO ORÇAMENTO" (−1.467,57)
+    ESTEIO: { orc: 3839292, m2: 5.98 },   // itens "RETIRADO DO ORÇAMENTO" com R$ 1 cada
     ITAJAI: { orc: 6363234, m2: 4.90 },
     CURITIBA: { orc: 7361752, m2: 4.61 }
   };
@@ -2922,25 +2938,25 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
      celFac('OBRAS DAS CANCELAS (24X)')[2].texto === '+344.234' && celFac('POSTOS ADICIONAIS DE SEGURANÇA')[2].texto === '+55.300',
      'facilities: ajustes calculados item a item (posto -250.120, obras excluídas -677.605, cancelas +344.234, Voigt +55.300)');
   const subFac = facLinhas.filter(l => l.tipo === 'subtotal')[0];
-  ok(subFac && subFac.celulas[2].texto === 'R$ 17.831.418' && subFac.celulas[3].texto === '-1,98%',
-     'facilities: subtotal antes do pátio = R$ 17.831.418 (-1,98%)');
+  ok(subFac && subFac.celulas[2].texto === 'R$ 17.831.421' && subFac.celulas[3].texto === '-1,98%',
+     'facilities: subtotal antes do pátio = R$ 17.831.421 (-1,98%)');
   const patioFac = celFac('EFEITO PÁTIO MERCADO LIVRE');
   ok(patioFac[2].texto === '(267.144)' && String(patioFac[4].texto).indexOf('0,42') >= 0,
      'facilities: abatimento Pátio Mercado Livre = (267.144), −R$ 0,42/m²');
   const fimFac = facLinhas[facLinhas.length - 1];
-  ok(fimFac.celulas[2].texto === 'R$ 17.564.274' && fimFac.celulas[3].texto === '-3,45%' && fimFac.celulas[4].texto.indexOf('−3,5%') >= 0,
-     'facilities: saldo final V2 = R$ 17.564.274 (-3,45%) — sem os itens retirados');
+  ok(fimFac.celulas[2].texto === 'R$ 17.564.277' && fimFac.celulas[3].texto === '-3,45%' && fimFac.celulas[4].texto.indexOf('−3,5%') >= 0,
+     'facilities: saldo final V2 = R$ 17.564.277 (-3,45%) — itens retirados com R$ 1');
 
   const estLinhas = G._orcLinhasImpactoMega_('ESTEIO', rels2210.ESTEIO, mods2210.ESTEIO);
   ok(estLinhas.length === 8, 'esteio: 8 linhas no impacto (V1, 4 ajustes com os retirados, subtotal, pátio ML, V2 final)');
   ok(estLinhas[0].celulas[2].texto === 'R$ 4.020.587' && estLinhas[0].celulas[4].texto.indexOf('6,27') >= 0,
      'esteio: saldo inicial V1 = R$ 4.020.587 (R$ 6,27/m²)');
   const subEst = estLinhas.filter(l => l.tipo === 'subtotal')[0];
-  ok(subEst && subEst.celulas[2].texto === 'R$ 4.106.433' && subEst.celulas[3].texto === '+2,14%' && subEst.celulas[4].texto.indexOf('6,39') >= 0,
-     'esteio: subtotal antes do Pátio ML = R$ 4.106.433 (+2,14% · R$ 6,39/m²)');
+  ok(subEst && subEst.celulas[2].texto === 'R$ 4.106.436' && subEst.celulas[3].texto === '+2,14%' && subEst.celulas[4].texto.indexOf('6,39') >= 0,
+     'esteio: subtotal antes do Pátio ML = R$ 4.106.436 (+2,14% · R$ 6,39/m²)');
   const fimEst = estLinhas[estLinhas.length - 1];
-  ok(fimEst.celulas[2].texto === 'R$ 3.839.289' && fimEst.celulas[3].texto === '-4,51%' && fimEst.celulas[4].texto.indexOf('5,98') >= 0,
-     'esteio: saldo final V2 = R$ 3.839.289 (-4,51% · R$ 5,98/m²)');
+  ok(fimEst.celulas[2].texto === 'R$ 3.839.292' && fimEst.celulas[3].texto === '-4,51%' && fimEst.celulas[4].texto.indexOf('5,98') >= 0,
+     'esteio: saldo final V2 = R$ 3.839.292 (-4,51% · R$ 5,98/m²)');
 
   const itjLinhas = G._orcLinhasImpactoMega_('ITAJAI', rels2210.ITAJAI, mods2210.ITAJAI);
   const fimItj = itjLinhas[itjLinhas.length - 1];

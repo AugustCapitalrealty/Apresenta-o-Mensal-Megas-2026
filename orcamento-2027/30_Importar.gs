@@ -9,10 +9,15 @@
  *     pelo G: e troca os IDs no 01_Config.gs / 02_Dados.gs. Os arquivos originais ficam; nada é apagado.
  *     Arquivo já convertido (mesmo nome na pasta) não é refeito.
  */
-const ORC_PASTA_ATUALIZACAO = 'ATUALIZAÇÃO 22-10-2026';
+const ORC_PASTA_ATUALIZACAO = 'ATUALIZAÇÃO 23-10-2026';
 
 // Nome da planilha convertida pelo nome do arquivo.
 const ORC_NOMES_ATUALIZACAO = [
+  // 23/10/2026, 9h: ritmo 2026 novo da controladoria — jan–set iguais aos de 12/10, out–dez mudaram (Itajaí:
+  // Manutenção de imóveis out 159.523 → 108.928, nov 189.009 → 295.173, dez 176.610 → 241.710).
+  [/^ritmo-mega-esteio/i, 'MEGA ESTEIO - RITMO 2026 (23-10-2026 09h)'],
+  [/^ritmo-mega-itajai/i, 'MEGA ITAJAÍ - RITMO 2026 (23-10-2026 09h)'],
+  [/^ritmo-2026-mega-curitiba/i, 'MEGA CURITIBA - RITMO 2026 (23-10-2026 09h)'],
   // 22/10/2026, 23h: o gestor atualizou o 090 (o 070 veio igual) e a controladoria o mês a mês dos três Megas.
   [/^090-despesas-gerais-atualizado/i, 'MESTRA - 090 - DESPESAS GERAIS (22-10-2026 23h)'],
   [/^esteio-mensal/i, 'MEGA ESTEIO - MENSAL 2027 (22-10-2026 23h)'],

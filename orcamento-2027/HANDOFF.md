@@ -9,6 +9,21 @@ reinício). O que importa sobre o projeto está aqui, no
 
 ## 0. COMECE AQUI — onde parou (22/10/2026 — V2 / v5 da apresentação de Facilities)
 
+**>>> 23/10/2026, manhã (Claude) — RITMO NOVO E GALERIA COM R$ 1 <<<**
+- **Ritmo 2026 de 23/10, 9h11** (RITMO-*.xlsx que o Guilherme baixou de novo): jan–set iguais aos de 12/10; **out–dez
+  mudaram**. Itajaí, Manutenção de imóveis: out 159.523 → 108.928, nov 189.009 → 295.173, dez 176.610 → 241.710 (R$/m²
+  mês com IPTU e seguro: out 3,89 → 3,42, nov 4,48 → 5,46, dez 4,37 → 4,97). Curitiba: manutenção nov/dez e limpeza
+  out um pouco menores; Esteio: manutenção out −3,6k / nov +3,6k. O ano de cada conta já fecha com a METRAGEM de 22/10
+  (o gerador espalhava a diferença pelo formato de 12/10 — ano certo, meses errados). **A nota de 22/10 dizendo
+  que out–dez não tinham mudado estava errada para este arquivo.**
+  - Arquivos em `ATUALIZAÇÃO 23-10-2026` (G:), regras em `ORC_NOMES_ATUALIZACAO` (30_Importar.gs, pasta trocada).
+    **Falta:** Guilherme rodar `importarAtualizacao()` → trocar os 3 `ritmoId` em 01_Config.gs pelos de `IDS.json`
+    → `clasp push` → gerar os 3 Megas. Fixtures `teste/fixture_ritmo_<c>_2310.json`.
+- **Itens "RETIRADO DO ORÇAMENTO" voltam a aparecer, com R$ 1 cada** (Guilherme, 23/10): `_orcLinhasModelo_`
+  (02_Dados.gs) zera os meses e põe R$ 1 no mês de maior valor. A galeria da comporta B2 no 090 de 23h já estava com
+  R$ 0,01 em jan. Esteio V2 **R$ 3.839.292**, Facilities **R$ 17.564.277** (+R$ 3); impacto "Itens retirados" −1.464,57.
+  Teste: 5.142/5.142.
+
 **>>> 22/10/2026, noite (Claude) — IMPACTO V1 → V2 CALCULADO DOS DADOS <<<**
 - Conferência item a item da base V1 × planilhas de 22/10: a lista de ajustes do Argon bate (cada Mega fecha no
   total). Esteio: a Assessoria de RH (−90.000) saiu do 090 sem mexer no total (já estava na Despesa de pessoal).
@@ -68,7 +83,8 @@ reinício). O que importa sobre o projeto está aqui, no
 - **Ritmo novo (RITMO-*.xlsx de 22/10, 22h06):** out–dez (projeção) igual ao que usamos nos 3 Megas; só mudam meses
   fechados (material de consumo fev/mar/ago) e o ano de IPTU Curitiba (+2.873) e Seguro Itajaí (−4.129). Não aplicado
   (Guilherme: meses fechados não deveriam mudar).
-- **Dados para o gestor:** "LIMPEZA DA GALERIA… COMPORTA B2 – RETIRADO" ainda tem R$ 1.464,57 em jul no 090; itens
+- **Dados para o gestor:** "LIMPEZA DA GALERIA… COMPORTA B2 – RETIRADO" ainda tem R$ 1.464,57 em jul no 090 (resolvido
+  em 23/10: a linha sai com R$ 1); itens
   com R$ 1 (Esteio) e R$ 0,01 (Itajaí/Curitiba) são marcadores sem valor.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).

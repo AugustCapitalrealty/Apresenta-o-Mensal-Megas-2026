@@ -234,11 +234,15 @@ function _orcLinhasModelo_(dados, unidade) {
     const conta = String(r[ORC_COL.conta] === null || r[ORC_COL.conta] === undefined ? '' : r[ORC_COL.conta])
       .replace(/ /g, ' ').trim();
     if (!conta) continue;
-    // Item que o gestor marcou "RETIRADO DO ORÇAMENTO" mas ficou com valor no sistema (Esteio: a limpeza da galeria
-    // da comporta B2, R$ 1.464,57 em jul): fica fora, sem precisar de nova carga (Guilherme, 22/10/2026).
-    if (/retirado do orcamento/.test(_orcNorm_(r[ORC_COL.item]))) continue;
     const meses = [];
     for (let m = 0; m < 12; m++) meses.push(-_orcNum_(r[ORC_COL.mes1 + m]));   // despesa vem negativa
+    // Item que o gestor marcou "RETIRADO DO ORÇAMENTO": a linha fica, sempre com R$ 1, como as bombas do SPK
+    // (Guilherme, 23/10/2026). A galeria da comporta B2 veio com R$ 1.464,57 em jul (22/10) e R$ 0,01 em jan (23h).
+    // O R$ 1 vai no mês de maior valor.
+    if (/retirado do orcamento/.test(_orcNorm_(r[ORC_COL.item]))) {
+      const mesMaior = meses.reduce((k, v, m) => Math.abs(v) > Math.abs(meses[k]) ? m : k, 0);
+      for (let m = 0; m < 12; m++) meses[m] = m === mesMaior ? 1 : 0;
+    }
     ORC_CORRECOES_MODELO.forEach(c => {
       if (String(r[ORC_COL.unidade]).trim() !== c.unidade || !c.item.test(_orcNorm_(r[ORC_COL.item])) ||
           Math.abs(meses[c.mes - 1] - c.de) >= 0.01) return;
