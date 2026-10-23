@@ -2854,6 +2854,12 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
         // Sem o resumo executivo (saiu em 22/10/2026): o Pátio ML aparece na ponte do R$/m² do "o que saiu e o que entrou".
         const es = sl.filter(x => /^O que saiu e o que entrou/.test(titulo(x)))[0];
         ok(es && textos(es).indexOf('PÁTIO MERCADO LIVRE') >= 0, 'esteio (22/10): o Pátio ML no "o que saiu e o que entrou"');
+        // SITUAÇÃO dos contratos que o gestor escreveu no deck (ORC_CONTRATOS_SITUACAO_GESTOR, 22/10/2026).
+        const tCtr = sl.filter(x => /^Contratos — 2026/.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
+        ok(tCtr.filter(t => t === 'Entra o rateio do Armazém B').length === 8 && tCtr.indexOf('Entra o rateio do Armazém B + Facial') >= 0 &&
+           tCtr.indexOf('Linha Coordenação Sai') >= 0 && tCtr.indexOf('Licença Analista/Assistente') >= 0 &&
+           tCtr.indexOf('Troca de empresa a partir de mar/27') >= 0,
+           'esteio (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
 
         const ponte = sl.filter(x => titulo(x) === 'Ponte Ritmo 2026 → Orçamento 2027')[0];
         const tPonte = ponte ? textos(ponte) : [];

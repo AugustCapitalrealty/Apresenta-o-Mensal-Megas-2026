@@ -28,6 +28,38 @@ const ORC_CONTRATOS_FORA = ['IPTU', 'Seguros', 'Seguro'];
 const ORC_CONTRATOS_JUNTAR = [
   { unidade: 'Mega Esteio', conta: 'Limpeza e conservação', termo: 'contrato lpu', nome: 'ROÇADA (LPU)', categoria: 'LPU' }
 ];
+// SITUAÇÃO que o gestor escreveu no deck (prints do Guilherme, 22/10/2026: "gravar essas situações"): vale no lugar
+// da regra, pelo nome do contrato — o do cálculo e, quando a planilha de textos troca, também o que aparece no slide.
+// Só as que diferem da regra (as iguais ficam com ela).
+const ORC_CONTRATOS_SITUACAO_GESTOR = {
+  'Mega Esteio': {
+    'VOIGT (ZELADORIA)': 'Entra o rateio do Armazém B', 'ZELADORIA': 'Entra o rateio do Armazém B',
+    'VOIGT (LIMPEZA)': 'Entra o rateio do Armazém B', 'AUXILIAR DE LIMPEZA': 'Entra o rateio do Armazém B',
+    'IMUNIZADORA RD (DEDETIZAÇÃO)': 'Entra o rateio do Armazém B',
+    'SUBESTAÇÃO DE ENERGIA': 'Entra o rateio do Armazém B',
+    'ADITIVO CONTRATO COBERTURA – AMZ B1': 'Entra o rateio do Armazém B',
+    'KEY ACCESS (CONTRATO)': 'Entra o rateio do Armazém B + Facial',
+    'ROÇADA (LPU)': 'Entra o rateio do Armazém B',
+    'NOVO CONTRATO SDAI – AMZ A E B': 'Novo Contrato + Armazém B',
+    'ADS (COBERTURA)': 'Entra o rateio do Armazém B',
+    'RENTBRELLA (ARMAZÉNS A E B)': 'Novo em 2027 + Armazém B',
+    'MANUTENÇÃO DO GERADOR': 'Entra o rateio do Armazém B',
+    'ADITIVO DO CONTRATO KEY ACCESS': 'Entra o rateio do Armazém B + Facial',
+    'INFRASPEAK MEGA ESTEIO': 'Novo Rateio entre os Megas',
+    'LICENÇA MENSAL EMAIL GOOGLE': 'Licença Analista/Assistente',
+    'SISTEMA PLANO MEGA ESTEIO': 'Reajuste IPCA',
+    'Internet fixa': 'Acima do IPCA',
+    'CUSTO MENSAL DE INTERNET': 'Reajuste IPCA',
+    'Linha de celular': 'Linha Coordenação Sai',
+    'ALURA': 'Redução'
+  }
+};
+function _orcSituacaoGestor_(cid, nome, regra) {
+  const m = (cid && ORC_CONTRATOS_SITUACAO_GESTOR[cid.nome]) || {}, n = _orcNorm_(nome);
+  const k = Object.keys(m).filter(x => _orcNorm_(x) === n)[0];
+  return k ? m[k] : regra;
+}
+
 // Linhas que o gestor/Guilherme mandou unir no slide de contratos (revisão de
 // 08/10/2026). Cada regra junta, na conta (ou em todas as contas da unidade sem
 // "conta"), as linhas cujo texto (nome do contrato de 2026 ou item de 2027) bate
@@ -491,7 +523,7 @@ function gerarSlideContratosTodos_(slide, W, H, cid, rel, cmp, pagina, iPag, nPa
       return linhaTab('grupo', g.conta.toUpperCase() + (l.cont ? ' (cont.)' : ''), g.ant, g.atual, mt, '');
     }
     const c = l.contrato;
-    return linhaTab('item', c.nome, c.ant, c.atual, c.situacao, c.categoria);
+    return linhaTab('item', c.nome, c.ant, c.atual, _orcSituacaoGestor_(cid, c.nome, c.situacao), c.categoria);
   });
   const ultima = iPag === nPag - 1;
   if (ultima) linhas.push(linhaTab('total', 'TOTAL DOS CONTRATOS', cmp.ant, cmp.atual, ''));
