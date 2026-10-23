@@ -206,11 +206,22 @@ const ORC_EXPEDIENTE = [
   { rotulo: 'Apresentação', nome: 'Jonatas Augusto',    papel: '' }
 ];
 
+// Foto do painel da esquerda: o C de musgo do escritório (Guilherme, 23/10/2026), a mesma imagem do expediente de
+// Propriedades — foto até 252 pt e a barra azul até 256, como o painel em formas. O lado direito dela tem o rodapé
+// de Propriedades escrito: um retângulo branco por cima, e o slide escreve o seu.
+const ORC_EXPEDIENTE_FOTO = 'EXPEDIENTE - PROPRIEDADES.jpg';
+
 function gerarSlideExpedienteFacilities_(slide, W, H) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, X = 288;
   slide.getBackground().setSolidFill('#FFFFFF');
-  _orcRet_(slide, 0, 0, 252, H, C.brandDark);
-  _orcRet_(slide, 252, 0, 4, H, C.brandLight);
+  const foto = _orcImagemDaPasta_(ORC_EXPEDIENTE_FOTO);
+  if (foto) {
+    slide.insertImage(foto).setWidth(W).setHeight(H).setLeft(0).setTop(0);
+    _orcRet_(slide, 256.5, 0, W - 256.5, H, '#FFFFFF');
+  } else {
+    _orcRet_(slide, 0, 0, 252, H, C.brandDark);
+    _orcRet_(slide, 252, 0, 4, H, C.brandLight);
+  }
   _orcLinha_(slide, X, H - 33, W - 36, H - 33, C.lines, 0.75);
   _orcUmaLinha_(slide, X, 40, W - X - 36, 16, 'ORÇAMENTO ' + ORC_ANO + ' · FACILITIES', { align: 'L', fs: 9, bold: true, cor: C.brandLight });
   _orcUmaLinha_(slide, X, 58, W - X - 36, 44, 'Expediente', { align: 'L', fs: 30, bold: true, cor: C.brandDark });
