@@ -95,10 +95,11 @@ function incluirSlideEntrouSaiu() { _orcAtualizarSlides_(ORC_FAC_MEGAS, ['Entrou
 //     sem IPTU nem seguro, dá o mesmo R$/m² nos dois;
 //   ▸ Itajaí: "demais variações", com a Arca Agro contra o 2026 dela na Limpeza (degrau "Veio da limpeza");
 //   ▸ Esteio: "projetos × custo recorrente", para pegar a imagem do gráfico (13h40).
-// Rodar de novo troca (não duplica).
+// Rodar de novo troca (não duplica). Funciona também com a apresentação em branco: aí ela fica só com esses 4 slides
+// (Esteio e depois Itajaí, no fim), e uma geração completa do Mega depois os troca.
 function atualizarSlidesDaTarde() {
-  _orcAtualizarSlides_(['ESTEIO'], ['M² área comum', 'M² com IPTU', 'Projetos × recorrente']);
-  _orcAtualizarSlides_(['ITAJAI'], ['Demais variações']);
+  _orcAtualizarSlides_(['ESTEIO'], ['M² área comum', 'M² com IPTU', 'Projetos × recorrente'], { noFim: true });
+  _orcAtualizarSlides_(['ITAJAI'], ['Demais variações'], { noFim: true });
 }
 
 // Só os slides que mudaram em 23/10/2026, sem gerar os Megas (Guilherme: "uma função para gerar somente os slides que
@@ -185,9 +186,14 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
 
       // Os slides da parte, na ordem do deck, com o título.
       const idsDeck = () => deck.getSlides().map(s => s.getObjectId());
+      // op.noFim: Mega fora do deck (ou a apresentação em branco) recebe os slides dos grupos no fim (Guilherme,
+      // 23/10/2026); sem ele, fica de fora.
       const lista = _orcListaFacilities_(chave);
-      if (!lista.length) { Logger.log(cid.nome + ': a parte ainda não foi gerada — rode gerarFacilities' + chave.charAt(0) + chave.slice(1).toLowerCase() + '()'); return; }
       const ordem = idsDeck();
+      if (!op.noFim && !lista.some(id => ordem.indexOf(id) >= 0)) {
+        Logger.log(cid.nome + ': a parte ainda não foi gerada — rode gerarMega' + chave.charAt(0) + chave.slice(1).toLowerCase() + '()');
+        return;
+      }
       const mapa = lista.filter(id => ordem.indexOf(id) >= 0).sort((a, b) => ordem.indexOf(a) - ordem.indexOf(b))
         .map(id => ({ id: id, titulo: _orcTituloSlide_(deck.getSlideById(id)) }));
       const comeca = (t, prefixos) => prefixos.some(p => t.indexOf(p) === 0);
@@ -222,12 +228,21 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
           // depoisDe: um título ou uma lista (vale o primeiro que existir no deck).
           const ref = [].concat(g.depoisDe || []).map(t => mapa.filter(m => m.titulo.indexOf(t) === 0).pop())
             .filter(Boolean)[0] || null;
-          if (!ref || !novos.length) {
-            if (novos.length) Logger.log(cid.nome + ' · ' + nomeGrupo + ': nenhum slide para trocar e sem lugar de referência — use a geração completa');
+          if (!novos.length) return;
+          if (!ref && !op.noFim) {
+            Logger.log(cid.nome + ' · ' + nomeGrupo + ': nenhum slide para trocar e sem lugar de referência — use a geração completa');
             return;
           }
-          posMapa = mapa.indexOf(ref) + 1;
-          posDeck = idsDeck().indexOf(ref.id) + 1;
+          if (ref) {
+            posMapa = mapa.indexOf(ref) + 1;
+            posDeck = idsDeck().indexOf(ref.id) + 1;
+          } else {
+            // Sem o slide de referência: no fim da parte do Mega, ou no fim da apresentação se o Mega não está nela.
+            posMapa = mapa.length;
+            posDeck = mapa.length ? idsDeck().indexOf(mapa[mapa.length - 1].id) + 1 : idsDeck().length;
+            Logger.log(cid.nome + ' · ' + nomeGrupo + ': sem o slide de referência no deck — entra no fim' +
+                       (mapa.length ? ' do ' + cid.nome : ' da apresentação'));
+          }
         }
         velhos.forEach(m => { const s = deck.getSlideById(m.id); if (s) s.remove(); mapa.splice(mapa.indexOf(m), 1); });
         _ORC_UNICO = { deckId: deckId, parte: chave, ids: [], indice: posDeck, alvo: null };

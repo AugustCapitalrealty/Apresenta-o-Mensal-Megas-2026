@@ -3273,6 +3273,20 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            ['Manutenção de Imóveis — Orçamento', 'Manutenção de imóveis', 'Demais categorias', 'PPCI'].every(p => doTitulo(p).length >= 1),
            'atualizarSlidesDeHoje: os grupos trocados no lugar, sem duplicar nem falhar, e o sumário aponta para o impacto novo (' +
            nH + ' → ' + facDeck.getSlides().length + ' slides' + (falhas.length ? ', ' + falhas.length + ' com falha' : '') + ')');
+
+        // 23/10/2026 (Guilherme): com a apresentação em branco, só os slides dos grupos, no fim — e rodar de novo troca.
+        facDeck.getSlides().forEach(s => s.remove());
+        const gruposB = ['M² área comum', 'M² com IPTU', 'Demais variações'];
+        G._orcAtualizarSlides_(['ITAJAI'], gruposB);
+        const b0 = facDeck.getSlides().length;   // sem noFim: Mega fora do deck fica de fora
+        G._orcAtualizarSlides_(['ITAJAI'], gruposB, { noFim: true });
+        const titB = () => facDeck.getSlides().map(s => tit(s.getObjectId()));
+        const b1 = titB();
+        G._orcAtualizarSlides_(['ITAJAI'], gruposB, { noFim: true });
+        const b2 = titB();
+        ok(b0 === 0 && b1.length === 3 && /^Custo por m² mês a mês — /.test(b1[0]) && /^Custo por m² mês a mês com IPTU/.test(b1[1]) &&
+           /^Por que a manutenção sobe/.test(b1[2]) && b2.join('|') === b1.join('|'),
+           'apresentação em branco: só os slides dos grupos, na ordem, e rodar de novo não duplica (' + b1.join(' | ') + ' → ' + b2.length + ')');
       }
     } finally {
       cid.despesasGeraisId = antes.d;
