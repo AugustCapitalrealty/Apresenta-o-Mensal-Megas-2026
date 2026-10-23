@@ -46,6 +46,12 @@ reinício). O que importa sobre o projeto está aqui, no
   (33_GestorRedesenho.gs); situações dos contratos do Esteio gravadas (`ORC_CONTRATOS_SITUACAO_GESTOR`); 75 fontes da
   v4 no código (`ORC_FONTES_PRINTS`); "Projetos — do maior" com mais espaço para o item; "Saída Voigt" no mês a mês da
   Segurança do Esteio (`ORC_ANOTACOES_MES`). Teste: 5.132/5.132.
+- **22/10, ~23h:** itens "RETIRADO DO ORÇAMENTO" saem da leitura do 090 (02_Dados.gs) → Esteio V2 R$ 3.839.289,
+  Facilities R$ 17.564.274 (impacto com a linha "Itens retirados"). Curitiba: situações dos contratos gravadas;
+  pares extras das lavagens (`ORC_PARES_EXTRA`, 24_PorQueSobe.gs, por cima de 23_DecisoesGestor.gs gerado); Roçada
+  (Grasstecno), coletas do restaurante (Transresíduos, Suíno Vivo) e Sentax (Gibraltar) com o 2026 do ritmo item a
+  item (`ORC_CONTRATOS_ANT_RITMO`). "Por que sobe" sem as notas embaixo; Projetos com fonte única por coluna.
+  Teste: 5.134/5.134.
 - **Ritmo novo (RITMO-*.xlsx de 22/10, 22h06):** out–dez (projeção) igual ao que usamos nos 3 Megas; só mudam meses
   fechados (material de consumo fev/mar/ago) e o ano de IPTU Curitiba (+2.873) e Seguro Itajaí (−4.129). Não aplicado
   (Guilherme: meses fechados não deveriam mudar).
