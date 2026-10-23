@@ -3131,6 +3131,49 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
     }
   }
 
+  // 23/10/2026: ritmo de 9h e metragem mensal (Mxxx-2026-x-Orcamento-2027, com a Despesa de pessoal mês a mês).
+  [['ESTEIO', 'esteio'], ['ITAJAI', 'itajai'], ['CURITIBA', 'curitiba']].forEach(([chave, c]) => {
+    const cid = G.ORC_CIDADES[chave];
+    const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
+    Object.assign(cid, { despesasGeraisId: G.ORC_MODELO_090_ID, servicosTerceirosId: G.ORC_MODELO_070_ID });
+    cid.relatorios.orcDosModelos = true;
+    porId[cid.relatorios.metragemId] = fixture('fixture_metragem_' + c + '_2210.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '_2300.json');
+    const semNovo = G._orcLerVisaoGeral_(chave);
+    const ritmoAntes = cid.relatorios.ritmoId;
+    cid.relatorios.ritmoId = 'teste-ritmo-' + c;
+    cid.relatorios.mensalMetragemId = 'teste-mm-' + c;
+    porId['teste-ritmo-' + c] = fixture('fixture_ritmo_' + c + '_2310.json');
+    porId['teste-mm-' + c] = fixture('fixture_mensalmet_' + c + '_2310.json');
+    try {
+      const v = G._orcLerVisaoGeral_(chave), rel = v.rel, kP = G._orcChaveConta_('Despesa de pessoal');
+      const pes = v.mensal.contas[kP], pesMet = rel.contas.filter(x => x.chave === kP)[0];
+      const soma = a => a.reduce((t, x) => t + x, 0);
+      ok(pes && Math.abs(soma(pes.orc) - pesMet.v.orc) < 1 && Math.abs(soma(pes.real) - pesMet.v.ritmo) < 1 && new Set(pes.orc.map(Math.round)).size > 1,
+         c + ' (23/10): Despesa de pessoal mês a mês no Orç 2027 e no Ritmo 2026, fechando com a METRAGEM (' + (pes ? G._orcMoeda_(soma(pes.orc)) : '—') + ')');
+      ok(Math.round(rel.total.orc) === Math.round(semNovo.rel.total.orc) && !Object.keys(v.mensal.contas).some(k => /^r m/.test(k)) &&
+         v.mensal.contas[G._orcChaveConta_('IPTU')] && v.mensal.contas[G._orcChaveConta_('Seguro')],
+         c + ' (23/10): total igual, sem as linhas "R$ M² MÊS" como conta, IPTU e Seguro seguem do Despesas-Mensal');
+      const d0 = G._orcM2Mensal_(semNovo.rel, semNovo.mensal, semNovo.realAnt, true), d = G._orcM2Mensal_(rel, v.mensal, v.realAnt, true);
+      const ser = (x, k) => x.series.filter(s => s.k === k)[0];
+      ok(d0.fora.indexOf('Despesa de pessoal') >= 0 && d.fora.indexOf('Despesa de pessoal') < 0 &&
+         Math.abs(ser(d, 'orc').media - ser(d0, 'orc').media) < 0.005 && Math.abs(ser(d, 'ritmo').media - ser(d0, 'ritmo').media) < 0.005,
+         c + ' (23/10): m² mês a mês com o pessoal de cada mês (antes 1/12), mesma média');
+      const f2 = x => x.toFixed(2).replace('.', ',');
+      console.log('    ' + c + ' ritmo out–dez R$/m² (com IPTU e seguro): ' + ser(d0, 'ritmo').meses.slice(9).map(f2).join(' / ') + ' → ' +
+                  ser(d, 'ritmo').meses.slice(9).map(f2).join(' / ') + ' · Orç 2027 jan/jun/dez: ' +
+                  [0, 5, 11].map(i => f2(ser(d0, 'orc').meses[i]) + '→' + f2(ser(d, 'orc').meses[i])).join(' '));
+      if (chave === 'ITAJAI') {
+        const m = ser(d, 'ritmo').meses.slice(9);
+        ok(m[0] < m[2] && m[2] < m[1], 'itajaí (23/10): ritmo out < dez < nov, como na planilha de ritmo (' + m.map(f2).join(' / ') + ')');
+      }
+    } finally {
+      delete cid.relatorios.mensalMetragemId;
+      cid.relatorios.ritmoId = ritmoAntes;
+      Object.assign(cid, { despesasGeraisId: antes.d, servicosTerceirosId: antes.s }); cid.relatorios.orcDosModelos = antes.o;
+    }
+  });
+
   // Restaurar fixtures anteriores
   porId[G.ORC_MODELO_090_ID] = M090_ANTES;
   porId[G.ORC_MODELO_070_ID] = M070_ANTES;

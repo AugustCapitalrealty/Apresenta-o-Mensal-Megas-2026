@@ -338,6 +338,10 @@ function _orcRotuloColuna_(k, anos) {
 function obterRelatorioMensal_(chaveCidade, modelos) {
   const mensal = _orcLerMensal_(_orcLerPrimeiraAba_(_orcRelatorioId_(chaveCidade, 'mensalId', 'Despesas-Mensal')));
   const cid = ORC_CIDADES[chaveCidade];
+  if (cid.relatorios.mensalMetragemId) {
+    try { _orcAplicarMensalMetragem_(mensal, _orcLerMensal_(_orcLerPrimeiraAba_(cid.relatorios.mensalMetragemId)), cid.nome); }
+    catch (e) { Logger.log(cid.nome + ': metragem mensal não lida — fica o Despesas-Mensal: ' + e.message); }
+  }
   // O 2026 mês a mês (Orç e Real/Ritmo) da planilha "RITMO-ATUAL" quando houver (12/10/2026): ela é exportada junto
   // com a METRAGEM e fecha com ela; o Despesas-Mensal é mais antigo e o mês a mês precisava de ajuste.
   if (cid.relatorios.ritmoId) {
@@ -530,6 +534,23 @@ function _orcAplicarRitmo_(mensal, ritmo, quem) {
   Logger.log(quem + ': ' + n + ' contas com o 2026 mês a mês da planilha RITMO-ATUAL');
 }
 
+// Relatório "Mxxx-2026-x-Orcamento-2027" (metragem mensal, 23/10/2026): as mesmas contas da METRAGEM mês a mês, com a
+// Despesa de pessoal, que o Despesas-Mensal não traz (o gráfico de m² punha 1/12 do ano em cada mês). Não traz IPTU
+// nem Seguro: esses ficam do Despesas-Mensal. Conta que ele tem troca o Orç do ano e o Real/Ritmo; o Orç do ano
+// anterior fica (ele não traz). Vem antes do RITMO-ATUAL, que segue dando o 2026 (fecha com a METRAGEM).
+function _orcAplicarMensalMetragem_(mensal, novo, quem) {
+  const zeros = () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const incluidas = [];
+  Object.keys(novo.contas).forEach(k => {
+    const n = novo.contas[k], m = mensal.contas[k];
+    if (m) { m.orc = n.orc.slice(); m.real = n.real.slice(); return; }
+    mensal.contas[k] = { nome: n.nome, orcAnt: zeros(), real: n.real.slice(), orc: n.orc.slice() };
+    incluidas.push(n.nome);
+  });
+  Logger.log(quem + ': metragem mensal lida (' + Object.keys(novo.contas).length + ' contas' +
+             (incluidas.length ? '; entraram ' + incluidas.join(', ') : '') + ')');
+}
+
 function _orcLerMensal_(dados) {
   const cab = (dados[0] || []).map(_orcNorm_);
   const aa = n => String(n).slice(-2);
@@ -538,6 +559,8 @@ function _orcLerMensal_(dados) {
     col.orcAnt[i] = cab.indexOf('orc ' + m + '/' + aa(ORC_ANO - 1));
     if (col.orcAnt[i] < 0) col.orcAnt[i] = cab.indexOf('orca ' + m + '/' + aa(ORC_ANO - 1));
     col.real[i] = cab.indexOf('real ' + m + '/' + aa(ORC_ANO - 1));
+    // "Mxxx-2026-x-Orcamento-2027" (23/10/2026): depois do último mês fechado a coluna é "Ritmo Out/26"
+    if (col.real[i] < 0) col.real[i] = cab.indexOf('ritmo ' + m + '/' + aa(ORC_ANO - 1));
     col.orc[i] = cab.indexOf('orca ' + m + '/' + aa(ORC_ANO));
     if (col.orc[i] < 0) col.orc[i] = cab.indexOf('orc ' + m + '/' + aa(ORC_ANO));
   });
@@ -554,7 +577,8 @@ function _orcLerMensal_(dados) {
   for (let i = 1; i < dados.length; i++) {
     const nome = String(dados[i][0] === null || dados[i][0] === undefined ? '' : dados[i][0])
       .replace(/ /g, ' ').trim();
-    if (!nome || /^total/.test(_orcNorm_(nome))) continue;
+    // "R$ M² MÊS - CURITIBA" (metragem mensal): indicador, não conta — somado viraria despesa
+    if (!nome || /^(total|r\$)/.test(_orcNorm_(nome))) continue;
     const serie = k => col[k].map(c => c < 0 ? 0 : -_orcNum_(dados[i][c]));
     const orc = serie('orc');
     // O erro de digitação do modelo também está no mês a mês (ORC_CORRECOES_MODELO, 02_Dados.gs).

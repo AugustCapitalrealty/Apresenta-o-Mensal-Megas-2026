@@ -18,6 +18,10 @@ const ORC_NOMES_ATUALIZACAO = [
   [/^ritmo-mega-esteio/i, 'MEGA ESTEIO - RITMO 2026 (23-10-2026 09h)'],
   [/^ritmo-mega-itajai/i, 'MEGA ITAJAÍ - RITMO 2026 (23-10-2026 09h)'],
   [/^ritmo-2026-mega-curitiba/i, 'MEGA CURITIBA - RITMO 2026 (23-10-2026 09h)'],
+  // 23/10/2026, 9h25: metragem mensal 2026 × 2027 (com a Despesa de pessoal mês a mês) → relatorios.mensalMetragemId
+  [/^mestei-2026-x-orcamento/i, 'MEGA ESTEIO - METRAGEM MENSAL 2026 x 2027 (23-10-2026)'],
+  [/^mitajai-2026-x-orcamento/i, 'MEGA ITAJAÍ - METRAGEM MENSAL 2026 x 2027 (23-10-2026)'],
+  [/^mcuritiba2026-x-orcamento/i, 'MEGA CURITIBA - METRAGEM MENSAL 2026 x 2027 (23-10-2026)'],
   // 22/10/2026, 23h: o gestor atualizou o 090 (o 070 veio igual) e a controladoria o mês a mês dos três Megas.
   [/^090-despesas-gerais-atualizado/i, 'MESTRA - 090 - DESPESAS GERAIS (22-10-2026 23h)'],
   [/^esteio-mensal/i, 'MEGA ESTEIO - MENSAL 2027 (22-10-2026 23h)'],

@@ -17,8 +17,17 @@ reinício). O que importa sobre o projeto está aqui, no
   (o gerador espalhava a diferença pelo formato de 12/10 — ano certo, meses errados). **A nota de 22/10 dizendo
   que out–dez não tinham mudado estava errada para este arquivo.**
   - Arquivos em `ATUALIZAÇÃO 23-10-2026` (G:), regras em `ORC_NOMES_ATUALIZACAO` (30_Importar.gs, pasta trocada).
-    **Falta:** Guilherme rodar `importarAtualizacao()` → trocar os 3 `ritmoId` em 01_Config.gs pelos de `IDS.json`
-    → `clasp push` → gerar os 3 Megas. Fixtures `teste/fixture_ritmo_<c>_2310.json`.
+    **Falta:** Guilherme rodar `importarAtualizacao()` → trocar os 3 `ritmoId` e pôr os 3 `mensalMetragemId` em
+    01_Config.gs pelos de `IDS.json` → `clasp push` → gerar os 3 Megas. Fixtures `teste/fixture_ritmo_<c>_2310.json`.
+- **Metragem mensal 2026 × 2027** (`Mxxx-2026-x-Orcamento-2027.xlsx`, 23/10 9h25 → `relatorios.mensalMetragemId`,
+  `_orcAplicarMensalMetragem_` em 04_DadosRelatorios.gs): mesmas contas da METRAGEM mês a mês **com a Despesa de
+  pessoal** (antes o m² mês a mês punha 1/12 do ano; 2027 tem o degrau do dissídio em mai/jun, 2026 o pico de jan).
+  Sem IPTU e Seguro (ficam do Despesas-Mensal). Orç 2027 das outras contas = mensal das 23h (diesel já corrigido).
+  2026: out–dez = ritmo de 9h; **agosto diverge** do ritmo e da METRAGEM em Itajaí (área comum −8,9k: água −8k,
+  limpeza +7,9k, consultoria +7,7k, locação −6k…) e Esteio (+8,5k: manutenção +13,7k, máquinas −6,7k…) — o 2026 segue
+  do ritmo (fecha com a METRAGEM/DRE); perguntar à controladoria qual agosto vale. Linhas "R$ M² MÊS" não viram conta.
+  Ritmo out–dez no m² com IPTU e seguro (teste): Itajaí 3,42 / 5,47 / 4,97, Curitiba 4,07 / 4,46 / 4,27, Esteio
+  6,99 / 7,34 / 7,21 = planilhas. Teste: 5.152/5.152. Fixtures `teste/fixture_mensalmet_<c>_2310.json`.
 - **Itens "RETIRADO DO ORÇAMENTO" voltam a aparecer, com R$ 1 cada** (Guilherme, 23/10): `_orcLinhasModelo_`
   (02_Dados.gs) zera os meses e põe R$ 1 no mês de maior valor. A galeria da comporta B2 no 090 de 23h já estava com
   R$ 0,01 em jan. Esteio V2 **R$ 3.839.292**, Facilities **R$ 17.564.277** (+R$ 3); impacto "Itens retirados" −1.464,57.
