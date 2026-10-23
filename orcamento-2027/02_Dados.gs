@@ -222,6 +222,9 @@ function _orcLinhasModelo_(dados, unidade) {
     const conta = String(r[ORC_COL.conta] === null || r[ORC_COL.conta] === undefined ? '' : r[ORC_COL.conta])
       .replace(/ /g, ' ').trim();
     if (!conta) continue;
+    // Item que o gestor marcou "RETIRADO DO ORÇAMENTO" mas ficou com valor no sistema (Esteio: a limpeza da galeria
+    // da comporta B2, R$ 1.464,57 em jul): fica fora, sem precisar de nova carga (Guilherme, 22/10/2026).
+    if (/retirado do orcamento/.test(_orcNorm_(r[ORC_COL.item]))) continue;
     const meses = [];
     for (let m = 0; m < 12; m++) meses.push(-_orcNum_(r[ORC_COL.mes1 + m]));   // despesa vem negativa
     out.push({
