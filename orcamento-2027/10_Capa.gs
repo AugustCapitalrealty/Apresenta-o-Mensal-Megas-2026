@@ -444,13 +444,46 @@ const ORC_PREMISSAS_ITENS = [
                                'planilhas) e no nível mais detalhado possível, inclusive classificando-os por projetos e disciplinas.']
 ];
 
+// As premissas de cada Mega, como o gestor escreveu na v4 apresentada em 13/10/2026 (a geração punha as de Facilities
+// nos três — Guilherme, 22/10/2026: "as premissas de cada Mega estão gerando errado"). Só os erros de português foram
+// corrigidos ("B,integrando", "Sensitva", "mais íntegra", "a características", "sendo considerando").
+const ORC_PREMISSAS_MEGA = {
+  'Mega Esteio': [
+    ['Integração', 'Em 2027 o Mega Esteio passa a ser visto e analisado com o Armazém A e B, integrando os serviços e ' +
+                   'custos compartilhados.'],
+    ['Segurança Patrimonial', 'Foco na melhoria e no incremento da segurança patrimonial, trazendo para os mesmos níveis e ' +
+                              'patamares dos demais Megas.'],
+    ['Sistema de Drenagem', 'Em 2027 está sendo considerada melhoria da manutenção preventiva do sistema de drenagem (bombas, ' +
+                            'elevatórias, fossas, etc) que até 2026 foi anual, passando para semestral. Proposta é aumentar a ' +
+                            'frequência, reduzir a manutenção corretiva e deixar o sistema mais íntegro.'],
+    ['Gestão de Pessoas', 'Com o aumento da operação, do empreendimento, e dos perfis de novos clientes (Meli), bem como as ' +
+                          'características do empreendimento, está sendo considerada a adição de um Assistente/Analista Jr.']
+  ],
+  'Mega Itajaí': [
+    ['Carry-Over', 'Impacto de manutenções de 2026 sendo carregadas para 2027, em especial o projeto das cancelas.'],
+    ['Área de Acessos', 'Implantação dos mastros das bandeiras e compra dos torniquetes Digicon TX1500 para a área de acesso'],
+    ['Segurança', 'Projeto de implantação do Cabo da Fibra Sensitiva A Sense com integração do CFTV'],
+    ['CVISH', 'Implementação de plano de manutenção continuada nas demarcações horizontais']
+  ],
+  'Mega Curitiba': [
+    ['Segurança Perimetral', 'Implementação de Projeto de Drone Autônomo com sistema de Análise de Risco embarcado na linha de ' +
+                             'segurança. (Avaliar composição dos valores no lançamento)'],
+    ['Entrada Fase 7A e 7B', 'Com a entrada da Fase 7A e 7B o custo do m2 diminui, possibilitando inclusão de valores e ' +
+                             'projetos em segurança e manutenção.'],
+    ['Manutenção CVISH', 'Implementação de plano de manutenção continuada da comunicação horizontal no Mega.'],
+    ['Área de acessos', 'Implantação do 4º torniquete no empreendimento.']
+  ]
+};
+
+// cid: o Mega (premissas dele, ORC_PREMISSAS_MEGA) ou { nome: 'Facilities' } (as gerais, ORC_PREMISSAS_ITENS).
 function gerarSlidePremissas_(slide, W, H, cid) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
   _orcHeader_(slide, W, 'Premissas — Orçamento ' + ORC_ANO,
     cid.nome + ' · como o orçamento foi construído e como ler esta apresentação');
-  const n = ORC_PREMISSAS_ITENS.length, top = 76, gap = 8, fim = H - 30;
+  const itens = ORC_PREMISSAS_MEGA[cid.nome] || ORC_PREMISSAS_ITENS;
+  const n = itens.length, top = 76, gap = 8, fim = H - 30;
   const rh = (fim - top - gap * (n - 1)) / n, x = MX, w = W - MX * 2;
-  ORC_PREMISSAS_ITENS.forEach((it, i) => {
+  itens.forEach((it, i) => {
     const y = top + i * (rh + gap);
     _orcRet_(slide, x, y, w, rh, C.cardBg, { redondo: true, borda: C.lines });
     _orcRet_(slide, x, y + 8, 4, rh - 16, C.brandLight);

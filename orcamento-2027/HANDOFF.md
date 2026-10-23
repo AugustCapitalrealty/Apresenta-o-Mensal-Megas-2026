@@ -36,6 +36,10 @@ reinício). O que importa sobre o projeto está aqui, no
   geração (`ORC_SLIDES_QUE_SAIRAM`: o resumo executivo), com o link do sumário refeito. Não refaz o que já está nem
   confere conteúdo. Slide novo na geração → grupo em ORC_GRUPOS_ATUALIZAVEIS + nome em ORC_GRUPOS_COMPLETAR.
   Teste: 5.126/5.126.
+- **Conferência com a v4 apresentada** (`referencia/CONFERENCIA-v4-x-geracao-22-10-2026.md`, texto dos 180 slides em
+  `referencia/v4_apresentada_13-10-2026.json`): perdas corrigidas — premissas próprias de cada Mega
+  (`ORC_PREMISSAS_MEGA`, 10_Capa.gs) e os 2 slides do drone do Curitiba sem marca (`ORC_GESTOR_SEM_MARCA`,
+  31_VersaoFinal.gs). Cartão "Despesa de pessoal" no entrou/saiu (vem da METRAGEM/RH). Teste: 5.133/5.133.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
 

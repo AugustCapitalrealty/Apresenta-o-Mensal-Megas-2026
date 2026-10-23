@@ -803,10 +803,20 @@ ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 7 sub ca
 ok(!slides.some(sl => titulo(sl) === 'Revisar antes da versão final'), 'IPTU e Seguro em valeMetragem: sem slide de revisão');
 ok(iSub[0] === 2 && titulo(slides[3]) === 'Premissas — Orçamento 2027', 'Premissas logo depois do sumário');
 const tPrem = textos(slides[3]);
-// 13/10/2026: as quatro premissas numeradas (ORC_PREMISSAS_ITENS), iguais nos três Megas.
-ok(G.ORC_PREMISSAS_ITENS.length === 4 && G.ORC_PREMISSAS_ITENS.every((it, k) => tPrem.indexOf('0' + (k + 1)) >= 0 &&
-   tPrem.indexOf(it[0]) >= 0 && tPrem.indexOf(it[1]) >= 0) && !tPrem.some(t => /…$/.test(t)),
-   'Premissas: 01 Preventivas, 02 Corretivas, 03 Não Previsíveis, 04 Projetos e Detalhamentos, com o texto inteiro');
+// 22/10/2026: cada Mega com as premissas dele (ORC_PREMISSAS_MEGA, as da v4 apresentada); as gerais
+// (ORC_PREMISSAS_ITENS) só no começo de Facilities.
+const premCur = G.ORC_PREMISSAS_MEGA['Mega Curitiba'];
+ok(premCur.length === 4 && premCur.every((it, k) => tPrem.indexOf('0' + (k + 1)) >= 0 &&
+   tPrem.indexOf(it[0]) >= 0 && tPrem.indexOf(it[1]) >= 0) && tPrem.indexOf('Preventivas') < 0 && !tPrem.some(t => /…$/.test(t)),
+   'Premissas de Curitiba: Segurança Perimetral, Entrada Fase 7A e 7B, Manutenção CVISH, Área de acessos, com o texto inteiro');
+['Mega Esteio', 'Mega Itajaí', 'Facilities'].forEach(nome => {
+  const s = novoSlide();
+  G.gerarSlidePremissas_(s, W, H, { nome: nome });
+  const t = s.shapes.map(r => r.texto).filter(Boolean);
+  const esperado = G.ORC_PREMISSAS_MEGA[nome] || G.ORC_PREMISSAS_ITENS;
+  ok(esperado.length === 4 && esperado.every(it => t.indexOf(it[0]) >= 0 && t.indexOf(it[1]) >= 0) && !t.some(x => /…$/.test(x)),
+     'Premissas de ' + nome + ': as quatro dele (' + esperado.map(it => it[0]).join(', ') + '), com o texto inteiro');
+});
 
 ok(titulo(slides[iSub[1] + 1]) === 'Ponte Ritmo 2026 → Orçamento 2027' && !slides.some(x => titulo(x) === 'Resumo executivo — Orçamento 2027'),
    'seção Resumo Executivo: abre na ponte; o slide do resumo executivo saiu (22/10/2026)');
@@ -2444,6 +2454,10 @@ console.log('Mega completo (00_Gerar.gs)');
   ger('Segurança e vigilância', 'Orç 2027 · Mega Esteio');
   gest('Implantação Moked | Rotina de Segurança', 'Mega Esteio');
   gest('Substituição Segurança | Cenário Hoje', 'Mega Esteio');
+  // Slide do gestor sem a marca nas anotações (o drone do Curitiba na v4): ORC_GESTOR_SEM_MARCA (22/10/2026).
+  { const s = v3.appendSlide();
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: 'DRONE AUTÔNOMO (XDRONE)' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Segurança e Vigilancia · Drone Autônomo · Mega Esteio' }); }
   ger('Manutenção: os itens de cada grupo (1/2)', '62 itens · Mega Esteio');
   gest('Instalação de Linha de Vida Vertical | Fase 1', 'Mega Esteio');
   ger('Sumário', 'Mega Itajaí · Orçamento 2027');
@@ -2457,6 +2471,8 @@ console.log('Mega completo (00_Gerar.gs)');
   const daParte = p => fac.getSlides().filter(s => lista(p).indexOf(s.getObjectId()) >= 0);
   const titE = daParte('ESTEIO').map(tit), titI = daParte('ITAJAI').map(tit);
   const iSeg = titE.findIndex(t => /^Segurança e vigilância/.test(t)), iItE = titE.indexOf('Manutenção: os itens de cada grupo (1/2)');
+  ok(titE[iSeg + 3] === 'DRONE AUTÔNOMO (XDRONE)',
+     'Mega completo: o slide do gestor sem a marca (drone) também é copiado, no lugar dele (' + titE[iSeg + 3] + ')');
   ok(iSeg > 0 && titE[iSeg + 1] === 'Implantação Moked | Rotina de Segurança' && titE[iSeg + 2] === 'Substituição Segurança | Cenário Hoje' &&
      iItE > 0 && titE[iItE + 1] === 'Instalação de Linha de Vida Vertical | Fase 1',
      'Mega completo: Moked e substituição depois de "Segurança e vigilância", a obra depois dos itens (1/2) (' +
@@ -2465,9 +2481,9 @@ console.log('Mega completo (00_Gerar.gs)');
   ok(iItI > 0 && titI[iItI + 1] === 'Pintura dos Prédios de Apoio' && titE.indexOf('Pintura dos Prédios de Apoio') < 0,
      'Mega completo: o slide do gestor do Itajaí só no Itajaí, depois dos itens de cada grupo');
   const copias = daParte('ESTEIO').concat(daParte('ITAJAI')).filter(s => /^\[REGISTRO FOTOGRÁFICO/.test(s.notas || ''));
-  ok(copias.length === 4 && daParte('ITAJAI').filter(s => /^\[REGISTRO FOTOGRÁFICO · ITAJAI\]/.test(s.notas || '')).length === 1 &&
+  ok(copias.length === 5 && daParte('ITAJAI').filter(s => /^\[REGISTRO FOTOGRÁFICO · ITAJAI\]/.test(s.notas || '')).length === 1 &&
      !copias.some(s => textos(s).some(t => /^Subtítulo:/.test(t))),
-     'Mega completo: 4 slides do gestor copiados e revisados (marca do Mega certo, subtítulo preenchido)');
+     'Mega completo: 5 slides do gestor copiados e revisados (com o drone sem marca) (marca do Mega certo, subtítulo preenchido)');
   ok(!fac.getSlides().some(s => /^Revisar antes da versão final/.test(tit(s)) || /Título do assunto/.test(tit(s))),
      'Mega completo: sem o "Revisar" e sem moldes de fotos');
   const n1 = fac.getSlides().length;

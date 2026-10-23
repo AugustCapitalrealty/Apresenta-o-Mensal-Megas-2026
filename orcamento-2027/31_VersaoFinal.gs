@@ -196,6 +196,11 @@ function _orcMegaDoSlide_(slide) {
 // que vem antes dele lá (a âncora: mesmo título; sem o "(1/2)" se a paginação mudou; sem achar, no fim do Mega),
 // revisado como em 29_GestorRevisado.gs, e entra na lista da parte — a próxima geração do Mega troca também esses. Os
 // moldes de fotos vazios do Mega saem. Perto dos 6 min do Apps Script, para e agenda completarSlidesDoGestor().
+// Slides do gestor que na v4 vieram sem a marca nas anotações (a v4 só é lida: não dá para marcar lá). Sem esta
+// lista eles contavam como gerados e não eram copiados — os dois do drone do Curitiba sumiam (Guilherme, 22/10/2026,
+// conferindo a v4 apresentada). Começo do título do slide.
+const ORC_GESTOR_SEM_MARCA = [/^DRONE AUTÔNOMO/i];
+
 function _orcGestorNaParte_(deckId, parte, inicio) {
   const cid = ORC_CIDADES[parte], props = PropertiesService.getScriptProperties();
   const propLista = 'ORC_FAC_' + parte, propFeitos = 'ORC_FAC_GESTOR_FEITOS_' + parte;
@@ -234,7 +239,8 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
   const sv3 = v3.getSlides();
   for (let i = 0; i < sv3.length; i++) {
     const s = sv3[i];
-    if (!_orcDonoFotos_(s)) {
+    const semMarca = !_orcDonoFotos_(s) && ORC_GESTOR_SEM_MARCA.some(re => re.test(tituloDe(textosDe(s))));
+    if (!_orcDonoFotos_(s) && !semMarca) {
       const ts = textosDe(s), t = tituloDe(ts);
       mega = megaDe(ts) || mega;
       if (t === 'Sumário') { if (dentro && mega !== cid.nome) break; if (mega === cid.nome) dentro = true; }
