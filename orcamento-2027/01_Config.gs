@@ -31,7 +31,7 @@ const ORC_TEXTOS_ID = '1whAdU26wkp6gV5RKtgX7jaBhhGIywZ3iV2CSiXdacGY';
 // Item). As de 12h (1eGg8vWV…, 1TSAqizR…) viraram "PODE EXCLUIR - …".
 // 12/10/2026, 19h54: a atualização final (pasta "ATUALIZAÇÃO 12-10-2026", importarAtualizacao()) —
 // o Moked do Esteio volta ao 070 (R$ 7.000/mês). As das 16h: 090 1GsxlXr-…, 070 1Msx1LjK….
-const ORC_MODELO_090_ID = '1i1XFv1Xvmm5OumBykhTxO45Wr21462aA6rR1yBRwVFE';   // MESTRA - 090 - DESPESAS GERAIS (22-10-2026)
+const ORC_MODELO_090_ID = '16LPXeEkCwAwFOCuss4v5dYe11KM8JAfNWnSlljBb78I';   // MESTRA - 090 - DESPESAS GERAIS (22-10-2026 23h); a de 18h era 1i1XFv1X…
 const ORC_MODELO_070_ID = '1U8cUr3PrFaDvzE-ziEyFMtUWpArnI__ffbyMe2SE8BA';   // MESTRA - 070 - SERVIÇOS DE TERCEIROS (22-10-2026)
 
 // Planilhas do modelo de orçamento, por cidade. Itajaí e Esteio entram quando
@@ -65,7 +65,7 @@ const ORC_CIDADES = {
       metragemId: '1tawzpoCAEF3ftXZPhCW1FcboxxFPARKsLheBabaszkk',   // MEGA CURITIBA - METRAGEM-COND 2027 (22-10-2026)
       // 2026 mês a mês (Orç e Ritmo) que fecha com a METRAGEM — substitui o do Despesas-Mensal.
       ritmoId:    '121pYnxYFP0OippjzeJSdvd_IzHxCnzqqqy7BgqBZ1zU',   // MEGA CURITIBA - RITMO 2026 (12-10-2026 20h42)
-      mensalId:   '1ZzmVcCmZTat8IGuqpq9IwtWEFyuWfeWDGxjL7xoAigI',   // MEGA CURITIBA - MENSAL 2027 (22-10-2026)
+      mensalId:   '1Un6j9AfAqiftiogUUDq3soieqEGf8ufOGf82ekdPMwU',   // MEGA CURITIBA - MENSAL 2027 (22-10-2026 23h)
       // Planilha da apresentação mensal dos Megas (megas-mensal/01_Config.gs,
       // PROJETOS.<cidade>.spreadsheetId): a aba "Financeiro <ano retrasado>"
       // dá o Real mês a mês do slide de custo por m² (20_M2Mensal.gs).
@@ -121,7 +121,7 @@ const ORC_CIDADES = {
     relatorios: {
       metragemId: '14j2urNQdd5hkypJJ5RlVjyora7-Y14m0rDjnBIF1XtY',   // MEGA ITAJAÍ - METRAGEM-COND 2027 (22-10-2026)
       ritmoId:    '1fNnwrqm22x0RVq0zXMO5f3vD1oOZF0pCpPS-ytmYOyk',   // MEGA ITAJAÍ - RITMO 2026 (12-10-2026 20h43)
-      mensalId:   '1A79qzCBlEvhvEc-W9pVTNVDI9PTPrGGmaZcwViUxcrA',   // MEGA ITAJAÍ - MENSAL 2027 (22-10-2026)
+      mensalId:   '1S0jfhLXIRKTGynuOfoetkrjCkXx72NEGcNaSsmNxxjE',   // MEGA ITAJAÍ - MENSAL 2027 (22-10-2026 23h)
       financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',   // planilha dos Megas (Itajaí)
       orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
     },
@@ -144,7 +144,7 @@ const ORC_CIDADES = {
     relatorios: {
       metragemId: '1RvWqP_wxSk2eJVsojIMpu3tjfRPpHg1UZWjjiql5vCU',   // MEGA ESTEIO - METRAGEM-COND 2027 (22-10-2026 Pátio)
       ritmoId:    '1p3RX8XDVy9PZHmjfWfap1YdlZO7n1tDPfwd4ZEag8AQ',   // MEGA ESTEIO - RITMO 2026 (12-10-2026 20h43)
-      mensalId:   '1qkmBWvfikQ3wVLbcQkr0VQi8rRgBAVbkclF5bA1XxBk',   // MEGA ESTEIO - MENSAL 2027 (22-10-2026)
+      mensalId:   '1LdGKll9z-edZIFhfCKlu0SaOYfm-CsI7xeYhvdZV2B0',   // MEGA ESTEIO - MENSAL 2027 (22-10-2026 23h)
       financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',   // planilha dos Megas (Esteio)
       // 12/10/2026, 20h: a METRAGEM das 19h56 traz R$ 1.200 em Outras taxas e
       // impostos e o Despesas-Mensal ainda R$ 0 — vale a METRAGEM (ver Curitiba).
