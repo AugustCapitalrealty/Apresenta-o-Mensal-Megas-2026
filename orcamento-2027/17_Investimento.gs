@@ -87,15 +87,17 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
     resto = { n: fora.length, total: fora.reduce((s, it) => s + it.total, 0) };
     itens = itens.slice(0, maxL - 1);
   }
+  // O nome do item com mais espaço e encolhendo até 6 pt antes de cortar (Jonatas, comentário no deck em 22/10/2026:
+  // "Melhorar aproveitamento do texto" — "FABRICAÇÃO E INSTALAÇÃO DE 2 BACIA…").
   const linhas = itens.map(it => ({ celulas: [
-    { texto: it.descricao, aba: 'Sugestões' }, { texto: it.categoria, cor: C.textBody, fs: 6.5 },
-    { texto: _orcQuando_(it.meses), cor: C.textBody, fs: 7 }, { texto: _orcMoeda_(it.total), bold: true }] }));
+    { texto: it.descricao, aba: 'Sugestões', fsMin: 6 }, { texto: it.categoria, cor: C.textBody, fs: 6.5, fsMin: 5.5 },
+    { texto: _orcQuando_(it.meses), cor: C.textBody, fs: 7, fsMin: 6 }, { texto: _orcMoeda_(it.total), bold: true }] }));
   if (resto) linhas.push({ celulas: [{ texto: '+ ' + resto.n + ' itens menores', cor: C.textBody }, null, null,
                                      { texto: _orcMoeda_(resto.total), bold: true }] });
   linhas.push({ total: true, celulas: [{ texto: 'TOTAL PROJETOS' }, null, null, { texto: _orcMoeda_(proj.total) }] });
   _orcTabela_(slide, rx + 8, ty + 22, rw - 16, [
-    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Categoria', w: 92, align: 'L' },
-    { titulo: 'Entrega', w: 52, align: 'C' }, { titulo: 'Valor', w: 70, align: 'C' }
+    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Categoria', w: 72, align: 'L' },
+    { titulo: 'Entrega', w: 42, align: 'C' }, { titulo: 'Valor', w: 62, align: 'C' }
   ], linhas, Math.min(16, disp / linhas.length), { hCab: 16 });
 
   // Legenda: o que é cada grupo, na cor da barra.

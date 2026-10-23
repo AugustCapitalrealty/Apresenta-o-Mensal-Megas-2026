@@ -40,6 +40,17 @@ reinício). O que importa sobre o projeto está aqui, no
   `referencia/v4_apresentada_13-10-2026.json`): perdas corrigidas — premissas próprias de cada Mega
   (`ORC_PREMISSAS_MEGA`, 10_Capa.gs) e os 2 slides do drone do Curitiba sem marca (`ORC_GESTOR_SEM_MARCA`,
   31_VersaoFinal.gs). Cartão "Despesa de pessoal" no entrou/saiu (vem da METRAGEM/RH). Teste: 5.133/5.133.
+- **22/10, noite — comentários do Jonatas/Guilherme no deck, aplicados na geração:** Ranking só com a tabela (G3);
+  rodapé padrão dos grupos de manutenção (`ORC_GRUPOS_MANUT_RODAPE`); "item a item" sem a legenda e a caixa "= Alta";
+  "por que sobe" sem a nota das obras adiadas; "Substituição Segurança" hoje/proposto com tabela no lugar do print
+  (33_GestorRedesenho.gs); situações dos contratos do Esteio gravadas (`ORC_CONTRATOS_SITUACAO_GESTOR`); 75 fontes da
+  v4 no código (`ORC_FONTES_PRINTS`); "Projetos — do maior" com mais espaço para o item; "Saída Voigt" no mês a mês da
+  Segurança do Esteio (`ORC_ANOTACOES_MES`). Teste: 5.132/5.132.
+- **Ritmo novo (RITMO-*.xlsx de 22/10, 22h06):** out–dez (projeção) igual ao que usamos nos 3 Megas; só mudam meses
+  fechados (material de consumo fev/mar/ago) e o ano de IPTU Curitiba (+2.873) e Seguro Itajaí (−4.129). Não aplicado
+  (Guilherme: meses fechados não deveriam mudar).
+- **Dados para o gestor:** "LIMPEZA DA GALERIA… COMPORTA B2 – RETIRADO" ainda tem R$ 1.464,57 em jul no 090; itens
+  com R$ 1 (Esteio) e R$ 0,01 (Itajaí/Curitiba) são marcadores sem valor.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
 

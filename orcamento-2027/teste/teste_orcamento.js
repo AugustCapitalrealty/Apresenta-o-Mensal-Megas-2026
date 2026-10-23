@@ -2860,6 +2860,11 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            tCtr.indexOf('Linha Coordenação Sai') >= 0 && tCtr.indexOf('Licença Analista/Assistente') >= 0 &&
            tCtr.indexOf('Troca de empresa a partir de mar/27') >= 0,
            'esteio (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
+        // A anotação "Saída Voigt" no mês a mês da Segurança (ORC_ANOTACOES_MES, 22/10/2026).
+        const seg = sl.filter(x => titulo(x) === 'Segurança e vigilância')[0];
+        ok(seg && textos(seg).indexOf('Saída Voigt') >= 0 &&
+           !sl.filter(x => x !== seg).some(x => textos(x).indexOf('Saída Voigt') >= 0),
+           'esteio (22/10): "Saída Voigt" com a seta no mês a mês da Segurança, e só nele');
 
         const ponte = sl.filter(x => titulo(x) === 'Ponte Ritmo 2026 → Orçamento 2027')[0];
         const tPonte = ponte ? textos(ponte) : [];

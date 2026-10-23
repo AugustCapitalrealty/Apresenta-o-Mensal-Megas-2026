@@ -75,7 +75,8 @@ function _orcPaginasItens_(fora) {
 // ritmo" — e o Orç do ano anterior como um traço cinza em cada mês. No topo,
 // a leitura: o Orç por mês contra o ritmo antes e depois do fechamento.
 // m: { orcAnt, real (ritmo), orc } do Despesas-Mensal; (cx, cy, cw, ch) = card.
-function _orcMesAMesConta_(slide, cx, cy, cw, ch, m, a) {
+// anot: anotações do gestor neste gráfico (ORC_ANOTACOES_MES), ou nada.
+function _orcMesAMesConta_(slide, cx, cy, cw, ch, m, a, anot) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors;
   const fech = ORC_RITMO_ULTIMO_MES_FECHADO;
   const mil = v => v < 9950 ? (v / 1000).toFixed(1).replace('.', ',') : _orcMilhar_(Math.round(v / 1000));
@@ -145,7 +146,36 @@ function _orcMesAMesConta_(slide, cx, cy, cw, ch, m, a) {
         { align: 'C', fs: 6, fsMin: 5, bold: true, cor: C.brandDark, fonte: DS.typography.titles, folga: 16 });
     }
   }
+
+  // Anotações do gestor: a caixa com o texto sobre os meses até "de" e a seta curva até a barra do mês "para".
+  (anot || []).forEach(an => {
+    const cxB = an.de > 0 ? (xm(an.de - 1) + xm(an.de)) / 2 : xm(an.de);
+    const bw = _orcLarguraTexto_(an.texto, 6.5, DS.typography.titles, true) + 16, bhB = 14;
+    const yB = Math.max(top - 4, y(Math.max(m.orc[an.de] || 0, an.de > 0 ? m.orc[an.de - 1] || 0 : 0)) - 30);
+    _orcRet_(slide, cxB - bw / 2, yB, bw, bhB, '#F1F5F9', { borda: '#475569', peso: 0.75 });
+    _orcUmaLinha_(slide, cxB - bw / 2, yB, bw, bhB, an.texto,
+      { align: 'C', fs: 6.5, fsMin: 5.5, bold: true, cor: C.textMain, fonte: DS.typography.titles, folga: 8 });
+    // A seta: do alto da caixa até o topo da barra de "para", em curva por cima (segmentos de linha, que entram na
+    // imagem do gráfico como as outras formas) e a ponta em duas linhas.
+    const COR = '#64748B', xa = cxB, ya = yB, xb = xm(an.para), yb = y(m.orc[an.para] || 0) - 3;
+    const xc = (xa + xb) / 2, yc = Math.min(ya, yb) - 18, n = 10, p = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, u = 1 - t;
+      p.push([u * u * xa + 2 * u * t * xc + t * t * xb, u * u * ya + 2 * u * t * yc + t * t * yb]);
+    }
+    for (let k = 0; k < n; k++) _orcLinha_(slide, p[k][0], p[k][1], p[k + 1][0], p[k + 1][1], COR, 1.2);
+    const ang = Math.atan2(yb - p[n - 1][1], xb - p[n - 1][0]), L = 5;
+    [ang + Math.PI * 0.82, ang - Math.PI * 0.82].forEach(g =>
+      _orcLinha_(slide, xb, yb, xb + L * Math.cos(g), yb + L * Math.sin(g), COR, 1.2));
+  });
 }
+
+// Anotações que o gestor pôs à mão no gráfico mês a mês de uma conta e que a geração apagava (Guilherme, 22/10/2026:
+// "faça essa melhoria nesse slide de Esteio" — "Saída Voigt" com a seta de fev para mar). Por Mega e conta (nome da
+// conta sem acento, minúsculo); de/para = mês (0 = jan): a caixa fica sobre os meses até "de" e a seta vai até "para".
+const ORC_ANOTACOES_MES = {
+  'Mega Esteio': { 'seguranca e vigilancia': [{ texto: 'Saída Voigt', de: 1, para: 2 }] }
+};
 
 // nPag: total de páginas da conta (esta + as dos itens menores); com mais de
 // uma, o título leva "(1/n)".
@@ -216,7 +246,7 @@ function gerarSlideLinhaALinha_(slide, W, H, cid, rel, mensal, linhasModelo, con
   _orcCard_(slide, MX, by, lw, bh, 'Mês a mês · R$ mil');
   const m = mensal && mensal.contas[conta.chave];
   if (m) {
-    _orcMesAMesConta_(slide, MX, by, lw, bh, m, a);
+    _orcMesAMesConta_(slide, MX, by, lw, bh, m, a, (ORC_ANOTACOES_MES[cid.nome] || {})[_orcNorm_(conta.nome)]);
   } else {
     _orcParagrafo_(slide, MX + 16, by + 40, lw - 32, 40,
       'Conta sem abertura mês a mês no relatório Despesas-Mensal ' + a.ritmo + ' x ' + a.orc + '.',
