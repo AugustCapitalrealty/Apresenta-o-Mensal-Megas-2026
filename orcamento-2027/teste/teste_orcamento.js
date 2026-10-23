@@ -3177,6 +3177,12 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
       console.log('    ' + c + ' ritmo out–dez R$/m² (com IPTU e seguro): ' + ser(d0, 'ritmo').meses.slice(9).map(f2).join(' / ') + ' → ' +
                   ser(d, 'ritmo').meses.slice(9).map(f2).join(' / ') + ' · Orç 2027 jan/jun/dez: ' +
                   [0, 5, 11].map(i => f2(ser(d0, 'orc').meses[i]) + '→' + f2(ser(d, 'orc').meses[i])).join(' '));
+      if (process.env.M2) {   // M2=1 node teste/teste_orcamento.js → as linhas do slide de área comum, antes × agora
+        const a0 = G._orcM2Mensal_(semNovo.rel, semNovo.mensal, semNovo.realAnt), a1 = G._orcM2Mensal_(rel, v.mensal, v.realAnt);
+        ['ritmo', 'orc'].forEach(k => console.log('    ' + c + ' área comum ' + k + ': ' + ser(a1, k).meses.map(f2).join(' ') +
+          ' · média ' + f2(ser(a1, k).media) + ' (antes: ' + ser(a0, k).meses.map(f2).join(' ') + ')'));
+        console.log('    ' + c + ' 1/12 por mês: antes ' + a0.fora.join(', ') + ' · agora ' + (a1.fora.join(', ') || 'nenhuma'));
+      }
       if (chave === 'ITAJAI') {
         const m = ser(d, 'ritmo').meses.slice(9);
         ok(m[0] < m[2] && m[2] < m[1], 'itajaí (23/10): ritmo out < dez < nov, como na planilha de ritmo (' + m.map(f2).join(' / ') + ')');
