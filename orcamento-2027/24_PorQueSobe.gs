@@ -251,7 +251,10 @@ function _orcDecisoesComExtras_(nome) {
   return Object.assign({}, dec, { semPar: semPar, pares: pares });
 }
 
-function _orcVariacoesItens_(cid, dados, conta, adi) {
+// cmp (opcional): a comparação de contratos (_orcCompararTodosContratos_). Contrato que mudou de conta (Arca Agro em
+// Itajaí: Limpeza em 2026, Manutenção em 2027) compara com o 2026 da conta antiga, que não está no Ritmo desta conta:
+// esse 2026 vira o degrau "Veio da <conta>" e a diferença vai para "Mesmo serviço" (Guilherme, 23/10/2026).
+function _orcVariacoesItens_(cid, dados, conta, adi, cmp) {
   const dec = _orcDecisoesComExtras_(cid.nome);
   if (!dec || !dec.semPar || !dados) return null;
   const v = conta.v;
@@ -271,9 +274,21 @@ function _orcVariacoesItens_(cid, dados, conta, adi) {
     return { nome: p.itens2027[0] || p.de2026, nome2027: p.itens2027.length > 0, v26: p.ritmo2026 || 0,
              v27: doModelo ? ks.reduce((t, k) => t + porNome[k], 0) : p.orc2027 };
   });
-  const novos = [];
+  const outra = _orcContratosDeOutraConta_(cmp, conta.chave), outraUsada = [];
+  const daOutra = desc => {
+    const t = ' ' + _orcNorm_(desc).replace(/[^a-z0-9 ]+/g, ' ') + ' ';
+    const l = outra.filter(o => outraUsada.indexOf(o) < 0 && ((o.textos || []).some(x => _orcNorm_(x) === _orcNorm_(desc)) ||
+      (p => p && t.indexOf(' ' + p + ' ') >= 0)(_orcPalavrasFornecedor_(o.nome)[0])))[0];
+    if (l) outraUsada.push(l);
+    return l;
+  };
+  const novos = [], mudou = [];
   dados.categorias.forEach(cat => cat.itens.forEach(it => {
-    if (it.total && !usados[_orcNorm_(it.descricao)]) novos.push({ nome: it.descricao, nome2027: true, v26: 0, v27: it.total });
+    if (!it.total || usados[_orcNorm_(it.descricao)]) return;
+    const l = daOutra(it.descricao);
+    if (l) mudou.push({ nome: it.descricao, nome2027: true, v26: l.ant, v27: it.total,
+                        de: (/\(([^)]+)\)/.exec(l.situacao) || [])[1] || 'outra conta' });
+    else novos.push({ nome: it.descricao, nome2027: true, v26: 0, v27: it.total });
   }));
   const semPar = dec.semPar.map(s => ({ nome: s.de2026, nome2027: false, v26: s.ritmo2026, v27: 0 }));
   const soma = (l, f) => l.reduce((t, x) => t + f(x), 0);
@@ -289,15 +304,22 @@ function _orcVariacoesItens_(cid, dados, conta, adi) {
                            ' × METRAGEM ' + _orcMoeda_(v.ritmo) + ' — a diferença fica em "não se repetem"');
   if (difOrc) Logger.log(cid.nome + ', demais variações: modelo ' + _orcMoeda_(dados.total) + ' × Orç ' + a27 + ' ' +
                          _orcMoeda_(v.orc) + ' — a diferença fica em "itens novos"');
+  const m26 = soma(mudou, x => x.v26), m27 = soma(mudou, x => x.v27);
+  const contasDe = mudou.map(x => x.de).filter((c, i, arr) => arr.indexOf(c) === i);
   const blocos = [
-    { nome: 'Itens novos em ' + a27, curto: 'Itens novos', v: v.orc - totAdi - p27,
-      expl: difOrc ? 'gastos de ' + a27 + ' sem gasto parecido no Ritmo ' + a26 : novos.length + ' itens sem gasto parecido no Ritmo ' + a26 },
+    { nome: 'Itens novos em ' + a27, curto: 'Itens novos', v: v.orc - totAdi - p27 - m27,
+      expl: difOrc ? 'gastos de ' + a27 + ' sem gasto parecido no Ritmo ' + a26 : novos.length + ' itens sem gasto parecido no Ritmo ' + a26 }
+  ].concat(mudou.length ? [
+    { nome: 'Contratos que vieram de outra conta', curto: contasDe.length === 1 ? 'Veio da ' + contasDe[0] : 'De outra conta', v: m26,
+      expl: 'o ' + a26 + ' de ' + mudou.length + ' contrato(s) lançado(s) em ' + contasDe.join(', ') + ' em ' + a26 }
+  ] : []).concat([
     { nome: 'Mesmo serviço nos dois anos', curto: 'Mesmo serviço', expl: pares.length + ' pares ligados pelo gestor' +
-      (totAdi ? ' (sem as obras adiadas)' : '') + ': reajuste, área nova, escopo', v: p27 - p26 },
+      (mudou.length ? ' e ' + mudou.length + ' contrato(s) que mudou de conta' : '') +
+      (totAdi ? ' (sem as obras adiadas)' : '') + ': reajuste, área nova, escopo', v: p27 - p26 + m27 - m26 },
     { nome: 'Gastos de ' + a26 + ' que não se repetem', curto: 'Não se repetem', v: -(v.ritmo - p26),
       expl: difRitmo ? 'gastos do Ritmo ' + a26 + ' sem item em ' + a27 : semPar.length + ' itens do Ritmo ' + a26 + ' sem item em ' + a27 }
-  ];
-  const cand = pares.concat(novos, semPar).map(x => Object.assign(x, { d: x.v27 - x.v26 }));
+  ]);
+  const cand = pares.concat(mudou, novos, semPar).map(x => Object.assign(x, { d: x.v27 - x.v26 }));
   return { blocos: blocos, demais: v.orc - v.ritmo - totAdi, totAdi: totAdi, nCand: cand.length,
            altas: cand.filter(x => x.d > 0.5).sort((x, y) => y.d - x.d).slice(0, 5),
            quedas: cand.filter(x => x.d < -0.5).sort((x, y) => x.d - y.d).slice(0, 5) };

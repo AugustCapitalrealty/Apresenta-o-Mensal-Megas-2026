@@ -466,6 +466,13 @@ function _orcMudouDeConta_(grupos) {
   }));
 }
 
+// As linhas de _orcMudouDeConta_ que estão na conta "chave" no ano do orçamento, para o item a item da manutenção
+// comparar com o 2026 da conta antiga (Arca Agro em Itajaí — Guilherme, 23/10/2026).
+function _orcContratosDeOutraConta_(cmp, chave) {
+  const g = (cmp && cmp.grupos || []).filter(x => x.chave === chave)[0];
+  return g ? g.linhas.filter(l => /^Mudou de conta/.test(l.situacao) && l.ant > 0.5) : [];
+}
+
 // Pendências de contratos sem 2026 identificado (para o alerta).
 function _orcContratosNaoIdentificados_(cmp) {
   const out = [];

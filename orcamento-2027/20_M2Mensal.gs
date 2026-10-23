@@ -43,10 +43,11 @@ function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
   const semAc = comIptu ? [] : [_orcChaveConta_('IPTU'), _orcChaveConta_('Seguro')];
   const fora = rel.contas.filter(c => !mensal.contas[c.chave]);
   // IPTU e seguro não são contas de rel.contas: sem eles no mensal, 1/12 do anual da METRAGEM.
-  // Pátio Mercado Livre (Esteio): abatimento anual rateado nos 12 meses.
-  const foraExtra = k => !comIptu ? 0 : (mensal.contas[_orcChaveConta_('IPTU')] ? 0 : (rel.iptu[k] || 0)) +
-                                        (mensal.contas[_orcChaveConta_('Seguro')] ? 0 : (rel.seguro[k] || 0)) -
-                                        ((rel.patio && rel.patio[k]) || 0);
+  // Pátio Mercado Livre (Esteio): abatimento anual rateado nos 12 meses, nos dois slides — com ele só no de IPTU, out–dez
+  // (sem IPTU nem seguro) saía R$ 0,42/m² abaixo da área comum (Guilherme, 23/10/2026).
+  const patio = k => (rel.patio && rel.patio[k]) || 0;
+  const foraExtra = k => (!comIptu ? 0 : (mensal.contas[_orcChaveConta_('IPTU')] ? 0 : (rel.iptu[k] || 0)) +
+                                         (mensal.contas[_orcChaveConta_('Seguro')] ? 0 : (rel.seguro[k] || 0))) - patio(k);
   const area = {};
   ['real', 'orcAnt', 'ritmo', 'orc'].forEach(k => { area[k] = _orcAreaImplicita_(rel, k); });
   if (!area.orcAnt) area.orcAnt = area.ritmo;
@@ -95,7 +96,10 @@ function _orcM2Mensal_(rel, mensal, realAnt, comIptu) {
       // arredondamento e dava 3,46 na tabela contra 3,45 na média das linhas.
       // O total segue o escrito na METRAGEM (é dele que sai a área).
       areaComum: { v: rel.areaComum[k], m2: m2(rel.areaComum[k]) },
-      iptu:      { v: rel.iptu[k],      m2: m2(rel.iptu[k], meses.iptu[k]) },
+      // Pátio ML em negativo, e a área comum já sem ele (a das linhas do slide sem IPTU).
+      patio:     { v: -patio(k), m2: m2(-patio(k)) },
+      areaLiq:   { v: rel.areaComum[k] - patio(k), m2: m2(rel.areaComum[k] - patio(k)) },
+      iptu:     { v: rel.iptu[k],      m2: m2(rel.iptu[k], meses.iptu[k]) },
       seguro:    { v: rel.seguro[k],    m2: m2(rel.seguro[k], meses.seguro[k]) },
       total:     { v: rel.total[k],     m2: (rel.m2Total && rel.m2Total[k]) || m2(rel.total[k]) }
     };
@@ -124,8 +128,9 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
   // subtítulo são os da tabela de baixo (total ÷ área), para não aparecer
   // 3,38 no painel e 3,39 na tabela.
   const m = _orcM2Mensagem_(S, d, comIptu);
+  const temPatio = Math.abs(d.custo.orc.patio.v) > 0.5;
   _orcHeader_(slide, W, titulo,
-    (comIptu ? 'Total com IPTU (no mês previsto) e seguro' : 'Área comum') + ' · Orç ' + a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
+    (comIptu ? 'Total com IPTU (no mês previsto) e seguro' : 'Área comum' + (temPatio ? ' − Pátio ML' : '')) + ' · Orç '+ a.orc + ' R$ ' + _orcM2_(m.orc) + '/m²' +
     (m.vAno ? ' · ' + m.vAno.texto + ' × Ritmo ' + a.ritmo : '') + ' · ' + cid.nome);
 
   const cy = 70, ch = 126, labW = 76, mediaW = 52, colW = (tw - labW - mediaW) / 12;
@@ -159,18 +164,30 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
   const linhaArea = { tipo: 'item', nome: 'Área (m²)', celulas: [
     { texto: m2Txt(d.area.real) }, null, { texto: m2Txt(d.area.ritmo) }, null, { texto: m2Txt(d.area.orc), bold: true }, null,
     { texto: vArea === null ? '–' : (vArea >= 0 ? '+' : '−') + _orcPct_(Math.abs(vArea)) }] };
+  // A linha do Pátio ML (só o Esteio) fecha a conta: área comum − Pátio + IPTU + seguro = total.
+  const linhaPatio = () => {
+    const cel = [];
+    anos.forEach(k => {
+      const p = d.custo[k].patio, ult = k === 'orc';
+      cel.push(Math.abs(p.v) > 0.5 ? { texto: '−' + _orcMoeda_(-p.v), bold: ult } : { texto: '–' },
+               Math.abs(p.v) > 0.5 ? { texto: '−' + _orcM2_(-p.m2), bold: ult } : { texto: '–' });
+    });
+    cel.push({ texto: '–' });
+    return { tipo: 'item', nome: '(−) Pátio Mercado Livre', celulas: cel };
+  };
   const by = yFim + 8;
   _orcTabelaNum_(slide, MX, by, tw, H - 26 - by, [
     { titulo: 'CUSTO CONDOMÍNIO', w: lab },
     { titulo: 'R$', w: nW }, { titulo: 'R$/M²', w: nW }, { titulo: 'R$', w: nW }, { titulo: 'R$/M²', w: nW },
     { titulo: 'R$', w: nW, destaque: true }, { titulo: 'R$/M²', w: nW, destaque: true }, { titulo: 'Δ R$/M²', w: dW }
   ], [
-    linhaCusto('Área comum (sem IPTU e seguro)', 'areaComum', 'subtotal'),
+    linhaCusto('Área comum (sem IPTU e seguro)', 'areaComum', 'subtotal')
+  ].concat(temPatio ? [linhaPatio()] : []).concat([
     linhaCusto('IPTU' + (n => (n === 1 ? ' · em 1 mês' : n < 12 ? ' · em ' + n + ' meses' : ''))(d.meses.iptu.orc), 'iptu'),
     linhaCusto('Seguro' + (n => (n === 1 ? ' · em 1 mês' : n < 12 ? ' · em ' + n + ' meses' : ''))(d.meses.seguro.orc), 'seguro'),
     linhaCusto('Total de despesas', 'total', 'total'),
     linhaArea
-  ], [{ titulo: 'REAL ' + a.real, c0: 1, n: 2 }, { titulo: 'RITMO ' + a.ritmo, c0: 3, n: 2 },
+  ]), [{ titulo: 'REAL ' + a.real, c0: 1, n: 2 }, { titulo: 'RITMO ' + a.ritmo, c0: 3, n: 2 },
       { titulo: 'ORÇ ' + a.orc, c0: 5, n: 2 }, { titulo: '× RITMO', c0: 7, n: 1, cor: C.brandDark }]);
 
   const fora = !d.fora.length ? '' : ' · 1/12 por mês: ' + d.fora[0].toLowerCase() +
@@ -189,7 +206,7 @@ function gerarSlideM2Mensal_(slide, W, H, cid, rel, mensal, realAnt, comIptu) {
 // tabela "Custo condomínio" (total ÷ área implícita) quando há — a média dos
 // 12 meses do gráfico arredonda diferente. A saída de out–dez saiu em 08/10/2026.
 function _orcM2Mensagem_(S, d, comIptu) {
-  const r = S.ritmo, o = S.orc, campo = comIptu ? 'total' : 'areaComum';
+  const r = S.ritmo, o = S.orc, campo = comIptu ? 'total' : 'areaLiq';
   const ac = k => d && d.custo && d.custo[k] && d.custo[k][campo] ? d.custo[k][campo].m2 : null;
   const rM = ac('ritmo') || (r && r.media), oM = ac('orc') || (o && o.media);
   if (!rM || !oM) return { vAno: null, saida: null, ritmo: rM, orc: oM };

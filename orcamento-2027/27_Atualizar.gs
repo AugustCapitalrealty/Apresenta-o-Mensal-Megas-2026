@@ -50,8 +50,12 @@ const ORC_GRUPOS_ATUALIZAVEIS = {
       return pags.map((pag, i) => ({ nome: 'Projetos × recorrente — itens (' + (i + 1) + '/' + pags.length + ')', selo: true, chaves: ch,
         fn: s => gerarSlideGruposManut_(s, x.W, x.H, x.cid, x.rel, x.calc.cls, pag, i, pags.length) }));
     } },
+  // 23/10/2026: o de área comum (2º slide da seção 08, depois do "Custo por m²"), para trocar junto com o de IPTU.
+  'M² área comum': { titulos: ['Custo por m² mês a mês — '], secao: 8, depoisDe: ['Custo por m²'],
+    slides: x => [{ nome: 'Custo por m² mês a mês', selo: true, chaves: null,
+      fn: s => gerarSlideM2Mensal_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal, x.visao.realAnt) }] },
   // 22/10/2026: o m² mês a mês com IPTU e seguro logo depois do de área comum (seção 08, Análise de Custos).
-  'M² com IPTU': { titulos: ['Custo por m² mês a mês com IPTU e seguro'], secao: 8, depoisDe: ['Custo por m² mês a mês — '],
+  'M² com IPTU':{ titulos: ['Custo por m² mês a mês com IPTU e seguro'], secao: 8, depoisDe: ['Custo por m² mês a mês — '],
     slides: x => x.visao.mensal ? [{ nome: 'Custo por m² mês a mês com IPTU e seguro', selo: true, chaves: null,
       fn: s => gerarSlideM2Mensal_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal, x.visao.realAnt, true) }] : [] },
   // 23/10/2026 (atualizarSlidesDeHoje): os slides da manutenção que mostram os itens um a um.
@@ -81,6 +85,16 @@ function atualizarSlidesCuritiba()   { _orcAtualizarSlides_(['CURITIBA'], ORC_AT
 // Só o slide "O que saiu e o que entrou" (V1 → V2) nos três Megas do deck já gerado — Guilherme, 22/10/2026.
 // Rodar de novo troca o slide (não duplica).
 function incluirSlideEntrouSaiu() { _orcAtualizarSlides_(ORC_FAC_MEGAS, ['Entrou e saiu']); }
+
+// 23/10/2026 à tarde, só os slides que mudaram depois do atualizarSlidesDeHoje() (Guilherme):
+//   ▸ Esteio: os dois m² mês a mês (área comum e com IPTU e seguro), com o Pátio Mercado Livre abatido nos dois — out–dez,
+//     sem IPTU nem seguro, dá o mesmo R$/m² nos dois;
+//   ▸ Itajaí: "demais variações", com a Arca Agro contra o 2026 dela na Limpeza (degrau "Veio da limpeza").
+// Rodar de novo troca (não duplica).
+function atualizarSlidesDaTarde() {
+  _orcAtualizarSlides_(['ESTEIO'], ['M² área comum', 'M² com IPTU']);
+  _orcAtualizarSlides_(['ITAJAI'], ['Demais variações']);
+}
 
 // Só os slides que mudaram em 23/10/2026, sem gerar os Megas (Guilherme: "uma função para gerar somente os slides que
 // mudamos"):
@@ -153,7 +167,15 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
       const calc = _orcCalculosCompartilhados_(cid, visao, dados);
       let adi = null, vi = null;
       try { adi = dados ? _orcAdiados2026_(cid, dados) : null; } catch (e) { Logger.log('Obras adiadas: ' + e.message); }
-      try { vi = dados && contas ? _orcVariacoesItens_(cid, dados, contas[0], adi) : null; } catch (e) { Logger.log('Variações: ' + e.message); }
+      // Os contratos só para o item a item (contrato que mudou de conta, 23/10/2026): ler o cadastro de 2026 leva tempo.
+      let cmp = null;
+      if (grupos.indexOf('Demais variações') >= 0) {
+        let modelosAnt = null;
+        try { modelosAnt = _orcModelosAnoAnterior_(); } catch (e) { Logger.log('Modelos do ano anterior: ' + e.message); }
+        try { cmp = _orcCompararTodosContratos_(rel, _orcCadastroAnoAnterior_(), cid.nome, visao.modelos, modelosAnt); }
+        catch (e) { Logger.log('Contratos (mudou de conta) indisponíveis: ' + e.message); }
+      }
+      try { vi = dados && contas ? _orcVariacoesItens_(cid, dados, contas[0], adi, cmp) : null; } catch (e) { Logger.log('Variações: ' + e.message); }
       const x = { chave: chave, cid: cid, W: W, H: H, visao: visao, rel: rel, dados: dados, contas: contas, calc: calc, adi: adi, vi: vi };
 
       // Os slides da parte, na ordem do deck, com o título.

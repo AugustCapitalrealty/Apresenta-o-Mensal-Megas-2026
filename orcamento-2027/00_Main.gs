@@ -262,7 +262,7 @@ function _orcGerarCidade_(deck, W, H, chave) {
       // V16 (09/10/2026): o resto da alta aberto item a item, pelos pares do
       // gestor — também no Mega sem obra adiada (aí é a alta inteira).
       let vi = null;
-      try { vi = _orcVariacoesItens_(cid, dados, contas[0], adi); }
+      try { vi = _orcVariacoesItens_(cid, dados, contas[0], adi, cmpTodos); }
       catch (e) { Logger.log('Variações item a item de ' + cid.nome + ' indisponíveis: ' + e.message); }
       if (vi) comSelo('Por que a manutenção sobe — item a item', [contas[0].chave],
         s => gerarSlideDemaisVariacoes_(s, W, H, cid, visao.rel, contas[0], vi));

@@ -1722,12 +1722,25 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
       .filter(a => a.k === 'ritmo' && !/^(IPTU|Seguro)$/.test(a.nome)).reduce((t, a) => t + a.dif, 0)) / area / 12);
     if (vis.realAnt) pertoReal(vis.realAnt.ac.reduce((t, v) => t + v, 0), vis.rel.areaComum.real, c + ': Real 2025 mês a mês = DRE');
     const m2v = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt);
-    m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2v.custo[s.k].areaComum.m2) < tolM2(s.k, s.area),
-      c + ': m² mês a mês — média das linhas = tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2v.custo[s.k].areaComum.m2.toFixed(2) + ')'));
+    m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2v.custo[s.k].areaLiq.m2) < tolM2(s.k, s.area),
+      c + ': m² mês a mês — média das linhas = tabela, sem o Pátio ML (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2v.custo[s.k].areaLiq.m2.toFixed(2) + ')'));
+    {
+      const cu = m2v.custo.orc;
+      pertoReal(cu.areaComum.v + cu.patio.v + cu.iptu.v + cu.seguro.v, cu.total.v, c + ': m² mês a mês — área comum − Pátio ML + IPTU + seguro = total');
+    }
     // Com IPTU e seguro (13/10/2026): a média das linhas = o R$/m² total da tabela, e o IPTU num mês só.
     const m2i = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt, true);
     m2i.series.filter(s => m2i.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2i.custo[s.k].total.m2) < 0.01 + tolM2(s.k, s.area),
       c + ': m² mês a mês com IPTU — média das linhas = total da tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2i.custo[s.k].total.m2.toFixed(2) + ')'));
+    // Mês do Orç sem IPTU nem seguro: o mesmo R$/m² com e sem IPTU (o Pátio ML sai dos dois — Guilherme, 23/10/2026).
+    {
+      const orc = x => x.series.filter(s => s.k === 'orc')[0].meses;
+      const cobra = (n, i) => { const ct = vis.mensal.contas[G._orcChaveConta_(n)]; return ct && Math.abs(ct.orc[i]) > 0.5; };
+      const sem = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter(i => !cobra('IPTU', i) && !cobra('Seguro', i));
+      ok(sem.every(i => Math.abs(orc(m2v)[i] - orc(m2i)[i]) < 0.005),
+         c + ': m² mês a mês — mês sem IPTU nem seguro igual nos dois slides (' + sem.map(i => G.ORC_MESES[i] + ' ' +
+         orc(m2v)[i].toFixed(2) + ' × ' + orc(m2i)[i].toFixed(2)).join(', ') + ')');
+    }
     {
       const sl = novoSlide({ _slides: [] });
       G.gerarSlideM2Mensal_(sl, W, H, G.ORC_CIDADES[chave], vis.rel, vis.mensal, vis.realAnt, true);
@@ -2970,6 +2983,18 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            vi.altas.some(x => /^OBRAS DAS CANCELAS/.test(x.nome) && Math.round(x.d) === 220034),
            'itajaí (23/10): cancelas de 2027 × cancelas 2/2 de 2026 (+220.034) e a provisão dos 3% × emergências de 2026 como mesmo serviço (' +
            lin(vi.altas) + ' | ' + lin(vi.quedas) + ')');
+        // 23/10/2026: a Arca Agro era da Limpeza em 2026 — compara com esse 2026 (R$ 88.428), sai das maiores altas e o
+        // 2026 dela vira o degrau "Veio da limpeza"; os degraus continuam somando a alta.
+        const cmpI = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, cid.nome, visao.modelos, FIX_MOD_2026);
+        const viA = G._orcVariacoesItens_(cid, dados, conta, G._orcAdiados2026_(cid, dados), cmpI);
+        const blA = viA.blocos.filter(b => /^Veio da limpeza$/.test(b.curto))[0];
+        const somaBl = viA.blocos.reduce((t, b) => t + b.v, 0);
+        if (process.env.VAR) console.log('    itajaí com a Arca Agro da limpeza: ' + viA.blocos.map(b => b.curto + ' ' + Math.round(b.v)).join(' · ') +
+                                         '\n      sobem: ' + lin(viA.altas));
+        ok(blA && Math.round(blA.v) === 88428 && !viA.altas.some(x => /arca agro/i.test(x.nome)) && Math.abs(somaBl - viA.demais) < 1 &&
+           Math.abs(somaBl - vi.blocos.reduce((t, b) => t + b.v, 0)) < 1,
+           'itajaí (23/10): Arca Agro × 2026 da Limpeza (R$ 88.428) — fora das maiores altas, degrau "Veio da limpeza", mesma alta (' +
+           viA.blocos.map(b => b.curto + ' ' + Math.round(b.v)).join(' · ') + ' | ' + lin(viA.altas) + ')');
       }
       const titulos = sl.map(titulo);
       ok(titulos.some(t => /^Impacto das revisões/.test(t)), c + ' (22/10): slide de impacto V1 → V2 inserido no deck');
