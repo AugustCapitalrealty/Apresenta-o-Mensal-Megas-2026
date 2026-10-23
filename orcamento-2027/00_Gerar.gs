@@ -25,6 +25,12 @@ function gerarMegaEsteio()   { _orcGerarFacilities_('ESTEIO', true); }
 function gerarMegaItajai()   { _orcGerarFacilities_('ITAJAI', true); }
 function gerarMegaCuritiba() { _orcGerarFacilities_('CURITIBA', true); }
 
+// Só os 6 slides "Projeto Segurança Eletrônica" do Curitiba (da v5 do gestor), no lugar deles, sem gerar o Mega
+// (Guilherme, 23/10/2026). Rodar de novo troca os 6 (não duplica).
+function incluirSegurancaEletronica() {
+  _orcGestorNaParte_(_orcIdFacilities_(), 'CURITIBA', Date.now(), /^Projeto Segurança Eletrônica/i);
+}
+
 function completarSlidesDoGestor() {
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'completarSlidesDoGestor')
     .forEach(t => ScriptApp.deleteTrigger(t));

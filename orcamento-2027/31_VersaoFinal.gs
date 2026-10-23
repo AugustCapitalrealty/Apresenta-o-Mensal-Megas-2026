@@ -207,11 +207,14 @@ const ORC_GESTOR_EXTRA = {
   CURITIBA: [{ fonte: '1IObiKZpG_iqvpQ69DFTTuOlhO0b_uImhe0O7inA9iGk', titulo: /^DRONE AUTÔNOMO/i }]   // v4
 };
 
-function _orcGestorNaParte_(deckId, parte, inicio) {
+// so (opcional): só os slides do gestor com esse começo de título, sem gerar o Mega (ex.: incluirSegurancaEletronica,
+// 00_Gerar.gs). Os que já estão na parte saem e entram de novo da fonte (rodar duas vezes não duplica); os outros
+// slides do gestor e a pendência de completarSlidesDoGestor() ficam como estão.
+function _orcGestorNaParte_(deckId, parte, inicio, so) {
   const cid = ORC_CIDADES[parte], props = PropertiesService.getScriptProperties();
   const propLista = 'ORC_FAC_' + parte, propFeitos = 'ORC_FAC_GESTOR_FEITOS_' + parte;
-  const feitos = JSON.parse(props.getProperty(propFeitos) || '[]');
-  props.setProperty('ORC_FAC_GESTOR_PENDENTE', parte);
+  const feitos = so ? [] : JSON.parse(props.getProperty(propFeitos) || '[]');
+  if (!so) props.setProperty('ORC_FAC_GESTOR_PENDENTE', parte);
   const deck = SlidesApp.openById(deckId), W = deck.getPageWidth(), H = deck.getPageHeight();
   const textosDe = s => s.getShapes().map(sh => { try { return sh.getText().asString(); } catch (e) { return ''; } });
   const megaDe = ts => {
@@ -225,10 +228,21 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
 
   // 1. Saem os slides do gestor deste Mega que não estão na lista da parte: os moldes de fotos vazios e o que sobrou de
   //    uma rodada que parou no meio (no Mega completo os slides do gestor vêm da v3, copiados de novo).
+  //    Com `so`: saem só os desse título (os da lista também), para entrarem de novo.
   let nMoldes = 0;
   const naLista = JSON.parse(props.getProperty(propLista) || '[]');
+  if (so) {
+    const ficam = naLista.filter(id => {
+      const s = deck.getSlideById(id);
+      if (!s || !_orcDonoFotos_(s) || !so.test(tituloDe(textosDe(s)))) return true;
+      s.remove();
+      return false;
+    });
+    props.setProperty(propLista, JSON.stringify(ficam));
+  }
   (_orcFotosPorParte_(deck)[parte] || []).forEach(id => {
-    if (naLista.indexOf(id) >= 0) return;
+    if (naLista.indexOf(id) >= 0 && !so) return;
+    if (so) { const s0 = deck.getSlideById(id); if (!s0 || !so.test(tituloDe(textosDe(s0)))) return; }
     const s = deck.getSlideById(id);
     if (!s) return;
     const t = _orcTituloGestor_(s);
@@ -262,8 +276,8 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
     }
     return out;
   };
-  const plano = planoDe(ORC_GESTOR_FONTE[parte] || ORC_DECK_VERSAO_GESTOR_ID);
-  (ORC_GESTOR_EXTRA[parte] || []).forEach(x => {
+  const plano = planoDe(ORC_GESTOR_FONTE[parte] || ORC_DECK_VERSAO_GESTOR_ID, so);
+  (so ? [] : ORC_GESTOR_EXTRA[parte] || []).forEach(x => {
     planoDe(x.fonte, x.titulo, x.fonte + ':').forEach(p => {
       if (plano.some(q => _orcNorm_(q.titulo) === _orcNorm_(p.titulo))) return;   // a fonte já tem: vale a dela
       plano.push(p);
@@ -303,7 +317,7 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
       feitos.push(p.chave);
       n++;
       props.setProperty(propLista, JSON.stringify(lista));
-      props.setProperty(propFeitos, JSON.stringify(feitos));
+      if (!so) props.setProperty(propFeitos, JSON.stringify(feitos));
       // A revisão que falha não para a geração: o slide fica como está na v3 e o log pede para conferir.
       try {
         const r = _orcRevisarSlideGestor_(novo, W, H, cid.nome, p.n, p.ancora);
@@ -324,6 +338,11 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
   });
   _orcSalvarDeck_(deck, 'os slides do gestor do ' + cid.nome);
   log.forEach(l => Logger.log(cid.nome + ' · ' + l));
+  if (so) {
+    Logger.log(cid.nome + ' · ' + n + ' de ' + plano.length + ' slides do gestor "' + so.source.replace(/^\^/, '') + '" entraram' +
+               (parou ? ' — o tempo acabou: rode de novo' : '') + (plano.length ? '' : ' (nenhum na fonte do Mega)'));
+    return { n: n, total: plano.length, parou: parou };
+  }
   const nMoked = plano.filter(p => /^Implantação Moked/i.test(p.titulo)).length;
   Logger.log(cid.nome + ' · slides do gestor da v3: ' + (plano.filter(p => p.feito).length + n) + ' de ' + plano.length +
              ' no Mega (' + nMoked + ' da Moked) · ' + nMoldes + ' moldes de fotos vazios saíram');

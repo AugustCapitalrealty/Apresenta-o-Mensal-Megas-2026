@@ -2552,6 +2552,18 @@ console.log('Mega completo (00_Gerar.gs)');
        titC[iSegC + 1] === 'DRONE AUTÔNOMO (XDRONE)',
        'Mega completo: Curitiba da v5 (Segurança Eletrônica) e o drone da v4 depois da Segurança, sem duplicar a Linha de Vida (' +
        titC.filter(t => /Linha de Vida|Segurança Eletrônica|DRONE/.test(t)).join(' / ') + ')');
+    // incluirSegurancaEletronica(): só os de Segurança Eletrônica, de novo da v5 (agora 2), sem duplicar nem mexer nos outros
+    gestD(v5, 'Projeto Segurança Eletrônica');
+    PROPS_DADOS.ORC_FAC_GESTOR_PENDENTE = 'ITAJAI';
+    const nAntes = fac.getSlides().length;
+    G.incluirSegurancaEletronica(); G.incluirSegurancaEletronica();
+    const titC2 = daParte('CURITIBA').map(tit), iItens2 = titC2.indexOf('Manutenção: os itens de cada grupo (2/2)');
+    ok(fac.getSlides().length === nAntes + 1 && titC2[iItens2 + 1] === 'Projeto Segurança Eletrônica' && titC2[iItens2 + 2] === 'Projeto Segurança Eletrônica' &&
+       titC2.filter(t => t === 'Projeto Segurança Eletrônica').length === 2 && titC2.indexOf('DRONE AUTÔNOMO (XDRONE)') > 0 &&
+       titC2.indexOf('Linha de Vida Vertical') > 0 && PROPS_DADOS.ORC_FAC_GESTOR_PENDENTE === 'ITAJAI',
+       'incluirSegurancaEletronica: os 2 da v5 depois dos itens (2/2), sem duplicar, o resto e a pendência intactos (' +
+       titC2.filter(t => /Segurança Eletrônica|DRONE|Linha de Vida/.test(t)).join(' / ') + ')');
+    delete PROPS_DADOS.ORC_FAC_GESTOR_PENDENTE;
     G.ORC_GESTOR_EXTRA.CURITIBA.forEach(x => { delete decks[x.fonte]; });
     delete decks[G.ORC_GESTOR_FONTE.CURITIBA];
   }
