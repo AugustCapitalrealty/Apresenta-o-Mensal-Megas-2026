@@ -662,8 +662,8 @@ function gerarSlideEntrouSaiu_(slide, W, H, cid, rel, modelos) {
       s: es.metragem < 0 ? -1 : 1 }
   ];
   if (es.patio) passos.push({ rot: 'Pátio Mercado Livre', m2: _orcM2Sinal_(porM2(-es.patio)), rs: '−' + _orcMoeda_(es.patio), s: -1 });
-  passos.push({ rot: 'Efeito da área', m2: _orcM2Sinal_(es.efArea),
-                rs: _orcMilhar_(es.area1) + ' → ' + _orcMilhar_(es.area2) + ' m²', s: es.efArea < 0 ? -1 : 1 });
+  // Sem o passo "Efeito da área" (Guilherme, 22/10/2026: a área não mudou da V1 para a V2 — a diferença da área
+  // implícita é arredondamento, ±0,01/m²). es.efArea continua calculado (o teste confere que a conta fecha).
   passos.push({ rot: 'V2 · 22/10', m2: _orcM2_(es.m2V2), rs: _orcMoeda_(es.v2), cheio: true });
 
   const tw = W - MX * 2, py = 66, ph = 40, pg = 6, pw = (tw - pg * (passos.length - 1)) / passos.length;

@@ -2936,6 +2936,8 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
          t.indexOf('ENTROU OU AUMENTOU') >= 0 && !t.some(x => /…$/.test(x)) && !fora.length &&
          (k !== 'ESTEIO' || t.some(x => /^Sem efeito no total/.test(x))),
          k + ' entrou/saiu: slide desenhado, sem texto cortado e nada fora do slide (' + fora.map(r => r.texto).join(' | ') + ')');
+      ok(t.indexOf('EFEITO DA ÁREA') < 0 && t.indexOf('DESPESA DE PESSOAL') >= 0,
+         k + ' entrou/saiu: sem o passo "Efeito da área" (a área não mudou da V1 para a V2); com "Despesa de pessoal"');
     });
     // Sem a base da V1: o slide avisa, não inventa
     G._ORC_BASE_V1.dados = null;
