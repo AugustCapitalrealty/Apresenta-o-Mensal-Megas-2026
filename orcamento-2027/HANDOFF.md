@@ -24,6 +24,9 @@ reinício). O que importa sobre o projeto está aqui, no
   negativo, a conta fica sem fechar e vai para `rel.mensalNaoConciliado` + log (hoje: IPTU Curitiba e Seguro Itajaí,
   que no m² com IPTU seguem o ano da DRE). Antes ela espalhava a diferença pelo ano todo. A metragem mensal só troca o
   Orç 2027 das contas que o Despesas-Mensal já tem.
+- **Decidido (Guilherme, 23/10):** a Despesa de pessoal de 2026 entra mês a mês (o realizado: pico de jan), não 1/12 —
+  o Ritmo jan–set do m² muda só por ela (Esteio jan 6,31 → 6,60, fev 6,19 → 5,88; média igual). `M2=1 node
+  teste/teste_orcamento.js` mostra as linhas antes × agora dos 3 Megas.
 - **Metragem mensal 2026 × 2027** (`Mxxx-2026-x-Orcamento-2027.xlsx`, 23/10 9h25 → `relatorios.mensalMetragemId`,
   `_orcAplicarMensalMetragem_` em 04_DadosRelatorios.gs): mesmas contas da METRAGEM mês a mês **com a Despesa de
   pessoal** (antes o m² mês a mês punha 1/12 do ano; 2027 tem o degrau do dissídio em mai/jun, 2026 o pico de jan).
