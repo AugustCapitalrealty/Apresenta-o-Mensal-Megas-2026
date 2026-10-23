@@ -31,6 +31,11 @@ reinício). O que importa sobre o projeto está aqui, no
   Revisão — Laureane Bransin; Montagem — Guilherme August; Apresentação — Jonatas Augusto (sem cargo: ninguém passou).
 - **Saiu dos Megas o slide "Resumo executivo — Orçamento 2027"** (a seção Resumo Executivo fica e abre no impacto /
   na ponte). `gerarSlideResumoExecutivo_` continua no código, sem uso. Teste: 5.123/5.123.
+- **`completarSlidesFaltando()`** (27_Atualizar.gs): em cada Mega já gerado, inclui só os slides que faltam
+  (`ORC_GRUPOS_COMPLETAR`: impacto, o que saiu/entrou, ponte, m² com IPTU), no lugar certo, e tira os que saíram da
+  geração (`ORC_SLIDES_QUE_SAIRAM`: o resumo executivo), com o link do sumário refeito. Não refaz o que já está nem
+  confere conteúdo. Slide novo na geração → grupo em ORC_GRUPOS_ATUALIZAVEIS + nome em ORC_GRUPOS_COMPLETAR.
+  Teste: 5.126/5.126.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
 

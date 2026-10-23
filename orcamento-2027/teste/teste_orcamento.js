@@ -2984,6 +2984,39 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
       ok(facDeck.getSlides().length === n0 + 1 && es2.length === 1 && es2[0] !== es1[0] &&
          ids().indexOf(es2[0]) === ids().indexOf(doTitulo('Impacto das revisões')[0]) + 1,
          'incluirSlideEntrouSaiu: rodar de novo troca o slide no mesmo lugar (não duplica)');
+      // completarSlidesFaltando() (22/10/2026): um deck "antigo" do Itajaí — sem o impacto, sem o "o que saiu e o que
+      // entrou" e sem o m² com IPTU, e com o resumo executivo (o link do sumário para a seção vai nele).
+      {
+        const idsC = () => facDeck.getSlides().map(x => x.getObjectId());
+        const tirar = pref => doTitulo(pref).forEach(id => {
+          facDeck.getSlideById(id).remove();
+          PROPS_DADOS.ORC_FAC_ITAJAI = JSON.stringify(lista().filter(y => y !== id));
+        });
+        const imp0 = doTitulo('Impacto das revisões')[0];
+        const sumario = facDeck.getSlideById(doTitulo('Sumário')[0]);
+        const linksImp = sumario.shapes.filter(f => f.link === imp0);
+        const prem = doTitulo('Premissas')[0];
+        const resumo = facDeck.insertSlide(idsC().indexOf(prem) + 1);
+        resumo.shapes.push({ tipo: 'TEXT_BOX', x: 30, y: 20, w: 400, h: 20, texto: 'Resumo executivo — Orçamento 2027' });
+        PROPS_DADOS.ORC_FAC_ITAJAI = JSON.stringify(lista().concat([resumo.getObjectId()]));
+        linksImp.forEach(f => { f.link = resumo.getObjectId(); });
+        tirar('Impacto das revisões'); tirar('O que saiu e o que entrou'); tirar('Custo por m² mês a mês com IPTU e seguro');
+        const n1 = facDeck.getSlides().length, ponte0 = doTitulo('Ponte Ritmo ')[0], m20 = doTitulo('Custo por m² mês a mês — ')[0];
+        G.completarSlidesFaltando();
+        const ids = idsC(), pos = pref => ids.indexOf(doTitulo(pref)[0]);
+        const imp1 = doTitulo('Impacto das revisões')[0];
+        ok(facDeck.getSlides().length === n1 - 1 + 3 && !doTitulo('Resumo executivo').length && !facDeck.getSlideById(resumo.getObjectId()) &&
+           pos('Impacto das revisões') === ids.indexOf(prem) + 1 && pos('O que saiu e o que entrou') === pos('Impacto das revisões') + 1 &&
+           pos('Ponte Ritmo ') === pos('O que saiu e o que entrou') + 1 && doTitulo('Ponte Ritmo ')[0] === ponte0 &&
+           pos('Custo por m² mês a mês com IPTU e seguro') === ids.indexOf(m20) + 1 &&
+           ['Impacto das revisões', 'O que saiu e o que entrou', 'Custo por m² mês a mês com IPTU e seguro'].every(p => doTitulo(p).length === 1),
+           'completarSlidesFaltando: inclui só o que faltava, no lugar certo, e tira o resumo executivo (' + facDeck.getSlides().length + ' slides)');
+        ok(linksImp.length > 0 && linksImp.every(f => f.link === imp1),
+           'completarSlidesFaltando: o link do sumário que ia para o resumo executivo vai para o impacto (' + linksImp.length + ')');
+        const antes = idsC().join();
+        G.completarSlidesFaltando();
+        ok(idsC().join() === antes, 'completarSlidesFaltando: rodar de novo não muda nada (nada faltando)');
+      }
     } finally {
       cid.despesasGeraisId = antes.d;
       cid.servicosTerceirosId = antes.s;
