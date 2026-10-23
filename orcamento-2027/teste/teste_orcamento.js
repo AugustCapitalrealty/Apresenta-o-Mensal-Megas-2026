@@ -2804,7 +2804,9 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
 
   // 4. Geração completa com fixtures da rodada de 22/10/2026
   const CAD_REV03 = fixture('fixture_contratos_2027_rev03.json');
-  const FIX_090_2210 = fixture('fixture_090_megas_2027_2210.json');
+  // 090 e mês a mês de 22/10/2026, 23h (o gestor mudou meses em Curitiba e zerou a galeria do Esteio; o diesel de
+  // Curitiba veio com um zero a mais, corrigido na leitura — ORC_CORRECOES_MODELO). As METRAGENS seguem as de 18h.
+  const FIX_090_2210 = fixture('fixture_090_megas_2027_2300.json');
   const FIX_070_2210 = fixture('fixture_070_megas_2027_2210.json');
   const CAD_ANTES = porId[G.ORC_CONTRATOS_ANO_IDS[0]], M090_ANTES = porId[G.ORC_MODELO_090_ID], M070_ANTES = porId[G.ORC_MODELO_070_ID];
   porId[G.ORC_MODELO_090_ID] = FIX_090_2210;
@@ -2826,7 +2828,7 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
     cid.relatorios.orcDosModelos = true;
     const met2210 = fixture('fixture_metragem_' + c + '_2210.json');
     porId[cid.relatorios.metragemId] = met2210;
-    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '_2210.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_' + c + '_2300.json');
     try {
       const visao = G._orcLerVisaoGeral_(chave), rel = visao.rel;
       rels2210[chave] = rel; mods2210[chave] = visao.modelos;
@@ -2863,6 +2865,13 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            'esteio (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
       }
       if (chave === 'CURITIBA') {
+        // Diesel do gerador (090 e mês a mês de 23h, ORC_CORRECOES_MODELO): jun R$ 10.817,30 no modelo e R$ 18.439,80 na
+        // conta Material de consumo do mês a mês — o ano fica igual ao de 18h.
+        const diesel = G._orcLinhasModelo_(FIX_090_2210, 60).filter(l => /DIESEL GERADOR \(R\$ 6,89/.test(l.item))[0];
+        const menC = G.obterRelatorioMensal_(chave), mc = menC && menC.contas[G._orcChaveConta_('Material de consumo')];
+        ok(diesel && Math.abs(diesel.meses[5] - 10817.30) < 0.01 && Math.abs(diesel.total - 21634.60) < 0.01 &&
+           mc && Math.abs(mc.orc[5] - 18439.80) < 0.01 && Math.abs(mc.orc.reduce((t, v) => t + v, 0) - 118598.60) < 0.01,
+           'curitiba (23h): diesel corrigido no 090 (jun R$ 10.817,30) e no mês a mês (jun R$ 18.439,80, ano R$ 118.598,60)');
         // Pares ligados depois da planilha do gestor (ORC_PARES_EXTRA, 22/10/2026): as lavagens dos Armazéns 3 e 4.
         const decC = G._orcDecisoesComExtras_('Mega Curitiba');
         const parC = n => decC.pares.filter(p => p.de2026.indexOf(n) === 0)[0];
@@ -2913,8 +2922,8 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
      celFac('OBRAS DAS CANCELAS (24X)')[2].texto === '+344.234' && celFac('POSTOS ADICIONAIS DE SEGURANÇA')[2].texto === '+55.300',
      'facilities: ajustes calculados item a item (posto -250.120, obras excluídas -677.605, cancelas +344.234, Voigt +55.300)');
   const subFac = facLinhas.filter(l => l.tipo === 'subtotal')[0];
-  ok(subFac && subFac.celulas[2].texto === 'R$ 17.831.419' && subFac.celulas[3].texto === '-1,98%',
-     'facilities: subtotal antes do pátio = R$ 17.831.419 (-1,98%)');
+  ok(subFac && subFac.celulas[2].texto === 'R$ 17.831.418' && subFac.celulas[3].texto === '-1,98%',
+     'facilities: subtotal antes do pátio = R$ 17.831.418 (-1,98%)');
   const patioFac = celFac('EFEITO PÁTIO MERCADO LIVRE');
   ok(patioFac[2].texto === '(267.144)' && String(patioFac[4].texto).indexOf('0,42') >= 0,
      'facilities: abatimento Pátio Mercado Livre = (267.144), −R$ 0,42/m²');
@@ -3044,7 +3053,7 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
     cid.servicosTerceirosId = G.ORC_MODELO_070_ID;
     cid.relatorios.orcDosModelos = true;
     porId[cid.relatorios.metragemId] = fixture('fixture_metragem_itajai_2210.json');
-    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_itajai_2210.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_itajai_2300.json');
     try {
       G._orcGerarFacilities_('ITAJAI');
       const tit = id => textos(facDeck.getSlideById(id))[0] || '';

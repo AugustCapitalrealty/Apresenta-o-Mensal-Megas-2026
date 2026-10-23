@@ -13,6 +13,11 @@ const ORC_PASTA_ATUALIZACAO = 'ATUALIZAÇÃO 22-10-2026';
 
 // Nome da planilha convertida pelo nome do arquivo.
 const ORC_NOMES_ATUALIZACAO = [
+  // 22/10/2026, 23h: o gestor atualizou o 090 (o 070 veio igual) e a controladoria o mês a mês dos três Megas.
+  [/^090-despesas-gerais-atualizado/i, 'MESTRA - 090 - DESPESAS GERAIS (22-10-2026 23h)'],
+  [/^esteio-mensal/i, 'MEGA ESTEIO - MENSAL 2027 (22-10-2026 23h)'],
+  [/^itajai-mensal/i, 'MEGA ITAJAÍ - MENSAL 2027 (22-10-2026 23h)'],
+  [/^curitiba-mensal/i, 'MEGA CURITIBA - MENSAL 2027 (22-10-2026 23h)'],
   [/^mega-esteio-metragem/i, 'MEGA ESTEIO - METRAGEM-COND 2027 (22-10-2026 Pátio)'],
   [/^metragem-itajai/i, 'MEGA ITAJAÍ - METRAGEM-COND 2027 (22-10-2026)'],
   [/^metragem-curitiba/i, 'MEGA CURITIBA - METRAGEM-COND 2027 (22-10-2026)'],

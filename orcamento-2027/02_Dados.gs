@@ -186,6 +186,18 @@ function _orcRecategorizar_(categoria, descricao) {
   return r ? r.para : categoria;
 }
 
+// Erros de digitação do gestor no modelo, corrigidos direto na leitura: só quando o mês tem exatamente o valor "de"
+// (acertado na planilha, a correção não pega mais). mes: 1 = jan. mensal: a mesma correção no relatório mês a mês
+// da controladoria, que vem do modelo com o erro (conta e valores do mês nele; 04_DadosRelatorios.gs).
+const ORC_CORRECOES_MODELO = [
+  // 090 de 22/10/2026, 23h (Guilherme: "claramente um erro de digitação, ele alterou o mês"): a compra semestral de
+  // diesel passou de jul para jun com um zero a mais — R$ 6,89 × 1.570 L = R$ 10.817,30. No mês a mês de Curitiba
+  // (23h), jun de Material de consumo = 7.622,50 + 100.817,30; certo: 7.622,50 + 10.817,30.
+  { unidade: '60', mega: 'Mega Curitiba', item: /compra semestral de diesel gerador/, mes: 6, de: 100817.30, para: 10817.30,
+    mensal: { conta: 'Material de consumo', de: 108439.80, para: 18439.80 },
+    texto: 'diesel do gerador em jun: R$ 100.817,30 → R$ 10.817,30 (R$ 6,89 × 1.570 L)' }
+];
+
 // unidade: código da unidade do Mega (cid.unidadeModelo) — a planilha traz
 // todas as unidades e o Mega fica só com as suas linhas. Sem ele, tudo.
 function _orcLerModelo_(planilhaId, unidade) {
@@ -227,6 +239,12 @@ function _orcLinhasModelo_(dados, unidade) {
     if (/retirado do orcamento/.test(_orcNorm_(r[ORC_COL.item]))) continue;
     const meses = [];
     for (let m = 0; m < 12; m++) meses.push(-_orcNum_(r[ORC_COL.mes1 + m]));   // despesa vem negativa
+    ORC_CORRECOES_MODELO.forEach(c => {
+      if (String(r[ORC_COL.unidade]).trim() !== c.unidade || !c.item.test(_orcNorm_(r[ORC_COL.item])) ||
+          Math.abs(meses[c.mes - 1] - c.de) >= 0.01) return;
+      meses[c.mes - 1] = c.para;
+      Logger.log(c.mega + ' · correção no modelo: ' + c.texto);
+    });
     out.push({
       linha: i + 1,
       conta: conta,

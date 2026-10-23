@@ -556,7 +556,12 @@ function _orcLerMensal_(dados) {
       .replace(/ /g, ' ').trim();
     if (!nome || /^total/.test(_orcNorm_(nome))) continue;
     const serie = k => col[k].map(c => c < 0 ? 0 : -_orcNum_(dados[i][c]));
-    contas[_orcChaveConta_(nome)] = { nome: nome, orcAnt: serie('orcAnt'), real: serie('real'), orc: serie('orc') };
+    const orc = serie('orc');
+    // O erro de digitação do modelo também está no mês a mês (ORC_CORRECOES_MODELO, 02_Dados.gs).
+    ORC_CORRECOES_MODELO.filter(c => c.mensal && _orcChaveConta_(c.mensal.conta) === _orcChaveConta_(nome) &&
+                                     Math.abs(orc[c.mes - 1] - c.mensal.de) < 0.01)
+      .forEach(c => { orc[c.mes - 1] = c.mensal.para; Logger.log(c.mega + ' · correção no mês a mês: ' + c.texto); });
+    contas[_orcChaveConta_(nome)] = { nome: nome, orcAnt: serie('orcAnt'), real: serie('real'), orc: orc };
   }
   if (!Object.keys(contas).length) throw new Error('Relatório mensal: nenhuma conta encontrada.');
   return { contas: contas };
