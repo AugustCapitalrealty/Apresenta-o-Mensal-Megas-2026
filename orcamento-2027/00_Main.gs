@@ -86,7 +86,7 @@ function _orcSalvarDeck_(deck, etapa) {
 
 /**
  * Ordem do deck, por seções (ORC_SECOES — a que o gestor montou no Mega Esteio da v3, 13/10/2026):
- *   Capa → Sumário → 01 Premissas → 02 Resumo Executivo (resumo + ponte) →
+ *   Capa → Sumário → 01 Premissas → 02 Resumo Executivo (impacto V1 → V2 e o que saiu/entrou na V2, ponte) →
  *   03 DRE (DRE, ofensores, defensores) → 04 Segurança → 05 Manutenção (resumo,
  *   linha a linha, por que sobe, projetos × recorrente, itens de cada grupo,
  *   categorias, demais, mensal) → 06 Limpeza e Conservação → 07 Contratos →
@@ -197,9 +197,13 @@ function _orcGerarCidade_(deck, W, H, chave) {
 
   if (visao) {
     const rel = visao.rel;
+    // A seção fica; o slide "Resumo executivo — Orçamento 2027" saiu dos Megas (Guilherme, 22/10/2026). A seção abre
+    // no impacto V1 → V2 (V2) ou na Ponte. gerarSlideResumoExecutivo_ (10_ResumoExecutivo.gs) continua no código.
     secao('Resumo Executivo');
-    comSelo('Resumo executivo', null, s => gerarSlideResumoExecutivo_(s, W, H, cid, rel, calc.cls, calc.reaj, visao.modelos, calc.contratos));
-    if (_orcTemImpactoV2Mega_(chave, rel)) comSelo('Impacto das revisões', null, s => gerarSlideImpactoMega_(s, W, H, cid, rel, visao.modelos));
+    if (_orcTemImpactoV2Mega_(chave, rel)) {
+      comSelo('Impacto das revisões', null, s => gerarSlideImpactoMega_(s, W, H, cid, rel, visao.modelos));
+      comSelo('O que saiu e o que entrou', null, s => gerarSlideEntrouSaiu_(s, W, H, cid, rel, visao.modelos));
+    }
     comSelo('Ponte', null, s => gerarSlidePonte_(s, W, H, cid, rel, visao.mensal));
 
     secao('DRE');

@@ -57,9 +57,9 @@ function _orcV1Mega_(chave) {
   const b = _orcBaseV1_(), m = b && b.megas && b.megas[chave];
   if (m && m.total && !m.erro) {
     return { total: m.total.orc, m2: m.area && m.area.orc ? m.total.orc / m.area.orc / 12 : ORC_V1_M2[chave],
-             itens: m.itens || null };
+             area: m.area && m.area.orc ? m.area.orc : null, itens: m.itens || null };
   }
-  return { total: ORC_V1_VALORES[chave], m2: ORC_V1_M2[chave], itens: null };
+  return { total: ORC_V1_VALORES[chave], m2: ORC_V1_M2[chave], area: null, itens: null };
 }
 
 // Detecta se a rodada atual é a V2 para incluir os slides de impacto
@@ -503,6 +503,238 @@ function gerarSlideImpactoMega_(slide, W, H, cid, rel, modelos) {
   _orcTabelaImpacto_(slide, MX, yTabela, tw, hTabela, colunas, linhas);
 
   _orcRodape_(slide, W, H, _orcRodapeImpacto_('Fonte: METRAGEM-COND e modelos 070/090 de 22/10/2026 vs. base V1 de 13/10/2026', linhas));
+}
+
+// ==========================================
+// SLIDE "O QUE SAIU E O QUE ENTROU" — POR MEGA (Guilherme, 22/10/2026)
+// ==========================================
+// Item a item (modelos 070/090 + contratos), base da V1 × agora, com o efeito de cada um no R$/m² ao mês. Vem
+// logo depois do slide de impacto; incluirSlideEntrouSaiu() (27_Atualizar.gs) põe só ele no deck já gerado.
+// A ponte do R$/m² fecha: cada R$ dividido pela área V2 (÷ 12), mais o efeito da área (o total V1 na área nova).
+const ORC_ES_MIN = 5000;   // R$: abaixo disso o item vai para "Demais ajustes" (reajuste de contrato)
+
+// { v1, v2, m2V1, m2V2, area1, area2, patio, reduz:[linha], aumenta:[linha], metragem, efArea, semEfeito:[linha] }
+// linha = { nome, conta, v1, v2, d }. Sem a base da V1 (ou sem a área), null.
+function _orcEntrouSaiu_(chave, rel, modelos) {
+  const cid = ORC_CIDADES[chave], v1 = _orcV1Mega_(chave);
+  const area2 = _orcAreaImplicita_(rel, 'orc');
+  if (!v1.itens || !v1.area || !area2 || !modelos) return null;
+
+  // Contas cujo item não mexe no total: as de dentro de uma conta da METRAGEM e as em que vale a METRAGEM.
+  const semTotal = {};
+  Object.keys(ORC_CONTAS_DENTRO).forEach(k => { semTotal[_orcChaveConta_(k)] = true; });
+  (cid.relatorios.valeMetragem || []).forEach(k => { semTotal[_orcChaveConta_(k)] = true; });
+
+  const porItem = {};
+  const juntar = (arr, campo) => arr.forEach(l => {
+    const k = _orcNorm_(l.item);
+    const r = porItem[k] || (porItem[k] = { nome: l.item, conta: _orcChaveConta_(l.conta), v1: 0, v2: 0 });
+    r[campo] += Number(l.total) || 0;
+  });
+  juntar(v1.itens, 'v1');
+  juntar(modelos, 'v2');
+  let linhas = Object.keys(porItem).map(k => porItem[k]);
+  linhas.forEach(r => { r.d = r.v2 - r.v1; });
+  linhas = linhas.filter(r => Math.abs(r.d) >= 0.5);
+
+  // Item que só trocou de nome (saiu um e entrou outro, mesma conta e mesmo valor): fica de fora.
+  const saiu = linhas.filter(r => Math.abs(r.v2) < 0.5), entrou = linhas.filter(r => Math.abs(r.v1) < 0.5);
+  saiu.forEach(s => {
+    const par = entrou.filter(e => !e.renomeado && e.conta === s.conta && Math.abs(e.v2 - s.v1) < 1)[0];
+    if (par) { par.renomeado = true; s.renomeado = true; }
+  });
+  linhas = linhas.filter(r => !r.renomeado);
+
+  // O mesmo item em vários armazéns ("… AMZ 1", "… AMZ 2"…) numa linha só: "4× … (AMZ 1 a 4)".
+  const grupos = {};
+  linhas.forEach(r => {
+    const m = String(r.nome).match(/^(.*?)\s*AMZ\s*(\d+)\s*$/i);
+    if (!m) return;
+    const k = r.conta + '|' + _orcNorm_(m[1]) + '|' + (r.d < 0 ? '-' : '+');
+    (grupos[k] || (grupos[k] = { base: m[1], nums: [], itens: [] })).itens.push(r);
+    grupos[k].nums.push(+m[2]);
+  });
+  Object.keys(grupos).forEach(k => {
+    const g = grupos[k];
+    if (g.itens.length < 2) return;
+    const nums = g.nums.sort((a, b) => a - b), r0 = g.itens[0];
+    const junto = { nome: g.base + ' (AMZ ' + nums[0] + ' a ' + nums[nums.length - 1] + ')', vezes: g.itens.length, conta: r0.conta,
+                    v1: 0, v2: 0, d: 0 };
+    g.itens.forEach(r => { junto.v1 += r.v1; junto.v2 += r.v2; junto.d += r.d; });
+    linhas = linhas.filter(r => g.itens.indexOf(r) < 0).concat([junto]);
+  });
+
+  const semEfeito = linhas.filter(r => semTotal[r.conta]);
+  const contam = linhas.filter(r => !semTotal[r.conta]);
+  const patio = rel.patio && Math.abs(rel.patio.orc) > 0.5 ? rel.patio.orc : 0;
+  const v2 = rel.total.orc;
+  const somaItens = contam.reduce((t, r) => t + r.d, 0);
+  return {
+    v1: v1.total, v2: v2, m2V1: v1.total / v1.area / 12, m2V2: v2 / area2 / 12, area1: v1.area, area2: area2, patio: patio,
+    reduz: contam.filter(r => r.d < 0).sort((a, b) => a.d - b.d),
+    aumenta: contam.filter(r => r.d > 0).sort((a, b) => b.d - a.d),
+    metragem: v2 + patio - v1.total - somaItens,        // o que não vem dos modelos (Despesa de pessoal da METRAGEM)
+    efArea: v1.total / 12 * (1 / area2 - 1 / v1.area),
+    semEfeito: semEfeito
+  };
+}
+
+// "[ESTRUTURA METÁLICA] - LIMPEZA DO RESERVATÓRIO SPK (R$ 188,88/M2 X 800M2)" → tag "Estrutura Metálica", base
+// "Limpeza, Tratamento e Pintura do Reservatório SPK" (sem a conta do R$/m²), contrato: "CONTRATO — X".
+const _ORC_ES_SIGLAS = ['SPK', 'VGAS', 'VGA', 'AMZ', 'CCO', 'RH', 'PPCI', 'BT', 'AVAC', 'SP', 'STE', 'ML', 'LCW', 'RD', 'CFTV', 'SCPQ', 'TX1500'];
+const _ORC_ES_MINUSC = ['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'a', 'o', 'as', 'os', 'na', 'no', 'para', 'com', 'ao', 'à', 'por', 'e/ou'];
+// Abreviações só quando o nome não cabe (antes de tirar parênteses e palavras do fim).
+const _ORC_ES_ABREV = [[/\bInstalação\b/g, 'Inst.'], [/\bManutenção\b/g, 'Manut.'], [/\bSubstituição\b/g, 'Subst.'],
+  [/\bImplantação\b/g, 'Implant.'], [/\bPreventiva\b/g, 'Prev.'], [/\bMetálicas?\b/g, 'Metál.'], [/\bEstruturas?\b/g, 'Estr.'],
+  [/\bArmazém\b/g, 'AMZ'], [/\bServiços?\b/g, 'Serv.'], [/\bFinanciamento\b/g, 'Financ.'], [/\bReferente\b/g, 'Ref.']];
+function _orcTituloES_(t) {
+  if (t.replace(/\([^)]*\)/g, '') !== t.replace(/\([^)]*\)/g, '').toUpperCase()) return t;
+  return t.toLowerCase().split(' ').map((p, i) => {
+    const P = p.toUpperCase();
+    if (_ORC_ES_SIGLAS.indexOf(P.replace(/[^A-Z0-9]/g, '')) >= 0 || /\d/.test(p)) return P;
+    if (i > 0 && _ORC_ES_MINUSC.indexOf(p) >= 0) return p;
+    return p.replace(/^([("']?)(\S)/, (m, a, c) => a + c.toUpperCase());
+  }).join(' ');
+}
+function _orcPartesItemES_(s) {
+  let t = String(s || '').replace(/\s+/g, ' ').trim();
+  const contrato = /^CONTRATO\s*[—–-]\s*/i.test(t);
+  t = t.replace(/^CONTRATO\s*[—–-]\s*/i, '');
+  const tags = [];
+  t = t.replace(/^(\s*\[[^\]]*\]\s*[-–—]?\s*)+/, m => { m.replace(/\[([^\]]*)\]/g, (x, g) => { tags.push(g); return x; }); return ''; });
+  t = t.replace(/\s*\([^)]*(R\$|M2|M²|\bX\b)[^)]*\)/gi, '').replace(/\s*-\s*$/, '').trim();
+  return { tag: tags.filter(x => !/^MEGA /i.test(x)).pop() || '', base: t, contrato: contrato };
+}
+// Nome que cabe em `util` pt a `fs` pt (sem "…"): com a tag na frente quando pedida ("Civil — Obras das Cancelas…",
+// itens que sem ela ficariam iguais), "4× " na frente do item juntado; se não couber, saem os parênteses e depois
+// palavras do fim.
+function _orcNomeItemES_(s, util, fs, comTag, vezes) {
+  const p = _orcPartesItemES_(s);
+  let t = (vezes > 1 ? vezes + '× ' : '') + (comTag && p.tag ? _orcTituloES_(p.tag) + ' — ' : '') +
+          (p.contrato ? 'Contrato ' : '') + _orcTituloES_(p.base);
+  const f = CR_DESIGN_SYSTEM.typography.body;
+  const cabe = x => _orcLarguraTexto_(x, fs || 6, f, false) <= util * 0.92;   // folga: a medida estimada erra um pouco
+  if (!cabe(t)) _ORC_ES_ABREV.forEach(a => { if (!cabe(t)) t = t.replace(a[0], a[1]); });
+  if (!cabe(t)) t = t.replace(/\s*\([^)]*\)/g, '');
+  while (!cabe(t) && t.split(' ').length > 1) {
+    t = t.split(' ').slice(0, -1).join(' ').replace(/(\s+(de|da|do|das|dos|e|para|com|a|o|em|na|no|ao|via)|[\s,:;(–—-])+$/i, '');
+  }
+  return t.replace(/\s*\([^)]*$/, '');
+}
+
+function _orcM2Sinal_(v) {
+  if (Math.abs(v) < 0.005) return '0,00';
+  return (v < 0 ? '−' : '+') + _orcM2_(Math.abs(v));
+}
+
+function gerarSlideEntrouSaiu_(slide, W, H, cid, rel, modelos) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, MX = DS.layout.marginX;
+  const chave = Object.keys(ORC_CIDADES).filter(k => ORC_CIDADES[k].nome === cid.nome)[0];
+  const es = _orcEntrouSaiu_(chave, rel, modelos);
+  if (!es) {
+    _orcHeader_(slide, W, 'O que saiu e o que entrou — ' + cid.nome + ' · V1 → V2', 'Item a item · efeito no R$/m² ao mês');
+    _orcParagrafo_(slide, MX, 140, W - MX * 2, 40, 'Sem a base da V1 (ORÇAMENTO 2027 - BASE V1.json) ou sem os modelos de agora ' +
+      'não dá para comparar item a item.', { fs: 10, cor: C.textMuted, align: 'C' });
+    return;
+  }
+  const porM2 = d => d / es.area2 / 12;
+  _orcHeader_(slide, W, 'O que saiu e o que entrou — ' + cid.nome + ' · V1 → V2',
+    'Item a item (modelos 070/090 e contratos) · R$/m² ao mês: V1 R$ ' + _orcM2_(es.m2V1) + ' → V2 R$ ' + _orcM2_(es.m2V2) +
+    ' (' + _orcM2Sinal_(es.m2V2 - es.m2V1) + ')');
+
+  // ---- Ponte do R$/m² (topo): cada passo com o R$/m² e o R$ ----
+  const soma = arr => arr.reduce((t, r) => t + r.d, 0);
+  const sR = soma(es.reduz), sA = soma(es.aumenta);
+  const passos = [
+    { rot: 'V1 · 13/10', m2: _orcM2_(es.m2V1), rs: _orcMoeda_(es.v1), cheio: true },
+    { rot: 'Saiu ou reduziu', m2: _orcM2Sinal_(porM2(sR)), rs: Math.abs(sR) < 0.5 ? 'nenhum item' : '−' + _orcMoeda_(Math.abs(sR)), s: -1 },
+    { rot: 'Entrou ou aumentou', m2: _orcM2Sinal_(porM2(sA)), rs: Math.abs(sA) < 0.5 ? 'nenhum item' : '+' + _orcMoeda_(sA), s: 1 },
+    { rot: 'Pessoal (METRAGEM)', m2: _orcM2Sinal_(porM2(es.metragem)), rs: (es.metragem < 0 ? '−' : '+') + _orcMoeda_(Math.abs(es.metragem)),
+      s: es.metragem < 0 ? -1 : 1 }
+  ];
+  if (es.patio) passos.push({ rot: 'Pátio Mercado Livre', m2: _orcM2Sinal_(porM2(-es.patio)), rs: '−' + _orcMoeda_(es.patio), s: -1 });
+  passos.push({ rot: 'Efeito da área', m2: _orcM2Sinal_(es.efArea),
+                rs: _orcMilhar_(es.area1) + ' → ' + _orcMilhar_(es.area2) + ' m²', s: es.efArea < 0 ? -1 : 1 });
+  passos.push({ rot: 'V2 · 22/10', m2: _orcM2_(es.m2V2), rs: _orcMoeda_(es.v2), cheio: true });
+
+  const tw = W - MX * 2, py = 66, ph = 40, pg = 6, pw = (tw - pg * (passos.length - 1)) / passos.length;
+  passos.forEach((p, i) => {
+    const x = MX + i * (pw + pg);
+    _orcRet_(slide, x, py, pw, ph, p.cheio ? C.brandDark : C.cardBg, { redondo: true, borda: p.cheio ? null : C.lines });
+    const cor = p.cheio ? '#FFFFFF' : (p.s < 0 ? _ORC_COR_VAR.desce : _ORC_COR_VAR.sobe);
+    _orcUmaLinha_(slide, x + 6, py + 3, pw - 12, 10, p.rot.toUpperCase(),
+      { align: 'L', fs: 5.5, bold: true, cor: p.cheio ? C.brandSoft : C.textBody, fonte: T.titles, fsMin: 4.5 });
+    _orcUmaLinha_(slide, x + 6, py + 13, pw - 12, 15, (p.cheio ? 'R$ ' : '') + p.m2 + '/m²',
+      { align: 'L', fs: 11, bold: true, cor: cor, fonte: T.titles, fsMin: 7 });
+    _orcUmaLinha_(slide, x + 6, py + 28, pw - 12, 10, p.rs,
+      { align: 'L', fs: 6, cor: p.cheio ? '#CBD5E1' : C.textBody, fonte: T.body, fsMin: 4.5 });
+  });
+
+  // ---- As duas tabelas: saiu ou reduziu | entrou ou aumentou ----
+  // Os dois cartões com a altura do maior conteúdo (sem quadro vazio até o rodapé).
+  const nota = es.semEfeito.length ? 12 : 0, gap = 10, cw = (tw - gap) / 2;
+  let rowH = 11;
+  const ty = py + ph + 10, thMax = H - 26 - ty - nota;
+  const cols = [{ t: 'ITEM', w: cw - 16 - 150, a: 'L' }, { t: 'V1 → V2 (R$ MIL)', w: 66, a: 'R' },
+                { t: 'R$', w: 46, a: 'R' }, { t: 'R$/M²', w: 38, a: 'R' }];
+  const fsL = 6.5, utilNome = _orcUtilUmaLinha_(cols[0].w - 2, 'L', 2);
+  const cabemMax = Math.max(2, Math.floor((thMax - 29 - 6) / rowH) - 1);   // linhas de item; a última é o total
+  const montar = arr => {
+    const grandes = arr.filter(r => Math.abs(r.d) >= ORC_ES_MIN);
+    let mostra = grandes, resto = arr.filter(r => Math.abs(r.d) < ORC_ES_MIN);
+    if (mostra.length + (resto.length ? 1 : 0) > cabemMax) {
+      mostra = grandes.slice(0, cabemMax - 1);
+      resto = arr.filter(r => mostra.indexOf(r) < 0);
+    }
+    // Itens que sem a tag ficariam iguais (as três "Obras das Cancelas"): com a tag na frente.
+    const chave = r => _orcNorm_(_orcPartesItemES_(r.nome).base.replace(/\s*\([^)]*\)/g, '')).split(' ').slice(0, 3).join(' ');
+    const tags = {};
+    mostra.forEach(r => { const k = chave(r); (tags[k] || (tags[k] = [])).push(_orcPartesItemES_(r.nome).tag); });
+    const comTag = r => { const t = tags[chave(r)]; return t.length > 1 && t.some(x => x !== t[0]); };
+    const linhas = mostra.map(r => ({ nome: _orcNomeItemES_(r.nome, utilNome, fsL, comTag(r), r.vezes),
+                                      v: _orcMil_(r.v1) + ' → ' + _orcMil_(r.v2), d: r.d }));
+    if (resto.length) linhas.push({ nome: 'Demais ajustes (' + resto.length + (resto.length === 1 ? ' item)' : ' itens)'), v: '', d: soma(resto), italico: true });
+    if (!linhas.length) linhas.push({ nome: 'Nenhum item', v: '', d: 0, italico: true });
+    linhas.push({ nome: 'Total', v: '', d: soma(arr), total: true });
+    return linhas;
+  };
+  const linhasR = montar(es.reduz), linhasA = montar(es.aumenta), nLin = Math.max(linhasR.length, linhasA.length);
+  rowH = Math.max(11, Math.min(14, (thMax - 35) / nLin));
+  const th = Math.min(thMax, 29 + nLin * rowH + 6);
+  const tabela = (x, titulo, linhas, sentido) => {
+    _orcCard_(slide, x, ty, cw, th, null);
+    _orcUmaLinha_(slide, x + 8, ty + 4, cw - 16, 12, titulo,
+      { align: 'L', fs: 7, bold: true, cor: sentido < 0 ? _ORC_COR_VAR.desce : _ORC_COR_VAR.sobe, fonte: T.titles });
+    const xs = [];
+    let acc = x + 8;
+    cols.forEach(c => { xs.push(acc); acc += c.w; });
+    const hy = ty + 17;
+    cols.forEach((c, i) => _orcUmaLinha_(slide, xs[i], hy, c.w - 2, 9, c.t,
+      { align: c.a, fs: 5.5, bold: true, cor: C.textMuted, fonte: T.titles, folga: 2 }));
+    _orcLinha_(slide, x + 8, hy + 10, x + cw - 8, hy + 10, C.lines, 0.5);
+    linhas.forEach((l, i) => {
+      const ry = hy + 12 + i * rowH;
+      if (l.total) _orcLinha_(slide, x + 8, ry, x + cw - 8, ry, C.lines, 0.5);
+      const corV = Math.abs(l.d) < 0.5 ? C.textMuted : (l.d < 0 ? _ORC_COR_VAR.desce : _ORC_COR_VAR.sobe);
+      const op = (a, extra) => Object.assign({ align: a, fs: fsL, fsMin: 5.5, bold: !!l.total, italic: !!l.italico,
+                                               cor: C.textMain, fonte: l.total ? T.titles : T.body, folga: 2 }, extra || {});
+      _orcUmaLinha_(slide, xs[0], ry, cols[0].w - 2, rowH, l.nome, op('L'));
+      if (l.v) _orcUmaLinha_(slide, xs[1], ry, cols[1].w - 2, rowH, l.v, op('R', { cor: C.textBody }));
+      _orcUmaLinha_(slide, xs[2], ry, cols[2].w - 2, rowH, Math.abs(l.d) < 0.5 ? '–' : (l.d < 0 ? '−' : '+') + _orcMilhar_(Math.abs(l.d)),
+        op('R', { cor: corV }));
+      _orcUmaLinha_(slide, xs[3], ry, cols[3].w - 2, rowH, _orcM2Sinal_(porM2(l.d)), op('R', { cor: corV }));
+    });
+  };
+  tabela(MX, 'SAIU OU REDUZIU', linhasR, -1);
+  tabela(MX + cw + gap, 'ENTROU OU AUMENTOU', linhasA, 1);
+
+  if (nota) {
+    const t = es.semEfeito.map(r => _orcNomeItemES_(r.nome, 260, 6) + ' (' + (r.d < 0 ? '−' : '+') + _orcMoeda_(Math.abs(r.d)) + ')').join('; ');
+    _orcUmaLinha_(slide, MX, ty + th + 4, tw, nota, 'Sem efeito no total (já estão na Despesa de pessoal ou a conta segue a METRAGEM): ' + t,
+      { align: 'L', fs: 6, fsMin: 5, cor: C.textBody, fonte: T.body, italic: true });
+  }
+  _orcRodape_(slide, W, H, 'Fonte: base V1 (13/10/2026) × modelos 070/090 e contratos de 22/10/2026 · R$/m² ao mês na área V2 · ' +
+    'itens abaixo de R$ ' + _orcMilhar_(ORC_ES_MIN) + ' em "Demais ajustes"');
 }
 
 function congelarV1() {

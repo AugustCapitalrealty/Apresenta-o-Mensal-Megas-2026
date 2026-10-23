@@ -23,7 +23,14 @@ const ORC_GRUPOS_ATUALIZAVEIS = {
   'Revisar': { titulos: ['Revisar antes da versão final'], secao: 0, depoisDe: null,
     slides: x => x.rel.avisos.length || x.rel.pendencias.length
       ? [{ nome: 'Revisar antes da versão final', fn: s => gerarSlideRevisar_(s, x.W, x.H, x.cid, x.rel) }] : [] },
-  'Ponte': { titulos: ['Ponte Ritmo '], secao: 2, depoisDe: 'Resumo executivo',
+  // V2 (22/10/2026): depois do impacto V1 → V2; deck gerado antes dele, depois do resumo executivo.
+  'Entrou e saiu': { titulos: ['O que saiu e o que entrou'], secao: 2, depoisDe: ['Impacto das revisões', 'Resumo executivo'],
+    slides: x => _orcTemImpactoV2Mega_(x.chave, x.rel)
+      ? [{ nome: 'O que saiu e o que entrou', selo: true, chaves: null,
+           fn: s => gerarSlideEntrouSaiu_(s, x.W, x.H, x.cid, x.rel, x.visao.modelos) }] : [] },
+  // Sem o resumo executivo (saiu em 22/10/2026): depois do "o que saiu e o que entrou", do impacto ou das premissas.
+  'Ponte': { titulos: ['Ponte Ritmo '], secao: 2,
+    depoisDe: ['O que saiu e o que entrou', 'Impacto das revisões', 'Resumo executivo', 'Premissas'],
     slides: x => [{ nome: 'Ponte', selo: true, chaves: null, fn: s => gerarSlidePonte_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal) }] },
   'Por que sobe': { titulos: ['Por que a manutenção sobe — '], secao: 5, depoisDe: 'Manutenção de imóveis',
     slides: x => x.contas && x.dados ? [{ nome: 'Por que a manutenção sobe', selo: true, chaves: [x.contas[0].chave],
@@ -51,6 +58,10 @@ function atualizarSlidesFacilities() { _orcAtualizarSlides_(['ESTEIO', 'ITAJAI',
 function atualizarSlidesEsteio()     { _orcAtualizarSlides_(['ESTEIO'], ORC_ATUALIZAR_AGORA); }
 function atualizarSlidesItajai()     { _orcAtualizarSlides_(['ITAJAI'], ORC_ATUALIZAR_AGORA); }
 function atualizarSlidesCuritiba()   { _orcAtualizarSlides_(['CURITIBA'], ORC_ATUALIZAR_AGORA); }
+
+// Só o slide "O que saiu e o que entrou" (V1 → V2) nos três Megas do deck já gerado — Guilherme, 22/10/2026.
+// Rodar de novo troca o slide (não duplica).
+function incluirSlideEntrouSaiu() { _orcAtualizarSlides_(ORC_FAC_MEGAS, ['Entrou e saiu']); }
 
 // Título do slide: o primeiro texto não vazio (o cabeçalho escreve o título antes de tudo; moldura e gráfico são
 // imagens). Sem a imagem do motor, as formas do gráfico vão para trás e ficam antes do título: percorre todas.
@@ -88,7 +99,7 @@ function _orcAtualizarSlides_(chaves, grupos) {
       let adi = null, vi = null;
       try { adi = dados ? _orcAdiados2026_(cid, dados) : null; } catch (e) { Logger.log('Obras adiadas: ' + e.message); }
       try { vi = dados && contas ? _orcVariacoesItens_(cid, dados, contas[0], adi) : null; } catch (e) { Logger.log('Variações: ' + e.message); }
-      const x = { cid: cid, W: W, H: H, visao: visao, rel: rel, dados: dados, contas: contas, calc: calc, adi: adi, vi: vi };
+      const x = { chave: chave, cid: cid, W: W, H: H, visao: visao, rel: rel, dados: dados, contas: contas, calc: calc, adi: adi, vi: vi };
 
       // Os slides da parte, na ordem do deck, com o título.
       const idsDeck = () => deck.getSlides().map(s => s.getObjectId());
@@ -109,7 +120,9 @@ function _orcAtualizarSlides_(chaves, grupos) {
           posMapa = mapa.indexOf(velhos[0]);
           posDeck = idsDeck().indexOf(velhos[0].id);
         } else {
-          const ref = g.depoisDe ? mapa.filter(m => m.titulo.indexOf(g.depoisDe) === 0).pop() : null;
+          // depoisDe: um título ou uma lista (vale o primeiro que existir no deck).
+          const ref = [].concat(g.depoisDe || []).map(t => mapa.filter(m => m.titulo.indexOf(t) === 0).pop())
+            .filter(Boolean)[0] || null;
           if (!ref || !novos.length) {
             if (novos.length) Logger.log(cid.nome + ' · ' + nomeGrupo + ': nenhum slide para trocar e sem lugar de referência — use a geração completa');
             return;

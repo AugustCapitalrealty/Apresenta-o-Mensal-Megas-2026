@@ -22,6 +22,15 @@ reinício). O que importa sobre o projeto está aqui, no
 - Pedido do Guilherme: o "Custo por m² mês a mês com IPTU e seguro" (antes só na apresentação "para colar",
   `gerarSlidesM2ComIptu()`) agora sai também em cada Mega, logo depois do "Custo por m² mês a mês" (título próprio,
   com selo como o outro). `gerarSlidesM2ComIptu()` continua existindo. Teste: 5.143/5.143.
+- Slide novo por Mega **"O que saiu e o que entrou — Mega X · V1 → V2"** (`gerarSlideEntrouSaiu_`, 35_Versoes.gs), logo
+  depois do impacto: ponte do R$/m² (V1 → saiu/reduziu → entrou/aumentou → pessoal da METRAGEM → Pátio ML → efeito da
+  área → V2, fecha exato) e as duas tabelas item a item (abaixo de R$ 5 mil vai para "Demais ajustes"; "AMZ 1…4" numa
+  linha; item só renomeado fica de fora; conta "dentro" da METRAGEM vira nota "sem efeito no total").
+  Só esse slide no deck já gerado: `incluirSlideEntrouSaiu()` (27_Atualizar.gs; rodar de novo troca, não duplica).
+- **Expediente** logo após a capa de Facilities (`ORC_EXPEDIENTE`, 25_Facilities.gs): Orçamentos — Time de Facilities;
+  Revisão — Laureane Bransin; Montagem — Guilherme August; Apresentação — Jonatas Augusto (sem cargo: ninguém passou).
+- **Saiu dos Megas o slide "Resumo executivo — Orçamento 2027"** (a seção Resumo Executivo fica e abre no impacto /
+  na ponte). `gerarSlideResumoExecutivo_` continua no código, sem uso. Teste: 5.123/5.123.
 - **Próximo:** Guilherme rodar `gerarComeco()` e os 3 Megas para ver o deck; depois os apontamentos que faltam
   (G2, G3, C3, I8, I9 — ver CLAUDE.md da pasta).
 

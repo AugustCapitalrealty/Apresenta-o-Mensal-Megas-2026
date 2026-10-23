@@ -794,8 +794,9 @@ const N_MANUT = 1 + nLL[0] + N_POR_QUE + N_VAR + 1 + nGrupos + nPagDemais + div.
 const cmpTodos = G._orcCompararTodosContratos_(rel, FIX_CAD_2026, 'Mega Curitiba', modelos, FIX_MOD_2026);
 const nTodos = G._orcPaginasContratos_(cmpTodos).length;
 // Análise de Custos: custo por m², m² mês a mês e m² mês a mês com IPTU e seguro (22/10/2026); + os 3 moldes de fotos
-const N_ESPERADO = 2 + SECOES.length + 1 + 2 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3 + 3;
-ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 7 sub capas, premissas, resumo + ponte, ' +
+// Resumo Executivo: só a ponte (o slide do resumo saiu em 22/10/2026).
+const N_ESPERADO = 2 + SECOES.length + 1 + 1 + 3 + nTodos + N_MANUT + nLL[1] + nLL[2] + 3 + 3;
+ok(slides.length === N_ESPERADO, N_ESPERADO + ' slides: capa, sumário, 7 sub capas, premissas, ponte, ' +
    'DRE + ofensores + defensores, ' + N_MANUT + ' de manutenção, segurança, limpeza, custo por m² (veio ' +
    slides.length + ')');
 
@@ -807,10 +808,10 @@ ok(G.ORC_PREMISSAS_ITENS.length === 4 && G.ORC_PREMISSAS_ITENS.every((it, k) => 
    tPrem.indexOf(it[0]) >= 0 && tPrem.indexOf(it[1]) >= 0) && !tPrem.some(t => /…$/.test(t)),
    'Premissas: 01 Preventivas, 02 Corretivas, 03 Não Previsíveis, 04 Projetos e Detalhamentos, com o texto inteiro');
 
-ok(titulo(slides[iSub[1] + 1]) === 'Resumo executivo — Orçamento 2027' &&
-   titulo(slides[iSub[1] + 2]) === 'Ponte Ritmo 2026 → Orçamento 2027', 'seção Resumo Executivo: resumo e ponte');
-ok([1, 2].every(k => textos(slides[iSub[1] + k]).indexOf('SUGESTÃO') < 0), 'resumo e ponte aprovados: sem o selo SUGESTÃO');
-const tPonte = textos(slides[iSub[1] + 2]);
+ok(titulo(slides[iSub[1] + 1]) === 'Ponte Ritmo 2026 → Orçamento 2027' && !slides.some(x => titulo(x) === 'Resumo executivo — Orçamento 2027'),
+   'seção Resumo Executivo: abre na ponte; o slide do resumo executivo saiu (22/10/2026)');
+ok(textos(slides[iSub[1] + 1]).indexOf('SUGESTÃO') < 0, 'ponte aprovada: sem o selo SUGESTÃO');
+const tPonte = textos(slides[iSub[1] + 1]);
 ok(!tPonte.some(t => /já roda|novo/i.test(t)) && tPonte.indexOf('Alta da conta') >= 0 && tPonte.indexOf('Redução') >= 0,
    'ponte: sem "já roda", legenda só com Alta da conta e Redução (' + tPonte.filter(t => /roda|novo|Alta|Redu/i.test(t)).join(' | ') + ')');
 
@@ -1176,15 +1177,15 @@ ok(tRev.some(t => /^DRE, (Ofensores|Defensores).*Ponte.*Custo por m²$/.test(t))
    tRev.filter(t => /^DRE/.test(t)).join(' | ') + ')');
 ok(!tRev.some(t => /…$/.test(t)), 'revisão: nenhum texto cortado (' + tRev.filter(t => /…$/.test(t)).join(' | ') + ')');
 const SELO = '⚠ REVISAR · IPTU, Seguro';
-const comSeloIdx = [iSub[1] + 1, iSub[1] + 2, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1, iM2 + 2]
+const comSeloIdx = [iSub[1] + 1, iDRE, iDRE + 1, iDRE + 2, iM2, iM2 + 1, iM2 + 2]
   .concat(Array.from({ length: nTodos }, (_, k) => iTodos + k)).map(iR);
-ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em resumo, ponte, DRE, ofensores, defensores e os dois de custo por m²');
+ok(comSeloIdx.every(i => textos(slidesRev[i]).indexOf(SELO) >= 0), 'selo REVISAR em ponte, DRE, ofensores, defensores e os dois de custo por m²');
 ok(slidesRev.filter(sl => textos(sl).indexOf(SELO) >= 0).length === comSeloIdx.length,
    'selo só nesses (linha a linha, investimento e manutenção não passam por IPTU/Seguro)');
 const nAviso = sl => textos(sl).filter(t => t === '⚠').length;
 ok(nAviso(slidesRev[iR(iDRE)]) === 2 && nAviso(slidesRev[iR(iM2)]) === 2, 'DRE e custo por m²: ⚠ nas linhas de IPTU e Seguro (DRE ' +
    nAviso(slidesRev[iR(iDRE)]) + ', m² ' + nAviso(slidesRev[iR(iM2)]) + ')');
-ok(['⚠ IPTU', '⚠ Seguro'].every(t => textos(slidesRev[iR(iSub[1] + 2)]).indexOf(t) >= 0), 'ponte: degraus de IPTU e Seguro com ⚠');
+ok(['⚠ IPTU', '⚠ Seguro'].every(t => textos(slidesRev[iR(iSub[1] + 1)]).indexOf(t) >= 0), 'ponte: degraus de IPTU e Seguro com ⚠');
 ok(relErrado.revisar.length === 1 && relErrado.revisar[0].nome === 'Segurança e vigilância',
    'mês digitado errado entra em rel.revisar');
 [iDRE, iDRE + 1, iDRE + 2].forEach(i => {
@@ -1378,7 +1379,8 @@ const ESTADO_CIDADES = {};
   const comFalha = sl.map((x, i) => [i + 1, textos(x).filter(t => t.indexOf('Falha ao gerar') === 0)]).filter(f => f[1].length);
   ok(!comFalha.length, c + ': nenhum slide com falha (' + comFalha.map(f => 'slide ' + f[0] + ': ' + f[1].join(' ')).join(' | ') + ')');
   const titulos = sl.map(titulo);
-  ['Resumo executivo — Orçamento 2027', 'DRE — Orçamento 2027', 'Ofensores — Orçamento 2027', 'Defensores — Orçamento 2027',
+  ok(titulos.indexOf('Resumo executivo — Orçamento 2027') < 0, c + ': sem o slide do resumo executivo (saiu em 22/10/2026)');
+  ['DRE — Orçamento 2027', 'Ofensores — Orçamento 2027', 'Defensores — Orçamento 2027',
    'Custo por m² mês a mês — Orçamento 2027', 'Manutenção de Imóveis — Orçamento 2027', 'Distribuição mensal']
     .forEach(t => ok(titulos.indexOf(t) >= 0, c + ': tem o slide "' + t + '"'));
   ok(titulos.some(t => /^Contratos — 2026 × Orçamento 2027/.test(t)), c + ': tem os contratos de todas as contas');
@@ -1828,15 +1830,19 @@ console.log('Deck único de Facilities');
      Math.max.apply(null, fotoI2.map(x => idsR.indexOf(x.getObjectId()))) < Math.min.apply(null, pos2('CURITIBA')),
      'Facilities: gerar Itajaí de novo mantém os slides de fotos do gestor (e a cópia dele) no fim de Itajaí');
   copia.remove();
-  ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[1])[0] === 'Premissas — Orçamento 2027' && textos(sl[2])[0] === 'Sumário' &&
-     textos(sl[3]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[3]).indexOf(t) >= 0),
-     'Facilities: capa, premissas (13/10/2026), sumário e o comparativo de R$/m² dos três Megas');
+  ok(textos(sl[0]).indexOf('Orçamento 2027, os três Megas') >= 0 && textos(sl[2])[0] === 'Premissas — Orçamento 2027' && textos(sl[3])[0] === 'Sumário' &&
+     textos(sl[4]).indexOf('Os Megas lado a lado — R$/m² ao mês') >= 0 && ['MEGA CURITIBA', 'MEGA ITAJAÍ', 'MEGA ESTEIO', 'FACILITIES'].every(t => textos(sl[4]).indexOf(t) >= 0),
+     'Facilities: capa, expediente (22/10/2026), premissas (13/10/2026), sumário e o comparativo de R$/m² dos três Megas');
+// Expediente logo após a capa (22/10/2026): os quatro créditos.
+ok(textos(sl[1]).indexOf('Expediente') >= 0 && ['ORÇAMENTOS', 'Time de Facilities', 'REVISÃO', 'Laureane Bransin', 'MONTAGEM', 'Guilherme August',
+    'APRESENTAÇÃO', 'Jonatas Augusto'].every(t => textos(sl[1]).indexOf(t) >= 0) && !textos(sl[1]).some(t => /…$/.test(t)),
+   'Facilities: expediente com Orçamentos, Revisão, Montagem e Apresentação (' + textos(sl[1]).join(' | ') + ')');
   ok(textos(sl[0]).indexOf('/m²') < 0 && !textos(sl[0]).some(t => /vs\. ritmo|[▲▼]/.test(t)),
      'Facilities: capa só com o total em R$, sem R$/m² nem Δ% contra o ritmo (Jonatas, 08/10/2026: distorce)');
-  ok(sl.slice(0, 6).every(x => !textos(x).some(t => /…$/.test(t))),
-     'Facilities: abertura sem texto cortado (' + sl.slice(0, 6).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
+  ok(sl.slice(0, 7).every(x => !textos(x).some(t => /…$/.test(t))),
+     'Facilities: abertura sem texto cortado (' + sl.slice(0, 7).map(x => textos(x).filter(t => /…$/.test(t)).join(' | ')).join(' ') + ')');
   {
-    const tR = textos(sl[5]);
+    const tR = textos(sl[6]);
     ok(tR[0] === 'Ranking dos Megas — R$/m² ao mês por conta' && tR.indexOf('Segurança e vigilância') >= 0 &&
        tR.indexOf('Segurança e vigilância') < tR.indexOf('Manutenção de imóveis') && !tR.some(t => /[▲▼]/.test(t)),
        'Facilities: ranking dos Megas depois do comparativo, Segurança no topo, sem variação (V4, aprovado 08/10/2026)');
@@ -1856,8 +1862,8 @@ console.log('Deck único de Facilities');
        textos(slAlvo('Premissas'))[0] === 'Premissas — Orçamento 2027',
        'Facilities: sumário do Mega leva à sub capa (DRE…) ou ao primeiro slide da seção sem sub capa (Premissas)');
   }
-  const linksCapa = sl[2].shapes.filter(f => f.link).map(f => f.link);
-  ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(p => linksCapa.indexOf(lista(p)[0]) >= 0) && linksCapa.indexOf(ids[3]) >= 0,
+  const linksCapa = sl[3].shapes.filter(f => f.link).map(f => f.link);
+  ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(p => linksCapa.indexOf(lista(p)[0]) >= 0) && linksCapa.indexOf(ids[4]) >= 0,
      'Facilities: sumário com link para o comparativo e para a capa de cada Mega');
   // Gerar de novo um Mega troca só os slides dele, no mesmo lugar.
   const idsAgora = fac.getSlides().map(x => x.getObjectId());   // o deck de agora (Itajaí já foi gerado de novo acima)
@@ -1865,7 +1871,7 @@ console.log('Deck único de Facilities');
   G._orcGerarFacilities_('ITAJAI');
   const ids2 = fac.getSlides().map(x => x.getObjectId());
   ok(fac.getSlides().length === nAntes && lista('CURITIBA').join() === curAntes && lista('ESTEIO').join() === esAntes &&
-     ids2.indexOf(lista('ITAJAI')[0]) === antesIt && fac.getSlides()[2].shapes.filter(f => f.link).map(f => f.link).indexOf(lista('ITAJAI')[0]) >= 0,
+     ids2.indexOf(lista('ITAJAI')[0]) === antesIt && fac.getSlides()[3].shapes.filter(f => f.link).map(f => f.link).indexOf(lista('ITAJAI')[0]) >= 0,
      'Facilities: gerar Itajaí de novo troca só os slides dele, no mesmo lugar, e refaz o link do sumário');
   // Atualizar só alguns slides (27_Atualizar.gs, 09/10/2026): troca a ponte, o "por que sobe" e as demais variações
   // no mesmo lugar, sem mexer no resto; slide que falta entra depois do de referência.
@@ -2217,10 +2223,8 @@ console.log('Atualização de 12/10/2026, 19h56 (METRAGEM, 070 e contratos)');
       G._orcGerar_([chave]);
       const sl = decks[cid.deckId].getSlides();
       ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))), c + ' (19h56): nenhum slide com falha ou texto cortado');
-      // Resumo executivo: o card do Orçamento do ano anterior e as mensagens com o porquê (12/10/2026).
-      const re = sl.filter(x => titulo(x) === 'Resumo executivo — Orçamento 2027')[0], tre = re ? textos(re) : [];
-      ok(tre.indexOf('ORÇAMENTO 2026') >= 0 && tre.some(t => /contas que mais sobem/.test(t)) && tre.some(t => /já são contratos/.test(t)) &&
-         !tre.some(t => /…$/.test(t)), c + ' (19h56): resumo com o Orçamento 2026 e as mensagens novas (' + tre.slice(-8).join(' / ') + ')');
+      // O slide do resumo executivo saiu dos Megas (Guilherme, 22/10/2026).
+      ok(!sl.some(x => titulo(x) === 'Resumo executivo — Orçamento 2027'), c + ' (19h56): sem o slide do resumo executivo');
       // O asterisco da Despesa de pessoal: na DRE e nos ofensores do Esteio, com a nota no rodapé (a tabela não
       // encolhe — a moldura continua a mesma); nos outros Megas, nada.
       const nota = '* Despesa de pessoal: inclui R$ 90.000 da assistente de facilities, como consultoria até o RH aprovar.';
@@ -2795,16 +2799,17 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
 
       const titulos = sl.map(titulo);
       ok(titulos.some(t => /^Impacto das revisões/.test(t)), c + ' (22/10): slide de impacto V1 → V2 inserido no deck');
+      const iImp = titulos.findIndex(t => /^Impacto das revisões/.test(t));
+      ok(iImp > 0 && /^O que saiu e o que entrou/.test(titulos[iImp + 1]), c + ' (22/10): "O que saiu e o que entrou" logo depois do impacto');
 
       if (chave === 'ESTEIO') {
         // Mega Esteio: validar destaque do Pátio Mercado Livre na Capa, Resumo Executivo, Ponte, DRE e M2 Mensal
         const tCapa = textos(sl[0]);
         ok(tCapa.some(t => /Antes Pátio ML: R\$ 4,11 mi/i.test(t)), 'esteio (22/10): capa exibe valor antes do Pátio ML');
 
-        const re = sl.filter(x => titulo(x) === 'Resumo executivo — Orçamento 2027')[0];
-        const tRe = re ? textos(re) : [];
-        ok(tRe.some(t => /Pátio Mercado Livre/i.test(t)) && tRe.some(t => /R\$ 4,11 mi/i.test(t)),
-           'esteio (22/10): resumo executivo destaca o abatimento do Pátio Mercado Livre');
+        // Sem o resumo executivo (saiu em 22/10/2026): o Pátio ML aparece na ponte do R$/m² do "o que saiu e o que entrou".
+        const es = sl.filter(x => /^O que saiu e o que entrou/.test(titulo(x)))[0];
+        ok(es && textos(es).indexOf('PÁTIO MERCADO LIVRE') >= 0, 'esteio (22/10): o Pátio ML no "o que saiu e o que entrou"');
 
         const ponte = sl.filter(x => titulo(x) === 'Ponte Ritmo 2026 → Orçamento 2027')[0];
         const tPonte = ponte ? textos(ponte) : [];
@@ -2879,6 +2884,48 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
   ok(G._orcRodapeImpacto_('Fonte', curSemBase).indexOf('base V1 não lida') >= 0, 'sem base V1: o rodapé avisa');
   G._ORC_BASE_V1.dados = fixture('fixture_base_v1.json');
 
+  // Slide "O que saiu e o que entrou" (22/10/2026): item a item, e a ponte do R$/m² fecha centavo por centavo
+  {
+    const somaD = arr => arr.reduce((t, r) => t + r.d, 0);
+    const metEsp = { ESTEIO: 7361, ITAJAI: 17176, CURITIBA: 10006 };   // Despesa de pessoal da METRAGEM (conferido em 22/10)
+    ['ESTEIO', 'ITAJAI', 'CURITIBA'].forEach(k => {
+      const es = G._orcEntrouSaiu_(k, rels2210[k], mods2210[k]);
+      const fecha = es.m2V1 + (somaD(es.reduz) + somaD(es.aumenta) + es.metragem - es.patio) / es.area2 / 12 + es.efArea;
+      ok(Math.abs(fecha - es.m2V2) < 1e-9 && Math.abs(es.m2V1 - G.ORC_V1_M2[k]) < 0.005 && Math.abs(es.metragem - metEsp[k]) <= 1,
+         k + ' entrou/saiu: V1 + saiu + entrou + pessoal − pátio + área = V2 no R$/m² (pessoal ' + Math.round(es.metragem) + ')');
+    });
+    const esI = G._orcEntrouSaiu_('ITAJAI', rels2210.ITAJAI, mods2210.ITAJAI);
+    ok(esI.reduz.length === 11 && esI.reduz.some(r => r.vezes === 4 && /LINHA DE VIDA/.test(r.nome) && Math.round(r.d) === -30540) && esI.reduz[0].d < -179000 && /RESERVAT/.test(esI.reduz[0].nome) &&
+       esI.aumenta.some(r => /CANCELAS/.test(r.nome) && Math.round(r.d) === 287175),
+       'itajaí entrou/saiu: as obras que saíram (as 4 linhas de vida numa só) e as 3 reduções; as cancelas entraram (' + esI.reduz.length + ')');
+    const esE = G._orcEntrouSaiu_('ESTEIO', rels2210.ESTEIO, mods2210.ESTEIO);
+    ok(esE.semEfeito.length === 1 && Math.round(esE.semEfeito[0].d) === -90000 && !esE.reduz.some(r => /ASSISTENTE DE FACILITIES/.test(r.nome)),
+       'esteio entrou/saiu: a Assessoria de RH (−90.000) fica como "sem efeito" (já está na Despesa de pessoal)');
+    const esC = G._orcEntrouSaiu_('CURITIBA', rels2210.CURITIBA, mods2210.CURITIBA);
+    ok(!esC.reduz.concat(esC.aumenta).some(r => /COMUNICAÇÃO HORIZONTAL/.test(r.nome)) &&
+       esC.aumenta.some(r => /RETROFIT DA CASA DE BOMBAS/.test(r.nome)) && esC.reduz.some(r => /24H NOTURNO/.test(r.nome)),
+       'curitiba entrou/saiu: o item que só mudou de nome fica de fora; retrofit entrou, posto 24h saiu');
+    ok(G._orcNomeItemES_('[ESTRUTURA METÁLICA] - LIMPEZA, TRATAMENTO E PINTURA DO RESERVATÓRIO SPK', 400) === 'Limpeza, Tratamento e Pintura do Reservatório SPK' &&
+       G._orcNomeItemES_('[PAVIMENTAÇÃO] - NIVELAMENTO DAS DOCAS DO ARMAZÉM 4 E 5 (R$ 188,88/M2 X 800M2)', 400) === 'Nivelamento das Docas do Armazém 4 e 5',
+       'entrou/saiu: nome do item sem a tag e sem a conta do R$/m² (' + G._orcNomeItemES_('[PAVIMENTAÇÃO] - NIVELAMENTO DAS DOCAS DO ARMAZÉM 4 E 5 (R$ 188,88/M2 X 800M2)', 400) + ')');
+    ['ESTEIO', 'ITAJAI', 'CURITIBA'].forEach(k => {
+      const s = novoSlide();
+      G.gerarSlideEntrouSaiu_(s, W, H, G.ORC_CIDADES[k], rels2210[k], mods2210[k]);
+      const t = s.shapes.map(r => r.texto).filter(Boolean);
+      const fora = s.shapes.filter(r => r.tipo !== 'LINE' && (r.y + r.h > H + 0.5 || r.x < 0 || r.x + r.w > W + 0.5));
+      ok(t[0] === 'O que saiu e o que entrou — ' + G.ORC_CIDADES[k].nome + ' · V1 → V2' && t.indexOf('SAIU OU REDUZIU') >= 0 &&
+         t.indexOf('ENTROU OU AUMENTOU') >= 0 && !t.some(x => /…$/.test(x)) && !fora.length &&
+         (k !== 'ESTEIO' || t.some(x => /^Sem efeito no total/.test(x))),
+         k + ' entrou/saiu: slide desenhado, sem texto cortado e nada fora do slide (' + fora.map(r => r.texto).join(' | ') + ')');
+    });
+    // Sem a base da V1: o slide avisa, não inventa
+    G._ORC_BASE_V1.dados = null;
+    const s0 = novoSlide();
+    G.gerarSlideEntrouSaiu_(s0, W, H, G.ORC_CIDADES.ITAJAI, rels2210.ITAJAI, mods2210.ITAJAI);
+    ok(textos(s0).some(x => /^Sem a base da V1/.test(x)), 'entrou/saiu sem a base V1: o slide diz que não dá para comparar');
+    G._ORC_BASE_V1.dados = fixture('fixture_base_v1.json');
+  }
+
   // Renderização isolada dos slides de impacto (sem cortes com "…")
   const s1 = novoSlide();
   G.gerarSlideImpactoFacilities_(s1, W, H, rels2210, mods2210);
@@ -2905,6 +2952,44 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
      'facilities abertura (22/10): slide de impacto consolidado inserido');
   ok(!slFac.some(x => textos(x).some(t => /…$/.test(t))),
      'facilities abertura (22/10): sem textos cortados ("…")');
+
+  // incluirSlideEntrouSaiu() (27_Atualizar.gs): no deck já gerado, só o slide novo, logo depois do impacto; rodar de
+  // novo troca (não duplica). Itajaí gerado no deck de Facilities com os dados de 22/10 e o slide tirado (deck antigo).
+  {
+    const cid = G.ORC_CIDADES.ITAJAI;
+    const antes = { d: cid.despesasGeraisId, s: cid.servicosTerceirosId, o: cid.relatorios.orcDosModelos };
+    cid.despesasGeraisId = G.ORC_MODELO_090_ID;
+    cid.servicosTerceirosId = G.ORC_MODELO_070_ID;
+    cid.relatorios.orcDosModelos = true;
+    porId[cid.relatorios.metragemId] = fixture('fixture_metragem_itajai_2210.json');
+    porId[cid.relatorios.mensalId] = fixture('fixture_mensal_itajai_2210.json');
+    try {
+      G._orcGerarFacilities_('ITAJAI');
+      const tit = id => textos(facDeck.getSlideById(id))[0] || '';
+      const lista = () => G._orcListaFacilities_('ITAJAI');
+      const doTitulo = pref => lista().filter(id => tit(id).indexOf(pref) === 0);
+      const es0 = doTitulo('O que saiu e o que entrou');
+      ok(es0.length === 1, 'facilities (22/10): Itajaí gerado já com o slide "O que saiu e o que entrou"');
+      facDeck.getSlideById(es0[0]).remove();
+      PROPS_DADOS.ORC_FAC_ITAJAI = JSON.stringify(lista().filter(id => id !== es0[0]));
+      const n0 = facDeck.getSlides().length;
+      G.incluirSlideEntrouSaiu();
+      const ids = () => facDeck.getSlides().map(x => x.getObjectId());
+      const es1 = doTitulo('O que saiu e o que entrou');
+      ok(facDeck.getSlides().length === n0 + 1 && es1.length === 1 &&
+         ids().indexOf(es1[0]) === ids().indexOf(doTitulo('Impacto das revisões')[0]) + 1 && lista().indexOf(es1[0]) >= 0,
+         'incluirSlideEntrouSaiu: o slide entra logo depois do impacto e vai para a lista do Mega');
+      G.incluirSlideEntrouSaiu();
+      const es2 = doTitulo('O que saiu e o que entrou');
+      ok(facDeck.getSlides().length === n0 + 1 && es2.length === 1 && es2[0] !== es1[0] &&
+         ids().indexOf(es2[0]) === ids().indexOf(doTitulo('Impacto das revisões')[0]) + 1,
+         'incluirSlideEntrouSaiu: rodar de novo troca o slide no mesmo lugar (não duplica)');
+    } finally {
+      cid.despesasGeraisId = antes.d;
+      cid.servicosTerceirosId = antes.s;
+      cid.relatorios.orcDosModelos = antes.o;
+    }
+  }
 
   // Restaurar fixtures anteriores
   porId[G.ORC_MODELO_090_ID] = M090_ANTES;

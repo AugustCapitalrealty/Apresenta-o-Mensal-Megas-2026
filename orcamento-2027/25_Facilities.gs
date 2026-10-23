@@ -171,6 +171,7 @@ function _orcGerarAbertura_(deck, W, H) {
   });
   _ORC_TRILHA = 0;
   _orcPasso_(deck, W, H, 'Capa — Facilities', s => gerarSlideCapaFacilities_(s, W, H, rels));
+  _orcPasso_(deck, W, H, 'Expediente — Facilities', s => gerarSlideExpedienteFacilities_(s, W, H));
   // As premissas logo depois da capa (Guilherme, 13/10/2026) — as mesmas dos Megas (10_Capa.gs).
   _orcPasso_(deck, W, H, 'Premissas — Facilities', s => gerarSlidePremissas_(s, W, H, { nome: 'Facilities' }));
   _orcPasso_(deck, W, H, 'Sumário — Facilities', s => gerarSlideSumarioFacilities_(s, W, H, rels));
@@ -192,6 +193,37 @@ function _orcTotaisFacilities_(rels) {
     t.areaOrc += _orcAreaImplicita_(r, 'orc') || 0; t.areaRitmo += _orcAreaImplicita_(r, 'ritmo') || 0;
   });
   return t;
+}
+
+// ==========================================
+// EXPEDIENTE (logo após a capa de Facilities) — Guilherme, 22/10/2026; o mesmo desenho do de Propriedades
+// ==========================================
+// Créditos (texto do Slides, editável aqui). papel vazio = só o nome.
+const ORC_EXPEDIENTE = [
+  { rotulo: 'Orçamentos',   nome: 'Time de Facilities', papel: '' },
+  { rotulo: 'Revisão',      nome: 'Laureane Bransin',   papel: '' },
+  { rotulo: 'Montagem',     nome: 'Guilherme August',   papel: '' },
+  { rotulo: 'Apresentação', nome: 'Jonatas Augusto',    papel: '' }
+];
+
+function gerarSlideExpedienteFacilities_(slide, W, H) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, X = 288;
+  slide.getBackground().setSolidFill('#FFFFFF');
+  _orcRet_(slide, 0, 0, 252, H, C.brandDark);
+  _orcRet_(slide, 252, 0, 4, H, C.brandLight);
+  _orcLinha_(slide, X, H - 33, W - 36, H - 33, C.lines, 0.75);
+  _orcUmaLinha_(slide, X, 40, W - X - 36, 16, 'ORÇAMENTO ' + ORC_ANO + ' · FACILITIES', { align: 'L', fs: 9, bold: true, cor: C.brandLight });
+  _orcUmaLinha_(slide, X, 58, W - X - 36, 44, 'Expediente', { align: 'L', fs: 30, bold: true, cor: C.brandDark });
+  const passo = ORC_EXPEDIENTE.length > 3 ? 60 : 76;
+  ORC_EXPEDIENTE.forEach((p, i) => {
+    const y = 120 + i * passo;
+    _orcRet_(slide, X + 7.2, y, 3, p.papel ? 56 : 40, C.brandLight);
+    _orcUmaLinha_(slide, X + 12, y, 380, 14, p.rotulo.toUpperCase(), { align: 'L', fs: 8.5, bold: true, cor: C.brandLight });
+    _orcUmaLinha_(slide, X + 12, y + 16, 380, 24, p.nome, { align: 'L', fs: 16, bold: true, cor: C.brandDark });
+    if (p.papel) _orcUmaLinha_(slide, X + 12, y + 40, 380, 16, p.papel, { align: 'L', fs: 10, cor: C.textBody, fonte: T.body });
+  });
+  _orcUmaLinha_(slide, W - 36 - 200, H - 29, 200, 16, 'Orçamento ' + ORC_ANO + ' · ' + ORC_VERSAO_ATUAL,
+    { align: 'R', fs: 7.5, cor: C.textMuted, fonte: T.body });
 }
 
 function gerarSlideCapaFacilities_(slide, W, H, rels) {
