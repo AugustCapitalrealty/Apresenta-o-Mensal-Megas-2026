@@ -240,6 +240,12 @@ function _orcLinhasModelo_(dados, unidade) {
     if (/retirado do orcamento/.test(_orcNorm_(r[ORC_COL.item]))) continue;
     const meses = [];
     for (let m = 0; m < 12; m++) meses.push(-_orcNum_(r[ORC_COL.mes1 + m]));   // despesa vem negativa
+    // Item com R$ 1 no ano (no máximo): marcador do gestor para obra tirada do ano (Esteio; no Itajaí e no Curitiba o
+    // marcador é R$ 0,01). Vale zero, como o de centavos: cai nos "zerados" de 02_Dados (fora das tabelas, e a obra
+    // adiada ainda sabe que saiu do ano) e não entra em total nenhum (Guilherme, 23/10/2026, na "demais categorias").
+    const noAno = meses.reduce((a, v) => a + v, 0);
+    // (Só o de R$ 1: o de centavos já ficava fora das tabelas, e zerá-lo mexeria no arredondamento dos totais.)
+    if (noAno >= 0.5 && noAno <= 1.005 && meses.every(v => Math.abs(v) <= 1.005)) meses.fill(0);
     ORC_CORRECOES_MODELO.forEach(c => {
       if (String(r[ORC_COL.unidade]).trim() !== c.unidade || !c.item.test(_orcNorm_(r[ORC_COL.item])) ||
           Math.abs(meses[c.mes - 1] - c.de) >= 0.01) return;

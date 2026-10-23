@@ -204,36 +204,51 @@ const ORC_PARES_EXTRA = {
       itens2027: ['LAVAGEM DA COBERTURA PARTE 2 (ARMAZÉM 3 E 4)'] }
   ],
   // Itajaí (Guilherme, 23/10/2026, no "demais variações"): a obra das cancelas é o mesmo serviço — a parte de 2026
-  // (equipamentos, 2/2) e a obra adiada para 2027, financiada em 24 meses; a provisão de emergências de 2026 é a
-  // provisão dos 3% de 2027 (o gestor já tinha escrito "Entra na provisão dos 3%", sem ligar o item).
+  // (equipamentos, 2/2) e a obra adiada para 2027, financiada em 24 meses.
   'Mega Itajaí': [
     { de2026: 'Obra cancelas 2/2 *  2594805 (Equipamentos eletrônicos)',
       itens2027: ['OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA FIXA SP 2,34% ANO',
                   'OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA FIXA SP 2,34%',
-                  'OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA SP 2,34%'] },
-    { de2026: 'Provisão manutenções emergências',
-      itens2027: ['PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS'] }
+                  'OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA SP 2,34%'] }
   ]
 };
 
-// As decisões do gestor (ORC_DECISOES_GESTOR) com os pares de ORC_PARES_EXTRA: o gasto de 2026 "sem par" vira par;
-// o par que o gestor deixou sem item de 2027 ganha os itens.
+// A provisão de 3% de 2027 de cada Mega. Em 2026 eram várias provisões por disciplina; em 2027 virou uma só (mudou a
+// premissa — Guilherme, 23/10/2026: "pode juntar todas as provisões e comparar com a de 3%"). As provisões de 2026 sem
+// item próprio em 2027 (ou já ligadas aos 3%) viram um par só com ela; as que o gestor ligou a um serviço (VGAs,
+// plantio, lâmpadas…) ficam como ele ligou.
+const ORC_PROVISAO_3 = {
+  'Mega Curitiba': 'PROVISÃO PARA MANUTENÇÃO NÃO PREVISTA (3% DO PACOTE DE MANUTENÇÃO)',
+  'Mega Esteio': 'PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS',
+  'Mega Itajaí': 'PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS'
+};
+
+// As decisões do gestor (ORC_DECISOES_GESTOR) com os pares de ORC_PARES_EXTRA (o gasto de 2026 "sem par" vira par; o
+// par que o gestor deixou sem item de 2027 ganha os itens) e as provisões de 2026 juntas contra a de 3% (ORC_PROVISAO_3).
 function _orcDecisoesComExtras_(nome) {
   const dec = ORC_DECISOES_GESTOR[nome];
-  const extra = ORC_PARES_EXTRA[nome] || [];
-  if (!dec || !dec.semPar || !extra.length) return dec;
+  const extra = ORC_PARES_EXTRA[nome] || [], prov3 = ORC_PROVISAO_3[nome];
+  if (!dec || !dec.semPar || (!extra.length && !prov3)) return dec;
   const n = x => _orcNorm_(x);
   const achados = extra.map(e => ({ e: e, s: dec.semPar.filter(x => n(x.de2026) === n(e.de2026))[0] })).filter(o => o.s);
   const completar = e => (dec.pares || []).filter(p => n(p.de2026) === n(e.de2026) && !(p.itens2027 || []).length)[0];
-  const pares = (dec.pares || []).map(p => {
+  let pares = (dec.pares || []).map(p => {
     const e = extra.filter(x => completar(x) === p)[0];
     return e ? Object.assign({}, p, { itens2027: e.itens2027 }) : p;
-  });
-  return Object.assign({}, dec, {
-    semPar: dec.semPar.filter(x => !achados.some(o => o.s === x)),
-    pares: pares.concat(achados.map(o => ({ de2026: o.e.de2026, ritmo2026: o.s.ritmo2026,
-                                             itens2027: o.e.itens2027, orc2027: 0 })))
-  });
+  }).concat(achados.map(o => ({ de2026: o.e.de2026, ritmo2026: o.s.ritmo2026, itens2027: o.e.itens2027, orc2027: 0 })));
+  let semPar = dec.semPar.filter(x => !achados.some(o => o.s === x));
+  if (prov3) {
+    const ehProv = x => /^provisao/.test(n(x.de2026));
+    const paraOs3 = p => ehProv(p) && (!(p.itens2027 || []).length || p.itens2027.every(i => n(i) === n(prov3)));
+    const juntas = pares.filter(paraOs3).concat(semPar.filter(ehProv));
+    if (juntas.length) {
+      pares = pares.filter(p => !paraOs3(p)).concat([{
+        de2026: 'Provisões de ' + (ORC_ANO - 1) + ' (' + juntas.length + ')', itens2027: [prov3], orc2027: 0,
+        ritmo2026: juntas.reduce((t, p) => t + (p.ritmo2026 || 0), 0), juntas: juntas.map(p => p.de2026) }]);
+      semPar = semPar.filter(s => !ehProv(s));
+    }
+  }
+  return Object.assign({}, dec, { semPar: semPar, pares: pares });
 }
 
 function _orcVariacoesItens_(cid, dados, conta, adi) {

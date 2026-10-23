@@ -34,6 +34,12 @@ reinício). O que importa sobre o projeto está aqui, no
   3 e 4), CVISH corrigido, Paisagismo/Defensas 2-3/Torniquete 4/lavagens/VGAs mexidos, drone tirado. **Decidido:** os
   2 do drone continuam, da v4 (`ORC_GESTOR_EXTRA`, 31_VersaoFinal.gs — slide que a fonte não tem mais, no lugar que
   tinha na outra versão). Na pasta VERSÕES há também "Cópia de … v5" e "1e … v5": não são lidas.
+- **23/10, tarde:** marcadores de R$ 1 do gestor (Esteio: 5 itens) valem zero na leitura (02_Dados.gs) → saem das tabelas;
+  Esteio V2 **R$ 3.839.284**, Facilities **R$ 17.564.269** (linha "Itens retirados" do impacto −1.472,57). Provisões de
+  2026 sem item próprio juntas num par contra a provisão de 3% de 2027 (`ORC_PROVISAO_3`, 24_PorQueSobe.gs; Curitiba 7,
+  Esteio 9, Itajaí 5). **`atualizarSlidesDeHoje()`** (27_Atualizar.gs) refaz só o que mudou: demais variações nos 3,
+  Esteio inteiro da manutenção + impacto/entrou-saiu, e a Segurança Eletrônica; links do sumário para slide trocado são
+  refeitos. Teste: 5.163/5.163.
 - **Projeto Segurança Eletrônica (Curitiba) melhorado** (33_GestorRedesenho.gs, `trecho` separa os 6 slides de mesmo
   título): print do histórico 2021–2026 → tabelas MANUTENÇÃO/AQUISIÇÃO; print do SLA → tabela; quadro do valor → cartão.
   A tabela das PROPOSTAS fica como print (o gestor escreveu "R$ 5.307,90" e pôs retângulos por cima). Aplicar:

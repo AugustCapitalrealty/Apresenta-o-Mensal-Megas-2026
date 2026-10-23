@@ -54,6 +54,16 @@ const ORC_GRUPOS_ATUALIZAVEIS = {
   'M² com IPTU': { titulos: ['Custo por m² mês a mês com IPTU e seguro'], secao: 8, depoisDe: ['Custo por m² mês a mês — '],
     slides: x => x.visao.mensal ? [{ nome: 'Custo por m² mês a mês com IPTU e seguro', selo: true, chaves: null,
       fn: s => gerarSlideM2Mensal_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal, x.visao.realAnt, true) }] : [] },
+  // 23/10/2026 (atualizarSlidesDeHoje): os slides da manutenção que mostram os itens um a um.
+  'Resumo manutenção': { titulos: ['Manutenção de Imóveis — Orçamento'], secao: 5, depoisDe: null,
+    slides: x => x.dados ? [{ nome: 'Resumo', fn: s => gerarSlideResumo_(s, x.W, x.H, x.cid, x.dados, _orcAreaImplicita_(x.rel, 'orc')) }] : [] },
+  'Linha a linha manutenção': { titulos: ['Manutenção de imóveis'], secao: 5, depoisDe: null,
+    slides: x => x.contas ? [{ nome: 'Linha a linha — ' + x.contas[0].nome, selo: true, chaves: [x.contas[0].chave],
+      fn: s => gerarSlideLinhaALinha_(s, x.W, x.H, x.cid, x.rel, x.visao.mensal, x.visao.modelos, x.contas[0], 1, x.calc ? x.calc.cls : null) }] : [] },
+  // Uma por categoria grande; o título do slide é o nome da categoria (titulos = função dos dados).
+  'Categorias': { titulos: x => x.dados ? _orcDividirCategorias_(x.dados).proprias.map(c => c.nome) : [], secao: 5, depoisDe: null,
+    slides: x => x.dados ? _orcDividirCategorias_(x.dados).proprias.map(c => ({ nome: 'Categoria ' + c.nome,
+      fn: s => gerarSlideCategoria_(s, x.W, x.H, x.cid, x.dados, c) })) : [] },
   'Demais categorias': { titulos: ['Demais categorias'], secao: 5, depoisDe: null,
     slides: x => {
       if (!x.dados) return [];
@@ -71,6 +81,23 @@ function atualizarSlidesCuritiba()   { _orcAtualizarSlides_(['CURITIBA'], ORC_AT
 // Só o slide "O que saiu e o que entrou" (V1 → V2) nos três Megas do deck já gerado — Guilherme, 22/10/2026.
 // Rodar de novo troca o slide (não duplica).
 function incluirSlideEntrouSaiu() { _orcAtualizarSlides_(ORC_FAC_MEGAS, ['Entrou e saiu']); }
+
+// Só os slides que mudaram em 23/10/2026, sem gerar os Megas (Guilherme: "uma função para gerar somente os slides que
+// mudamos"):
+//   ▸ os três Megas: "Por que a manutenção sobe: as demais variações" (provisões de 2026 juntas contra a de 3%; no
+//     Itajaí, as cancelas 2/2 de 2026 = a obra das cancelas de 2027);
+//   ▸ Esteio: sem os itens "RETIRADO" e os marcadores de R$ 1 — impacto V1 → V2, o que saiu e entrou, resumo e linha a
+//     linha da manutenção, itens de cada grupo, categorias e demais categorias;
+//   ▸ Curitiba: os 6 slides de Segurança Eletrônica do gestor, melhorados (incluirSegurancaEletronica, 00_Gerar.gs).
+// Cada parte mostra no log o tempo; se o Apps Script parar no meio, rodar de novo troca tudo outra vez (não duplica).
+const ORC_GRUPOS_HOJE_ESTEIO = ['Impacto V1 → V2', 'Entrou e saiu', 'Resumo manutenção', 'Linha a linha manutenção',
+                                'Demais variações', 'Itens de cada grupo', 'Categorias', 'Demais categorias'];
+function atualizarSlidesDeHoje() {
+  _orcAtualizarSlides_(['ITAJAI', 'CURITIBA'], ['Demais variações']);
+  _orcAtualizarSlides_(['ESTEIO'], ORC_GRUPOS_HOJE_ESTEIO);
+  try { incluirSegurancaEletronica(); }
+  catch (e) { Logger.log('Segurança Eletrônica não atualizada: ' + e.message + ' — rode incluirSegurancaEletronica() (00_Gerar.gs).'); }
+}
 
 // ==========================================
 // COMPLETAR O DECK: só o que falta (Guilherme, 22/10/2026)
@@ -138,6 +165,7 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
         .map(id => ({ id: id, titulo: _orcTituloSlide_(deck.getSlideById(id)) }));
       const comeca = (t, prefixos) => prefixos.some(p => t.indexOf(p) === 0);
       const relato = { incluidos: [], tirados: [] };
+      const trocados = {};   // id do slide trocado → id do primeiro slide novo do grupo
 
       // Os que saíram da geração: saem do deck; guarda o slide de antes de cada um para refazer os links no fim.
       const saiu = {};
@@ -151,9 +179,12 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
       });
 
       grupos.forEach(nomeGrupo => {
-        const g = ORC_GRUPOS_ATUALIZAVEIS[nomeGrupo];
-        if (!g) { Logger.log('Grupo desconhecido: ' + nomeGrupo + ' (ver ORC_GRUPOS_ATUALIZAVEIS)'); return; }
-        const velhos = mapa.filter(m => comeca(m.titulo, g.titulos));
+        const g0 = ORC_GRUPOS_ATUALIZAVEIS[nomeGrupo];
+        if (!g0) { Logger.log('Grupo desconhecido: ' + nomeGrupo + ' (ver ORC_GRUPOS_ATUALIZAVEIS)'); return; }
+        const g = typeof g0.titulos === 'function' ? Object.assign({}, g0, { titulos: g0.titulos(x) }) : g0;
+        // Título exato quando o grupo dá nomes (categorias: "PPCI" não pode pegar outro slide que comece igual).
+        const velhos = mapa.filter(m => typeof g0.titulos === 'function' ? g.titulos.indexOf(m.titulo) >= 0 : comeca(m.titulo, g.titulos));
+        if (!g.titulos.length) return;
         if (op.soFaltando && velhos.length) return;              // já está no deck: fica como está
         const novos = g.slides(x);
         let posMapa, posDeck;
@@ -175,6 +206,8 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
         _ORC_UNICO = { deckId: deckId, parte: chave, ids: [], indice: posDeck, alvo: null };
         _ORC_TRILHA = g.secao;
         novos.forEach(n => _orcPasso_(deck, W, H, n.nome, s => { n.fn(s); if (n.selo) _orcSeloRevisar_(s, W, rel, n.chaves); }));
+        // Link do sumário que ia para um slide trocado (o impacto abre a seção Resumo Executivo) vai para o novo.
+        if (_ORC_UNICO.ids.length) velhos.forEach(m => { trocados[m.id] = _ORC_UNICO.ids[0]; });
         mapa.splice.apply(mapa, [posMapa, 0].concat(_ORC_UNICO.ids.map(id => ({ id: id, titulo: g.titulos[0] }))));
         Logger.log(cid.nome + ' · ' + nomeGrupo + ': ' + velhos.length + ' slide(s) trocado(s) por ' + novos.length);
         if (!velhos.length) novos.forEach(n => relato.incluidos.push(n.nome));
@@ -182,19 +215,22 @@ function _orcAtualizarSlides_(chaves, grupos, op) {
       });
       _ORC_TRILHA = 0;
 
-      // Links (sumário do Mega) que iam para um slide que saiu: para o slide que agora vem depois do anterior a ele.
-      if (Object.keys(saiu).length) {
+      // Links (sumário do Mega) que iam para um slide que saiu: para o slide que agora vem depois do anterior a ele; os
+      // que iam para um slide trocado, para o novo.
+      if (Object.keys(saiu).length || Object.keys(trocados).length) {
         const ids = idsDeck();
         let refeitos = 0;
         deck.getSlides().forEach(s => s.getShapes().forEach(sh => {
           let alvo = null;
           try { const l = sh.getLink(); alvo = l ? l.getSlideId() : null; } catch (e) { return; }
-          if (!alvo || !(alvo in saiu)) return;
-          const ant = saiu[alvo], novoId = ant ? ids[ids.indexOf(ant) + 1] : null, novo = novoId ? deck.getSlideById(novoId) : null;
+          if (!alvo || (!(alvo in saiu) && !(alvo in trocados))) return;
+          let novo = null;
+          if (alvo in trocados) novo = deck.getSlideById(trocados[alvo]);
+          else { const ant = saiu[alvo], novoId = ant ? ids[ids.indexOf(ant) + 1] : null; novo = novoId ? deck.getSlideById(novoId) : null; }
           try { if (novo) { sh.setLinkSlide(novo); refeitos++; } else sh.removeLink(); }
           catch (e) { Logger.log('Link não refeito: ' + e.message); }
         }));
-        Logger.log(cid.nome + ': ' + refeitos + ' link(s) que iam para slides tirados agora vão para o slide que ficou no lugar');
+        if (refeitos) Logger.log(cid.nome + ': ' + refeitos + ' link(s) do sumário refeitos para os slides novos');
       }
       if (op.soFaltando) {
         Logger.log(cid.nome + ' — ' + (relato.incluidos.length || relato.tirados.length
