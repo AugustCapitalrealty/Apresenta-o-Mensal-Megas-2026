@@ -52,6 +52,11 @@ reinício). O que importa sobre o projeto está aqui, no
   (Grasstecno), coletas do restaurante (Transresíduos, Suíno Vivo) e Sentax (Gibraltar) com o 2026 do ritmo item a
   item (`ORC_CONTRATOS_ANT_RITMO`). "Por que sobe" sem as notas embaixo; Projetos com fonte única por coluna.
   Teste: 5.134/5.134.
+- **22/10, 23h — 090 e mês a mês novos carregados** (importarAtualizacao): 090 `16LPXeEkCwAwFOCuss4v5dYe11KM8JAfNWnSlljBb78I`;
+  mensal Curitiba `1Un6j9AfAqiftiogUUDq3soieqEGf8ufOGf82ekdPMwU`, Itajaí `1S0jfhLXIRKTGynuOfoetkrjCkXx72NEGcNaSsmNxxjE`,
+  Esteio `1LdGKll9z-edZIFhfCKlu0SaOYfm-CsI7xeYhvdZV2B0` (070 igual, segue o de 18h). Mudou: Curitiba troca de meses (linha de
+  vida mar→jun, lavagem society jul→jun) e o diesel com um zero a mais em jun, corrigido na leitura
+  (`ORC_CORRECOES_MODELO`, 02_Dados.gs, também no mês a mês). Totais V2 iguais. Fixtures `*_2300.json`.
 - **Ritmo novo (RITMO-*.xlsx de 22/10, 22h06):** out–dez (projeção) igual ao que usamos nos 3 Megas; só mudam meses
   fechados (material de consumo fev/mar/ago) e o ano de IPTU Curitiba (+2.873) e Seguro Itajaí (−4.129). Não aplicado
   (Guilherme: meses fechados não deveriam mudar).
