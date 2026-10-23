@@ -52,6 +52,14 @@ reinício). O que importa sobre o projeto está aqui, no
   (Grasstecno), coletas do restaurante (Transresíduos, Suíno Vivo) e Sentax (Gibraltar) com o 2026 do ritmo item a
   item (`ORC_CONTRATOS_ANT_RITMO`). "Por que sobe" sem as notas embaixo; Projetos com fonte única por coluna.
   Teste: 5.134/5.134.
+- **A FAZER — imagens dos moldes (log do gerarMegaEsteio de 22/10, 23h16):**
+  - **Molduras (dá sem Python):** faltam 4 na pasta IMAGENS - SLIDES — `MOLDURA - cc760defbc47.png` (Impacto das
+    revisões), `6d0c8e6d56a3` (O que saiu e o que entrou), `ed99c6c51e90` (Defensores), `9925288b3201` (Projetos ×
+    recorrente — itens 1/2). Specs em `MOLDURAS PENDENTES.json` → `node ferramentas/molduras_imagem.js <json>`, subir
+    os PNG na pasta e gerar o Mega de novo. Itajaí e Curitiba vão pedir as suas ao serem gerados.
+  - **Gráficos pelo motor (precisa de Python → só com liberação do Guilherme):** 21 slides do Esteio saem em formas
+    (`GRAFICOS PENDENTES.json`, `ferramentas/graficos_imagem.py`). Em formas está certo, só menos bonito.
+  - Planilha de textos: 197 textos, 10 cortados — conferir quais.
 - **22/10, 23h — 090 e mês a mês novos carregados** (importarAtualizacao): 090 `16LPXeEkCwAwFOCuss4v5dYe11KM8JAfNWnSlljBb78I`;
   mensal Curitiba `1Un6j9AfAqiftiogUUDq3soieqEGf8ufOGf82ekdPMwU`, Itajaí `1S0jfhLXIRKTGynuOfoetkrjCkXx72NEGcNaSsmNxxjE`,
   Esteio `1LdGKll9z-edZIFhfCKlu0SaOYfm-CsI7xeYhvdZV2B0` (070 igual, segue o de 18h). Mudou: Curitiba troca de meses (linha de
