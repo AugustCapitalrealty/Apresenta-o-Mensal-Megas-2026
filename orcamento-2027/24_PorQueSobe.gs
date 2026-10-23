@@ -55,9 +55,7 @@ function _orcNomeObra_(s) {
 }
 
 // Quadro da direita do "por que sobe" no Mega sem obra adiada: Orç anterior,
-// Ritmo e Orç em R$ e R$/m² ao mês, e o Orç contra cada base. Quando a área
-// implícita muda muito (Esteio cresce com B1 e B2), diz que o R$ e o R$/m²
-// andam em sentidos diferentes — comparação honesta (analista, 07/10/2026).
+// Ritmo e Orç em R$ e R$/m² ao mês, e o Orç contra cada base.
 function _orcQuadroBasesManut_(slide, x, y, w, h, rel, v, areas) {
   const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, a = rel.anos;
   _orcCard_(slide, x, y, w, h, 'Orçado, ritmo e orçamento da conta');
@@ -73,17 +71,11 @@ function _orcQuadroBasesManut_(slide, x, y, w, h, rel, v, areas) {
     { tipo: 'total', nome: 'Orç ' + a.orc, celulas: [{ texto: _orcMoeda_(v.orc) }, { texto: m2(v.orc, areas.area) }, { texto: '' }] }
   ];
   const numW = (w - 20 - 90) / 3;
-  const yFim = _orcTabelaNum_(slide, x + 10, y + 26, w - 20, 16 + 15 * linhas.length, [
+  // Sem o texto "Sem obras de 2026 adiadas… / A área muda de… mil m²…" embaixo da tabela (Guilherme, 22/10/2026: "remover").
+  _orcTabelaNum_(slide, x + 10, y + 26, w - 20, 16 + 15 * linhas.length, [
     { titulo: 'BASE', w: 90 }, { titulo: 'R$ NO ANO', w: numW }, { titulo: 'R$/M² AO MÊS', w: numW, destaque: true },
     { titulo: 'ORÇ ' + a.orc + ' × BASE', w: numW }
   ], linhas, null);
-  let texto = 'Sem obras de ' + a.ritmo + ' adiadas para ' + a.orc + ' neste Mega (planilha de comparação do gestor). ' +
-              'A alta aberta item a item está no próximo slide.';
-  if (areas.area && areas.aRit && Math.abs(areas.area / areas.aRit - 1) > 0.1) {
-    texto += ' A área muda de ' + _orcMilhar_(Math.round(areas.aRit / 1000)) + ' mil para ' +
-             _orcMilhar_(Math.round(areas.area / 1000)) + ' mil m² entre o Ritmo e o Orç: por isso o R$ e o R$/m² não andam juntos.';
-  }
-  _orcParagrafo_(slide, x + 12, yFim + 10, w - 24, 50, texto, { fs: 7.5, fsMin: 6, cor: C.textBody, fonte: T.body });
 }
 
 // R$/m² ao mês das demais variações ("+R$ 0,08/m²"): cada ano com a sua área

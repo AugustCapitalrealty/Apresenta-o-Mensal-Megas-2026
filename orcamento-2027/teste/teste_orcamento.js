@@ -1399,8 +1399,9 @@ const ESTADO_CIDADES = {};
   const tPonteC = textos(sl[titulos.indexOf('Ponte Ritmo 2026 → Orçamento 2027')] || { shapes: [] });
   const tPQC = textos(sl[titulos.indexOf('Por que a manutenção sobe — Orçamento 2027')] || { shapes: [] });
   ok(tPonteC.indexOf('ORÇ 2026') >= 0 && tPonteC.indexOf('ORÇ 2026 → ORÇ 2027') >= 0 && tPQC.indexOf('ORÇ 2026') >= 0 &&
-     (c !== 'esteio' || (tPQC.indexOf('VARIAÇÃO') >= 0 && tPQC.indexOf('R$/M² AO MÊS') >= 0 && tPQC.some(t => /A área muda de/.test(t)))),
-     c + ': ponte e "por que sobe" com o Orç 2026' + (c === 'esteio' ? ' (sem obra adiada: quadro Orç × Ritmo × Orç e o aviso da área)' : ''));
+     (c !== 'esteio' || (tPQC.indexOf('VARIAÇÃO') >= 0 && tPQC.indexOf('R$/M² AO MÊS') >= 0 &&
+                         !tPQC.some(t => /A área muda de|Sem obras de 2026 adiadas/.test(t)))),
+     c + ': ponte e "por que sobe" com o Orç 2026' + (c === 'esteio' ? ' (sem obra adiada: quadro Orç × Ritmo × Orç, sem o texto embaixo)' : ''));
   ok(textos(sl[0]).indexOf(cid.nome) >= 0 && textos(sl[0]).indexOf('/m²') >= 0, c + ': capa com o Mega e o R$/m²');
   // Os relatórios fecham entre si; o slide de revisão só traz as pendências
   // de dados (19_Revisar.gs, _orcPendencias_).
