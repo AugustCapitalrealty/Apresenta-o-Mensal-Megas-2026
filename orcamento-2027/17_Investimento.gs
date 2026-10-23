@@ -88,16 +88,27 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
     itens = itens.slice(0, maxL - 1);
   }
   // O nome do item com mais espaço e encolhendo até 6 pt antes de cortar (Jonatas, comentário no deck em 22/10/2026:
-  // "Melhorar aproveitamento do texto" — "FABRICAÇÃO E INSTALAÇÃO DE 2 BACIA…").
+  // "Melhorar aproveitamento do texto" — "FABRICAÇÃO E INSTALAÇÃO DE 2 BACIA…"). Um tamanho só por coluna — o que faz
+  // caber o texto mais comprido (Jonatas, 22/10/2026: "tamanho de fontes diferentes" quando cada linha encolhia sozinha).
+  const wCat = 72, wEnt = 42, wVal = 62, wItem = rw - 16 - wCat - wEnt - wVal;
+  const fsCabe = (textos, w, fsMax, fsMinimo) => {
+    const util = _orcUtilUmaLinha_(w, 'L', 6), fonte = CR_DESIGN_SYSTEM.typography.body;
+    let f = fsMax;
+    while (f > fsMinimo && textos.some(t => _orcLarguraTexto_(_orcTextoEscolhido_('Sugestões', t), f, fonte, false) > util)) f -= 0.25;
+    return f;
+  };
+  const fsItem = fsCabe(itens.map(it => it.descricao), wItem, 8, 6);
+  const fsCat = fsCabe(itens.map(it => it.categoria || ''), wCat, 6.5, 5.5);
   const linhas = itens.map(it => ({ celulas: [
-    { texto: it.descricao, aba: 'Sugestões', fsMin: 6 }, { texto: it.categoria, cor: C.textBody, fs: 6.5, fsMin: 5.5 },
-    { texto: _orcQuando_(it.meses), cor: C.textBody, fs: 7, fsMin: 6 }, { texto: _orcMoeda_(it.total), bold: true }] }));
+    { texto: it.descricao, aba: 'Sugestões', fs: fsItem, fsMin: fsItem },
+    { texto: it.categoria, cor: C.textBody, fs: fsCat, fsMin: fsCat },
+    { texto: _orcQuando_(it.meses), cor: C.textBody, fs: 7, fsMin: 7 }, { texto: _orcMoeda_(it.total), bold: true }] }));
   if (resto) linhas.push({ celulas: [{ texto: '+ ' + resto.n + ' itens menores', cor: C.textBody }, null, null,
                                      { texto: _orcMoeda_(resto.total), bold: true }] });
   linhas.push({ total: true, celulas: [{ texto: 'TOTAL PROJETOS' }, null, null, { texto: _orcMoeda_(proj.total) }] });
   _orcTabela_(slide, rx + 8, ty + 22, rw - 16, [
-    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Categoria', w: 72, align: 'L' },
-    { titulo: 'Entrega', w: 42, align: 'C' }, { titulo: 'Valor', w: 62, align: 'C' }
+    { titulo: 'Item', w: null, align: 'L' }, { titulo: 'Categoria', w: wCat, align: 'L' },
+    { titulo: 'Entrega', w: wEnt, align: 'C' }, { titulo: 'Valor', w: wVal, align: 'C' }
   ], linhas, Math.min(16, disp / linhas.length), { hCab: 16 });
 
   // Legenda: o que é cada grupo, na cor da barra.

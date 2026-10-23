@@ -52,6 +52,17 @@ const ORC_CONTRATOS_SITUACAO_GESTOR = {
     'CUSTO MENSAL DE INTERNET': 'Reajuste IPCA',
     'Linha de celular': 'Linha Coordenação Sai',
     'ALURA': 'Redução'
+  },
+  // Prints do Guilherme, 22/10/2026 ("grave essas situações do Mega Curitiba também"); "Contato" corrigido.
+  'Mega Curitiba': {
+    'VIGILÂNCIA (EMPRESA AUXILIAR)': 'Posto Diurno Full 2027',
+    'MOKED (CONSULTORIA)': '> IPCA (Efeito Contrato Global)',
+    'PEST PATROL (DEDETIZAÇÃO)': 'Contrato Full em 2027',
+    'AR-CONDICIONADO (PMOC)': 'Era avulso em 2026 + Adeq. PMOC',
+    'ENERGIA SOLAR – HP FINANCIAL': 'Fim do Leasing',
+    'EFFICIENZA SOLUÇÕES EM ENERGIA': 'Rescisão do Contrato em Jun/26',
+    'INFRASPEAK MEGA CURITIBA': 'Revisão do Rateio 2027',
+    'LOCAÇÃO DE CARRO (BARIGUI)': 'Continuidade Contrato'
   }
 };
 function _orcSituacaoGestor_(cid, nome, regra) {

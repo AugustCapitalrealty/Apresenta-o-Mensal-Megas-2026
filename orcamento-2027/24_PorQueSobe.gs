@@ -303,9 +303,9 @@ function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
   // ---- Maiores altas e quedas (direita) ----
   const tx = cx + cw + 12, tw = W - MX - tx;
   _orcCard_(slide, tx, cy, tw, ch, 'Maiores altas e quedas, item a item');
-  const x0 = tx + 10, lw = tw - 20, numW = 54, nomeW = lw - numW * 3, hCab = 15, hNota = 24;
+  const x0 = tx + 10, lw = tw - 20, numW = 54, nomeW = lw - numW * 3, hCab = 15;
   const nLin = vi.altas.length + vi.quedas.length;
-  const rowH = Math.min(20, (ch - 26 - hCab * 2 - 10 - hNota - 6) / Math.max(1, nLin));
+  const rowH = Math.min(20, (ch - 26 - hCab * 2 - 10 - 6) / Math.max(1, nLin));
   const tabela = (y, titulo, cor, lista) => {
     _orcRet_(slide, x0, y, lw, hCab, cor);
     _orcUmaLinha_(slide, x0 + 4, y, nomeW - 4, hCab, titulo,
@@ -328,13 +328,9 @@ function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
     });
     return ry;
   };
-  let y = tabela(cy + 26, 'SOBEM', _ORC_COR_VAR.sobe, vi.altas);
-  y = tabela(y + 10, 'CAEM', C.brandDark, vi.quedas);
-  const mostrados = vi.altas.concat(vi.quedas);
-  _orcParagrafo_(slide, tx + 12, y + 6, tw - 24, hNota,
-    'Os ' + mostrados.length + ' itens somam ' + mil(mostrados.reduce((t, x) => t + x.d, 0)) + '; o resto se espalha em ' +
-    (vi.nCand - mostrados.length) + ' itens. Par = item de ' + a.orc + ' que o gestor ligou a um gasto de ' + a.ritmo +
-    ' na planilha de comparação.', { fs: 6.5, fsMin: 5.5, cor: C.textBody, fonte: T.body });
+  // Sem a nota "Os 10 itens somam…; Par = item de 2027…" embaixo das tabelas (Guilherme, 22/10/2026: "remover").
+  const y = tabela(cy + 26, 'SOBEM', _ORC_COR_VAR.sobe, vi.altas);
+  tabela(y + 10, 'CAEM', C.brandDark, vi.quedas);
 
   _orcRodape_(slide, W, H, 'Fonte: planilha de comparação Ritmo ' + a.ritmo + ' × Orç ' + a.orc + ' (pares do gestor), modelo 090 de ' +
     a.orc + ' e METRAGEM-COND · ' + cid.nome);

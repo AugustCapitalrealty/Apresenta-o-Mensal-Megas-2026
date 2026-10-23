@@ -2860,6 +2860,15 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            tCtr.indexOf('Linha Coordenação Sai') >= 0 && tCtr.indexOf('Licença Analista/Assistente') >= 0 &&
            tCtr.indexOf('Troca de empresa a partir de mar/27') >= 0,
            'esteio (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
+      }
+      if (chave === 'CURITIBA') {
+        const tCtrC = sl.filter(x => /^Contratos — 2026/.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
+        ok(['Posto Diurno Full 2027', '> IPCA (Efeito Contrato Global)', 'Contrato Full em 2027', 'Era avulso em 2026 + Adeq. PMOC',
+            'Fim do Leasing', 'Rescisão do Contrato em Jun/26', 'Revisão do Rateio 2027', 'Continuidade Contrato']
+           .every(t => tCtrC.indexOf(t) >= 0) && tCtrC.indexOf('Ampliação R$ 14 mil') >= 0,
+           'curitiba (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
+      }
+      if (chave === 'ESTEIO') {
         // A anotação "Saída Voigt" no mês a mês da Segurança (ORC_ANOTACOES_MES, 22/10/2026).
         const seg = sl.filter(x => titulo(x) === 'Segurança e vigilância')[0];
         ok(seg && textos(seg).indexOf('Saída Voigt') >= 0 &&
