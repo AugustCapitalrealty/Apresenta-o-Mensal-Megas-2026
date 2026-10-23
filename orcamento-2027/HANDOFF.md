@@ -24,6 +24,10 @@ reinício). O que importa sobre o projeto está aqui, no
   negativo, a conta fica sem fechar e vai para `rel.mensalNaoConciliado` + log (hoje: IPTU Curitiba e Seguro Itajaí,
   que no m² com IPTU seguem o ano da DRE). Antes ela espalhava a diferença pelo ano todo. A metragem mensal só troca o
   Orç 2027 das contas que o Despesas-Mensal já tem.
+- **Gráficos "pelo motor" sem Python (23/10):** `ferramentas/graficos_imagem.js` (Node, PNG RGBA, antialias por
+  distância ao contorno) faz o que o `graficos_imagem.py` fazia: `node ferramentas/graficos_imagem.js "<IMAGENS -
+  SLIDES>/GRAFICOS PENDENTES.json" "<IMAGENS - SLIDES>"`. 119 desenhados em 30 s (os 44 dos logs do Esteio e Itajaí de
+  23/10 incluídos); as 22 molduras pendentes também (`molduras_imagem.js`). O log da geração já manda rodar o .js.
 - **Decidido (Guilherme, 23/10):** a Despesa de pessoal de 2026 entra mês a mês (o realizado: pico de jan), não 1/12 —
   o Ritmo jan–set do m² muda só por ela (Esteio jan 6,31 → 6,60, fev 6,19 → 5,88; média igual). `M2=1 node
   teste/teste_orcamento.js` mostra as linhas antes × agora dos 3 Megas.

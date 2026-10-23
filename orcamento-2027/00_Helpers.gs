@@ -460,7 +460,7 @@ function _orcFecharMoldura_(slide, W, H) {
 // em diante as formas (retângulos, linhas, bolinhas) que não são card da
 // moldura são anotadas em vez de criadas; os textos e imagens entram na hora.
 // No fim do slide as formas viram UMA imagem — "GRAFICO - <assinatura>.png"
-// na pasta de imagens, desenhada por ferramentas/graficos_imagem.py com
+// na pasta de imagens, desenhada por ferramentas/graficos_imagem.js (sem Python) com
 // antialias e pontas redondas — mandada para trás de tudo (e a moldura, que
 // fecha depois, mais para trás ainda). Sem a imagem na pasta: as formas de
 // sempre, atrás dos textos, e a especificação vai para "GRAFICOS
@@ -541,7 +541,7 @@ function _orcLogGraficos_(quem) {
     Logger.log(quem + ' · formas pelo motor: ' + _ORC_GRAF_CONTA.com + ' slides em imagem, ' + n + ' em formas' +
                (faltam.length ? ' — faltam na pasta ' + ORC_PASTA_IMAGENS + ': ' +
                  faltam.map(h => 'GRAFICO - ' + h + '.png (' + _ORC_GRAF_CONTA.sem[h].join(', ') + ')').join('; ') +
-                 '. As especificações foram para ' + ORC_GRAFICOS_PENDENTES + ': rode ferramentas/graficos_imagem.py e gere de novo.' : ''));
+                 '. As especificações foram para ' + ORC_GRAFICOS_PENDENTES + ': node ferramentas/graficos_imagem.js com ele (sem Python) e gere de novo.' : ''));
   }
   if (faltam.length) {
     try {

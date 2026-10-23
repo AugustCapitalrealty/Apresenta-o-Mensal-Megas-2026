@@ -379,7 +379,7 @@ const ORC_USAR_MOLDURAS = true;
 // slide com cabeçalho, as formas do conteúdo (fundos de tabela, faixas,
 // barras, linhas dos gráficos, bolinhas) viram UMA imagem "GRAFICO -
 // <assinatura>.png" na pasta de imagens, desenhada por
-// ferramentas/graficos_imagem.py, logo acima da moldura; os textos ficam no
+// ferramentas/graficos_imagem.js, logo acima da moldura; os textos ficam no
 // slide, editáveis. A assinatura sai das próprias formas: a imagem só muda se
 // algum número (ou o layout) mudar. false = tudo em formas, como antes.
 const ORC_USAR_GRAFICOS_IMAGEM = true;
