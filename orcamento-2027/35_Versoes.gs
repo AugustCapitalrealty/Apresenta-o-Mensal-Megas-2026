@@ -86,11 +86,10 @@ const ORC_AJUSTES_V2 = {
       pega: /selantes das paredes m7|bacias de contencao/,
       obs: 'Carry-over selantes M7–M12 (+8,9k) e 2 bacias contenção (+9,9k)',
       itemFac: 'SELANTES E BACIAS DE CONTENÇÃO', obsFac: 'Carry-over selantes M7–M12 (+8,9k) e 2 bacias contenção diesel (+9,9k)' },
-    // Itens com "RETIRADO DO ORÇAMENTO" no nome: a geração conta R$ 1 em cada (02_Dados.gs, 23/10/2026). Na V1 a
-    // galeria tinha R$ 1.465,57; as 2 revisões da bomba do SPK já eram R$ 1 e não mudam.
-    { item: 'ITENS RETIRADOS DO ORÇAMENTO', conta: 'Manutenção', ref: -1464.57,
+    // Itens com "RETIRADO DO ORÇAMENTO" no nome e valor no sistema: a geração não conta mais (02_Dados.gs, 22/10/2026).
+    { item: 'ITENS RETIRADOS DO ORÇAMENTO', conta: 'Manutenção', ref: -1467.57,
       pega: /retirado do orcamento/,
-      obs: 'Limpeza da galeria da comporta B2: de R$ 1.465,57 para R$ 1 (linha mantida)' },
+      obs: 'Limpeza da galeria da comporta B2 (R$ 1.465,57) e 2 revisões da bomba do SPK (R$ 1 cada)' },
     { item: 'KEY ACCESS FACIAL, CONTRATOS E RH', conta: 'Outras', ref: 13088.71, resto: true,
       obs: 'Key Access facial (+3,6k), pessoal (+7,4k), contratos (+2k)',
       itemFac: 'KEY ACCESS, CONTRATOS E RH' }

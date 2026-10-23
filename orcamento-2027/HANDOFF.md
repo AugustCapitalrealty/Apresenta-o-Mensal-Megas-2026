@@ -45,10 +45,9 @@ reinício). O que importa sobre o projeto está aqui, no
   do ritmo (fecha com a METRAGEM/DRE); perguntar à controladoria qual agosto vale. Linhas "R$ M² MÊS" não viram conta.
   Ritmo out–dez no m² com IPTU e seguro (teste): Itajaí 3,42 / 5,47 / 4,97, Curitiba 4,07 / 4,46 / 4,27, Esteio
   6,99 / 7,34 / 7,21 = planilhas. Teste: 5.152/5.152. Fixtures `teste/fixture_mensalmet_<c>_2310.json`.
-- **Itens "RETIRADO DO ORÇAMENTO" voltam a aparecer, com R$ 1 cada** (Guilherme, 23/10): `_orcLinhasModelo_`
-  (02_Dados.gs) zera os meses e põe R$ 1 no mês de maior valor. A galeria da comporta B2 no 090 de 23h já estava com
-  R$ 0,01 em jan. Esteio V2 **R$ 3.839.292**, Facilities **R$ 17.564.277** (+R$ 3); impacto "Itens retirados" −1.464,57.
-  Teste: 5.142/5.142.
+- **Itens "RETIRADO DO ORÇAMENTO": FORA dos slides** (Guilherme, 23/10, vendo o PPCI do Esteio). De manhã eles tinham
+  voltado com R$ 1 cada; à tarde ele pediu para tirar — volta a regra de 22/10 22h45 (`_orcLinhasModelo_`, 02_Dados.gs:
+  a linha sai da leitura). Esteio V2 **R$ 3.839.289**, Facilities **R$ 17.564.274**; impacto "Itens retirados" −1.467,57.
 
 **>>> 22/10/2026, noite (Claude) — IMPACTO V1 → V2 CALCULADO DOS DADOS <<<**
 - Conferência item a item da base V1 × planilhas de 22/10: a lista de ajustes do Argon bate (cada Mega fecha no
