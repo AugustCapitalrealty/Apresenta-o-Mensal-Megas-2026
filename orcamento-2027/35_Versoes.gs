@@ -57,7 +57,7 @@ function _orcV1Mega_(chave) {
   const b = _orcBaseV1_(), m = b && b.megas && b.megas[chave];
   if (m && m.total && !m.erro) {
     return { total: m.total.orc, m2: m.area && m.area.orc ? m.total.orc / m.area.orc / 12 : ORC_V1_M2[chave],
-             area: m.area && m.area.orc ? m.area.orc : null, itens: m.itens || null };
+             area: m.area && m.area.orc ? m.area.orc : null, itens: m.itens || null, contas: m.contas || null };
   }
   return { total: ORC_V1_VALORES[chave], m2: ORC_V1_M2[chave], area: null, itens: null };
 }
@@ -569,11 +569,18 @@ function _orcEntrouSaiu_(chave, rel, modelos) {
   const patio = rel.patio && Math.abs(rel.patio.orc) > 0.5 ? rel.patio.orc : 0;
   const v2 = rel.total.orc;
   const somaItens = contam.reduce((t, r) => t + r.d, 0);
+  // O que não vem dos modelos: a Despesa de pessoal, que vem pronta da METRAGEM (RH). Se a sobra for só ela (até R$ 1),
+  // o cartão diz "Despesa de pessoal" com o de/para; senão, "Pessoal e outras (METRAGEM)".
+  const metragem = v2 + patio - v1.total - somaItens;
+  const kPes = _orcChaveConta_('Despesa de pessoal');
+  const pes = arr => (arr || []).filter(c => _orcChaveConta_(c.nome) === kPes).reduce((t, c) => t + ((c.v && c.v.orc) || 0), 0);
+  const pes1 = pes(v1.contas), pes2 = pes(rel.contas);
   return {
     v1: v1.total, v2: v2, m2V1: v1.total / v1.area / 12, m2V2: v2 / area2 / 12, area1: v1.area, area2: area2, patio: patio,
     reduz: contam.filter(r => r.d < 0).sort((a, b) => a.d - b.d),
     aumenta: contam.filter(r => r.d > 0).sort((a, b) => b.d - a.d),
-    metragem: v2 + patio - v1.total - somaItens,        // o que não vem dos modelos (Despesa de pessoal da METRAGEM)
+    metragem: metragem,
+    pessoal: { v1: pes1, v2: pes2, so: !!(v1.contas && Math.abs(metragem - (pes2 - pes1)) < 1) },
     efArea: v1.total / 12 * (1 / area2 - 1 / v1.area),
     semEfeito: semEfeito
   };
@@ -649,7 +656,9 @@ function gerarSlideEntrouSaiu_(slide, W, H, cid, rel, modelos) {
     { rot: 'V1 · 13/10', m2: _orcM2_(es.m2V1), rs: _orcMoeda_(es.v1), cheio: true },
     { rot: 'Saiu ou reduziu', m2: _orcM2Sinal_(porM2(sR)), rs: Math.abs(sR) < 0.5 ? 'nenhum item' : '−' + _orcMoeda_(Math.abs(sR)), s: -1 },
     { rot: 'Entrou ou aumentou', m2: _orcM2Sinal_(porM2(sA)), rs: Math.abs(sA) < 0.5 ? 'nenhum item' : '+' + _orcMoeda_(sA), s: 1 },
-    { rot: 'Pessoal (METRAGEM)', m2: _orcM2Sinal_(porM2(es.metragem)), rs: (es.metragem < 0 ? '−' : '+') + _orcMoeda_(Math.abs(es.metragem)),
+    { rot: es.pessoal.so ? 'Despesa de pessoal' : 'Pessoal e outras (METRAGEM)', m2: _orcM2Sinal_(porM2(es.metragem)),
+      rs: (es.metragem < 0 ? '−' : '+') + _orcMoeda_(Math.abs(es.metragem)) +
+          (es.pessoal.so ? ' · ' + _orcMil_(es.pessoal.v1) + ' → ' + _orcMil_(es.pessoal.v2) + ' mil' : ''),
       s: es.metragem < 0 ? -1 : 1 }
   ];
   if (es.patio) passos.push({ rot: 'Pátio Mercado Livre', m2: _orcM2Sinal_(porM2(-es.patio)), rs: '−' + _orcMoeda_(es.patio), s: -1 });
@@ -661,7 +670,8 @@ function gerarSlideEntrouSaiu_(slide, W, H, cid, rel, modelos) {
   passos.forEach((p, i) => {
     const x = MX + i * (pw + pg);
     _orcRet_(slide, x, py, pw, ph, p.cheio ? C.brandDark : C.cardBg, { redondo: true, borda: p.cheio ? null : C.lines });
-    const cor = p.cheio ? '#FFFFFF' : (p.s < 0 ? _ORC_COR_VAR.desce : _ORC_COR_VAR.sobe);
+    // Passo que arredonda para 0,00/m²: cinza (nem sobe nem desce).
+    const cor = p.cheio ? '#FFFFFF' : (p.m2 === '0,00' ? C.textMuted : (p.s < 0 ? _ORC_COR_VAR.desce : _ORC_COR_VAR.sobe));
     _orcUmaLinha_(slide, x + 6, py + 3, pw - 12, 10, p.rot.toUpperCase(),
       { align: 'L', fs: 5.5, bold: true, cor: p.cheio ? C.brandSoft : C.textBody, fonte: T.titles, fsMin: 4.5 });
     _orcUmaLinha_(slide, x + 6, py + 13, pw - 12, 15, (p.cheio ? 'R$ ' : '') + p.m2 + '/m²',
@@ -734,7 +744,7 @@ function gerarSlideEntrouSaiu_(slide, W, H, cid, rel, modelos) {
       { align: 'L', fs: 6, fsMin: 5, cor: C.textBody, fonte: T.body, italic: true });
   }
   _orcRodape_(slide, W, H, 'Fonte: base V1 (13/10/2026) × modelos 070/090 e contratos de 22/10/2026 · R$/m² ao mês na área V2 · ' +
-    'itens abaixo de R$ ' + _orcMilhar_(ORC_ES_MIN) + ' em "Demais ajustes"');
+    'itens abaixo de R$ ' + _orcMilhar_(ORC_ES_MIN) + ' em "Demais ajustes" · Despesa de pessoal: vem da METRAGEM (RH), não dos modelos');
 }
 
 function congelarV1() {

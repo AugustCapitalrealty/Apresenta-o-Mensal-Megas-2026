@@ -2893,6 +2893,9 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
       const fecha = es.m2V1 + (somaD(es.reduz) + somaD(es.aumenta) + es.metragem - es.patio) / es.area2 / 12 + es.efArea;
       ok(Math.abs(fecha - es.m2V2) < 1e-9 && Math.abs(es.m2V1 - G.ORC_V1_M2[k]) < 0.005 && Math.abs(es.metragem - metEsp[k]) <= 1,
          k + ' entrou/saiu: V1 + saiu + entrou + pessoal − pátio + área = V2 no R$/m² (pessoal ' + Math.round(es.metragem) + ')');
+      ok(es.pessoal.so && Math.abs((es.pessoal.v2 - es.pessoal.v1) - es.metragem) < 1,
+         k + ' entrou/saiu: o que não vem dos modelos é só a Despesa de pessoal da METRAGEM (' +
+         Math.round(es.pessoal.v1) + ' → ' + Math.round(es.pessoal.v2) + ')');
     });
     const esI = G._orcEntrouSaiu_('ITAJAI', rels2210.ITAJAI, mods2210.ITAJAI);
     ok(esI.reduz.length === 11 && esI.reduz.some(r => r.vezes === 4 && /LINHA DE VIDA/.test(r.nome) && Math.round(r.d) === -30540) && esI.reduz[0].d < -179000 && /RESERVAT/.test(esI.reduz[0].nome) &&
