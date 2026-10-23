@@ -2922,6 +2922,18 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
       ok(!sl.some(x => textos(x).some(t => t.indexOf('Falha ao gerar') === 0 || /…$/.test(t))),
          c + ' (22/10): deck completo gerado sem falhas e sem textos cortados ("…")');
 
+      if (chave === 'ITAJAI') {
+        // 23/10/2026: cancelas 2/2 de 2026 = obra das cancelas de 2027 (mesmo serviço); provisão de emergências = os 3%.
+        const dados = G.obterManutencao_('ITAJAI'), conta = rel.contas.filter(x => x.chave === G._orcChaveConta_('Manutenção de imóveis'))[0];
+        const vi = G._orcVariacoesItens_(cid, dados, conta, G._orcAdiados2026_(cid, dados));
+        const lin = l => l.map(x => G._orcNomeItemVar_(x.nome) + ' ' + Math.round(x.d)).join(' / ');
+        if (process.env.VAR) console.log('    itajaí demais variações: ' + vi.blocos.map(b => b.curto + ' ' + Math.round(b.v)).join(' · ') +
+                                         '\n      sobem: ' + lin(vi.altas) + '\n      caem: ' + lin(vi.quedas));
+        ok(!vi.quedas.concat(vi.altas).some(x => /cancelas 2\/2|manutenções emergências|^PROVISÃO DE 3%/i.test(x.nome)) &&
+           vi.altas.some(x => /^OBRAS DAS CANCELAS/.test(x.nome) && Math.round(x.d) === 220034),
+           'itajaí (23/10): cancelas de 2027 × cancelas 2/2 de 2026 (+220.034) e a provisão dos 3% × emergências de 2026 como mesmo serviço (' +
+           lin(vi.altas) + ' | ' + lin(vi.quedas) + ')');
+      }
       const titulos = sl.map(titulo);
       ok(titulos.some(t => /^Impacto das revisões/.test(t)), c + ' (22/10): slide de impacto V1 → V2 inserido no deck');
       const iImp = titulos.findIndex(t => /^Impacto das revisões/.test(t));

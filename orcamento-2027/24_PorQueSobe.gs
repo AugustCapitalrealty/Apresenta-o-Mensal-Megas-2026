@@ -202,20 +202,37 @@ const ORC_PARES_EXTRA = {
       itens2027: ['LAVAGEM DA ESTRUTURA METÁLICA DOS ARMAZÉNS 3 E 4'] },
     { de2026: 'Limpeza de cobertura armazéns 3 e 4 Boticário #10233727',
       itens2027: ['LAVAGEM DA COBERTURA PARTE 2 (ARMAZÉM 3 E 4)'] }
+  ],
+  // Itajaí (Guilherme, 23/10/2026, no "demais variações"): a obra das cancelas é o mesmo serviço — a parte de 2026
+  // (equipamentos, 2/2) e a obra adiada para 2027, financiada em 24 meses; a provisão de emergências de 2026 é a
+  // provisão dos 3% de 2027 (o gestor já tinha escrito "Entra na provisão dos 3%", sem ligar o item).
+  'Mega Itajaí': [
+    { de2026: 'Obra cancelas 2/2 *  2594805 (Equipamentos eletrônicos)',
+      itens2027: ['OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA FIXA SP 2,34% ANO',
+                  'OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA FIXA SP 2,34%',
+                  'OBRAS DAS CANCELAS (VIA FINANCIAMENTO 24 MESES) TAXA SP 2,34%'] },
+    { de2026: 'Provisão manutenções emergências',
+      itens2027: ['PROVISÃO DE 3% SOBRE A MANUTENÇÃO PARA ITENS NÃO PREVISTOS'] }
   ]
 };
 
-// As decisões do gestor (ORC_DECISOES_GESTOR) com os pares de ORC_PARES_EXTRA.
+// As decisões do gestor (ORC_DECISOES_GESTOR) com os pares de ORC_PARES_EXTRA: o gasto de 2026 "sem par" vira par;
+// o par que o gestor deixou sem item de 2027 ganha os itens.
 function _orcDecisoesComExtras_(nome) {
   const dec = ORC_DECISOES_GESTOR[nome];
   const extra = ORC_PARES_EXTRA[nome] || [];
   if (!dec || !dec.semPar || !extra.length) return dec;
   const n = x => _orcNorm_(x);
   const achados = extra.map(e => ({ e: e, s: dec.semPar.filter(x => n(x.de2026) === n(e.de2026))[0] })).filter(o => o.s);
+  const completar = e => (dec.pares || []).filter(p => n(p.de2026) === n(e.de2026) && !(p.itens2027 || []).length)[0];
+  const pares = (dec.pares || []).map(p => {
+    const e = extra.filter(x => completar(x) === p)[0];
+    return e ? Object.assign({}, p, { itens2027: e.itens2027 }) : p;
+  });
   return Object.assign({}, dec, {
     semPar: dec.semPar.filter(x => !achados.some(o => o.s === x)),
-    pares: (dec.pares || []).concat(achados.map(o => ({ de2026: o.e.de2026, ritmo2026: o.s.ritmo2026,
-                                                        itens2027: o.e.itens2027, orc2027: 0 })))
+    pares: pares.concat(achados.map(o => ({ de2026: o.e.de2026, ritmo2026: o.s.ritmo2026,
+                                             itens2027: o.e.itens2027, orc2027: 0 })))
   });
 }
 
