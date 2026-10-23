@@ -193,8 +193,34 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adiOuNull) {
 // se repetem" (o Ritmo da conta menos o dos pares) e o Orç que o modelo não
 // alcança, em "itens novos". As duas vão para o log.
 // null sem as decisões na base ritmo (semPar) ou sem o modelo.
+// Pares ligados depois da planilha de comparação do gestor (23_DecisoesGestor.gs é gerado dela e não se edita à mão):
+// o gasto de 2026 sai de "sem par" e vira par com os itens de 2027 (descrição como no 090, sem a [CATEGORIA]).
+// Curitiba (Jonatas, 22/10/2026: "está previsto em 2027, valor de 50k, confirmar"; Guilherme: ligar pelo assunto).
+const ORC_PARES_EXTRA = {
+  'Mega Curitiba': [
+    { de2026: 'Lavação em fechamentos metálico fase 01 #14839538',
+      itens2027: ['LAVAGEM DA ESTRUTURA METÁLICA DOS ARMAZÉNS 3 E 4'] },
+    { de2026: 'Limpeza de cobertura armazéns 3 e 4 Boticário #10233727',
+      itens2027: ['LAVAGEM DA COBERTURA PARTE 2 (ARMAZÉM 3 E 4)'] }
+  ]
+};
+
+// As decisões do gestor (ORC_DECISOES_GESTOR) com os pares de ORC_PARES_EXTRA.
+function _orcDecisoesComExtras_(nome) {
+  const dec = ORC_DECISOES_GESTOR[nome];
+  const extra = ORC_PARES_EXTRA[nome] || [];
+  if (!dec || !dec.semPar || !extra.length) return dec;
+  const n = x => _orcNorm_(x);
+  const achados = extra.map(e => ({ e: e, s: dec.semPar.filter(x => n(x.de2026) === n(e.de2026))[0] })).filter(o => o.s);
+  return Object.assign({}, dec, {
+    semPar: dec.semPar.filter(x => !achados.some(o => o.s === x)),
+    pares: (dec.pares || []).concat(achados.map(o => ({ de2026: o.e.de2026, ritmo2026: o.s.ritmo2026,
+                                                        itens2027: o.e.itens2027, orc2027: 0 })))
+  });
+}
+
 function _orcVariacoesItens_(cid, dados, conta, adi) {
-  const dec = ORC_DECISOES_GESTOR[cid.nome];
+  const dec = _orcDecisoesComExtras_(cid.nome);
   if (!dec || !dec.semPar || !dados) return null;
   const v = conta.v;
   const porNome = {};

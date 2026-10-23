@@ -125,6 +125,19 @@ const ORC_CONTRATOS_NAO_SAO = [
 //     jul, 1.333,33 cada) em Manutenção predial. As notas da LF e a bomba de
 //     dreno (Manutenção de máquinas) são corretivas, fora do PMOC.
 const ORC_CONTRATOS_ANT_RITMO = [
+  // Curitiba (Jonatas/Guilherme, 22/10/2026: "não é novo" — o fornecedor de 2026 era outro), valores do ritmo 2026
+  // item a item exportado em 07/10/2026 (ferramentas/bases_2026): Roçada = "Serviço de Roçada - Grasstecno" (070,
+  // jan–dez); rejeitos = "Coleta de lixo do restaurante industrial - Sodexo (Rejeitos) - Transresíduos" (070, fev–dez);
+  // orgânicos = "… Sodexo (Orgânico) - Suinocultura" (3 Joses / Suíno Vivo, 070, jul–dez); Sentax = "[CONTRATO] Papel
+  // Higiênico e Toalha, Sabonete Líquido e Sacos de Lixo - Gibraltar (Sentax)" (090, jul–dez).
+  { unidade: 'Mega Curitiba', conta: 'Limpeza e conservação', termo: 'rocada', ant: 123300.00,
+    situacao: 'Era Grasstecno em ' + (ORC_ANO - 1) },
+  { unidade: 'Mega Curitiba', conta: 'Limpeza e conservação', termo: 'rejeitos', ant: 70425.70,
+    situacao: 'Era Transresíduos em ' + (ORC_ANO - 1) },
+  { unidade: 'Mega Curitiba', conta: 'Limpeza e conservação', termo: 'organicos', ant: 27400.00,
+    situacao: 'Era Suíno Vivo (jul–dez/' + String(ORC_ANO - 1).slice(-2) + ')' },
+  { unidade: 'Mega Curitiba', conta: 'Material de consumo', termo: 'saco de lixo', ant: 22046.10,
+    situacao: 'Era Gibraltar (jul–dez/' + String(ORC_ANO - 1).slice(-2) + ')' },
   { unidade: 'Mega Itajaí', conta: 'Limpeza e conservação', termo: 'nova escala', ant: 4 * (8602.10 + 8000),
     situacao: 'Ano cheio (começou em set/' + String(ORC_ANO - 1).slice(-2) + ')' },
   { unidade: 'Mega Curitiba', conta: 'Segurança e vigilância', termo: 'itau',

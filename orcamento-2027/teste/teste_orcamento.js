@@ -2863,11 +2863,23 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
            'esteio (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
       }
       if (chave === 'CURITIBA') {
-        const tCtrC = sl.filter(x => /^Contratos — 2026/.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
+        // Pares ligados depois da planilha do gestor (ORC_PARES_EXTRA, 22/10/2026): as lavagens dos Armazéns 3 e 4.
+        const decC = G._orcDecisoesComExtras_('Mega Curitiba');
+        const parC = n => decC.pares.filter(p => p.de2026.indexOf(n) === 0)[0];
+        ok(!decC.semPar.some(s => /^(Lavação em fechamentos|Limpeza de cobertura armazéns 3 e 4)/.test(s.de2026)) &&
+           parC('Lavação em fechamentos') && parC('Lavação em fechamentos').ritmo2026 === 50000 &&
+           parC('Limpeza de cobertura') && Math.round(parC('Limpeza de cobertura').ritmo2026) === 114058 &&
+           G.ORC_DECISOES_GESTOR['Mega Curitiba'].semPar.some(s => /^Lavação em fechamentos/.test(s.de2026)),
+           'curitiba: as lavagens de 2026 ligadas às de 2027 (pares extras), sem mexer nas decisões geradas da planilha');
+        const tCtrC =sl.filter(x => /^Contratos — 2026/.test(titulo(x))).reduce((a, x) => a.concat(textos(x)), []);
         ok(['Posto Diurno Full 2027', '> IPCA (Efeito Contrato Global)', 'Contrato Full em 2027', 'Era avulso em 2026 + Adeq. PMOC',
             'Fim do Leasing', 'Rescisão do Contrato em Jun/26', 'Revisão do Rateio 2027', 'Continuidade Contrato']
            .every(t => tCtrC.indexOf(t) >= 0) && tCtrC.indexOf('Ampliação R$ 14 mil') >= 0,
            'curitiba (22/10): contratos com as situações gravadas do gestor (e a regra onde ele não mudou)');
+        // Os que "não são novos" (22/10/2026): 2026 do ritmo item a item (Grasstecno, Transresíduos, Suíno Vivo, Gibraltar).
+        ok(['Era Grasstecno em 2026', '123.300', 'Era Transresíduos em 2026', '70.426', 'Era Suíno Vivo (jul–dez/26)', '27.400',
+            'Era Gibraltar (jul–dez/26)', '22.046'].every(t => tCtrC.indexOf(t) >= 0),
+           'curitiba (22/10): roçada, coletas do restaurante e Sentax com o fornecedor e o valor de 2026');
       }
       if (chave === 'ESTEIO') {
         // A anotação "Saída Voigt" no mês a mês da Segurança (ORC_ANOTACOES_MES, 22/10/2026).
