@@ -252,7 +252,10 @@ function _orcRevisarSlideGestorNaMarca_(slide, W, H, mega, nV3, ancora) {
   if (_orcTrocarMolduraGestor_(slide, W, H, secao)) feito.push('trilha em 0' + secao);
 
   // 5b. Tabela em print ou tabela simples → tabela no padrão do deck (33_GestorRedesenho.gs).
-  const red = ORC_GESTOR_REDESENHOS.filter(r => r.mega === mega && nt.indexOf(r.titulo) >= 0)[0];
+  // Slides com o mesmo título (Projeto Segurança Eletrônica): `trecho` = um texto do slide, sem acento, que separa cada um.
+  const textoTodo = ORC_GESTOR_REDESENHOS.some(r => r.trecho) ? _orcNorm_(slide.getShapes().map(txt).join(' ')) : '';
+  const red = ORC_GESTOR_REDESENHOS.filter(r => r.mega === mega && nt.indexOf(r.titulo) >= 0 &&
+                                                (!r.trecho || textoTodo.indexOf(r.trecho) >= 0))[0];
   if (red) _orcRedesenharGestor_(slide, W, H, red, feito, avisos);
 
   // 5c. O que só o gestor sabe corrigir: selo ⚠ REVISAR no slide.

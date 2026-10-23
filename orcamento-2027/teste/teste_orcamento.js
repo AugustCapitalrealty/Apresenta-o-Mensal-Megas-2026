@@ -2861,6 +2861,43 @@ console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
        'redesenho: ' + (i ? 'cenário proposto' : 'cenário hoje') + ' — o print vira tabela com os mesmos valores e o texto do gestor desce (' +
        (texto && Math.round(texto.y)) + ' ≥ ' + Math.round(fimTab) + ')');
   });
+
+  // Projeto Segurança Eletrônica (Curitiba, 23/10/2026): seis slides com o mesmo título, separados pelo texto. Posições da
+  // "Cópia de … v5" (slides 156, 158 e 161). A tabela das propostas (o gestor escreveu por cima) fica como print.
+  const v3e = novoDeck(); v3e._slides = [];
+  v3e.appendSlide().shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: 'Manutenção de imóveis · Mega Curitiba' });
+  const se = (secao, prints) => {
+    const s = v3e.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · CURITIBA]\nSlide do gestor';
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 522, h: 26, texto: 'Projeto Segurança Eletrônica' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 36, w: 522, h: 18, texto: 'Manutenção de imóveis · Armazém 3 e 4 · Mega Curitiba' },
+                  { tipo: 'TEXT_BOX', x: 456, y: 90, w: 226, h: 12, texto: secao },
+                  { tipo: 'TEXT_BOX', x: 456, y: 104, w: 222, h: 150, texto: 'Texto do gestor' });
+    prints.forEach(p => s.shapes.push(Object.assign({ tipo: 'IMAGE' }, p)));
+    return s;
+  };
+  se('CUSTOS COM SEGURANÇA ELETRÔNICA', [{ x: 47, y: 90, w: 388, h: 267, nome: 'print-historico' }]);
+  se('MANUTENÇÃO PREVENTIVA', [{ x: 490, y: 107, w: 159, h: 119, nome: 'figura' }]);
+  se('NÍVEL DE SERVIÇO E BENCHMARKING', [{ x: 44, y: 205, w: 389, h: 117, nome: 'print-sla' }, { x: 301, y: 99, w: 43, h: 36, nome: 'logo' }]);
+  se('PROPOSTAS FINAIS', [{ x: 56, y: 96, w: 380, h: 75, nome: 'print-propostas' }, { x: 66, y: 222, w: 365, h: 90, nome: 'print-valor' }]);
+  const deckE = novoDeck(), resE = G._orcGerarGestorRevisados_(deckE, v3e), slE = deckE.getSlides();
+  if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'formas_seg_eletronica.json'),
+    JSON.stringify({ W: W, H: H, slides: slE.map(x => ({ fundo: x.shapes.fundo, formas: x.shapes })) }));
+  const imgs = s => s.shapes.filter(r => r.tipo === 'IMAGE').map(r => r.nome);
+  const foraE = s => s.shapes.filter(r => r.tipo !== 'IMAGE' && r.x < 450 && r.y > 60 && !(r.x >= 37 && r.x + r.w <= 447 && r.y + r.h <= 369));
+  if (process.env.DIAG) console.log('    DIAG textos 0: ' + textos(slE[0]).filter(x => /…|MANUT|AQUIS|182|102.399|166,67|VIDEO/.test(x)).join(' | '));
+  if (process.env.DIAG) resE.forEach((r, i) => console.log('    DIAG ' + i + ': ' + JSON.stringify(r.feito) + ' / ' + JSON.stringify(r.avisos) +
+    ' / imgs ' + imgs(slE[i]) + ' / fora: ' + JSON.stringify(foraE(slE[i]).map(q => [q.tipo, Math.round(q.x), Math.round(q.y), Math.round(q.w), Math.round(q.h), q.texto]))));
+  ok(imgs(slE[0]).indexOf('print-historico') < 0 && ['MANUTENÇÃO', 'AQUISIÇÃO', 'R$ 182.349,22', 'R$ 102.399,99', 'R$ 166,67', 'INST. VIDEO PORTEIRO']
+       .every(t => textos(slE[0]).indexOf(t) >= 0) && !foraE(slE[0]).length && !textos(slE[0]).some(t => /…$/.test(t)),
+     'redesenho: Segurança Eletrônica — o histórico (print) vira as tabelas de manutenção e aquisição, na área da esquerda');
+  ok(imgs(slE[1]).indexOf('figura') >= 0 && !resE[1].feito.some(f => /redesenhado/.test(f)), 'redesenho: Segurança Eletrônica — o slide sem print de tabela fica');
+  ok(imgs(slE[2]).indexOf('print-sla') < 0 && imgs(slE[2]).indexOf('logo') >= 0 && textos(slE[2]).indexOf('Até 48hs após a chegada') >= 0 &&
+     textos(slE[2]).some(t => /^Nível 2: Paralisação Parcial/.test(t)) && !foraE(slE[2]).length,
+     'redesenho: Segurança Eletrônica — o SLA (print) vira tabela; os logos ficam');
+  ok(imgs(slE[3]).indexOf('print-propostas') >= 0 && imgs(slE[3]).indexOf('print-valor') < 0 && textos(slE[3]).indexOf('R$ 5.307,90 / mês') >= 0 &&
+     !foraE(slE[3]).length,
+     'redesenho: Segurança Eletrônica — o valor mensal vira cartão; a tabela das propostas (com a marca do gestor) fica');
 }
 
 console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impacto V1 → V2');

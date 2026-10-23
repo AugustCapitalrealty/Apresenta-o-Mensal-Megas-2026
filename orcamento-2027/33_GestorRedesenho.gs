@@ -52,8 +52,148 @@ const ORC_GESTOR_REDESENHOS = [
   // A Sense: o print da análise validada da AlphaSense.
   { titulo: 'implantacao a sense', mega: 'Mega Itajaí', o: 'print da análise da AlphaSense em tabela (mesmo texto e valores)',
     tirar: [{ tipo: 'IMAGE', x: 46.4, y: 204.9, w: 391.6, h: 150.4 }],
-    desenhar: (s, W, H, t) => _orcRedesenhoAlphaSense_(s, t[0]) }
+    desenhar: (s, W, H, t) => _orcRedesenhoAlphaSense_(s, t[0]) },
+  // Projeto Segurança Eletrônica (Curitiba, "Cópia de … v5"; Guilherme, 23/10/2026: "melhore os slides do projeto de
+  // segurança"). Os 6 slides têm o mesmo título: `trecho` (texto do slide, sem acento) separa cada um. Valores lidos dos
+  // prints, letra por letra. A tabela das propostas fica como print: o gestor escreveu "R$ 5.307,90" e pôs dois
+  // retângulos por cima dela — redesenhar mudaria o que ele marcou.
+  { titulo: 'projeto seguranca eletronica', trecho: 'custos com seguranca eletronica', mega: 'Mega Curitiba',
+    o: 'print do histórico de manutenção e aquisição em tabelas (mesmo texto e valores)',
+    tirar: [{ tipo: 'IMAGE', x: 47, y: 90, w: 388, h: 267 }],
+    desenhar: (s, W, H, t) => _orcRedesenhoHistoricoSegElet_(s, t[0]) },
+  { titulo: 'projeto seguranca eletronica', trecho: 'nivel de servico e benchmarking', mega: 'Mega Curitiba',
+    o: 'print do SLA em tabela (mesmo texto e valores)',
+    tirar: [{ tipo: 'IMAGE', x: 44, y: 205, w: 389, h: 117 }],
+    desenhar: (s, W, H, t) => _orcRedesenhoSlaSegElet_(s, t[0]) },
+  { titulo: 'projeto seguranca eletronica', trecho: 'propostas finais', mega: 'Mega Curitiba',
+    o: 'print do valor mensal em cartão (mesmo texto e valor)',
+    tirar: [{ tipo: 'IMAGE', x: 66, y: 222, w: 365, h: 90 }],
+    desenhar: (s, W, H, t) => _orcRedesenhoValorSegElet_(s, t[0]) }
 ];
+
+// Segurança Eletrônica — histórico (print com duas tabelas, MANUTENÇÃO e AQUISIÇÃO, Real 2021…2025 e Total 2026):
+// as duas no padrão do deck, uma embaixo da outra, no lugar do print. Célula vazia no print = vazia aqui.
+// Cabeçalho em dois níveis, como no print: "REAL" sobre 2021…2025 e "TOTAL" sobre 2026 (grupos: [rótulo, nº de colunas]).
+const ORC_SEG_ELET_HISTORICO = {
+  colunas: ['Item', '2021', '2022', '2023', '2024', '2025', '2026'],
+  grupos: [['REAL', 5], ['TOTAL', 1]],
+  blocos: [
+    { nome: 'MANUTENÇÃO', linhas: [
+      ['CANCELA', '', 'R$ 13.034,69', 'R$ 11.920,00', 'R$ 13.820,09', 'R$ 21.826,06', 'R$ 12.405,00'],
+      ['CFTV', 'R$ 12.848,92', 'R$ 7.117,50', '', 'R$ 1.980,00', '', 'R$ 2.550,00'],
+      ['DILACERADOR', 'R$ 4.292,60', 'R$ 11.536,36', '', 'R$ 1.000,00', 'R$ 2.500,00', 'R$ 1.685,00'],
+      ['CERCA ELÉTRICA', '', '', 'R$ 10.750,00', '', 'R$ 8.051,00', 'R$ 18.360,00'],
+      ['CONCERTINA', '', 'R$ 6.350,00', '', '', '', ''],
+      ['ALAMBRADO/TELAS', '', 'R$ 2.749,52', '', '', '', ''],
+      ['SENSOR DE BARREIRA', '', '', '', '', '', ''],
+      ['KEY ACCESS', '', 'R$ 7.600,00', '', '', 'R$ 166,67', ''],
+      ['ATUALIZAÇÃO KEY ACCESS', '', 'R$ 7.660,00', 'R$ 250,00', 'R$ 1.006,67', '', ''],
+      ['INST. VIDEO PORTEIRO', '', '', '', '', '', '']] },
+    { nome: 'AQUISIÇÃO', linhas: [
+      ['CANCELA', 'R$ 33.193,30', 'R$ 21.347,56', 'R$ 182.349,22', '', '', 'R$ 62.344,58'],
+      ['CFTV', 'R$ 825,25', 'R$ 58.406,98', '', '', '', 'R$ 4.527,76'],
+      ['CÂMERA', 'R$ 12.718,78', 'R$ 5.316,45', 'R$ 10.137,46', 'R$ 18.832,41', '', 'R$ 0,00'],
+      ['SPEED DOME', '', '', '', '', '', 'R$ 17.246,45'],
+      ['CERCA ELÉTRICA', '', 'R$ 102.399,99', '', '', '', 'R$ 1.390,00'],
+      ['DILACERADOR', '', '', '', '', '', ''],
+      ['CONCERTINA', '', '', 'R$ 850,00', '', '', ''],
+      ['ALAMBRADO', '', '', '', '', '', ''],
+      ['SENSOR DE BARREIRA', '', '', '', '', '', ''],
+      ['KEY ACCESS', '', '', '', '', 'R$ 2.961,00', ''],
+      ['ATUALIZAÇÃO KEY ACCESS', '', '', '', '', '', ''],
+      ['INST. VIDEO PORTEIRO', '', '', '', '', '', '']] }
+  ]
+};
+
+function _orcRedesenhoHistoricoSegElet_(slide, t) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, A = ORC_GESTOR_ESQ, H0 = ORC_SEG_ELET_HISTORICO;
+  const linhasTodas = H0.blocos.reduce((n, b) => n + b.linhas.length, 0), hRot = 11, hG = 10, hCab = 12, gap = 5;
+  const rowH = Math.min(11, (A.fim - t.y - H0.blocos.length * (hRot + hG + hCab) - gap) / linhasTodas);
+  // Colunas de valor do tamanho do maior valor; a letra desce até a coluna do item caber.
+  let fs = 6.5, wNum = 0;
+  for (; fs >= 5.5; fs -= 0.25) {
+    wNum = Math.ceil(Math.max.apply(null, H0.blocos.map(b => Math.max.apply(null, b.linhas.map(l =>
+      Math.max.apply(null, l.slice(1).map(v => _orcLarguraTexto_(v, fs, T.body, false))))))) + 12);
+    if (A.w - wNum * 6 >= 96) break;
+  }
+  const colunas = H0.colunas.map((c, j) => ({ titulo: c, w: j ? wNum : null, align: j ? 'R' : 'L' }));
+  let y = t.y;
+  H0.blocos.forEach((b, i) => {
+    _orcUmaLinha_(slide, A.x, y, A.w, hRot, b.nome, { align: 'L', fs: 7, bold: true, cor: C.brandLight, fonte: T.titles, folga: 0, fsMin: 6 });
+    y += hRot;
+    let gx = A.x + (A.w - wNum * 6);
+    _orcRet_(slide, A.x, y, A.w, hG, C.brandDark);
+    H0.grupos.forEach(([rot, n], k) => {
+      if (k) _orcLinha_(slide, gx, y + 2, gx, y + hG - 2, '#FFFFFF', 0.5);
+      _orcUmaLinha_(slide, gx, y, wNum * n, hG, rot, { align: 'C', fs: 6, bold: true, cor: '#FFFFFF', fonte: T.titles, folga: 2, fsMin: 5.5 });
+      gx += wNum * n;
+    });
+    const linhas = b.linhas.map(l => ({ celulas: l.map((v, j) => v ? { texto: v, fs: fs, bold: j === 6 } : null) }));
+    y = _orcTabela_(slide, A.x, y + hG, A.w, colunas, linhas, rowH, { fs: fs, hCab: hCab }) + (i ? 0 : gap);
+  });
+}
+
+// Tabela de texto: toda célula pode quebrar linha; a altura da linha segue a célula mais alta. colunas: [{ titulo,
+// w (null = sobra), align }]; linhas: textos ("\n" = nova linha). Devolve o y do fim.
+function _orcTabelaTextos_(slide, x, y, w, colunas, linhas, fs) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography;
+  const fixo = colunas.reduce((a, c) => a + (c.w || 0), 0), ws = colunas.map(c => c.w || (w - fixo));
+  const hCab = 15;
+  _orcRet_(slide, x, y, w, hCab, C.brandDark);
+  let cx = x;
+  colunas.forEach((c, i) => {
+    _orcUmaLinha_(slide, cx, y, ws[i], hCab, c.titulo.toUpperCase(),
+      { align: c.align || 'L', fs: 7, bold: true, cor: '#FFFFFF', fonte: T.titles, folga: 6, fsMin: 6, cortar: true });
+    cx += ws[i];
+  });
+  let ry = y + hCab;
+  linhas.forEach((l, r) => {
+    const h = Math.max(15, Math.max.apply(null, l.map((v, i) => _orcMokedLinhas_(v, ws[i], fs, T.body, false))) * fs * 1.362 + 7);
+    if (r % 2 === 1) _orcRet_(slide, x, ry, w, h, C.zebra);
+    cx = x;
+    l.forEach((v, i) => {
+      if (v) _orcParagrafo_(slide, cx, ry, ws[i], h, v,
+        { fs: fs, fsMin: fs - 0.5, cor: C.textMain, fonte: T.body, meio: true, align: colunas[i].align === 'C' ? 'C' : undefined });
+      cx += ws[i];
+    });
+    ry += h;
+  });
+  _orcLinha_(slide, x, ry, x + w, ry, C.lines, 1);
+  return ry;
+}
+
+// Segurança Eletrônica — o SLA (print "Abaixo o SLA considerado." e a tabela de 3 níveis).
+function _orcRedesenhoSlaSegElet_(slide, t) {
+  const DS = CR_DESIGN_SYSTEM, A = ORC_GESTOR_ESQ;
+  _orcUmaLinha_(slide, A.x, t.y, A.w, 12, 'Abaixo o SLA considerado.',
+    { align: 'L', fs: 7.5, bold: true, cor: DS.colors.textMain, fonte: DS.typography.body, folga: 0, fsMin: 6.5 });
+  _orcTabelaTextos_(slide, A.x, t.y + 13, A.w,
+    [{ titulo: 'Tipo de pane ou defeito', w: null }, { titulo: 'Chegada', w: 118 }, { titulo: 'Resolução', w: 88 }],
+    [['Nível 1: Paralisação Total do Sistema, por exemplo:\n• Ausência total de sinais de vídeo;\n• Parada do sistema de controle de acesso; ou\n' +
+      '• Perda de comando do sistema de alarme.', 'Até 4hs (horário comercial) / Até 6hs (fora do horário comercial)', 'Até 12hs após a chegada'],
+     ['Nível 2: Paralisação Parcial do Sistema, por exemplo:\n• Impossibilidade de efetuar cadastro de visitantes;\n• Perda de imagens em mais que ' +
+      'duas câmeras; ou\n• Disparos constantes do sistema de alarme.', 'Até 8hs (horário comercial) / Até 12hs (fora do horário comercial)',
+      'Até 24hs após a chegada'],
+     ['Nível 3: Demais irregularidades do sistema.', 'Até 24hs', 'Até 48hs após a chegada']], 6.5);
+}
+
+// Segurança Eletrônica — o quadro do valor mensal (print) em cartão, no mesmo lugar: mesmos textos.
+function _orcRedesenhoValorSegElet_(slide, t) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, A = ORC_GESTOR_ESQ;
+  const x = A.x, w = A.w, y = t.y, h = Math.min(t.h, A.fim - y);
+  _orcRet_(slide, x, y, w, h, '#FFFFFF', { borda: C.lines });
+  _orcRet_(slide, x, y, w, 16, C.brandDark);
+  _orcUmaLinha_(slide, x, y, w, 16, 'MANUTENÇÃO PERMANENTE | VALOR MENSAL',
+    { align: 'C', fs: 7.5, bold: true, cor: '#FFFFFF', fonte: T.titles, folga: 6, fsMin: 6.5 });
+  _orcUmaLinha_(slide, x, y + 18, w, 13, 'Opção com Atendimento Mensal',
+    { align: 'C', fs: 8, bold: true, cor: C.textMain, fonte: T.body, folga: 6, fsMin: 7 });
+  _orcParagrafo_(slide, x + 10, y + 31, w - 20, h - 31 - 26,
+    '01 Visita semanal de 8 h cada (Corretiva e/ou Preventiva)\n+ 01 Visita Emergencial por mês de até 8 h.',
+    { fs: 7.5, fsMin: 6.5, cor: C.textBody, fonte: T.body, meio: true, align: 'C' });
+  _orcRet_(slide, x, y + h - 24, w, 24, C.brandTint2);
+  _orcUmaLinha_(slide, x, y + h - 24, w, 24, 'R$ 5.307,90 / mês',
+    { align: 'C', fs: 13, bold: true, cor: C.brandDark, fonte: T.titles, folga: 6, fsMin: 10 });
+}
 
 // Área da esquerda do molde de fotos (até a linha vertical do texto do gestor).
 const ORC_GESTOR_ESQ = { x: 44, w: 396, fim: 368 };

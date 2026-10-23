@@ -34,6 +34,10 @@ reinício). O que importa sobre o projeto está aqui, no
   3 e 4), CVISH corrigido, Paisagismo/Defensas 2-3/Torniquete 4/lavagens/VGAs mexidos, drone tirado. **Decidido:** os
   2 do drone continuam, da v4 (`ORC_GESTOR_EXTRA`, 31_VersaoFinal.gs — slide que a fonte não tem mais, no lugar que
   tinha na outra versão). Na pasta VERSÕES há também "Cópia de … v5" e "1e … v5": não são lidas.
+- **Projeto Segurança Eletrônica (Curitiba) melhorado** (33_GestorRedesenho.gs, `trecho` separa os 6 slides de mesmo
+  título): print do histórico 2021–2026 → tabelas MANUTENÇÃO/AQUISIÇÃO; print do SLA → tabela; quadro do valor → cartão.
+  A tabela das PROPOSTAS fica como print (o gestor escreveu "R$ 5.307,90" e pôs retângulos por cima). Aplicar:
+  `incluirSegurancaEletronica()`. Itajaí: cancelas 2/2 e provisão dos 3% como mesmo serviço (`ORC_PARES_EXTRA`).
 - **Decidido (Guilherme, 23/10):** a Despesa de pessoal de 2026 entra mês a mês (o realizado: pico de jan), não 1/12 —
   o Ritmo jan–set do m² muda só por ela (Esteio jan 6,31 → 6,60, fev 6,19 → 5,88; média igual). `M2=1 node
   teste/teste_orcamento.js` mostra as linhas antes × agora dos 3 Megas.
