@@ -2859,6 +2859,10 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
 
       decks = {};
       G._orcGerar_([chave]);
+      // CORTES=1: o que sai com "…" antes das propostas de 07_PropostasTextos.gs (as que a planilha de textos ainda
+      // não tem na coluna C saem cortadas na geração de verdade até rodar aplicarPropostasTextos()).
+      if (process.env.CORTES) console.log('    ' + c + ' cortados sem as propostas: ' +
+        decks[cid.deckId].getSlides().map(x => textos(x).filter(t => /…$/.test(t))).reduce((a, b) => a.concat(b), []).join(' | '));
       G.aplicarPropostasTextos();
       decks = {};
       G._orcGerar_([chave]);
