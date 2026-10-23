@@ -280,10 +280,10 @@ function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
   // coluna, cheia, é o total — "demais variações" (ou a alta inteira).
   const cy = 74, ch = H - 28 - cy, cw = (W - MX * 2) * 0.46, cx = MX;
   _orcCard_(slide, cx, cy, cw, ch, 'De onde vêm os ' + mil(vi.demais));
-  const bl = vi.blocos, totH = 38, legL = 10;
-  const ly = cy + ch - totH - 8;                       // caixa do total, embaixo
-  const yLeg = ly - 6 - bl.length * legL;              // legenda dos degraus
-  const base = yLeg - 28, topo = cy + 52;              // área das colunas (nomes embaixo da base)
+  // Sem a legenda dos degraus e a caixa "= Alta…" embaixo (Guilherme, 22/10/2026: "remover isso tudo aqui"): a coluna
+  // cheia já é o total, e as colunas ficam com o card inteiro.
+  const bl = vi.blocos;
+  const base = cy + ch - 34, topo = cy + 52;           // área das colunas (nomes embaixo da base)
   const acs = [0];
   bl.forEach(b => acs.push(acs[acs.length - 1] + b.v));
   const lo = Math.min(0, Math.min.apply(null, acs)), hi = Math.max(1, Math.max.apply(null, acs));
@@ -302,18 +302,6 @@ function gerarSlideDemaisVariacoes_(slide, W, H, cid, rel, conta, vi) {
   };
   bl.forEach((b, i) => coluna(i, acs[i], acs[i + 1], corDe(b.v), _orcDeltaMil_(b.v) + ' mil', b.curto, ''));
   coluna(bl.length, 0, vi.demais, C.brandDark, mil(vi.demais), comAdi ? 'Demais variações' : 'Alta total', m2);
-  // Legenda: o que é cada degrau.
-  bl.forEach((b, i) => _orcParagrafo_(slide, px, yLeg + i * legL, pw, legL, b.curto + ': ' + b.expl,
-    { fs: 6, fsMin: 5, cor: C.textBody, fonte: T.body }));
-  _orcRet_(slide, cx + 12, ly, cw - 24, totH, C.brandTint, { redondo: true });
-  _orcRet_(slide, cx + 12, ly, 3, totH, C.brandLight);
-  _orcUmaLinha_(slide, cx + 22, ly + 4, cw - 40, 16,
-    '= ' + (comAdi ? 'Demais variações' : 'Alta contra o Ritmo ' + a.ritmo) + ': ' + mil(vi.demais),
-    { align: 'L', fs: 10, bold: true, cor: C.brandDark, fonte: T.titles, fsMin: 8, folga: 4 });
-  _orcParagrafo_(slide, cx + 20, ly + 19, cw - 36, 16, comAdi
-    ? 'Com as obras adiadas (' + mil(vi.totAdi) + '), a alta toda da manutenção: ' + mil(v.orc - v.ritmo)
-    : 'Ritmo ' + a.ritmo + ' ' + _orcCompacto_(v.ritmo) + ' → Orç ' + a.orc + ' ' + _orcCompacto_(v.orc),
-    { fs: 7, fsMin: 6, cor: C.textBody, fonte: T.body });
 
   // ---- Maiores altas e quedas (direita) ----
   const tx = cx + cw + 12, tw = W - MX - tx;

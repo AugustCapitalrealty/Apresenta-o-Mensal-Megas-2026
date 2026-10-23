@@ -10,6 +10,10 @@
 // O que entra em cada grupo, em palavras de quem lê o slide — vai na faixa de
 // legenda embaixo dos cards (pedido do gestor, 06/10/2026: "vai gerar
 // dúvidas"). Mesma ordem de classManut.grupos.
+// Rodapé dos slides "Projetos × custo recorrente" e "os itens de cada grupo": o texto que o gestor deixou no deck
+// (Guilherme, 22/10/2026: "deixar esse aqui como padrão").
+const ORC_GRUPOS_MANUT_RODAPE = 'Cada item cai no primeiro grupo que servir: contrato → recorrente (6+ meses) → ' +
+  'projeto (obra nova) → pontual';
 // Textos curtos, para caber em 2 linhas no card (gestor, 08/10/2026: os de
 // Pontual e Projetos vazavam a borda na 3ª linha).
 const ORC_GRUPOS_MANUT_LEGENDA = [
@@ -106,8 +110,7 @@ function gerarSlideInvestimento_(slide, W, H, cid, rel, classManut) {
       { fs: 6.5, fsMin: 5.5, cor: C.textBody, espac: 100 });
   });
 
-  _orcRodape_(slide, W, H, 'Cada item cai no primeiro grupo que servir: contrato → recorrente (6+ meses) → ' +
-    'projeto (obra nova) → pontual; itens revistos pelo gestor seguem a decisão dele · ' + cid.nome);
+  _orcRodape_(slide, W, H, ORC_GRUPOS_MANUT_RODAPE + ' · ' + cid.nome);
 }
 
 // ==========================================
@@ -200,8 +203,7 @@ function gerarSlideGruposManut_(slide, W, H, cid, rel, cls, pagina, iPag, nPag) 
     const largo = q.col === 'largo';
     _orcQuadroGrupo_(slide, largo ? MX : MX + q.col * (cw + gap), Q.topo + q.y, largo ? W - MX * 2 : cw, q, cls);
   });
-  _orcRodape_(slide, W, H, 'Contrato: cadastro de contratos · recorrente: 6+ meses, semestral ou anual · projeto: obra ou compra nova · ' +
-    'pontual: o resto · itens revistos pelo gestor seguem a decisão dele · ' + cid.nome);
+  _orcRodape_(slide, W, H, ORC_GRUPOS_MANUT_RODAPE + ' · ' + cid.nome);
 }
 
 function _orcQuadroGrupo_(slide, x, y, w, q, cls) {
