@@ -43,6 +43,10 @@ const ORC_GRUPOS_ATUALIZAVEIS = {
   'Demais variações': { titulos: ['Por que a manutenção sobe:'], secao: 5, depoisDe: 'Por que a manutenção sobe — ',
     slides: x => x.vi ? [{ nome: 'Por que a manutenção sobe — item a item', selo: true, chaves: [x.contas[0].chave],
       fn: s => gerarSlideDemaisVariacoes_(s, x.W, x.H, x.cid, x.rel, x.contas[0], x.vi) }] : [] },
+  // 23/10/2026: o slide dos projetos × custo recorrente (antes dos itens de cada grupo).
+  'Projetos × recorrente': { titulos: ['Manutenção: projetos × custo recorrente'], secao: 5, depoisDe: null,
+    slides: x => x.calc && x.calc.cls ? [{ nome: 'Projetos × recorrente', selo: true, chaves: [_orcChaveConta_('Manutenção de imóveis')],
+      fn: s => gerarSlideInvestimento_(s, x.W, x.H, x.cid, x.rel, x.calc.cls) }] : [] },
   'Itens de cada grupo': { titulos: ['Manutenção: os itens de cada grupo'], secao: 5, depoisDe: 'Manutenção: projetos × custo recorrente',
     slides: x => {
       if (!x.calc || !x.calc.cls) return [];
@@ -89,10 +93,11 @@ function incluirSlideEntrouSaiu() { _orcAtualizarSlides_(ORC_FAC_MEGAS, ['Entrou
 // 23/10/2026 à tarde, só os slides que mudaram depois do atualizarSlidesDeHoje() (Guilherme):
 //   ▸ Esteio: os dois m² mês a mês (área comum e com IPTU e seguro), com o Pátio Mercado Livre abatido nos dois — out–dez,
 //     sem IPTU nem seguro, dá o mesmo R$/m² nos dois;
-//   ▸ Itajaí: "demais variações", com a Arca Agro contra o 2026 dela na Limpeza (degrau "Veio da limpeza").
+//   ▸ Itajaí: "demais variações", com a Arca Agro contra o 2026 dela na Limpeza (degrau "Veio da limpeza");
+//   ▸ Esteio: "projetos × custo recorrente", para pegar a imagem do gráfico (13h40).
 // Rodar de novo troca (não duplica).
 function atualizarSlidesDaTarde() {
-  _orcAtualizarSlides_(['ESTEIO'], ['M² área comum', 'M² com IPTU']);
+  _orcAtualizarSlides_(['ESTEIO'], ['M² área comum', 'M² com IPTU', 'Projetos × recorrente']);
   _orcAtualizarSlides_(['ITAJAI'], ['Demais variações']);
 }
 
