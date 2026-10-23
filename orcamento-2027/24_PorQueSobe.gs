@@ -174,14 +174,11 @@ function gerarSlidePorQueSobe_(slide, W, H, cid, rel, conta, adiOuNull) {
   linhas.push({ tipo: 'total', nome: 'TOTAL (' + adi.itens.length + (adi.itens.length === 1 ? ' OBRA)' : ' OBRAS)'),
                 celulas: [{ texto: _orcMoeda_(adi.total2026) }, { texto: _orcMoeda_(adi.total) }] });
   const numW = 56;
-  const yFim = _orcTabelaNum_(slide, tx + 10, cy + 26, tw - 20, 16 + 15 * linhas.length, [
+  // Sem a nota "Orçadas em 2026, não realizadas…" embaixo da tabela (Jonatas, comentário no deck em 22/10/2026: "Retirar").
+  _orcTabelaNum_(slide, tx + 10, cy + 26, tw - 20, 16 + 15 * linhas.length, [
     { titulo: 'OBRA (COMO ESTAVA NO ORÇ ' + a.ritmo + ')', w: tw - 20 - numW * 2 },
     { titulo: 'ORÇ ' + a.ritmo, w: numW }, { titulo: 'ORÇ ' + a.orc, w: numW, destaque: true }
   ], linhas, null);
-  _orcParagrafo_(slide, tx + 12, yFim + 8, tw - 24, 34,
-    // Sem a menção ao "comentário do gestor" (gestor, 08/10/2026: "Retirar comentário").
-    'Orçadas em ' + a.ritmo + ', não realizadas e passadas para ' + a.orc + '. Orç ' + a.orc + ' = valor de hoje no modelo 090.',
-    { fs: 7, fsMin: 6, cor: C.textBody, fonte: T.body });
 
   _orcRodape_(slide, W, H, 'Fonte: METRAGEM-COND (Orç ' + a.orcAnt + ', Ritmo e Orçamento da conta) · obras: planilhas de comparação ' +
     a.ritmo + ' × ' + a.orc + ' e modelo 090 de ' + a.orc + ' · ' + cid.nome);

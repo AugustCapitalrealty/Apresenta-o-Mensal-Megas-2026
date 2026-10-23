@@ -139,6 +139,7 @@ function novoSlide(deck) {
     getPageElements: () => slide.shapes.slice().map(reg => ({
       getPageElementType: () => reg.tipo === 'IMAGE' ? 'IMAGE' : reg.tipo === 'LINE' ? 'LINE' : reg.tipo === 'TABLE' ? 'TABLE' : 'SHAPE',
       getLeft: () => reg.x, getTop: () => reg.y, getWidth: () => reg.w, getHeight: () => reg.h,
+      setTop: v => { num(v, 'setTop'); reg.y = v; },   // 33_GestorRedesenho.gs desce o texto de baixo da tabela
       asShape: () => ({ getText: () => ({ asString: () => (reg.texto || '') + '\n' }) }),
       asTable: () => ({ getNumRows: () => reg.celulas.length, getNumColumns: () => reg.celulas[0].length,
         getCell: (i, j) => ({ getText: () => ({ asString: () => reg.celulas[i][j] + '\n' }) }) }),
@@ -2758,6 +2759,33 @@ console.log('Slides do gestor redesenhados (33_GestorRedesenho.gs)');
   ok(DEM && cur.shapes.some(r => r.cor === DEM) && !sl[0].shapes.some(r => r.cor === DEM),
      'redesenho: tabela de Curitiba na cor da Demercado; a do Itajaí, na da Capital');
   ok(G.CR_DESIGN_SYSTEM.colors.brandDark === G.ORC_MARCAS.CAPITAL.colors.brandDark, 'redesenho: a marca volta para a Capital no fim');
+
+  // Substituição da segurança (Esteio, 22/10/2026): o print da planilha na coluna da direita vira tabela, e o texto do
+  // gestor logo abaixo desce o que a tabela cresceu. Posições da v4 (slides 26 e 27).
+  const v3s = novoDeck(); v3s._slides = [];
+  const s3 = v3s.appendSlide(); s3.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 500, h: 18, texto: 'Segurança · Mega Esteio' });
+  const subst = (titulo, print) => {
+    const s = v3s.appendSlide();
+    s.notas = '[REGISTRO FOTOGRÁFICO · ESTEIO]\nSlide do gestor';
+    s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 36, w: 522, h: 18, texto: 'Segurança e vigilância · Mega Esteio' },
+                  { tipo: 'TEXT_BOX', x: 44, y: 12, w: 522, h: 26, texto: titulo },
+                  { tipo: 'IMAGE', x: 48.4, y: 94.8, w: 376.7, h: 264.4, nome: 'mapa' },
+                  Object.assign({ tipo: 'IMAGE', nome: 'print-planilha' }, print),
+                  { tipo: 'TEXT_BOX', x: 456, y: 206, w: 222, h: 153, texto: 'Texto do gestor embaixo da tabela' });
+  };
+  subst('Substituição Segurança | Cenário Hoje', { x: 455.3, y: 164.3, w: 221.7, h: 35.4 });
+  subst('Substituição Segurança | Cenário Proposto', { x: 456.0, y: 165.9, w: 223.4, h: 24.2 });
+  const deckS = novoDeck(), resS = G._orcGerarGestorRevisados_(deckS, v3s), slS = deckS.getSlides();
+  [['R$ 85.022,38', 'SEGURANÇA · PORTEIRO OBRA (ARMAZÉM B2)'], ['R$ 104.537,09', 'SEGURANÇA · PORTEIRO (ARMAZÉM B)']].forEach(([tot, nome], i) => {
+    const s = slS[i], tx = textos(s);
+    const texto = s.shapes.filter(r => r.texto === 'Texto do gestor embaixo da tabela')[0];
+    const fimTab = Math.max.apply(null, s.shapes.filter(r => r.tipo !== 'IMAGE' && r !== texto && r.y < 300 && r.x >= 450).map(r => r.y + r.h));
+    ok(!s.shapes.some(r => r.nome === 'print-planilha') && s.shapes.some(r => r.nome === 'mapa') &&
+       tx.indexOf(tot) >= 0 && tx.indexOf(nome) >= 0 && tx.indexOf('TOTAL') >= 0 && !tx.some(t => /…$/.test(t)) &&
+       texto && texto.y >= fimTab && resS[i].feito.some(f => /redesenhado/.test(f)),
+       'redesenho: ' + (i ? 'cenário proposto' : 'cenário hoje') + ' — o print vira tabela com os mesmos valores e o texto do gestor desce (' +
+       (texto && Math.round(texto.y)) + ' ≥ ' + Math.round(fimTab) + ')');
+  });
 }
 
 console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impacto V1 → V2');

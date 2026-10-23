@@ -35,6 +35,20 @@ const ORC_GESTOR_REDESENHOS = [
   { titulo: 'substituicao seguranca | comparativo megas', mega: 'Mega Esteio', o: 'print do comparativo dos Megas em tabela (mesmo texto e valores)',
     tirar: [{ tipo: 'IMAGE', x: 48.9, y: 231.3, w: 379.8, h: 105.4 }],
     desenhar: (s, W, H, t) => _orcRedesenhoComparativo_(s, t[0]) },
+  // Substituição da segurança, cenário hoje e proposto: o print da planilha (pequeno, ilegível na tela) em tabela
+  // (Guilherme, 22/10/2026: "melhore a qualidade desse slide, melhore a tabela"). Valores lidos do print da v4, letra
+  // por letra; só o ")" que faltava em "(ARMAZÉM B2".
+  { titulo: 'substituicao seguranca | cenario hoje', mega: 'Mega Esteio', o: 'print da planilha em tabela (mesmo texto e valores)',
+    tirar: [{ tipo: 'IMAGE', x: 455.3, y: 164.3, w: 221.7, h: 35.4 }],
+    desenhar: (s, W, H, t) => _orcRedesenhoSubstituicao_(s, W, H, t[0], ['VALOR'], [
+      { nome: 'SEGURANÇA · ARMAZÉM A + B (VIGIA-RONDA+PORTARIA A)', valores: ['R$ 57.372,38'] },
+      { nome: 'SEGURANÇA · PORTEIRO OBRA (ARMAZÉM B2)', valores: ['R$ 27.650,00'] }], ['R$ 85.022,38']) },
+  { titulo: 'substituicao seguranca | cenario proposto', mega: 'Mega Esteio', o: 'print da planilha em tabela (mesmo texto e valores)',
+    tirar: [{ tipo: 'IMAGE', x: 456.0, y: 165.9, w: 223.4, h: 24.2 }],
+    desenhar: (s, W, H, t) => _orcRedesenhoSubstituicao_(s, W, H, t[0], ['VALOR', 'IMPACTO (+)', 'NOVO VALOR'], [
+      { nome: 'SEGURANÇA · ARMAZÉM A + B (VIGIA-RONDA+PORTARIA A)', valores: ['R$ 57.372,38', 'R$ 8.164,71', 'R$ 65.537,09'] },
+      { nome: 'SEGURANÇA · PORTEIRO (ARMAZÉM B)', valores: ['R$ 27.650,00', 'R$ 11.350,00', 'R$ 39.000,00'] }],
+      ['R$ 85.022,38', 'R$ 19.514,71', 'R$ 104.537,09']) },
   // A Sense: o print da análise validada da AlphaSense.
   { titulo: 'implantacao a sense', mega: 'Mega Itajaí', o: 'print da análise da AlphaSense em tabela (mesmo texto e valores)',
     tirar: [{ tipo: 'IMAGE', x: 46.4, y: 204.9, w: 391.6, h: 150.4 }],
@@ -151,6 +165,54 @@ function _orcRedesenhoComparativo_(slide, t) {
   _orcParagrafo_(slide, A.x, fim + 3, A.w, 22,
     '* Em Curitiba a Portaria/CCO é "Controlador de Acesso", em Esteio é "Porteiro" e em Itajaí é "Vigilante Desarmado"',
     { fs: 7, fsMin: 6, cor: DS.colors.textBody, fonte: DS.typography.body, italic: true });
+}
+
+// Substituição da segurança (cenário hoje / proposto): a tabela na coluna da direita do slide, no lugar do print.
+// valores: títulos das colunas de valor; itens: [{ nome: 'CONTRATO · FUNÇÃO', valores }]; total: valores do total.
+// Nome que não cabe ao lado dos valores fica numa linha e os valores na de baixo. O texto do gestor logo abaixo do
+// print desce o que a tabela cresceu.
+function _orcRedesenhoSubstituicao_(slide, W, H, t, valores, itens, total) {
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors, T = DS.typography, fs = 6.5, fsMin = 5.5;
+  const x = t.x, w = Math.min(W - 30 - t.x, Math.max(t.w, 230));
+  const abaixo = slide.getPageElements().filter(e => e.getTop() >= t.y + t.h - 2 && e.getLeft() >= t.x - 15 && e.getLeft() < t.x + t.w);
+  const topoAbaixo = abaixo.length ? Math.min.apply(null, abaixo.map(e => e.getTop())) : null;
+  // Colunas de valor à direita, do tamanho de "R$ 104.537,09"; sobra pelo menos o "TOTAL" à esquerda.
+  const vw = Math.min(64, Math.floor((w - 54) / valores.length)), x0 = x + w - vw * valores.length;
+  const util = _orcUtilUmaLinha_(x0 - x - 6, 'L', 4);
+  const umaLinha = itens.every(it => _orcLarguraTexto_(it.nome, fsMin, T.body, false) <= util);
+  const hCab = 13, hLin = 11, tituloNome = 'CONTRATO · EMPREENDIMENTO (FUNÇÃO)';
+  const cel = (cx, cy, cw, ch, texto, op) => _orcUmaLinha_(slide, cx, cy, cw, ch, texto,
+    Object.assign({ align: 'R', fs: fs, fsMin: fsMin, cor: C.textMain, fonte: T.body, folga: 4 }, op || {}));
+  const cab = { fs: 5.5, fsMin: 4.5, bold: true, cor: '#FFFFFF', fonte: T.titles };
+  let y = t.y;
+  // Cabeçalho numa faixa só quando o título da 1ª coluna cabe ao lado dos valores; senão, em duas.
+  if (_orcLarguraTexto_(tituloNome, 5.5, T.titles, true) <= util) {
+    _orcRet_(slide, x, y, w, hCab, C.brandDark);
+    cel(x + 4, y, x0 - x - 6, hCab, tituloNome, Object.assign({ align: 'L' }, cab));
+  } else {
+    _orcRet_(slide, x, y, w, hCab * 2 - 2, C.brandDark);
+    cel(x + 4, y, w - 8, hCab - 1, tituloNome, Object.assign({ align: 'L' }, cab));
+    y += hCab - 2;
+  }
+  valores.forEach((v, j) => cel(x0 + j * vw, y, vw - 4, hCab, v, cab));
+  y += hCab;
+  itens.forEach((it, i) => {
+    const h = umaLinha ? hLin + 1 : hLin * 2;
+    if (i % 2 === 1) _orcRet_(slide, x, y, w, h, C.zebra);
+    cel(x + 4, y, umaLinha ? x0 - x - 6 : w - 8, umaLinha ? h : hLin, it.nome, { align: 'L' });
+    it.valores.forEach((v, j) => cel(x0 + j * vw, umaLinha ? y : y + hLin - 1, vw - 4, umaLinha ? h : hLin, v,
+      { fs: 6, fsMin: 5, bold: j === it.valores.length - 1 }));
+    y += h;
+  });
+  _orcRet_(slide, x, y, w, hLin + 2, C.brandTint2);
+  cel(x + 4, y, x0 - x - 6, hLin + 2, 'TOTAL', { align: 'L', bold: true, fonte: T.titles });
+  total.forEach((v, j) => cel(x0 + j * vw, y, vw - 4, hLin + 2, v, { fs: 6, fsMin: 5, bold: true }));
+  y += hLin + 2;
+  _orcLinha_(slide, x, y, x + w, y, C.lines, 1);
+  if (topoAbaixo !== null && y + 8 > topoAbaixo) {
+    const d = y + 8 - topoAbaixo;
+    abaixo.forEach(e => e.setTop(e.getTop() + d));
+  }
 }
 
 // A Sense: a análise validada da AlphaSense (o print), mesmos textos e valores.
