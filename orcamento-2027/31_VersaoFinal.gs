@@ -201,7 +201,7 @@ function _orcMegaDoSlide_(slide) {
 // conferindo a v4 apresentada). Começo do título do slide.
 const ORC_GESTOR_SEM_MARCA = [/^DRONE AUTÔNOMO/i];
 // Slides que a fonte do Mega (ORC_GESTOR_FONTE) não tem mais e continuam vindo de outra versão, no lugar que tinham
-// nela (Guilherme, 23/10/2026: o Curitiba sai da v5, onde o gestor tirou os dois do drone — eles ficam, da v4).
+// nela (Guilherme, 23/10/2026: o Curitiba sai da "Cópia de … v5", onde o gestor tirou os dois do drone — eles ficam, da v4).
 // { parte: [{ fonte: id da apresentação, titulo: começo do título }] }
 const ORC_GESTOR_EXTRA = {
   CURITIBA: [{ fonte: '1IObiKZpG_iqvpQ69DFTTuOlhO0b_uImhe0O7inA9iGk', titulo: /^DRONE AUTÔNOMO/i }]   // v4
@@ -225,6 +225,8 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
     return null;
   };
   const tituloDe = ts => ts.map(t => t.trim()).filter(String)[0] || '';
+  // O slide do gestor tem esse começo de título? Pelo primeiro texto e pelo título que a revisão acha, com e sem acento.
+  const casa = (re, s) => [tituloDe(textosDe(s)), _orcTituloGestor_(s)].some(t => re.test(t) || re.test(_orcNorm_(t)));
 
   // 1. Saem os slides do gestor deste Mega que não estão na lista da parte: os moldes de fotos vazios e o que sobrou de
   //    uma rodada que parou no meio (no Mega completo os slides do gestor vêm da v3, copiados de novo).
@@ -234,7 +236,7 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
   if (so) {
     const ficam = naLista.filter(id => {
       const s = deck.getSlideById(id);
-      if (!s || !_orcDonoFotos_(s) || !so.test(tituloDe(textosDe(s)))) return true;
+      if (!s || !_orcDonoFotos_(s) || !casa(so, s)) return true;
       s.remove();
       return false;
     });
@@ -242,7 +244,7 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
   }
   (_orcFotosPorParte_(deck)[parte] || []).forEach(id => {
     if (naLista.indexOf(id) >= 0 && !so) return;
-    if (so) { const s0 = deck.getSlideById(id); if (!s0 || !so.test(tituloDe(textosDe(s0)))) return; }
+    if (so) { const s0 = deck.getSlideById(id); if (!s0 || !casa(so, s0)) return; }
     const s = deck.getSlideById(id);
     if (!s) return;
     const t = _orcTituloGestor_(s);
@@ -254,8 +256,11 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
   // 2. O plano: os slides do gestor deste Mega na fonte (ORC_GESTOR_FONTE), cada um com a âncora. A seção do Mega vai
   //    do sumário dele ao sumário do Mega seguinte. Depois, os de ORC_GESTOR_EXTRA que a fonte não tem mais.
   //    so: só os slides com esse começo de título; prefixo: na chave de "feitos" (ids de decks diferentes).
+  const vistos = [];   // títulos dos slides do gestor do Mega na fonte (para o log quando `so` não acha nada)
+  let nomeFonte = '';
   const planoDe = (fonteId, so, prefixo) => {
-    const out = [], sv3 = SlidesApp.openById(fonteId).getSlides();
+    const fonte = SlidesApp.openById(fonteId), out = [], sv3 = fonte.getSlides();
+    nomeFonte = nomeFonte || (fonte.getName ? fonte.getName() : fonteId);
     let mega = null, ancora = null, dentro = false;
     for (let i = 0; i < sv3.length; i++) {
       const s = sv3[i];
@@ -270,7 +275,8 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
       if ((mega || 'Mega Esteio') !== cid.nome) continue;
       const titulo = _orcTituloGestor_(s);
       if (/Título do assunto/.test(titulo)) continue;                                  // molde vazio
-      if (so && !so.test(tituloDe(textosDe(s)))) continue;
+      vistos.push(titulo);
+      if (so && !casa(so, s)) continue;
       const chave = (prefixo || '') + s.getObjectId();
       out.push({ ancora: ancora, origem: s, n: i + 1, titulo: titulo, chave: chave, feito: feitos.indexOf(chave) >= 0 });
     }
@@ -340,7 +346,8 @@ function _orcGestorNaParte_(deckId, parte, inicio, so) {
   log.forEach(l => Logger.log(cid.nome + ' · ' + l));
   if (so) {
     Logger.log(cid.nome + ' · ' + n + ' de ' + plano.length + ' slides do gestor "' + so.source.replace(/^\^/, '') + '" entraram' +
-               (parou ? ' — o tempo acabou: rode de novo' : '') + (plano.length ? '' : ' (nenhum na fonte do Mega)'));
+               (parou ? ' — o tempo acabou: rode de novo' : '') + (plano.length ? '' : ' (nenhum na fonte do Mega: "' + nomeFonte +
+               '" — slides do gestor do ' + cid.nome + ' lá: ' + (vistos.join(' | ') || 'nenhum') + ')'));
     return { n: n, total: plano.length, parou: parou };
   }
   const nMoked = plano.filter(p => /^Implantação Moked/i.test(p.titulo)).length;

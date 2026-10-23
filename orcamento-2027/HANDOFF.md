@@ -28,8 +28,9 @@ reinício). O que importa sobre o projeto está aqui, no
   distância ao contorno) faz o que o `graficos_imagem.py` fazia: `node ferramentas/graficos_imagem.js "<IMAGENS -
   SLIDES>/GRAFICOS PENDENTES.json" "<IMAGENS - SLIDES>"`. 119 desenhados em 30 s (os 44 dos logs do Esteio e Itajaí de
   23/10 incluídos); as 22 molduras pendentes também (`molduras_imagem.js`). O log da geração já manda rodar o .js.
-- **Slides do gestor do Curitiba agora da v5** (`ORC_GESTOR_FONTE.CURITIBA` = `1QJee0lt…`, 03_Exportar.gs; Esteio e
-  Itajaí seguem da v4). Na v5 (pptx baixado pelo Guilherme, 23/10 10h57): +6 "Projeto Segurança Eletrônica" (Armazém
+- **Slides do gestor do Curitiba agora da "Cópia de … v5"** (`ORC_GESTOR_FONTE.CURITIBA` = `1bDcoqPOXIRoyMhR5IeRLeFxH9G8MMpIMW49ymzp8VHM`,
+  03_Exportar.gs; Esteio e Itajaí seguem da v4). A v5 (`1QJee0lt…`) NÃO tem os de Segurança Eletrônica (conferido pelo
+  conector, 23/10 11h); a "1e … v5" é cópia da Cópia. `incluirSegurancaEletronica()` (00_Gerar.gs) põe só os 6. Na v5 (pptx baixado pelo Guilherme, 23/10 10h57): +6 "Projeto Segurança Eletrônica" (Armazém
   3 e 4), CVISH corrigido, Paisagismo/Defensas 2-3/Torniquete 4/lavagens/VGAs mexidos, drone tirado. **Decidido:** os
   2 do drone continuam, da v4 (`ORC_GESTOR_EXTRA`, 31_VersaoFinal.gs — slide que a fonte não tem mais, no lugar que
   tinha na outra versão). Na pasta VERSÕES há também "Cópia de … v5" e "1e … v5": não são lidas.

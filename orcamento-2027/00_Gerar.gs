@@ -25,10 +25,10 @@ function gerarMegaEsteio()   { _orcGerarFacilities_('ESTEIO', true); }
 function gerarMegaItajai()   { _orcGerarFacilities_('ITAJAI', true); }
 function gerarMegaCuritiba() { _orcGerarFacilities_('CURITIBA', true); }
 
-// Só os 6 slides "Projeto Segurança Eletrônica" do Curitiba (da v5 do gestor), no lugar deles, sem gerar o Mega
+// Só os 6 slides "Projeto Segurança Eletrônica" do Curitiba (da "Cópia de … v5" do gestor, ORC_GESTOR_FONTE), no lugar deles, sem gerar o Mega
 // (Guilherme, 23/10/2026). Rodar de novo troca os 6 (não duplica).
 function incluirSegurancaEletronica() {
-  _orcGestorNaParte_(_orcIdFacilities_(), 'CURITIBA', Date.now(), /^Projeto Segurança Eletrônica/i);
+  _orcGestorNaParte_(_orcIdFacilities_(), 'CURITIBA', Date.now(), /^projeto seguranca eletronica/);   // sem acento: casa compara os dois
 }
 
 function completarSlidesDoGestor() {
