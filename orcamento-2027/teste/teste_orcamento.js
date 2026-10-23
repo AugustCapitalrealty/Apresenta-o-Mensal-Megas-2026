@@ -2515,6 +2515,46 @@ console.log('Mega completo (00_Gerar.gs)');
   ok(fac.getSlides().length === n1 && daParte('ESTEIO').filter(s => tit(s) === 'Implantação Moked | Rotina de Segurança').length === 1,
      'Mega completo: gerar o Esteio de novo troca também os slides do gestor, sem duplicar (' + fac.getSlides().length + ' slides)');
   ok(!PROPS_DADOS.ORC_FAC_GESTOR_PENDENTE, 'Mega completo: nada pendente para completarSlidesDoGestor()');
+
+  // 23/10/2026: o Curitiba sai da v5 (sem o drone, com os de Segurança Eletrônica); o drone continua, da v4
+  // (ORC_GESTOR_EXTRA), no lugar que tinha lá.
+  {
+    const deckCom = (fn) => { const d = novoDeck(); d._slides = []; fn(d); return d; };
+    const gerD = (d, titulo, sub) => { const s = d.appendSlide();
+      s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo }, { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: sub }); };
+    const gestD = (d, titulo) => { const s = d.appendSlide();
+      s.notas = '[REGISTRO FOTOGRÁFICO · CURITIBA]\nSlide do gestor';
+      s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: titulo },
+                    { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Manutenção de imóveis · Armazém 3 e 4 · Mega Curitiba' }); };
+    const v5 = deckCom(d => {
+      gerD(d, 'Sumário', 'Mega Curitiba · Orçamento 2027');
+      gerD(d, 'Segurança e vigilância', 'Orç 2027 · Mega Curitiba');
+      gerD(d, 'Manutenção: os itens de cada grupo (1/2)', '74 itens · Mega Curitiba');
+      gestD(d, 'Linha de Vida Vertical');
+      gerD(d, 'Manutenção: os itens de cada grupo (2/2)', '74 itens · Mega Curitiba');
+      gestD(d, 'Projeto Segurança Eletrônica');
+    });
+    const v4 = deckCom(d => {
+      gerD(d, 'Sumário', 'Mega Curitiba · Orçamento 2027');
+      gerD(d, 'Segurança e vigilância', 'Orç 2027 · Mega Curitiba');
+      const s = d.appendSlide();
+      s.shapes.push({ tipo: 'TEXT_BOX', x: 44, y: 12, w: 520, h: 26, texto: 'DRONE AUTÔNOMO (XDRONE)' },
+                    { tipo: 'TEXT_BOX', x: 44, y: 36, w: 520, h: 18, texto: 'Segurança e Vigilancia · Drone Autônomo · Mega Curitiba' });
+      gerD(d, 'Manutenção: os itens de cada grupo (1/2)', '74 itens · Mega Curitiba');
+      gestD(d, 'Linha de Vida Vertical');
+    });
+    decks[G.ORC_GESTOR_FONTE.CURITIBA] = v5;
+    G.ORC_GESTOR_EXTRA.CURITIBA.forEach(x => { decks[x.fonte] = v4; });
+    G.gerarMegaCuritiba();
+    const titC = daParte('CURITIBA').map(tit);
+    const iSegC = titC.findIndex(t => /^Segurança e vigilância/.test(t));
+    ok(titC.filter(t => t === 'Linha de Vida Vertical').length === 1 && titC.indexOf('Projeto Segurança Eletrônica') > 0 &&
+       titC[iSegC + 1] === 'DRONE AUTÔNOMO (XDRONE)',
+       'Mega completo: Curitiba da v5 (Segurança Eletrônica) e o drone da v4 depois da Segurança, sem duplicar a Linha de Vida (' +
+       titC.filter(t => /Linha de Vida|Segurança Eletrônica|DRONE/.test(t)).join(' / ') + ')');
+    G.ORC_GESTOR_EXTRA.CURITIBA.forEach(x => { delete decks[x.fonte]; });
+    delete decks[G.ORC_GESTOR_FONTE.CURITIBA];
+  }
   delete decks[G.ORC_DECK_VERSAO_GESTOR_ID];
   G.ORC_FACILITIES.deckId = idAntes;
 }

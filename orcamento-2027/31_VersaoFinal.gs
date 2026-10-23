@@ -200,6 +200,12 @@ function _orcMegaDoSlide_(slide) {
 // lista eles contavam como gerados e não eram copiados — os dois do drone do Curitiba sumiam (Guilherme, 22/10/2026,
 // conferindo a v4 apresentada). Começo do título do slide.
 const ORC_GESTOR_SEM_MARCA = [/^DRONE AUTÔNOMO/i];
+// Slides que a fonte do Mega (ORC_GESTOR_FONTE) não tem mais e continuam vindo de outra versão, no lugar que tinham
+// nela (Guilherme, 23/10/2026: o Curitiba sai da v5, onde o gestor tirou os dois do drone — eles ficam, da v4).
+// { parte: [{ fonte: id da apresentação, titulo: começo do título }] }
+const ORC_GESTOR_EXTRA = {
+  CURITIBA: [{ fonte: '1IObiKZpG_iqvpQ69DFTTuOlhO0b_uImhe0O7inA9iGk', titulo: /^DRONE AUTÔNOMO/i }]   // v4
+};
 
 function _orcGestorNaParte_(deckId, parte, inicio) {
   const cid = ORC_CIDADES[parte], props = PropertiesService.getScriptProperties();
@@ -231,27 +237,38 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
     nMoldes++;
   });
 
-  // 2. O plano: os slides do gestor deste Mega na v3, cada um com a âncora. A seção do Mega vai do sumário dele ao
-  //    sumário do Mega seguinte.
-  const v3 = SlidesApp.openById(ORC_GESTOR_FONTE[parte] || ORC_DECK_VERSAO_GESTOR_ID);
-  const plano = [];
-  let mega = null, ancora = null, dentro = false;
-  const sv3 = v3.getSlides();
-  for (let i = 0; i < sv3.length; i++) {
-    const s = sv3[i];
-    const semMarca = !_orcDonoFotos_(s) && ORC_GESTOR_SEM_MARCA.some(re => re.test(tituloDe(textosDe(s))));
-    if (!_orcDonoFotos_(s) && !semMarca) {
-      const ts = textosDe(s), t = tituloDe(ts);
-      mega = megaDe(ts) || mega;
-      if (t === 'Sumário') { if (dentro && mega !== cid.nome) break; if (mega === cid.nome) dentro = true; }
-      ancora = { mega: mega, titulo: t };
-      continue;
+  // 2. O plano: os slides do gestor deste Mega na fonte (ORC_GESTOR_FONTE), cada um com a âncora. A seção do Mega vai
+  //    do sumário dele ao sumário do Mega seguinte. Depois, os de ORC_GESTOR_EXTRA que a fonte não tem mais.
+  //    so: só os slides com esse começo de título; prefixo: na chave de "feitos" (ids de decks diferentes).
+  const planoDe = (fonteId, so, prefixo) => {
+    const out = [], sv3 = SlidesApp.openById(fonteId).getSlides();
+    let mega = null, ancora = null, dentro = false;
+    for (let i = 0; i < sv3.length; i++) {
+      const s = sv3[i];
+      const semMarca = !_orcDonoFotos_(s) && ORC_GESTOR_SEM_MARCA.some(re => re.test(tituloDe(textosDe(s))));
+      if (!_orcDonoFotos_(s) && !semMarca) {
+        const ts = textosDe(s), t = tituloDe(ts);
+        mega = megaDe(ts) || mega;
+        if (t === 'Sumário') { if (dentro && mega !== cid.nome) break; if (mega === cid.nome) dentro = true; }
+        ancora = { mega: mega, titulo: t };
+        continue;
+      }
+      if ((mega || 'Mega Esteio') !== cid.nome) continue;
+      const titulo = _orcTituloGestor_(s);
+      if (/Título do assunto/.test(titulo)) continue;                                  // molde vazio
+      if (so && !so.test(tituloDe(textosDe(s)))) continue;
+      const chave = (prefixo || '') + s.getObjectId();
+      out.push({ ancora: ancora, origem: s, n: i + 1, titulo: titulo, chave: chave, feito: feitos.indexOf(chave) >= 0 });
     }
-    if ((mega || 'Mega Esteio') !== cid.nome) continue;
-    const titulo = _orcTituloGestor_(s);
-    if (/Título do assunto/.test(titulo)) continue;                                  // molde vazio
-    plano.push({ ancora: ancora, origem: s, n: i + 1, titulo: titulo, feito: feitos.indexOf(s.getObjectId()) >= 0 });
-  }
+    return out;
+  };
+  const plano = planoDe(ORC_GESTOR_FONTE[parte] || ORC_DECK_VERSAO_GESTOR_ID);
+  (ORC_GESTOR_EXTRA[parte] || []).forEach(x => {
+    planoDe(x.fonte, x.titulo, x.fonte + ':').forEach(p => {
+      if (plano.some(q => _orcNorm_(q.titulo) === _orcNorm_(p.titulo))) return;   // a fonte já tem: vale a dela
+      plano.push(p);
+    });
+  });
 
   // 3. A posição de cada âncora entre os slides gerados da parte.
   const lista = JSON.parse(props.getProperty(propLista) || '[]');
@@ -283,7 +300,7 @@ function _orcGestorNaParte_(deckId, parte, inicio) {
       const novo = deck.insertSlide(pos + 1 + k, p.origem);
       // Na lista logo ao entrar: se a execução parar no meio, a próxima geração do Mega tira este slide também.
       lista.push(novo.getObjectId());
-      feitos.push(p.origem.getObjectId());
+      feitos.push(p.chave);
       n++;
       props.setProperty(propLista, JSON.stringify(lista));
       props.setProperty(propFeitos, JSON.stringify(feitos));

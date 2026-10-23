@@ -28,6 +28,11 @@ reinício). O que importa sobre o projeto está aqui, no
   distância ao contorno) faz o que o `graficos_imagem.py` fazia: `node ferramentas/graficos_imagem.js "<IMAGENS -
   SLIDES>/GRAFICOS PENDENTES.json" "<IMAGENS - SLIDES>"`. 119 desenhados em 30 s (os 44 dos logs do Esteio e Itajaí de
   23/10 incluídos); as 22 molduras pendentes também (`molduras_imagem.js`). O log da geração já manda rodar o .js.
+- **Slides do gestor do Curitiba agora da v5** (`ORC_GESTOR_FONTE.CURITIBA` = `1QJee0lt…`, 03_Exportar.gs; Esteio e
+  Itajaí seguem da v4). Na v5 (pptx baixado pelo Guilherme, 23/10 10h57): +6 "Projeto Segurança Eletrônica" (Armazém
+  3 e 4), CVISH corrigido, Paisagismo/Defensas 2-3/Torniquete 4/lavagens/VGAs mexidos, drone tirado. **Decidido:** os
+  2 do drone continuam, da v4 (`ORC_GESTOR_EXTRA`, 31_VersaoFinal.gs — slide que a fonte não tem mais, no lugar que
+  tinha na outra versão). Na pasta VERSÕES há também "Cópia de … v5" e "1e … v5": não são lidas.
 - **Decidido (Guilherme, 23/10):** a Despesa de pessoal de 2026 entra mês a mês (o realizado: pico de jan), não 1/12 —
   o Ritmo jan–set do m² muda só por ela (Esteio jan 6,31 → 6,60, fev 6,19 → 5,88; média igual). `M2=1 node
   teste/teste_orcamento.js` mostra as linhas antes × agora dos 3 Megas.
