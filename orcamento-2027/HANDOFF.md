@@ -17,8 +17,13 @@ reinício). O que importa sobre o projeto está aqui, no
   (o gerador espalhava a diferença pelo formato de 12/10 — ano certo, meses errados). **A nota de 22/10 dizendo
   que out–dez não tinham mudado estava errada para este arquivo.**
   - Arquivos em `ATUALIZAÇÃO 23-10-2026` (G:), regras em `ORC_NOMES_ATUALIZACAO` (30_Importar.gs, pasta trocada).
-    **Falta:** Guilherme rodar `importarAtualizacao()` → trocar os 3 `ritmoId` e pôr os 3 `mensalMetragemId` em
-    01_Config.gs pelos de `IDS.json` → `clasp push` → gerar os 3 Megas. Fixtures `teste/fixture_ritmo_<c>_2310.json`.
+    `importarAtualizacao()` rodado 23/10 9h32; `ritmoId` e `mensalMetragemId` dos 3 Megas trocados em 01_Config.gs e
+    `clasp push` feito. **Falta:** Guilherme gerar o começo e os 3 Megas. Fixtures `teste/fixture_ritmo_<c>_2310.json`.
+- **"De 2026 o que já foi já foi, não mexa" (Guilherme, 23/10):** o realizado (jan–set) do ritmo nunca muda. A
+  conciliação com a METRAGEM (`_orcAjustarSerie_`, travado no Ritmo) só mexe em out–dez; se não couber sem mês
+  negativo, a conta fica sem fechar e vai para `rel.mensalNaoConciliado` + log (hoje: IPTU Curitiba e Seguro Itajaí,
+  que no m² com IPTU seguem o ano da DRE). Antes ela espalhava a diferença pelo ano todo. A metragem mensal só troca o
+  Orç 2027 das contas que o Despesas-Mensal já tem.
 - **Metragem mensal 2026 × 2027** (`Mxxx-2026-x-Orcamento-2027.xlsx`, 23/10 9h25 → `relatorios.mensalMetragemId`,
   `_orcAplicarMensalMetragem_` em 04_DadosRelatorios.gs): mesmas contas da METRAGEM mês a mês **com a Despesa de
   pessoal** (antes o m² mês a mês punha 1/12 do ano; 2027 tem o degrau do dissídio em mai/jun, 2026 o pico de jan).

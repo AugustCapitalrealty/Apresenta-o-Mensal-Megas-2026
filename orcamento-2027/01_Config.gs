@@ -64,7 +64,8 @@ const ORC_CIDADES = {
     relatorios: {
       metragemId: '1tawzpoCAEF3ftXZPhCW1FcboxxFPARKsLheBabaszkk',   // MEGA CURITIBA - METRAGEM-COND 2027 (22-10-2026)
       // 2026 mês a mês (Orç e Ritmo) que fecha com a METRAGEM — substitui o do Despesas-Mensal.
-      ritmoId:    '121pYnxYFP0OippjzeJSdvd_IzHxCnzqqqy7BgqBZ1zU',   // MEGA CURITIBA - RITMO 2026 (12-10-2026 20h42)
+      ritmoId:    '1g_wufQvOJY2849m4hf6bybf338oRhnnEDZEg1j8gmZI',   // MEGA CURITIBA - RITMO 2026 (23-10-2026 09h)
+      mensalMetragemId: '1lvC0jEdt1NkxKxuySpqJ8rKPLAUHXHk-1Sew1vKhOVM',   // MEGA CURITIBA - METRAGEM MENSAL 2026 x 2027 (23-10-2026)
       mensalId:   '1Un6j9AfAqiftiogUUDq3soieqEGf8ufOGf82ekdPMwU',   // MEGA CURITIBA - MENSAL 2027 (22-10-2026 23h)
       // Planilha da apresentação mensal dos Megas (megas-mensal/01_Config.gs,
       // PROJETOS.<cidade>.spreadsheetId): a aba "Financeiro <ano retrasado>"
@@ -120,7 +121,8 @@ const ORC_CIDADES = {
     unidadeModelo: 19,                                                     // Mega Itajaí
     relatorios: {
       metragemId: '14j2urNQdd5hkypJJ5RlVjyora7-Y14m0rDjnBIF1XtY',   // MEGA ITAJAÍ - METRAGEM-COND 2027 (22-10-2026)
-      ritmoId:    '1fNnwrqm22x0RVq0zXMO5f3vD1oOZF0pCpPS-ytmYOyk',   // MEGA ITAJAÍ - RITMO 2026 (12-10-2026 20h43)
+      ritmoId:    '1cVIIZ3JknOzg7566Ax8xoE-QAYZ811e9bJV6rvY0oLw',   // MEGA ITAJAÍ - RITMO 2026 (23-10-2026 09h)
+      mensalMetragemId: '1YjizgKzmBiFTu-K66PFVbAuDOY6q50P5Ds02ryTZBTA',   // MEGA ITAJAÍ - METRAGEM MENSAL 2026 x 2027 (23-10-2026)
       mensalId:   '1S0jfhLXIRKTGynuOfoetkrjCkXx72NEGcNaSsmNxxjE',   // MEGA ITAJAÍ - MENSAL 2027 (22-10-2026 23h)
       financeiroMegasId: '1UQXY1bNS-w4PuLOILpemiXRuMu3ao2mguVgsiO-14k4',   // planilha dos Megas (Itajaí)
       orcDosModelos: true   // Orç 2027 pelos modelos + contratos (ver Curitiba)
@@ -143,7 +145,8 @@ const ORC_CIDADES = {
     unidadeModelo: 18,                                                     // Mega Esteio
     relatorios: {
       metragemId: '1RvWqP_wxSk2eJVsojIMpu3tjfRPpHg1UZWjjiql5vCU',   // MEGA ESTEIO - METRAGEM-COND 2027 (22-10-2026 Pátio)
-      ritmoId:    '1p3RX8XDVy9PZHmjfWfap1YdlZO7n1tDPfwd4ZEag8AQ',   // MEGA ESTEIO - RITMO 2026 (12-10-2026 20h43)
+      ritmoId:    '1A3FMgXb6XaQWxJzq_qa7_FgtkPvYxP83NhM4t_5JxnA',   // MEGA ESTEIO - RITMO 2026 (23-10-2026 09h)
+      mensalMetragemId: '1NSVDuAclww1oumpzG1AmIV7FYk3a-jpFBt3qmlDYTy8',   // MEGA ESTEIO - METRAGEM MENSAL 2026 x 2027 (23-10-2026)
       mensalId:   '1LdGKll9z-edZIFhfCKlu0SaOYfm-CsI7xeYhvdZV2B0',   // MEGA ESTEIO - MENSAL 2027 (22-10-2026 23h)
       financeiroMegasId: '1wbtzAqiv7fhXiwmxaAmQb5Nc0UV0EaDZwPoJqknhvYY',   // planilha dos Megas (Esteio)
       // 12/10/2026, 20h: a METRAGEM das 19h56 traz R$ 1.200 em Outras taxas e

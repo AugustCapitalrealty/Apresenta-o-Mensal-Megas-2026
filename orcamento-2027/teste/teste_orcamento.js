@@ -1530,7 +1530,9 @@ const MODELO_SEC = {};
           if (Math.abs(m[campo].reduce((t, v) => t + v, 0) - x.v[k]) > 1) naoFecha.push(x.nome + ' ' + k);
         });
       });
-      ok(!naoFecha.length, c + ' (exportação nova): mês a mês = DRE (' + naoFecha.join(', ') + ')');
+      // O realizado do ritmo não muda (23/10/2026): conta cujo ano na METRAGEM fica abaixo do realizado não fecha no Ritmo
+      const travadasE = (rel.mensalNaoConciliado || []).map(a => a.nome + ' ' + a.k);
+      ok(naoFecha.every(n => travadasE.indexOf(n) >= 0 && / ritmo$/.test(n)), c + ' (exportação nova): mês a mês = DRE, salvo Ritmo sem espaço na projeção (' + naoFecha.join(', ') + ')');
       ok(!rel.orcCalculado.semConta.length, c + ' (exportação nova): toda conta dos modelos tem linha na METRAGEM (' +
          rel.orcCalculado.semConta.map(s => s.nome + ' ' + Math.round(s.total)).join(', ') + ')');
       // Esteio: a assistente de facilities ("Assessoria de RH", R$ 90 mil no 090) fica DENTRO da Despesa de
@@ -1712,15 +1714,19 @@ ok(['CURITIBA', 'ITAJAI', 'ESTEIO'].every(k => ORC_DOS_MODELOS_CONFIG[k]), 'orcD
         if (Math.abs(m.real[i] - cru.contas[x.chave].real[i]) > 0.01 && mexeuRealizado.indexOf(x.nome) < 0) mexeuRealizado.push(x.nome);
       }
     });
-    ok(!naoFecha.length, c + ': mês a mês soma a DRE em toda conta e coluna (' + naoFecha.join(', ') + ')');
-    ok(mexeuRealizado.length <= 2, c + ': ritmo realizado (jan–set) intacto, salvo conta sem espaço na projeção (' + mexeuRealizado.join(', ') + ')');
+    const travadas = (vis.rel.mensalNaoConciliado || []).map(a => a.nome + ' ' + a.k);
+    ok(naoFecha.every(n => travadas.indexOf(n) >= 0 && / ritmo$/.test(n)), c + ': mês a mês soma a DRE em toda conta e coluna, salvo Ritmo sem espaço na projeção (' + naoFecha.join(', ') + ')');
+    ok(!mexeuRealizado.length, c + ': ritmo realizado (jan–set) intacto em toda conta (' + mexeuRealizado.join(', ') + ')');
+    // Tolerância do Ritmo: o que não fechou (fora IPTU e seguro, que no m² com IPTU seguem o ano da DRE) ÷ área ÷ 12
+    const tolM2 = (k, area) => 0.005 + (k !== 'ritmo' || !area ? 0 : Math.abs((vis.rel.mensalNaoConciliado || [])
+      .filter(a => a.k === 'ritmo' && !/^(IPTU|Seguro)$/.test(a.nome)).reduce((t, a) => t + a.dif, 0)) / area / 12);
     if (vis.realAnt) pertoReal(vis.realAnt.ac.reduce((t, v) => t + v, 0), vis.rel.areaComum.real, c + ': Real 2025 mês a mês = DRE');
     const m2v = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt);
-    m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(s.media.toFixed(2) === m2v.custo[s.k].areaComum.m2.toFixed(2),
+    m2v.series.filter(s => m2v.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2v.custo[s.k].areaComum.m2) < tolM2(s.k, s.area),
       c + ': m² mês a mês — média das linhas = tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2v.custo[s.k].areaComum.m2.toFixed(2) + ')'));
     // Com IPTU e seguro (13/10/2026): a média das linhas = o R$/m² total da tabela, e o IPTU num mês só.
     const m2i = G._orcM2Mensal_(vis.rel, vis.mensal, vis.realAnt, true);
-    m2i.series.filter(s => m2i.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2i.custo[s.k].total.m2) < 0.015,
+    m2i.series.filter(s => m2i.custo[s.k]).forEach(s => ok(Math.abs(s.media - m2i.custo[s.k].total.m2) < 0.01 + tolM2(s.k, s.area),
       c + ': m² mês a mês com IPTU — média das linhas = total da tabela (' + s.nome + ': ' + s.media.toFixed(2) + ' × ' + m2i.custo[s.k].total.m2.toFixed(2) + ')'));
     {
       const sl = novoSlide({ _slides: [] });
@@ -3154,6 +3160,14 @@ console.log('Versão 2 (V2 — 22/10/2026): Efeito Pátio Mercado Livre e Impact
       ok(Math.round(rel.total.orc) === Math.round(semNovo.rel.total.orc) && !Object.keys(v.mensal.contas).some(k => /^r m/.test(k)) &&
          v.mensal.contas[G._orcChaveConta_('IPTU')] && v.mensal.contas[G._orcChaveConta_('Seguro')],
          c + ' (23/10): total igual, sem as linhas "R$ M² MÊS" como conta, IPTU e Seguro seguem do Despesas-Mensal');
+      // "De 2026 o que já foi já foi" (Guilherme, 23/10/2026): jan–set de cada conta = o realizado da planilha de
+      // ritmo, mesmo depois da conciliação com a METRAGEM (a diferença vai só para out–dez).
+      const rit = G._orcLerRitmo_(fixture('fixture_ritmo_' + c + '_2310.json')), cru = G._orcLerMensal_(fixture('fixture_mensal_' + c + '_2300.json')).contas;
+      const mexeu = Object.keys(v.mensal.contas).filter(k => {
+        const fonte = rit[k] ? rit[k].real : cru[k] ? cru[k].real : null;   // conta fora do ritmo: a do Despesas-Mensal
+        return !fonte || v.mensal.contas[k].real.slice(0, 9).some((x, i) => Math.abs(x - fonte[i]) > 0.5);
+      }).map(k => v.mensal.contas[k].nome);
+      ok(!mexeu.length, c + ' (23/10): 2026 jan–set intocado (planilha de ritmo; fora dela, o Despesas-Mensal)' + (mexeu.length ? ' — mudou: ' + mexeu.join(', ') : ''));
       const d0 = G._orcM2Mensal_(semNovo.rel, semNovo.mensal, semNovo.realAnt, true), d = G._orcM2Mensal_(rel, v.mensal, v.realAnt, true);
       const ser = (x, k) => x.series.filter(s => s.k === k)[0];
       ok(d0.fora.indexOf('Despesa de pessoal') >= 0 && d.fora.indexOf('Despesa de pessoal') < 0 &&

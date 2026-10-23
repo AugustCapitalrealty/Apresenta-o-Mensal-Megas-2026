@@ -407,15 +407,18 @@ function _orcConferirMensal_(rel, mensal, valeMetragem) {
  * rel.mensalConciliado (uma linha no slide de revisão).
  */
 function _orcConciliarMensal_(rel, mensal, realAnt) {
-  const ajustes = [];
+  const ajustes = [], travadas = [];
   const contas = rel.contas.concat([{ nome: 'IPTU', chave: _orcChaveConta_('IPTU'), v: rel.iptu },
                                     { nome: 'Seguro', chave: _orcChaveConta_('Seguro'), v: rel.seguro }]);
   if (mensal) contas.forEach(c => {
     const m = mensal.contas[c.chave];
     if (!m) return;
     [['orcAnt', 'orcAnt', 0], ['ritmo', 'real', ORC_RITMO_ULTIMO_MES_FECHADO], ['orc', 'orc', 0]].forEach(([k, campo, desde]) => {
-      const d = _orcAjustarSerie_(m[campo], c.v[k], desde);
+      // Ritmo: o realizado (até o último mês fechado) não muda nunca (Guilherme, 23/10/2026)
+      const d = _orcAjustarSerie_(m[campo], c.v[k], desde, k === 'ritmo');
       if (d) ajustes.push({ nome: c.nome, k: k, dif: d });
+      const falta = c.v[k] - m[campo].reduce((t, v) => t + v, 0);
+      if (Math.abs(falta) > 1) travadas.push({ nome: c.nome, k: k, dif: falta });
     });
   });
   if (realAnt) {
@@ -426,13 +429,18 @@ function _orcConciliarMensal_(rel, mensal, realAnt) {
   ajustes.forEach(a => Logger.log('Mês a mês conciliado com a DRE — ' + a.nome + ' (' + _orcRotuloColuna_(a.k, rel.anos) +
                                   '): ' + (a.dif >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(a.dif))));
   rel.mensalConciliado = ajustes;
+  // O que não fechou porque o realizado não muda (o ano da METRAGEM abaixo do realizado + projeção zerada)
+  rel.mensalNaoConciliado = travadas;
+  travadas.forEach(a => Logger.log('Mês a mês ≠ DRE (realizado não muda) — ' + a.nome + ' (' + _orcRotuloColuna_(a.k, rel.anos) +
+                                   '): ' + (a.dif >= 0 ? '+' : '−') + _orcMoeda_(Math.abs(a.dif))));
 }
 
 // Leva a soma da série (12 meses, alterada no lugar) ao alvo; devolve a
 // diferença (0 se já batia). Os meses antes de `desde` ficam; a diferença vai
 // para os outros na proporção do que já têm (por igual se zerados). Se ali
-// não couber sem mês negativo, vai para o ano todo.
-function _orcAjustarSerie_(serie, alvo, desde) {
+// não couber sem mês negativo, vai para o ano todo — menos com `travado`
+// (o realizado do ritmo): aí a série fica como está e só o log registra.
+function _orcAjustarSerie_(serie, alvo, desde, travado) {
   const d = alvo - serie.reduce((t, v) => t + v, 0);
   if (Math.abs(d) <= 1) return 0;
   const tenta = (ini, semNegativo) => {
@@ -443,6 +451,16 @@ function _orcAjustarSerie_(serie, alvo, desde) {
     idx.forEach(i => { novo[i] += base > 0.5 ? d * serie[i] / base : d / idx.length; });
     return !semNegativo || idx.every(i => novo[i] >= -0.005) ? novo : null;
   };
+  if (travado && desde > 0) {
+    const so = desde < 12 ? tenta(desde, true) : null;
+    if (!so) {
+      Logger.log('Mês a mês não conciliado (meses fechados não mudam): faltam ' + _orcMoeda_(d) + ' depois de ' +
+                 _ORC_MES_ABREV[desde - 1] + ' sem deixar mês negativo');
+      return 0;
+    }
+    so.forEach((v, i) => { serie[i] = v; });
+    return d;
+  }
   const novo = (desde > 0 && desde < 12 ? tenta(desde, true) : null) || tenta(0, true) || tenta(0, false);
   novo.forEach((v, i) => { serie[i] = v; });
   return d;
@@ -536,14 +554,15 @@ function _orcAplicarRitmo_(mensal, ritmo, quem) {
 
 // Relatório "Mxxx-2026-x-Orcamento-2027" (metragem mensal, 23/10/2026): as mesmas contas da METRAGEM mês a mês, com a
 // Despesa de pessoal, que o Despesas-Mensal não traz (o gráfico de m² punha 1/12 do ano em cada mês). Não traz IPTU
-// nem Seguro: esses ficam do Despesas-Mensal. Conta que ele tem troca o Orç do ano e o Real/Ritmo; o Orç do ano
-// anterior fica (ele não traz). Vem antes do RITMO-ATUAL, que segue dando o 2026 (fecha com a METRAGEM).
+// nem Seguro: esses ficam do Despesas-Mensal. Conta que o mensal já tem: troca só o Orç do ano — o 2026 não muda
+// ("o que já foi já foi", Guilherme, 23/10/2026; o agosto deste relatório difere do ritmo e da METRAGEM). Conta nova
+// entra inteira; o RITMO-ATUAL, aplicado depois, dá o 2026 dela quando a tem.
 function _orcAplicarMensalMetragem_(mensal, novo, quem) {
   const zeros = () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   const incluidas = [];
   Object.keys(novo.contas).forEach(k => {
     const n = novo.contas[k], m = mensal.contas[k];
-    if (m) { m.orc = n.orc.slice(); m.real = n.real.slice(); return; }
+    if (m) { m.orc = n.orc.slice(); return; }
     mensal.contas[k] = { nome: n.nome, orcAnt: zeros(), real: n.real.slice(), orc: n.orc.slice() };
     incluidas.push(n.nome);
   });
