@@ -74,16 +74,17 @@ function gerarSlideBridge() {
 // LEITURA DA PLANILHA
 // ==========================================
 function obterDadosBridge() {
-  const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-  const sheet = ss.getSheetByName(NOME_ABA_BRIDGE);
-  if (!sheet) throw new Error('Aba "' + NOME_ABA_BRIDGE + '" não encontrada.');
+  // Planilha do financeiro do Mega (ver getAbaFinanceiro_ em 01_Config);
+  // a aba NOME_ABA_BRIDGE da planilha do Mega fica só como reserva.
+  const sheet = getAbaFinanceiro_(NOME_ABA_BRIDGE);
+  if (!sheet) throw new Error('Financeiro não encontrado (FINANCEIRO_IDS nem aba "' + NOME_ABA_BRIDGE + '").');
 
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return null;
 
   const normTxt = s => String(s || '').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-  const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+  const toAbs = _finAbs_;
 
   // ── Localiza linha de cabeçalho ───────────────────────────────────────────
   let hdrRow = -1;

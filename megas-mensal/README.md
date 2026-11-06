@@ -23,6 +23,21 @@ slides são gerados diretamente na apresentação Google Slides correspondente.
 > do editor e o resultado sai no log. `setupAbasPorCidade()` (05_Suporte) usa
 > `getActiveSpreadsheet()` e só funciona num projeto vinculado à planilha.
 
+## Financeiro (desde 06/11/2026)
+
+O financeiro (DRE, Bridge, Resultado Operacional, Custo do m², orçamento do
+analista) é lido de uma **planilha própria por Mega** em
+`29 - Template Apresentações/02 - PLANILHAS DE APOIO/`, configurada em
+`FINANCEIRO_IDS` (`01_Config.gs`). Lida a 1ª aba. Formato = o da antiga aba
+FINANCEIRO BRIDGE (trincas Orç | Real/Ritmo | Variação por mês) com as linhas
+`TOTAL ÁREA ...` / `R$ M² MÊS` no fim (o que antes ia na METRO QUADRADO).
+Sem ID ou se o arquivo não abrir, cai nas abas antigas da planilha do Mega.
+
+**O mês de referência é sempre o B1 da aba DADOS da planilha do Mega**
+(`obterMesReferencia_`), inclusive no Custo do m² — a planilha do financeiro
+não define mês. Todo mês: trocar o arquivo e atualizar o ID em
+`FINANCEIRO_IDS`, ou sobrescrever o conteúdo do mesmo arquivo.
+
 ## Como usar
 
 No editor do Apps Script (projeto dedicado acima), rode uma das funções de `00_Main.gs`:

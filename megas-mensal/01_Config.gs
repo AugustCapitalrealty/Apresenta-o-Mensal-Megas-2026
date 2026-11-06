@@ -266,6 +266,69 @@ function getProjetoAtivo() {
 }
 
 function getSpreadsheetIdAtivo()  { return getProjetoAtivo().spreadsheetId;  }
+
+// ==========================================
+// FONTE DO FINANCEIRO — planilha própria por Mega (desde 06/11/2026)
+// ==========================================
+// O financeiro (Orç × Real × Ritmo por rubrica, mês a mês, + linhas de
+// R$/m²) vem de uma planilha SEPARADA por Mega, em
+// "29 - Template Apresentações/02 - PLANILHAS DE APOIO/" — `financeiroId`
+// em FINANCEIRO_IDS abaixo. É a mesma tabela que antes era colada em DUAS
+// abas da planilha do Mega (FINANCEIRO BRIDGE e METRO QUADRADO): mesmo
+// cabeçalho "Orç Jan/26 | Real Jan/26 | Variação R$" em trincas, Ritmo nos
+// meses futuros, e as linhas "TOTAL ÁREA ..." + "R$ M² MÊS" no fim. Por isso
+// os leitores não mudaram — só a aba de onde leem.
+//
+// Lida a PRIMEIRA aba do arquivo (o nome dela muda a cada export:
+// "mega-curitiba-outubro", "mega-itajai"...). Todo mês: trocar o arquivo
+// por um novo e atualizar o ID aqui, OU sobrescrever o conteúdo do mesmo
+// arquivo (aí o ID não muda).
+//
+// Sem financeiroId (ou se o arquivo não abrir), cai na aba antiga da
+// planilha do Mega — FINANCEIRO BRIDGE / METRO QUADRADO — e avisa no log.
+const FINANCEIRO_IDS = {
+  CURITIBA: '1CT7fMByW9fC1zMED84Dx0Jcson1weS3BALvXOoWetw8',   // mega-curitiba-outubro
+  ITAJAI  : '1H8fjn23nSh9diNxBpOwo5e6dszq8Mj41fyHjp51LgdQ',   // mega-itajai
+  ESTEIO  : '1SlGajME_0cs2JZpm8LOiNsFjYWhGgm9bAcMXi06WGkI'    // mega-esteio-outubro
+};
+
+// abaLegada: 'FINANCEIRO BRIDGE' ou 'METRO QUADRADO' (a aba que a planilha
+// do Mega usava para o mesmo dado). Devolve a Sheet ou null.
+function getAbaFinanceiro_(abaLegada) {
+  const id = FINANCEIRO_IDS[_projetoAtivoChave];
+  if (id) {
+    try {
+      const sheet = SpreadsheetApp.openById(id).getSheets()[0];
+      if (sheet) return sheet;
+    } catch (e) {
+      Logger.log('⚠ Financeiro: não abriu a planilha ' + id + ' (' + e.message +
+                 ') — usando a aba "' + abaLegada + '" da planilha do Mega.');
+    }
+  }
+  return SpreadsheetApp.openById(getSpreadsheetIdAtivo()).getSheetByName(abaLegada);
+}
+
+// Valor de célula do financeiro → número positivo (despesa). Aceita número
+// (getValues) e também texto contábil "(16.397,86)" — caso o export seja
+// importado como texto, ler só `typeof === 'number'` zeraria o deck inteiro
+// sem erro nenhum.
+function _finAbs_(v) {
+  if (typeof v === 'number') return isFinite(v) ? Math.abs(v) : 0;
+  const n = parseNumeroCusto_(v);
+  return n == null ? 0 : n;
+}
+
+// Cabeçalhos "Orç Fev/25" no meio de um bloco 2026 (erro de digitação que
+// veio nos exports de out/2026): corrige o ano de cada grupo pelo ano mais
+// frequente. Mesma blindagem que obterDadosBridge já fazia.
+// grupos: [{ ano2: '26', ... }] — altera no lugar e devolve o ano da moda.
+function _finAnoModa_(grupos) {
+  const cont = {};
+  grupos.forEach(g => { cont[g.ano2] = (cont[g.ano2] || 0) + 1; });
+  const moda = Object.keys(cont).sort((a, b) => cont[b] - cont[a])[0];
+  grupos.forEach(g => { if (g.ano2 !== moda) g.ano2 = moda; });
+  return moda;
+}
 function getPresentationIdAtivo() { return getProjetoAtivo().presentationId; }
 
 // Abre sempre a apresentação da cidade ativa, independente de qual estiver aberta no editor

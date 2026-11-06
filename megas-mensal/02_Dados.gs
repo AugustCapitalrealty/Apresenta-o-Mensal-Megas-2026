@@ -1860,9 +1860,10 @@ function obterDadosCustoM2() {
   const _ckCusto = getProjetoAtivo().nome;
   if (_custoM2Cache[_ckCusto]) return _custoM2Cache[_ckCusto];
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('METRO QUADRADO');
-    if (!sheet) throw new Error('Aba METRO QUADRADO não encontrada');
+    // Planilha do financeiro do Mega (ver getAbaFinanceiro_ em 01_Config):
+    // as linhas "TOTAL ÁREA ..." e "R$ M² MÊS" vêm na mesma tabela.
+    const sheet = getAbaFinanceiro_('METRO QUADRADO');
+    if (!sheet) throw new Error('Financeiro não encontrado (FINANCEIRO_IDS nem aba METRO QUADRADO)');
 
     const rango  = sheet.getDataRange();
     const data   = rango.getDisplayValues();
@@ -1936,16 +1937,31 @@ function obterDadosCustoM2() {
 
     // ── Mês de referência ─────────────────────────────────────────────────
     // Prioridade:
-    //   1. Mês escrito na célula A1 da aba (ex: "MAIO", "Abril") — controle manual
-    //   2. Mês corrente (se tiver dados)
-    //   3. Último mês com Orç e Real preenchidos
+    //   1. Mês de referência do deck — célula B1 da aba DADOS da planilha do
+    //      Mega (obterMesReferencia_), o MESMO de todos os outros slides.
+    //      Desde 06/11/2026 é sempre ele: a planilha do financeiro é um
+    //      export e não tem o mês em A1, e com A1 vazia o passo 3 escolhia o
+    //      mês corrente (novembro = Ritmo) em vez de outubro.
+    //   2. Mês escrito na célula A1 da aba (reserva para a aba antiga)
+    //   3. Mês corrente (se tiver dados)
+    //   4. Último mês com Orç e Real preenchidos
     const temDados = i => tabela['Orç 2026'][i] !== null && tabela['Real 2026'][i] !== null;
     let mesRef = null;
+
+    try {
+      const ref = obterMesReferencia_();
+      if (ref && ref.index >= 0 && ref.index < meses.length && temDados(ref.index)) {
+        mesRef = { ...meses[ref.index], index: ref.index };
+        Logger.log('obterDadosCustoM2: mês de referência da aba DADOS (B1) → ' + mesRef.nomeMesExtenso);
+      }
+    } catch (e) {
+      Logger.log('obterDadosCustoM2: obterMesReferencia_ falhou — ' + e.message);
+    }
 
     const mesesIdx = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     const a1 = normalizarTextoCusto_(data[0][0]).substring(0, 3);
     const idxManual = mesesIdx.indexOf(a1);
-    if (idxManual >= 0 && idxManual < meses.length && temDados(idxManual)) {
+    if (!mesRef && idxManual >= 0 && idxManual < meses.length && temDados(idxManual)) {
       mesRef = { ...meses[idxManual], index: idxManual };
       Logger.log('obterDadosCustoM2: mês definido manualmente em A1 → ' + data[0][0]);
     }
@@ -2638,13 +2654,13 @@ function dreOrdemDe_(chave) {
 
 function obterDadosDRE_() {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('FINANCEIRO BRIDGE');
+    // Planilha do financeiro do Mega (ver getAbaFinanceiro_ em 01_Config).
+    const sheet = getAbaFinanceiro_('FINANCEIRO BRIDGE');
     if (!sheet) return null;
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return null;
 
-    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+    const toAbs = _finAbs_;
 
     let hdrRow = -1;
     for (let r = 0; r < Math.min(5, data.length); r++) {
@@ -2662,9 +2678,11 @@ function obterDadosDRE_() {
       const idxMes = MESES_VALIDOS.indexOf(m[1].toLowerCase());
       if (idxMes < 0) continue;
       const ano2 = m[2].length === 2 ? m[2] : m[2].slice(-2);
-      grupos.push({ ord: (2000 + parseInt(ano2, 10)) * 100 + (idxMes + 1), cOrc: c, cReal: c + 1 });
+      grupos.push({ ano2, idxMes, cOrc: c, cReal: c + 1 });
     }
     if (!grupos.length) return null;
+    _finAnoModa_(grupos);   // "Orç Fev/25" num bloco 2026 → 26
+    grupos.forEach(g => { g.ord = (2000 + parseInt(g.ano2, 10)) * 100 + (g.idxMes + 1); });
     grupos.sort((a, b) => a.ord - b.ord);
 
     const ref    = obterMesReferencia_();
@@ -2855,13 +2873,13 @@ function _lerAnoAnterior_() {
 // Retorna { serie: [{ord, orc, real}] } ordenado por mês, ou null.
 function obterDadosOrcamentoAnalista_() {
   try {
-    const ss    = SpreadsheetApp.openById(getSpreadsheetIdAtivo());
-    const sheet = ss.getSheetByName('FINANCEIRO BRIDGE');
+    // Planilha do financeiro do Mega (ver getAbaFinanceiro_ em 01_Config).
+    const sheet = getAbaFinanceiro_('FINANCEIRO BRIDGE');
     if (!sheet) return null;
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return null;
 
-    const toAbs = v => Math.abs(typeof v === 'number' ? v : 0);
+    const toAbs = _finAbs_;
 
     let hdrRow = -1;
     for (let r = 0; r < Math.min(5, data.length); r++) {
@@ -2879,9 +2897,11 @@ function obterDadosOrcamentoAnalista_() {
       const idxMes = MESES_VALIDOS.indexOf(m[1].toLowerCase());
       if (idxMes < 0) continue;
       const ano2 = m[2].length === 2 ? m[2] : m[2].slice(-2);
-      grupos.push({ ord: (2000 + parseInt(ano2, 10)) * 100 + (idxMes + 1), cOrc: c, cReal: c + 1 });
+      grupos.push({ ano2, idxMes, cOrc: c, cReal: c + 1 });
     }
     if (!grupos.length) return null;
+    _finAnoModa_(grupos);   // "Orç Fev/25" num bloco 2026 → 26
+    grupos.forEach(g => { g.ord = (2000 + parseInt(g.ano2, 10)) * 100 + (g.idxMes + 1); });
 
     // Rubricas-alvo: casamento por palavras-chave (radical "materia" cobre
     // "material" E "materiais"). Informática entra nas DUAS formas —
