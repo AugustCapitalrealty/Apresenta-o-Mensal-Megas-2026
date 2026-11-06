@@ -5,16 +5,27 @@ operacionais dos empreendimentos **Mega Curitiba**, **Mega Itajaí** e **Mega Es
 (August Capital Realty). Os dados são lidos das planilhas Google de cada cidade e os
 slides são gerados diretamente na apresentação Google Slides correspondente.
 
-> **Publicação: esta pasta sobe com `clasp push`** (projeto
-> [`1Mj5tx6a…`](https://script.google.com/home/projects/1Mj5tx6av7GyERqjn8JixbSUeqOCHIJj-XNHFib1yp0VMERQ3nUz5j4NW/edit)).
-> Não edite no editor do Apps Script: o próximo push apaga. Se editar, `clasp pull`
-> antes. Desde 06/10/2026 os arquivos seguem o padrão da `propriedades-mensal`
-> (`00`–`05` infraestrutura, `10`–`25` slides na ordem do deck); as tabelas de
-> "Estrutura do projeto" abaixo ainda citam os nomes antigos (`SlideNN_*`).
+> **Publicação: esta pasta sobe com `clasp push`** para o projeto **dedicado**
+> (standalone, não vinculado a nenhum arquivo)
+> [`17EeVQ6q…`](https://script.google.com/home/projects/17EeVQ6q5xgaXLVcLLWD6ns4BZrkUIv2NRQFEczakDP-6XFlEeLo5c4-R/edit),
+> que aparece no Drive como `SLIDES APRESENTAÇÃO MENSAL - GERENCIAL` dentro de
+> `29 - Template Apresentações/`. Não edite no editor do Apps Script: o próximo push
+> apaga. Se editar, `clasp pull` numa pasta temporária antes. Desde 06/10/2026 os
+> arquivos seguem o padrão da `propriedades-mensal` (`00`–`05` infraestrutura,
+> `10`–`25` slides na ordem do deck); as tabelas de "Estrutura do projeto" abaixo
+> ainda citam os nomes antigos (`SlideNN_*`).
+>
+> **Projeto antigo (06/11/2026):** até essa data o código rodava no projeto
+> `1Mj5tx6a…`, vinculado a um arquivo (`parentId 1yTxg6NUmRGJmOIwdmIX_dtPuLKiv-mjnbnR21YIVfq0`).
+> Ele não recebe mais push; as execuções são feitas no projeto dedicado.
+> Consequência de não ter arquivo vinculado: o menu "📊 Capital Realty" (`onOpen`)
+> e os `prompt`/`alert` não aparecem — as funções rodam pelo seletor de funções
+> do editor e o resultado sai no log. `setupAbasPorCidade()` (05_Suporte) usa
+> `getActiveSpreadsheet()` e só funciona num projeto vinculado à planilha.
 
 ## Como usar
 
-No editor do Apps Script, rode uma das funções de `00_Main.gs`:
+No editor do Apps Script (projeto dedicado acima), rode uma das funções de `00_Main.gs`:
 
 | Função | O que faz |
 |---|---|

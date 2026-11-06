@@ -320,6 +320,8 @@ function gerarApresentacaoCompleta_() {
       erros.push(p.nome + ': ' + e.message);
       Logger.log('    ✗ ERRO: ' + e.message);
     }
+    // Grava no Drive ao fim de CADA passo (ver _salvarDeck_).
+    if (!_salvarDeck_()) erros.push(p.nome + ': falha ao gravar o deck (Service unavailable: Slides)');
   });
 
   Logger.log('✔ ' + projeto.nome + ' — ' + (erros.length ? erros.length + ' erro(s).' : 'Sem erros.'));
@@ -337,17 +339,50 @@ function gerarApresentacaoCompleta_() {
   // (HISTORICO_VALIDADO_ID, em 01_Config.gs). Ver Suporte_RegistroDados.gs.
 }
 
+// Grava as alterações pendentes do Slides (saveAndClose) com até 3 tentativas.
+//
+// Por quê: o SlidesApp acumula TODAS as alterações da execução e só grava no
+// fim. Numa geração completa (~50 slides, centenas de shapes) essa gravação
+// final única estourava com "Service unavailable: Slides" e a execução INTEIRA
+// se perdia (03/11/2026: log "Sem erros", deck continuou vazio no Drive).
+// Gravando ao fim de cada passo, cada lote é pequeno e, se algo falhar, o que
+// já foi feito fica salvo. É seguro porque todo slide abre o deck de novo via
+// getDeckAtivo() (nenhum código guarda o objeto Presentation entre passos).
+function _salvarDeck_() {
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      getDeckAtivo().saveAndClose();
+      return true;
+    } catch (e) {
+      Logger.log('    ⚠ Gravação do deck falhou (tentativa ' + tentativa + '/3): ' + e.message);
+      Utilities.sleep(3000 * tentativa);
+    }
+  }
+  return false;
+}
+
+// Retorna quantos slides o deck tinha ANTES de limpar (0 = deck vazio).
 function limparApresentacao_() {
   const deck = getDeckAtivo();
   const slides = deck.getSlides();
   for (let i = slides.length - 1; i >= 1; i--) slides[i].remove();
-  Logger.log('  Apresentação limpa (' + (slides.length - 1) + ' slides removidos).');
+  Logger.log('  Apresentação limpa (' + Math.max(slides.length - 1, 0) + ' slides removidos' +
+             (slides.length ? '' : ' — deck estava vazio') + ').');
+  _salvarDeck_();
+  return slides.length;
 }
 
 function regerarApresentacaoCompleta_() {
   if (!_megasConferirProjeto_()) return;
-  limparApresentacao_();
+  const tinhaCapaAntiga = limparApresentacao_() > 0;
   gerarApresentacaoCompleta_();
+
+  // Deck começou vazio → não existe capa antiga; o slide 1 já é a capa NOVA.
+  // (03/11/2026: sem este teste a capa recém-gerada era apagada.)
+  if (!tinhaCapaAntiga) {
+    Logger.log('  Deck começou vazio — nenhuma capa antiga para remover.');
+    return;
+  }
 
   // A capa agora é GERADA (gerarSlideCapa), então o primeiro slide antigo
   // que limparApresentacao_ preservou fica obsoleto — remove se sobrou.
@@ -384,6 +419,7 @@ function regerarApresentacaoCompleta_() {
                  '). A apresentação foi gerada normalmente — só apague o slide 1 (capa antiga) à mão, se ele ainda estiver lá.');
     }
   }
+  _salvarDeck_();
 }
 
 
