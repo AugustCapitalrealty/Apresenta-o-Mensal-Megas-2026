@@ -84,7 +84,7 @@ function obterDadosBridge() {
 
   const normTxt = s => String(s || '').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-  const toAbs = _finAbs_;
+  const toAbs = _finDespesa_;   // despesa com sinal (crédito abate)
 
   // ── Localiza linha de cabeçalho ───────────────────────────────────────────
   let hdrRow = -1;
@@ -150,7 +150,7 @@ function obterDadosBridge() {
     if (!data[r][0]) continue;
     if (normTxt(data[r][0]).includes('total')) { vetorTotalPlanilha = data[r]; break; }
     for (let c = 1; c < data[r].length; c++) {
-      vetor[c] += typeof data[r][c] === 'number' ? data[r][c] : 0;
+      vetor[c] += _finValor_(data[r][c]);   // com sinal (crédito abate); aceita texto contábil
     }
   }
 

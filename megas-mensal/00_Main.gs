@@ -492,8 +492,8 @@ function _financeiroConferencia_() {
     Logger.log('    custo m²  = R$ ' + fmt(cm.kpis.custo) + '/m²');
     Logger.log('    meta m²   = R$ ' + fmt(cm.kpis.meta) + '/m²');
     if (cm.kpis.custo != null && cm.kpis.custo < 0) {
-      Logger.log('    ⚠ custo NEGATIVO — a aba METRO QUADRADO está em formato contábil e ' +
-                 'algo escapou do Math.abs (ver numeroCelula em 02_Dados.gs).');
+      Logger.log('    ⚠ custo NEGATIVO — ' +
+                 'o mês tem crédito líquido (estorno/empréstimo) ou o sinal da planilha mudou (ver numeroCelula em 02_Dados.gs).');
     }
     if (!area) {
       Logger.log('    ⚠ sem área: o R$/m² dos slides vai sair omitido. Confira a aba ' +

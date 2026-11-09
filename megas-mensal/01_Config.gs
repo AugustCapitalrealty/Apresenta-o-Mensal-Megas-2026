@@ -308,14 +308,23 @@ function getAbaFinanceiro_(abaLegada) {
   return SpreadsheetApp.openById(getSpreadsheetIdAtivo()).getSheetByName(abaLegada);
 }
 
-// Valor de célula do financeiro → número positivo (despesa). Aceita número
-// (getValues) e também texto contábil "(16.397,86)" — caso o export seja
+// Valor de célula do financeiro → DESPESA (positivo = gasto). As planilhas
+// estão em formato contábil: despesa negativa "(16.397,86)", crédito
+// positivo. Então despesa = −valor: um crédito (estorno, empréstimo — ex.:
+// Curitiba jun/26 "Segurança vigilância" +395.871,44, confirmado pelo
+// Guilherme em 09/11/2026) vira despesa NEGATIVA e abate do total. Antes era
+// Math.abs, que contava o crédito como gasto.
+// Aceita número (getValues) e também texto contábil — caso o export seja
 // importado como texto, ler só `typeof === 'number'` zeraria o deck inteiro
 // sem erro nenhum.
-function _finAbs_(v) {
-  if (typeof v === 'number') return isFinite(v) ? Math.abs(v) : 0;
-  const n = parseNumeroCusto_(v);
+function _finValor_(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  const n = parseNumeroContabil_(v);
   return n == null ? 0 : n;
+}
+function _finDespesa_(v) {
+  const n = _finValor_(v);
+  return n === 0 ? 0 : -n;     // evita -0
 }
 
 // Cabeçalhos "Orç Fev/25" no meio de um bloco 2026 (erro de digitação que

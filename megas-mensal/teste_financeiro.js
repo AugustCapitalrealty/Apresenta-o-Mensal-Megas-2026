@@ -29,3 +29,8 @@ const c=obterDadosCustoM2();
 ok('custo m² mês = Outubro: '+(c.mesRef?c.mesRef.nomeMesExtenso:JSON.stringify(Object.keys(c))), JSON.stringify(c).includes('Outubro'));
 ok('área = 220000/10 = 22000: '+c.area, Math.round(c.area)===22000);
 ok('custo m² referência = Outubro: '+c.referencia.mesExtenso, c.referencia.mesExtenso==='Outubro');
+// Crédito (09/11/2026): valor positivo na planilha = crédito → despesa negativa, abate (não vira gasto).
+ok('crédito "395,00" → despesa −395: '+_finDespesa_('395,00'), _finDespesa_('395,00')===-395);
+ok('"(16.397,86)" → despesa 16397,86: '+_finDespesa_('(16.397,86)'), Math.abs(_finDespesa_('(16.397,86)')-16397.86)<1e-9);
+ok('número cru -3,66 → 3,66 e +0,69 → −0,69', _finDespesa_(-3.66)===3.66 && _finDespesa_(0.69)===-0.69);
+ok('zero não vira −0', Object.is(_finDespesa_(0),0) && Object.is(_finDespesa_('0,00'),0));

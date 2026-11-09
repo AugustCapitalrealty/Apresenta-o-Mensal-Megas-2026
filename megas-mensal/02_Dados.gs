@@ -1878,14 +1878,14 @@ function obterDadosCustoM2() {
     // mês, nome da linha, mês em A1 — que precisam do texto como está.)
     let brutos = null;
     try { brutos = rango.getValues(); } catch (e) { Logger.log('Custo m²: getValues indisponível — ' + e.message); }
-    // Devolve SEMPRE positivo, igual ao parseNumeroCusto_ (que já fazia
-    // Math.abs): Curitiba e Esteio guardam a aba em formato contábil, com
-    // despesa negativa — "(3,66)" no texto, -3.66 no valor cru. O deck
-    // sempre mostrou custo como número positivo; sem o Math.abs aqui, ler o
-    // valor cru fazia o slide CUSTO DO M² sair com "R$ -3,89".
+    // Devolve DESPESA (positivo = gasto), igual ao parseNumeroCusto_: a aba
+    // está em formato contábil, despesa negativa — "(3,66)" no texto, -3.66
+    // no valor cru — então despesa = −valor. Mês com crédito líquido (ex.:
+    // Curitiba jun/26, empréstimo na vigilância) sai negativo, como deve.
+    // (Até 09/11/2026 era Math.abs, que transformava o crédito em gasto.)
     const numeroCelula = (linha, col) => {
       const cru = brutos && brutos[linha] ? brutos[linha][col] : null;
-      if (typeof cru === 'number' && isFinite(cru)) return Math.abs(cru);
+      if (typeof cru === 'number' && isFinite(cru)) return cru === 0 ? 0 : -cru;
       return parseNumeroCusto_(data[linha][col]);
     };
     const header = data[0];
@@ -2660,7 +2660,7 @@ function obterDadosDRE_() {
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return null;
 
-    const toAbs = _finAbs_;
+    const toAbs = _finDespesa_;   // despesa com sinal (crédito abate)
 
     let hdrRow = -1;
     for (let r = 0; r < Math.min(5, data.length); r++) {
@@ -2879,7 +2879,7 @@ function obterDadosOrcamentoAnalista_() {
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return null;
 
-    const toAbs = _finAbs_;
+    const toAbs = _finDespesa_;   // despesa com sinal (crédito abate)
 
     let hdrRow = -1;
     for (let r = 0; r < Math.min(5, data.length); r++) {
@@ -2983,19 +2983,28 @@ function normalizarTextoCusto_(txt) {
     .trim();
 }
 
-function parseNumeroCusto_(valor) {
+// Texto contábil → número COM sinal: "(432.621,10)" ou "-432.621,10" → −432621.10.
+function parseNumeroContabil_(valor) {
   if (valor === '' || valor === null || valor === undefined) return null;
   let s = String(valor).trim();
   if (!s) return null;
+  const negativo = /\(.*\)/.test(s) || /^-|^R\$\s*-/.test(s);
   s = s
     .replace(/\s/g, '')
     .replace('R$', '')
-    .replace(/[()]/g, '')     // negativos como "(432.621,10)" → "432.621,10"
+    .replace(/[()\-]/g, '')
     .replace(/\./g, '')
     .replace(',', '.');
   const n = parseFloat(s);
   if (isNaN(n)) return null;
-  return Math.abs(n);
+  return negativo ? -n : n;
+}
+
+// Texto contábil → DESPESA (positivo = gasto; crédito sai negativo). Ver _finDespesa_.
+function parseNumeroCusto_(valor) {
+  const n = parseNumeroContabil_(valor);
+  if (n == null) return null;
+  return n === 0 ? 0 : -n;
 }
 
 function normalizarAnoCusto_(anoTxt) {
