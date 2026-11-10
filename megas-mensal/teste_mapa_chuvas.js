@@ -1,5 +1,6 @@
 // Teste do Mapa de Chuvas (24_Slide_MapaChuvas.gs): turnos do anel, média de
-// 10 anos, chamados ligados à chuva e a geometria do slide.
+// 10 anos e a geometria do slide (sem previsão nem chamados de chuva desde
+// 10/11/2026).
 // Rodar: node megas-mensal/teste_mapa_chuvas.js
 // Prévia: PREVIA=<pasta> node megas-mensal/teste_mapa_chuvas.js  → grava
 // <pasta>/mapa_chuvas.svg (abrir no navegador ou Chrome --headless --screenshot).
@@ -140,8 +141,8 @@ t(d.turnos.pico.valor === 14.2 && d.turnos.pico.dia === 23 && d.turnos.pico.turn
 t(_chuvaClasse_(14.2).nome === 'Forte' && _chuvaClasse_(10).nome === 'Forte', 'forte a partir de 10');
 t(_chuvaClasse_(9.99).nome === 'Moderada' && _chuvaClasse_(2.5).nome === 'Moderada', 'moderada 2,5–10');
 t(_chuvaClasse_(0.5).nome === 'Leve' && _chuvaClasse_(0.49) === null && _chuvaClasse_(0) === null, 'leve a partir de 0,5; abaixo é seco');
-const imp = d.impactos.map(i => i.id + ':' + i.dia + '/' + i.turno).join(' ');
-t(imp === '104:7/0 102:11/2 101:23/1 106:23/1', 'impactos (chuveiro e agosto fora; madrugada → noite anterior; sem hora → manhã) → ' + imp);
+t(d.impactos === undefined && d.previsao === undefined, 'sem impactos nem previsão nos dados');
+t(!urls.some(u => u.indexOf('/v1/forecast') >= 0), 'não consulta a previsão');
 const daily = urls.find(u => u.indexOf('daily=precipitation_sum') >= 0);
 t(/start_date=2015-01-01/.test(daily) && /end_date=2026-09-30/.test(daily), 'diário de 2015-01-01 a 2026-09-30 → ' + daily);
 const hourly = urls.find(u => u.indexOf('hourly=') >= 0);
@@ -154,7 +155,7 @@ t(tx.includes('43 mm'), 'KPI chuva no mês = 43 mm');
 t(tx.some(s => s === '▼ 65% abaixo da média de 10 anos (120 mm)'), 'KPI: ▼ 65% abaixo da média → ' + tx.filter(s => /média/.test(s)).join(' | '));
 t(tx.includes('2 de 30'), 'KPI dias com chuva = 2 de 30');
 t(tx.includes('14,2 mm/h') && tx.includes('23/09 · tarde · chuva forte'), 'KPI pico 14,2 mm/h, 23/09 tarde');
-t(tx.includes('4'), 'KPI chamados = 4');
+t(!tx.some(s => /CHAMADOS LIGADOS/.test(s)), 'sem KPI de chamados');
 t(tx.includes('SETEMBRO') && tx.includes('2026'), 'centro do anel com o mês');
 for (let dia = 1; dia <= 30; dia++) if (!tx.includes(String(dia))) t(false, 'rótulo do dia ' + dia);
 t(!tx.includes('31'), 'setembro sem dia 31');
@@ -164,10 +165,11 @@ t(pontos.filter(s => s.fill === '#1E3A8A').length === 1, '1 ponto forte');
 t(pontos.filter(s => s.fill === '#0284C7').length === 1, '1 ponto moderado');
 t(pontos.filter(s => s.fill === '#7DD3FC').length === 2, '2 pontos leves');
 const xs = shapes.filter(s => s.tipo === 'LINE' && s.borda === CR_DESIGN_SYSTEM.colors.accentRed);
-t(xs.length === 3 * 2 + 2, '3 células com ✕ (101 e 106 na mesma) + legenda → ' + xs.length / 2);
+t(xs.length === 0, 'nenhum ✕ no anel nem na legenda → ' + xs.length);
+t(!tx.some(s => /chamado ligado/.test(s)), 'legenda sem chamado ligado à chuva');
 t(tx.includes('OUT/25') && tx.includes('SET/26') && tx.includes('93'), 'painel de 12 meses');
-t(tx.includes('HOJE') && tx.includes('16/10') && tx.includes('29/10'), 'previsão de 16/10 a 29/10');
-t(tx.some(s => /^72 mm previstos · 7 dias com chuva · maior volume: 24 mm em 22\/10$/.test(s)), 'rodapé da previsão → ' + tx.filter(s => /previstos/.test(s)).join(''));
+t(!tx.some(s => /PREVISÃO|HOJE|previstos/.test(s)), 'sem painel de previsão');
+t(!tx.some(s => /BD-CORRETIVAS/.test(s)), 'subtítulo só com a Open-Meteo');
 t(!tx.some(s => /indisponível|Falha/.test(s)), 'nenhum aviso de falha → ' + tx.filter(s => /indisponível|Falha/.test(s)).join(' | '));
 // Geometria: nada sai da página (a elipse do header sangra de propósito).
 const fora = shapes.filter(s => !(s.tipo === 'ELLIPSE' && s.w === 450) && (s.x < -14 || s.y < 0 || s.x + s.w > 734 || s.y + s.h > 405));
@@ -187,9 +189,8 @@ openMeteoFora = true;
 let erro = null;
 try { tx = rodar(); } catch (e) { erro = e; }
 t(!erro, 'não lança exceção → ' + (erro && erro.message));
-t(tx.some(s => /Previsão indisponível/.test(s)) && tx.some(s => /Histórico indisponível/.test(s)), 'avisos nos painéis');
+t(tx.some(s => /Histórico indisponível/.test(s)), 'aviso no painel de 12 meses');
 t(tx.includes('sem dado horário'), 'anel avisa sem dado horário');
-t(tx.includes('4'), 'chamados continuam aparecendo (vêm da BD, não da Open-Meteo)');
 t(shapes.filter(s => s.tipo === 'ELLIPSE' && s.w < 10 && s.w > 6 && s.fill === '#FFFFFF').length === 90, '90 pontos vazios');
 openMeteoFora = false;
 
@@ -202,44 +203,10 @@ t(tx.includes('SET/26*'), 'mês parcial marcado com * no painel de 12 meses');
 t(/end_date=2026-09-19/.test(urls.find(u => u.indexOf('hourly=') >= 0)), 'horário não pede além de ontem');
 hoje = '2026-10-16';
 
-// ── Cenário 4: slide dos chamados ligados à chuva ───────────────────────────
-console.log('Cenário 4: slide dos chamados');
-tx = rodar(gerarSlideChamadosChuva);
-t(slidesCriados === 1, 'um slide para 4 chamados');
-t(tx.includes('4 CHAMADOS · 1 FECHADO · 3 EM ABERTO'), 'título com a contagem (104 tem estado Fechado mas sem data → aberto, regra do backlog) → ' + tx.find(s => /CHAMADO/.test(s) && /ABERTO/.test(s)));
-const ordem = tx.filter(s => /^10[1-6]$/.test(s)).join(',');
-t(ordem === '104,102,101,106', 'ordem por dia e turno → ' + ordem);
-t(tx.includes('Fechado 25/09'), 'pílula fechado com data');
-t(tx.includes('Fechado sem data'), '104: estado Fechado sem data de fechamento');
-t(tx.includes('Aguardando material'), 'aberto mostra o estado');
-t(tx.includes('manhã · sem hora'), 'reporte sem hora');
-t(tx.includes('noite · 03:40'), 'madrugada aparece como noite do dia anterior, com a hora real');
-t(tx.includes('11/09'), 'goteira das 3h40 do dia 12 cai no dia 11');
-t(tx.includes('14,2 mm/h') && tx.includes('forte'), 'chuva do turno do 101/106 = 14,2 forte');
-t(tx.includes('termo: infiltração') && tx.includes('termo: goteira') && tx.includes('termo: calha'), 'termo que pôs na lista');
-t(tx.includes('Emergencial') && tx.includes('GALPÃO 3'), 'prioridade e local');
-t(!tx.some(s => /chuveiro|placa/.test(s)), 'chuveiro e agosto fora');
-const fora2 = shapes.filter(s => !(s.tipo === 'ELLIPSE' && s.w === 450) && (s.x < -14 || s.y < 0 || s.x + s.w > 734 || s.y + s.h > 405));
-t(fora2.length === 0, 'tabela dentro da página → ' + fora2.map(s => s.tipo + ' ' + (s.texto || '')).slice(0, 3).join(' | '));
-if (process.env.PREVIA) fs.writeFileSync(path.join(process.env.PREVIA, 'chamados_chuva.svg'), svg(shapes));
-
-const muitos = [];
-for (let i = 0; i < 25; i++) muitos.push({ id: String(500 + i), descricao: 'Infiltração na cobertura, trecho ' + i + ', água escorrendo pela parede até o piso do mezanino e molhando paletes armazenados',
-  dtReporte: U(2026, 9, 1 + i, 9), estado: 'Aberto', estadoSistema: 'Aberto', dtFechado: null, local: 'GALPÃO COM NOME MUITO COMPRIDO DE VERDADE ' + i, cliente: 'Cliente', prioridade: 'Alta' });
-bd = muitos;
-tx = rodar(gerarSlideChamadosChuva);
-t(slidesCriados === 3, '25 chamados → 3 slides de 9 → ' + slidesCriados);
-t(tx.some(s => /· 3\/3$/.test(s)), 'subtítulo com a página');
-t(shapes.every(s => s.tipo !== 'TEXT_BOX' || !s.texto || !/^Falha/.test(s.texto)), 'sem aviso de falha');
-bd = [];
-rodar(gerarSlideChamadosChuva);
-t(slidesCriados === 0, 'sem chamado de chuva → nenhum slide');
-bd = BD_PADRAO;
-
-// Cache: o slide dos chamados reaproveita a leitura do mapa.
+// Cache: a segunda leitura do mesmo Mega/mês não vai à Open-Meteo.
 _mapaChuvasCache = {}; urls = [];
 obterMapaChuvas_(); const n1 = urls.length; obterMapaChuvas_();
-t(n1 === 3 && urls.length === 3, 'segunda leitura vem do cache → ' + n1 + '/' + urls.length);
+t(n1 === 2 && urls.length === 2, 'segunda leitura vem do cache → ' + n1 + '/' + urls.length);
 
 // ── Cenário 5: Mega Curitiba fica em Campina Grande do Sul ──────────────────
 setProjetoAtivo('CURITIBA');

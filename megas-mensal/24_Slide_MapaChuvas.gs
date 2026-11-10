@@ -1,36 +1,30 @@
 /**
  * ARQUIVO: 24_Slide_MapaChuvas.gs
  * SEÇÃO:   SLIDES — Mapa de Chuvas (Curitiba, Itajaí e Esteio)
- * DESCRIÇÃO: Um slide por Mega com quatro leituras da chuva:
- *   ▸ faixa de KPIs: chuva do mês × média de 10 anos, dias com chuva, pico
- *     de intensidade (mm/h) e chamados ligados à chuva;
+ * DESCRIÇÃO: Um slide por Mega com três leituras da chuva:
+ *   ▸ faixa de KPIs: chuva do mês × média de 10 anos, dias com chuva e pico
+ *     de intensidade (mm/h);
  *   ▸ anel do mês: um ponto por dia × turno (manhã, tarde, noite) na cor da
- *     MAIOR intensidade horária daquele turno, com ✕ onde abriu chamado de
- *     chuva;
- *   ▸ previsão dos próximos 14 dias;
+ *     MAIOR intensidade horária daquele turno;
  *   ▸ chuva dos últimos 12 meses contra a média dos 10 anos anteriores.
+ * A previsão de 14 dias e os chamados ligados à chuva (✕ no anel + slide
+ * com a lista) foram retirados em 10/11/2026, a pedido do Guilherme.
  *
  * Fonte: Open-Meteo (pública, sem chave). O realizado e a média vêm do
- * arquivo histórico (archive-api, reanálise ERA5); a previsão, da API de
- * previsão. Anel, KPIs e barras saem do MESMO arquivo histórico — o total do
- * mês no KPI é a mesma barra do mês no painel da direita, não um número de
- * outra base (lição 2 do CLAUDE.md).
+ * arquivo histórico (archive-api, reanálise ERA5). Anel, KPIs e barras saem
+ * do MESMO arquivo histórico — o total do mês no KPI é a mesma barra do mês
+ * no painel da direita, não um número de outra base (lição 2 do CLAUDE.md).
  *
  * Por que não o pluviômetro do Esteio: ele é lido a cada ida de campo
  * (volume acumulado desde a leitura anterior), então não dá intensidade por
  * hora nem por turno — e só o Esteio tem. O slide do pluviômetro continua
  * logo antes deste; aqui a divergência entre os dois vai para o Logger.
  *
- * Os impactos (✕) vêm da BD-CORRETIVAS: chamado do mês cuja descrição fala
- * de chuva, infiltração, goteira, alagamento… (CHUVA_TERMOS_IMPACTO), no dia
- * e turno da Data de reporte.
- *
  * Cada painel se desenha sozinho: se uma das consultas falhar, aquele painel
  * mostra o aviso e os outros saem normais.
  */
 
 const CHUVA_URL_ARQUIVO  = 'https://archive-api.open-meteo.com/v1/archive';
-const CHUVA_URL_PREVISAO = 'https://api.open-meteo.com/v1/forecast';
 
 // Turnos do anel. A noite vai das 18h às 6h do dia SEGUINTE: a chuva das 3h
 // da madrugada do dia 10 pinta a noite do dia 9 — é a noite que começou lá.
@@ -42,8 +36,7 @@ const CHUVA_TURNOS = [
 
 // Faixas por intensidade horária (mm/h), da mais forte para a mais fraca: a
 // primeira cujo `min` o valor alcança é a classe. Abaixo de 0,5 mm/h conta
-// como seco (garoa que não molha o chão). Escala de azuis de propósito: o
-// vermelho fica reservado para o ✕ de impacto, que é o que pede ação.
+// como seco (garoa que não molha o chão).
 const CHUVA_FAIXAS = [
   { min: 10,  nome: 'Forte',    faixa: '> 10 mm/h',     cor: '#1E3A8A' },
   { min: 2.5, nome: 'Moderada', faixa: '2,5–10 mm/h',   cor: '#0284C7' },
@@ -59,13 +52,6 @@ const CHUVA_DIA_CHUVOSO_MM = 1;
 // completos o número fica instável e o slide mostra "—".
 const CHUVA_ANOS_MEDIA     = 10;
 const CHUVA_ANOS_MEDIA_MIN = 5;
-
-// Trechos procurados (sem acento, minúsculo) na descrição do chamado.
-// "chuva" não pega "chuveiro" (chuve…), que é hidráulica e não clima.
-const CHUVA_TERMOS_IMPACTO = ['chuva', 'infiltr', 'goteir', 'alag', 'inund', 'enchent',
-                              'calha', 'temporal', 'vendaval', 'transbord'];
-
-const CHUVA_DIAS_SEMANA = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
 
 // ==========================================
@@ -99,19 +85,19 @@ function gerarSlideMapaChuvas() {
   slide.getBackground().setSolidFill(CORES.bgSlide);
 
   criarHeaderPadrao(slide, 'MAPA DE CHUVAS',
-    projeto.nome + ' · ' + ref.curto + '/' + ref.ano + ' · Fonte: Open-Meteo (ERA5) e BD-CORRETIVAS');
+    projeto.nome + ' · ' + ref.curto + '/' + ref.ano + ' · Fonte: Open-Meteo (ERA5)');
 
   const mX = 30, gap = 10, topo = 72, kpiH = 50;
   const largura = W - mX * 2;
   const painelY = topo + kpiH + gap;
   const painelH = H - painelY - 10;
-  const wAnel = 213, wMeses = 180;   // 180: com menos, "OUT/25" quebrava em duas linhas no Slides
-  const wPrev = largura - wAnel - wMeses - gap * 2;
+  // Sem a previsão, os dois painéis dividem a largura. O anel é limitado
+  // pela altura; a sobra vai para as barras de 12 meses.
+  const wAnel = 300, wMeses = largura - wAnel - gap;
 
   const partes = [
     ['KPIs',      () => _chuvaKpis_(slide, mX, topo, largura, kpiH, dados),                         [mX, topo, largura, kpiH]],
     ['Anel',      () => _chuvaAnel_(slide, mX, painelY, wAnel, painelH, dados),                     [mX, painelY, wAnel, painelH]],
-    ['Previsão',  () => _chuvaPrevisaoPainel_(slide, mX + wAnel + gap, painelY, wPrev, painelH, dados.previsao), [mX + wAnel + gap, painelY, wPrev, painelH]],
     ['12 meses',  () => _chuvaMesesPainel_(slide, W - mX - wMeses, painelY, wMeses, painelH, dados.meses, ref), [W - mX - wMeses, painelY, wMeses, painelH]]
   ];
   partes.forEach(p => {
@@ -129,173 +115,11 @@ function gerarSlideMapaChuvas() {
 
 
 // ==========================================
-// SLIDE — CHAMADOS LIGADOS À CHUVA (logo depois do mapa)
-// ==========================================
-// A lista por trás dos ✕ do anel: quando, quanto chovia naquele turno, o
-// chamado e a situação dele. A coluna "termo" diz qual palavra pôs o chamado
-// na lista — é por ela que se acha falso positivo antes da reunião. Sem
-// nenhum chamado no mês, não gera slide.
-const CHUVA_TERMO_ROTULO = {
-  chuva: 'chuva', infiltr: 'infiltração', goteir: 'goteira', alag: 'alagamento', inund: 'inundação',
-  enchent: 'enchente', calha: 'calha', temporal: 'temporal', vendaval: 'vendaval', transbord: 'transbordo'
-};
-
-function gerarSoChamadosChuvaCuritiba() { setProjetoAtivo('CURITIBA'); gerarSlideChamadosChuva(); }
-function gerarSoChamadosChuvaItajai()   { setProjetoAtivo('ITAJAI');   gerarSlideChamadosChuva(); }
-function gerarSoChamadosChuvaEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideChamadosChuva(); }
-
-function gerarSlideChamadosChuva() {
-  if (!_projetoAtivoChave) setProjetoAtivo('CURITIBA');
-  const projeto = getProjetoAtivo();
-  const dados   = obterMapaChuvas_();
-  if (!dados || !dados.impactos.length) {
-    Logger.log('Chamados de chuva: ' + projeto.nome + ' sem chamado ligado à chuva no mês — nenhum slide.');
-    return;
-  }
-
-  const deck = getDeckAtivo();
-  const W = deck.getPageWidth(), H = deck.getPageHeight();
-  const mX = 30, topo = 72;
-  const cardH = H - topo - 10;
-  const rowH = 27, cabH = 18;
-  // criarCardPainel devolve o topo do conteúdo 32pt abaixo do card.
-  const porPagina = Math.max(1, Math.floor((cardH - 32 - cabH - 8) / rowH));
-  const lista = dados.impactos;
-  const paginas = Math.ceil(lista.length / porPagina);
-
-  for (let p = 0; p < paginas; p++) {
-    const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-    slide.getBackground().setSolidFill(CORES.bgSlide);
-    criarHeaderPadrao(slide, 'CHAMADOS LIGADOS À CHUVA',
-      projeto.nome + ' · ' + dados.ref.curto + '/' + dados.ref.ano +
-      ' · BD-CORRETIVAS, descrição com termo de chuva' + (paginas > 1 ? ' · ' + (p + 1) + '/' + paginas : ''));
-    const fatia = lista.slice(p * porPagina, (p + 1) * porPagina);
-    try {
-      // Card da altura do conteúdo: com poucos chamados, o card cheio da
-      // página ficava com dois terços vazios.
-      const alturaUsada = Math.min(cardH, 32 + cabH + 3 + fatia.length * rowH + 10);
-      _chuvaTabelaChamados_(slide, mX, topo, W - mX * 2, alturaUsada, fatia, dados, lista.length, rowH, cabH);
-    } catch (e) {
-      Logger.log('Chamados de chuva — falha ao desenhar: ' + e.message);
-      _chuvaAviso_(slide, mX, topo, W - mX * 2, cardH, 'Falha ao desenhar a tabela: ' + e.message);
-    }
-  }
-  Logger.log('Chamados de chuva: ' + lista.length + ' chamado(s) em ' + paginas + ' slide(s).');
-}
-
-function _chuvaTabelaChamados_(slide, x, y, w, h, fatia, dados, total, rowH, cabH) {
-  const DS = CR_DESIGN_SYSTEM;
-  const abertos = dados.impactos.filter(i => !i.fechado).length;
-  const titulo = total + ' CHAMADO' + (total === 1 ? '' : 'S') + ' · ' +
-                 (total - abertos) + ' FECHADO' + (total - abertos === 1 ? '' : 'S') + ' · ' +
-                 abertos + ' EM ABERTO';
-  const y0 = criarCardPainel(slide, x, y, w, h, titulo, CORES.lightBlue);
-
-  const ix = x + 14, iw = w - 24;
-  const cols = [
-    { k: 'quando', t: 'QUANDO',          w: 62 },
-    { k: 'chuva',  t: 'CHUVA NO TURNO',  w: 68 },
-    { k: 'id',     t: 'Nº',              w: 44 },
-    { k: 'desc',   t: 'DESCRIÇÃO',       w: 0 },    // o que sobrar
-    { k: 'local',  t: 'LOCAL / CLIENTE', w: 112 },
-    { k: 'pri',    t: 'PRIORIDADE',      w: 62 },
-    { k: 'sit',    t: 'SITUAÇÃO',        w: 78 }
-  ];
-  const fixo = cols.reduce((s, c) => s + c.w, 0);
-  cols.find(c => c.k === 'desc').w = iw - fixo;
-  let cx = ix;
-  cols.forEach(c => { c.x = cx; cx += c.w; });
-  const col = k => cols.find(c => c.k === k);
-
-  // Cabeçalho das colunas.
-  cols.forEach(c => _gUmaLinha_(slide, c.x, y0, c.w - 4, cabH, c.t,
-    { align: 'L', fs: 6.3, bold: true, cor: DS.colors.textBody, fonte: DS.typography.body, folga: 2, fsMin: 5 }));
-  const linha = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, y0 + cabH, iw, 1);
-  linha.getFill().setSolidFill(DS.colors.lines);
-  linha.getBorder().setTransparent();
-
-  const corta = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s; };
-  const ddmm = dt => String(dt.getUTCDate()).padStart(2, '0') + '/' + String(dt.getUTCMonth() + 1).padStart(2, '0');
-  const um = (cx, cy, cw, ch, txt, op) => _gUmaLinha_(slide, cx, cy, cw - 4, ch, txt,
-    Object.assign({ align: 'L', fs: 7, cor: DS.colors.textMain, fonte: DS.typography.body, folga: 2, fsMin: 5.5 }, op || {}));
-
-  fatia.forEach((im, i) => {
-    const ry = y0 + cabH + 3 + i * rowH;
-    if (i % 2 === 1) {
-      const zebra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, ix, ry, iw, rowH);
-      zebra.getFill().setSolidFill(DS.colors.bgSlide);
-      zebra.getBorder().setTransparent();
-    }
-    const l1 = ry + 3, l2 = ry + 14;
-
-    // QUANDO — dia e turno, com a hora do reporte.
-    um(col('quando').x, l1, col('quando').w, 11, String(im.dia).padStart(2, '0') + '/' + dados.ref.mes,
-      { fs: 8, bold: true, fonte: DS.typography.titles });
-    um(col('quando').x, l2, col('quando').w, 10,
-      CHUVA_TURNOS[im.turno].nome + (im.semHora ? ' · sem hora' :
-        ' · ' + String(im.dtReporte.getUTCHours()).padStart(2, '0') + ':' + String(im.dtReporte.getUTCMinutes()).padStart(2, '0')),
-      { fs: 6.3, cor: DS.colors.textBody });
-
-    // CHUVA NO TURNO — o mesmo ponto do anel.
-    const v = dados.turnos ? dados.turnos.celulas[im.dia - 1][im.turno] : null;
-    const cls = _chuvaClasse_(v);
-    const bola = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, col('chuva').x, ry + (rowH - 7) / 2, 7, 7);
-    if (v === null) {
-      bola.getFill().setSolidFill(DS.colors.cardBg);
-      bola.getBorder().getLineFill().setSolidFill(CHUVA_COR_SEM_DADO);
-      bola.getBorder().setWeight(0.75);
-    } else {
-      bola.getFill().setSolidFill(cls ? cls.cor : CHUVA_COR_SECO);
-      bola.getBorder().setTransparent();
-    }
-    um(col('chuva').x + 10, l1, col('chuva').w - 10, 11, v === null ? '—' : (cls ? _chuvaMmh_(v) + ' mm/h' : 'seco'),
-      { fs: 7, bold: !!cls, cor: cls ? cls.cor : DS.colors.textBody });
-    um(col('chuva').x + 10, l2, col('chuva').w - 10, 10, v === null ? 'sem dado' : (cls ? cls.nome.toLowerCase() : 'abaixo de 0,5 mm/h'),
-      { fs: 6, cor: DS.colors.textBody });
-
-    // Nº
-    um(col('id').x, ry, col('id').w, rowH, im.id || '—', { fs: 7.5, bold: true, cor: DS.colors.brandMed });
-
-    // DESCRIÇÃO + termo que pôs o chamado na lista.
-    _gParagrafo_(slide, col('desc').x, ry + 1, col('desc').w - 6, 15, corta(im.descricao, 120),
-      { fs: 7, fsMin: 5.5, espac: 100, cor: DS.colors.textMain });
-    um(col('desc').x, l2 + 1, col('desc').w, 9, 'termo: ' + (CHUVA_TERMO_ROTULO[im.termo] || im.termo),
-      { fs: 5.8, italic: true, cor: DS.colors.textBody });
-
-    // LOCAL / CLIENTE
-    um(col('local').x, l1, col('local').w, 11, corta(im.local, 30) || '—', { fs: 7 });
-    um(col('local').x, l2, col('local').w, 10, corta(im.cliente, 32), { fs: 6.3, cor: DS.colors.textBody });
-
-    // PRIORIDADE
-    const corPri = im.prioridade === 'Emergencial' ? DS.colors.accentRed
-                 : im.prioridade === 'Alta' ? DS.colors.accentOrange : DS.colors.textBody;
-    um(col('pri').x, ry, col('pri').w, rowH, im.prioridade || '—', { fs: 7, bold: corPri !== DS.colors.textBody, cor: corPri });
-
-    // SITUAÇÃO — pílula verde (fechado) ou laranja (aberto, com o estado).
-    const pw = col('sit').w - 6, ph = 15, py = ry + (rowH - ph) / 2;
-    const pil = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, col('sit').x, py, pw, ph);
-    pil.getFill().setSolidFill(im.fechado ? '#D1FAE5' : '#FFEDD5');
-    pil.getBorder().setTransparent();
-    // Estado "Fechado" sem data de fechamento conta como aberto (regra do
-    // backlog, _bdChamadoFechado_) — a pílula diz isso em vez de "Fechado"
-    // em laranja, que pareceria contradição.
-    const fechadoSemData = !im.fechado && /^fechad|^conclu|^finaliz/.test(_histNorm_(im.estado));
-    const txtSit = im.fechado ? 'Fechado ' + ddmm(im.dtFechado)
-                 : fechadoSemData ? 'Fechado sem data'
-                 : corta(im.estado || 'Em aberto', 22);
-    _gUmaLinha_(slide, col('sit').x, py, pw, ph, txtSit,
-      { fs: 6.5, bold: true, cor: im.fechado ? '#047857' : '#C2410C', fonte: DS.typography.body, folga: 0, fsMin: 5 });
-  });
-}
-
-
-// ==========================================
 // DADOS
 // ==========================================
 // Devolve null só quando o Mega não tem coordenadas. Cada bloco que falhar
 // fica null e o painel dele mostra o aviso.
-// Cache por Mega e mês: o slide dos chamados (logo depois do mapa) usa a
-// mesma leitura, sem consultar a Open-Meteo e a BD de novo.
+// Cache por Mega e mês (a leitura da Open-Meteo é a parte lenta).
 let _mapaChuvasCache = {};
 
 function obterMapaChuvas_() {
@@ -310,7 +134,7 @@ function obterMapaChuvas_() {
   const ontem = _chuvaIsoMais_(_chuvaHojeIso_(), -1);   // o arquivo histórico não tem "hoje"
   const local = '?latitude=' + c.lat + '&longitude=' + c.lon + '&timezone=America%2FSao_Paulo';
 
-  const r = { ref: ref, nDias: nDias, mes: null, meses: null, turnos: null, previsao: null, impactos: [] };
+  const r = { ref: ref, nDias: nDias, mes: null, meses: null, turnos: null };
 
   // 1) Diário — os 12 meses da janela e os 10 anos antes de cada um.
   const inicioDiario = _chuvaIso_(ref.ano - 1 - CHUVA_ANOS_MEDIA, 0, 1);
@@ -333,15 +157,6 @@ function obterMapaChuvas_() {
                             '&end_date=' + fimHora + '&hourly=precipitation');
     if (j && j.hourly && j.hourly.time) r.turnos = _chuvaTurnos_(j.hourly, ref, nDias);
   }
-
-  // 3) Previsão dos próximos 14 dias.
-  const p = _chuvaBuscar_(CHUVA_URL_PREVISAO + local +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
-    '&forecast_days=14');
-  if (p && p.daily && p.daily.time) r.previsao = _chuvaPrevisao_(p.daily);
-
-  // 4) Chamados ligados à chuva.
-  r.impactos = _chuvaImpactos_(ref);
 
   // Esteio: confere com o pluviômetro de campo (lição 3 — divergência no
   // Logger, nunca escolhida em silêncio).
@@ -472,58 +287,6 @@ function _chuvaTurnos_(hourly, ref, nDias) {
   return { celulas: celulas, pico: pico && pico.valor > 0 ? pico : null };
 }
 
-function _chuvaPrevisao_(daily) {
-  return daily.time.map((t, i) => ({
-    iso:  String(t),
-    wmo:  daily.weather_code ? daily.weather_code[i] : null,
-    tmax: daily.temperature_2m_max ? daily.temperature_2m_max[i] : null,
-    tmin: daily.temperature_2m_min ? daily.temperature_2m_min[i] : null,
-    mm:   daily.precipitation_sum ? daily.precipitation_sum[i] : null,
-    prob: daily.precipitation_probability_max ? daily.precipitation_probability_max[i] : null
-  }));
-}
-
-// Chamados do mês de referência cuja descrição fala de chuva. O turno segue
-// a mesma regra do anel (madrugada = noite do dia anterior). Data sem hora
-// (00:00:00 exato) não tem turno — vai para a manhã do próprio dia.
-function _chuvaImpactos_(ref) {
-  let itens = [];
-  try {
-    itens = _lerBdCorretivasCru_();
-  } catch (e) {
-    Logger.log('Mapa de Chuvas: BD-CORRETIVAS indisponível (' + e.message + ').');
-    return [];
-  }
-
-  const saida = [];
-  itens.forEach(it => {
-    let dt = it.dtReporte;
-    if (!dt) return;
-    const txt = _histNorm_(it.descricao);
-    const termo = CHUVA_TERMOS_IMPACTO.find(p => txt.indexOf(p) >= 0);
-    if (!termo) return;
-
-    // As datas da BD vêm como hora de parede em UTC (_histParseDataHora_).
-    const h = dt.getUTCHours();
-    const semHora = h === 0 && dt.getUTCMinutes() === 0 && dt.getUTCSeconds() === 0;
-    let turno;
-    if (semHora)    turno = 0;
-    else if (h < 6) { turno = 2; dt = new Date(dt.getTime() - 86400000); }
-    else            turno = h < 12 ? 0 : (h < 18 ? 1 : 2);
-
-    if (dt.getUTCFullYear() !== ref.ano || dt.getUTCMonth() !== ref.index) return;
-    saida.push({ dia: dt.getUTCDate(), turno: turno, id: it.id, descricao: it.descricao, termo: termo,
-                 dtReporte: it.dtReporte, semHora: semHora, local: it.local || '', cliente: it.cliente || '',
-                 prioridade: it.prioridade || '', estado: it.estado || '',
-                 fechado: _bdChamadoFechado_(it.estadoSistema || it.estado, it.dtFechado), dtFechado: it.dtFechado || null });
-  });
-  saida.sort((a, b) => (a.dia - b.dia) || (a.turno - b.turno) || (a.dtReporte - b.dtReporte));
-  if (saida.length) {
-    Logger.log('Mapa de Chuvas: ' + saida.length + ' chamado(s) ligado(s) à chuva — ' +
-               saida.map(s => s.id + ' (' + s.dia + '/' + CHUVA_TURNOS[s.turno].sigla + ')').join(', '));
-  }
-  return saida;
-}
 
 function _chuvaClasse_(mmh) {
   if (mmh === null || mmh === undefined) return null;
@@ -563,19 +326,6 @@ function _chuvaMmh_(v) {
   return (Math.round(v * 10) / 10).toFixed(1).replace('.', ',');
 }
 
-function _chuvaIcone_(c) {
-  if (c === 0) return '☀️';
-  if (c === 1) return '🌤️';
-  if (c === 2) return '⛅';
-  if (c === 3) return '☁️';
-  if (c === 45 || c === 48) return '🌫️';
-  if (c >= 51 && c <= 57) return '🌦️';
-  if ((c >= 61 && c <= 67) || c === 80 || c === 81) return '🌧️';
-  if (c === 82 || c >= 95) return '⛈️';
-  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return '🌨️';
-  return '🌡️';
-}
-
 
 // ==========================================
 // DESENHO — KPIs
@@ -599,7 +349,6 @@ function _chuvaKpis_(slide, x, y, w, h, d) {
 
   const pico = d.turnos ? d.turnos.pico : null;
   const classePico = pico ? _chuvaClasse_(pico.valor) : null;
-  const nImp = d.impactos.length;
 
   const cards = [
     { label: 'CHUVA NO MÊS', valor: total === null ? '—' : _chuvaMm_(total) + ' mm',
@@ -609,10 +358,7 @@ function _chuvaKpis_(slide, x, y, w, h, d) {
     { label: 'PICO DE INTENSIDADE', valor: pico ? _chuvaMmh_(pico.valor) + ' mm/h' : '—',
       sub: pico ? String(pico.dia).padStart(2, '0') + '/' + ref.mes + ' · ' + CHUVA_TURNOS[pico.turno].nome +
                   (classePico ? ' · chuva ' + classePico.nome.toLowerCase() : '')
-                : 'sem chuva registrada', cor: classePico ? classePico.cor : DS.textBody },
-    { label: 'CHAMADOS LIGADOS À CHUVA', valor: String(nImp),
-      sub: nImp ? '✕ no anel · lista no slide seguinte' : 'nenhum chamado no mês',
-      cor: nImp ? DS.accentRed : DS.accentGreen }
+                : 'sem chuva registrada', cor: classePico ? classePico.cor : DS.textBody }
   ];
 
   const gap = 10, cw = (w - gap * (cards.length - 1)) / cards.length;
@@ -697,22 +443,6 @@ function _chuvaAnel_(slide, x, y, w, h, d) {
       { fs: 6, bold: true, cor: DS.colors.brandMed, fonte: DS.typography.titles, folga: 3 });
   });
 
-  // ✕ dos chamados ligados à chuva (um por célula, mesmo com vários chamados).
-  const marcados = {};
-  d.impactos.forEach(im => {
-    const k = im.dia + '|' + im.turno;
-    if (marcados[k] || im.dia < 1 || im.dia > d.nDias) return;
-    marcados[k] = true;
-    const a = ang(im.dia);
-    const px = cx + raios[im.turno] * Math.cos(a), py = cy + raios[im.turno] * Math.sin(a);
-    const s = diam / 2 + 1;
-    [[px - s, py - s, px + s, py + s], [px - s, py + s, px + s, py - s]].forEach(q => {
-      const l = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, q[0], q[1], q[2], q[3]);
-      l.getLineFill().setSolidFill(DS.colors.accentRed);
-      l.setWeight(1.75);
-    });
-  });
-
   // Centro: mês e ano.
   const rMiolo = raios[2] - diam;
   _gUmaLinha_(slide, cx - rMiolo, cy - 13, rMiolo * 2, 15, d.ref.nome,
@@ -755,97 +485,9 @@ function _chuvaLegendaAnel_(slide, x, y, w) {
     cx1 += cw;
   });
 
-  // Linha 2: impacto e horário dos turnos.
-  const y2 = y + linhaH;
-  item(x, y2, w * 0.42, (bx, by) => {
-    [[bx, by, bx + bola, by + bola], [bx, by + bola, bx + bola, by]].forEach(q => {
-      const l = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, q[0], q[1], q[2], q[3]);
-      l.getLineFill().setSolidFill(DS.colors.accentRed);
-      l.setWeight(1.5);
-    });
-  }, 'chamado ligado à chuva');
-  _gUmaLinha_(slide, x + w * 0.42, y2, w * 0.58, linhaH, 'M 6–12h · T 12–18h · N 18–6h',
+  // Linha 2: horário dos turnos.
+  _gUmaLinha_(slide, x, y + linhaH, w, linhaH, 'M 6–12h · T 12–18h · N 18–6h',
     { align: 'L', fs: 6, bold: true, cor: DS.colors.brandMed, fonte: DS.typography.body, folga: 2, fsMin: 5 });
-}
-
-
-// ==========================================
-// DESENHO — PREVISÃO (14 dias)
-// ==========================================
-function _chuvaPrevisaoPainel_(slide, x, y, w, h, prev) {
-  const DS = CR_DESIGN_SYSTEM;
-  const y0 = criarCardPainel(slide, x, y, w, h, 'PREVISÃO — PRÓXIMOS 14 DIAS', CORES.lightBlue);
-  if (!prev || !prev.length) {
-    _chuvaAviso_(slide, x + 4, y0, w - 4, y + h - y0, 'Previsão indisponível: a Open-Meteo não respondeu.');
-    return;
-  }
-
-  const dias = prev.slice(0, 14);
-  const cols = 7, rows = Math.ceil(dias.length / cols);
-  const padX = 10, gap = 3, rodapeH = 16;
-  const gx = x + 4 + padX;
-  const cw = (w - 4 - padX * 2 - gap * (cols - 1)) / cols;
-  const ch = (y + h - 6 - rodapeH - y0 - gap * (rows - 1)) / rows;
-
-  dias.forEach((p, i) => {
-    _chuvaCelulaPrevisao_(slide, gx + (i % cols) * (cw + gap), y0 + Math.floor(i / cols) * (ch + gap), cw, ch, p, i === 0);
-  });
-
-  // Rodapé: o resumo que se lê em voz alta na reunião.
-  const comMm = dias.filter(p => p.mm !== null && p.mm !== undefined);
-  const total = comMm.reduce((s, p) => s + Number(p.mm), 0);
-  const chuvosos = comMm.filter(p => p.mm >= CHUVA_DIA_CHUVOSO_MM).length;
-  const maior = comMm.reduce((m, p) => (!m || p.mm > m.mm) ? p : m, null);
-  let txt = _chuvaMm_(total) + ' mm previstos · ' + chuvosos + ' dia' + (chuvosos === 1 ? '' : 's') + ' com chuva';
-  if (maior && maior.mm >= CHUVA_DIA_CHUVOSO_MM) {
-    txt += ' · maior volume: ' + _chuvaMm_(maior.mm) + ' mm em ' + maior.iso.substr(8, 2) + '/' + maior.iso.substr(5, 2);
-  }
-  _gUmaLinha_(slide, gx, y + h - 4 - rodapeH, w - 4 - padX * 2, rodapeH, txt,
-    { fs: 7, bold: true, cor: DS.colors.brandMed, fonte: DS.typography.body, folga: 2, fsMin: 5.5 });
-}
-
-function _chuvaCelulaPrevisao_(slide, x, y, w, h, p, hoje) {
-  const DS = CR_DESIGN_SYSTEM;
-  const chove = p.mm !== null && p.mm !== undefined && p.mm >= CHUVA_DIA_CHUVOSO_MM;
-
-  const bg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, w, h);
-  bg.getFill().setSolidFill(hoje ? '#EFF6FF' : DS.colors.bgSlide);
-  if (hoje) {
-    bg.getBorder().getLineFill().setSolidFill(DS.colors.brandLight);
-    bg.getBorder().setWeight(1);
-  } else {
-    bg.getBorder().setTransparent();
-  }
-
-  const dt = new Date(Date.UTC(+p.iso.substr(0, 4), +p.iso.substr(5, 2) - 1, +p.iso.substr(8, 2)));
-  const k = h / 100;   // posições pensadas para 100pt de altura, escaladas
-  const op = (fs, extra) => Object.assign({ fs: fs, folga: 6, fonte: DS.typography.body, cor: DS.colors.textBody }, extra || {});
-
-  _gUmaLinha_(slide, x, y + 4 * k, w, 9 * k, hoje ? 'HOJE' : CHUVA_DIAS_SEMANA[dt.getUTCDay()],
-    op(6, { bold: true, cor: hoje ? DS.colors.brandLight : DS.colors.textBody }));
-  _gUmaLinha_(slide, x, y + 13 * k, w, 10 * k, p.iso.substr(8, 2) + '/' + p.iso.substr(5, 2),
-    op(6.5, { cor: DS.colors.textMain }));
-  _gUmaLinha_(slide, x, y + 25 * k, w, 20 * k, _chuvaIcone_(p.wmo), op(14));
-  _gUmaLinha_(slide, x, y + 47 * k, w, 12 * k, p.tmax === null ? '—' : Math.round(p.tmax) + '°',
-    op(9, { bold: true, cor: DS.colors.textMain, fonte: DS.typography.titles }));
-  _gUmaLinha_(slide, x, y + 59 * k, w, 10 * k, p.tmin === null ? '—' : Math.round(p.tmin) + '°',
-    op(7, { cor: DS.colors.textBody }));
-
-  // Chuva: volume em destaque quando chove, e a probabilidade como barrinha.
-  _gUmaLinha_(slide, x, y + 72 * k, w, 10 * k, chove ? _chuvaMm_(p.mm) + ' mm' : 'seco',
-    op(6.3, { bold: chove, cor: chove ? '#0284C7' : DS.colors.textBody }));
-  if (p.prob !== null && p.prob !== undefined) {
-    const bw = w - 8, by = y + 85 * k;
-    const trilho = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, by, bw, 2.5);
-    trilho.getFill().setSolidFill(DS.colors.lines);
-    trilho.getBorder().setTransparent();
-    if (p.prob > 0) {
-      const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + 4, by, Math.max(1, bw * Math.min(100, p.prob) / 100), 2.5);
-      barra.getFill().setSolidFill(p.prob >= 60 ? '#0284C7' : DS.colors.brandSoft);
-      barra.getBorder().setTransparent();
-    }
-    _gUmaLinha_(slide, x, by + 3, w, 9 * k, Math.round(p.prob) + '%', op(5.5));
-  }
 }
 
 
