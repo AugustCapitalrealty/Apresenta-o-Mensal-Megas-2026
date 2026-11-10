@@ -134,5 +134,18 @@ checa(!bkc.some(s => /NÃO FOI GERADO/.test(textoDe(s))), 'sem aviso de falha');
   checa(pgs.slice(1).every(p => p[0].continua), 'a partir da 2ª página o grupo diz "cont."');
 }
 
+console.log('\n== Preventivas: SLA subiu ou caiu vs mês anterior ==');
+{
+  const s = novoSlide();
+  _prevVariacaoSla_(s, 0, 0, 100, 100, 97.22, 'vs set');
+  _prevVariacaoSla_(s, 0, 0, 100, 85.3, 87.6, 'vs até set');
+  _prevVariacaoSla_(s, 0, 0, 100, 90, 90, 'vs set');
+  _prevVariacaoSla_(s, 0, 0, 100, 90, null, 'vs set');
+  const txt = s.shapes.map(x => x.txt);
+  checa(txt[0] === '▲ +2,8 p.p. vs set', 'subiu: ' + txt[0]);
+  checa(txt[1] === '▼ -2,3 p.p. vs até set', 'caiu: ' + txt[1]);
+  checa(txt[2] === '= vs set' && txt.length === 3, 'igual mostra "="; sem mês anterior não desenha nada');
+}
+
 console.log(falhas ? '\n✗ ' + falhas + ' de ' + total + ' falharam' : '\n✓ ' + total + '/' + total + ' passaram');
 process.exitCode = falhas ? 1 : 0;

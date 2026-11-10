@@ -32,17 +32,32 @@ function gerarSlidePreventivas() {
   const acumulado  = obterAcumuladoPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, ref.index);
   const foraSla    = obterPreventivasForaSla_(ref.ano, ref.index);
 
+  // ▲/▼ do SLA contra o mês anterior (pedido do Guilherme, 10/11/2026: "cadê o
+  // efeito de percentual se está subindo ou não"). Mês: contra o mês anterior
+  // (janeiro compara com dezembro do ano anterior). Acumulado: contra o
+  // acumulado até o mês anterior (em janeiro não há).
+  const antIdx  = ref.index === 0 ? 11 : ref.index - 1;
+  const antAno  = ref.index === 0 ? ref.ano - 1 : ref.ano;
+  const antNome = String(PROP_MESES_MIN[antIdx]);
+  let slaMesAnt = null, slaAcumAnt = null;
+  try { slaMesAnt = obterIndicadoresPropriedades_(BD_ABA_PREVENTIVAS, antAno, antIdx).total.sla.pct; } catch (e) {}
+  try { if (ref.index > 0) slaAcumAnt = obterAcumuladoPropriedades_(BD_ABA_PREVENTIVAS, ref.ano, antIdx).sla.pct; } catch (e) {}
+
   const dadosMensal = {
     titulo    : (ref.curto || ref.nome) + ' / ' + ref.ano,
     previstas : mensal.execucao.previstas,
     realizadas: mensal.execucao.realizadas,
-    sla       : mensal.sla.pct
+    sla       : mensal.sla.pct,
+    slaAnt    : slaMesAnt,
+    rotuloAnt : 'vs ' + antNome
   };
   const dadosAcumulado = {
     titulo    : 'ACUMULADO ' + ref.ano + ' (JAN–' + String(ref.curto || ref.nome).toUpperCase() + ')',
     previstas : acumulado.execucao.previstas,
     realizadas: acumulado.execucao.realizadas,
-    sla       : acumulado.sla.pct
+    sla       : acumulado.sla.pct,
+    slaAnt    : slaAcumAnt,
+    rotuloAnt : 'vs até ' + antNome
   };
 
   const marginX = 30, topY = 80, gap = 25, cardH = 140;
@@ -71,6 +86,7 @@ function _prevCardMetrica_(slide, x, y, w, h, dados, corTema) {
   _prevItemSimples_(slide, x + 10,            contentY, colW, 'PREVISTAS',  dados.previstas,  DS.colors.textMuted, DS.colors.textMain);
   _prevItemSimples_(slide, x + 10 + colW,     contentY, colW, 'REALIZADAS', dados.realizadas, DS.colors.textMuted, DS.colors.textMain);
   _prevItemSimples_(slide, x + 10 + colW * 2, contentY, colW, 'SLA',        slaTxt,           DS.colors.textMuted, corPorSLA(dados.sla, corTema));
+  _prevVariacaoSla_(slide, x + 10 + colW * 2, contentY + 58, colW, dados.sla, dados.slaAnt, dados.rotuloAnt);
 
   // Barra de progresso Realizadas/Previstas, no rodapé do card.
   if (dados.previstas > 0) {
@@ -89,6 +105,23 @@ function _prevCardMetrica_(slide, x, y, w, h, dados, corTema) {
     lbl.getText().setText(Math.round(pct * 100) + '% realizado').getTextStyle()
       .setFontSize(7.5).setBold(true).setForegroundColor(corTema).setFontFamily(DS.typography.titles);
   }
+}
+
+// "▲ +2,8 p.p. vs set": SLA maior é melhor, então subir é verde e cair é vermelho.
+// Em pontos percentuais (diferença de duas porcentagens), não em %.
+function _prevVariacaoSla_(slide, x, y, w, atual, anterior, rotulo) {
+  if (atual == null || anterior == null) return;
+  const DS = CR_DESIGN_SYSTEM;
+  const d = Math.round((atual - anterior) * 10) / 10;
+  const txt = d === 0 ? '= ' + rotulo
+    : (d > 0 ? '▲ +' : '▼ ') + d.toFixed(1).replace('.', ',') + ' p.p. ' + rotulo;
+  const cor = d === 0 ? DS.colors.textMuted : (d > 0 ? DS.colors.accentGreen : DS.colors.accentRed);
+  const folga = 10;
+  const t = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x - folga, y, w + folga * 2, 12);
+  t.getText().setText(txt).getTextStyle()
+    .setFontSize(7.5).setBold(true).setForegroundColor(cor).setFontFamily(DS.typography.body);
+  t.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  t.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
 }
 
 function _prevItemSimples_(slide, x, y, w, label, valor, colorLabel, colorVal) {

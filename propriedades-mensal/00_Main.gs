@@ -55,7 +55,8 @@ function onOpen() {
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
       .addItem('Bridge — Manutenção (Tabela)', 'gerarSoBridgeManutencao')
       .addItem('Bridge — Manutenção (Gráfico)', 'gerarSoBridgeGrafico')
-      .addItem('Farol de Metas', 'gerarSoMetas'))
+      .addItem('Farol de Metas', 'gerarSoMetas')
+      .addItem('Fotos (Obras, Vistorias, Adequações)', 'gerarSoFotos'))
     .addSeparator()
     .addItem('📥 Importar export da controladoria (CSV)', 'importarExportControladoria')
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
@@ -103,6 +104,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
   ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_', '_capasDeckDoMes_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
+  ['23_Slide_Fotos.gs',             ['gerarSlidesFotos', '_fotosSecao_', '_fotosNome_', 'gerarSoFotos']],
   ['06_ImportarControladoria.gs',   ['importarExportControladoria', '_importarControladoria_', '_controladoriaLer_']],
 ];
 
@@ -186,7 +188,8 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
     { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
     { nome: 'Farol de Metas',                fn: gerarSlidesMetas },
-    // { nome: 'Fotos de Serviços',       fn: gerarSlidesFotosServicos },
+    // Fotos das seções 04, 05 e 06, do Drive (23_Slide_Fotos.gs); cada seção vai para o fim dela.
+    { nome: 'Fotos (04, 05, 06)',            fn: gerarSlidesFotos },
     { nome: 'Encerramento',                  fn: gerarSlideEncerramento }   // por último: fica no fim do deck
   ];
 
