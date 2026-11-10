@@ -275,18 +275,18 @@ console.log('\n== DRE de Propriedades (Despesas Operacionais) ==');
 {
   const dreProp = porSlide['DRE de Propriedades'] || [];
   const textos = dreProp.map(s => s.txt);
+  // Formato dos Megas (10/11/2026, opção B): total → 4 categorias → rubricas,
+  // com a manutenção aberta por imóvel e sem receita.
   checa(textos.some(t => /^DESPESAS OPERACIONAIS$/i.test(t)), 'linha raiz DESPESAS OPERACIONAIS');
-  checa(textos.some(t => /^DESPESA DE PESSOAL$/i.test(t)), 'grupo DESPESA DE PESSOAL');
-  checa(textos.some(t => /^SERVIÇOS DE TERCEIROS$/i.test(t)), 'grupo SERVIÇOS DE TERCEIROS');
-  checa(textos.some(t => /^DESPESAS FISCAIS$/i.test(t)), 'grupo DESPESAS FISCAIS');
-  checa(textos.some(t => /^DESPESAS GERAIS$/i.test(t)), 'grupo DESPESAS GERAIS');
-
-  // Subitens com valor aparecem, subitens zerados NÃO aparecem (somente nomes, sem código)
-  checa(textos.some(t => /^SEGUROS$/i.test(t)), 'subitem com valor SEGUROS presente');
-  checa(textos.some(t => /^MANUTENÇÃO IMÓVEIS$/i.test(t)), 'subitem com valor MANUTENÇÃO IMÓVEIS presente');
-  checa(textos.some(t => t === '592'), 'MANUTENÇÃO IMÓVEIS traz o plano 592k vindo do DRE de Manutenção');
-  checa(!textos.some(t => /^MATERIAL CONSUMO$/i.test(t)), 'subitem zerado MATERIAL CONSUMO ocultado');
-  checa(!textos.some(t => /^TELEFONE$/i.test(t)), 'subitem zerado TELEFONE ocultado');
+  ['DESPESAS COM PESSOAL E ADMINISTRATIVAS', 'SERVIÇOS DE TERCEIROS', 'MANUTENÇÃO E CONSERVAÇÃO'].forEach(c =>
+    checa(textos.indexOf(c) !== -1, 'categoria ' + c + ' (a dos Megas)'));
+  checa(!textos.some(t => /^DESPESAS (FISCAIS|GERAIS)$/i.test(t)), 'sem os grupos contábeis antigos (06.03/06.04)');
+  checa(textos.some(t => /^Despesa de pessoal$/.test(t)), 'rubrica com valor (Despesa de pessoal) presente');
+  checa(textos.some(t => /^ARM\. CUBATÃO$/.test(t)) && textos.some(t => /^MEGA ITAJAI$/.test(t)),
+        'manutenção aberta por imóvel (Cubatão, Mega Itajaí)');
+  checa(textos.some(t => t === '592'), 'Manutenção e Conservação traz o plano 592k do DRE de Manutenção');
+  checa(!textos.some(t => /^(Material de consumo|Telefone)$/.test(t)), 'rubricas zeradas ocultadas');
+  checa(!textos.some(t => /RECEITA/i.test(t)), 'nenhuma linha de receita');
 }
 
 // ── 4.2. Bridge explícito de Manutenção e ponto de entrada geral ────────

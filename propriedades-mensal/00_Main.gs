@@ -176,7 +176,10 @@ function gerarApresentacaoPropriedades() {
     // Vai para depois da capa da seção 5 (VISTORIAS) sozinho — a posição no pipeline não importa.
     { nome: 'Monitoramento de Pendências',   fn: gerarSlidePendenciasVistorias },
     { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
-    { nome: 'DRE de Manutenção',             fn: gerarSlideDREManutencao },
+    // O DRE de Manutenção por imóvel virou parte do DRE de Propriedades (formato
+    // dos Megas, 10/11/2026). O passo só tira o slide antigo do deck; o slide
+    // avulso continua no menu.
+    { nome: 'DRE de Manutenção (retirado)',  fn: () => _slideLimpar_(getDeckMensal_(), TAG_DRE_MANUTENCAO) },
     { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
     { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
     { nome: 'Farol de Metas',                fn: gerarSlidesMetas },

@@ -41,7 +41,7 @@ function gerarSlideDREPropriedades() {
   const ref = dados.ref;
   const mesAbrev = ref.curto.toUpperCase() + '/' + String(ref.ano).slice(-2);
   criarHeaderPadrao(slide, 'DRE — DESPESAS OPERACIONAIS',
-    'Meta vs Realizado (projeção pelo ritmo) · Equipe Propriedades · valores em R$ mil · Mês: ' + mesAbrev);
+    'Meta vs Realizado (projeção pelo ritmo) · gerência + manutenção dos imóveis · valores em R$ mil · Mês: ' + mesAbrev);
 
   try {
     _drePropGrade_(slide, deck, dados, mesAbrev);

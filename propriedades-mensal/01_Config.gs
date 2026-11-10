@@ -292,6 +292,28 @@ const DRE_PROP_ESTRUTURA = {
   ]
 };
 
+// DRE de Propriedades NO FORMATO DOS MEGAS: as mesmas 4 categorias de
+// megas-mensal (DRE_CATEGORIAS), com as contas do plano de Propriedades.
+// Manutenção e Conservação abre por imóvel (centros do DRE de Manutenção).
+// 06.04.23 (Outras Receitas Operacionais) fica de fora: o slide é só gasto.
+const DRE_PROP_CATEGORIAS = [
+  { nome: 'Despesas com Pessoal e Administrativas', itens: [
+    ['06.01', 'Despesa de pessoal'], ['06.04.09', 'Passagens'], ['06.04.10', 'Hospedagem'],
+    ['06.04.11', 'Representação e refeição'], ['06.04.12', 'Táxi / Uber'], ['06.04.13', 'Locação de veículos'],
+    ['06.04.14', 'Combustíveis'], ['06.04.04', 'Estacionamento e pedágio'], ['06.04.21', 'Outras despesas administrativas']
+  ] },
+  { nome: 'Serviços de Terceiros', itens: [
+    ['06.02', 'Serviços de terceiros'], ['06.04.06', 'Propaganda e publicidade'], ['06.04.20', 'Processos judiciais']
+  ] },
+  { nome: 'Manutenção e Conservação', manutencao: true },
+  { nome: 'Utilities, Taxas e Consumo', itens: [
+    ['06.04.07', 'Energia elétrica'], ['06.04.08', 'Água'], ['06.04.03', 'Telefone'], ['06.04.02', 'Material de consumo'],
+    ['06.03', 'Taxas e impostos'], ['06.04.01', 'Seguros'], ['06.04.05', 'Aluguéis e condomínios'],
+    ['06.04.16', 'Condomínio Mega Esteio'], ['06.04.17', 'Condomínio Mega Itajaí'], ['06.04.18', 'Condomínio Mega Curitiba'],
+    ['06.04.19', 'Condomínio Mega Canoas'], ['06.04.22', 'Condomínios Mega']
+  ] }
+];
+
 // Em cada aba, por mês, duas colunas na ordem acima; depois duas de Total.
 // Par = 1ª coluna do mês, ímpar = 2ª. Mês m (0-based) → colunas 2m e 2m+1.
 

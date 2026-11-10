@@ -1058,81 +1058,56 @@ function obterDREPropriedades_() {
     };
   };
 
-  // Obtém o DRE de Manutenção para preencher 06.04.15 · MANUTENÇÃO IMÓVEIS (o pai da estratificação)
-  let recManut = null;
+  // A manutenção dos imóveis vem do DRE de Manutenção, centro a centro (com o
+  // realizado completado pelas REAL-* quando a planilha ainda não tem o mês).
+  let dadosManut = null;
   try {
-    const dadosManut = obterDREManutencao_();
-    if (dadosManut && dadosManut.total) recManut = dadosManut.total;
+    dadosManut = obterDREManutencao_();
   } catch (e) {
     Logger.log('DRE Propriedades: aviso ao obter DRE Manutenção — ' + e.message);
   }
 
-  const est = DRE_PROP_ESTRUTURA;
-  const linhas = [];
+  // FORMATO DOS MEGAS (Guilherme, 10/11/2026: "fazer um DRE igual dos Megas",
+  // opção B): DESPESAS OPERACIONAIS → as 4 categorias de megas-mensal
+  // (DRE_PROP_CATEGORIAS) → rubricas. Em Manutenção e Conservação, uma linha
+  // por imóvel. Só gasto: receita não entra (06.04.23 fica de fora).
+  const somarListaDRE = lista => ({
+    mes:  { aa: _dreSoma_(lista.map(b => b.mes.aa)),  plan: _dreSoma_(lista.map(b => b.mes.plan)),  real: _dreSoma_(lista.map(b => b.mes.real)) },
+    acum: { aa: _dreSoma_(lista.map(b => b.acum.aa)), plan: _dreSoma_(lista.map(b => b.acum.plan)), real: _dreSoma_(lista.map(b => b.acum.real)) },
+    ano:  { aa: _dreSoma_(lista.map(b => b.ano.aa)),  plan: _dreSoma_(lista.map(b => b.ano.plan)),  proj: _dreSoma_(lista.map(b => b.ano.proj)) }
+  });
 
-  // 1. Processa todos os subitens de 06.04 (DESPESAS GERAIS)
-  const itens0604 = [];
-  est.contasGerais.forEach(sub => {
-    let recSub;
-    if (sub.cod === '06.04.15') {
-      // MANUTENÇÃO IMÓVEIS: recebe os valores do DRE de Manutenção (pai da estratificação)
-      recSub = recManut || recorte(sub.cod);
+  const mapeadas = { '06.04.15': true, '06.04.23': true };
+  const categorias = DRE_PROP_CATEGORIAS.map(cat => {
+    let itens;
+    if (cat.manutencao) {
+      const centros = dadosManut ? [].concat.apply([], dadosManut.empresas.map(e => e.centros)) : [];
+      itens = centros.filter(c => temValor(c))
+        .map(c => ({ tipo: 'item', codigo: c.codigo, nome: _dreNomeCurto_(c.nome), b: { mes: c.mes, acum: c.acum, ano: c.ano } }))
+        .sort((a, b) => (b.b.ano.proj || 0) - (a.b.ano.proj || 0));
+      if (!dadosManut) {
+        const rec = recorte('06.04.15');
+        if (temValor(rec)) itens = [{ tipo: 'item', codigo: '06.04.15', nome: 'Manutenção imóveis', b: rec }];
+        avisos.push('DRE de Manutenção indisponível: manutenção em uma linha só, pela aba de Propriedades.');
+      }
     } else {
-      recSub = recorte(sub.cod);
+      itens = cat.itens.map(par => { mapeadas[par[0]] = true; return { tipo: 'item', codigo: par[0], nome: par[1], b: recorte(par[0]) }; })
+        .filter(i => temValor(i.b));
     }
-    if (temValor(recSub)) {
-      itens0604.push({
-        tipo: 'item',
-        codigo: sub.cod,
-        nome: _dreLimparNome_(sub.nome).toUpperCase(),
-        b: recSub
-      });
-    }
+    return { nome: cat.nome.toUpperCase(), itens: itens, b: somarListaDRE(itens.map(i => i.b)) };
+  }).filter(c => c.itens.length);
+
+  // Conta com valor que nenhuma categoria pega: aviso na nota, nunca some calada.
+  DRE_PROP_ESTRUTURA.contasGerais.concat(DRE_PROP_ESTRUTURA.grupos).forEach(c => {
+    if (c.cod === '06.04' || mapeadas[c.cod]) return;
+    if (temValor(recorte(c.cod))) avisos.push('Conta ' + c.cod + ' (' + c.nome + ') tem valor e não está em DRE_PROP_CATEGORIAS — fora do DRE.');
   });
 
-  // 2. Soma todos os subitens de 06.04 para formar o total do grupo DESPESAS GERAIS
-  const somaItens0604 = {
-    mes:  { aa: _dreSoma_(itens0604.map(i => i.b.mes.aa)),   plan: _dreSoma_(itens0604.map(i => i.b.mes.plan)),  real: _dreSoma_(itens0604.map(i => i.b.mes.real)) },
-    acum: { aa: _dreSoma_(itens0604.map(i => i.b.acum.aa)),  plan: _dreSoma_(itens0604.map(i => i.b.acum.plan)), real: _dreSoma_(itens0604.map(i => i.b.acum.real)) },
-    ano:  { aa: _dreSoma_(itens0604.map(i => i.b.ano.aa)),   plan: _dreSoma_(itens0604.map(i => i.b.ano.plan)),  proj: _dreSoma_(itens0604.map(i => i.b.ano.proj)) }
-  };
-
-  // 3. Grupos 06.01, 06.02, 06.03, 06.04 (somente nomes, sem código)
-  const gruposRec = est.grupos.map(g => {
-    let bGrp;
-    if (g.cod === '06.04') {
-      // O grupo DESPESAS GERAIS é exatamente a soma dos seus subitens exibidos
-      bGrp = somaItens0604;
-    } else {
-      bGrp = recorte(g.cod);
-    }
-    return {
-      tipo: 'grupo',
-      codigo: g.cod,
-      nome: _dreLimparNome_(g.nome),
-      b: bGrp
-    };
-  });
-
-  // 4. Raiz DESPESAS OPERACIONAIS: soma os 4 grupos (06.01 + 06.02 + 06.03 + 06.04)
-  let recRaiz = {
-    mes:  { aa: _dreSoma_(gruposRec.map(g => g.b.mes.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.mes.plan)),  real: _dreSoma_(gruposRec.map(g => g.b.mes.real)) },
-    acum: { aa: _dreSoma_(gruposRec.map(g => g.b.acum.aa)),  plan: _dreSoma_(gruposRec.map(g => g.b.acum.plan)), real: _dreSoma_(gruposRec.map(g => g.b.acum.real)) },
-    ano:  { aa: _dreSoma_(gruposRec.map(g => g.b.ano.aa)),   plan: _dreSoma_(gruposRec.map(g => g.b.ano.plan)),  proj: _dreSoma_(gruposRec.map(g => g.b.ano.proj)) }
-  };
-
-  linhas.push({
-    tipo: 'total',
-    codigo: est.raiz.cod,
-    nome: _dreLimparNome_(est.raiz.nome),
-    b: recRaiz
-  });
-
-  gruposRec.forEach(grp => {
-    linhas.push(grp);
-    if (grp.codigo === '06.04') {
-      itens0604.forEach(item => linhas.push(item));
-    }
+  const recRaiz = somarListaDRE(categorias.map(c => c.b));
+  const linhas = [{ tipo: 'total', codigo: '06', nome: 'DESPESAS OPERACIONAIS', b: recRaiz }];
+  categorias.forEach(c => {
+    linhas.push({ tipo: 'grupo', nome: c.nome, b: c.b });
+    c.itens.forEach(i => linhas.push(i));
   });
 
   Logger.log('DRE Propriedades: ref ' + ref.nome + '/' + ref.ano +
