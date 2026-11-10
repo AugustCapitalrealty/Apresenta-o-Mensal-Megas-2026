@@ -67,8 +67,9 @@ function gerarSlideIndicadoresGerais() {
     ] },
     { title: 'GESTÃO DE CONTRATAÇÕES', color: DS.colors.brandLight, semComparativo: true, headerTexto: 'TOTAL', rows: [
       { label: 'Processos em andamento',     lookup: 'Contratações em andamento' },
-      { label: 'Percentual de conclusão',    lookup: 'Contratações conclusão (%)' },
-      { label: 'Prazo médio de contratação', lookup: 'Contratações prazo médio' }
+      { label: 'Em fase de edital',          lookup: 'Em fase de edital' },
+      { label: 'Em atraso',                  lookup: 'Contratações em atraso' },
+      { label: 'Contratações fechadas',      lookup: 'Contratações concluídas' }
     ] }
   ];
 

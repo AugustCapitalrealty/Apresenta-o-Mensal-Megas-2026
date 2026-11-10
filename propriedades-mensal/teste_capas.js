@@ -66,7 +66,7 @@ const deck = {
 };
 const capaMao = nome => novoSlide(['CAPITAL REALTY', 'APRESENTAÇÃO MENSAL', nome, 'Obras, Contratações e Indicadores do Mês', 'AGOSTO 2026']);
 
-// O deck de setembro/2026, resumido: capa, destaques, seções feitas à mão (sem VISTORIAS, para testar o "não cria").
+// O deck de setembro/2026, resumido: capa, destaques, seções feitas à mão (sem VISTORIAS, para testar a criação no fim).
 function montarDeck() {
   slides.length = 0;
   slides.push(novoSlide(['CAPITAL REALTY', 'APRESENTAÇÃO MENSAL', 'GESTÃO DE\nPROPRIEDADES', 'Obras, Contratações e Indicadores do Mês'], '【PROP_CAPA_AUTO】'));
@@ -117,10 +117,10 @@ checa(o1[2] === 'PROP_SECAO_01_AUTO' && o1[3].indexOf('DRE') === 0, 'FINANCEIRO 
 checa(o1[4] === 'PROP_SECAO_02_AUTO' && o1[5].indexOf('MANUTENÇÃO PREVENTIVA') === 0, 'MANUTENÇÕES no lugar');
 checa(o1[6] === 'PROP_SECAO_03_AUTO' && o1[7] === 'PROP_SECAO_04_AUTO', 'CONTRATAÇÕES e OBRAS no lugar');
 checa(o1[9] === 'PROP_SECAO_06_AUTO', 'ADEQUAÇÕES no lugar');
-checa(o1.indexOf('PROP_SECAO_05_AUTO') < 0, 'VISTORIAS sem capa no deck → não criada');
-checa(logs.some(l => /Seção 5 \(Vistorias\).*não criada/.test(l)), 'e o Logger diz qual faltou e como pedir');
+checa(o1[o1.length - 2] === 'PROP_SECAO_05_AUTO', 'VISTORIAS sem capa no deck → criada no fim, antes do encerramento');
+checa(logs.some(l => /Criadas no FIM.*5 Vistorias/.test(l)), 'e o Logger diz qual foi para o fim');
 checa(o1[o1.length - 1] === 'PROP_ENCERRAMENTO_AUTO', 'encerramento é o último');
-checa(slides.length === n0 + 1, 'mesmo nº de slides + o encerramento (nenhuma capa duplicada)');
+checa(slides.length === n0 + 2, 'mesmo nº de slides + VISTORIAS + o encerramento (nenhuma capa duplicada)');
 checa(!slides.some(s => /AGOSTO 2026/.test(textoDe(s))), 'nenhuma capa ficou com AGOSTO (mês antigo)');
 checa(slides.filter(s => /PROP_SECAO|PROP_CAPA|PROP_ENCERR/.test(s.nota)).every(dentro), 'capas em formas dentro da página');
 const sec4 = slides.find(s => /PROP_SECAO_04/.test(s.nota));
@@ -130,7 +130,7 @@ console.log('\n== Segunda geração: acha pela tag, não duplica ==');
 rodar();
 const o2 = ordem();
 checa(JSON.stringify(o2) === JSON.stringify(o1), 'mesma ordem da primeira');
-checa(slides.length === n0 + 1, 'mesmo nº de slides');
+checa(slides.length === n0 + 2, 'mesmo nº de slides');
 
 console.log('\n== Com as imagens na pasta ==');
 comImagens = true;
@@ -142,7 +142,7 @@ checa(capa.imagens.filter(i => /LOGO|1Tx9/.test(i.blob)).length === 2, 'capa: lo
 checa(s1.imagens.some(i => i.blob === 'blob:SECAO - PROPRIEDADES MENSAL - 01.jpg'), 'seção 01: imagem SECAO … 01');
 checa(textoDe(s1) === 'SETEMBRO 2026', 'seção 01: só o mês como texto (o resto está na imagem)');
 checa(enc.imagens.some(i => i.blob === 'blob:ENCERRAMENTO - PROPRIEDADES MENSAL.jpg'), 'encerramento em imagem');
-checa(slides.length === n0 + 1 && JSON.stringify(ordem().filter(x => /^PROP_/.test(x))) ===
+checa(slides.length === n0 + 2 && JSON.stringify(ordem().filter(x => /^PROP_/.test(x))) ===
       JSON.stringify(o1.filter(x => /^PROP_/.test(x))), 'trocar formas por imagem não mexe na ordem');
 checa([capa, s1, enc].every(dentro), 'texto por cima dentro da página');
 

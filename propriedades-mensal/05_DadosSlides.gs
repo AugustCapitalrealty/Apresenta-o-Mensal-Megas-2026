@@ -279,7 +279,8 @@ function obterDashboardPropriedades_() {
   const fmtVar = (nom, pct) => {
     if (nom == null || isNaN(nom)) return '—';
     const sinal = nom >= 0 ? '+' : '−';
-    const pctStr = (pct != null && !isNaN(pct)) ? ' (' + (pct >= 0 ? '+' : '') + (pct * 100).toFixed(1).replace('.', ',') + '%)' : '';
+    // % sem sinal: o sinal do valor já diz se é economia (+) ou gasto acima do ritmo (−).
+    const pctStr = (pct != null && !isNaN(pct)) ? ' (' + Math.abs(pct * 100).toFixed(1).replace('.', ',') + '%)' : '';
     return sinal + fmtK(Math.abs(nom)) + pctStr;
   };
 
@@ -325,8 +326,8 @@ function obterDashboardPropriedades_() {
   map.set('Em fase de edital',          linha3(contratacoes.emEdital, null, null));
   map.set('Contratações em atraso',     linha3(contratacoes.emAtraso, null, null));
   map.set('Contratações concluídas',    linha3(contratacoes.fechadas, null, null));
-  map.set('Contratações conclusão (%)', linha3('4', null, null));
-  map.set('Contratações prazo médio',   linha3('15', null, null));
+  // % de conclusão e prazo médio de contratação saíam fixos ('4' e '15'), que eram
+  // na verdade o "em edital" e o "em atraso" do mês. Voltam quando houver o cálculo.
 
   Logger.log('Dashboard: conclusão histórica — ' + conclusoes[0].fechadosAte + ' fechados de ' +
              conclusoes[0].criadosAte + ' abertos até o fim do mês' +

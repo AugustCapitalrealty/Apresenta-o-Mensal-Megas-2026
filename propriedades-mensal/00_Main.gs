@@ -39,6 +39,7 @@ function onOpen() {
     .addSeparator()
     .addSubMenu(ui.createMenu('⚡ Slide Avulso')
       .addItem('Capa, Capas de Seção e Encerramento', 'gerarSoCapas')
+      .addItem('Capas no Deck do Mês (cópia enviada)', 'gerarCapasNoDeckDoMes')
       .addItem('Dashboard Operacional', 'gerarSoDashboard')
       .addItem('Preventivas', 'gerarSoPreventivas')
       .addItem('Corretivas', 'gerarSoCorretivas')
@@ -99,7 +100,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
   ['19_Slide_DREBridge.gs',         ['gerarSlideDREPropriedades', 'gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
-  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_']],
+  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
 ];
 

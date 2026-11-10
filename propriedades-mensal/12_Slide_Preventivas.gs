@@ -67,7 +67,7 @@ function _prevCardMetrica_(slide, x, y, w, h, dados, corTema) {
   const contentY = criarCardPainel(slide, x, y, w, h, dados.titulo, corTema) + 6;
   const colW = (w - 20) / 3;
 
-  const slaTxt = dados.sla == null ? '—' : dados.sla.toFixed(1) + '%';
+  const slaTxt = dados.sla == null ? '—' : dados.sla.toFixed(1).replace('.', ',') + '%';
   _prevItemSimples_(slide, x + 10,            contentY, colW, 'PREVISTAS',  dados.previstas,  DS.colors.textMuted, DS.colors.textMain);
   _prevItemSimples_(slide, x + 10 + colW,     contentY, colW, 'REALIZADAS', dados.realizadas, DS.colors.textMuted, DS.colors.textMain);
   _prevItemSimples_(slide, x + 10 + colW * 2, contentY, colW, 'SLA',        slaTxt,           DS.colors.textMuted, corPorSLA(dados.sla, corTema));

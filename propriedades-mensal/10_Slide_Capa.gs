@@ -21,7 +21,13 @@ function gerarSlideCapa() {
   // A capa volta para onde estava (1º slide, se não havia): appendSlide joga no fim.
   let lugar = 0;
   const antigas = deck.getSlides().filter(s => _capasNotas_(s).indexOf(TAG_CAPA) >= 0);
-  if (antigas.length) lugar = _capasIndice_(deck, antigas[0]);
+  if (antigas.length) {
+    lugar = _capasIndice_(deck, antigas[0]);
+  } else {
+    // Deck do mês montado à mão: a capa pode estar sem tag. Troca no lugar em vez de duplicar.
+    const aMao = _capaFeitaAMao_(deck);
+    if (aMao) { lugar = _capasIndice_(deck, aMao); aMao.remove(); }
+  }
   _slideLimpar_(deck, TAG_CAPA);
   const slide = _slideNovo_(deck, TAG_CAPA);  // sem header: a capa pinta o próprio fundo
 

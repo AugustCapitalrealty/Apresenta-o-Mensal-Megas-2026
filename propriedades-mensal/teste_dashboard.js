@@ -245,8 +245,9 @@ ok('tem Capital Realty (CR) R$ 421.028', dash.get('Orçamento Capital Realty').a
 ok('tem Demercado R$ 183.515', dash.get('Orçamento Demercado').atual === 'R$ 183.515');
 ok('tem Economia Projetada positiva (+R$ 12.826)', dash.get('Economia Projetada (26/25)').atual.includes('+R$ 12.826'), dash.get('Economia Projetada (26/25)').atual);
 ok('tem CAPEX', dash.has('CAPEX'));
-ok('tem Contratações conclusão (%)', dash.has('Contratações conclusão (%)'));
-ok('tem Contratações prazo médio', dash.has('Contratações prazo médio'));
+// % de conclusão e prazo médio saíam fixos ('4' e '15', que eram o "em edital" e o "em atraso") — saíram em 30/10.
+ok('tem Contratações em atraso', dash.has('Contratações em atraso'));
+ok('tem Contratações concluídas', dash.has('Contratações concluídas'));
 // Grupo VISTORIAS: do VistoriaPro. Aqui não há o app (sem PropertiesService/
 // UrlFetchApp no dublê): as linhas existem e mostram "—", nunca 0 (lição 3).
 // Com o app, ver teste_vistorias.js.

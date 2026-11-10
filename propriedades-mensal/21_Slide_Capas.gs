@@ -13,6 +13,14 @@
  * sai em formas (o desenho que o deck já tinha) — a geração nunca para por
  * causa de uma imagem.
  *
+ * 30/10/2026: Python não roda nesta máquina (CrowdStrike), então as imagens
+ * de capas_mensal.py nunca foram geradas e as capas saíam em formas. Agora
+ * há um degrau no meio, igual às capas do Planejamento: SÓ A FOTO, recortada
+ * e com o véu em Node (ferramentas/fotos_mensal.js → "PROPRIEDADES MENSAL -
+ * FOTO - <nome>.png"), e títulos, frases, filetes e rodapé de capas_mensal.py
+ * desenhados por cima em texto e formas do Slides. Ordem: imagem inteira
+ * (Python) > foto + texto (Node) > formas.
+ *
  * AS SEÇÕES SÃO AS DO TIME, não inventadas aqui: até setembro/2026 o deck
  * tinha uma capa feita à mão por seção ("CAPITAL REALTY · APRESENTAÇÃO
  * MENSAL · FINANCEIRO …"). A geração troca cada uma, NO MESMO LUGAR, pela
@@ -78,6 +86,32 @@ function _capasFundo_(slide, W, H, nome, titulo) {
   return true;
 }
 
+// Só a FOTO, sem texto (ferramentas/fotos_mensal.js, em Node — Python não roda nesta máquina, e por isso as imagens
+// de slide inteiro de capas_mensal.py nunca existiram). O resto do desenho de capas_mensal.py vai por cima, em texto
+// e formas do Slides — mesmo caminho das capas do Planejamento (fotos_planejamento.js). false = não achou a foto.
+const CAPAS_FOTO_PREFIXO = 'PROPRIEDADES MENSAL - FOTO - ';
+function _capasFoto_(slide, nome, x, y, w, h, titulo) {
+  const b = _capasBlob_('pasta:' + CAPAS_FOTO_PREFIXO + nome + '.png');
+  if (b.erro) { Logger.log('Foto "' + nome + '" indisponível (' + b.erro.message + ') — vai o desenho em formas.'); return false; }
+  const img = slide.insertImage(b.blob).setLeft(x).setTop(y).setWidth(w).setHeight(h);
+  img.sendToBack();
+  if (titulo) img.setTitle(titulo).setDescription(titulo);
+  return true;
+}
+
+// Filete e texto do rodapé (= rodape() de capas_mensal.py).
+function _capasRodape_(slide, txt) {
+  _sRet_(slide, 48, 372, 636, 0.75, CR_DESIGN_SYSTEM.colors.lines);
+  _capasTxt_(slide, 48, 376, 420, 16, txt, 7.5, false, '#94A3B8', null, CR_DESIGN_SYSTEM.typography.body);
+}
+
+// Fonte que cabe numa linha: o Slides quebra a linha sozinho, e capas_mensal.py encolhia até um mínimo.
+// 0,62 em = largura média de um caractere em Montserrat Bold, com folga; 7,2 pt = recuo da caixa de cada lado.
+function _capasFonteQueCabe_(txt, larg, fs, fsMin) {
+  while (fs > fsMin && String(txt).length * fs * 0.62 > larg - 2 * 7.2) fs -= 0.5;
+  return fs;
+}
+
 // Logos CR + DM (negativos) lado a lado a partir de x; devolve false se nenhum veio.
 function _capasLogos_(slide, x, y, h) {
   let algum = false;
@@ -137,10 +171,21 @@ function _capasNoLugarDe_(novo, antigo, deck) {
 // ==========================================
 // CAPA (chamada por gerarSlideCapa, 10_Slide_Capa.gs)
 // ==========================================
-// Mesmas caixas de capa() em ferramentas/capas_mensal.py.
+// Mesmas caixas de capa() em ferramentas/capas_mensal.py. Imagem inteira (Python) > foto + texto (Node) > formas.
 function _capaImagem_(slide, W, H, ref) {
-  if (!_capasFundo_(slide, W, H, 'CAPA - PROPRIEDADES MENSAL.jpg', 'Gestão de Propriedades — Apresentação mensal')) return false;
-  slide.getBackground().setSolidFill('#FFFFFF');
+  const DS = CR_DESIGN_SYSTEM, C = DS.colors;
+  if (_capasFundo_(slide, W, H, 'CAPA - PROPRIEDADES MENSAL.jpg', 'Gestão de Propriedades — Apresentação mensal')) {
+    slide.getBackground().setSolidFill('#FFFFFF');
+  } else if (_capasFoto_(slide, 'CAPA', 0, 0, W, 210, 'Gestão de Propriedades — Apresentação mensal')) {
+    slide.getBackground().setSolidFill('#FFFFFF');
+    _sRet_(slide, 0, 210, W, 4, C.brandLight);
+    _capasTxt_(slide, 48, 226, 400, 16, 'APRESENTAÇÃO MENSAL', 10, true, C.brandLight);
+    _capasTxt_(slide, 46, 242, 600, 54, 'Gestão de Propriedades', _capasFonteQueCabe_('Gestão de Propriedades', 600, 38, 24), true, C.brandDark);
+    _capasTxt_(slide, 48, 296, 420, 18, 'Obras, contratações e indicadores do mês', 11, false, '#475569', null, DS.typography.body);
+    _capasRodape_(slide, 'Capital Realty · Demercado · Gerência de Propriedades');
+  } else {
+    return false;
+  }
   if (!_capasLogos_(slide, 48, 30, 28)) {
     _capasTxt_(slide, 44, 30, 300, 32, 'CAPITAL REALTY', 13, true, '#FFFFFF');
   }
@@ -157,20 +202,18 @@ function gerarCapasSecoes() {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const ref = obterMesReferencia_();
   let feitas = 0;
+  const noFim = [];
   SECOES_MENSAL.forEach(sec => {
     const antiga = _capasAcharSecao_(deck, sec);
-    if (!antiga) {
-      Logger.log('Seção ' + sec.n + ' (' + sec.titulo + '): o deck não tem capa dessa seção — não criada ' +
-                 '(a ordem do deck é do time). Para ganhar uma, ponha no lugar um slide com o texto ' +
-                 '"APRESENTAÇÃO MENSAL" e "' + sec.casa + '".');
-      return;
-    }
     const s = _slideNovo_(deck, _capaTagSecao_(sec.n));
     _capaSecaoDesenho_(s, W, H, sec, ref);
-    _capasNoLugarDe_(s, antiga, deck);
+    // Sem capa no deck: fica no fim (antes do encerramento, que é refeito depois) e o time arrasta para o lugar
+    // (Guilherme, 30/10/2026: "gerar no final se não encontrar, daí eu organizo"). Da próxima vez é achada pela tag.
+    if (antiga) _capasNoLugarDe_(s, antiga, deck); else noFim.push(sec.n + ' ' + sec.titulo);
     feitas++;
   });
   Logger.log('✓ Capas de seção: ' + feitas + ' de ' + SECOES_MENSAL.length + ' → ' + ref.nome + ' ' + ref.ano);
+  if (noFim.length) Logger.log('  Criadas no FIM do deck (não havia capa da seção — arraste para o lugar): ' + noFim.join(', '));
 }
 
 // A capa da seção no deck: a gerada antes (tag) ou a feita à mão (texto). Nunca a capa do deck.
@@ -197,6 +240,27 @@ function _capaSecaoDesenho_(slide, W, H, sec, ref) {
     _capasTxt_(slide, 464, 376, 220, 16, ref.nome + ' ' + ref.ano, 7.5, true, C.brandLight, 'R');
     return;
   }
+  // Foto da seção (Node) à direita e o texto de secao() de capas_mensal.py por cima.
+  const bx = 410, by = 30, bw = 274, bh = 326;
+  if (_capasFoto_(slide, 'SECAO ' + num, bx, by, bw, bh, num + ' ' + sec.titulo)) {
+    slide.getBackground().setSolidFill('#FFFFFF');
+    _sRet_(slide, bx, by, 4, bh, C.brandLight);
+    _capasTxt_(slide, 46, 26, 200, 66, num, 54, true, '#60A5FA');
+    _capasTxt_(slide, 48, 96, 340, 16, 'PROPRIEDADES · APRESENTAÇÃO MENSAL', 9, true, C.brandLight);
+    let y;
+    if (sec.titulo.length > 24) {            // "Obras e Contratações em Andamento": duas linhas
+      _capasTxt_(slide, 48, 112, 352, 80, sec.titulo, 26, true, C.brandDark);
+      y = 186;
+    } else {
+      _capasTxt_(slide, 48, 116, 352, 44, sec.titulo, _capasFonteQueCabe_(sec.titulo, 352, 30, 18), true, C.brandDark);
+      y = 160;
+    }
+    _capasTxt_(slide, 48, y, 352, 40, sec.frase, 12, false, '#475569', null, DS.typography.body);
+    _sRet_(slide, 48 + 7.2, y + 40, 40, 3, C.brandLight);
+    _capasRodape_(slide, 'Capital Realty · Demercado · Apresentação Mensal · Propriedades');
+    _capasTxt_(slide, 464, 376, 220, 16, ref.nome + ' ' + ref.ano, 7.5, true, C.brandLight, 'R');
+    return;
+  }
   // Em formas: o desenho das capas feitas à mão (fundo escuro, espinha, wordmark), com o número da seção.
   slide.getBackground().setSolidFill(C.brandDark);
   _sRet_(slide, 0, 0, 6, H, C.brandLight);
@@ -211,6 +275,54 @@ function _capaSecaoDesenho_(slide, W, H, sec, ref) {
 
 
 // ==========================================
+// CAPAS NO DECK DO MÊS (a cópia que vai para a diretoria)
+// ==========================================
+// O pipeline grava no deck modelo (DECK_PROPRIEDADES_ID); o enviado é a cópia
+// do mês, montada à mão a partir dele. As capas feitas à mão na cópia ficavam
+// com o mês da cópia anterior (setembro/2026 saiu com "AGOSTO 2026" em cinco
+// capas de seção). Aqui só as capas rodam na cópia: os outros passos apagam e
+// recolocam slides no fim, o que bagunçaria a ordem montada à mão.
+function gerarCapasNoDeckDoMes() {
+  const ref = obterMesReferencia_();
+  const arq = _capasDeckDoMes_(ref);
+  if (!arq) {
+    Logger.log('✗ Não achei "APRESENTAÇÃO PROPRIEDADES - ' + ref.nome + '/' + ref.ano +
+               '" na pasta do deck modelo — nada alterado. Confira o nome da cópia e o CONFIG!B1.');
+    return ['Deck do mês não encontrado'];
+  }
+  Logger.log('▶ Capas no deck do mês: ' + arq.getName());
+  _deckAlvoId_ = arq.getId();
+  try { return gerarSoCapas(); } finally { _deckAlvoId_ = ''; }
+}
+
+// A cópia do mês fica na mesma pasta do modelo. Compara sem acento, "/", "-" e espaços
+// extras: o título é "… - SETEMBRO/2026", o Drive para Windows mostra "… - SETEMBRO 2026".
+function _capasDeckDoMes_(ref) {
+  const chave = s => _norm_(String(s).replace(/[\/\-–]/g, ' '));
+  const alvo = chave('APRESENTAÇÃO PROPRIEDADES ' + ref.nome + ' ' + ref.ano);
+  const pastas = DriveApp.getFileById(DECK_PROPRIEDADES_ID).getParents();
+  while (pastas.hasNext()) {
+    const it = pastas.next().getFilesByType(MimeType.GOOGLE_SLIDES);
+    while (it.hasNext()) {
+      const f = it.next();
+      if (f.getId() !== DECK_PROPRIEDADES_ID && chave(f.getName()) === alvo) return f;
+    }
+  }
+  return null;
+}
+
+// Capa principal feita à mão (sem a tag na nota): só nos 3 primeiros slides, pelo texto.
+function _capaFeitaAMao_(deck) {
+  const slides = deck.getSlides().slice(0, 3);
+  for (let i = 0; i < slides.length; i++) {
+    const t = _dreTextoDoSlide_(slides[i]).replace(/\s+/g, ' ');
+    if (t.indexOf('APRESENTAÇÃO MENSAL') >= 0 && t.indexOf('GESTÃO DE PROPRIEDADES') >= 0) return slides[i];
+  }
+  return null;
+}
+
+
+// ==========================================
 // ENCERRAMENTO (sempre o último slide)
 // ==========================================
 function gerarSlideEncerramento() {
@@ -220,6 +332,15 @@ function gerarSlideEncerramento() {
   _slideLimpar_(deck, TAG_ENCERRAMENTO);
   const s = _slideNovo_(deck, TAG_ENCERRAMENTO);
   if (_capasFundo_(s, W, H, 'ENCERRAMENTO - PROPRIEDADES MENSAL.jpg', 'Obrigado')) {
+    if (!_capasLogos_(s, 48, 332, 24)) _capasTxt_(s, 44, 330, 300, 28, 'CAPITAL REALTY', 13, true, '#FFFFFF');
+  } else if (_capasFoto_(s, 'ENCERRAMENTO', 0, 0, W, H, 'Obrigado')) {
+    // Foto com o véu da marca (Node) e o texto de encerramento() de capas_mensal.py por cima.
+    _sRet_(s, 0, 0, 6, H, C.brandLight);
+    _capasTxt_(s, 46, 120, 300, 16, 'APRESENTAÇÃO MENSAL · PROPRIEDADES', 9, true, '#60A5FA');
+    _capasTxt_(s, 44, 138, 320, 64, 'Obrigado', 48, true, '#FFFFFF');
+    _sRet_(s, 48 + 7.2, 210, 40, 3, '#60A5FA');
+    _capasTxt_(s, 46, 222, 320, 18, 'INFRAESTRUTURA INSPIRA.', 12, true, '#FFFFFF');
+    _capasTxt_(s, 46, 240, 320, 18, 'LOGÍSTICA CONECTA.', 12, true, '#60A5FA');
     if (!_capasLogos_(s, 48, 332, 24)) _capasTxt_(s, 44, 330, 300, 28, 'CAPITAL REALTY', 13, true, '#FFFFFF');
   } else {
     s.getBackground().setSolidFill(C.brandDark);

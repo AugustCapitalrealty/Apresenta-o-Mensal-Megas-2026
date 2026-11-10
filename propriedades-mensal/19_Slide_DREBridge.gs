@@ -227,7 +227,8 @@ function _dreGrade_(slide, deck, dados, mesAbrev) {
   });
 
   if (dados.avisos && dados.avisos.length) {
-    _sTxt(slide, x0, H - 10, tableW, 9, '⚠ ' + dados.avisos[0], 5.2, false, DS.colors.accentOrange, 'left');
+    // Aviso interno (de onde veio o realizado etc.): na nota do slide, não na tela da diretoria.
+    slide.getNotesPage().getSpeakerNotesShape().getText().appendText('\n⚠ ' + dados.avisos.join('\n⚠ '));
   }
 }
 
@@ -353,7 +354,8 @@ function _drePropGrade_(slide, deck, dados, mesAbrev) {
   });
 
   if (dados.avisos && dados.avisos.length) {
-    _sTxt(slide, x0, H - 10, tableW, 9, '⚠ ' + dados.avisos[0], 5.2, false, DS.colors.accentOrange, 'left');
+    // Aviso interno (de onde veio o realizado etc.): na nota do slide, não na tela da diretoria.
+    slide.getNotesPage().getSpeakerNotesShape().getText().appendText('\n⚠ ' + dados.avisos.join('\n⚠ '));
   }
 }
 

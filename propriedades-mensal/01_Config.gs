@@ -104,7 +104,12 @@ const VISTORIAS_API_URL = 'https://klaaeqoaqfuhepjoznad.supabase.co/functions/v1
 // https://docs.google.com/presentation/d/1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY/edit
 const DECK_PROPRIEDADES_ID = '1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY';
 
+// Deck alvo da execução em curso. Vazio = o modelo acima. Só gerarCapasNoDeckDoMes()
+// (21_Slide_Capas.gs) aponta para a cópia do mês, e só enquanto roda.
+let _deckAlvoId_ = '';
+
 function getDeckMensal_() {
+  if (_deckAlvoId_) return SlidesApp.openById(_deckAlvoId_);
   if (!DECK_PROPRIEDADES_ID) {
     throw new Error('DECK_PROPRIEDADES_ID está vazio em 01_Config.gs — ' +
                     'informe o ID do Google Slides da apresentação mensal de Propriedades.');
