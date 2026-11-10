@@ -11,43 +11,30 @@ function gerarSlideEncerramento() {
   const slide = deck.appendSlide(SlidesApp.PredefinedLayout.BLANK);
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const DS = CR_DESIGN_SYSTEM;
+  const projeto = getProjetoAtivo();
 
-  // Fundo premium (sem espinha lateral — capa final é mais centrada/simétrica)
-  _capaFundo_(slide, W, H, { espinha: false });
+  // Fundo (redesenho de 10/11/2026): a foto da capa sob véu escuro uniforme
+  // fecha o deck com a mesma imagem que o abriu. Sem halos, anéis,
+  // triângulo, letras espaçadas nem faixas de degradê.
+  const comFoto = projeto.fotoFundoId &&
+    _capaFotoFundo_(slide, W, H, projeto.fotoFundoId, { cor: DS.colors.brandDark, alpha: 0.86 });
+  if (!comFoto) _capaFundoLimpo_(slide);
 
-  // Logo do próprio Mega centralizada no topo (por pedido — antes ficava no
-  // canto e não estava legal). Fica como assinatura da unidade, simétrica
-  // com o logo da Capital Realty no rodapé.
-  _capaMegaLogo_(slide, W, { cx: W / 2, y: 22, w: 116, h: 38 });
+  // Logo do próprio Mega centralizada no topo, simétrica ao logo da Capital
+  // Realty no rodapé.
+  _capaMegaLogo_(slide, W, { cx: W / 2, y: 26, w: 116, h: 38 });
 
-  // Overline centralizado
-  const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.20, W - 80, 18);
-  over.getText().setText(_capaEspacado_('Obrigado')).getTextStyle()
-    .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
-  over.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  const yT = H * 0.30;
+  _capaTexto_(slide, 'Obrigado', 40, yT, W - 80, 60, 44, '#FFFFFF', { centro: true });
 
-  // Mensagem principal
-  const msg = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.20 + 26, W - 80, 100);
-  msg.getText().setText('INFRAESTRUTURA INSPIRA.\nLOGÍSTICA CONECTA.').getTextStyle()
-    .setFontSize(34).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  msg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER).setLineSpacing(102);
-  const tr = msg.getText();
-  tr.getRange(15, 23).getTextStyle().setForegroundColor('#60A5FA');  // "INSPIRA."
-  tr.getRange(34, 42).getTextStyle().setForegroundColor('#60A5FA');  // "CONECTA."
+  const msg = _capaTexto_(slide, 'Infraestrutura inspira. Logística conecta.', 40, yT + 62, W - 80, 24, 15, '#CBD5E1', { centro: true });
+  msg.getText().getRange(15, 23).getTextStyle().setForegroundColor('#60A5FA');   // "inspira."
+  msg.getText().getRange(34, 42).getTextStyle().setForegroundColor('#60A5FA');   // "conecta."
 
-  // Slogan com linhas + faixa de gradiente central
-  const sloganY = H * 0.20 + 132;
-  const sloganBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, (W / 2) - 160, sloganY, 320, 22);
-  sloganBox.getText().setText('EXPANDIR EFICIÊNCIA').getTextStyle()
-    .setFontSize(12).setBold(true).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.titles);
-  sloganBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  _capaGradiente_(slide, (W / 2) - 230, sloganY + 11, 55, 2, DS.colors.brandDark, '#60A5FA', { steps: 16 });
-  _capaGradiente_(slide, (W / 2) + 175, sloganY + 11, 55, 2, '#60A5FA', DS.colors.brandDark, { steps: 16 });
-
-  // ── Contatos (cards glass) ──────────────────────────────────────────────
-  const contatos = getProjetoAtivo().contatos || [];
+  // ── Contatos (cards) ────────────────────────────────────────────────────
+  const contatos = projeto.contatos || [];
   const cardW = 250, cardH = 58, cardGap = 26;
-  const contatoY = sloganY + 44;
+  const contatoY = yT + 112;
   const totalW = (cardW * contatos.length) + (cardGap * Math.max(contatos.length - 1, 0));
   const startX = (W - totalW) / 2;
   contatos.forEach((c, i) => {
@@ -55,24 +42,15 @@ function gerarSlideEncerramento() {
   });
 
   // ── Logo oficial (negativo) no rodapé, centralizado ─────────────────────
-  const sep = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, W / 2 - 60, H - 62, W / 2 + 60, H - 62);
-  sep.getLineFill().setSolidFill('#334155'); sep.setWeight(1);
   try {
-    const img = _capaLogoImg_(slide, LOGOS_CR.fullNegativo, 34);
-    img.setLeft((W - img.getWidth()) / 2).setTop(H - 52);
+    const img = _capaLogoImg_(slide, LOGOS_CR.fullNegativo, 30);
+    img.setLeft((W - img.getWidth()) / 2).setTop(H - 50);
   } catch (e) {
     Logger.log('Encerramento: logo negativo indisponível, wordmark em texto. ' + e.message);
-    const logoBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 52, W - 80, 24);
-    logoBox.getText().setText('CAPITAL REALTY').getTextStyle()
-      .setFontSize(16).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-    logoBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    const logoSub = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H - 30, W - 80, 14);
-    logoSub.getText().setText('infraestrutura logística').getTextStyle()
-      .setFontSize(7.5).setForegroundColor('#94A3B8').setFontFamily(DS.typography.body);
-    logoSub.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    _capaTexto_(slide, 'CAPITAL REALTY', 40, H - 50, W - 80, 24, 16, '#FFFFFF', { centro: true });
   }
 
-  Logger.log('Slide 12 (Encerramento premium) gerado.');
+  Logger.log('Encerramento gerado.');
 }
 
 // Card de contato premium (glass): avatar com as duas iniciais + nome/cargo.
@@ -104,5 +82,4 @@ function _encCardContato(slide, x, y, w, h, nome, cargo) {
   const rb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, tx, y + 31, tw, 16);
   rb.getText().setText(cargo).getTextStyle()
     .setFontSize(8.5).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);
-  rb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }

@@ -338,7 +338,10 @@ function _finAnoModa_(grupos) {
   grupos.forEach(g => { if (g.ano2 !== moda) g.ano2 = moda; });
   return moda;
 }
-function getPresentationIdAtivo() { return getProjetoAtivo().presentationId; }
+// _presentationIdTeste_: desvia a geração para outra apresentação (só o
+// testarCapas*, em 10_Slide_Capas.gs) sem tocar no deck do mês.
+let _presentationIdTeste_ = null;
+function getPresentationIdAtivo() { return _presentationIdTeste_ || getProjetoAtivo().presentationId; }
 
 // Abre sempre a apresentação da cidade ativa, independente de qual estiver aberta no editor
 function getDeckAtivo() {

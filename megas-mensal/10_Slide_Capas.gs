@@ -127,6 +127,45 @@ function _capaFotoFundo_(slide, W, H, fotoId, opts) {
   }
 }
 
+// Véu de legibilidade sobre a foto: PNG transparente com degradê suave
+// (brandDark denso à esquerda, some rumo à direita, + base escurecida).
+// Substitui o degradê simulado por faixas (_capaGradiente_), cujas
+// sobreposições de 0,8pt viravam listras verticais visíveis sobre a foto.
+// Arquivo: 29 - Template Apresentações/01 - Fotos para slides/cr-scrim-capa.png
+// (gerado em 10/11/2026). Sem o PNG, cai num véu sólido único — nunca listra.
+const CAPA_SCRIM_ID = '1xus46vuE0D4oKyX_VLZ4YG5_icoDmT4s';
+
+function _capaScrim_(slide, W, H) {
+  if (CAPA_SCRIM_ID) {
+    try {
+      const img = slide.insertImage(DriveApp.getFileById(CAPA_SCRIM_ID).getBlob());
+      img.setLeft(0).setTop(0).setWidth(W).setHeight(H);
+      return;
+    } catch (e) {
+      Logger.log('Capa: véu PNG indisponível (' + CAPA_SCRIM_ID + '), usando véu sólido. ' + e.message);
+    }
+  }
+  const veu = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
+  veu.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);
+  veu.getBorder().setTransparent();
+}
+
+// Fundo sem foto: só a cor institucional, sem manchas nem anéis.
+function _capaFundoLimpo_(slide) {
+  slide.getBackground().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark);
+}
+
+// Caixa de texto de uma linha/parágrafo com o estilo das capas.
+function _capaTexto_(slide, txt, x, y, w, h, tam, cor, opts) {
+  opts = opts || {};
+  const tb = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, x, y, w, h);
+  tb.getText().setText(txt).getTextStyle()
+    .setFontSize(tam).setBold(opts.bold !== false).setForegroundColor(cor)
+    .setFontFamily(opts.body ? CR_DESIGN_SYSTEM.typography.body : CR_DESIGN_SYSTEM.typography.titles);
+  if (opts.centro) tb.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  return tb;
+}
+
 // Anel decorativo (elipse só com contorno, sem preenchimento) — elemento do
 // brandbook reaproveitado do repo Controle de Acessos Megas. Complementa as
 // manchas preenchidas (_capaFundo_) com uma camada mais fina e gráfica.
@@ -261,67 +300,32 @@ function gerarSlideCapa() {
   const DS = CR_DESIGN_SYSTEM;
   const ref = obterMesReferencia_();
 
-  // ── Fundo: foto (quando a cidade tem fotoFundoId) ou fundo escuro padrão ──
-  let comFoto = false;
-  if (projeto.fotoFundoId) {
-    comFoto = _capaFotoFundo_(slide, W, H, projeto.fotoFundoId, { cor: DS.colors.brandDark, alpha: 0.5 });
-  }
-  if (comFoto) {
-    // Scrim lateral esquerdo (escurece p/ o texto ler, some rumo à direita)
-    _capaGradiente_(slide, 0, 0, W * 0.62, H, DS.colors.brandDark, DS.colors.brandDark,
-      { alphaFrom: 0.55, alphaTo: 0.0, steps: 22 });
-    // Anéis + triângulo brancos translúcidos por cima da foto
-    _capaAnel_(slide, W - 260, 60, 420, '#FFFFFF', 1.25, 0.12);
-    _capaAnel_(slide, W - 220, 100, 320, '#FFFFFF', 1,    0.07);
-    _capaTriangulo_(slide, W - 165, 165, 90, '#FFFFFF', 0.08);
-    // Espinha lateral (assinatura), por cima da foto
-    _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
-  } else {
-    _capaFundo_(slide, W, H);
-  }
+  // Fundo: foto com véu leve (a foto precisa aparecer) + degradê em PNG à
+  // esquerda para o texto ler. Sem anéis, triângulos ou espinha: a capa vive
+  // da foto e da tipografia.
+  const comFoto = projeto.fotoFundoId &&
+    _capaFotoFundo_(slide, W, H, projeto.fotoFundoId, { cor: DS.colors.brandDark, alpha: 0.22 });
+  if (comFoto) _capaScrim_(slide, W, H); else _capaFundoLimpo_(slide);
 
-  // Wordmark Capital Realty (topo esquerdo). Sem logo do Mega na capa
-  // (removida por pedido — o nome do Mega já aparece como herói abaixo).
-  _capaWordmark_(slide, 42, 30);
+  _capaWordmark_(slide, 50, 34);
 
-  // Overline espaçado
-  const over = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 44, H * 0.30, W - 200, 20);
-  over.getText().setText(_capaEspacado_('Relatório Operacional de Facilities')).getTextStyle()
-    .setFontSize(9).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
+  const x0 = 50, yT = H * 0.36;
+  _capaTexto_(slide, 'RELATÓRIO OPERACIONAL DE FACILITIES', x0, yT - 30, W - 140, 20, 10, DS.colors.brandSoft);
 
-  // Barra de destaque em gradiente acima do título
-  _capaGradiente_(slide, 46, H * 0.30 + 26, 66, 4, DS.colors.brandLight, '#60A5FA', { steps: 12 });
-
-  // Título principal
-  const titulo = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 40, H * 0.30 + 36, W - 120, 130);
-  titulo.getText().setText('RESULTADOS\nFACILITIES').getTextStyle()
-    .setFontSize(44).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  // O Slides não aceita lineSpacing abaixo de 100 (mínimo "espaçamento
-  // simples" da própria interface) — usar <100 lança "Invalid argument:
-  // spacing" na API.
+  const titulo = _capaTexto_(slide, 'RESULTADOS\nFACILITIES', x0 - 2, yT - 6, W - 140, 110, 44, '#FFFFFF');
+  // O Slides não aceita lineSpacing abaixo de 100 ("Invalid argument: spacing").
   titulo.getText().getParagraphStyle().setLineSpacing(100);
 
-  // Cidade (herói do co-branding)
-  const cidade = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, H * 0.30 + 158, W - 120, 40);
-  cidade.getText().setText(projeto.nome).getTextStyle()
-    .setFontSize(24).setBold(true).setForegroundColor('#60A5FA').setFontFamily(DS.typography.titles);
+  const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0 + 2, yT + 110, 48, 3);
+  barra.getFill().setSolidFill('#60A5FA'); barra.getBorder().setTransparent();
 
-  // Pill de período em gradiente
-  const pillY = H * 0.30 + 202, pillW = 250, pillH = 30;
-  _capaGradiente_(slide, 42, pillY, pillW, pillH, DS.colors.brandMed, DS.colors.brandLight, { steps: 24 });
-  const pillBorda = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 42, pillY, pillW, pillH);
-  pillBorda.getFill().setTransparent();
-  pillBorda.getBorder().getLineFill().setSolidFill('#60A5FA', 0.35); pillBorda.getBorder().setWeight(1);
-  const pillT = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 42, pillY, pillW, pillH);
-  pillT.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-  pillT.getText().setText(ref.nome + ' ' + ref.ano).getTextStyle()
-    .setFontSize(11).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
-  pillT.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  _capaTexto_(slide, projeto.nome, x0, yT + 122, W - 140, 34, 22, '#60A5FA');
+  _capaTexto_(slide, String(ref.nome).toUpperCase() + ' ' + ref.ano, x0, yT + 154, W - 140, 24, 13, '#FFFFFF');
 
-  // Rodapé
-  _capaRodape_(slide, W, H, 'CAPITAL REALTY · INFRAESTRUTURA LOGÍSTICA', 'Expandir Eficiência');
+  const slogan = _capaTexto_(slide, 'Expandir Eficiência', W - 250, H - 40, 210, 20, 9, '#CBD5E1');
+  slogan.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 
-  Logger.log('Slide 00 (Capa única, premium) gerado → ' + ref.label);
+  Logger.log('Slide 00 (Capa) gerado → ' + ref.label);
 }
 
 // ==========================================
@@ -512,39 +516,18 @@ function gerarSoAgendaEsteio()   { setProjetoAtivo('ESTEIO');   gerarSlideAgenda
 // ==========================================
 /**
  * ARQUIVO: Slide_CapaSecao.gs
- * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto), versão premium
+ * COMPONENTE — CAPA DE SEÇÃO (divisória de assunto)
  *
- * Cada seção tem sua ESTÉTICA ÚNICA na FORMA (um "motivo" próprio que remete
- * ao tema — um ícone PNG da pasta do Drive quando existe, senão o desenho
- * nativo em shapes do Slides; ver Slide_IconesCapas.gs) e na FOTO de fundo —
- * mas a COR é uma só, padrão,
- * em todas: o azul #60A5FA, o mesmo destaque já usado na Capa e no
- * Encerramento. Antes cada categoria tinha uma cor diferente (verde,
- * laranja, vermelho...) e ficou com cara de "carnaval" — a marca não
- * autoriza essa variedade toda, então padronizamos:
- *   PREVENTIVA   → grade de plano (calendário)
- *   CORRETIVA    → alerta/exclamação (ação corretiva)
- *   CONTRATADOS  → anéis entrelaçados (parceria)
- *   INTERNOS     → skyline de barras (predial/time)
- *   COMPLEMENTOS → sinal de mais (itens extras, sem categoria própria)
- *   PATRIMONIAL  → cadeado (segurança)
- *   OPERACIONAL  → barras crescentes + seta (financeiro)
- *   UTILITIES    → medidor de energia
- *   SUSTENTAVEL  → anéis de crescimento + broto (ESG)
- *   DOCUMENTACAO → pilha de papéis (jurídico)
+ * Redesenho de 10/11/2026 (pedido do Guilherme: "os símbolos estão feios"):
+ * sem o motivo desenhado em shapes por categoria (grade, alerta, cadeado...,
+ * que pareciam clip-art) e sem a pasta de ícones. A seção se diferencia pela
+ * FOTO de fundo e pelo título; o resto é fixo: linha de contexto (Mega · mês),
+ * título em duas linhas (2ª no azul de destaque), barra curta e o logo.
  *
- * Foto de fundo por CATEGORIA (FOTOS_SECAO em 01_Config.gs, chave passada
- * como 3º argumento). Sem foto → capaFotoId da cidade → fundo escuro premium.
- *
- * PRÉ-REQUISITO: Slide_CapasComuns.gs (helpers _capa*).
+ * Foto por CATEGORIA (FOTOS_SECAO em 01_Config.gs, chave = 3º argumento).
+ * Sem foto da categoria → capaFotoId da cidade → foto da capa (fotoFundoId)
+ * → fundo liso.
  */
-
-// Cor de acento ÚNICA para todas as categorias — o azul #60A5FA, mesmo
-// destaque padrão da Capa e do Encerramento. Não varia por categoria (a
-// diferenciação fica só na forma do motivo e na foto de fundo).
-function _secAcento_(chave) {
-  return '#60A5FA';
-}
 
 function gerarCapaSecao(linha1, linha2, chave) {
   const deck  = getDeckAtivo();
@@ -552,393 +535,66 @@ function gerarCapaSecao(linha1, linha2, chave) {
   const W = deck.getPageWidth(), H = deck.getPageHeight();
   const projeto = getProjetoAtivo();
   const DS = CR_DESIGN_SYSTEM;
+  const ref = obterMesReferencia_();
 
   const k = String(chave || linha2 || '').toUpperCase();
-  const acento = _secAcento_(k);
-  const fotoId = (typeof FOTOS_SECAO !== 'undefined' && FOTOS_SECAO[k]) || projeto.capaFotoId;
+  const fotoId = (typeof FOTOS_SECAO !== 'undefined' && FOTOS_SECAO[k]) || projeto.capaFotoId || projeto.fotoFundoId;
 
-  // ── Fundo: foto da categoria (+ véu/scrim) ou fundo escuro premium ────────
-  let comFoto = false;
-  if (fotoId) comFoto = _capaFotoFundo_(slide, W, H, fotoId, { cor: DS.colors.brandDark, alpha: 0.5 });
-  if (comFoto) {
-    _capaGradiente_(slide, 0, 0, W * 0.62, H, DS.colors.brandDark, DS.colors.brandDark,
-      { alphaFrom: 0.55, alphaTo: 0.0, steps: 22 });
-    _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
-  } else {
-    slide.getBackground().setSolidFill(DS.colors.brandDark);
-    const massa = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, -220, H - 240, 500, 500);
-    massa.getFill().setSolidFill(DS.colors.brandMed, 0.22); massa.getBorder().setTransparent();
-    _capaGradiente_(slide, 0, 0, 6, H, DS.colors.brandLight, DS.colors.brandSoft, { vertical: true, steps: 30 });
-  }
+  const comFoto = fotoId && _capaFotoFundo_(slide, W, H, fotoId, { cor: DS.colors.brandDark, alpha: 0.22 });
+  if (comFoto) _capaScrim_(slide, W, H); else _capaFundoLimpo_(slide);
 
-  // ── Motivo geométrico único da categoria (lado direito) ───────────────────
-  _secDesenharMotivo_(k, slide, W * 0.80, H * 0.36, acento);
+  const x0 = 56, tY = H / 2 - 80;
+  _capaTexto_(slide, projeto.nome.toUpperCase() + '  ·  ' + String(ref.nome).toUpperCase() + ' ' + ref.ano,
+              x0, tY - 28, W - 140, 20, 10, DS.colors.brandSoft);
+  _capaTexto_(slide, linha1, x0 - 2, tY, W - 140, 56, 40, '#FFFFFF');
+  _capaTexto_(slide, linha2, x0 - 2, tY + 48, W - 140, 56, 40, '#60A5FA');
 
-  // ── Título em duas linhas: 1ª branca, 2ª na cor de acento da categoria ────
-  const tY = H / 2 - 110;
-  const t1 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 58, tY, W - 120, 56);
-  t1.getText().setText(linha1).getTextStyle()
-    .setFontSize(38).setBold(true).setForegroundColor('#FFFFFF').setFontFamily(DS.typography.titles);
+  const barra = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x0, tY + 114, 48, 3);
+  barra.getFill().setSolidFill('#60A5FA'); barra.getBorder().setTransparent();
 
-  const t2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 58, tY + 50, W - 120, 56);
-  t2.getText().setText(linha2).getTextStyle()
-    .setFontSize(38).setBold(true).setForegroundColor(acento).setFontFamily(DS.typography.titles);
-
-  // Sublinha curta na cor de acento
-  const sub = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 62, tY + 112, 55, 3);
-  sub.getFill().setSolidFill(acento); sub.getBorder().setTransparent();
-
-  // Subtítulo
-  const st = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, 58, tY + 126, W - 120, 30);
-  st.getText().setText(projeto.nome + ' | Relatório Operacional').getTextStyle()
-    .setFontSize(16).setForegroundColor('#CBD5E1').setFontFamily(DS.typography.body);
-
-  // Wordmark Capital Realty no rodapé esquerdo
-  _capaWordmark_(slide, 58, H - 58, { h: 30 });
+  _capaWordmark_(slide, x0, H - 58, { h: 28 });
 
   Logger.log('Capa de seção: ' + linha1 + ' ' + linha2 + ' [' + k + ']' + (comFoto ? ' (foto)' : ''));
 }
 
 
 // ==========================================
-// MOTIVOS GEOMÉTRICOS POR CATEGORIA
+// TESTE DAS CAPAS (apresentação separada)
 // ==========================================
-// Todos desenhados em torno de (cx, cy), predominância branca translúcida
-// (lê sobre a foto) com UM realce na cor de acento. Só shapes nativos.
+// Gera Capa, três divisórias (uma sem foto própria: Complementos) e o
+// Encerramento numa apresentação NOVA, na mesma pasta do deck da cidade —
+// o deck do mês não é tocado. O link sai no log. Apague o arquivo depois.
+function testarCapasEsteio()   { _testarCapas_('ESTEIO'); }
+function testarCapasCuritiba() { _testarCapas_('CURITIBA'); }
+function testarCapasItajai()   { _testarCapas_('ITAJAI'); }
 
-function _secDesenharMotivo_(chave, s, cx, cy, cor) {
-  // Ícone da pasta do Drive tem precedência, quando existe (ver
-  // Slide_IconesCapas.gs). Sem pasta configurada isso sai na primeira linha
-  // sem nenhuma chamada de rede, e o desenho nativo abaixo continua sendo o
-  // padrão — ele é vetorial e nunca depende de arquivo externo.
-  if (_secIconeCapa_(s, cx, cy, chave)) return;
-
-  switch (chave) {
-    case 'PREVENTIVA':   return _secMotPreventiva_(s, cx, cy, cor);
-    case 'CORRETIVA':    return _secMotCorretiva_(s, cx, cy, cor);
-    case 'CONTRATADOS':  return _secMotContratados_(s, cx, cy, cor);
-    case 'INTERNOS':     return _secMotInternos_(s, cx, cy, cor);
-    case 'COMPLEMENTOS': return _secMotComplementos_(s, cx, cy, cor);
-    case 'PATRIMONIAL':  return _secMotPatrimonial_(s, cx, cy, cor);
-    case 'OPERACIONAL':  return _secMotOperacional_(s, cx, cy, cor);
-    case 'UTILITIES':    return _secMotUtilities_(s, cx, cy, cor);
-    case 'SUSTENTAVEL':  return _secMotSustentavel_(s, cx, cy, cor);
-    case 'DOCUMENTACAO': return _secMotDocumentacao_(s, cx, cy, cor);
-    default:
-      _capaAnel_(s, cx - 80, cy - 70, 150, '#FFFFFF', 1.25, 0.12);
-      _capaAnel_(s, cx - 60, cy - 50, 110, '#FFFFFF', 1, 0.08);
-  }
-}
-
-function _secRet_(s, x, y, w, h, cor, alpha, rounded) {
-  const t = rounded ? SlidesApp.ShapeType.ROUND_RECTANGLE : SlidesApp.ShapeType.RECTANGLE;
-  const r = s.insertShape(t, x, y, w, h);
-  r.getFill().setSolidFill(cor, alpha); r.getBorder().setTransparent();
-  return r;
-}
-
-// PREVENTIVA — grade 3×3 (plano/calendário), célula central em destaque.
-function _secMotPreventiva_(s, cx, cy, cor) {
-  const cell = 22, gap = 9, n = 3, span = n * cell + (n - 1) * gap;
-  const x0 = cx - span / 2, y0 = cy - span / 2;
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-    const x = x0 + c * (cell + gap), y = y0 + r * (cell + gap);
-    const sq = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cell, cell);
-    if (r === 1 && c === 1) {
-      sq.getFill().setSolidFill(cor, 0.9); sq.getBorder().setTransparent();
-    } else {
-      sq.getFill().setTransparent();
-      sq.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.5); sq.getBorder().setWeight(1.5);
-    }
-  }
-}
-
-// CORRETIVA — sinal de alerta (triângulo + exclamação): ação corretiva
-// nasce de um problema identificado — símbolo universal, direto ao ponto.
-function _secMotCorretiva_(s, cx, cy, cor) {
-  const w = 104, h = 92;
-  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - w / 2, cy - h / 2, w, h);
-  tri.getFill().setTransparent();
-  tri.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.55); tri.getBorder().setWeight(2.5);
-
-  const bar = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 4, cy - 8, 8, 26);
-  bar.getFill().setSolidFill(cor, 0.92); bar.getBorder().setTransparent();
-  const dot = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 5, cy + 24, 10, 10);
-  dot.getFill().setSolidFill(cor, 0.92); dot.getBorder().setTransparent();
-}
-
-// CONTRATADOS — dois anéis entrelaçados (parceria/contrato), um em destaque.
-function _secMotContratados_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 56, cy - 36, 72, '#FFFFFF', 2.5, 0.5);
-  _capaAnel_(s, cx - 16, cy - 36, 72, cor, 2.5, 0.85);
-}
-
-// INTERNOS — skyline de barras (predial/time), uma barra em destaque.
-function _secMotInternos_(s, cx, cy, cor) {
-  const alt = [38, 64, 50, 78, 44], bw = 14, gap = 8;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 42;
-  alt.forEach((hh, i) => {
-    const dest = (i === 3);
-    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, dest ? cor : '#FFFFFF', dest ? 0.85 : 0.28, true);
-  });
-  _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
-}
-
-// COMPLEMENTOS — sinal de mais: serviços extras que não têm categoria
-// própria (nem Contratados, nem Internos) — "+" é o símbolo mais direto pra
-// "itens adicionais", sem forçar um objeto literal que nem sempre existe.
-// A barra vertical (destaque) cruza a horizontal (branca) formando o "+".
-function _secMotComplementos_(s, cx, cy, cor) {
-  const comprimento = 92, espessura = 18;
-  _secRet_(s, cx - comprimento / 2, cy - espessura / 2, comprimento, espessura, '#FFFFFF', 0.5, true);
-  _secRet_(s, cx - espessura / 2, cy - comprimento / 2, espessura, comprimento, cor, 0.9, true);
-}
-
-// PATRIMONIAL — cadeado (segurança), miolo (fechadura) em destaque.
-function _secMotPatrimonial_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 20, cy - 42, 40, '#FFFFFF', 3, 0.5);   // arco/shackle
-  const body = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cx - 28, cy - 14, 56, 48);
-  body.getFill().setSolidFill(CR_DESIGN_SYSTEM.colors.brandDark, 0.55);   // cobre a base do arco
-  body.getBorder().getLineFill().setSolidFill('#FFFFFF', 0.6); body.getBorder().setWeight(2.5);
-  const kh = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 6, cy + 2, 12, 12);
-  kh.getFill().setSolidFill(cor, 0.95); kh.getBorder().setTransparent();
-  _secRet_(s, cx - 2, cy + 11, 4, 12, cor, 0.95, false);
-}
-
-// OPERACIONAL — barras crescentes + seta (resultado financeiro), topo em destaque.
-function _secMotOperacional_(s, cx, cy, cor) {
-  const alt = [30, 48, 66, 86], bw = 16, gap = 10;
-  const span = alt.length * bw + (alt.length - 1) * gap, x0 = cx - span / 2, base = cy + 44;
-  alt.forEach((hh, i) => {
-    const last = (i === alt.length - 1);
-    _secRet_(s, x0 + i * (bw + gap), base - hh, bw, hh, last ? cor : '#FFFFFF', last ? 0.85 : 0.3, true);
-  });
-  const tri = s.insertShape(SlidesApp.ShapeType.TRIANGLE, x0 + span - bw - 4, base - alt[3] - 26, 24, 22);
-  tri.getFill().setSolidFill(cor, 0.9); tri.getBorder().setTransparent();
-  _secRet_(s, x0 - 6, base, span + 12, 2, '#FFFFFF', 0.5, false);
-}
-
-// UTILITIES — medidor de energia (corpo + agulha + escala), miolo em
-// destaque. Substitui o sol/raios anterior (não aprovado).
-function _secMotUtilities_(s, cx, cy, cor) {
-  const R = 46;
-  // Corpo do medidor (semicírculo aproximado por anel + máscara)
-  _capaAnel_(s, cx - R, cy - R, R * 2, '#FFFFFF', 2.5, 0.5);
-  // Escala: tracinhos ao redor do arco superior
-  for (let i = 0; i <= 6; i++) {
-    const a = (200 - i * 40) * Math.PI / 180;   // varre ~200° a -40°
-    const x1 = cx + Math.cos(a) * (R - 10), y1 = cy - Math.sin(a) * (R - 10);
-    const x2 = cx + Math.cos(a) * (R - 2),  y2 = cy - Math.sin(a) * (R - 2);
-    const tick = s.insertShape(SlidesApp.ShapeType.RECTANGLE, Math.min(x1, x2), Math.min(y1, y2), 2.5, 2.5);
-    tick.getFill().setSolidFill('#FFFFFF', 0.6); tick.getBorder().setTransparent();
-  }
-  // Agulha apontando para cima-direita (consumo alto) na cor de acento
-  const agulha = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 1.5, cy - R * 0.68, 3, R * 0.68);
-  agulha.getFill().setSolidFill(cor, 0.95); agulha.getBorder().setTransparent();
-  agulha.setRotation(35);
-  const eixo = s.insertShape(SlidesApp.ShapeType.ELLIPSE, cx - 8, cy - 8, 16, 16);
-  eixo.getFill().setSolidFill(cor, 0.95); eixo.getBorder().setTransparent();
-  // Base do medidor
-  _secRet_(s, cx - 34, cy + 4, 68, 8, '#FFFFFF', 0.5, true);
-}
-
-// SUSTENTAVEL — anéis de crescimento (troncos) + broto no topo: gestão
-// sustentável / ESG, sem depender de sol/energia literal.
-function _secMotSustentavel_(s, cx, cy, cor) {
-  _capaAnel_(s, cx - 58, cy - 46, 116, '#FFFFFF', 1.25, 0.14);
-  _capaAnel_(s, cx - 40, cy - 28, 80,  '#FFFFFF', 1.25, 0.28);
-  _capaAnel_(s, cx - 20, cy - 8,  40,  cor, 1.75, 0.9);
-
-  const caule = s.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - 2, cy - 66, 4, 22);
-  caule.getFill().setSolidFill(cor, 0.85); caule.getBorder().setTransparent();
-  const f1 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx - 20, cy - 80, 20, 18);
-  f1.getFill().setSolidFill(cor, 0.85); f1.getBorder().setTransparent(); f1.setRotation(-25);
-  const f2 = s.insertShape(SlidesApp.ShapeType.TRIANGLE, cx,      cy - 80, 20, 18);
-  f2.getFill().setSolidFill(cor, 0.85); f2.getBorder().setTransparent(); f2.setRotation(25);
-}
-
-// DOCUMENTACAO — pilha de papéis (jurídico), faixa superior em destaque.
-function _secMotDocumentacao_(s, cx, cy, cor) {
-  _secRet_(s, cx - 30 + 14, cy - 40 + 14, 56, 74, '#FFFFFF', 0.25, true);
-  _secRet_(s, cx - 30 + 7,  cy - 40 + 7,  56, 74, '#FFFFFF', 0.4,  true);
-  _secRet_(s, cx - 30, cy - 40, 56, 74, '#FFFFFF', 0.92, true);
-  _secRet_(s, cx - 30, cy - 40, 56, 9, cor, 0.9, false);
-  for (let i = 0; i < 4; i++) {
-    _secRet_(s, cx - 22, cy - 18 + i * 12, i === 3 ? 24 : 40, 3, '#94A3B8', 0.9, false);
-  }
-}
-
-// ==========================================
-// ÍCONES DE SEÇÃO (GOOGLE DRIVE / NATIVO)
-// ==========================================
-/**
- * ARQUIVO: Slide_IconesCapas.gs
- * ÍCONES DAS CAPAS DE SEÇÃO — pasta do Google Drive
- *
- * Mesma ideia dos logos de cliente (Slide_LogosClientes.gs): a imagem mora no
- * Drive e o código só a encaixa no slide. A diferença é que aqui NÃO tem mapa
- * de IDs de arquivo — o ícone é procurado pelo NOME dentro de UMA pasta. Para
- * trocar o ícone de uma seção basta substituir o arquivo na pasta; nada de
- * editar código e reimplantar.
- *
- * ┌─ COMO CONFIGURAR ────────────────────────────────────────────────────────┐
- * │ 1. Crie uma pasta no Drive (ex.: "Ícones — Capas de Seção") e compartilhe │
- * │    com a conta que roda o script.                                        │
- * │ 2. Cole o ID da pasta em ICONES_CAPAS_PASTA_ID abaixo (o ID é o trecho    │
- * │    depois de /folders/ na URL).                                          │
- * │ 3. Ponha um arquivo PNG por seção, com os nomes de _ICONES_CAPAS_ARQUIVO_ │
- * │    (preventiva.png, corretiva.png, ...).                                  │
- * └──────────────────────────────────────────────────────────────────────────┘
- *
- * PNG, NÃO SVG. A API do Slides aceita apenas PNG, JPEG e GIF — um SVG na
- * pasta seria recusado com erro obscuro na hora de gerar. Por isso o tipo do
- * arquivo é conferido ANTES de inserir e um SVG vira um aviso claro no Logger
- * (ver _iconeCapaFormatoOk_).
- *
- * O ícone precisa ser CLARO (branco/quase branco) e com fundo transparente: a
- * capa é uma foto escurecida, e um ícone preto simplesmente some. Diferente do
- * motivo desenhado, uma imagem não pode ser recolorida pelo código.
- *
- * NADA É OBRIGATÓRIO. Sem pasta configurada, sem arquivo, arquivo inacessível
- * ou em formato errado, a capa desenha o motivo geométrico nativo de sempre
- * (_secDesenharMotivo_ em Slide_CapaSecao.gs) — que é vetorial e continua
- * sendo o padrão até alguém povoar a pasta.
- */
-
-// ID da pasta do Drive com os ícones — a mesma pasta de assets do projeto
-// (onde já moram os logos Mega e as subpastas CR/, CLIENTES/, FOTOS MEGAS/).
-// Só os arquivos SOLTOS na pasta são procurados; subpasta não é vasculhada.
-// Vazio = recurso desligado: nenhuma chamada ao Drive e capas 100% nativas.
-const ICONES_CAPAS_PASTA_ID = '1LDDbVpH0zAwUeQR7cu7bTOqg74Fa5Yks';
-
-// Chave da seção (a mesma de _secDesenharMotivo_) → nome do arquivo na pasta,
-// sem extensão. A extensão é resolvida por _ICONES_CAPAS_EXTENSOES_.
-const _ICONES_CAPAS_ARQUIVO_ = {
-  'PREVENTIVA'  : 'preventiva',
-  'CORRETIVA'   : 'corretiva',
-  'CONTRATADOS' : 'contratados',
-  'INTERNOS'    : 'internos',
-  'PATRIMONIAL' : 'patrimonial',
-  'OPERACIONAL' : 'operacional',
-  'UTILITIES'   : 'utilities',
-  'SUSTENTAVEL' : 'sustentavel',
-  'DOCUMENTACAO': 'documentacao'
-};
-
-// Extensões tentadas, em ordem. PNG primeiro: é o que preserva transparência
-// e traço fino de ícone sem artefato de compressão.
-const _ICONES_CAPAS_EXTENSOES_ = ['png', 'jpg', 'jpeg', 'gif'];
-
-// Formatos que a API do Slides aceita em insertImage.
-const _ICONES_CAPAS_MIMES_OK_ = ['image/png', 'image/jpeg', 'image/gif'];
-
-// Lado da caixa (pt) onde o ícone é encaixado, centrada no mesmo ponto do
-// motivo nativo. _insertLogoFit_ preenche o MÁXIMO da caixa sem distorcer,
-// então ícone quadrado e ícone largo ocupam a mesma área visual.
-const ICONE_CAPA_BOX_PT = 108;
-
-// Cache por chave de seção, inclusive dos MISSES (valor null): sem isso, um
-// deck das três cidades repetiria a mesma busca no Drive a cada capa.
-const _iconeCapaCache_ = {};
-
-// Índice nome→arquivo da pasta, montado UMA vez por execução.
-//
-// Vale a pena listar a pasta inteira em vez de perguntar arquivo por arquivo:
-// com getFilesByName seriam 4 consultas (uma por extensão) × 9 seções = 36
-// idas ao Drive quando a pasta ainda não tem ícone nenhum — que é justamente
-// o estado inicial. Assim é 1 só. De quebra, o índice é minúsculo, então
-// "Preventiva.PNG" também é encontrado (o Drive diferencia maiúsculas).
-let _iconeCapaIndice_ = null;
-
-function _iconesCapaIndice_() {
-  if (_iconeCapaIndice_) return _iconeCapaIndice_;
-  const idx = {};
+function _testarCapas_(chave) {
+  setProjetoAtivo(chave);
+  const projeto = getProjetoAtivo();
+  const nova = SlidesApp.create('TESTE CAPAS — ' + projeto.nome + ' — ' +
+    Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM HH:mm'));
+  const id = nova.getId();
+  nova.saveAndClose();
   try {
-    const it = DriveApp.getFolderById(ICONES_CAPAS_PASTA_ID).getFiles();
-    while (it.hasNext()) {
-      const f = it.next();
-      idx[String(f.getName() || '').toLowerCase()] = f;
-    }
+    const pastas = DriveApp.getFileById(projeto.presentationId).getParents();
+    if (pastas.hasNext()) DriveApp.getFileById(id).moveTo(pastas.next());
   } catch (e) {
-    Logger.log('Ícones das capas: pasta do Drive inacessível (' + e.message +
-               ') — usando os motivos desenhados.');
-  }
-  _iconeCapaIndice_ = idx;
-  return idx;
-}
-
-// Devolve o Blob do ícone da seção, ou null (sem pasta, sem arquivo, arquivo
-// inacessível ou formato não suportado). Nunca lança.
-function _getIconeCapaBlob_(chave) {
-  if (!ICONES_CAPAS_PASTA_ID) return null;
-
-  const nomeBase = _ICONES_CAPAS_ARQUIVO_[String(chave || '').toUpperCase()];
-  if (!nomeBase) return null;
-
-  if (nomeBase in _iconeCapaCache_) return _iconeCapaCache_[nomeBase];
-
-  const idx = _iconesCapaIndice_();
-  let achado = null;
-  for (let i = 0; i < _ICONES_CAPAS_EXTENSOES_.length && !achado; i++) {
-    achado = idx[nomeBase + '.' + _ICONES_CAPAS_EXTENSOES_[i]] || null;
-  }
-  if (!achado) {
-    Logger.log('Ícone da capa "' + chave + '": nenhum arquivo "' + nomeBase +
-               '.(png|jpg|gif)" na pasta — usando o motivo desenhado.');
+    Logger.log('Teste das capas: não moveu para a pasta do deck (' + e.message + ') — ficou no Meu Drive.');
   }
 
-  let blob = null;
-  if (achado) {
-    try {
-      const b = achado.getBlob();
-      blob = _iconeCapaFormatoOk_(b, chave, achado.getName()) ? b : null;
-    } catch (e) {
-      Logger.log('Ícone da capa "' + chave + '": arquivo não abriu (' + e.message + ').');
-    }
-  }
-
-  _iconeCapaCache_[nomeBase] = blob;
-  return blob;
-}
-
-// O erro do Slides para formato não suportado não diz qual arquivo causou o
-// problema — conferir aqui transforma isso num aviso acionável.
-function _iconeCapaFormatoOk_(blob, chave, nomeArquivo) {
-  const mime = String(blob.getContentType() || '').toLowerCase();
-  if (_ICONES_CAPAS_MIMES_OK_.indexOf(mime) >= 0) return true;
-  Logger.log('Ícone da capa "' + chave + '": "' + nomeArquivo + '" é ' + (mime || 'de tipo desconhecido') +
-             '. O Slides só aceita PNG, JPEG e GIF' +
-             (mime.indexOf('svg') >= 0 ? ' — converta o SVG para PNG (512px, traço branco, fundo transparente).' : '.') +
-             ' Usando o motivo desenhado.');
-  return false;
-}
-
-// Desenha o ícone da seção centrado em (cx, cy). Devolve true se desenhou —
-// false manda o chamador cair no motivo geométrico nativo.
-function _secIconeCapa_(slide, cx, cy, chave) {
-  const blob = _getIconeCapaBlob_(chave);
-  if (!blob) return false;
+  _presentationIdTeste_ = id;
   try {
-    const b = ICONE_CAPA_BOX_PT;
-    _insertLogoFit_(slide, blob, cx - b / 2, cy - b / 2, b, b);
-    return true;
-  } catch (e) {
-    Logger.log('Ícone da capa "' + chave + '": não inseriu no slide (' + e.message + ').');
-    return false;
+    [
+      () => gerarSlideCapa(),
+      () => gerarCapaSecao('RESULTADO', 'OPERACIONAL', 'OPERACIONAL'),
+      () => gerarCapaSecao('MANUTENÇÃO', 'PREVENTIVA', 'PREVENTIVA'),
+      () => gerarCapaSecao('SERVIÇOS', 'COMPLEMENTARES', 'COMPLEMENTOS'),
+      () => gerarSlideEncerramento()
+    ].forEach(fn => { fn(); _salvarDeck_(); });
+    getDeckAtivo().getSlides()[0].remove();   // slide de título em branco que o create() traz
+    _salvarDeck_();
+  } finally {
+    _presentationIdTeste_ = null;
   }
-}
-
-// Diagnóstico manual: roda pela pasta e diz, seção a seção, o que está pronto
-// e o que falta. Use depois de povoar a pasta, antes de gerar o deck.
-function conferirIconesCapas() {
-  if (!ICONES_CAPAS_PASTA_ID) {
-    Logger.log('ICONES_CAPAS_PASTA_ID vazio — as capas usam o motivo desenhado (padrão atual).');
-    return;
-  }
-  _iconeCapaIndice_ = null;   // relê a pasta: o arquivo pode ter acabado de entrar
-  Object.keys(_ICONES_CAPAS_ARQUIVO_).forEach(chave => {
-    delete _iconeCapaCache_[_ICONES_CAPAS_ARQUIVO_[chave]];
-    const blob = _getIconeCapaBlob_(chave);
-    Logger.log((blob ? '✓ ' : '· ') + chave + (blob ? ' → ' + blob.getContentType() : ' → motivo desenhado'));
-  });
+  Logger.log('Teste das capas (' + projeto.nome + '): https://docs.google.com/presentation/d/' + id + '/edit');
 }

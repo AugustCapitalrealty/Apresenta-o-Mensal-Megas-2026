@@ -115,8 +115,7 @@ function onOpen() {
     .addSubMenu(ui.createMenu('🔍 Diagnósticos & Auditoria')
       .addItem('Conferir 22 arquivos no editor', 'diagnosticarArquivos')
       .addItem('Diagnosticar Backlog (Estoque × Fluxo)', 'diagnosticarBacklog')
-      .addItem('Check de Consistência (Slide Descartável)', 'gerarSlideCheckConsistencia')
-      .addItem('Conferir Ícones das Capas no Drive', 'conferirIconesCapas'))
+      .addItem('Check de Consistência (Slide Descartável)', 'gerarSlideCheckConsistencia'))
     .addToUi();
 }
 
@@ -192,7 +191,7 @@ const _MEGAS_DEPENDENCIAS_ = [
   ['02_Dados.gs',             ['obterMesReferencia_', 'obterDadosDashboard', 'obterDadosPreventivas', 'obterDadosCorretivasV6', 'obterDadosTempo', 'obterDadosFinanceiro', 'obterDadosCustoM2', 'obterDadosBacklogClientesFacilities_', 'obterDadosBacklogClientesProperties_']],
   ['04_Diagnosticos.gs',      ['diagnosticarArquivos', 'diagnosticarBacklog', 'listarColunasBdCorretivas', 'gerarSlideCheckConsistencia']],
   ['05_Suporte.gs',           ['marcarFinalCuritiba', 'registrarHistoricoDados_', 'gerarEmailMensalCuritiba']],
-  ['10_Slide_Capas.gs',       ['gerarSlideCapa', 'gerarCapaSecao', 'gerarSlideContraCapa', 'gerarSlideAgenda', '_capaFundo_', 'conferirIconesCapas']],
+  ['10_Slide_Capas.gs',       ['gerarSlideCapa', 'gerarCapaSecao', 'gerarSlideContraCapa', 'gerarSlideAgenda', '_capaFundo_', '_capaScrim_']],
   ['11_Slide_Destaques.gs',   ['gerarSlideDestaques']],
   ['12_Slide_Dashboard.gs',   ['gerarSlideDashboard']],
   ['13_Slide_Metas.gs',       ['gerarSlidesMetas', 'gerarSlidesMetasGuilherme', 'gerarFarolGuilherme']],
