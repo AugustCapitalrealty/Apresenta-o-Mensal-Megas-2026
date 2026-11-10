@@ -137,6 +137,7 @@ const TAG_DRE_MANUTENCAO            = '【PROP_DRE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_MANUTENCAO         = '【PROP_BRIDGE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_GRAFICO            = '【PROP_BRIDGE_GRAFICO_AUTO】';
 const TAG_PENDENCIAS                = '【PROP_PENDENCIAS_AUTO】';
+// Slide retirado em 10/11/2026; a tag fica para limpar decks antigos.
 const TAG_DEMORA_CRONICA            = '【PROP_DEMORA_CRONICA_AUTO】';
 
 // ==========================================

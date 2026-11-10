@@ -1,6 +1,6 @@
-// node teste_demora_cronica.js — feedback da diretoria de 31/10/2026:
-//   · descrições inteiras, com o local (Backlog de Clientes e Emergencial);
-//   · slide Demora Crônica (> 180 dias): onde travou + análise da equipe.
+// node teste_descricoes.js — feedback da diretoria de 31/10/2026: descrições
+// inteiras, com o local (Backlog de Clientes e Emergencial). O slide Demora
+// Crônica, feito na mesma leva, foi retirado em 10/11/2026.
 // Dublês de Slides e da planilha; os chamados são inventados no formato do BD-CORRETIVAS.
 const fs = require('fs');
 const path = require('path');
@@ -133,36 +133,6 @@ checa(!bkc.some(s => /NÃO FOI GERADO/.test(textoDe(s))), 'sem aviso de falha');
         'cliente com 14 chamados longos: ' + pgs.length + ' páginas, nenhum perdido');
   checa(pgs.slice(1).every(p => p[0].continua), 'a partir da 2ª página o grupo diz "cont."');
 }
-
-console.log('\n== Demora crônica ==');
-// O Backlog de Clientes já está no deck; um slide à mão depois dele.
-slides.push(novoSlide()); slides[slides.length - 1].nota = 'FOTOS À MÃO';
-const d = obterDemoraCronica_();
-checa(d.itens.length === 3, '3 chamados > 180 dias (os emergenciais de setembro e o fechado ficam fora)');
-checa(d.itens[0].id === '2844117' && d.itens[0].dias > 1700, 'o mais antigo primeiro (' + d.itens[0].dias + 'd)');
-checa(d.porEtapa.SEM_APROVACAO === 1 && d.porEtapa.PAUSADO === 1 && d.porEtapa.NAO_INICIADO === 1, 'uma etapa para cada');
-const pausado = d.itens.find(i => i.id === '6389786');
-checa(/^Pausado — Orçamento 2027 \(desde 01\/03\/26/.test(pausado.travou), 'pausado diz o motivo e desde quando: ' + pausado.travou);
-checa(/^Aprovado em 25\/05\/26, não iniciado/.test(d.itens.find(i => i.id === '18190018').travou), 'aprovado e não iniciado');
-checa(/Sem análise da equipe\. Último status: "Aguardando 3ª proposta"/.test(d.itens.find(i => i.id === '18190018').porque),
-      'sem análise: mostra o último status do BD');
-checa(abaDemora && abaDemora[0][0] === 'Id chamado' && abaDemora.length === 4, 'aba criada com cabeçalho + 3 chamados para preencher');
-
-// A equipe preenche um; a 2ª rodada lê e não duplica.
-const linha = abaDemora.findIndex(r => r[0] === '6389786');
-abaDemora[linha][6] = 'Piso fora do orçamento 2026'; abaDemora[linha][7] = 'Incluir no orçamento 2027';
-abaDemora[linha][8] = 'Ricardo'; abaDemora[linha][9] = '15/01/2027';
-gerarSlideDemoraCronica();
-checa(abaDemora.length === 4, '2ª rodada não duplica linhas');
-const dem = slides.filter(s => /PROP_DEMORA_CRONICA/.test(s.nota));
-const t = dem.map(textoDe).join(' ');
-checa(/Causa: Piso fora do orçamento 2026 · Ação: Incluir no orçamento 2027 \(Ricardo, até 15\/01\/2027\)/.test(t), 'análise da equipe no slide');
-checa(/1 de 3/.test(t), 'cartão "com análise da equipe: 1 de 3"');
-const iUlt = slides.map(s => s.nota).lastIndexOf(slides.filter(s => /PROP_BACKLOG_CLIENTES/.test(s.nota)).pop().nota);
-checa(/PROP_DEMORA_CRONICA/.test(slides[iUlt + 1].nota) && slides[slides.length - 1].nota === 'FOTOS À MÃO',
-      'vai logo depois do Backlog de Clientes, antes dos slides à mão');
-checa(dem.every(dentro), 'nada fora da página');
-checa(!/NÃO FOI GERADO/.test(t), 'sem aviso de falha');
 
 console.log(falhas ? '\n✗ ' + falhas + ' de ' + total + ' falharam' : '\n✓ ' + total + '/' + total + ' passaram');
 process.exitCode = falhas ? 1 : 0;

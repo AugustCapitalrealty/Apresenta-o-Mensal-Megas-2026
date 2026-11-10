@@ -48,10 +48,8 @@ function onOpen() {
       .addItem('Backlog Emergencial (Detalhe)', 'gerarSoBacklogEmergencial')
       .addItem('Chamados Pendentes (Motivos)', 'gerarSoChamadosPendentes')
       .addItem('Backlog de Clientes (Properties)', 'gerarSoBacklogClientes')
-      .addItem('Demora Crônica (> 180 dias)', 'gerarSoDemoraCronica')
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
-      .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
       .addItem('Monitoramento de Pendências (VistoriaPro)', 'gerarSoPendencias')
       .addItem('DRE — Propriedades (Desp. Operacionais)', 'gerarSoDREPropriedades')
       .addItem('DRE — Manutenção', 'gerarSoDREManutencao')
@@ -106,7 +104,6 @@ const _PROP_DEPENDENCIAS_ = [
   ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_', '_capasDeckDoMes_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
   ['06_ImportarControladoria.gs',   ['importarExportControladoria', '_importarControladoria_', '_controladoriaLer_']],
-  ['23_Slide_DemoraCronica.gs',     ['gerarSlideDemoraCronica', 'obterDemoraCronica_', '_demoraEtapa_', '_demoraAnalise_', 'gerarSoDemoraCronica']],
 ];
 
 function _propConferirProjeto_() {
@@ -170,11 +167,15 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
     { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
-    // Logo depois do Backlog de Clientes, sozinho (23_Slide_DemoraCronica.gs).
-    { nome: 'Demora Crônica',                fn: gerarSlideDemoraCronica },
+    // Demora Crônica saiu (Guilherme, 10/11/2026: "não gostei, tire"). O passo só
+    // remove o slide de decks gerados antes.
+    { nome: 'Demora Crônica (retirado)',     fn: () => _slideLimpar_(getDeckMensal_(), TAG_DEMORA_CRONICA) },
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
-    { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },
+    // Torre de Manutenção (Capital Realty e Demercado) saiu (Guilherme, 10/11/2026).
+    // O passo só remove os slides de decks gerados antes; o DRE já abre a
+    // manutenção por imóvel.
+    { nome: 'Torre de Manutenção (retirada)', fn: () => _slideLimpar_(getDeckMensal_(), TAG_TORRE_MANUTENCAO) },
     // Vai para depois da capa da seção 5 (VISTORIAS) sozinho — a posição no pipeline não importa.
     { nome: 'Monitoramento de Pendências',   fn: gerarSlidePendenciasVistorias },
     { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
@@ -210,6 +211,20 @@ function gerarApresentacaoNoDeckDoMes() {
   Logger.log('▶ Deck do mês: ' + arq.getName());
   _deckAlvoId_ = arq.getId();
   try { return gerarApresentacaoPropriedades(); } finally { _deckAlvoId_ = ''; }
+}
+
+// Tira da cópia do mês os slides retirados em 10/11/2026 (Demora Crônica e as duas
+// Torres de Manutenção), sem regerar o resto.
+function retirarSlidesRetiradosDoDeckDoMes() {
+  const arq = _capasDeckDoMes_(obterMesReferencia_());
+  if (!arq) { Logger.log('✗ Deck do mês não encontrado — nada alterado.'); return; }
+  _deckAlvoId_ = arq.getId();
+  try {
+    const antes = getDeckMensal_().getSlides().length;
+    _slideLimpar_(getDeckMensal_(), TAG_DEMORA_CRONICA);
+    _slideLimpar_(getDeckMensal_(), TAG_TORRE_MANUTENCAO);
+    Logger.log('✓ ' + arq.getName() + ': ' + (antes - getDeckMensal_().getSlides().length) + ' slide(s) removido(s) (Demora Crônica e Torre de Manutenção).');
+  } finally { _deckAlvoId_ = ''; }
 }
 
 function gerarTodosOsSlides() {

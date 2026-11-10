@@ -33,7 +33,7 @@
 // casa = o texto que identifica a capa feita à mão (junto com "APRESENTAÇÃO MENSAL").
 const SECOES_MENSAL = [
   { n: 1, casa: 'FINANCEIRO',             titulo: 'Financeiro',
-    frase: 'DRE, bridge, torre de manutenção e CAPEX' },
+    frase: 'DRE das despesas e bridge da manutenção' },
   { n: 2, casa: 'MANUTENÇÕES',            titulo: 'Manutenções',
     frase: 'Preventivas, corretivas e backlog de chamados' },
   { n: 3, casa: 'GESTÃO DE CONTRATAÇÕES', titulo: 'Gestão de Contratações',

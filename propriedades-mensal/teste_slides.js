@@ -217,7 +217,6 @@ const PASSOS = [
   ['Backlog Emergencial',    () => gerarSlideBacklogEmergencialDetalhe()],
   ['Chamados Pendentes',     () => gerarSlideChamadosPendentes()],
   ['Backlog de Clientes',    () => gerarSlideBacklogClientesProperties()],
-  ['Demora Crônica',         () => gerarSlideDemoraCronica()],
   ['Recebimento de Obras',   () => gerarSlideRecebimentoObras()],
   ['Gestão de Contratações', () => gerarSlideContratacoes()],
   ['Torre de Manutenção',    () => gerarSlideTorreManutencao()],
