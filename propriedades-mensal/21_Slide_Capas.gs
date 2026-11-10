@@ -280,7 +280,8 @@ function _capaSecaoDesenho_(slide, W, H, sec, ref) {
 // O pipeline grava no deck modelo (DECK_PROPRIEDADES_ID); o enviado é a cópia
 // do mês, montada à mão a partir dele. As capas feitas à mão na cópia ficavam
 // com o mês da cópia anterior (setembro/2026 saiu com "AGOSTO 2026" em cinco
-// capas de seção). Aqui só as capas rodam na cópia: os outros passos apagam e
+// capas de seção). Aqui só as capas rodam na cópia (o deck inteiro na cópia é
+// gerarApresentacaoNoDeckDoMes, 00_Main.gs, que troca no mesmo lugar). Antes: os outros passos apagam e
 // recolocam slides no fim, o que bagunçaria a ordem montada à mão.
 function gerarCapasNoDeckDoMes() {
   const ref = obterMesReferencia_();
@@ -298,7 +299,8 @@ function gerarCapasNoDeckDoMes() {
 // A cópia do mês fica na mesma pasta do modelo. Compara sem acento, "/", "-" e espaços
 // extras: o título é "… - SETEMBRO/2026", o Drive para Windows mostra "… - SETEMBRO 2026".
 function _capasDeckDoMes_(ref) {
-  const chave = s => _norm_(String(s).replace(/[\/\-–]/g, ' '));
+  // Sem o prefixo "NN - " que a pasta ganhou em 06/11/2026 ("10 - APRESENTAÇÃO …").
+  const chave = s => _norm_(String(s).replace(/[\/\-–]/g, ' ')).replace(/^\d+ /, '');
   const alvo = chave('APRESENTAÇÃO PROPRIEDADES ' + ref.nome + ' ' + ref.ano);
   const pastas = DriveApp.getFileById(DECK_PROPRIEDADES_ID).getParents();
   while (pastas.hasNext()) {

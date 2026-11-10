@@ -104,8 +104,9 @@ const VISTORIAS_API_URL = 'https://klaaeqoaqfuhepjoznad.supabase.co/functions/v1
 // https://docs.google.com/presentation/d/1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY/edit
 const DECK_PROPRIEDADES_ID = '1hU2a_7dms3fQV6bLBcVWIrNgmoE_ePg2aq-oUf9MNLY';
 
-// Deck alvo da execução em curso. Vazio = o modelo acima. Só gerarCapasNoDeckDoMes()
-// (21_Slide_Capas.gs) aponta para a cópia do mês, e só enquanto roda.
+// Deck alvo da execução em curso. Vazio = o modelo acima. gerarCapasNoDeckDoMes()
+// (21_Slide_Capas.gs) e gerarApresentacaoNoDeckDoMes() (00_Main.gs) apontam para a
+// cópia do mês, e só enquanto rodam.
 let _deckAlvoId_ = '';
 
 function getDeckMensal_() {

@@ -34,6 +34,7 @@ function onOpen() {
   ui.createMenu('🏢 Propriedades 2026')
     .addItem('▶ Gerar Todos os Slides', 'gerarTodosOsSlides')
     .addItem('▶ Gerar Apresentação Completa', 'gerarApresentacaoPropriedades')
+    .addItem('▶ Gerar no Deck do Mês (cópia enviada)', 'gerarApresentacaoNoDeckDoMes')
     .addItem('📊 Gerar / Atualizar Dashboard', 'gerarSoDashboard')
     .addItem('📋 Gerar Só Tabelas (Obras + Contratações)', 'gerarTabelasPropriedades')
     .addSeparator()
@@ -100,7 +101,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['18_Slide_TorreManutencao.gs',   ['gerarSlideTorreManutencao']],
   ['19_Slide_DREBridge.gs',         ['gerarSlideDREPropriedades', 'gerarSlideDREManutencao', 'gerarSlideBridgeManutencao', 'gerarSlideBridgeManutencaoGrafico', '_drePosicionarNaSecao_', '_dreFalha_']],
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
-  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_']],
+  ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_', '_capasDeckDoMes_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
 ];
 
@@ -185,6 +186,23 @@ function gerarApresentacaoPropriedades() {
 /**
  * PONTO DE ENTRADA: Gera todos os slides da Apresentação Mensal de Propriedades.
  */
+// A cópia do mês ("APRESENTAÇÃO PROPRIEDADES - <MÊS>/<ANO>", na pasta do
+// modelo) é a que vai para a diretoria. Gera nela, trocando cada slide
+// automático no mesmo lugar (_passoNoLugar_); Destaques, fotos de serviços e
+// os outros slides feitos à mão não têm tag e não são tocados.
+function gerarApresentacaoNoDeckDoMes() {
+  const ref = obterMesReferencia_();
+  const arq = _capasDeckDoMes_(ref);
+  if (!arq) {
+    Logger.log('✗ Não achei "APRESENTAÇÃO PROPRIEDADES - ' + ref.nome + '/' + ref.ano +
+               '" na pasta do deck modelo — nada alterado. Confira o nome da cópia e o CONFIG!B1.');
+    return ['Deck do mês não encontrado'];
+  }
+  Logger.log('▶ Deck do mês: ' + arq.getName());
+  _deckAlvoId_ = arq.getId();
+  try { return gerarApresentacaoPropriedades(); } finally { _deckAlvoId_ = ''; }
+}
+
 function gerarTodosOsSlides() {
   return gerarApresentacaoPropriedades();
 }
@@ -243,7 +261,9 @@ function _rodarPassos_(passos) {
   const erros = [];
   passos.forEach(p => {
     try {
+      const antes = _passoFotoDeck_();
       p.fn();
+      _passoNoLugar_(antes, p.nome);
       Logger.log('  ✓ ' + p.nome);
     } catch (e) {
       erros.push(p.nome + ': ' + e.message);
@@ -252,6 +272,42 @@ function _rodarPassos_(passos) {
   });
   if (erros.length) Logger.log('  ' + erros.length + ' slide(s) com erro.');
   return erros;
+}
+
+// TROCA NO MESMO LUGAR. Cada gerador apaga os slides da rodada anterior pela
+// tag e cria os novos com appendSlide — no FIM do deck. No modelo isso não
+// importava; na cópia do mês, cuja ordem é montada à mão, jogaria Dashboard,
+// Preventivas etc. para depois do encerramento. Aqui, depois de cada passo,
+// os slides novos vão para a posição do primeiro que foi apagado.
+// Só age no caso "apagou e recriou no fim": quem já se posiciona sozinho
+// (capa, capas de seção, DRE/Bridge, Pendências) não fica no fim e é deixado
+// como está; slide que não existia antes (1ª geração) fica no fim.
+function _passoFotoDeck_() {
+  try { return getDeckMensal_().getSlides().map(s => s.getObjectId()); } catch (e) { return null; }
+}
+
+function _passoNoLugar_(antes, nome) {
+  if (!antes) return;
+  try {
+    const slides = getDeckMensal_().getSlides();
+    const ids = slides.map(s => s.getObjectId());
+    const eraAntes = {}, eAgora = {};
+    antes.forEach(id => { eraAntes[id] = true; });
+    ids.forEach(id => { eAgora[id] = true; });
+    let lugar = -1;
+    for (let i = 0; i < antes.length && lugar < 0; i++) if (!eAgora[antes[i]]) lugar = i;
+    const novos = [];
+    ids.forEach((id, i) => { if (!eraAntes[id]) novos.push(i); });
+    if (lugar < 0 || !novos.length) return;
+    const ultimo = novos[novos.length - 1];
+    if (ultimo !== ids.length - 1 || ultimo - novos[0] !== novos.length - 1) return;   // não estão juntos no fim
+    if (lugar >= novos[0]) return;                                                     // já estão no lugar
+    // Slide.move(i) conta na ordem ANTES de mover; os novos estão todos depois de lugar + k.
+    novos.forEach((i, k) => slides[i].move(lugar + k));
+    Logger.log('    ↳ ' + nome + ': ' + novos.length + ' slide(s) no lugar dos antigos (a partir do ' + (lugar + 1) + 'º).');
+  } catch (e) {
+    Logger.log('    ↳ ' + nome + ': ficou no fim do deck (' + e.message + ').');
+  }
 }
 
 
