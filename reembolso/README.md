@@ -208,6 +208,7 @@ financeiro (08/10/2026, ~33 min — ver [`Ata_Entrevista_Financeiro.md`](Ata_Ent
 
 ## 11. Arquivos desta pasta
 
+- `HANDOFF.md` — resumo para retomar em outra sessão (leia primeiro).
 - `README.md` — este documento.
 - `Diagnostico_Reembolsos_CapitalRealty.xlsx` — planilha com as abas: Visão Geral, Dores Consolidadas, Matriz Dor x Pessoa, entrevistas individuais (Wilson, Cadu, Jonatas, Ricardo, Financeiro), Preservar, Ideias de Solução, Próximos Passos.
 - `Ata_Entrevista_Financeiro.md` — respostas como anotadas + leitura para o diagnóstico.
