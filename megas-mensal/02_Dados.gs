@@ -1619,6 +1619,11 @@ function obterDadosCorretivasV6() {
     kpiData.mFechados = String(fluxo.mFechados);
     kpiData.aCriados  = String(fluxo.aCriados);
     kpiData.aFechados = String(fluxo.aFechados);
+    // Tempo médio (horas corridas) também do BD — mês e acumulado com o mesmo
+    // cálculo. Antes o acumulado, sem fonte, repetia o valor do mês.
+    const fmtH = h => formatarTempo(formatarNumeroBR(Math.round(h)));
+    if (fluxo.mTempoH != null) kpiData.mTempo = fmtH(fluxo.mTempoH);
+    if (fluxo.aTempoH != null) kpiData.aTempo = fmtH(fluxo.aTempoH);
   }
 
   // 2. FONTE DA DISPONIBILIDADE E TEMPO MÉDIO: busca na aba CHAMADOS do Histórico Validado
@@ -1632,15 +1637,16 @@ function obterDadosCorretivasV6() {
     if (itM) kpiData.mDisp = String(itM.bruto || itM.valor);
     if (itA) kpiData.aDisp = String(itA.bruto || itA.valor);
 
-    // Se tempo médio estiver vazio, busca no Histórico Validado
-    if (kpiData.mTempo === '-' || kpiData.aTempo === '-') {
-      const sTmp = lerHistoricoValidado('Tempo médio entre criado e fechado', { aba: 'CHAMADOS' });
-      if (sTmp && sTmp.length) {
-        const itTmp = sTmp.find(s => s.ord === ordRef) || sTmp[sTmp.length - 1];
-        if (itTmp && itTmp.bruto) {
-          if (kpiData.mTempo === '-') kpiData.mTempo = formatarTempo(itTmp.bruto);
-          if (kpiData.aTempo === '-') kpiData.aTempo = formatarTempo(itTmp.bruto);
-        }
+    // Tempo médio: o BD (acima) é a fonte. O Histórico Validado só cobre o
+    // MÊS quando o BD não deu número, e serve de conferência no log. O
+    // acumulado nunca copia o mês: sem o BD, fica "-".
+    const sTmp = lerHistoricoValidado('Tempo médio entre criado e fechado', { aba: 'CHAMADOS' });
+    const itTmp = (sTmp || []).find(s => s.ord === ordRef);
+    if (itTmp && itTmp.bruto) {
+      if (kpiData.mTempo === '-') kpiData.mTempo = formatarTempo(itTmp.bruto);
+      else if (formatarTempo(itTmp.bruto) !== kpiData.mTempo) {
+        Logger.log('Corretivas: tempo médio do mês ' + kpiData.mTempo + ' (BD-CORRETIVAS) × ' +
+                   formatarTempo(itTmp.bruto) + ' no HISTÓRICO.');
       }
     }
   } catch (e) {
@@ -4102,6 +4108,13 @@ function obterFluxoCorretivasBD_() {
   // que o vocabulário de Estado da base tem mais valores de "encerrado" do
   // que só "Fechado" — e aí a regra precisa ser revista, não o cálculo.
   let comDataSemEstado = 0;
+  // Tempo médio entre criado e fechado, em HORAS CORRIDAS (definição do
+  // Guilherme, 10/11/2026): média de (Fechado em − Data de reporte) dos
+  // chamados FECHADOS na janela — mês = fechados no mês; acumulado =
+  // fechados de 1º de janeiro até o fim do mês. Duração negativa (data
+  // digitada errada) fica de fora.
+  const HORA = 3600000;
+  let mHoras = 0, mComTempo = 0, aHoras = 0, aComTempo = 0;
   itens.forEach(it => {
     if (dentro(it.dtReporte, refIni, refFim)) mCriados++;
     if (dentro(it.dtReporte, anoIni, refFim)) aCriados++;
@@ -4109,6 +4122,12 @@ function obterFluxoCorretivasBD_() {
     if (fechado && dentro(it.dtFechado, refIni, refFim)) mFechados++;
     if (fechado && dentro(it.dtFechado, anoIni, refFim)) aFechados++;
     if (!fechado && dentro(it.dtFechado, refIni, refFim)) comDataSemEstado++;
+
+    const dur = (fechado && it.dtReporte) ? (it.dtFechado - it.dtReporte) / HORA : NaN;
+    if (dur >= 0) {
+      if (dentro(it.dtFechado, refIni, refFim)) { mHoras += dur; mComTempo++; }
+      if (dentro(it.dtFechado, anoIni, refFim)) { aHoras += dur; aComTempo++; }
+    }
   });
   if (comDataSemEstado) {
     Logger.log('BD-CORRETIVAS: ' + comDataSemEstado + ' chamado(s) com "Fechado em" no mês ' +
@@ -4117,6 +4136,8 @@ function obterFluxoCorretivasBD_() {
   }
 
   return { mCriados, mFechados, aCriados, aFechados,
+           mTempoH: mComTempo ? mHoras / mComTempo : null,
+           aTempoH: aComTempo ? aHoras / aComTempo : null,
            comDataSemEstado: comDataSemEstado, total: itens.length };
 }
 
