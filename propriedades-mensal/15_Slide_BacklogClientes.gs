@@ -57,7 +57,7 @@ function gerarSlideBacklogClientesProperties() {
   const grupos = ordemClientes.map(cli => porCliente[cli]);
 
   const coresMapa = _backlogClientesCoresMapa_(dados);
-  const paginas = _paginarGruposBacklog_(grupos, listaH);
+  const paginas = _paginarGruposBacklog_(grupos, listaH, W - 2 * marginX);
 
   paginas.forEach((grupoDaPagina, i) => {
     const slide = _slideNovo_(deck, TAG_BACKLOG_CLIENTES);
@@ -127,6 +127,7 @@ function obterDadosBacklogClientesProperties_() {
     cliente:       it.cliente,
     empreendimento: it.cc,
     descricao:     it.descricao,
+    onde:          _propOndeChamado_(it.local, it.area),
     dataReporte:   _histFormatarDataCurta_(it.dtReporte),
     diasAberto:    _histDiasAberto_(it.dtReporte, refFim)
   }));
@@ -202,21 +203,18 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   const lineH = fontSize * (LINE_PCT / 100) * 1.15;
 
   const MIN_ROW_H = 40, CAPTION_H = 12;
-  const linhasPorChamado = _linhasPorChamadoQueCabem_(
-    [grupos], listH - HEADER_H - HEADER_GAP, lineH, MIN_ROW_H, CAPTION_H, ROW_GAP);
-  const alturaChamado = lineH * linhasPorChamado;
 
   const maxCliente = 26;
-  const LOGO_COL_W = LOGO_LARG_PADRAO, LOGO_GAP = 16, LOGO_CELL_H = LOGO_ALT_PADRAO + 6;
+  const LOGO_COL_W = LOGO_LARG_PADRAO, LOGO_GAP = _BKC_.LOGO_GAP, LOGO_CELL_H = LOGO_ALT_PADRAO + 6;
 
   // EMP_W dimensionado pelo caso comum ("MEGA CURITIBA", 13 caracteres) com
   // folga; nome maior é truncado por _truncarNome_ em vez de quebrar linha e
   // desalinhar a tabela. DATA_W/DIAS_W vêm dos Megas, já com folga para
   // "dd/mm/aa" (8 chars) e para 4 dígitos de dias ("1050d").
-  const EMP_W = 88, DATA_W = 68, DIAS_W = 52, COL_GAP = 8;
+  const EMP_W = _BKC_.EMP_W, DATA_W = _BKC_.DATA_W, DIAS_W = _BKC_.DIAS_W, COL_GAP = _BKC_.COL_GAP;
 
   const descX = x + 15 + LOGO_COL_W + LOGO_GAP;
-  const descW = (w - 30) - LOGO_COL_W - LOGO_GAP - EMP_W - DATA_W - DIAS_W - (COL_GAP * 3);
+  const descW = _backlogClientesDescW_(w);
   const empX  = descX + descW + COL_GAP;
   const dataX = empX + EMP_W + COL_GAP;
   const diasX = dataX + DATA_W + COL_GAP;
@@ -232,7 +230,12 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
   let cursorY = linhasY;
   grupos.forEach(grupo => {
     const cor = (coresMapa && coresMapa[grupo[0].cliente]) || corTema;
-    const rowH = Math.max(grupo.length * alturaChamado, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
+    // Altura POR CHAMADO, do tamanho do texto (descrição inteira + onde):
+    // feedback da diretoria, 31/10/2026 — o "…" no meio da frase não deixava
+    // saber do que se tratava.
+    const alturas = grupo.map(it => _backlogClientesAlturaChamado_(it, descW, fontSize, lineH));
+    const somaAlt = alturas.reduce((s, a) => s + a, 0);
+    const rowH = Math.max(somaAlt, MIN_ROW_H + (grupo.length > 1 ? CAPTION_H : 0));
 
     // Casa pelo apelido de exibição, não pelo nome cru da planilha.
     const nomeDisplay = _clienteDisplay_(grupo[0].cliente);
@@ -249,17 +252,12 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
     }
     if (grupo.length > 1) {
       _sTxt(slide, x + 15, logoY + LOGO_CELL_H + 1, LOGO_COL_W, CAPTION_H - 1,
-            '(' + grupo.length + ' chamados)', 7, false, DS.colors.textMuted, 'center');
+            '(' + grupo.length + ' chamados' + (grupo.continua ? ', cont.' : '') + ')', 7, false, DS.colors.textMuted, 'center');
     }
 
-    // Orçamento de caracteres da descrição: o que cabe numa linha vezes
-    // quantas linhas este chamado pode ocupar nesta página. A altura já foi
-    // reservada com o mesmo número, então a quebra é esperada e não desalinha
-    // as colunas seguintes.
-    const capacidadeLinha = _charsQueCabem_(descW, fontSize) * linhasPorChamado;
-
-    let ticketY = cursorY + (rowH - grupo.length * alturaChamado) / 2;
-    grupo.forEach(it => {
+    let ticketY = cursorY + (rowH - somaAlt) / 2;
+    grupo.forEach((it, k) => {
+      const alturaChamado = alturas[k];
       const descBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, descX, ticketY, descW, alturaChamado);
       const tr = descBox.getText();
       tr.setText('');
@@ -268,8 +266,7 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
       const idPart = tr.appendText('• ' + it.id + ' - ');
       idPart.getTextStyle().setFontSize(fontSize).setBold(true)
         .setForegroundColor(DS.colors.textMuted).setFontFamily(DS.typography.body);
-      const maxDesc = Math.max(4, capacidadeLinha - 3 - String(it.id).length - 3);
-      const descPart = tr.appendText(_truncarNome_(it.descricao, maxDesc));
+      const descPart = tr.appendText(_backlogClientesTextoChamado_(it));
       descPart.getTextStyle().setFontSize(fontSize).setBold(false)
         .setForegroundColor(DS.colors.textMain).setFontFamily(DS.typography.body);
       tr.getParagraphStyle().setLineSpacing(LINE_PCT);
@@ -306,13 +303,36 @@ function _backlogClientesTabela_(slide, x, y, w, h, titulo, totalCount, grupos, 
 // PAGINAÇÃO E CORES
 // ==========================================
 
+// Colunas da tabela (pt). A paginação mede a descrição com a MESMA largura
+// que o desenho usa — senão a página promete um encaixe que o slide não cumpre.
+const _BKC_ = { EMP_W: 88, DATA_W: 68, DIAS_W: 52, COL_GAP: 8, LOGO_GAP: 16 };
+// Teto de segurança da descrição (texto maior ganha "…"); não é o corte usual.
+const BACKLOG_CLI_MAX_CHARS = 420;
+
+function _backlogClientesDescW_(w) {
+  return (w - 30) - LOGO_LARG_PADRAO - _BKC_.LOGO_GAP - _BKC_.EMP_W - _BKC_.DATA_W - _BKC_.DIAS_W - (_BKC_.COL_GAP * 3);
+}
+
+// "Área Comum - Portaria · Cobertura — <descrição inteira>" (sem o "• id - ").
+function _backlogClientesTextoChamado_(it) {
+  const desc = String(it.descricao || '').replace(/\s+/g, ' ').trim() || '(sem descrição)';
+  return _truncar_((it.onde ? it.onde + ' — ' : '') + desc, BACKLOG_CLI_MAX_CHARS);
+}
+
+// Linhas que o chamado ocupa (com 10% de folga na estimativa de caracteres
+// por linha) × altura da linha. Mesmo cálculo na paginação e no desenho.
+function _backlogClientesAlturaChamado_(it, descW, fontSize, lineH) {
+  const chars = ('• ' + it.id + ' - ').length + _backlogClientesTextoChamado_(it).length;
+  const linhas = Math.max(1, Math.ceil(chars * 1.1 / _charsQueCabem_(descW, fontSize)));
+  return linhas * lineH + 2;
+}
+
 /**
- * Quebra os grupos em páginas que cabem no card. Usa a fonte MÍNIMA (7pt) e
- * UMA linha por chamado — o piso que garante o encaixe. Se a página sobrar
- * altura, _linhasPorChamadoQueCabem_ dá duas linhas a cada chamado na hora de
- * desenhar, em vez de truncar a descrição no meio.
+ * Quebra os grupos em páginas que cabem no card, medindo cada chamado pelo
+ * tamanho do texto (descrição inteira). Cliente com mais chamados do que cabe
+ * numa página é partido em pedaços ("N chamados, cont." no segundo).
  */
-function _paginarGruposBacklog_(grupos, listaH) {
+function _paginarGruposBacklog_(grupos, listaH, w) {
   if (!grupos.length) return [[]];
 
   const FLOOR_FONT = 7, LINE_PCT = 130;
@@ -323,13 +343,29 @@ function _paginarGruposBacklog_(grupos, listaH) {
   const CARD_HEADER = 32, LIST_TOP_PAD = 4, LIST_BOTTOM_PAD = 8;
   const pageBudgetPt = listaH - CARD_HEADER - LIST_TOP_PAD - LIST_BOTTOM_PAD - HEADER_H - HEADER_GAP;
 
-  const lineHFloor = FLOOR_FONT * (LINE_PCT / 100) * 1.15;
+  const lineH = FLOOR_FONT * (LINE_PCT / 100) * 1.15;
+  const descW = _backlogClientesDescW_(w || 660);
   const alturaGrupo = g =>
-    Math.max(g.length * lineHFloor, MIN_ROW_H + (g.length > 1 ? CAPTION_H : 0)) + ROW_GAP;
+    Math.max(g.reduce((s, it) => s + _backlogClientesAlturaChamado_(it, descW, FLOOR_FONT, lineH), 0),
+             MIN_ROW_H + (g.length > 1 ? CAPTION_H : 0)) + ROW_GAP;
+
+  const pedacos = [];
+  grupos.forEach(g => {
+    let atual = [];
+    g.forEach(it => {
+      if (atual.length && alturaGrupo(atual.concat([it])) > pageBudgetPt) {
+        pedacos.push(atual);
+        atual = [];
+        atual.continua = true;
+      }
+      atual.push(it);
+    });
+    if (atual.length) pedacos.push(atual);
+  });
 
   const paginas = [];
   let atual = [], alturaAtual = 0;
-  grupos.forEach(g => {
+  pedacos.forEach(g => {
     const alturaG = alturaGrupo(g);
     if (atual.length && alturaAtual + alturaG > pageBudgetPt) {
       paginas.push(atual);

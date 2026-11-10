@@ -487,7 +487,9 @@ function obterBacklogEmergencialDetalhe_() {
     .filter(it => _histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim))
     .map(it => ({
       cc          : it.cc,
-      descricao   : it.descricao || '(sem descrição)',
+      // Onde + texto inteiro (feedback da diretoria, 31/10/2026): quatro
+      // sinistros de calha com o mesmo texto só se distinguem pelo módulo.
+      descricao   : _propDescricaoComOnde_(it, BACKLOG_EMERG_MAX_CHARS),
       dataAbertura: _histFormatarDataCurta_(it.dtReporte),
       dias        : _histDiasAberto_(it.dtReporte, refFim)
     }));

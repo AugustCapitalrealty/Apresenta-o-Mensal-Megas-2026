@@ -48,6 +48,7 @@ function onOpen() {
       .addItem('Backlog Emergencial (Detalhe)', 'gerarSoBacklogEmergencial')
       .addItem('Chamados Pendentes (Motivos)', 'gerarSoChamadosPendentes')
       .addItem('Backlog de Clientes (Properties)', 'gerarSoBacklogClientes')
+      .addItem('Demora Crônica (> 180 dias)', 'gerarSoDemoraCronica')
       .addItem('Recebimento de Obras', 'gerarSoRecebimentoObras')
       .addItem('Gestão de Contratações', 'gerarSoContratacoes')
       .addItem('Torre de Manutenção', 'gerarSoTorreManutencao')
@@ -103,6 +104,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
   ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_', '_capasDeckDoMes_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
+  ['23_Slide_DemoraCronica.gs',     ['gerarSlideDemoraCronica', 'obterDemoraCronica_', '_demoraEtapa_', '_demoraAnalise_', 'gerarSoDemoraCronica']],
 ];
 
 function _propConferirProjeto_() {
@@ -166,6 +168,8 @@ function gerarApresentacaoPropriedades() {
     { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
     { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
+    // Logo depois do Backlog de Clientes, sozinho (23_Slide_DemoraCronica.gs).
+    { nome: 'Demora Crônica',                fn: gerarSlideDemoraCronica },
     { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
     { nome: 'Torre de Manutenção',           fn: gerarSlideTorreManutencao },

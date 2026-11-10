@@ -137,6 +137,7 @@ const TAG_DRE_MANUTENCAO            = '【PROP_DRE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_MANUTENCAO         = '【PROP_BRIDGE_MANUTENCAO_AUTO】';
 const TAG_BRIDGE_GRAFICO            = '【PROP_BRIDGE_GRAFICO_AUTO】';
 const TAG_PENDENCIAS                = '【PROP_PENDENCIAS_AUTO】';
+const TAG_DEMORA_CRONICA            = '【PROP_DEMORA_CRONICA_AUTO】';
 
 // ==========================================
 // TORRE DE MANUTENÇÃO — CONFIGURAÇÃO E DADOS BASE
@@ -590,17 +591,21 @@ const REL_RECEBIMENTO = {
 const PROP_BACKLOG_MAX_BARRAS = 14;
 
 // ── de 14_Slide_Backlog.gs ──────────
-const BACKLOG_EMERG_MAX_LINHAS = 8;
+// 6 linhas por página (eram 8) para a descrição caber INTEIRA, com o local
+// na frente: ~3 linhas de 7pt na coluna larga. BACKLOG_EMERG_MAX_CHARS é o
+// teto de segurança (texto maior ganha "…"), não o corte usual.
+const BACKLOG_EMERG_MAX_LINHAS = 6;
+const BACKLOG_EMERG_MAX_CHARS  = 270;
 // "Data Abertura" é 'textoCentro', não 'data': _tabDesenharTabela_ só
 // desenha coluna 'data' se o texto bater com dd/mm/AAAA (_tabEhData_,
 // 03_Tabelas.gs) — e _histFormatarDataCurta_ (02_Dados.gs) devolve ano com
 // 2 dígitos (dd/mm/aa), pra caber na coluna estreita. 'textoCentro' exibe
 // o texto como veio, sem essa validação.
 const BACKLOG_EMERG_COLUNAS = [
-  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.20 },
-  { nome: 'Descrição',      tipo: 'texto',        largura: 0.53 },
-  { nome: 'Data Abertura',  tipo: 'textoCentro',  largura: 0.13 },
-  { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.14 }
+  { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.14 },
+  { nome: 'Local — Descrição', tipo: 'texto',     largura: 0.62, fonte: 7 },
+  { nome: 'Data Abertura',  tipo: 'textoCentro',  largura: 0.12 },
+  { nome: 'Dias em Aberto', tipo: 'numero',       largura: 0.12 }
 ];
 
 // ── de 13_Slide_Corretivas.gs ─────────────────────────

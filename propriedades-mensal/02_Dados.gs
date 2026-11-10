@@ -64,6 +64,33 @@ function _histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim) {
   return !fechado;
 }
 
+// ONDE é o chamado, em texto curto: "Área Comum - Portaria · Cobertura".
+// A coluna Local vem como "06.01.006287.56.04 - MEGA Curitiba - ÁREA COMUM -
+// Portaria": sai o código, sai o imóvel (já está na coluna Empreendimento) e
+// o que estiver todo em maiúsculas vira "Título". A Área (Cobertura, Piso…)
+// vai junto quando o Local não a diz. Quatro sinistros de calha com o mesmo
+// texto viram quatro linhas distinguíveis pelo módulo.
+function _propOndeChamado_(local, area) {
+  let segs = String(local || '').replace(/^\d[\w.]*\s+-\s+/, '').split(/\s+-\s+/)
+    .map(s => s.trim()).filter(Boolean);
+  if (segs.length > 1) segs = segs.slice(1);
+  const titulo = s => (s.length > 3 && s === s.toUpperCase())
+    ? s.toLowerCase().replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toUpperCase()) : s;
+  const onde = segs.map(titulo).join(' - ');
+  const ar = String(area || '').trim();
+  if (!ar || _histNorm_(onde).indexOf(_histNorm_(ar)) >= 0) return onde;
+  return onde ? onde + ' · ' + ar : ar;
+}
+
+// "Área Comum - Portaria · Cobertura — <descrição inteira>", com teto de
+// segurança em maxChars (texto maior ganha "…").
+function _propDescricaoComOnde_(it, maxChars) {
+  const onde = _propOndeChamado_(it.local, it.area);
+  const desc = String(it.descricao || '').replace(/\s+/g, ' ').trim() || '(sem descrição)';
+  const txt  = onde ? onde + ' — ' + desc : desc;
+  return maxChars ? _truncar_(txt, maxChars) : txt;
+}
+
 // Megas x demais imóveis — o corte que a apresentação usa para separar
 // "desempenho nos Megas" de "desempenho nos demais".
 function _propEhMega_(cc) {
@@ -240,6 +267,17 @@ function _propLerBase_(nomeAba) {
     // subtração fica só de reserva, para a linha que tiver P e não tiver AG.
     const cAprov  = col('aprovado em', 'aprovada em', 'data de aprovacao', 'data de aprovação');
     const cTaprov = col('tempo para aprovar (segundos)', 'tempo para aprovar');
+    // Para IDENTIFICAR o chamado (feedback da diretoria, 31/10/2026: "o leitor
+    // precisa identificar do que se trata") e dizer ONDE ele travou (Demora
+    // crônica, 23_Slide_DemoraCronica.gs). "Local" vem antes de "Tipologia
+    // local" no cabeçalho, e "Descrição" antes de "Descrição do estado" —
+    // col() pega a primeira, que é a certa nos dois casos.
+    const cLocal  = col('local');
+    const cArea   = col('area');
+    const cInicio = col('iniciado em', 'iniciada em');
+    const cPausa  = col('pausado em');
+    const cDescEst = col('descricao do estado');
+    const cObs    = col('observac');
 
     if (cCC < 0) {
       Logger.log(nomeAba + ': sem coluna "Centro de Custos" — rode inspecionarBase("' +
@@ -266,7 +304,13 @@ function _propLerBase_(nomeAba) {
         dtReporte: cIni    >= 0 ? _histParseDataHora_(data[r][cIni]) : null,
         dtFechado: cFim    >= 0 ? _histParseDataHora_(data[r][cFim]) : null,
         dtAprovado: cAprov >= 0 ? _histParseDataHora_(data[r][cAprov]) : null,
-        tempoAprovarSeg: cTaprov >= 0 ? _propNumeroOuNull_(data[r][cTaprov]) : null
+        tempoAprovarSeg: cTaprov >= 0 ? _propNumeroOuNull_(data[r][cTaprov]) : null,
+        local    : cLocal  >= 0 ? String(data[r][cLocal] || '').trim() : '',
+        area     : cArea   >= 0 ? String(data[r][cArea]  || '').trim() : '',
+        dtIniciado: cInicio >= 0 ? _histParseDataHora_(data[r][cInicio]) : null,
+        dtPausado: cPausa  >= 0 ? _histParseDataHora_(data[r][cPausa]) : null,
+        descEstado: cDescEst >= 0 ? String(data[r][cDescEst] || '').trim() : '',
+        observacoes: cObs  >= 0 ? String(data[r][cObs]   || '').trim() : ''
       });
     }
     // Diz de que coluna saiu a aprovação. Sem isso, uma coluna renomeada

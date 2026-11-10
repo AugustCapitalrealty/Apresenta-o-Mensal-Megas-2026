@@ -510,7 +510,7 @@ const _DEPS_BACKLOG_CLIENTES_ = [
   // Do próprio 15_Slide_BacklogClientes.gs: se estes faltarem, é o
   // arquivo do slide que está velho no editor.
   { nome: '_backlogClientesTabela_',           arquivo: '15_Slide_BacklogClientes.gs', args: 10 },
-  { nome: '_paginarGruposBacklog_',            arquivo: '15_Slide_BacklogClientes.gs', args: 2  },
+  { nome: '_paginarGruposBacklog_',            arquivo: '15_Slide_BacklogClientes.gs', args: 3  },
   { nome: '_charsQueCabem_',                   arquivo: '00_Helpers.gs', args: 2  },
   { nome: '_linhasPorChamadoQueCabem_',        arquivo: '15_Slide_BacklogClientes.gs', args: 6  },
   { nome: '_clienteDisplay_',                  arquivo: '15_Slide_BacklogClientes.gs', args: 1  },
