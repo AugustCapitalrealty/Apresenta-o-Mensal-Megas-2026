@@ -90,5 +90,36 @@ checa((_capasDeckDoMes_({ nome: 'OUTUBRO', ano: 2026 }) || { getId: () => null }
 checa((_capasDeckDoMes_({ nome: 'SETEMBRO', ano: 2026 }) || { getId: () => null }).getId() === 'SET', 'acha "08 - … SETEMBRO/2026"');
 checa(_capasDeckDoMes_({ nome: 'NOVEMBRO', ano: 2026 }) === null, 'mês sem cópia → null (não cai no modelo)');
 
+console.log('\n== Limpeza por tag não apaga cópia feita à mão (10/11/2026) ==');
+{
+  const TAG = '【RECEBIMENTO_AUTO】';
+  const lista = [];
+  const sl = (id, nota, fotoArea) => {
+    const s = { id, nota, getObjectId: () => id,
+      getNotesPage: () => ({ getSpeakerNotesShape: () => ({ getText: () => ({
+        asString: () => s.nota, setText: t => { s.nota = t; } }) }) }),
+      getImages: () => (fotoArea ? [{ getWidth: () => fotoArea, getHeight: () => 1 }] : []),
+      getShapes: () => [], remove: () => lista.splice(lista.indexOf(s), 1) };
+    return s;
+  };
+  const dk = { getSlides: () => lista.slice(), getPageWidth: () => 720, getPageHeight: () => 405 };
+  const novo = sl('g1', ''); _tabMarcarSlide_(novo, TAG);
+  lista.push(novo,
+    sl('copia', novo.nota, 0),                                   // duplicado do gerado: nota com o ID de outro slide
+    sl('antigoSemFoto', TAG + '\nGerado em 01/10/2026', 0),      // gerado antes do ID
+    sl('antigoComFoto', TAG + '\nGerado em 01/10/2026', 60000),  // "Serviços Contratados" com foto
+    sl('capaAntiga', '【PROP_CAPA_AUTO】\nGerado em 01/10/2026', 200000),
+    sl('outro', 'nota qualquer', 0));
+  checa(/slide-id: g1/.test(novo.nota), 'a nota do slide gerado guarda o próprio ID');
+  _tabRemoverPorTag_(dk, TAG);
+  const ids = lista.map(s => s.id).join(',');
+  checa(ids.indexOf('g1') < 0 && ids.indexOf('antigoSemFoto') < 0, 'remove o gerado e o antigo sem foto');
+  checa(ids.indexOf('copia') >= 0, 'mantém a CÓPIA de um slide gerado (ID diferente)');
+  checa(ids.indexOf('antigoComFoto') >= 0, 'mantém slide antigo com foto grande (feito à mão)');
+  _tabRemoverPorTag_(dk, TAG_CAPA);
+  checa(lista.every(s => s.id !== 'capaAntiga'), 'capa antiga com foto ainda é trocada (a capa é gerada com foto)');
+  checa(lista.some(s => s.id === 'outro'), 'slide sem a tag não é tocado');
+}
+
 console.log(falhas ? '\n✗ ' + falhas + ' de ' + total + ' falharam' : '\n✓ ' + total + '/' + total + ' passaram');
 process.exitCode = falhas ? 1 : 0;

@@ -375,14 +375,49 @@ function _tabRemoverPorTag_(deck, tag) {
   deck.getSlides().forEach(s => {
     try {
       const notas = s.getNotesPage().getSpeakerNotesShape().getText().asString();
-      if (notas.indexOf(tag) !== -1) s.remove();
+      if (notas.indexOf(tag) === -1) return;
+      if (_tabEhCopiaAMao_(s, notas, deck, tag)) {
+        Logger.log('  Slide com a tag ' + tag + ' mantido: é cópia feita à mão de um slide gerado (' +
+                   _tabTituloCurto_(s) + '). Apague a tag da nota para ele não parecer gerado.');
+        return;
+      }
+      s.remove();
     } catch (e) {}
   });
 }
 
+// DUPLICAR UM SLIDE GERADO COPIA A NOTA, COM A TAG. Em 10/11/2026 isso apagou
+// os slides feitos à mão de outubro: "Serviços Contratados" (fotos), Vistorias
+// de Rotina e Status de Projetos Aprovados tinham sido criados duplicando o
+// Recebimento de Obras e carregavam 【RECEBIMENTO_AUTO】; o CAPEX carregava a
+// tag da Torre. Agora a nota guarda também o ID do slide gerado
+// (_TAB_ID_NOTA_): uma cópia tem outro ID e é preservada. Slide marcado antes
+// disso (sem o ID) só sai se não tiver foto grande — slide gerado não tem.
+const _TAB_ID_NOTA_ = 'slide-id: ';
+
+function _tabEhCopiaAMao_(s, notas, deck, tag) {
+  const i = notas.indexOf(_TAB_ID_NOTA_);
+  if (i >= 0) return notas.slice(i + _TAB_ID_NOTA_.length).split(/\s/)[0] !== s.getObjectId();
+  // Sem ID (marcado antes de 10/11/2026): foto ocupando mais de 12% da página = feito à mão.
+  // Menos na capa e no encerramento, que são gerados COM foto.
+  if (tag === TAG_CAPA || tag === TAG_ENCERRAMENTO) return false;
+  try {
+    const area = deck.getPageWidth() * deck.getPageHeight();
+    return s.getImages().some(im => im.getWidth() * im.getHeight() > area * 0.12);
+  } catch (e) { return false; }
+}
+
+function _tabTituloCurto_(s) {
+  try {
+    const t = s.getShapes().map(x => { try { return x.getText().asString().trim(); } catch (e) { return ''; } })
+      .filter(Boolean)[0] || '';
+    return '"' + t.slice(0, 40) + '"';
+  } catch (e) { return 'sem título'; }
+}
+
 function _tabMarcarSlide_(slide, tag) {
   slide.getNotesPage().getSpeakerNotesShape().getText()
-    .setText(tag + '\nGerado em ' + new Date().toLocaleString('pt-BR'));
+    .setText(tag + '\nGerado em ' + new Date().toLocaleString('pt-BR') + '\n' + _TAB_ID_NOTA_ + slide.getObjectId());
 }
 
 function _tabV_(linha, idx) {
