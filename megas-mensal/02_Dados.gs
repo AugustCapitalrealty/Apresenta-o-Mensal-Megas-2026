@@ -3623,6 +3623,8 @@ function _backlogAplicarRecalculoBD_(serie) {
 // CHAMADOS POR PRIORIDADE (Abertos x Fechados) — abas "CHAMADOS ABERTOS MES"
 // e "CHAMADOS FECHADOS MES" da planilha de HISTÓRICO VALIDADO
 // ==========================================
+// Fonte principal: BD-CORRETIVAS. As abas abaixo são só reserva (BD
+// indisponível).
 // As duas abas são a exportação bruta do sistema de chamados (colunas "Id
 // chamado", "Cliente", "Prioridade", "Descrição", "Centro de Custos" etc.),
 // substituída inteira todo mês — cabeçalho na linha 1, sem mesclagem.
@@ -3634,6 +3636,49 @@ function _backlogAplicarRecalculoBD_(serie) {
 // (postos, outros clientes fora dos 3 Megas) ficam de fora.
 function _lerChamadosMes_(nomeAba) {
   const alvoMega = _histEmpChave_(getProjetoAtivo().nome);
+  // 1. FONTE PRINCIPAL: BD-CORRETIVAS (regra do Guilherme, 10/11/2026 — tudo
+  // de chamados sai do BD). Lido o BD, o resultado vale mesmo vazio (mês sem
+  // chamados); a aba manual só entra se o BD não puder ser lido.
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const ref    = obterMesReferencia_();
+      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+      const ehFechados = _histNorm_(nomeAba).indexOf('fechado') >= 0;
+
+      const saidaBD = [];
+      rawCorr.forEach(it => {
+        if (ehFechados) {
+          const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
+          if (fechado && it.dtFechado && it.dtFechado >= refIni && it.dtFechado < refFim) {
+            saidaBD.push({
+              id:         it.id,
+              cliente:    it.cliente || '',
+              prioridade: it.prioridade || '',
+              descricao:  it.descricao || ''
+            });
+          }
+        } else {
+          // Abertos no mês
+          if (it.dtReporte && it.dtReporte >= refIni && it.dtReporte < refFim) {
+            saidaBD.push({
+              id:         it.id,
+              cliente:    it.cliente || '',
+              prioridade: it.prioridade || '',
+              descricao:  it.descricao || ''
+            });
+          }
+        }
+      });
+      return saidaBD;
+    }
+  } catch (eBD) {
+    Logger.log('_lerChamadosMes_ BD-CORRETIVAS: ' + eBD.message);
+  }
+
+  // 2. RESERVA: aba manual do HISTÓRICO, só com o BD indisponível.
+  Logger.log('Aviso: BD-CORRETIVAS indisponível — ' + nomeAba + ' lido da aba manual do HISTÓRICO.');
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
     const sheet = ss.getSheetByName(nomeAba);
@@ -3668,45 +3713,6 @@ function _lerChamadosMes_(nomeAba) {
     }
   } catch (e) {
     Logger.log('_lerChamadosMes_(' + nomeAba + '): ' + e.message);
-  }
-
-  // Fallback: busca direto na BD-CORRETIVAS para o mês de referência
-  try {
-    const rawCorr = _lerBdCorretivasCru_();
-    if (rawCorr && rawCorr.length) {
-      const ref    = obterMesReferencia_();
-      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
-      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
-      const ehFechados = _histNorm_(nomeAba).indexOf('fechado') >= 0;
-
-      const saidaBD = [];
-      rawCorr.forEach(it => {
-        if (ehFechados) {
-          const fechado = _bdChamadoFechado_(it.estado, it.dtFechado);
-          if (fechado && it.dtFechado && it.dtFechado >= refIni && it.dtFechado < refFim) {
-            saidaBD.push({
-              id:         it.id,
-              cliente:    it.cliente || '',
-              prioridade: it.prioridade || '',
-              descricao:  it.descricao || ''
-            });
-          }
-        } else {
-          // Abertos no mês
-          if (it.dtReporte && it.dtReporte >= refIni && it.dtReporte < refFim) {
-            saidaBD.push({
-              id:         it.id,
-              cliente:    it.cliente || '',
-              prioridade: it.prioridade || '',
-              descricao:  it.descricao || ''
-            });
-          }
-        }
-      });
-      if (saidaBD.length) return saidaBD;
-    }
-  } catch (eBD) {
-    Logger.log('_lerChamadosMes_ BD fallback: ' + eBD.message);
   }
 
   return [];
@@ -4268,6 +4274,37 @@ function _abaBacklogClientesDetalhes_(ss) {
 
 function _lerBacklogClientesDetalhes_() {
   const alvoEmp = _histEmpChave_(getProjetoAtivo().nome);
+  // 1. FONTE PRINCIPAL: BD-CORRETIVAS (regra do Guilherme, 10/11/2026), com a
+  // mesma regra de locatário dos slides Facilities/Properties
+  // (_resolverEquipeResponsaveis_ → it.equipe). Lido o BD, vale mesmo vazio.
+  try {
+    const rawCorr = _lerBdCorretivasCru_();
+    if (rawCorr && rawCorr.length) {
+      const ref    = obterMesReferencia_();
+      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
+      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
+      const saidaBD = [];
+      rawCorr.forEach(it => {
+        if (it.equipe !== 'LOCATARIO') return;
+        if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
+        saidaBD.push({
+          id:          it.id,
+          cliente:     it.cliente || 'Cliente',
+          descricao:   it.descricao || '',
+          estado:      it.estado,
+          equipe:      'LOCATARIO',
+          dataReporte: _histFormatarDataCurta_(it.dtReporte),
+          diasAberto:  _histDiasAberto_(it.dtReporte, refFim)
+        });
+      });
+      return saidaBD;
+    }
+  } catch (eBD) {
+    Logger.log('_lerBacklogClientesDetalhes_ BD-CORRETIVAS: ' + eBD.message);
+  }
+
+  // 2. RESERVA: aba manual do HISTÓRICO, só com o BD indisponível.
+  Logger.log('Aviso: BD-CORRETIVAS indisponível — Backlog de Clientes (locatário) lido da aba manual do HISTÓRICO.');
   try {
     const ss    = SpreadsheetApp.openById(HISTORICO_VALIDADO_ID);
     const sheet = _abaBacklogClientesDetalhes_(ss);
@@ -4314,36 +4351,6 @@ function _lerBacklogClientesDetalhes_() {
     }
   } catch (e) {
     Logger.log('_lerBacklogClientesDetalhes_: ' + e.message);
-  }
-
-  // Fallback: lê direto da BD-CORRETIVAS filtrando por LOCATÁRIO
-  try {
-    const rawCorr = _lerBdCorretivasCru_();
-    if (rawCorr && rawCorr.length) {
-      const ref    = obterMesReferencia_();
-      const refIni = new Date(Date.UTC(ref.ano, ref.index, 1));
-      const refFim = new Date(Date.UTC(ref.ano, ref.index + 1, 1));
-      const saidaBD = [];
-      rawCorr.forEach(it => {
-        const ehLocatario = it.equipe === 'LOCATARIO' ||
-                            _chamadoResponsabilidadeLocatario_(it.responsaveis || '') ||
-                            _histNorm_(it.estado).indexOf('locatario') >= 0;
-        if (!ehLocatario) return;
-        if (!_histAbertoNoMes_(it.estado, it.dtReporte, it.dtFechado, refIni, refFim)) return;
-        saidaBD.push({
-          id:          it.id,
-          cliente:     it.cliente || 'Cliente',
-          descricao:   it.descricao || '',
-          estado:      it.estado,
-          equipe:      'LOCATARIO',
-          dataReporte: _histFormatarDataCurta_(it.dtReporte),
-          diasAberto:  _histDiasAberto_(it.dtReporte, refFim)
-        });
-      });
-      if (saidaBD.length) return saidaBD;
-    }
-  } catch (eBD) {
-    Logger.log('_lerBacklogClientesDetalhes_ BD fallback: ' + eBD.message);
   }
 
   return [];
