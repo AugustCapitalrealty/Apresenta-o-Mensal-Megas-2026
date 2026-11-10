@@ -4032,7 +4032,7 @@ function _lerBdCorretivasCru_() {
         // que não é PROPERTY, e bate com o que a aba curada antiga trazia
         // na coluna EQUIPE pra esses chamados. "OUTROS" dava a impressão
         // falsa de que ninguém da operação era responsável.
-        equipe:        _resolverEquipeResponsaveis_(rawResp) || 'FACILITIES',
+        equipe:        _resolverEquipeResponsaveis_(rawResp, estadoOp) || 'FACILITIES',
         dtReporte:     cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null,
         dtFechado:     cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null
       });
@@ -4439,8 +4439,15 @@ const _RESPONSAVEL_EQUIPE_ = (function () {
 // "Disponivel") — quando presente, PREVALECE sobre a equipe (mesmo que
 // PROPERTY também esteja na lista): o chamado é do locatário, não da
 // operação.
-function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
-  return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0;
+// O ESTADO operacional (=SE(Estado="Pausado"; Motivo_de_pausa; Estado)) com
+// "Responsabilidade Locatário" também vale: muitos chamados só têm a marca
+// ali, e sem isso o mesmo chamado saía no Backlog de Clientes — Detalhe
+// (locatário) E no Backlog de Clientes — Facilities (Esteio out/26:
+// 20136842 e 18189526), e o card do Backlog Facilities divergia do slide
+// de Backlog por estado (2 x 4).
+function _chamadoResponsabilidadeLocatario_(responsaveisTxt, estadoOp) {
+  return _histNorm_(responsaveisTxt).indexOf('responsabilidade locatario') >= 0 ||
+         _histNorm_(estadoOp).indexOf('locatario') >= 0;
 }
 
 // Resolve a equipe responsável por um chamado a partir do texto bruto da
@@ -4449,8 +4456,8 @@ function _chamadoResponsabilidadeLocatario_(responsaveisTxt) {
 // vence se qualquer nome da lista for PROPERTY (regra combinada do
 // usuário: "quem vai prevalecer é Property"); 3) senão FACILITIES; 4)
 // senão OPERACAO; 5) '' se nenhum nome reconhecido.
-function _resolverEquipeResponsaveis_(responsaveisTxt) {
-  if (_chamadoResponsabilidadeLocatario_(responsaveisTxt)) return 'LOCATARIO';
+function _resolverEquipeResponsaveis_(responsaveisTxt, estadoOp) {
+  if (_chamadoResponsabilidadeLocatario_(responsaveisTxt, estadoOp)) return 'LOCATARIO';
   const equipes = String(responsaveisTxt || '').split(',')
     .map(n => _RESPONSAVEL_EQUIPE_[_histNorm_(n)])
     .filter(Boolean);
@@ -4515,6 +4522,7 @@ function _lerBdCorretivasChamadosClientes_() {
     const cReporte = hdr.findIndex(h => h.indexOf('data de reporte') >= 0 || h.indexOf('data reporte') >= 0);
     const cFechado = hdr.findIndex(h => h.indexOf('fechado em') >= 0 || h.indexOf('fechada em') >= 0);
     const cResp    = hdr.findIndex(h => h.indexOf('responsaveis') >= 0 || h.indexOf('responsavel') >= 0);
+    const cMotivo  = hdr.findIndex(h => h.indexOf('motivo de pausa') >= 0 || h.indexOf('motivo') >= 0);
 
     const colsMega = [cCC, cEdif, cEmpresa, cLocal].filter(c => c >= 0);
     if (cId < 0 || colsMega.length === 0 || cCliente < 0) return [];
@@ -4532,9 +4540,12 @@ function _lerBdCorretivasChamadosClientes_() {
       if (!cliente || _ehCondominio_(cliente)) continue;
 
       const responsaveis = cResp >= 0 ? row[cResp] : '';
-      if (_chamadoResponsabilidadeLocatario_(responsaveis)) continue;   // é do locatário, não da operação
-
       const estado    = cEstado  >= 0 ? String(row[cEstado] || '').trim() : '';
+      const motivo    = cMotivo  >= 0 ? String(row[cMotivo] || '').trim() : '';
+      // Mesma regra do _lerBdCorretivasCru_: Pausado → vale o motivo de pausa.
+      const estadoOp  = (_histNorm_(estado).indexOf('pausad') >= 0 && motivo) ? motivo : estado;
+      if (_chamadoResponsabilidadeLocatario_(responsaveis, estadoOp)) continue;   // é do locatário, não da operação
+
       const dtReporte = cReporte >= 0 ? _histParseDataHora_(row[cReporte]) : null;
       const dtFechado = cFechado >= 0 ? _histParseDataHora_(row[cFechado]) : null;
       if (!_histAbertoNoMes_(estado, dtReporte, dtFechado, refIni, refFim)) continue;
@@ -4545,7 +4556,7 @@ function _lerBdCorretivasChamadosClientes_() {
         descricao:   cDesc >= 0 ? _limparDescricaoChecklist_(String(row[cDesc] || '').trim()) : '',
         dataReporte: _histFormatarDataCurta_(dtReporte),
         diasAberto:  _histDiasAberto_(dtReporte, refFim),
-        equipe:      _resolverEquipeResponsaveis_(responsaveis)
+        equipe:      _resolverEquipeResponsaveis_(responsaveis, estadoOp)
       });
     }
     return saida;
