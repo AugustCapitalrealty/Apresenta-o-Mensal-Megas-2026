@@ -78,7 +78,7 @@ const foto = (nome, ar) => ({ getName: () => nome, getMimeType: () => 'image/jpe
                               getBlob: () => ({ ar }) });
 const pdf = { getName: () => 'orçamento.pdf', getMimeType: () => 'application/pdf', getDateCreated: () => 0, getBlob: () => ({}) };
 const FOTOS = pasta('FOTOS', [
-  pasta('04 - OBRAS E CONTRATAÇÕES', [pasta('10 - OUTUBRO', [
+  pasta('03 - CONTRATAÇÕES E OBRAS', [pasta('10 - OUTUBRO', [
     pasta('02 - MEGA CURITIBA - Troca de zenitais (CONCLUÍDO)', [], [foto('a', 0.75), foto('b', 0.75)]),
     pasta('01 - MEGA ESTEIO - Reparo do muro B2 (EM ANDAMENTO)', [],
           [foto('1', 1.5), foto('2', 1.33), foto('3', 1.5), foto('4', 1.33), foto('5', 1.5), pdf]),
@@ -98,11 +98,11 @@ global.obterMesReferencia_ = () => ({ index: 9, nome: 'OUTUBRO', curto: 'Out', a
 // Deck como o Guilherme montou (resumido): capas de seção com tag, encerramento no fim.
 const comNota = (nota, nome) => { const s = novoSlide(); s.nota = nota; s.nome = nome; slides.push(s); return s; };
 comNota(TAG_CAPA, 'CAPA');
-[1, 2, 3, 4].forEach(n => comNota(_capaTagSecao_(n), 'SEÇÃO ' + n));
+[1, 2, 3].forEach(n => comNota(_capaTagSecao_(n), 'SEÇÃO ' + n));
 comNota('', 'RECEBIMENTO (à mão)');
-comNota(_capaTagSecao_(5), 'SEÇÃO 5');
+comNota(_capaTagSecao_(4), 'SEÇÃO 4');
 comNota('', 'MONITORAMENTO');
-comNota(_capaTagSecao_(6), 'SEÇÃO 6');
+comNota(_capaTagSecao_(5), 'SEÇÃO 5');
 comNota(TAG_ENCERRAMENTO, 'FIM');
 
 console.log('\n== Nome da pasta → legenda e etiqueta ==');
@@ -114,11 +114,11 @@ gerarSlidesFotos();
 const nomeDe = s => s.nome || (s.shapes.filter(x => x.txt).map(x => x.txt).find(t => /MEGA|IMÓVEL/.test(t)) || '?');
 const ordem = slides.map(nomeDe);
 console.log('    ' + ordem.join(' | '));
-const i5 = ordem.indexOf('SEÇÃO 5'), i6 = ordem.indexOf('SEÇÃO 6');
+const i5 = ordem.indexOf('SEÇÃO 4'), i6 = ordem.indexOf('SEÇÃO 5');
 checa(ordem[i5 - 2] === 'MEGA ESTEIO — REPARO DO MURO B2' && ordem[i5 - 1] === 'MEGA CURITIBA — TROCA DE ZENITAIS',
-      'seção 04: um slide por serviço, na ordem "01, 02", no fim da seção (antes da capa 05)');
-checa(ordem[i6 - 1] === '[ IMÓVEL — SERVIÇO ]', 'seção 05 sem fotos do mês: molduras vazias antes da capa 06');
-checa(ordem[ordem.length - 2] === '[ IMÓVEL — SERVIÇO ]' && ordem[ordem.length - 1] === 'FIM', 'seção 06: antes do encerramento');
+      'seção 03: um slide por serviço, na ordem "01, 02", no fim da seção (antes da capa 04)');
+checa(ordem[i6 - 1] === '[ IMÓVEL — SERVIÇO ]', 'seção 04 sem fotos do mês: molduras vazias antes da capa 05');
+checa(ordem[ordem.length - 2] === '[ IMÓVEL — SERVIÇO ]' && ordem[ordem.length - 1] === 'FIM', 'seção 05: antes do encerramento');
 checa(!ordem.some(t => /VAZIA/i.test(t)), 'pasta sem imagem (só PDF) não vira slide');
 
 const esteio = slides.find(s => nomeDe(s) === 'MEGA ESTEIO — REPARO DO MURO B2');
@@ -131,8 +131,8 @@ checa(esteio.shapes.some(x => x.txt === 'EM ANDAMENTO'), 'etiqueta "EM ANDAMENTO
 
 const pastaVist = FOTOS.filhas.find(f => f.nome === 'VISTORIAS');
 checa(pastaVist.filhas.some(f => f.nome === '10 - OUTUBRO'), 'cria VISTORIAS/10 - OUTUBRO para pôr as fotos');
-checa(FOTOS.filhas.some(f => f.nome === '06 - ADEQUAÇÕES DE CLIENTES' && f.filhas[0].nome === '10 - OUTUBRO'),
-      'cria 06 - ADEQUAÇÕES DE CLIENTES/10 - OUTUBRO');
+checa(FOTOS.filhas.some(f => f.nome === '05 - ADEQUAÇÕES DE CLIENTES' && f.filhas[0].nome === '10 - OUTUBRO'),
+      'cria 05 - ADEQUAÇÕES DE CLIENTES/10 - OUTUBRO');
 
 console.log('\n== Regerar não duplica ==');
 const antes = slides.length;

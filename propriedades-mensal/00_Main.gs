@@ -56,7 +56,8 @@ function onOpen() {
       .addItem('Bridge — Manutenção (Tabela)', 'gerarSoBridgeManutencao')
       .addItem('Bridge — Manutenção (Gráfico)', 'gerarSoBridgeGrafico')
       .addItem('Farol de Metas', 'gerarSoMetas')
-      .addItem('Fotos (Obras, Vistorias, Adequações)', 'gerarSoFotos'))
+      .addItem('Fotos (Obras, Vistorias, Adequações)', 'gerarSoFotos')
+      .addItem('Só reordenar o Deck do Mês', 'ordenarDeckDoMes'))
     .addSeparator()
     .addItem('📥 Importar export da controladoria (CSV)', 'importarExportControladoria')
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
@@ -104,6 +105,7 @@ const _PROP_DEPENDENCIAS_ = [
   ['20_Slide_Metas.gs',             ['gerarSlidesMetas', '_metaResolver_']],
   ['21_Slide_Capas.gs',             ['gerarCapasSecoes', 'gerarSlideEncerramento', '_capaImagem_', '_capaTagSecao_', '_capasAcharSecao_', '_capasIndice_', 'gerarCapasNoDeckDoMes', '_capaFeitaAMao_', '_capasDeckDoMes_']],
   ['22_Slide_Pendencias.gs',        ['gerarSlidePendenciasVistorias', '_pendDesenhar_', 'diagnosticarVistorias']],
+  ['24_OrdemDeck.gs',              ['ordenarDeck', '_estruturaDeck_', '_ordemRank_', 'ordenarDeckDoMes']],
   ['23_Slide_Fotos.gs',             ['gerarSlidesFotos', '_fotosSecao_', '_fotosNome_', 'gerarSoFotos']],
   ['06_ImportarControladoria.gs',   ['importarExportControladoria', '_importarControladoria_', '_controladoriaLer_']],
 ];
@@ -144,53 +146,35 @@ function gerarApresentacaoPropriedades() {
 
   Logger.log('▶ Apresentação Mensal de Propriedades — portfólio');
 
-  // Ordem oficial, conforme definido com o time:
-  //
-  //   1. Capa
-  //   2. Indicadores gerais
-  //   3. Preventivas
-  //   4. Corretivas
-  //   5. Backlog
-  //   6. Backlog Emergencial — Detalhe
-  //   7. Chamados Pendentes (Backlog) — por motivo
-  //   8. Backlog de Clientes — Properties (com empreendimento)
-  //   9. Recebimento de Obras (tabela)
-  //  10. Gestão de Contratações (tabela)
-  //  11. Torre de Manutenção (Capital Realty e Demercado)
-  //
+  // A ORDEM DO DECK não é a destes passos: é a de _estruturaDeck_()
+  // (24_OrdemDeck.gs), aplicada no último passo. Aqui só importa gerar tudo.
   const passos = [
+    // Sobras da estrutura antiga (capa e fotos da seção 06; Demora Crônica,
+    // Torre e DRE de Manutenção, retirados em 10/11/2026).
+    { nome: 'Limpar sobras',                 fn: () => {
+        _ordemLimparSobras_();
+        const deck = getDeckMensal_();
+        [TAG_DEMORA_CRONICA, TAG_TORRE_MANUTENCAO, TAG_DRE_MANUTENCAO].forEach(t => _slideLimpar_(deck, t));
+      } },
     { nome: 'Capa',                          fn: gerarSlideCapa },
-    // As capas de seção ficam no lugar das feitas à mão (21_Slide_Capas.gs) — não mudam a ordem.
     { nome: 'Capas de Seção',                fn: gerarCapasSecoes },
-    { nome: 'Indicadores Gerais',            fn: gerarSlideIndicadoresGerais },
+    { nome: 'Dashboard Operacional',         fn: gerarSlideIndicadoresGerais },
+    { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
+    { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
+    { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
+    { nome: 'Farol de Metas',                fn: gerarSlidesMetas },
     { nome: 'Preventivas',                   fn: gerarSlidePreventivas },
     { nome: 'Corretivas',                    fn: gerarSlideCorretivas },
     { nome: 'Backlog',                       fn: gerarSlideBacklog },
     { nome: 'Backlog Emergencial - Detalhe', fn: gerarSlideBacklogEmergencialDetalhe },
     { nome: 'Chamados Pendentes (Backlog)',  fn: gerarSlideChamadosPendentes },
     { nome: 'Backlog de Clientes',           fn: gerarSlideBacklogClientesProperties },
-    // Demora Crônica saiu (Guilherme, 10/11/2026: "não gostei, tire"). O passo só
-    // remove o slide de decks gerados antes.
-    { nome: 'Demora Crônica (retirado)',     fn: () => _slideLimpar_(getDeckMensal_(), TAG_DEMORA_CRONICA) },
-    { nome: 'Recebimento de Obras',          fn: gerarSlideRecebimentoObras },
     { nome: 'Gestão de Contratações',        fn: gerarSlideContratacoes },
-    // Torre de Manutenção (Capital Realty e Demercado) saiu (Guilherme, 10/11/2026).
-    // O passo só remove os slides de decks gerados antes; o DRE já abre a
-    // manutenção por imóvel.
-    { nome: 'Torre de Manutenção (retirada)', fn: () => _slideLimpar_(getDeckMensal_(), TAG_TORRE_MANUTENCAO) },
-    // Vai para depois da capa da seção 5 (VISTORIAS) sozinho — a posição no pipeline não importa.
+    { nome: 'Recebimento de Obras e Análise de Projetos', fn: gerarSlideRecebimentoObras },
     { nome: 'Monitoramento de Pendências',   fn: gerarSlidePendenciasVistorias },
-    { nome: 'DRE de Propriedades',           fn: gerarSlideDREPropriedades },
-    // O DRE de Manutenção por imóvel virou parte do DRE de Propriedades (formato
-    // dos Megas, 10/11/2026). O passo só tira o slide antigo do deck; o slide
-    // avulso continua no menu.
-    { nome: 'DRE de Manutenção (retirado)',  fn: () => _slideLimpar_(getDeckMensal_(), TAG_DRE_MANUTENCAO) },
-    { nome: 'Bridge de Manutenção (Tabela)',  fn: gerarSlideBridgeManutencao },
-    { nome: 'Bridge de Manutenção (Gráfico)', fn: gerarSlideBridgeManutencaoGrafico },
-    { nome: 'Farol de Metas',                fn: gerarSlidesMetas },
-    // Fotos das seções 04, 05 e 06, do Drive (23_Slide_Fotos.gs); cada seção vai para o fim dela.
-    { nome: 'Fotos (04, 05, 06)',            fn: gerarSlidesFotos },
-    { nome: 'Encerramento',                  fn: gerarSlideEncerramento }   // por último: fica no fim do deck
+    { nome: 'Fotos (03, 04, 05)',            fn: gerarSlidesFotos },
+    { nome: 'Encerramento',                  fn: gerarSlideEncerramento },
+    { nome: 'Ordenar o deck',                fn: ordenarDeck }
   ];
 
   return _rodarPassos_(passos);

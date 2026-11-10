@@ -26,12 +26,15 @@
 // ==========================================
 function gerarSlideRecebimentoObras() {
   const deck = getDeckMensal_();
-  _tabRemoverPorTag_(deck, TAG_RECEBIMENTO);
-  _tabRemoverPorTag_(deck, TAG_RECEBIMENTO.replace('_AUTO】', '_HIST_AUTO】'));
+  [TAG_RECEBIMENTO, TAG_ANALISE_PROJETOS].forEach(t => {
+    _tabRemoverPorTag_(deck, t);
+    _tabRemoverPorTag_(deck, _recTagHist_(t));
+  });
 
   let n = 0;
-  ['esteio', 'ctba', 'analise'].forEach(k => {
-    n += _recGerar_(deck, REL_RECEBIMENTO[k]);
+  // Análise de Projetos com tag própria: vai para Adequações de Clientes (24_OrdemDeck.gs).
+  [['esteio', TAG_RECEBIMENTO], ['ctba', TAG_RECEBIMENTO], ['analise', TAG_ANALISE_PROJETOS]].forEach(([k, tag]) => {
+    n += _recGerar_(deck, REL_RECEBIMENTO[k], tag);
   });
   Logger.log('  Recebimento de Obras: ' + n + ' slide(s).');
   return n;
@@ -41,7 +44,9 @@ function gerarSlideRecebimentoObras() {
 // ==========================================
 // GERAÇÃO
 // ==========================================
-function _recGerar_(deck, rel) {
+function _recTagHist_(tag) { return tag.replace('_AUTO】', '_HIST_AUTO】'); }
+
+function _recGerar_(deck, rel, tag) {
   const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
 
   const SW = deck.getPageWidth();
@@ -56,14 +61,14 @@ function _recGerar_(deck, rel) {
   const kTotal = rel.kpis[0], kConcl = rel.kpis[1], kAberto = rel.kpis[2];
 
   // Bloco principal: só o que está em aberto, e só a contagem em aberto.
-  let n = _recPaginas_(deck, SW, SH, rel, abertos, TAG_RECEBIMENTO,
+  let n = _recPaginas_(deck, SW, SH, rel, abertos, tag,
     [{ label: kAberto.label, cor: kAberto.cor, valor: abertos.length }], '', referencia, null);
 
   // Bloco histórico: o total geral e o % concluído, que só fazem sentido aqui.
   if (concluidos.length) {
     const pct = linhas.length ? Math.round((concluidos.length / linhas.length) * 100) : 0;
     n += _recPaginas_(deck, SW, SH, rel, concluidos,
-      TAG_RECEBIMENTO.replace('_AUTO】', '_HIST_AUTO】'),
+      _recTagHist_(tag),
       [{ label: kTotal.label, cor: kTotal.cor, valor: linhas.length },
        { label: kConcl.label, cor: kConcl.cor, valor: concluidos.length }],
       pct + '% ' + rel.pctTexto, referencia, 'HISTÓRICO · CONCLUÍDOS');

@@ -26,9 +26,10 @@
  */
 
 const FOTOS_SECOES = [
-  { n: 4, titulo: 'SERVIÇOS CONTRATADOS',    pasta: '04 - OBRAS E CONTRATAÇÕES',     chaves: ['obras', 'contrat'] },
-  { n: 5, titulo: 'VISTORIAS',               pasta: '05 - VISTORIAS',                chaves: ['vistori'] },
-  { n: 6, titulo: 'ADEQUAÇÕES DE CLIENTES',  pasta: '06 - ADEQUAÇÕES DE CLIENTES',   chaves: ['adequa'] }
+  // n = número da seção (SECOES_MENSAL); a ordem no deck vem de 24_OrdemDeck.gs.
+  { n: 3, titulo: 'SERVIÇOS CONTRATADOS',    pasta: '03 - CONTRATAÇÕES E OBRAS',     chaves: ['obras', 'contrat'] },
+  { n: 4, titulo: 'VISTORIAS',               pasta: '04 - VISTORIAS',                chaves: ['vistori'] },
+  { n: 5, titulo: 'ADEQUAÇÕES DE CLIENTES',  pasta: '05 - ADEQUAÇÕES DE CLIENTES',   chaves: ['adequa'] }
 ];
 const PF_MAX_FOTOS = 4;
 const PF_KEYLINE   = '#CBD5E1';

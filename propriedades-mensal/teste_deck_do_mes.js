@@ -121,5 +121,56 @@ console.log('\n== Limpeza por tag não apaga cópia feita à mão (10/11/2026) =
   checa(lista.some(s => s.id === 'outro'), 'slide sem a tag não é tocado');
 }
 
+console.log('\n== Ordenar o deck pela estrutura (o deck embaralhado de 10/11/2026) ==');
+{
+  const lista = [];
+  let n = 0;
+  const sl = (nome, tag, texto) => {
+    const s = { nome, id: 'o' + (++n), nota: '', getObjectId: () => s.id,
+      getNotesPage: () => ({ getSpeakerNotesShape: () => ({ getText: () => ({ asString: () => s.nota }) }) }),
+      getShapes: () => [{ getText: () => ({ asString: () => texto || nome }) }],
+      move: i => { const de = lista.indexOf(s); lista.splice(de, 1); lista.splice(de < i ? i - 1 : i, 0, s); } };
+    if (tag) s.nota = tag + '\nGerado em 10/11/2026\n' + _TAB_ID_NOTA_ + s.id;
+    lista.push(s); return s;
+  };
+  const hist = t => t.replace('_AUTO】', '_HIST_AUTO】');
+  // A ordem do pptx das 17:31: capas todas no topo, Bridge dentro de Manutenções, conteúdo depois da 06.
+  sl('Capa', TAG_CAPA);
+  sl('Sec1', _capaTagSecao_(1)); sl('DRE', TAG_DRE_PROPRIEDADES);
+  sl('Sec2', _capaTagSecao_(2)); sl('Bridge', TAG_BRIDGE_MANUTENCAO); sl('BridgeG', TAG_BRIDGE_GRAFICO);
+  sl('Sec3', _capaTagSecao_(3)); sl('Fotos3', _fotosTag_(3));
+  sl('Sec4', _capaTagSecao_(4)); sl('Pend', TAG_PENDENCIAS); sl('Fotos4', _fotosTag_(4));
+  sl('Sec5', _capaTagSecao_(5));
+  sl('Dash', TAG_DASHBOARD); sl('Prev', TAG_PREVENTIVAS); sl('Corr', TAG_CORRETIVAS); sl('Back', TAG_BACKLOG);
+  sl('Emerg1', TAG_BACKLOG_EMERG_DETALHE); sl('Emerg2', TAG_BACKLOG_EMERG_DETALHE); sl('Motivo', TAG_CHAMADOS_PENDENTES);
+  sl('Cli1', TAG_BACKLOG_CLIENTES); sl('Cli2', TAG_BACKLOG_CLIENTES);
+  sl('Receb', TAG_RECEBIMENTO); sl('Obra à mão', null); sl('RecebH', hist(TAG_RECEBIMENTO));
+  sl('Analise', TAG_ANALISE_PROJETOS); sl('AnaliseH', hist(TAG_ANALISE_PROJETOS));
+  sl('Contr', TAG_CONTRATACOES); sl('ContrH', TAG_CONTRATACOES_HIST);
+  sl('Metas1', TAG_METAS); sl('Metas2', TAG_METAS); sl('Fotos5', _fotosTag_(5));
+  sl('Destaques', null, 'DESTAQUES DO PERÍODO');
+  const copia = sl('Cópia à mão', TAG_RECEBIMENTO); copia.nota = copia.nota.replace(_TAB_ID_NOTA_ + copia.id, _TAB_ID_NOTA_ + 'outro');
+  sl('Fim', TAG_ENCERRAMENTO);
+
+  const salvo = global.getDeckMensal_;
+  global.getDeckMensal_ = () => ({ getSlides: () => lista.slice() });
+  ordenarDeck();
+  global.getDeckMensal_ = salvo;
+  const ord = lista.map(s => s.nome).join(' | ');
+  console.log('    ' + ord);
+  // "Cópia à mão" vinha logo depois dos Destaques: anda colada neles.
+  checa(ord === ['Capa', 'Destaques', 'Cópia à mão', 'Dash', 'Sec1', 'DRE', 'Bridge', 'BridgeG', 'Metas1', 'Metas2',
+    'Sec2', 'Prev', 'Corr', 'Back', 'Emerg1', 'Emerg2', 'Motivo', 'Cli1', 'Cli2',
+    'Sec3', 'Contr', 'ContrH', 'Receb', 'Obra à mão', 'RecebH', 'Fotos3',
+    'Sec4', 'Pend', 'Fotos4',
+    'Sec5', 'Analise', 'AnaliseH', 'Fotos5', 'Fim'].join(' | '),
+    'Capa · Destaques · Dashboard · Financeiro · Metas · Manutenções · Contratações e Obras · Vistorias · Adequações · Obrigado');
+  checa(ord.indexOf('Receb | Obra à mão | RecebH') >= 0, 'slide feito à mão anda colado no anterior');
+  global.getDeckMensal_ = () => ({ getSlides: () => lista.slice() });
+  ordenarDeck();
+  global.getDeckMensal_ = salvo;
+  checa(lista.map(s => s.nome).join(' | ') === ord, 'ordenar de novo não muda nada');
+}
+
 console.log(falhas ? '\n✗ ' + falhas + ' de ' + total + ' falharam' : '\n✓ ' + total + '/' + total + ' passaram');
 process.exitCode = falhas ? 1 : 0;

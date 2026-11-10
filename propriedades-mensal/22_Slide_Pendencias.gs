@@ -12,7 +12,7 @@
  *   - imóveis com mais pendências (ordem do índice de saúde do app, 0 a 100);
  *   - pendências por disciplina e a idade das que estão em aberto.
  *
- * Vai logo depois da capa da seção 5 (VISTORIAS); sem a capa no deck, fica no
+ * Vai logo depois da capa da seção 4 (VISTORIAS); sem a capa no deck, fica no
  * fim. Sem o app (token, rede), o slide sai com o aviso do motivo — nunca com
  * zeros.
  *
@@ -203,14 +203,14 @@ function _pendData_(iso) {
   return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(iso || '');
 }
 
-// Logo depois da capa da seção 5 (VISTORIAS). Nunca lança: posição errada é
+// Logo depois da capa da seção 4 (VISTORIAS). Nunca lança: posição errada é
 // chato, mas perder o slide por causa dela seria pior.
 function _pendPosicionar_(deck, slide) {
   try {
-    const secao = SECOES_MENSAL.filter(s => s.n === 5)[0];
+    const secao = SECOES_MENSAL.filter(s => s.casa === 'VISTORIAS')[0];
     const capa = secao ? _capasAcharSecao_(deck, secao) : null;
     if (!capa) {
-      Logger.log('Pendências: capa da seção 5 (VISTORIAS) não encontrada; slide fica no fim do deck.');
+      Logger.log('Pendências: capa da seção 4 (VISTORIAS) não encontrada; slide fica no fim do deck.');
       return;
     }
     slide.move(_capasIndice_(deck, capa) + 1);

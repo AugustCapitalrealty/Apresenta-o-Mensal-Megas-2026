@@ -32,17 +32,18 @@
 // = SECOES de ferramentas/capas_mensal.py (título, frase e foto desenhados na imagem).
 // casa = o texto que identifica a capa feita à mão (junto com "APRESENTAÇÃO MENSAL").
 const SECOES_MENSAL = [
+  // Estrutura de 10/11/2026 (Guilherme): 5 seções; "Gestão de Contratações" e
+  // "Obras e Contratações em Andamento" viraram uma só. A ordem dos slides no
+  // deck é a de ESTRUTURA_DECK (24_OrdemDeck.gs).
   { n: 1, casa: 'FINANCEIRO',             titulo: 'Financeiro',
     frase: 'DRE das despesas e bridge da manutenção' },
   { n: 2, casa: 'MANUTENÇÕES',            titulo: 'Manutenções',
     frase: 'Preventivas, corretivas e backlog de chamados' },
-  { n: 3, casa: 'GESTÃO DE CONTRATAÇÕES', titulo: 'Gestão de Contratações',
-    frase: 'Processos em andamento, contratações fechadas e backlog de clientes' },
-  { n: 4, casa: 'OBRAS E CONTRATAÇÕES',   titulo: 'Obras e Contratações em Andamento',
-    frase: 'Serviços contratados em andamento e concluídos no mês' },
-  { n: 5, casa: 'VISTORIAS',              titulo: 'Vistorias',
-    frase: 'Recebimento de obras, vistorias de rotina e SGQ' },
-  { n: 6, casa: 'ADEQUAÇÕES DE CLIENTES', titulo: 'Adequações de Clientes',
+  { n: 3, casa: 'CONTRATAÇÕES',           titulo: 'Contratações e Obras',
+    frase: 'Processos de contratação, recebimento de obras e serviços contratados' },
+  { n: 4, casa: 'VISTORIAS',              titulo: 'Vistorias',
+    frase: 'Monitoramento de pendências e vistorias de rotina' },
+  { n: 5, casa: 'ADEQUAÇÕES DE CLIENTES', titulo: 'Adequações de Clientes',
     frase: 'Análise de projetos e status dos projetos aprovados' }
 ];
 const TAG_ENCERRAMENTO = '【PROP_ENCERRAMENTO_AUTO】';

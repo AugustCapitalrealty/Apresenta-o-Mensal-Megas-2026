@@ -4,7 +4,7 @@
 //   - o grupo VISTORIAS do Dashboard com os números do app;
 //   - o slide Monitoramento de Pendências (22_Slide_Pendencias.gs): cartões,
 //     setas, tabela, disciplinas, idade, aviso quando o app falha, posição
-//     depois da capa da seção 5, nada fora da página e texto que cabe (medido
+//     depois da capa da seção 4, nada fora da página e texto que cabe (medido
 //     com a largura real das letras — a tabela de gestao-tvs/Visual.gs).
 //
 // Rodar: node propriedades-mensal/teste_vistorias.js
@@ -75,7 +75,7 @@ function novoSlide(notas) {
     }
   };
 }
-// Deck com a capa da seção 5 na posição 6 (e outros slides em volta).
+// Deck com a capa da seção 4 na posição 6 (e outros slides em volta).
 let deckSlides = [];
 const deck = {
   getPageWidth: () => 720, getPageHeight: () => 405, getSlides: () => deckSlides,
@@ -83,7 +83,7 @@ const deck = {
 };
 function montarDeck(comCapa) {
   deckSlides = [0, 1, 2, 3, 4, 5].map(() => novoSlide(''));
-  if (comCapa) deckSlides.push(novoSlide('【PROP_SECAO_05_AUTO】'));
+  if (comCapa) deckSlides.push(novoSlide('【PROP_SECAO_04_AUTO】'));
   deckSlides.push(novoSlide(''));
 }
 global.SlidesApp = {
@@ -189,7 +189,7 @@ const barras = s.filter(f => f.tipo === 'RECTANGLE' && f.h === 9);
 t(barras.length === 5 && barras.slice(3).every(b => b.cor === C.accentOrange) && barras.slice(0, 3).every(b => b.cor === C.brandLight),
   'idade: 5 barras, as de mais de 90 dias em laranja');
 t(txt.some(x => x.indexOf('Fonte: VistoriaPro') === 0), 'rodapé com a fonte do dado');
-t(movidoPara === 7, 'vai para logo depois da capa da seção 5 (índice 7) → ' + movidoPara);
+t(movidoPara === 7, 'vai para logo depois da capa da seção 4 (índice 7) → ' + movidoPara);
 
 // Geometria: nada fora da página e texto de uma linha que cabe na caixa.
 const fora = s.filter(f => f.tipo !== 'ELLIPSE' && (f.x < -0.5 || f.y < -0.5 || f.x + f.w > 720.5 || f.y + f.h > 405.5));
@@ -206,10 +206,10 @@ caixas.forEach((a, i) => caixas.slice(i + 1).forEach(b => {
 }));
 t(!sobrepostos.length, 'nenhum texto em cima de outro → ' + sobrepostos.join(' | '));
 
-// Sem a capa da seção 5 no deck: fica no fim, e o Logger conta.
+// Sem a capa da seção 4 no deck: fica no fim, e o Logger conta.
 reiniciar();
 rodarSlide('Pendências — sem capa da seção', false);
-t(movidoPara === null && logs.some(l => /capa da seção 5/.test(l)), 'sem a capa da seção 5: fica no fim e avisa no Logger');
+t(movidoPara === null && logs.some(l => /capa da seção 4/.test(l)), 'sem a capa da seção 4: fica no fim e avisa no Logger');
 
 // ── 4. App fora: aviso no slide, nada de zeros ──────────────────────────────
 reiniciar(); resposta = { cod: 500, corpo: { error: 'boom' } };

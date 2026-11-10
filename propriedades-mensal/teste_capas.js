@@ -66,7 +66,8 @@ const deck = {
 };
 const capaMao = nome => novoSlide(['CAPITAL REALTY', 'APRESENTAÇÃO MENSAL', nome, 'Obras, Contratações e Indicadores do Mês', 'AGOSTO 2026']);
 
-// O deck de setembro/2026, resumido: capa, destaques, seções feitas à mão (sem VISTORIAS, para testar a criação no fim).
+// O deck de setembro/2026, resumido, já sem a capa "Obras e Contratações em Andamento" (fundida em
+// Contratações e Obras, 10/11/2026): capa, destaques, seções feitas à mão (sem VISTORIAS, para testar a criação no fim).
 function montarDeck() {
   slides.length = 0;
   slides.push(novoSlide(['CAPITAL REALTY', 'APRESENTAÇÃO MENSAL', 'GESTÃO DE\nPROPRIEDADES', 'Obras, Contratações e Indicadores do Mês'], '【PROP_CAPA_AUTO】'));
@@ -76,7 +77,6 @@ function montarDeck() {
   slides.push(capaMao('MANUTENÇÕES'));
   slides.push(novoSlide(['MANUTENÇÃO PREVENTIVA']));
   slides.push(capaMao('GESTÃO DE CONTRATAÇÕES'));
-  slides.push(capaMao('OBRAS E CONTRATAÇÕES\nEM ANDAMENTO'));
   slides.push(novoSlide(['VISTORIAS DE ROTINA']));
   slides.push(capaMao('ADEQUAÇÕES DE CLIENTES'));
   slides.push(novoSlide(['STATUS PROJETOS APROVADOS']));
@@ -115,16 +115,16 @@ checa(o1[0] === 'PROP_CAPA_AUTO', 'a capa refeita volta para o 1º slide, não p
 checa(o1[1].indexOf('DESTAQUES') === 0, 'os Destaques ficam logo depois da capa');
 checa(o1[2] === 'PROP_SECAO_01_AUTO' && o1[3].indexOf('DRE') === 0, 'FINANCEIRO trocada no lugar, antes do DRE');
 checa(o1[4] === 'PROP_SECAO_02_AUTO' && o1[5].indexOf('MANUTENÇÃO PREVENTIVA') === 0, 'MANUTENÇÕES no lugar');
-checa(o1[6] === 'PROP_SECAO_03_AUTO' && o1[7] === 'PROP_SECAO_04_AUTO', 'CONTRATAÇÕES e OBRAS no lugar');
-checa(o1[9] === 'PROP_SECAO_06_AUTO', 'ADEQUAÇÕES no lugar');
-checa(o1[o1.length - 2] === 'PROP_SECAO_05_AUTO', 'VISTORIAS sem capa no deck → criada no fim, antes do encerramento');
-checa(logs.some(l => /Criadas no FIM.*5 Vistorias/.test(l)), 'e o Logger diz qual foi para o fim');
+checa(o1[6] === 'PROP_SECAO_03_AUTO', 'GESTÃO DE CONTRATAÇÕES vira 03 Contratações e Obras, no lugar');
+checa(o1[8] === 'PROP_SECAO_05_AUTO', 'ADEQUAÇÕES (agora 05) no lugar');
+checa(o1[o1.length - 2] === 'PROP_SECAO_04_AUTO', 'VISTORIAS sem capa no deck → criada no fim, antes do encerramento');
+checa(logs.some(l => /Criadas no FIM.*4 Vistorias/.test(l)), 'e o Logger diz qual foi para o fim');
 checa(o1[o1.length - 1] === 'PROP_ENCERRAMENTO_AUTO', 'encerramento é o último');
 checa(slides.length === n0 + 2, 'mesmo nº de slides + VISTORIAS + o encerramento (nenhuma capa duplicada)');
 checa(!slides.some(s => /AGOSTO 2026/.test(textoDe(s))), 'nenhuma capa ficou com AGOSTO (mês antigo)');
 checa(slides.filter(s => /PROP_SECAO|PROP_CAPA|PROP_ENCERR/.test(s.nota)).every(dentro), 'capas em formas dentro da página');
-const sec4 = slides.find(s => /PROP_SECAO_04/.test(s.nota));
-checa(/OBRAS E CONTRATAÇÕES EM ANDAMENTO/.test(textoDe(sec4)) && /SETEMBRO 2026/.test(textoDe(sec4)), 'em formas: título e mês no slide');
+const sec3 = slides.find(s => /PROP_SECAO_03/.test(s.nota));
+checa(/CONTRATAÇÕES E OBRAS/.test(textoDe(sec3)) && /SETEMBRO 2026/.test(textoDe(sec3)), 'em formas: título e mês no slide');
 
 console.log('\n== Segunda geração: acha pela tag, não duplica ==');
 rodar();
