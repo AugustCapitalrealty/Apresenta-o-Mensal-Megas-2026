@@ -13,12 +13,14 @@
 function _pgCap_(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
 
 // Linhas do DRE/Bridge: grupos e itens com algum valor no ano (ritmo ou real).
-function _pgLinhasFin_(agg) {
+// modo 'mes' (Bridge mês a mês): também fecha os grupos com mesAMes = false.
+function _pgLinhasFin_(agg, modo) {
   const temValor = x => x.P.some(v => Math.abs(v) >= 0.5) || x.R.some(v => Math.abs(v) >= 0.5);
   const out = [];
   agg.grupos.forEach(g => {
     if (!temValor(g)) return;
     out.push({ tipo: 'grupo', nome: g.nome, serie: g });
+    if (!g.detalhar || (modo === 'mes' && !g.mesAMes)) return;
     g.itens.forEach(it => { if (temValor(it)) out.push({ tipo: 'item', nome: it.nome, serie: it }); });
   });
   return out;
@@ -68,7 +70,7 @@ function slideDREPG_(s, ctx) {
   }
   if (agg.creditos.length) {
     const por = {};
-    agg.creditos.forEach(c => { (por[c.desc] = por[c.desc] || []).push(c); });
+    agg.creditos.slice().sort((a, b) => a.mes - b.mes).forEach(c => { (por[c.desc] = por[c.desc] || []).push(c); });
     notas.push('Créditos no realizado (estornos que abatem a despesa): ' + Object.keys(por).map(d =>
       _pgCap_(d) + ' ' + por[d].map(c => '+' + _pgMil_(c.valor) + ' mil (' + PG_MESES_CURTO[c.mes].toLowerCase() + ')').join(', ')
     ).join(' · ') + '.');
@@ -103,7 +105,7 @@ function slideBridgeTabelaPG_(s, ctx) {
   const linhas = [{ tipo: 'cab', cel: ['RUBRICA'].concat(PG_MESES_CURTO, ['ANO']) }];
   const valores = serie => serie.R.map((r, i) => (i <= m ? r : serie.P[i]));
   const cinza = [null].concat(Array(12).fill(0).map((_, i) => (i > m ? DS.textMuted : null)), [null]);
-  _pgLinhasFin_(agg).forEach(l => {
+  _pgLinhasFin_(agg, 'mes').forEach(l => {
     const v = valores(l.serie);
     linhas.push({ tipo: l.tipo, cel: [(l.tipo === 'item' ? '   ' : '') + l.nome].concat(v.map(_pgMil_), [_pgMil_(_pgSomas_(l.serie, m).proj)]),
                   italico: italico, cores: l.tipo === 'item' ? cinza : null });
@@ -127,10 +129,10 @@ function slideBridgeGraficoPG_(s, ctx) {
 
   // Variação por rubrica (item); as pequenas viram "Demais".
   let deltas = [];
-  agg.grupos.forEach(g => g.itens.forEach(it => {
-    const k = _pgSomas_(it, m);
+  agg.grupos.forEach(g => (g.detalhar ? g.itens.map(it => ({ nome: it.nome, s: it })) : [{ nome: _pgNomeGrupo_(g.nome), s: g }]).forEach(x => {
+    const k = _pgSomas_(x.s, m);
     const d = k.proj - k.anoP;
-    if (Math.abs(d) >= 0.5) deltas.push({ nome: it.nome, d: d });
+    if (Math.abs(d) >= 0.5) deltas.push({ nome: x.nome, d: d });
   }));
   deltas.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   if (deltas.length > 7) {

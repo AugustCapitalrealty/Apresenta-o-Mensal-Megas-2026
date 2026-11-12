@@ -104,3 +104,10 @@ o TOTAL do DRE contra o export (9,9/15,9 · 220,8/196,9 · 240,7/216,8).
   06/11, Agendamento Inteligência de Mercado sem data registrada). Aba no formato
   antigo também é lida. Slides antigos com tag PORTFOLIO/CRONOGRAMA/ENTREGAS são
   removidos na regeração. Deck = 16 slides.
+- **Pessoal nunca abre** (Guilherme, 12/11/2026: "o DRE não entra em detalhes do
+  custo com pessoal"): `detalhar: false` no grupo PESSOAL de `PG_RUBRICAS` → uma
+  linha só no DRE, no mês a mês, na cascata e nas notas (variações e créditos
+  saem como "Pessoal", nunca bônus/provisão/INSS). **Viagens não abre no mês a
+  mês** ("mês a mês de viagens não precisa"): `mesAMes: false`; no DRE abre.
+  O teste reprova se qualquer slide citar salário, bônus, encargos, provisão,
+  benefício etc.

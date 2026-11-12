@@ -175,7 +175,7 @@ function _pgRubricaDaConta_(conta) {
 function agregarFinanceiroPG_(fin) {
   const z = () => Array(12).fill(0);
   const grupos = PG_RUBRICAS.map(g => ({
-    nome: g.grupo, P: z(), R: z(),
+    nome: g.grupo, detalhar: g.detalhar !== false, mesAMes: g.mesAMes !== false && g.detalhar !== false, P: z(), R: z(),
     itens: g.itens.map(it => ({ nome: it[0], P: z(), R: z(), contas: {} }))
   }));
   const total = { P: z(), R: z() }, deprec = { P: z(), R: z() };
@@ -201,7 +201,13 @@ function agregarFinanceiroPG_(fin) {
       g.P[i] += P[i]; g.R[i] += R[i];
       total.P[i] += P[i]; total.R[i] += R[i];
     }
-    l.R.forEach((v, i) => { if (v > 0.005 && i <= fin.mes) creditos.push({ desc: l.desc, mes: i, valor: v }); });
+    // Crédito de grupo fechado (pessoal) sai somado no mês com o nome do grupo — nunca a conta.
+    const descCred = g.detalhar ? l.desc : _pgNomeGrupo_(g.nome);
+    l.R.forEach((v, i) => {
+      if (!(v > 0.005 && i <= fin.mes)) return;
+      const ja = creditos.find(c => c.desc === descCred && c.mes === i);
+      if (ja && !g.detalhar) ja.valor += v; else creditos.push({ desc: descCred, mes: i, valor: v });
+    });
   });
 
   Object.keys(foraMapa).forEach(c => Logger.log('⚠ Conta fora do mapa de rubricas (entrou em "Outras"): ' + c));
@@ -221,16 +227,22 @@ function _pgSomas_(serie, m) {
   };
 }
 
+// "PESSOAL" → "Pessoal"; "VIAGENS E DESLOCAMENTOS" → "Viagens e deslocamentos".
+function _pgNomeGrupo_(nome) { const t = String(nome).toLowerCase(); return t.charAt(0).toUpperCase() + t.slice(1); }
+
 /**
  * Contas com maior diferença real × ritmo no acumulado (para as notas do DRE).
- * Agrupa a mesma conta das duas empresas (11 e 61).
+ * Agrupa a mesma conta das duas empresas (11 e 61). Grupo fechado (pessoal)
+ * entra como UM item com o nome do grupo — nunca por conta.
  */
 function _pgMaioresVariacoes_(fin, n) {
   const m = fin.mes, por = {};
   fin.linhas.forEach(l => {
-    if (!_pgRubricaDaConta_(l.conta)) return;
-    const k = l.conta;
-    por[k] = por[k] || { conta: k, desc: l.desc, dif: 0, real: 0, ritmo: 0 };
+    const pos = _pgRubricaDaConta_(l.conta);
+    if (!pos) return;
+    const grp = PG_RUBRICAS[pos.g];
+    const k = grp.detalhar === false ? 'G:' + grp.grupo : l.conta;
+    por[k] = por[k] || { conta: k, desc: grp.detalhar === false ? _pgNomeGrupo_(grp.grupo) : l.desc, dif: 0, real: 0, ritmo: 0 };
     for (let i = 0; i <= m; i++) { por[k].real += -l.R[i]; por[k].ritmo += -l.P[i]; }
   });
   return Object.keys(por).map(k => por[k])

@@ -172,6 +172,15 @@ console.log('Linha TOTAL do DRE: ' + valsTot.join(' | '));
 ok(valsTot.includes('9,9') && valsTot.includes('15,9') && valsTot.includes('220,8') && valsTot.includes('196,9') &&
    valsTot.includes('240,7') && valsTot.includes('216,8'), 'TOTAL do DRE não bate com o export (esperado 9,9/15,9 · 220,8/196,9 · 240,7/216,8)');
 
+// Pessoal nunca abre (Guilherme, 12/11/2026); viagens abre no DRE, não no mês a mês.
+const PESSOAL_DETALHE = /sal[aá]rio|encargo|provis[aã]o|provis[oõ]es|benef[ií]cio|b[oô]nus|inss|fgts|f[eé]rias|13º|assist[eê]ncia m[eé]dica|alimenta[cç][aã]o|vale transporte|seguro de vida|flex mobilidade/i;
+deck.slides.forEach((s, i) => ok(!PESSOAL_DETALHE.test(textos(s)), 'slide ' + i + ' abre custo de pessoal: ' +
+  (textos(s).match(new RegExp('.{0,40}' + PESSOAL_DETALHE.source + '.{0,40}', 'i')) || [''])[0]));
+const txtTag = tag => textos(deck.slides.find(s => s.notas.indexOf(tag) >= 0));
+ok(/PESSOAL/.test(txtTag('【PG_DRE】')) && /Hospedagem/.test(txtTag('【PG_DRE】')), 'DRE sem a linha Pessoal ou sem o detalhe de viagens');
+ok(!/Hospedagem|Passagens/.test(txtTag('【PG_BRIDGE_TABELA】')) && /VIAGENS/.test(txtTag('【PG_BRIDGE_TABELA】')), 'mês a mês abrindo viagens');
+ok(/Pessoal/.test(txtTag('【PG_BRIDGE_GRAFICO】')), 'cascata sem a barra Pessoal');
+
 console.log((falhas ? '✗ ' : '✓ ') + oks + ' ok, ' + falhas + ' falha(s)');
 
 if (PREVIA) {

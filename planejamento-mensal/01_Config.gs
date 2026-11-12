@@ -58,16 +58,24 @@ const CR_DESIGN_SYSTEM = {
  * para o log e para a nota do slide — nunca some do total.
  * Depreciação (08) fica fora do DRE (não é despesa operacional), como em
  * Propriedades; aparece só no rodapé.
+ *
+ * detalhar: false → o grupo sai SEMPRE numa linha só (DRE, mês a mês, cascata e
+ *   notas). PESSOAL: decisão do Guilherme, 12/11/2026 ("o DRE não entra em
+ *   detalhes do custo com pessoal") — numa área pequena, abrir salário/bônus/
+ *   provisão expõe a remuneração de pessoas. Os itens continuam aqui só para
+ *   conferência no log/diagnóstico.
+ * mesAMes: false → no Bridge mês a mês o grupo sai numa linha só (VIAGENS,
+ *   Guilherme, 12/11/2026: "mês a mês de viagens não precisa"); no DRE abre.
  */
 const PG_RUBRICAS = [
-  { grupo: 'PESSOAL', itens: [
+  { grupo: 'PESSOAL', detalhar: false, itens: [
     ['Salários, férias e bônus', ['06.01.01']],
     ['Encargos (INSS e FGTS)', ['06.01.05']],
     ['Provisões (férias e 13º)', ['06.01.06']],
     ['Benefícios', ['06.01.02', '06.01.03', '06.01.04', '06.01.07', '06.01.08', '06.01.09', '06.01.10', '06.01.11']],
     ['Outras despesas de pessoal', ['06.01']]
   ] },
-  { grupo: 'VIAGENS E DESLOCAMENTOS', itens: [
+  { grupo: 'VIAGENS E DESLOCAMENTOS', mesAMes: false, itens: [
     ['Passagens', ['06.04.09']],
     ['Hospedagem', ['06.04.10']],
     ['Refeição e representação', ['06.04.11']],
