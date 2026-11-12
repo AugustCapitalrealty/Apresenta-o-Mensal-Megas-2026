@@ -180,7 +180,7 @@ function _pgVar_(real, ritmo) {
   const DS = CR_DESIGN_SYSTEM;
   if (Math.abs(ritmo) < 0.5) {
     if (Math.abs(real) < 0.5) return { txt: '—', cor: DS.textMuted };
-    return { txt: 's/ ritmo', cor: real > 0 ? DS.pior : DS.melhor };
+    return { txt: 's/ planej.', cor: real > 0 ? DS.pior : DS.melhor };
   }
   const p = (real - ritmo) / Math.abs(ritmo) * 100;
   const r = Math.round(p);

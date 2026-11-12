@@ -111,3 +111,13 @@ o TOTAL do DRE contra o export (9,9/15,9 · 220,8/196,9 · 240,7/216,8).
   mês** ("mês a mês de viagens não precisa"): `mesAMes: false`; no DRE abre.
   O teste reprova se qualquer slide citar salário, bônus, encargos, provisão,
   benefício etc.
+- **Rótulo "Planejado"** (Guilherme, 12/11/2026, no print do DRE: "outubro
+  deveria ser planejado"): o deck chama a coluna "Planejado" do export de
+  **Planejado** (antes "Ritmo") no DRE, Dashboard, Bridge e notas. Projeção do
+  ano = realizado até o mês + planejado dos meses seguintes.
+- **Saiu o slide "Análise de variação · mês a mês"** (pedido do Guilherme).
+  Tag `【PG_BRIDGE_TABELA】` em `PG_TAGS_RETIRADAS`: some do deck na regeração.
+  Deck = 15 slides. (A função `slideBridgeTabelaPG_` ficou no código, sem uso.)
+- **Pendente:** o Guilherme vai mandar o **planejado do ano** (orçamento fixo de
+  2026 do CC). Quando chegar: decidir com ele se o DRE compara real × esse
+  planejado fixo e o "Planejado" do export volta a se chamar ritmo/projeção.

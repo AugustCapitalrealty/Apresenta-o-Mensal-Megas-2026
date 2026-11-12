@@ -133,6 +133,7 @@ G.gerarApresentacaoPG();
 const deck = Object.values(decks)[0];
 // Slide da 1ª versão (portfólio) num deck já gerado: tem que sumir na regeração.
 const velho = deck.insertSlide(5); velho.notas = '【PG_PORTFOLIO】\nslide-id: ' + velho.id;
+const velho2 = deck.insertSlide(6); velho2.notas = '【PG_BRIDGE_TABELA】\nslide-id: ' + velho2.id;
 G.gerarApresentacaoPG();   // 2ª vez: tem que trocar no lugar, sem duplicar
 ok(!deck.slides.some(s => /PG_PORTFOLIO/.test(s.notas)), 'slide antigo de portfólio não foi removido');
 logs.filter(l => /✗|⚠/.test(l)).forEach(l => console.log('  log: ' + l.split('\n')[0]));
@@ -141,7 +142,7 @@ logs.filter(l => /✗|⚠/.test(l)).forEach(l => console.log('  log: ' + l.split
 const textos = s => s.formas.map(f => f.texto || '').join(' | ');
 const nTags = deck.slides.map(s => (s.notas.match(/【PG_[A-Z_0-9]+】/) || [''])[0]);
 console.log('Slides (' + deck.slides.length + '): ' + deck.slides.map((s, i) => i + ':' + (nTags[i].replace(/【PG_|】/g, '') || (/DESTAQUES/.test(textos(s)) ? 'DESTAQUES(manual)' : 'manual'))).join(' '));
-ok(deck.slides.length === (CHEIO ? 17 : 16), 'quantidade de slides inesperada: ' + deck.slides.length);
+ok(deck.slides.length === (CHEIO ? 16 : 15), 'quantidade de slides inesperada: ' + deck.slides.length);
 ok(deck.slides.filter(s => /PG_PROJETOS_ANO/.test(s.notas)).length === (CHEIO ? 2 : 1), 'páginas da lista de projetos');
 ok(deck.slides.filter(s => /PG_FAROL/.test(s.notas)).length === 1 && deck.slides.filter(s => /PG_META_DETALHE/.test(s.notas)).length === 4, 'metas faltando');
 ok(nTags[0] === '【PG_CAPA】', 'capa não é o 1º slide');
@@ -178,7 +179,7 @@ deck.slides.forEach((s, i) => ok(!PESSOAL_DETALHE.test(textos(s)), 'slide ' + i 
   (textos(s).match(new RegExp('.{0,40}' + PESSOAL_DETALHE.source + '.{0,40}', 'i')) || [''])[0]));
 const txtTag = tag => textos(deck.slides.find(s => s.notas.indexOf(tag) >= 0));
 ok(/PESSOAL/.test(txtTag('【PG_DRE】')) && /Hospedagem/.test(txtTag('【PG_DRE】')), 'DRE sem a linha Pessoal ou sem o detalhe de viagens');
-ok(!/Hospedagem|Passagens/.test(txtTag('【PG_BRIDGE_TABELA】')) && /VIAGENS/.test(txtTag('【PG_BRIDGE_TABELA】')), 'mês a mês abrindo viagens');
+ok(!deck.slides.some(s => /PG_BRIDGE_TABELA/.test(s.notas)), 'mês a mês ainda no deck (foi retirado)');
 ok(/Pessoal/.test(txtTag('【PG_BRIDGE_GRAFICO】')), 'cascata sem a barra Pessoal');
 
 console.log((falhas ? '✗ ' : '✓ ') + oks + ' ok, ' + falhas + ' falha(s)');

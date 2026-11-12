@@ -24,22 +24,23 @@ const PG_TAG = {
 };
 const PG_ID_NOTA = 'slide-id: ';
 
-// Slides da 1ª versão que saíram do deck (12/11/2026): removidos se ainda existirem.
-const PG_TAGS_RETIRADAS = ['【PG_PORTFOLIO】', '【PG_CRONOGRAMA】', '【PG_ENTREGAS】'];
+// Slides que saíram do deck (12/11/2026, pedidos do Guilherme): removidos se ainda existirem.
+// Portfólio/cronograma/entregas → lista de projetos do ano; mês a mês ("Análise de variação") → retirado.
+const PG_TAGS_RETIRADAS = ['【PG_PORTFOLIO】', '【PG_CRONOGRAMA】', '【PG_ENTREGAS】', '【PG_BRIDGE_TABELA】'];
 
 function _pgRemoverRetirados_() {
   let n = 0;
   _pgDeckAtual_.getSlides().forEach(s => {
     if (PG_TAGS_RETIRADAS.some(t => _pgEhGerado_(s, t))) { s.remove(); n++; }
   });
-  if (n) Logger.log('Removidos ' + n + ' slide(s) que saíram do deck (portfólio/cronograma/entregas).');
+  if (n) Logger.log('Removidos ' + n + ' slide(s) que saíram do deck (portfólio/cronograma/entregas/mês a mês).');
 }
 
 // A ORDEM DO DECK — mudar a ordem é mudar só esta lista.
 function _pgEstrutura_() {
   const T = PG_TAG;
   return [T.CAPA, 'DESTAQUES', T.DASHBOARD,
-    T.SEC1, T.DRE, T.BRIDGE_TAB, T.BRIDGE_GRAF,
+    T.SEC1, T.DRE, T.BRIDGE_GRAF,
     T.SEC2, T.FAROL, T.META,
     T.SEC3, T.PROJETOS_ANO,
     T.FIM];

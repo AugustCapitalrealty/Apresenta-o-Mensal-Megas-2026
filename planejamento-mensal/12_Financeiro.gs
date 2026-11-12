@@ -30,7 +30,7 @@ function slideDREPG_(s, ctx) {
   const DS = CR_DESIGN_SYSTEM, m = ctx.mes, agg = ctx.agg;
   const mesC = PG_MESES_CURTO[m];
   _pgHeader_(s, 'DRE · PLANEJAMENTO & GESTÃO',
-    'Realizado × ritmo em R$ mil · ' + _pgMesTexto_(ctx).toLowerCase().replace(/^./, c => c.toUpperCase()) +
+    'Realizado × planejado em R$ mil · ' + _pgMesTexto_(ctx).toLowerCase().replace(/^./, c => c.toUpperCase()) +
     ', acumulado e projeção do ano');
 
   const x = DS.marginX + 3, y = 72, alt = 14;
@@ -40,12 +40,12 @@ function slideDREPG_(s, ctx) {
   // Faixa de cima com os três blocos.
   _pgRet_(s, x, y, W, alt, DS.brandDark);
   _pgTxt_(s, 'RUBRICA', x - 5, y, 196, alt, { fs: 7, negrito: true, fonte: DS.titulos, cor: '#FFFFFF' });
-  [mesC + '/' + String(ctx.ano).slice(2), 'ACUMULADO JAN–' + mesC, 'ANO ' + ctx.ano + ' (REAL + RITMO)'].forEach((t, i) => {
+  [mesC + '/' + String(ctx.ano).slice(2), 'ACUMULADO JAN–' + mesC, 'ANO ' + ctx.ano].forEach((t, i) => {
     _pgTxt_(s, t, x + 186 + i * 156, y, 156, alt, { fs: 7, negrito: true, fonte: DS.titulos, cor: '#FFFFFF', align: 'C' });
     if (i) _pgLinha_(s, x + 186 + i * 156, y + 2, x + 186 + i * 156, y + alt - 2, '#3B4A7A', 0.75);
   });
 
-  const linhas = [{ tipo: 'sub', cel: ['', 'Ritmo', 'Real', 'Var.', 'Ritmo', 'Real', 'Var.', 'Ritmo', 'Projeção', 'Var.'] }];
+  const linhas = [{ tipo: 'sub', cel: ['', 'Planejado', 'Real', 'Var.', 'Planejado', 'Real', 'Var.', 'Planejado', 'Projeção', 'Var.'] }];
   const linhaDe = (tipo, nome, serie) => {
     const k = _pgSomas_(serie, m);
     const v1 = _pgVar_(k.mesR, k.mesP), v2 = _pgVar_(k.acumR, k.acumP), v3 = _pgVar_(k.proj, k.anoP);
@@ -66,7 +66,7 @@ function slideDREPG_(s, ctx) {
   const vars = _pgMaioresVariacoes_(ctx.fin, 4);
   if (vars.length) {
     notas.push('Maiores diferenças no acumulado: ' + vars.map(v =>
-      _pgCap_(v.desc) + ' ' + _pgMil_(Math.abs(v.dif)) + ' mil ' + (v.dif > 0 ? 'acima' : 'abaixo') + ' do ritmo').join(' · ') + '.');
+      _pgCap_(v.desc) + ' ' + _pgMil_(Math.abs(v.dif)) + ' mil ' + (v.dif > 0 ? 'acima' : 'abaixo') + ' do planejado').join(' · ') + '.');
   }
   if (agg.creditos.length) {
     const por = {};
@@ -81,14 +81,14 @@ function slideDREPG_(s, ctx) {
     _pgTxt_(s, notas.join('\n'), x - 4, yFim + 15, W + 8, PG_H - 22 - (yFim + 15), { fs: 7, cor: DS.textBody, topo: true });
   }
   const dep = _pgSomas_(agg.deprec, m);
-  _pgRodape_(s, 'Fonte: ' + ctx.fin.arquivo + ' (CC ' + PG_CENTRO_CUSTO.split(' ')[0] + '). Ritmo = "Planejado" do export; ' +
+  _pgRodape_(s, 'Fonte: ' + ctx.fin.arquivo + ' (CC ' + PG_CENTRO_CUSTO.split(' ')[0] + '). Projeção = realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + planejado dos meses seguintes; ' +
     'P&G sem meta financeira. Depreciação fora do DRE (real acum. ' + _pgMil_(dep.acumR) + ' mil).');
 }
 
 function slideBridgeTabelaPG_(s, ctx) {
   const DS = CR_DESIGN_SYSTEM, m = ctx.mes, agg = ctx.agg;
   _pgHeader_(s, 'ANÁLISE DE VARIAÇÃO · MÊS A MÊS',
-    'R$ mil · realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ', ritmo nos meses seguintes · projeção do ano');
+    'R$ mil · realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ', planejado nos meses seguintes · projeção do ano');
   const x = DS.marginX + 2, y = 72, alt = 13;
   const cols = [{ w: 150, align: 'L' }].concat(Array(12).fill(0).map(() => ({ w: 38, align: 'R' })), [{ w: 50, align: 'R' }]);
 
@@ -98,7 +98,7 @@ function slideBridgeTabelaPG_(s, ctx) {
   _pgTxt_(s, 'REALIZADO', xMes, y, wReal, 11, { fs: 6.5, negrito: true, cor: '#FFFFFF', align: 'C', fonte: DS.titulos });
   if (m < 11) {
     _pgRet_(s, xMes + wReal, y, 38 * (11 - m), 11, DS.cinzaBarra);
-    _pgTxt_(s, 'RITMO', xMes + wReal, y, 38 * (11 - m), 11, { fs: 6.5, negrito: true, cor: DS.textBody, align: 'C', fonte: DS.titulos });
+    _pgTxt_(s, 'PLANEJADO', xMes + wReal, y, 38 * (11 - m), 11, { fs: 6.5, negrito: true, cor: DS.textBody, align: 'C', fonte: DS.titulos });
   }
 
   const italico = [false].concat(Array(12).fill(0).map((_, i) => i > m), [false]);
@@ -111,21 +111,21 @@ function slideBridgeTabelaPG_(s, ctx) {
                   italico: italico, cores: l.tipo === 'item' ? cinza : null });
   });
   const tot = valores(agg.total), k = _pgSomas_(agg.total, m);
-  linhas.push({ tipo: 'tot', cel: ['TOTAL (REAL + RITMO)'].concat(tot.map(_pgMil_), [_pgMil_(k.proj)]) });
-  linhas.push({ tipo: 'grupo', cel: ['RITMO (PLANEJADO DO EXPORT)'].concat(agg.total.P.map(_pgMil_), [_pgMil_(k.anoP)]) });
+  linhas.push({ tipo: 'tot', cel: ['TOTAL (REAL + PLANEJADO)'].concat(tot.map(_pgMil_), [_pgMil_(k.proj)]) });
+  linhas.push({ tipo: 'grupo', cel: ['PLANEJADO'].concat(agg.total.P.map(_pgMil_), [_pgMil_(k.anoP)]) });
   const dif = tot.map((v, i) => v - agg.total.P[i]);
   const corDif = d => (Math.abs(d) < 50 ? DS.textMuted : d > 0 ? DS.pior : DS.melhor);
-  linhas.push({ tipo: 'item', cel: ['DIFERENÇA (REAL − RITMO)'].concat(dif.map((d, i) => (i <= m ? _pgMil_(d) : '')), [_pgMil_(k.proj - k.anoP)]),
+  linhas.push({ tipo: 'item', cel: ['DIFERENÇA (REAL − PLANEJADO)'].concat(dif.map((d, i) => (i <= m ? _pgMil_(d) : '')), [_pgMil_(k.proj - k.anoP)]),
                 cores: [DS.textMain].concat(dif.map(corDif), [corDif(k.proj - k.anoP)]) });
   _pgTabela_(s, x, y + 11, cols, linhas, alt, 6.5);
-  _pgRodape_(s, 'Despesa positiva; crédito (estorno) entra negativo e abate. Diferença: vermelho = gastou mais que o ritmo, verde = menos.');
+  _pgRodape_(s, 'Despesa positiva; crédito (estorno) entra negativo e abate. Diferença: vermelho = gastou mais que o planejado, verde = menos.');
 }
 
 function slideBridgeGraficoPG_(s, ctx) {
   const DS = CR_DESIGN_SYSTEM, m = ctx.mes, agg = ctx.agg;
   const kTot = _pgSomas_(agg.total, m);
-  _pgHeader_(s, 'BRIDGE · RITMO → PROJEÇÃO ' + ctx.ano,
-    'O que explica a diferença entre o ritmo do ano e a projeção (realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + ritmo) · R$ mil');
+  _pgHeader_(s, 'BRIDGE · PLANEJADO → PROJEÇÃO ' + ctx.ano,
+    'O que explica a diferença entre o planejado do ano e a projeção (realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + planejado) · R$ mil');
 
   // Variação por rubrica (item); as pequenas viram "Demais".
   let deltas = [];
@@ -139,7 +139,7 @@ function slideBridgeGraficoPG_(s, ctx) {
     const resto = deltas.slice(6).reduce((a, x) => a + x.d, 0);
     deltas = deltas.slice(0, 6).concat([{ nome: 'Demais rubricas', d: resto }]);
   }
-  const barras = [{ nome: 'Ritmo ' + ctx.ano, v: kTot.anoP, total: true }]
+  const barras = [{ nome: 'Planejado ' + ctx.ano, v: kTot.anoP, total: true }]
     .concat(deltas.map(x => ({ nome: x.nome, v: x.d })), [{ nome: 'Projeção ' + ctx.ano, v: kTot.proj, total: true }]);
 
   // Escala a partir do zero.
@@ -176,9 +176,9 @@ function slideBridgeGraficoPG_(s, ctx) {
   const pct = kTot.anoP ? Math.round(Math.abs(dif) / kTot.anoP * 100) : 0;
   const maior = deltas.filter(x => x.nome !== 'Demais rubricas')[0];
   let frase = 'Projeção ' + ctx.ano + ' de R$ ' + _pgMil_(kTot.proj) + ' mil, R$ ' + _pgMil_(Math.abs(dif)) + ' mil (' + pct + '%) ' +
-    (dif <= 0 ? 'abaixo' : 'acima') + ' do ritmo do ano.';
+    (dif <= 0 ? 'abaixo' : 'acima') + ' do planejado do ano.';
   if (maior) frase += ' Maior efeito: ' + maior.nome.toLowerCase() + ' (' + (maior.d > 0 ? '+' : '−') + _pgMil_(Math.abs(maior.d)) + ' mil).';
   const y0 = _pgCard_(s, DS.marginX, 340, PG_W - 2 * DS.marginX, 44, null, DS.brandMed);
   _pgTxt_(s, frase, DS.marginX + 10, 344, PG_W - 2 * DS.marginX - 20, 36, { fs: 9, cor: DS.textMain });
-  _pgRodape_(s, 'Vermelho = gasto acima do ritmo; verde = abaixo. Fonte: ' + ctx.fin.arquivo + '.');
+  _pgRodape_(s, 'Vermelho = gasto acima do planejado; verde = abaixo. Fonte: ' + ctx.fin.arquivo + '.');
 }

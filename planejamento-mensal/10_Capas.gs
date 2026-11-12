@@ -27,7 +27,7 @@ function slideCapaPG_(s, ctx) {
 
 const PG_SECOES = [
   null,
-  { num: '01', titulo: 'FINANCEIRO', sub: 'Realizado × ritmo do centro de custo de P&G' },
+  { num: '01', titulo: 'FINANCEIRO', sub: 'Realizado × planejado do centro de custo de P&G' },
   { num: '02', titulo: 'METAS', sub: 'Farol de metas 2026' },
   { num: '03', titulo: 'PROJETOS', sub: 'Projetos realizados no ano' }
 ];

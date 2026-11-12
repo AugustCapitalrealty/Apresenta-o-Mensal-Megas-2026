@@ -14,10 +14,10 @@ function _pgKpi_(s, x, y, w, valor, rotulo, linha3, cor3, corValor) {
 // "▲ 60% acima do ritmo" / "▼ 11% abaixo do ritmo" (despesa: acima é ruim).
 function _pgVarTexto_(real, ritmo) {
   const DS = CR_DESIGN_SYSTEM;
-  if (Math.abs(ritmo) < 0.5) return { txt: 'sem ritmo', cor: DS.textMuted };
+  if (Math.abs(ritmo) < 0.5) return { txt: 'sem planejado', cor: DS.textMuted };
   const p = Math.round((real - ritmo) / Math.abs(ritmo) * 100);
-  if (p === 0) return { txt: '= ritmo', cor: DS.textBody };
-  return p > 0 ? { txt: '▲ ' + p + '% acima do ritmo', cor: DS.pior } : { txt: '▼ ' + (-p) + '% abaixo do ritmo', cor: DS.melhor };
+  if (p === 0) return { txt: '= planejado', cor: DS.textBody };
+  return p > 0 ? { txt: '▲ ' + p + '% acima do planejado', cor: DS.pior } : { txt: '▼ ' + (-p) + '% abaixo do planejado', cor: DS.melhor };
 }
 
 function slideDashboardPG_(s, ctx) {
@@ -30,9 +30,9 @@ function slideDashboardPG_(s, ctx) {
   let y0 = _pgCard_(s, mX, 74, wMeio, 136, 'FINANCEIRO (R$ mil)', DS.brandMed);
   const wk = (wMeio - 24) / 3;
   const v1 = _pgVarTexto_(k.mesR, k.mesP), v2 = _pgVarTexto_(k.acumR, k.acumP), v3 = _pgVarTexto_(k.proj, k.anoP);
-  _pgKpi_(s, mX + 12, y0 + 4, wk, _pgMil_(k.mesR), 'Realizado em ' + PG_MESES_CURTO[m].toLowerCase() + '\nRitmo ' + _pgMil_(k.mesP), v1.txt, v1.cor);
-  _pgKpi_(s, mX + 12 + wk, y0 + 4, wk, _pgMil_(k.acumR), 'Acumulado jan–' + PG_MESES_CURTO[m].toLowerCase() + '\nRitmo ' + _pgMil_(k.acumP), v2.txt, v2.cor);
-  _pgKpi_(s, mX + 12 + 2 * wk, y0 + 4, wk, _pgMil_(k.proj), 'Projeção ' + ctx.ano + '\nRitmo do ano ' + _pgMil_(k.anoP), v3.txt, v3.cor);
+  _pgKpi_(s, mX + 12, y0 + 4, wk, _pgMil_(k.mesR), 'Realizado em ' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.mesP), v1.txt, v1.cor);
+  _pgKpi_(s, mX + 12 + wk, y0 + 4, wk, _pgMil_(k.acumR), 'Acumulado jan–' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.acumP), v2.txt, v2.cor);
+  _pgKpi_(s, mX + 12 + 2 * wk, y0 + 4, wk, _pgMil_(k.proj), 'Projeção ' + ctx.ano + '\nPlanejado no ano ' + _pgMil_(k.anoP), v3.txt, v3.cor);
 
   // METAS ----------------------------------------------------------------
   const xM = mX + wMeio + gap;
