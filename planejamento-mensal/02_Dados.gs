@@ -98,18 +98,29 @@ function _pgCelula_(c) {
 }
 
 /**
- * Lê o export e devolve:
- *   { mes, ano, arquivo, linhas: [{ conta, desc, empresa, centro, P[12], R[12] }], avisos: [] }
- * P = coluna "Planejado" = RITMO (decisão do Guilherme, 12/11/2026 — nunca é orçamento).
- * R = Realizado. Valores como vêm: despesa NEGATIVA.
+ * Planejado do ano (orçamento fixo) na pasta de P&G: "Planejado-<Ano>.csv".
+ * Mesmo formato do export do mês; a coluna "Planejado" dele é o ORÇAMENTO de
+ * 2026 (fixo o ano inteiro). Enviado pelo Guilherme em 12/11/2026.
  */
-function obterFinanceiroPG_() {
-  const exp = _pgAcharExport_();
-  const tabela = Utilities.parseCsv(_pgTextoCsv_(exp.arquivo), ';');
-  if (!tabela.length) throw new Error('Export vazio: ' + exp.arquivo.getName());
-  const cab = tabela[0].map(_pgCelula_);
+function _pgAcharPlano_(ano) {
+  const it = DriveApp.getFolderById(PG_PASTA_ID).getFiles();
+  while (it.hasNext()) {
+    const f = it.next();
+    const m = f.getName().match(/^planejado[-_ ]+(\d{4})\.csv$/i);
+    if (m && Number(m[1]) === ano) return f;
+  }
+  return null;
+}
 
-  // Colunas mensais pelo cabeçalho ("PlanejadoJan/26", "RealizadoOut/26"), não pela posição.
+/**
+ * Lê um CSV da controladoria (conta × PlanejadoMmm/AA × RealizadoMmm/AA).
+ * Devolve { linhas: [{ conta, desc, empresa, centro, P[12], R[12] }], centros: [] }.
+ * Colunas mensais achadas pelo cabeçalho, não pela posição.
+ */
+function _pgLerCsvControladoria_(arquivo) {
+  const tabela = Utilities.parseCsv(_pgTextoCsv_(arquivo), ';');
+  if (!tabela.length) throw new Error('CSV vazio: ' + arquivo.getName());
+  const cab = tabela[0].map(_pgCelula_);
   const colP = Array(12).fill(-1), colR = Array(12).fill(-1);
   cab.forEach((h, j) => {
     const m = h.match(/^(planejado|realizado)\s*([a-zç]{3})\/(\d{2})$/i);
@@ -122,11 +133,10 @@ function obterFinanceiroPG_() {
   const cConta = achar(/^estr\.? da conta/), cDesc = achar(/^descricao da conta/),
         cEmp = achar(/^descricao da unidade/), cCentro = achar(/^descricao do centro de custo/);
   if (cConta < 0 || colP.indexOf(-1) >= 0 || colR.indexOf(-1) >= 0) {
-    throw new Error('Cabeçalho do export não reconhecido (esperado "Estr. da conta" e Planejado/Realizado de Jan a Dez). ' +
-      'Arquivo: ' + exp.arquivo.getName());
+    throw new Error('Cabeçalho não reconhecido (esperado "Estr. da conta" e Planejado/Realizado de Jan a Dez). ' +
+      'Arquivo: ' + arquivo.getName());
   }
-
-  const linhas = [], avisos = [], centros = {};
+  const linhas = [], centros = {};
   tabela.slice(1).forEach(r => {
     const conta = _pgCelula_(r[cConta]);
     if (!/^\d{2}(\.\d+)*$/.test(conta)) return;
@@ -141,13 +151,43 @@ function obterFinanceiroPG_() {
       R: colR.map(j => _pgNum_(r[j]) || 0)
     });
   });
-  const nomesCentro = Object.keys(centros);
-  if (nomesCentro.some(c => _pgNorm_(c).indexOf('planejamento') < 0)) {
-    avisos.push('Export com centro de custo que não é P&G: ' + nomesCentro.join(', '));
+  return { linhas: linhas, centros: Object.keys(centros) };
+}
+
+/**
+ * Financeiro do deck:
+ *   { mes, ano, arquivo, arquivoPlano, temPlano, linhas: [{ conta, desc, empresa, centro, O[12], P[12], R[12] }], avisos }
+ *   O = PLANEJADO do ano (orçamento fixo, Planejado-<Ano>.csv) — é o que o deck chama de "Planejado".
+ *   P = RITMO (coluna "Planejado" do export do mês) — só para projetar os meses que faltam.
+ *   R = Realizado (do export do mês). Valores como vêm: despesa NEGATIVA.
+ * Sem o arquivo do plano: O = P (compara com o ritmo) e o rodapé avisa.
+ */
+function obterFinanceiroPG_() {
+  const exp = _pgAcharExport_();
+  const lido = _pgLerCsvControladoria_(exp.arquivo);
+  const linhas = lido.linhas, avisos = [];
+  if (lido.centros.some(c => _pgNorm_(c).indexOf('planejamento') < 0)) {
+    avisos.push('Export com centro de custo que não é P&G: ' + lido.centros.join(', '));
+  }
+  const chave = l => l.conta + '|' + _pgNorm_(l.empresa);
+  const arqPlano = _pgAcharPlano_(exp.ano);
+  if (arqPlano) {
+    const plano = _pgLerCsvControladoria_(arqPlano).linhas;
+    const porChave = {};
+    plano.forEach(l => { porChave[chave(l)] = l; });
+    linhas.forEach(l => { const p = porChave[chave(l)]; l.O = p ? p.P.slice() : Array(12).fill(0); if (p) p.usada = true; });
+    // Conta que só existe no plano (ex.: combustíveis em 2026): entra com realizado e ritmo zero.
+    plano.filter(p => !p.usada).forEach(p => linhas.push({ conta: p.conta, desc: p.desc, empresa: p.empresa, centro: p.centro,
+      O: p.P.slice(), P: Array(12).fill(0), R: Array(12).fill(0) }));
+    Logger.log('Planejado do ano: ' + arqPlano.getName() + ' · ' + plano.length + ' contas');
+  } else {
+    linhas.forEach(l => { l.O = l.P.slice(); });
+    avisos.push('Planejado-' + exp.ano + '.csv não está na pasta de P&G: o deck compara com o ritmo do export do mês.');
   }
   Logger.log('Financeiro: ' + exp.arquivo.getName() + ' · ' + linhas.length + ' contas · mês de referência ' +
     PG_MESES[exp.mes] + ' ' + exp.ano);
-  return { mes: exp.mes, ano: exp.ano, arquivo: exp.arquivo.getName(), linhas: linhas, avisos: avisos };
+  return { mes: exp.mes, ano: exp.ano, arquivo: exp.arquivo.getName(), arquivoPlano: arqPlano ? arqPlano.getName() : '',
+           temPlano: !!arqPlano, linhas: linhas, avisos: avisos };
 }
 
 // Rubrica da conta (primeiro prefixo que casa, na ordem de PG_RUBRICAS). null = fora do 06.
@@ -166,7 +206,8 @@ function _pgRubricaDaConta_(conta) {
  * Agrega o financeiro no formato do DRE. Despesa POSITIVA (despesa = −valor):
  * um crédito no realizado (estorno) entra negativo e abate, como na planilha.
  *
- *   grupos[g] = { nome, P[12], R[12], itens: [{ nome, P[12], R[12], contas: [...] }] }
+ *   grupos[g] = { nome, O[12], P[12], R[12], itens: [{ nome, O[12], P[12], R[12], contas: [...] }] }
+ *   (O = planejado do ano, P = ritmo, R = realizado)
  *   total     = { P[12], R[12] }
  *   deprec    = { P[12], R[12] }      (08 — fora do total)
  *   creditos  = [{ desc, mes, valor }]  (realizado positivo no export)
@@ -175,31 +216,31 @@ function _pgRubricaDaConta_(conta) {
 function agregarFinanceiroPG_(fin) {
   const z = () => Array(12).fill(0);
   const grupos = PG_RUBRICAS.map(g => ({
-    nome: g.grupo, detalhar: g.detalhar !== false, mesAMes: g.mesAMes !== false && g.detalhar !== false, P: z(), R: z(),
-    itens: g.itens.map(it => ({ nome: it[0], P: z(), R: z(), contas: {} }))
+    nome: g.grupo, detalhar: g.detalhar !== false, mesAMes: g.mesAMes !== false && g.detalhar !== false, O: z(), P: z(), R: z(),
+    itens: g.itens.map(it => ({ nome: it[0], O: z(), P: z(), R: z(), contas: {} }))
   }));
-  const total = { P: z(), R: z() }, deprec = { P: z(), R: z() };
+  const total = { O: z(), P: z(), R: z() }, deprec = { O: z(), P: z(), R: z() };
   const creditos = [], foraMapa = {}, ignoradas = {};
   const ultimo = PG_RUBRICAS.length - 1, ultimoItem = PG_RUBRICAS[ultimo].itens.length - 1;
 
   fin.linhas.forEach(l => {
-    const P = l.P.map(v => -v), R = l.R.map(v => -v);
+    const O = l.O.map(v => -v), P = l.P.map(v => -v), R = l.R.map(v => -v);
     if (/^08(\.|$)/.test(l.conta)) {
-      for (let i = 0; i < 12; i++) { deprec.P[i] += P[i]; deprec.R[i] += R[i]; }
+      for (let i = 0; i < 12; i++) { deprec.O[i] += O[i]; deprec.P[i] += P[i]; deprec.R[i] += R[i]; }
       return;
     }
     const pos = _pgRubricaDaConta_(l.conta);
     if (!pos) {
-      if (l.P.some(v => v) || l.R.some(v => v)) ignoradas[l.conta + ' ' + l.desc] = true;
+      if (l.O.some(v => v) || l.P.some(v => v) || l.R.some(v => v)) ignoradas[l.conta + ' ' + l.desc] = true;
       return;
     }
     if (pos.g === ultimo && pos.k === ultimoItem) foraMapa[l.conta + ' ' + l.desc] = true;
     const g = grupos[pos.g], it = g.itens[pos.k];
     it.contas[l.conta + ' ' + l.desc] = true;
     for (let i = 0; i < 12; i++) {
-      it.P[i] += P[i]; it.R[i] += R[i];
-      g.P[i] += P[i]; g.R[i] += R[i];
-      total.P[i] += P[i]; total.R[i] += R[i];
+      it.O[i] += O[i]; it.P[i] += P[i]; it.R[i] += R[i];
+      g.O[i] += O[i]; g.P[i] += P[i]; g.R[i] += R[i];
+      total.O[i] += O[i]; total.P[i] += P[i]; total.R[i] += R[i];
     }
     // Crédito de grupo fechado (pessoal) sai somado no mês com o nome do grupo — nunca a conta.
     const descCred = g.detalhar ? l.desc : _pgNomeGrupo_(g.nome);
@@ -217,9 +258,12 @@ function agregarFinanceiroPG_(fin) {
 }
 
 // Somas de uma série (despesa) para o mês de referência m.
+// mesO/acumO/anoO = PLANEJADO do ano (o que o deck mostra como "Planejado");
+// proj = realizado até o mês + RITMO dos meses seguintes.
 function _pgSomas_(serie, m) {
   const soma = (a, i, j) => a.slice(i, j).reduce((x, y) => x + y, 0);
   return {
+    mesO: serie.O[m], acumO: soma(serie.O, 0, m + 1), anoO: soma(serie.O, 0, 12),
     mesP: serie.P[m], mesR: serie.R[m],
     acumP: soma(serie.P, 0, m + 1), acumR: soma(serie.R, 0, m + 1),
     anoP: soma(serie.P, 0, 12),
@@ -243,7 +287,7 @@ function _pgMaioresVariacoes_(fin, n) {
     const grp = PG_RUBRICAS[pos.g];
     const k = grp.detalhar === false ? 'G:' + grp.grupo : l.conta;
     por[k] = por[k] || { conta: k, desc: grp.detalhar === false ? _pgNomeGrupo_(grp.grupo) : l.desc, dif: 0, real: 0, ritmo: 0 };
-    for (let i = 0; i <= m; i++) { por[k].real += -l.R[i]; por[k].ritmo += -l.P[i]; }
+    for (let i = 0; i <= m; i++) { por[k].real += -l.R[i]; por[k].ritmo += -l.O[i]; }   // "ritmo" aqui = planejado do ano
   });
   return Object.keys(por).map(k => por[k])
     .map(x => { x.dif = x.real - x.ritmo; return x; })

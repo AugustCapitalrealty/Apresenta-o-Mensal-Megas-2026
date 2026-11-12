@@ -29,10 +29,10 @@ function slideDashboardPG_(s, ctx) {
   const k = _pgSomas_(ctx.agg.total, m);
   let y0 = _pgCard_(s, mX, 74, wMeio, 136, 'FINANCEIRO (R$ mil)', DS.brandMed);
   const wk = (wMeio - 24) / 3;
-  const v1 = _pgVarTexto_(k.mesR, k.mesP), v2 = _pgVarTexto_(k.acumR, k.acumP), v3 = _pgVarTexto_(k.proj, k.anoP);
-  _pgKpi_(s, mX + 12, y0 + 4, wk, _pgMil_(k.mesR), 'Realizado em ' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.mesP), v1.txt, v1.cor);
-  _pgKpi_(s, mX + 12 + wk, y0 + 4, wk, _pgMil_(k.acumR), 'Acumulado jan–' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.acumP), v2.txt, v2.cor);
-  _pgKpi_(s, mX + 12 + 2 * wk, y0 + 4, wk, _pgMil_(k.proj), 'Projeção ' + ctx.ano + '\nPlanejado no ano ' + _pgMil_(k.anoP), v3.txt, v3.cor);
+  const v1 = _pgVarTexto_(k.mesR, k.mesO), v2 = _pgVarTexto_(k.acumR, k.acumO), v3 = _pgVarTexto_(k.proj, k.anoO);
+  _pgKpi_(s, mX + 12, y0 + 4, wk, _pgMil_(k.mesR), 'Realizado em ' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.mesO), v1.txt, v1.cor);
+  _pgKpi_(s, mX + 12 + wk, y0 + 4, wk, _pgMil_(k.acumR), 'Acumulado jan–' + PG_MESES_CURTO[m].toLowerCase() + '\nPlanejado ' + _pgMil_(k.acumO), v2.txt, v2.cor);
+  _pgKpi_(s, mX + 12 + 2 * wk, y0 + 4, wk, _pgMil_(k.proj), 'Projeção ' + ctx.ano + '\nPlanejado no ano ' + _pgMil_(k.anoO), v3.txt, v3.cor);
 
   // METAS ----------------------------------------------------------------
   const xM = mX + wMeio + gap;

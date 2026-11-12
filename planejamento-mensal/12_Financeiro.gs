@@ -48,12 +48,12 @@ function slideDREPG_(s, ctx) {
   const linhas = [{ tipo: 'sub', cel: ['', 'Planejado', 'Real', 'Var.', 'Planejado', 'Real', 'Var.', 'Planejado', 'Projeção', 'Var.'] }];
   const linhaDe = (tipo, nome, serie) => {
     const k = _pgSomas_(serie, m);
-    const v1 = _pgVar_(k.mesR, k.mesP), v2 = _pgVar_(k.acumR, k.acumP), v3 = _pgVar_(k.proj, k.anoP);
+    const v1 = _pgVar_(k.mesR, k.mesO), v2 = _pgVar_(k.acumR, k.acumO), v3 = _pgVar_(k.proj, k.anoO);
     const corV = tipo === 'tot' ? null : undefined;
     return {
       tipo: tipo,
-      cel: [(tipo === 'item' ? '   ' : '') + nome, _pgMil_(k.mesP), _pgMil_(k.mesR), v1.txt,
-            _pgMil_(k.acumP), _pgMil_(k.acumR), v2.txt, _pgMil_(k.anoP), _pgMil_(k.proj), v3.txt],
+      cel: [(tipo === 'item' ? '   ' : '') + nome, _pgMil_(k.mesO), _pgMil_(k.mesR), v1.txt,
+            _pgMil_(k.acumO), _pgMil_(k.acumR), v2.txt, _pgMil_(k.anoO), _pgMil_(k.proj), v3.txt],
       cores: corV === null ? null : [null, null, null, v1.cor, null, null, v2.cor, null, null, v3.cor]
     };
   };
@@ -81,8 +81,16 @@ function slideDREPG_(s, ctx) {
     _pgTxt_(s, notas.join('\n'), x - 4, yFim + 15, W + 8, PG_H - 22 - (yFim + 15), { fs: 7, cor: DS.textBody, topo: true });
   }
   const dep = _pgSomas_(agg.deprec, m);
-  _pgRodape_(s, 'Fonte: ' + ctx.fin.arquivo + ' (CC ' + PG_CENTRO_CUSTO.split(' ')[0] + '). Projeção = realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + planejado dos meses seguintes; ' +
-    'P&G sem meta financeira. Depreciação fora do DRE (real acum. ' + _pgMil_(dep.acumR) + ' mil).');
+  _pgRodape_(s, _pgFonteFin_(ctx) + ' Depreciação fora do DRE (real acum. ' + _pgMil_(dep.acumR) + ' mil).');
+}
+
+// Rodapé comum do financeiro: de onde vem cada coluna.
+function _pgFonteFin_(ctx) {
+  const mC = PG_MESES_CURTO[ctx.mes].toLowerCase();
+  const plan = ctx.fin.temPlano ? 'Planejado = ' + ctx.fin.arquivoPlano + ' (orçamento do ano)'
+    : '⚠ Sem Planejado-' + ctx.ano + '.csv: "Planejado" = ritmo do export';
+  return plan + '. Realizado e ritmo: ' + ctx.fin.arquivo + ' (CC ' + PG_CENTRO_CUSTO.split(' ')[0] + '). Projeção = realizado até ' +
+    mC + ' + ritmo dos meses seguintes.';
 }
 
 function slideBridgeTabelaPG_(s, ctx) {
@@ -125,21 +133,22 @@ function slideBridgeGraficoPG_(s, ctx) {
   const DS = CR_DESIGN_SYSTEM, m = ctx.mes, agg = ctx.agg;
   const kTot = _pgSomas_(agg.total, m);
   _pgHeader_(s, 'BRIDGE · PLANEJADO → PROJEÇÃO ' + ctx.ano,
-    'O que explica a diferença entre o planejado do ano e a projeção (realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + planejado) · R$ mil');
+    'O que explica a diferença entre o planejado do ano e a projeção (realizado até ' + PG_MESES_CURTO[m].toLowerCase() + ' + ritmo) · R$ mil');
 
   // Variação por rubrica (item); as pequenas viram "Demais".
   let deltas = [];
   agg.grupos.forEach(g => (g.detalhar ? g.itens.map(it => ({ nome: it.nome, s: it })) : [{ nome: _pgNomeGrupo_(g.nome), s: g }]).forEach(x => {
     const k = _pgSomas_(x.s, m);
-    const d = k.proj - k.anoP;
+    const d = k.proj - k.anoO;
     if (Math.abs(d) >= 0.5) deltas.push({ nome: x.nome, d: d });
   }));
   deltas.sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
   if (deltas.length > 7) {
     const resto = deltas.slice(6).reduce((a, x) => a + x.d, 0);
-    deltas = deltas.slice(0, 6).concat([{ nome: 'Demais rubricas', d: resto }]);
+    // "Demais" só aparece se somar ao menos R$ 50 (senão vira uma barra "+0,0" sem sentido).
+    deltas = deltas.slice(0, 6).concat(Math.abs(resto) >= 50 ? [{ nome: 'Demais rubricas', d: resto }] : []);
   }
-  const barras = [{ nome: 'Planejado ' + ctx.ano, v: kTot.anoP, total: true }]
+  const barras = [{ nome: 'Planejado ' + ctx.ano, v: kTot.anoO, total: true }]
     .concat(deltas.map(x => ({ nome: x.nome, v: x.d })), [{ nome: 'Projeção ' + ctx.ano, v: kTot.proj, total: true }]);
 
   // Escala a partir do zero.
@@ -172,13 +181,13 @@ function slideBridgeGraficoPG_(s, ctx) {
   });
 
   // Leitura em uma frase (calculada).
-  const dif = kTot.proj - kTot.anoP;
-  const pct = kTot.anoP ? Math.round(Math.abs(dif) / kTot.anoP * 100) : 0;
+  const dif = kTot.proj - kTot.anoO;
+  const pct = kTot.anoO ? Math.round(Math.abs(dif) / kTot.anoO * 100) : 0;
   const maior = deltas.filter(x => x.nome !== 'Demais rubricas')[0];
   let frase = 'Projeção ' + ctx.ano + ' de R$ ' + _pgMil_(kTot.proj) + ' mil, R$ ' + _pgMil_(Math.abs(dif)) + ' mil (' + pct + '%) ' +
     (dif <= 0 ? 'abaixo' : 'acima') + ' do planejado do ano.';
   if (maior) frase += ' Maior efeito: ' + maior.nome.toLowerCase() + ' (' + (maior.d > 0 ? '+' : '−') + _pgMil_(Math.abs(maior.d)) + ' mil).';
   const y0 = _pgCard_(s, DS.marginX, 340, PG_W - 2 * DS.marginX, 44, null, DS.brandMed);
   _pgTxt_(s, frase, DS.marginX + 10, 344, PG_W - 2 * DS.marginX - 20, 36, { fs: 9, cor: DS.textMain });
-  _pgRodape_(s, 'Vermelho = gasto acima do planejado; verde = abaixo. Fonte: ' + ctx.fin.arquivo + '.');
+  _pgRodape_(s, 'Vermelho = gasto acima do planejado; verde = abaixo. ' + _pgFonteFin_(ctx));
 }

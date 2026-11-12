@@ -14,34 +14,37 @@ Propriedades. Mesmo design system (`CR_DESIGN_SYSTEM`) e mesma lógica de
   `clasp clone` numa pasta temporária e comparar (o editor pode ter mudanças).
   Toda mudança termina com `git commit` + `git push`.
 
-## Estrutura do deck (proposta, rascunho v1 de 12/11/2026)
+## Estrutura do deck (estado em 12/11/2026, 15 slides)
 
 Capa · Destaques (manual) · Dashboard · **01 Financeiro** (DRE, Bridge
-tabela, Bridge gráfico) · **02 Metas** (Farol 2026, 1 slide por meta) ·
-**03 Projetos** (Portfólio, Cronograma, Entregas do mês e próximos passos) ·
-Encerramento. Rascunho: `PLANEJAMENTO & GESTÃO/RASCUNHO/PG - rascunho do deck v1.png`.
+cascata) · **02 Metas** (Farol 2026, 1 slide por meta) · **03 Projetos**
+(lista dos projetos do ano) · Encerramento. A ordem mora só em
+`_pgEstrutura_()` (`04_Deck.gs`). Capas e divisórias no padrão dos Megas
+(foto + véu + degradê PNG; fotos em `PG_FOTOS`, `10_Capas.gs`).
+Prévias em `PLANEJAMENTO & GESTÃO/RASCUNHO/`.
 
 ## Fontes
 
-| Seção | Fonte | Situação |
-|---|---|---|
-| Financeiro | Export da controladoria do CC **1.01.01.008 GERÊNCIA DE PLANEJAMENTO E GESTÃO** (empresas 11 e 61), mesmo formato do de Propriedades. Salvo como `Planejamento-<Mês>-<Ano>.csv` na pasta do deck | Out/26 recebido |
-| Metas | As 4 metas do Farol do Guilherme (hoje fixas em `farol-guilherme/Farol.gs`) → passar para uma planilha | A criar |
-| Projetos | Planilha de portfólio nova (carga inicial: projetos da pasta `27 - Projetos`) | A criar |
+| Seção | Fonte (na pasta de P&G) |
+|---|---|
+| Financeiro — realizado e ritmo | Export do mês da controladoria, CC **1.01.01.008 GERÊNCIA DE PLANEJAMENTO E GESTÃO** (empresas 11 e 61): `Planejamento-<Mês>-<Ano>.csv`. **O mês do deck sai deste nome.** |
+| Financeiro — planejado | Orçamento do ano, mesmo formato: `Planejado-<Ano>.csv` (a coluna "Planejado" dele é o orçamento fixo) |
+| Metas e Projetos | `PLANILHA PLANEJAMENTO & GESTÃO` (abas CONFIG, METAS, PROJETOS), criada pelo próprio gerador se faltar |
 
 ## Regras do financeiro (decisões do Guilherme, 12/11/2026)
 
-- A coluna **"Planejado" do export é o RITMO**, nunca orçamento. No deck
-  aparece sempre como "Ritmo".
-- **P&G não tem meta financeira:** DRE = Real × Ritmo (mês e acumulado) +
-  projeção do ano (real até o mês de referência + ritmo dos meses seguintes).
-  Sem coluna Meta/Orçamento.
-- Categorias = `DRE_PROP_CATEGORIAS` de `propriedades-mensal` (todas as 32
-  contas de out/26 se encaixam). Depreciação (08) fica fora do total 06.
-- Out/26 (R$ mil, despesas 06): mês real 15,9 × ritmo 9,9; acum. jan–out
-  196,9 × 220,8; projeção 2026 = 216,8. A explicar: créditos de bônus
-  +22,2 mil (fev) e provisão de férias +18,6 mil (mai, mês fica negativo);
-  salários de ~19 mil → ~4 mil/mês a partir de maio.
+- **"Planejado" no deck = orçamento do ano** (`Planejado-2026.csv`). A coluna
+  "Planejado" do export do mês é o **ritmo** e só serve para projetar os
+  meses que faltam. Projeção do ano = realizado até o mês + ritmo dos meses
+  seguintes. Sem `Planejado-<Ano>.csv`, o deck compara com o ritmo e avisa no
+  rodapé. No código: série `O` = planejado do ano, `P` = ritmo, `R` = realizado.
+- **Pessoal nunca abre** (uma linha só no DRE, na cascata e nas notas).
+- Rubricas próprias de P&G (`PG_RUBRICAS`, `01_Config.gs`); depreciação (08)
+  fora do total 06.
+- Out/26 (R$ mil, despesas 06): mês real 15,9 × planejado 42,1; acum. jan–out
+  196,9 × 401,6; ano: projeção 216,8 × planejado 484,5. Quase toda a diferença
+  é pessoal (planejado 468,7 no ano; salários caíram de ~19 mil para ~4 mil/mês
+  a partir de maio). Viagens: planejado 9,8 mil no ano, realizado 8,8 mil até out.
 
 ## Como usar (código publicado em 12/11/2026)
 

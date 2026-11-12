@@ -12,6 +12,9 @@ const fs = require('fs'), path = require('path'), vm = require('vm');
 const csv = process.argv[2];
 if (!csv) { console.log('Uso: node teste_pg.js <export.csv>'); process.exit(1); }
 const PREVIA = process.env.PREVIA, CHEIO = !!process.env.CHEIO;
+// IMG_MAP=<arquivo.json> { "<id do Drive>": "<caminho do PNG local>" } — fotos/logos de verdade na prévia.
+const IMG_MAP = process.env.IMG_MAP ? JSON.parse(fs.readFileSync(process.env.IMG_MAP, 'utf8')) : {};
+const pngDim = p => { const b = fs.readFileSync(p); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
 
 let falhas = 0, oks = 0;
 const ok = (c, msg) => { if (c) oks++; else { falhas++; console.log('  ✗ ' + msg); } };
@@ -62,8 +65,12 @@ function novoSlide(deck) {
     insertTextBox: (t, x, y, w, h) => forma({ tipo: 'TEXT_BOX', x, y, w, h, texto: t }),
     insertLine: (c, x1, y1, x2, y2) => { const f = reg({ tipo: 'LINE', x1, y1, x2, y2, x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
       return { getLineFill: () => ({ setSolidFill: c => { f.cor = c; } }), setWeight: w => { f.peso = w; } }; },
-    insertImage: () => { const f = reg({ tipo: 'IMAGE', x: 0, y: 0, w: 350, h: 100, rotulo: 'logo' });
-      const im = { getWidth: () => 350, getHeight: () => 100,
+    // Imagem: se o ID estiver em IMG_MAP (JSON id → PNG local), usa o tamanho real do PNG
+    // e grava src para a prévia; senão, 350×100 genérico.
+    insertImage: blob => { const loc = blob && blob.__id && IMG_MAP[blob.__id];
+      const dim = loc ? pngDim(loc) : [350, 100];
+      const f = reg({ tipo: 'IMAGE', x: 0, y: 0, w: dim[0], h: dim[1], rotulo: loc ? path.basename(loc) : 'logo', src: loc || undefined });
+      const im = { getWidth: () => dim[0], getHeight: () => dim[1],
         setWidth: v => { f.w = v; return im; }, setHeight: v => { f.h = v; return im; }, setLeft: v => { f.x = v; return im; }, setTop: v => { f.y = v; return im; } };
       return im; },
     getShapes: () => s.formas.filter(f => f.texto != null).map(f => ({ getText: () => ({ asString: () => f.texto }) })),
@@ -78,11 +85,15 @@ function arquivo(o) { const f = Object.assign({ mime: 'text/csv' }, o);
   return Object.assign(f, { getName: () => f.nome, getId: () => f.id, getMimeType: () => f.mime, getUrl: () => 'https://exemplo/' + f.id,
     moveTo: () => {}, getBlob: () => ({ getDataAsString: cs => fs.readFileSync(f.caminho, /8859/.test(cs) ? 'latin1' : 'utf8') }) }); }
 arquivos.push(arquivo({ id: 'CSV1', nome: path.basename(csv).replace(/^.*?(Planejamento)/i, 'Planejamento'), caminho: csv }));
+// Planejado do ano ao lado do export (SEM_PLANO=1 testa o caso sem o arquivo: compara com o ritmo).
+const csvPlano = path.join(path.dirname(csv), 'Planejado-2026.csv');
+const COM_PLANO = fs.existsSync(csvPlano) && !process.env.SEM_PLANO;
+if (COM_PLANO) arquivos.push(arquivo({ id: 'CSV2', nome: 'Planejado-2026.csv', caminho: csvPlano }));
 arquivos.push(arquivo({ id: 'SS1', nome: 'PLANILHA PLANEJAMENTO & GESTÃO', mime: 'application/vnd.google-apps.spreadsheet' }));
 const decks = {};
 const DriveApp = {
   getFolderById: () => ({ getFiles: () => { let i = 0; return { hasNext: () => i < arquivos.length, next: () => arquivos[i++] }; } }),
-  getFileById: id => arquivos.find(f => f.id === id) || { getBlob: () => ({}), moveTo: () => {}, getUrl: () => 'https://exemplo/' + id }
+  getFileById: id => arquivos.find(f => f.id === id) || { getBlob: () => ({ __id: id }), moveTo: () => {}, getUrl: () => 'https://exemplo/' + id }
 };
 const SlidesApp = {
   ShapeType: { RECTANGLE: 'RECTANGLE', ROUND_RECTANGLE: 'ROUND_RECTANGLE', ELLIPSE: 'ELLIPSE', DIAMOND: 'DIAMOND' },
@@ -159,6 +170,7 @@ deck.slides.forEach((s, i) => {
     const nums = ['x', 'y', 'w', 'h'].map(k => f[k]);
     ok(nums.every(n => typeof n === 'number' && isFinite(n)), 'slide ' + i + ' forma com número inválido: ' + JSON.stringify(f).slice(0, 120));
     if (f.tipo === 'ELLIPSE') return;    // grafismo do cabeçalho/capa sangra de propósito
+    if (f.tipo === 'IMAGE' && f.w >= 700 && f.h >= 395) return;   // foto de fundo cobre a página e é cortada de propósito
     ok(f.x >= -1 && f.y >= -1 && f.x + f.w <= 721 && f.y + f.h <= 406, 'slide ' + i + ' forma fora da página: ' +
       f.tipo + ' ' + [f.x, f.y, f.w, f.h].map(Math.round).join(',') + ' ' + (f.texto || '').slice(0, 40));
   });
@@ -170,8 +182,10 @@ const linhaTot = dre && dre.formas.filter(f => f.texto && f.y > 0);
 const iTot = linhaTot.findIndex(f => f.texto === 'TOTAL P&G');
 const valsTot = linhaTot.filter(f => Math.abs(f.y - linhaTot[iTot].y) < 0.5).map(f => f.texto);
 console.log('Linha TOTAL do DRE: ' + valsTot.join(' | '));
-ok(valsTot.includes('9,9') && valsTot.includes('15,9') && valsTot.includes('220,8') && valsTot.includes('196,9') &&
-   valsTot.includes('240,7') && valsTot.includes('216,8'), 'TOTAL do DRE não bate com o export (esperado 9,9/15,9 · 220,8/196,9 · 240,7/216,8)');
+// Com o plano: Planejado = orçamento do ano (42,1 · 401,6 · 484,5). Sem: ritmo do export (9,9 · 220,8 · 240,7).
+// Realizado e projeção (real + ritmo) não dependem do plano.
+const esp = COM_PLANO ? ['42,1', '15,9', '401,6', '196,9', '484,5', '216,8'] : ['9,9', '15,9', '220,8', '196,9', '240,7', '216,8'];
+ok(esp.every(v => valsTot.includes(v)), 'TOTAL do DRE não bate (esperado ' + esp.join(' / ') + ')');
 
 // Pessoal nunca abre (Guilherme, 12/11/2026); viagens abre no DRE, não no mês a mês.
 const PESSOAL_DETALHE = /sal[aá]rio|encargo|provis[aã]o|provis[oõ]es|benef[ií]cio|b[oô]nus|inss|fgts|f[eé]rias|13º|assist[eê]ncia m[eé]dica|alimenta[cç][aã]o|vale transporte|seguro de vida|flex mobilidade/i;

@@ -80,9 +80,9 @@ function diagnosticarPG() {
   const ctx = _pgContexto_();
   const k = _pgSomas_(ctx.agg.total, ctx.mes);
   Logger.log('Mês de referência: ' + PG_MESES[ctx.mes] + ' ' + ctx.ano + ' (' + ctx.fin.arquivo + ')');
-  Logger.log('Financeiro (R$ mil): mês real ' + _pgMil_(k.mesR) + ' × planejado ' + _pgMil_(k.mesP) +
-    ' · acum. ' + _pgMil_(k.acumR) + ' × ' + _pgMil_(k.acumP) + ' · projeção ' + _pgMil_(k.proj) + ' × planejado ano ' + _pgMil_(k.anoP));
-  ctx.agg.grupos.forEach(g => { const s = _pgSomas_(g, ctx.mes); Logger.log('  ' + g.nome + ': acum. ' + _pgMil_(s.acumR) + ' × ' + _pgMil_(s.acumP)); });
+  Logger.log('Financeiro (R$ mil): mês real ' + _pgMil_(k.mesR) + ' × planejado ' + _pgMil_(k.mesO) +
+    ' · acum. ' + _pgMil_(k.acumR) + ' × ' + _pgMil_(k.acumO) + ' · projeção ' + _pgMil_(k.proj) + ' × planejado ano ' + _pgMil_(k.anoO));
+  ctx.agg.grupos.forEach(g => { const s = _pgSomas_(g, ctx.mes); Logger.log('  ' + g.nome + ': acum. ' + _pgMil_(s.acumR) + ' × ' + _pgMil_(s.acumO)); });
   if (ctx.metas) Logger.log('Metas: ' + ctx.metas.metas.length + ' · ' + ctx.metas.atingidos + '/' + ctx.metas.total + ' pontos · situação ' + (ctx.metas.situacao || '—'));
   if (ctx.projetos) Logger.log('Projetos: ' + ctx.projetos.length + ' (' + ctx.projetos.filter(p => p.situacao === 'concluido').length + ' concluídos, ' + ctx.projetos.filter(p => !p.situacao).length + ' sem situação)');
   const ss = _pgPlanilha_();
