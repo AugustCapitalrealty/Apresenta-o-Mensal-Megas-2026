@@ -105,13 +105,10 @@ const SlidesApp = {
 function planilha(ctxG) {
   const metas = [ctxG.PG_CAB_METAS].concat(ctxG._pgCargaMetas_());
   let proj = [ctxG.PG_CAB_PROJETOS].concat(ctxG._pgCargaProjetos_());
-  if (CHEIO) {   // EXEMPLO de layout, não é dado real
+  if (CHEIO) {   // EXEMPLO de layout (14 projetos → 2 páginas), não é dado real
     const d = (dd, mm) => new Date(2026, mm - 1, dd);
-    const ex = [[d(1, 9), d(13, 11), 80, 'No prazo'], [d(1, 10), d(30, 11), 45, 'Atenção'], [d(15, 8), d(30, 11), 90, 'Atenção'],
-      [d(1, 10), d(19, 12), 60, 'No prazo'], [d(1, 7), d(15, 12), 85, 'No prazo'], [d(1, 8), d(31, 10), 70, 'Atrasado'],
-      [d(15, 9), d(20, 11), 75, 'Atenção'], [d(1, 9), d(10, 10), 100, 'Entregue'], [d(10, 9), d(6, 11), 100, 'Entregue'], [d(1, 7), d(28, 8), 100, 'Entregue']];
-    proj = proj.map((r, i) => i === 0 ? r : (() => { const e = ex[i - 1]; const o = r.slice(); o[2] = 'Guilherme'; o[3] = e[0]; o[4] = e[1]; o[5] = e[2]; o[6] = e[3];
-      if (e[3] === 'Entregue' && !o[7]) o[7] = i === 8 ? d(10, 10) : e[1]; return o; })());
+    for (let i = 0; i < 3; i++) proj.push(['Projeto de exemplo ' + (i + 1), 'Área X', i ? 'Pausado' : 'Concluído', i ? '' : d(15, 3),
+      'Texto de exemplo para ver o layout com descrição longa ocupando duas linhas na coluna do que foi feito no projeto.']);
   }
   const abas = { METAS: metas, PROJETOS: proj };
   return { getUrl: () => 'https://exemplo/SS1', getId: () => 'SS1',
@@ -133,15 +130,20 @@ vm.runInContext(codigo, G);
 // ---------------------------------------------------------------- execução
 console.log('Rodando gerarApresentacaoPG()' + (CHEIO ? ' [planilha CHEIA de exemplo]' : '') + '…');
 G.gerarApresentacaoPG();
-G.gerarApresentacaoPG();   // 2ª vez: tem que trocar no lugar, sem duplicar
 const deck = Object.values(decks)[0];
+// Slide da 1ª versão (portfólio) num deck já gerado: tem que sumir na regeração.
+const velho = deck.insertSlide(5); velho.notas = '【PG_PORTFOLIO】\nslide-id: ' + velho.id;
+G.gerarApresentacaoPG();   // 2ª vez: tem que trocar no lugar, sem duplicar
+ok(!deck.slides.some(s => /PG_PORTFOLIO/.test(s.notas)), 'slide antigo de portfólio não foi removido');
 logs.filter(l => /✗|⚠/.test(l)).forEach(l => console.log('  log: ' + l.split('\n')[0]));
 
 // ---------------------------------------------------------------- conferências
 const textos = s => s.formas.map(f => f.texto || '').join(' | ');
 const nTags = deck.slides.map(s => (s.notas.match(/【PG_[A-Z_0-9]+】/) || [''])[0]);
 console.log('Slides (' + deck.slides.length + '): ' + deck.slides.map((s, i) => i + ':' + (nTags[i].replace(/【PG_|】/g, '') || (/DESTAQUES/.test(textos(s)) ? 'DESTAQUES(manual)' : 'manual'))).join(' '));
-ok(deck.slides.length === 17 + (CHEIO ? 0 : 0) || deck.slides.length >= 16, 'quantidade de slides inesperada: ' + deck.slides.length);
+ok(deck.slides.length === (CHEIO ? 17 : 16), 'quantidade de slides inesperada: ' + deck.slides.length);
+ok(deck.slides.filter(s => /PG_PROJETOS_ANO/.test(s.notas)).length === (CHEIO ? 2 : 1), 'páginas da lista de projetos');
+ok(deck.slides.filter(s => /PG_FAROL/.test(s.notas)).length === 1 && deck.slides.filter(s => /PG_META_DETALHE/.test(s.notas)).length === 4, 'metas faltando');
 ok(nTags[0] === '【PG_CAPA】', 'capa não é o 1º slide');
 ok(/DESTAQUES DO PER/.test(textos(deck.slides[1])), 'Destaques não está logo depois da capa');
 ok(deck.slides.filter(s => /DESTAQUES DO PER/.test(textos(s))).length === 1, 'Destaques duplicado na 2ª execução');

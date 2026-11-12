@@ -19,10 +19,21 @@ const PG_TAG = {
   CAPA: '【PG_CAPA】', DASHBOARD: '【PG_DASHBOARD】',
   SEC1: '【PG_SECAO_1】', DRE: '【PG_DRE】', BRIDGE_TAB: '【PG_BRIDGE_TABELA】', BRIDGE_GRAF: '【PG_BRIDGE_GRAFICO】',
   SEC2: '【PG_SECAO_2】', FAROL: '【PG_FAROL】', META: '【PG_META_DETALHE】',
-  SEC3: '【PG_SECAO_3】', PORTFOLIO: '【PG_PORTFOLIO】', CRONOGRAMA: '【PG_CRONOGRAMA】', ENTREGAS: '【PG_ENTREGAS】',
+  SEC3: '【PG_SECAO_3】', PROJETOS_ANO: '【PG_PROJETOS_ANO】',
   FIM: '【PG_ENCERRAMENTO】'
 };
 const PG_ID_NOTA = 'slide-id: ';
+
+// Slides da 1ª versão que saíram do deck (12/11/2026): removidos se ainda existirem.
+const PG_TAGS_RETIRADAS = ['【PG_PORTFOLIO】', '【PG_CRONOGRAMA】', '【PG_ENTREGAS】'];
+
+function _pgRemoverRetirados_() {
+  let n = 0;
+  _pgDeckAtual_.getSlides().forEach(s => {
+    if (PG_TAGS_RETIRADAS.some(t => _pgEhGerado_(s, t))) { s.remove(); n++; }
+  });
+  if (n) Logger.log('Removidos ' + n + ' slide(s) que saíram do deck (portfólio/cronograma/entregas).');
+}
 
 // A ORDEM DO DECK — mudar a ordem é mudar só esta lista.
 function _pgEstrutura_() {
@@ -30,7 +41,7 @@ function _pgEstrutura_() {
   return [T.CAPA, 'DESTAQUES', T.DASHBOARD,
     T.SEC1, T.DRE, T.BRIDGE_TAB, T.BRIDGE_GRAF,
     T.SEC2, T.FAROL, T.META,
-    T.SEC3, T.PORTFOLIO, T.CRONOGRAMA, T.ENTREGAS,
+    T.SEC3, T.PROJETOS_ANO,
     T.FIM];
 }
 

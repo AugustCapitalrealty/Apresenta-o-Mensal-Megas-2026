@@ -20,21 +20,6 @@ function _pgVarTexto_(real, ritmo) {
   return p > 0 ? { txt: '▲ ' + p + '% acima do ritmo', cor: DS.pior } : { txt: '▼ ' + (-p) + '% abaixo do ritmo', cor: DS.melhor };
 }
 
-// Fim do mês de referência e janela dos próximos marcos.
-function _pgFimMes_(ctx) { return new Date(ctx.ano, ctx.mes + 1, 0, 23, 59, 59); }
-
-function _pgProximosMarcos_(ctx, dias) {
-  const fim = _pgFimMes_(ctx), lim = new Date(fim.getTime() + dias * 86400000);
-  return (ctx.projetos || [])
-    .filter(p => p.prazo && p.prazo > fim && p.prazo <= lim && p.statusKey !== 'entregue')
-    .sort((a, b) => a.prazo - b.prazo);
-}
-
-function _pgEntreguesNoMes_(ctx) {
-  return (ctx.projetos || []).filter(p => p.statusKey === 'entregue' && p.entregueEm &&
-    p.entregueEm.getFullYear() === ctx.ano && p.entregueEm.getMonth() === ctx.mes);
-}
-
 function slideDashboardPG_(s, ctx) {
   const DS = CR_DESIGN_SYSTEM, m = ctx.mes;
   _pgHeader_(s, 'DASHBOARD · PLANEJAMENTO & GESTÃO', _pgMesTexto_(ctx) + ' · financeiro, metas e projetos da área');
@@ -78,21 +63,20 @@ function slideDashboardPG_(s, ctx) {
     _pgTxt_(s, 'Planilha de projetos não encontrada (rodar criarPlanilhaPG).', mX + 12, y0 + 10, wT - 24, 40, { fs: 9, cor: DS.textMuted });
   } else {
     const P = ctx.projetos;
-    const ativos = P.filter(p => p.statusKey !== 'entregue');
-    const c = key => ativos.filter(p => p.statusKey === key).length;
-    const kp = [[String(ativos.length), 'projetos ativos', DS.textMain],
-                [String(c('no prazo')), 'no prazo', DS.melhor],
-                [String(c('atencao')), 'atenção', '#B7810C'],
-                [String(c('atrasado')), 'atrasado(s)', DS.pior],
-                [String(_pgEntreguesNoMes_(ctx).length), 'entregue(s) em ' + PG_MESES_CURTO[m].toLowerCase(), DS.brandMed]];
-    kp.forEach((q, i) => _pgKpi_(s, mX + 12 + i * 78, y0 + 6, 70, q[0], q[1], null, null, q[2]));
-    const semSt = ativos.filter(p => !p.statusKey).length;
-    if (semSt) _pgTxt_(s, semSt + ' projeto(s) ativo(s) sem status na planilha', mX + 8, y0 + 64, 380, 12, { fs: 7, cor: DS.textMuted, italico: true });
+    const n = k => P.filter(p => p.situacao === k).length;
+    const kp = [[String(P.length), 'projetos no ano', DS.textMain],
+                [String(n('concluido')), 'concluído(s)', DS.melhor],
+                [String(n('em andamento')), 'em andamento', DS.brandLight]];
+    if (n('pausado')) kp.push([String(n('pausado')), 'pausado(s)', DS.textMuted]);
+    kp.forEach((q, i) => _pgKpi_(s, mX + 12 + i * 86, y0 + 6, 78, q[0], q[1], null, null, q[2]));
 
-    const xm = mX + 12 + 5 * 78 + 10, wm = wT - (xm - mX) - 12;
-    _pgTxt_(s, 'PRÓXIMOS MARCOS (60 DIAS)', xm - 4, y0, wm, 14, { fs: 7.5, negrito: true, fonte: DS.titulos, cor: DS.textMain });
-    const marcos = _pgProximosMarcos_(ctx, 60).slice(0, 5);
-    const txt = marcos.length ? marcos.map(p => _pgDataCurta_(p.prazo) + ' · ' + p.projeto).join('\n') : 'Nenhum prazo nos próximos 60 dias.';
+    // Concluídos no ano, mais recentes primeiro.
+    const xm = mX + 12 + 4 * 86 + 10, wm = wT - (xm - mX) - 12;
+    _pgTxt_(s, 'CONCLUÍDOS EM ' + ctx.ano, xm - 4, y0, wm, 14, { fs: 7.5, negrito: true, fonte: DS.titulos, cor: DS.textMain });
+    const conc = P.filter(p => p.situacao === 'concluido')
+      .sort((a, b) => (b.concluidoEm || 0) - (a.concluidoEm || 0)).slice(0, 6);
+    const txt = conc.length ? conc.map(p => '✓ ' + (p.concluidoEm ? _pgDataCurta_(p.concluidoEm) + ' · ' : '') + p.projeto).join('\n')
+                            : 'Nenhum projeto concluído registrado.';
     _pgTxt_(s, txt, xm - 4, y0 + 15, wm, 100, { fs: 8, cor: DS.textBody, topo: true });
   }
   _pgRodape_(s, 'Fontes: ' + ctx.fin.arquivo + ' (CC ' + PG_CENTRO_CUSTO.split(' ')[0] + ') · ' + PG_PLANILHA_NOME + ' (abas METAS e PROJETOS).');

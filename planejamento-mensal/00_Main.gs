@@ -3,11 +3,11 @@
  * PONTOS DE ENTRADA — escolher no seletor do editor e clicar em Executar
  * (projeto standalone: não há menu). Resultado e link do deck no log.
  *
- *   criarPlanilhaPG()        1ª vez: cria a planilha de metas e projetos na pasta de P&G
+ *   criarPlanilhaPG()        cria a planilha de metas e projetos (o gerar já chama se faltar)
  *   gerarApresentacaoPG()    gera/atualiza o deck do mês inteiro
  *   gerarSoFinanceiroPG()    só Dashboard + DRE + Bridges
  *   gerarSoMetasPG()         só Dashboard + Farol + slides de cada meta
- *   gerarSoProjetosPG()      só Dashboard + Portfólio + Cronograma + Entregas
+ *   gerarSoProjetosPG()      só Dashboard + lista de projetos do ano
  *   diagnosticarPG()         confere export, planilha e deck sem mexer em nada
  *
  * MÊS DO DECK = mês do nome do export mais recente na pasta
@@ -25,6 +25,8 @@ function _pgContexto_() {
   const fin = obterFinanceiroPG_();
   const ctx = { fin: fin, mes: fin.mes, ano: fin.ano, agg: agregarFinanceiroPG_(fin) };
   fin.avisos.forEach(a => Logger.log('⚠ ' + a));
+  // Sem planilha, metas e projetos sumiam do deck (1ª geração, 12/11/2026): cria na hora.
+  if (!_pgPlanilha_()) { Logger.log('Planilha de P&G não encontrada — criando agora.'); criarPlanilhaPG(); }
   try { ctx.metas = obterMetasPG_(); } catch (e) { Logger.log('⚠ Metas: ' + e.message); ctx.metas = null; }
   try { ctx.projetos = obterProjetosPG_(); } catch (e) { Logger.log('⚠ Projetos: ' + e.message); ctx.projetos = null; }
   if (!ctx.metas) Logger.log('⚠ Planilha/aba METAS não encontrada — rode criarPlanilhaPG().');
@@ -59,15 +61,14 @@ function _pgGerar_(o) {
     if (o.projetos) {
       if (o.capas) P('Divisória 03 Projetos', T.SEC3, novo => slideSecaoPG_(novo(), ctx, 3));
       if (ctx.projetos) {
-        P('Portfólio', T.PORTFOLIO, novo => slidesPortfolioPG_(novo, ctx));
-        P('Cronograma', T.CRONOGRAMA, novo => slideCronogramaPG_(novo(), ctx));
-        P('Entregas e próximos passos', T.ENTREGAS, novo => slideEntregasPG_(novo(), ctx));
+        P('Projetos realizados no ano', T.PROJETOS_ANO, novo => slidesProjetosAnoPG_(novo, ctx));
       }
     }
     if (o.capas) P('Encerramento', T.FIM, novo => slideEncerramentoPG_(novo(), ctx));
 
     // Deck recém-criado: tira o slide em branco que o SlidesApp.create põe.
     (aberto.brancos || []).forEach(s => { try { s.remove(); } catch (e) {} });
+    _pgRemoverRetirados_();
     _pgOrdenar_();
     aberto.deck.saveAndClose();
   } finally {
@@ -84,7 +85,7 @@ function diagnosticarPG() {
     ' · acum. ' + _pgMil_(k.acumR) + ' × ' + _pgMil_(k.acumP) + ' · projeção ' + _pgMil_(k.proj) + ' × ritmo ano ' + _pgMil_(k.anoP));
   ctx.agg.grupos.forEach(g => { const s = _pgSomas_(g, ctx.mes); Logger.log('  ' + g.nome + ': acum. ' + _pgMil_(s.acumR) + ' × ' + _pgMil_(s.acumP)); });
   if (ctx.metas) Logger.log('Metas: ' + ctx.metas.metas.length + ' · ' + ctx.metas.atingidos + '/' + ctx.metas.total + ' pontos · situação ' + (ctx.metas.situacao || '—'));
-  if (ctx.projetos) Logger.log('Projetos: ' + ctx.projetos.length + ' (' + ctx.projetos.filter(p => !p.statusKey).length + ' sem status)');
+  if (ctx.projetos) Logger.log('Projetos: ' + ctx.projetos.length + ' (' + ctx.projetos.filter(p => p.situacao === 'concluido').length + ' concluídos, ' + ctx.projetos.filter(p => !p.situacao).length + ' sem situação)');
   const ss = _pgPlanilha_();
   Logger.log('Planilha: ' + (ss ? ss.getUrl() : 'NÃO ENCONTRADA — rode criarPlanilhaPG()'));
 }

@@ -84,16 +84,15 @@ const PG_RUBRICAS = [
   ] }
 ];
 
-// Status da planilha de PROJETOS (coluna Status). Chave = texto sem acento, minúsculo.
-const PG_STATUS_PROJETO = {
-  'no prazo':     { rotulo: 'NO PRAZO',     cor: '#10B981', fundo: '#DEF4E9', texto: '#0B5C34' },
-  'atencao':      { rotulo: 'ATENÇÃO',      cor: '#E5A417', fundo: '#FDF1D2', texto: '#7A5B00' },
-  'atrasado':     { rotulo: 'ATRASADO',     cor: '#EF4444', fundo: '#FDE2E2', texto: '#9B1C1C' },
-  'entregue':     { rotulo: 'ENTREGUE',     cor: '#8FA3C7', fundo: '#E3E8F4', texto: '#151E49' },
-  'pausado':      { rotulo: 'PAUSADO',      cor: '#94A3B8', fundo: '#EEF1F5', texto: '#46516B' },
-  'nao iniciado': { rotulo: 'NÃO INICIADO', cor: '#CBD5E1', fundo: '#F1F5F9', texto: '#46516B' }
+// Situação dos projetos do ano (aba PROJETOS, coluna Situação). Chave = texto sem acento, minúsculo.
+// Seção 03 = só a LISTA dos projetos feitos no ano (Guilherme, 12/11/2026: sem
+// cronograma, sem farol de prazo, sem marcos).
+const PG_SITUACAO_PROJETO = {
+  'concluido':    { rotulo: 'CONCLUÍDO',    cor: '#10B981', fundo: '#DEF4E9', texto: '#0B5C34', ordem: 0 },
+  'em andamento': { rotulo: 'EM ANDAMENTO', cor: '#065CA9', fundo: '#E9F0FA', texto: '#003D7B', ordem: 1 },
+  'pausado':      { rotulo: 'PAUSADO',      cor: '#94A3B8', fundo: '#EEF1F5', texto: '#46516B', ordem: 2 }
 };
-const PG_STATUS_VAZIO = { rotulo: 'A PREENCHER', cor: '#CBD5E1', fundo: '#F1F5F9', texto: '#8592AC' };
+const PG_STATUS_VAZIO = { rotulo: 'A PREENCHER', cor: '#CBD5E1', fundo: '#F1F5F9', texto: '#8592AC', ordem: 3 };
 
 // Status das METAS (colunas Status mês / Status ano), no padrão das cores do Farol.
 const PG_STATUS_META = {

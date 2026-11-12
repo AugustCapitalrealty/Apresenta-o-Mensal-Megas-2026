@@ -51,7 +51,7 @@ Google pede autorização (Drive, Slides, Planilhas).
 
 | Função | O que faz |
 |---|---|
-| `criarPlanilhaPG()` | **1ª vez.** Cria `PLANILHA PLANEJAMENTO & GESTÃO` na pasta de P&G (abas CONFIG, METAS, PROJETOS) com a carga inicial. Se já existir, só mostra o link |
+| `criarPlanilhaPG()` | (O `gerarApresentacaoPG` já chama sozinho se faltar.) Cria `PLANILHA PLANEJAMENTO & GESTÃO` na pasta de P&G (abas CONFIG, METAS, PROJETOS) com a carga inicial. Se já existir, só mostra o link |
 | `gerarApresentacaoPG()` | Gera/atualiza o deck do mês inteiro (19 slides com 4 metas e até 11 projetos) |
 | `gerarSoFinanceiroPG()` / `gerarSoMetasPG()` / `gerarSoProjetosPG()` | Só a seção (e o Dashboard) |
 | `diagnosticarPG()` | Mostra no log mês, totais, metas, projetos e o link da planilha, sem mexer em nada |
@@ -91,3 +91,16 @@ o TOTAL do DRE contra o export (9,9/15,9 · 220,8/196,9 · 240,7/216,8).
 `PREVIA=<pasta>` grava `formas.json` para `../ferramentas/previa_slides.js`
 (PNG por slide); `CHEIO=1` usa uma planilha toda preenchida de **exemplo**
 (não é dado real) para ver portfólio e cronograma cheios.
+
+### Mudança de 12/11/2026 (depois do 1º deck gerado)
+- O 1º deck saiu **sem Metas e sem Projetos** porque a planilha não existia
+  (o `criarPlanilhaPG` não tinha sido rodado). Agora o `gerarApresentacaoPG`
+  **cria a planilha sozinho** quando ela falta.
+- **Seção 03 = só a lista dos projetos feitos no ano** (pedido do Guilherme):
+  saíram portfólio com prazo/avanço, cronograma e entregas/próximos marcos.
+  Aba PROJETOS: `Projeto · Área cliente · Situação (Concluído/Em andamento/Pausado)
+  · Concluído em · O que foi feito`. Até 12 por slide (pagina sozinho).
+  Carga com 11 projetos (3 concluídos: Pesquisa de Satisfação 28/08, Papo com RH
+  06/11, Agendamento Inteligência de Mercado sem data registrada). Aba no formato
+  antigo também é lida. Slides antigos com tag PORTFOLIO/CRONOGRAMA/ENTREGAS são
+  removidos na regeração. Deck = 16 slides.

@@ -304,29 +304,35 @@ function obterMetasPG_() {
   return { metas: metas, total: total, atingidos: atingidos, situacao: _pgSituacaoEm_() };
 }
 
-// Projetos (aba PROJETOS).
+/**
+ * Projetos do ano (aba PROJETOS): Projeto · Área cliente · Situação · Concluído em · O que foi feito.
+ * Aceita também a aba no formato da 1ª versão (Status/Entregue em/Observação):
+ * Status "Entregue" vira Concluído, qualquer outro status preenchido vira Em andamento.
+ */
 function obterProjetosPG_() {
   const rows = _pgLerAba_('PROJETOS');
   if (rows == null) return null;
   return rows.map(r => {
-    const k = _pgNorm_(r['status']);
-    // Avanço: célula formatada em % chega como fração (0,8); digitada como número, 80.
-    const bruto = (r['avanco (%)'] != null && r['avanco (%)'] !== '') ? r['avanco (%)'] : r['avanco'];
-    let av = _pgNum_(bruto);
-    if (av != null && typeof bruto === 'number' && av <= 1) av = av * 100;
+    let k = _pgNorm_(r['situacao']);
+    if (!k && r['status'] != null) {
+      const st = _pgNorm_(r['status']);
+      k = st === 'entregue' ? 'concluido' : st === 'pausado' ? 'pausado' : st ? 'em andamento' : '';
+    }
+    if (k === 'concluida' || k === 'entregue') k = 'concluido';
     return {
       projeto: String(r['projeto'] || '').trim(),
       area: String(r['area cliente'] || r['area'] || '').trim(),
-      responsavel: String(r['responsavel'] || '').trim(),
-      inicio: _pgData_(r['inicio']),
-      prazo: _pgData_(r['prazo']),
-      avanco: av == null ? null : Math.max(0, Math.min(100, av)),
-      statusKey: PG_STATUS_PROJETO[k] ? k : '',
-      entregueEm: _pgData_(r['entregue em']),
-      proximo: String(r['proximo passo'] || '').trim(),
-      obs: String(r['observacao'] || '').trim()
+      situacao: PG_SITUACAO_PROJETO[k] ? k : '',
+      concluidoEm: _pgData_(r['concluido em'] != null ? r['concluido em'] : r['entregue em']),
+      feito: String(r['o que foi feito'] || r['observacao'] || '').trim()
     };
   }).filter(p => p.projeto);
 }
 
-function _pgStatusProjeto_(p) { return PG_STATUS_PROJETO[p.statusKey] || PG_STATUS_VAZIO; }
+function _pgSituacao_(p) { return PG_SITUACAO_PROJETO[p.situacao] || PG_STATUS_VAZIO; }
+
+// Lista do ano: concluídos (pela data), depois em andamento, pausados e sem situação.
+function _pgProjetosOrdenados_(lista) {
+  return lista.slice().sort((a, b) => (_pgSituacao_(a).ordem - _pgSituacao_(b).ordem) ||
+    ((a.concluidoEm || 0) - (b.concluidoEm || 0)) || a.projeto.localeCompare(b.projeto));
+}

@@ -5,16 +5,16 @@
  * Carga inicial:
  *  - METAS: as 4 metas do Farol 2026 do Guilherme com a situação de SETEMBRO
  *    (textos de farol-guilherme/Farol.gs, 16/10/2026). Atualizar para o mês do deck.
- *  - PROJETOS: projetos da pasta 27 - Projetos (CLAUDE.md, 12/11/2026). Só o que
- *    é fato conhecido foi preenchido; início, prazo, avanço e status em branco
- *    ficam para a equipe preencher ("não inventar dado").
+ *  - PROJETOS: LISTA dos projetos feitos no ano (Guilherme, 12/11/2026: a seção
+ *    03 é só essa lista). Carga com o que está registrado (ENTREGAS.md, CLAUDE.md
+ *    da pasta 27, Farol); data de conclusão em branco quando não registrada.
+ * gerarApresentacaoPG() chama esta função sozinho se a planilha não existir.
  * Se a planilha já existir na pasta, NÃO sobrescreve: só mostra o link.
  */
 
 const PG_CAB_METAS = ['Nº', 'Meta', 'Direcionador', 'Prazo', 'Pontos', 'Real mês', 'Status mês', 'Real ano', 'Status ano',
   'Andamento', 'Próximo passo'];
-const PG_CAB_PROJETOS = ['Projeto', 'Área cliente', 'Responsável', 'Início', 'Prazo', 'Avanço (%)', 'Status', 'Entregue em',
-  'Próximo passo', 'Observação'];
+const PG_CAB_PROJETOS = ['Projeto', 'Área cliente', 'Situação', 'Concluído em', 'O que foi feito'];
 
 function _pgCargaMetas_() {
   const d = (dia, mes) => new Date(2026, mes - 1, dia);
@@ -39,28 +39,31 @@ function _pgCargaMetas_() {
 
 function _pgCargaProjetos_() {
   const d = (dia, mes) => new Date(2026, mes - 1, dia);
-  // [Projeto, Área cliente, Responsável, Início, Prazo, Avanço, Status, Entregue em, Próximo passo, Observação]
+  // [Projeto, Área cliente, Situação, Concluído em, O que foi feito]
+  // Só fatos registrados (ENTREGAS.md, CLAUDE.md da pasta 27, Farol). Data em branco = não registrada.
   return [
-    ['Garantias Mega Curitiba F5B', 'Engenharia', '', '', d(13, 11), '', '', '',
-      'Subir a base no Drive para a Engenharia, conferir o Infraspeak e pedir os termos', ''],
-    ['Reembolsos: processo, manual e procedimento', 'Financeiro', '', '', d(30, 11), '', '', '',
-      'Gerador do deck do diagnóstico, e-mail ao Financeiro e escopo com o Jonatas', 'Meta 2026 (meta 4)'],
-    ['Garantias Mega Itajaí F4', 'Engenharia', '', '', '', 90, '', '',
-      'Falta Metaro e os termos (Letícia)', '9 de 10 garantias no Infraspeak'],
-    ['Revisão dos checklists do Infraspeak', 'Facilities', '', '', '', '', '', '',
-      'Conversas com os gestores', 'Web App v17 no ar'],
-    ['Gerador de Parecer Reputacional (Kronoos)', 'Jurídico', '', '', '', '', '', '',
-      'Migrar para o Drive do Jurídico', 'v5 no ar; manual pronto'],
-    ['Brigada de Cheias Mega Esteio', 'Facilities', '', '', '', '', '', '',
-      'Aprovação do certificado (versão A ou B)', ''],
-    ['Deck mensal de contratos de obra', 'Engenharia', '', '', '', '', '', '',
-      'Rodar o gerador e conferir', ''],
-    ['Agendamento: Inteligência de Mercado', 'Comercial / Marketing', '', '', '', '', '', '',
-      '', 'No ar (versão 7)'],
-    ['Papo com RH', 'RH', '', '', '', 100, 'Entregue', d(6, 11),
-      'Sustentação', 'No ar no Drive do RH'],
-    ['Pesquisa de Satisfação Interdepartamental', 'RH', '', '', '', 100, 'Entregue', '',
-      '', 'Pesquisa encerrada em 28/08/2026']
+    ['Pesquisa de Satisfação Interdepartamental', 'RH', 'Concluído', d(28, 8),
+      'Plataforma da pesquisa (formulário e painel do RH) criada e aplicada entre as áreas. Pesquisa encerrada em 28/08.'],
+    ['Papo com RH', 'RH', 'Concluído', d(6, 11),
+      'Site de inscrição com painel em planilha, lista de espera, convite com sala e Meet, e-mails do RH e relatório mensal em PDF. Manual POP entregue.'],
+    ['Agendamento: Apresentação de Inteligência de Mercado', 'Comercial / Marketing', 'Concluído', '',
+      'Web App de inscrições integrado a Planilhas e Google Agenda. No ar (versão 7).'],
+    ['Reembolsos: processo, manual e procedimento', 'Financeiro', 'Em andamento', '',
+      'Entrevistas com as áreas e com o Financeiro; análise e deck do diagnóstico. Meta 2026.'],
+    ['Garantias Mega Itajaí F4', 'Engenharia', 'Em andamento', '',
+      'Garantias dos contratos e do manual do locatário viram avisos no Infraspeak: 9 de 10 cadastradas.'],
+    ['Garantias Mega Curitiba F5B', 'Engenharia', 'Em andamento', '',
+      'Manual lido; base para a Engenharia e planilha para o Infraspeak prontas.'],
+    ['Revisão dos checklists do Infraspeak', 'Facilities', 'Em andamento', '',
+      'Diagnóstico de todos os checklists (sentido, frequência e lacunas) num Web App (v17).'],
+    ['Gerador de Parecer Reputacional (Kronoos)', 'Jurídico', 'Em andamento', '',
+      'Parecer gerado no Google Docs a partir do Kronoos (v5 no ar, manual pronto). Falta migrar para o Drive do Jurídico.'],
+    ['Brigada de Cheias Mega Esteio', 'Facilities', 'Em andamento', '',
+      'Certificado, procedimento, cartaz e vídeo da brigada. Certificado aguardando aprovação.'],
+    ['Deck mensal de contratos de obra', 'Engenharia', 'Em andamento', '',
+      'Gerador do deck mensal de contratos de obra (Mega Curitiba, Fase 7) no Google Slides.'],
+    ['Apresentações gerenciais mensais', 'Diretoria', 'Em andamento', '',
+      'Geração automática dos decks mensais dos Megas (Curitiba, Esteio, Itajaí), de Propriedades e de P&G.']
   ];
 }
 
@@ -99,13 +102,12 @@ function criarPlanilhaPG() {
   metas.getRange('I2:I60').setDataValidation(regraStatusMeta);
   metas.getRange('D2:D60').setNumberFormat('dd/mm/yyyy');
 
-  const proj = montar('PROJETOS', PG_CAB_PROJETOS, _pgCargaProjetos_(), [260, 140, 130, 90, 90, 80, 110, 90, 320, 260]);
-  proj.getRange('G2:G200').setDataValidation(SpreadsheetApp.newDataValidation()
-    .requireValueInList(['No prazo', 'Atenção', 'Atrasado', 'Entregue', 'Pausado', 'Não iniciado'], true).build());
-  proj.getRange('D2:E200').setNumberFormat('dd/mm/yyyy');
-  proj.getRange('H2:H200').setNumberFormat('dd/mm/yyyy');
+  const proj = montar('PROJETOS', PG_CAB_PROJETOS, _pgCargaProjetos_(), [300, 160, 120, 110, 520]);
+  proj.getRange('C2:C200').setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Concluído', 'Em andamento', 'Pausado'], true).build());
+  proj.getRange('D2:D200').setNumberFormat('dd/mm/yyyy');
 
   PropertiesService.getScriptProperties().setProperty(PG_PROP_PLANILHA, ss.getId());
   Logger.log('✓ Planilha criada: ' + ss.getUrl());
-  Logger.log('  Preencher em PROJETOS: início, prazo, avanço e status. Em METAS e CONFIG!B1: situação do mês do deck.');
+  Logger.log('  Conferir PROJETOS (situação, data de conclusão, o que foi feito) e METAS + CONFIG!B1 (situação do mês do deck).');
 }
