@@ -27,6 +27,11 @@ ou execute uma das funções de `00_Main.gs`:
 
 **Mês do deck** = célula B1 da aba CONFIG da PLANILHA PROPRIEDADES (não o calendário).
 
+**Um deck só (16/11/2026).** Tudo é gerado sempre no deck fixo `DECK_PROPRIEDADES_ID`
+(menu **▶ Gerar Apresentação Completa**). A cópia do mês é feita **à mão** depois de
+gerar. Não existe mais geração direto na cópia: o fluxo antigo
+(`gerarApresentacaoNoDeckDoMes`, aposentado) deixou o deck fixo com meses misturados.
+
 **16/10/2026:**
 - **Realizado do mês ainda zerado na PLANILHA PROPRIEDADES** → `_dreCompletarComReal_` (05_DadosSlides.gs) completa
   com os lançamentos das planilhas REAL-* (`DRE_REAL_FONTES`, 01_Config.gs). Centro de custo com lançamento fora de

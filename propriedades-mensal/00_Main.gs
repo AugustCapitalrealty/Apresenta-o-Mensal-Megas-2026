@@ -33,14 +33,14 @@ function onOpen() {
 
   ui.createMenu('🏢 Propriedades 2026')
     .addItem('▶ Gerar Todos os Slides', 'gerarTodosOsSlides')
+    // Um deck só: tudo é gerado no deck fixo (DECK_PROPRIEDADES_ID). A cópia do
+    // mês é feita à mão pelo Guilherme depois de gerar (decisão de 16/11/2026).
     .addItem('▶ Gerar Apresentação Completa', 'gerarApresentacaoPropriedades')
-    .addItem('▶ Gerar no Deck do Mês (cópia enviada)', 'gerarApresentacaoNoDeckDoMes')
     .addItem('📊 Gerar / Atualizar Dashboard', 'gerarSoDashboard')
     .addItem('📋 Gerar Só Tabelas (Obras + Contratações)', 'gerarTabelasPropriedades')
     .addSeparator()
     .addSubMenu(ui.createMenu('⚡ Slide Avulso')
       .addItem('Capa, Capas de Seção e Encerramento', 'gerarSoCapas')
-      .addItem('Capas no Deck do Mês (cópia enviada)', 'gerarCapasNoDeckDoMes')
       .addItem('Dashboard Operacional', 'gerarSoDashboard')
       .addItem('Preventivas', 'gerarSoPreventivas')
       .addItem('Corretivas', 'gerarSoCorretivas')
@@ -57,7 +57,7 @@ function onOpen() {
       .addItem('Bridge — Manutenção (Gráfico)', 'gerarSoBridgeGrafico')
       .addItem('Farol de Metas', 'gerarSoMetas')
       .addItem('Fotos (Obras, Vistorias, Adequações)', 'gerarSoFotos')
-      .addItem('Só reordenar o Deck do Mês', 'ordenarDeckDoMes'))
+      .addItem('Só reordenar o deck', 'ordenarDeck'))
     .addSeparator()
     .addItem('📥 Importar export da controladoria (CSV)', 'importarExportControladoria')
     .addItem('🔍 Diagnosticar Propriedades', 'diagnosticarPropriedades')
@@ -183,8 +183,14 @@ function gerarApresentacaoPropriedades() {
 /**
  * PONTO DE ENTRADA: Gera todos os slides da Apresentação Mensal de Propriedades.
  */
+// APOSENTADO em 16/11/2026 (fora do menu): o fluxo agora é gerar SEMPRE no deck
+// fixo (gerarApresentacaoPropriedades) e o Guilherme faz a cópia do mês à mão.
+// Gerar direto na cópia deixou o deck fixo com meses misturados (Análise de
+// Projetos de setembro ao lado de Contratações de outubro). Mantida só porque os
+// testes cobrem; não usar.
+//
 // A cópia do mês ("APRESENTAÇÃO PROPRIEDADES - <MÊS>/<ANO>", na pasta do
-// modelo) é a que vai para a diretoria. Gera nela, trocando cada slide
+// modelo) era a que ia para a diretoria. Gera nela, trocando cada slide
 // automático no mesmo lugar (_passoNoLugar_); Destaques, fotos de serviços e
 // os outros slides feitos à mão não têm tag e não são tocados.
 function gerarApresentacaoNoDeckDoMes() {
