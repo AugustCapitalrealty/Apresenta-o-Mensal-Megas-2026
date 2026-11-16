@@ -301,6 +301,37 @@ reiniciar();
 }
 resposta = { cod: 200, corpo: FIX };
 
+// ── 5d. Com o corte EXCLUINDO o histórico (app, 16/11/2026): tudo zero de verdade ─────
+// Depois da migration 20261116200000 todas as NCs anteriores a 01/08/2026 saem dos indicadores:
+// outubro/26 volta com 0 em aberto, imoveis = [] e disciplinas = [].
+reiniciar();
+{
+  const Z = { mes: '2026-08', vistorias_periodicas: 0, visitas_mensais: 0, visitas_programadas: 0, imoveis_visitados: 0, imoveis_ativos: 6,
+              ncs_abertas_no_mes: 0, ncs_resolvidas_no_mes: 0, ncs_em_aberto: 0, ncs_vencidas: 0, ncs_alta_vencidas: 0,
+              mttr_dias: null, pct_resolvidas_no_prazo: null };
+  resposta = { cod: 200, corpo: Object.assign({}, FIX, {
+    atual: Z, anterior: Object.assign({}, Z, { mes: '2026-07' }),
+    idade: { '0-30': 0, '31-60': 0, '61-90': 0, '91-180': 0, '>180': 0 }, imoveis: [], disciplinas: [] }) };
+  const sv = rodarSlide('Pendências — corte exclui o histórico (tudo zero)');
+  const tv = sv.filter(f => f.texto).map(f => f.texto);
+  const corpoV = tv.join(' ');
+  t(!tv.some(x => /NÃO FOI GERADO/.test(x)), 'corte exclui histórico: slide sai normalmente');
+  t(tv.includes('SEM LANÇAMENTOS NO MÊS') && /foi registrada no VistoriaPro em AGOSTO 2026\./.test(corpoV),
+    'corte exclui histórico: nota "sem lançamentos" termina na frase do mês');
+  t(!/estoque já cadastrado|As 0 NCs/.test(corpoV), 'corte exclui histórico: sem a frase do estoque (não diz "As 0 NCs em aberto…")');
+  t(tv.includes('DATA DE CORTE DO HISTÓRICO: 01/08/2026') && /Vistorias e NCs anteriores a essa data são histórico e não entram nos indicadores\./.test(corpoV),
+    'nota de corte: "anteriores a essa data são histórico e não entram nos indicadores"');
+  t(!/SLA\) das NCs constatadas/.test(corpoV), 'nota de corte: a frase antiga do SLA saiu');
+  t(tv.includes('Nenhuma NC lançada após a data de corte.') && !tv.includes('Nenhuma NC em aberto no fim do mês.'), 'corte exclui histórico: mensagem NEUTRA (não o verde "nenhuma NC em aberto", que pareceria boa notícia)');
+  t(sv.some(f => f.texto === 'Nenhuma NC lançada após a data de corte.' && f.corTexto === CR_DESIGN_SYSTEM.colors.textMuted), 'corte exclui histórico: a mensagem neutra é cinza');
+  t(tv.includes('0 de 0') && tv.includes('0 de 6 imóveis') && tv.includes('nenhuma em aberto'), 'corte exclui histórico: zeros à vista e vencidas diz "nenhuma em aberto" (não "— do aberto")');
+  t(!tv.some(x => /^— do aberto/.test(x)), 'corte exclui histórico: sem o texto estranho "— do aberto"');
+  const fora3 = sv.filter(f => f.tipo !== 'ELLIPSE' && (f.x < -0.5 || f.y < -0.5 || f.x + f.w > 720.5 || f.y + f.h > 405.5));
+  const estouro3 = sv.filter(f => f.texto && f.fs && f.texto.indexOf('\n') < 0 && _tvLargura_(f.texto, f.fs, f.fonte, f.negrito) > f.w - RECUO + 0.5);
+  t(!fora3.length && !estouro3.length, 'corte exclui histórico: nada fora da página e nenhuma linha estoura → ' + estouro3.map(f => f.texto).join(' | '));
+}
+resposta = { cod: 200, corpo: FIX };
+
 // ── 5c. Apelidos dos imóveis (PEND_NOMES_IMOVEL) ────────────────────────────
 t(_pendNomeImovel_('Armazém Frigorificado Colombo') === 'Friozem Colombo', 'apelido: Armazém Frigorificado Colombo → Friozem Colombo');
 t(_pendNomeImovel_('ARMAZÉM MONOUSUÁRIO ITAJAÍ') === 'Emergent Cold (Aurora)', 'apelido: casa em caixa alta e com acento');

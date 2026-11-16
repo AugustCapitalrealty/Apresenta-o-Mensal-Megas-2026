@@ -61,7 +61,8 @@ function _pendDesenhar_(slide, W, H, v) {
     { l: 'NCs EM ABERTO', v: a.ncs_em_aberto, var: _pendVariacao_(a.ncs_em_aberto, b.ncs_em_aberto, true),
       sub: a.ncs_abertas_no_mes + ' nova(s) no mês' },
     { l: 'VENCIDAS', v: a.ncs_vencidas, var: _pendVariacao_(a.ncs_vencidas, b.ncs_vencidas, true),
-      sub: pct(a.ncs_vencidas, a.ncs_em_aberto) + ' do aberto · ' + a.ncs_alta_vencidas + ' alta', alerta: a.ncs_vencidas > 0 },
+      sub: a.ncs_em_aberto > 0 ? pct(a.ncs_vencidas, a.ncs_em_aberto) + ' do aberto · ' + a.ncs_alta_vencidas + ' alta' : 'nenhuma em aberto',
+      alerta: a.ncs_vencidas > 0 },
     { l: 'RESOLVIDAS NO MÊS', v: a.ncs_resolvidas_no_mes, var: _pendVariacao_(a.ncs_resolvidas_no_mes, b.ncs_resolvidas_no_mes, false),
       sub: a.pct_resolvidas_no_prazo == null ? 'nenhuma no mês' : _pendNum_(a.pct_resolvidas_no_prazo) + '% no prazo' },
     { l: 'TEMPO DE RESOLUÇÃO', v: a.mttr_dias == null ? '—' : _pendNum_(a.mttr_dias) + 'd',
@@ -139,7 +140,12 @@ function _pendDesenhar_(slide, W, H, v) {
     yAcc += h;
   });
   if (!imoveis.length) {
-    _sTxt(slide, tabX, yImov + 30, tabW, 20, 'Nenhuma NC em aberto no fim do mês.', 9, true, c.accentGreen, 'center');
+    // Mês limpo de verdade (houve atividade e não sobrou NC): mensagem verde. Mês SEM lançamento nenhum: texto
+    // neutro — "nenhuma NC em aberto" em verde pareceria boa notícia, e o caso é falta de lançamento.
+    if (notas.some(n => n.titulo === 'SEM LANÇAMENTOS NO MÊS'))
+      _sTxt(slide, tabX, yImov + 30, tabW, 20, 'Nenhuma NC lançada após a data de corte.', 9, true, c.textMuted, 'center');
+    else
+      _sTxt(slide, tabX, yImov + 30, tabW, 20, 'Nenhuma NC em aberto no fim do mês.', 9, true, c.accentGreen, 'center');
   } else if (imoveis.length > mostrar) {
     _sTxt(slide, tabX, yImov + 16 + yAcc + 1, tabW, 12, '+ ' + (imoveis.length - mostrar) + ' imóvel(is) com pendência fora da lista',
       7, false, c.textMuted, 'left');
@@ -255,15 +261,19 @@ function _pendNotas_(v, maxChars) {
     const mes = (typeof obterMesReferencia_ === 'function' && obterMesReferencia_().label) || String(v.mes || '');
     notas.push({
       titulo: 'SEM LANÇAMENTOS NO MÊS',
-      linhas: _pendQuebrar_('Nenhuma vistoria, visita mensal ou NC (nova ou resolvida) foi registrada no VistoriaPro em ' + mes +
-                            '. As ' + a.ncs_em_aberto + ' NCs em aberto são o estoque já cadastrado.', maxChars),
+      // A frase do estoque só entra se houver NC em aberto: com a data de corte excluindo o histórico
+      // dos indicadores (app, 16/11/2026), o normal é 0 e a frase seria "As 0 NCs em aberto…".
+      linhas: _pendQuebrar_('Nenhuma vistoria, visita mensal ou NC (nova ou resolvida) foi registrada no VistoriaPro em ' + mes + '.' +
+                            (Number(a.ncs_em_aberto) > 0 ? ' As ' + a.ncs_em_aberto + ' NCs em aberto são o estoque já cadastrado.' : ''), maxChars),
       cor: c.accentOrange
     });
   }
   if (v && v.data_corte) {
     notas.push({
       titulo: 'DATA DE CORTE DO HISTÓRICO: ' + _pendData_(v.data_corte),
-      linhas: _pendQuebrar_('O prazo (SLA) das NCs constatadas antes dessa data é contado a partir dela.', maxChars),
+      // Regra do app desde 16/11/2026: o que é anterior ao corte é histórico e NÃO entra nos indicadores
+      // (antes só o SLA era contado a partir dele). Pedido do Guilherme.
+      linhas: _pendQuebrar_('Vistorias e NCs anteriores a essa data são histórico e não entram nos indicadores.', maxChars),
       cor: c.brandLight
     });
   }
