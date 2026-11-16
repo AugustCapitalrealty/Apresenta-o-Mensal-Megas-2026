@@ -13,7 +13,8 @@
  *                              Emergencial · Pendentes por motivo · Backlog de Clientes
  *   03 Contratações e Obras .. Gestão de Contratações · Recebimento de Obras · fotos
  *   04 Vistorias ............. Monitoramento de Pendências · fotos
- *   05 Adequações de Clientes  Análise de Projetos · fotos
+ *   05 Adequações de Clientes  Análise de Projetos (em andamento + concluídas do mês) ·
+ *                              Indicadores de Análise de Projetos · fotos
  *   Encerramento
  *
  * Como ordena: cada slide gerado é achado pela tag da nota. Slide feito à mão
@@ -36,7 +37,7 @@ function _estruturaDeck_() {
     TAG_CHAMADOS_PENDENTES, TAG_BACKLOG_CLIENTES,
     _capaTagSecao_(3), TAG_CONTRATACOES, TAG_CONTRATACOES_HIST, TAG_RECEBIMENTO, hist(TAG_RECEBIMENTO), _fotosTag_(3),
     _capaTagSecao_(4), TAG_PENDENCIAS, _fotosTag_(4),
-    _capaTagSecao_(5), TAG_ANALISE_PROJETOS, hist(TAG_ANALISE_PROJETOS), _fotosTag_(5),
+    _capaTagSecao_(5), TAG_ANALISE_PROJETOS, TAG_ANALISE_INDICADORES, _fotosTag_(5),
     TAG_ENCERRAMENTO
   ];
 }

@@ -26,17 +26,20 @@
 // ==========================================
 function gerarSlideRecebimentoObras() {
   const deck = getDeckMensal_();
-  [TAG_RECEBIMENTO, TAG_ANALISE_PROJETOS].forEach(t => {
+  // A tag _HIST_ de Análise de Projetos é do histórico antigo (aposentado em
+  // 16/11/2026): continua na limpeza para sumir de decks que ainda o tenham.
+  [TAG_RECEBIMENTO, TAG_ANALISE_PROJETOS, TAG_ANALISE_INDICADORES].forEach(t => {
     _tabRemoverPorTag_(deck, t);
     _tabRemoverPorTag_(deck, _recTagHist_(t));
   });
 
   let n = 0;
-  // Análise de Projetos com tag própria: vai para Adequações de Clientes (24_OrdemDeck.gs).
-  [['esteio', TAG_RECEBIMENTO], ['ctba', TAG_RECEBIMENTO], ['analise', TAG_ANALISE_PROJETOS]].forEach(([k, tag]) => {
+  [['esteio', TAG_RECEBIMENTO], ['ctba', TAG_RECEBIMENTO]].forEach(([k, tag]) => {
     n += _recGerar_(deck, REL_RECEBIMENTO[k], tag);
   });
-  Logger.log('  Recebimento de Obras: ' + n + ' slide(s).');
+  // Análise de Projetos: tag própria, vai para Adequações de Clientes (24_OrdemDeck.gs).
+  n += _analiseGerar_(deck);
+  Logger.log('  Recebimento de Obras e Análise de Projetos: ' + n + ' slide(s).');
   return n;
 }
 
@@ -118,4 +121,184 @@ function _recPrazoDias_(recebStr, entregaStr, prazoOriginal) {
   const fim  = _tabData_(entregaStr) || _tabHoje_();
   const dias = Math.round((fim - receb) / 86400000);
   return String(dias < 0 ? 0 : dias);
+}
+
+
+// ==========================================
+// ANÁLISE DE PROJETOS — concluídas do mês + indicadores (16/11/2026)
+// ==========================================
+// Pedido do Guilherme: o deck mostra só o que está em andamento e o que foi
+// concluído NO MÊS; o histórico deixou de ser listado e virou indicadores.
+// Decisões (rascunho v1 aprovado em 16/11):
+//   · "concluída no mês" = data de ENTREGA dentro do mês de referência;
+//   · concluídos SEM data de entrega ficam fora de "por mês" e do prazo (e o
+//     rodapé do slide diz quantos são), mas contam no total do ano e nos
+//     recortes por empreendimento, avaliador e locatário;
+//   · prazo = Entrega − Recebimento, em dias (a coluna PRAZO da planilha vem
+//     negativa quando falta a Entrega, então não é lida).
+// Colunas da aba (só as com nome): 0 Empr. 1 Locatário 2 Objetivo 3 Compl.
+// 4 Memorial 5 Recebimento 6 Entrega 7 Avaliador 8 Status 9 Prazo.
+
+function _analiseGerar_(deck) {
+  const rel = REL_RECEBIMENTO.analise;
+  const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+  const ref = obterMesReferencia_();
+  const ind = _analiseIndicadores_(linhas, ref);
+  const SW = deck.getPageWidth(), SH = deck.getPageHeight();
+
+  const relMes = Object.assign({}, rel, { subtitulo: 'Em andamento e concluídas em ' + ref.nome + ' ' + ref.ano });
+  const kpis = [
+    { label: rel.kpis[0].label, cor: rel.kpis[0].cor, valor: ind.concMes },
+    { label: rel.kpis[1].label, cor: rel.kpis[1].cor, valor: ind.abertos.length }
+  ];
+  let n = _recPaginas_(deck, SW, SH, relMes, ind.linhasTabela, TAG_ANALISE_PROJETOS, kpis, '', _tabRotuloReferencia_(), null);
+  n += _analiseDesenharIndicadores_(deck, ind, ref);
+  Logger.log('  Análise de Projetos: ' + ind.abertos.length + ' em andamento, ' + ind.concMes + ' concluída(s) em ' +
+             ref.nome + ', ' + ind.concAno + ' no ano (' + ind.semData + ' sem data de entrega).');
+  return n;
+}
+
+// Conta pura (sem Slides): é o que o teste_analise.js confere.
+function _analiseIndicadores_(linhas, ref) {
+  const rel = REL_RECEBIMENTO.analise;
+  const DIA = 86400000;
+  const abertos = [], concl = [];
+  linhas.forEach(r => (rel.testeConcluido(r) ? concl : abertos).push(r));
+
+  const reg = r => ({ r: r, rec: _tabData_(_tabV_(r, 5)), ent: _tabData_(_tabV_(r, 6)) });
+  const todas = concl.map(reg);
+  const comData = todas.filter(x => x.ent);
+  const semData = todas.filter(x => !x.ent);
+  // Só entregas do ano do deck, até o mês de referência (entrega futura não conta).
+  const noAno = comData.filter(x => x.ent.getFullYear() === ref.ano && x.ent.getMonth() <= ref.index);
+  const doMes = m => (m < 0 ? [] : noAno.filter(x => x.ent.getMonth() === m));
+  const prazoDe = lista => lista.filter(x => x.rec).map(x => Math.max(0, Math.round((x.ent - x.rec) / DIA)));
+  const media = a => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : null);
+  const mediana = a => {
+    if (!a.length) return null;
+    const b = a.slice().sort((x, y) => x - y), m = Math.floor(b.length / 2);
+    return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2;
+  };
+
+  const mes = doMes(ref.index), ant = doMes(ref.index - 1);
+  const pAno = prazoDe(noAno);
+  const doAno = noAno.concat(semData);   // os sem data contam no ano e nos recortes
+
+  const contar = (lista, f) => {
+    const o = {};
+    lista.forEach(x => { const k = f(x.r); if (k) o[k] = (o[k] || 0) + 1; });
+    return Object.keys(o).map(k => [k, o[k]]).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+  };
+  const pct = f => (doAno.length ? Math.round(100 * doAno.filter(x => f(x.r)).length / doAno.length) : null);
+
+  const porMes = [];
+  for (let m = 0; m <= ref.index; m++) porMes.push(doMes(m).length);
+
+  const concMesLinhas = mes.slice().sort((a, b) => a.ent - b.ent).map(x => x.r);
+  return {
+    abertos: abertos,
+    linhasTabela: abertos.concat(concMesLinhas),
+    concMes: mes.length, concMesAnt: ant.length, concAno: doAno.length, semData: semData.length,
+    prazoMes: media(prazoDe(mes)), prazoMesAnt: media(prazoDe(ant)),
+    prazoAno: media(pAno), prazoMediana: mediana(pAno), prazoMax: pAno.length ? Math.max.apply(null, pAno) : null,
+    porMes: porMes,
+    porEmp:  contar(doAno, r => _analiseTitulo_(_tabV_(r, 0))),
+    porAval: contar(doAno, r => _analiseTitulo_(_tabV_(r, 7).split(/\s+/)[0])),
+    // Locatário fica como está na planilha: tem sigla (JBT, HP TRADE, BPB) que o Title Case estragaria.
+    porLoc:  contar(doAno, r => _tabV_(r, 1)),
+    pctMemorial: pct(r => /^sim$/i.test(_tabV_(r, 4))),
+    pctComplementar: pct(r => { const t = _tabV_(r, 3); return t !== '' && !/^n\/?a$/i.test(t); })
+  };
+}
+
+// "MEGA CURITIBA" → "Mega Curitiba"; conectivos curtos (de, da, do…) ficam minúsculos.
+function _analiseTitulo_(s) {
+  return String(s || '').trim().toLowerCase().split(/\s+/).filter(p => p).map((p, i) =>
+    (i > 0 && p.length <= 2) ? p : p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+
+function _analiseDesenharIndicadores_(deck, ind, ref) {
+  const W = deck.getPageWidth(), H = deck.getPageHeight();
+  const slide = _slideNovo_(deck, TAG_ANALISE_INDICADORES, 'ANÁLISE DE PROJETOS',
+    'Indicadores do ano · jan–' + String(ref.curto || '').toLowerCase() + ' ' + ref.ano + ' (projetos concluídos)');
+  try {
+    _analisePintar_(slide, W, H, ind, ref);
+  } catch (e) {
+    _slideFalha_(slide, 40, 160, W - 80, 200, 'INDICADORES DE ANÁLISE DE PROJETOS — NÃO FOI GERADO', e,
+      'Confira se 16_Slide_RecebimentoObras.gs, 22_Slide_Pendencias.gs e 00_Helpers.gs estão iguais no editor (lição 6).');
+  }
+  return 1;
+}
+
+function _analisePintar_(slide, W, H, ind, ref) {
+  const c = CR_DESIGN_SYSTEM.colors;
+  const mX = 40;
+  const dias = x => (x == null ? '—' : _pendNum_(x) + 'd');
+
+  // ── Cartões ──
+  const cards = [
+    { l: 'CONCLUÍDAS NO MÊS', v: ind.concMes, var: _pendVariacao_(ind.concMes, ind.concMesAnt, false),
+      sub: 'mês anterior: ' + ind.concMesAnt + ' · no ano: ' + ind.concAno },
+    { l: 'PRAZO MÉDIO NO MÊS', v: dias(ind.prazoMes), var: _pendVariacao_(ind.prazoMes, ind.prazoMesAnt, true),
+      sub: 'mês anterior: ' + dias(ind.prazoMesAnt) },
+    { l: 'PRAZO MÉDIO NO ANO', v: dias(ind.prazoAno), var: null,
+      sub: 'mediana ' + dias(ind.prazoMediana) + ' · máx. ' + dias(ind.prazoMax) },
+    { l: 'COM MEMORIAL BASE', v: ind.pctMemorial == null ? '—' : ind.pctMemorial + '%', var: null,
+      sub: (ind.pctComplementar == null ? '—' : ind.pctComplementar + '%') + ' com análise complementar' }
+  ];
+  const cTop = 76, cH = 66, cGap = 10;
+  const cW = (W - 2 * mX - cGap * (cards.length - 1)) / cards.length;
+  cards.forEach((k, i) => _pendCartao_(slide, mX + i * (cW + cGap), cTop, cW, cH, k));
+
+  // ── Gráfico: concluídas por mês de entrega ──
+  const pTop = cTop + cH + 12, pH = H - pTop - 26;
+  const wG = 330;
+  const yIn = criarCardPainel(slide, mX, pTop, wG, pH, 'CONCLUÍDAS POR MÊS DE ENTREGA', c.brandLight);
+  const MES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+  const base = pTop + pH - 22, topo = yIn + 16, altMax = base - topo;
+  const maxV = Math.max(1, Math.max.apply(null, ind.porMes));
+  const n = Math.max(1, ind.porMes.length);
+  const slot = (wG - 28) / n, barW = Math.min(28, slot * 0.62);
+  ind.porMes.forEach((v, i) => {
+    const x = mX + 14 + i * slot + (slot - barW) / 2;
+    const h = v > 0 ? Math.max(3, altMax * v / maxV) : 2;
+    // O mês do deck em verde; os outros no azul da marca.
+    _sRet_(slide, x, base - h, barW, h, i === ref.index ? c.accentGreen : (v > 0 ? c.brandLight : c.lines));
+    _sTxt(slide, x - 4, base - h - 13, barW + 8, 12, String(v), 8, true, c.textMain, 'center');
+    _sTxt(slide, x - 4, base + 3, barW + 8, 12, MES[i], 7, false, c.textMuted, 'center');
+  });
+
+  // ── Recortes do ano ──
+  const xR = mX + wG + 12, wR = W - mX - xR;
+  const hTop = Math.floor((pH - 10) / 2), hBot = pH - 10 - hTop;
+  _analiseBarras_(slide, xR, pTop, wR, hTop, 'POR EMPREENDIMENTO (ANO)', c.brandLight, ind.porEmp, c.brandLight);
+  const wB = (wR - 10) / 2;
+  _analiseBarras_(slide, xR, pTop + hTop + 10, wB, hBot, 'POR AVALIADOR', c.brandMed, ind.porAval, c.brandMed);
+  _analiseBarras_(slide, xR + wB + 10, pTop + hTop + 10, wB, hBot, 'PRINCIPAIS LOCATÁRIOS', c.accentGreen, ind.porLoc, c.accentGreen);
+
+  const nota = 'Referência: ' + ref.nome + ' ' + ref.ano +
+    (ind.semData ? ' · ' + ind.semData + ' concluído(s) sem data de entrega ficam fora de "por mês" e do prazo' : '');
+  _sTxt(slide, mX, H - 22, W - 2 * mX, 14, nota, 6.5, false, c.textMuted, 'left');
+}
+
+// Lista de barras horizontais [[nome, n], …] dentro de um cartão. Não cabendo
+// todas, a última linha diz quantas ficaram de fora (nada some calado).
+function _analiseBarras_(slide, x, y, w, h, titulo, corTema, itens, corBarra) {
+  const c = CR_DESIGN_SYSTEM.colors;
+  const yIn = criarCardPainel(slide, x, y, w, h, titulo, corTema);
+  if (!itens.length) { _sTxt(slide, x + 14, yIn + 8, w - 28, 14, 'Sem dados.', 8, false, c.textMuted, 'left'); return; }
+  const passo = 14;
+  const cabem = Math.max(1, Math.floor((y + h - yIn - 4) / passo));
+  const mostrar = itens.length > cabem ? cabem - 1 : cabem;
+  const labelW = (w - 28) * 0.46, barMax = (w - 28) - labelW - 24, max = itens[0][1];
+  itens.slice(0, Math.max(1, mostrar)).forEach((it, i) => {
+    const yy = yIn + 2 + i * passo;
+    const len = Math.max(2, barMax * it[1] / max);
+    _sTxt(slide, x + 14, yy, labelW, 12, _truncar_(it[0], _charsQueCabem_(labelW, 7.5)), 7.5, false, c.textMain, 'left');
+    _sRet_(slide, x + 14 + labelW, yy + 2, len, 8, corBarra);
+    _sTxt(slide, x + 14 + labelW + len + 3, yy, 22, 12, String(it[1]), 7.5, true, c.textMain, 'left');
+  });
+  if (itens.length > mostrar && mostrar >= 1) {
+    _sTxt(slide, x + 14, yIn + 2 + mostrar * passo, w - 28, 12, '+ ' + (itens.length - mostrar) + ' outro(s)', 7, false, c.textMuted, 'left');
+  }
 }

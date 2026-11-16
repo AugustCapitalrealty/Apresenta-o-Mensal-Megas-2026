@@ -545,6 +545,9 @@ const TAG_RECEBIMENTO = '【RECEBIMENTO_AUTO】';
 // Análise de Projetos saía com a tag do Recebimento de Obras; tag própria para ir
 // para a seção Adequações de Clientes (estrutura de 10/11/2026).
 const TAG_ANALISE_PROJETOS = '【PROP_ANALISE_PROJETOS_AUTO】';
+// Desde 16/11/2026 Análise de Projetos mostra só o em andamento e as concluídas
+// do mês; o histórico virou o slide de indicadores (tag própria).
+const TAG_ANALISE_INDICADORES = '【PROP_ANALISE_INDICADORES_AUTO】';
 const REC_COLUNAS = [
   { nome: 'Empreendimento', tipo: 'textoCentro', largura: 0.18 },
   { nome: 'Obra',           tipo: 'texto',       largura: 0.40 },
@@ -586,7 +589,9 @@ const REL_RECEBIMENTO = {
     nome:            'Análise de Projetos',
     aba:             'Análise de Projetos',
     titulo:          'ANÁLISE DE PROJETOS',
-    subtitulo:       'Recebimento de Obras',
+    // O subtítulo real ("Em andamento e concluídas em OUTUBRO 2026") é montado em
+    // _analiseGerar_ (16_Slide_RecebimentoObras.gs), porque depende do mês.
+    subtitulo:       'Em andamento e concluídas no mês',
     cabecalhoContem: ['OBJETIVO', 'AVALIADOR', 'LOCAT'],
     // 10 colunas: fonte menor e 7 linhas/slide, para o Objetivo de 2 linhas
     // caber sem transbordar a célula.
@@ -609,10 +614,10 @@ const REL_RECEBIMENTO = {
       { nome: 'Prazo',     tipo: 'textoCentro', largura: 0.065,
         calcular: r => _recPrazoDias_(_tabV_(r, 5), _tabV_(r, 6), _tabV_(r, 9)) }
     ],
+    // Cartões do rodapé: concluídas do MÊS (não o total) e o que está em andamento.
     kpis: [
-      { label: 'TOTAL',     cor: CR_DESIGN_SYSTEM.colors.brandDark,    teste: null },
-      { label: 'CONCLUÍDO', cor: CR_DESIGN_SYSTEM.colors.accentGreen,  teste: r => /conclu/i.test(_tabV_(r, 8)) },
-      { label: 'ANDAMENTO', cor: CR_DESIGN_SYSTEM.colors.accentOrange, teste: r => /andamento/i.test(_tabV_(r, 8)) }
+      { label: 'CONCLUÍDAS NO MÊS', cor: CR_DESIGN_SYSTEM.colors.accentGreen,  teste: null },
+      { label: 'ANDAMENTO',         cor: CR_DESIGN_SYSTEM.colors.accentOrange, teste: r => /andamento/i.test(_tabV_(r, 8)) }
     ],
     pctTexto:       'concluído',
     testeConcluido: r => /conclu/i.test(_tabV_(r, 8))

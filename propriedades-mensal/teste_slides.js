@@ -122,6 +122,10 @@ const deck = {
 
 // ── Dublê da planilha: as fixtures do DRE, e vazio para o resto ─────────
 const FIX = JSON.parse(fs.readFileSync(path.join(DIR, 'teste_dre_fixtures.json'), 'utf8'));
+// Análise de Projetos: os 34 registros reais (planilha de 16/11/2026) no lugar da fixture
+// mínima, para o slide de em andamento/concluídas do mês e o de indicadores desenharem de verdade.
+FIX['Análise de Projetos'] = [FIX['Análise de Projetos'][0]]
+  .concat(JSON.parse(fs.readFileSync(path.join(DIR, 'teste_analise_fixture.json'), 'utf8')));
 function aba(nome) {
   const m = FIX[nome];
   return { getName: () => nome, getLastRow: () => m.length, getLastColumn: () => m[0].length,
@@ -323,6 +327,24 @@ console.log('\n== Farol de Metas na grade de Facilities ==');
         'sem a banda "N PONTOS" na coluna da esquerda');
   checa(!meta.some(s => s.txt === 'MÊS' || s.txt === 'ANO'),
         'sem as faixas agrupadoras MÊS/ANO');
+}
+
+// ── Análise de Projetos: concluídas do mês + indicadores (16/11/2026) ───
+console.log('\n== Análise de Projetos ==');
+{
+  // O dublê de referência aqui é AGOSTO/2026: em andamento + as 2 entregues em agosto.
+  const tx = (porSlide['Recebimento de Obras'] || []).map(s => s.txt);
+  const tem = t => tx.some(x => x === t);
+  checa(tem('PORTA PALLETS'), 'tabela: o projeto em andamento aparece');
+  checa(tem('ADEQUAÇÕES INTERNAS (PRELIMINARES)'), 'tabela: concluída com entrega no mês de referência (agosto) aparece');
+  checa(!tx.some(x => /INSTALAÇÃO DE RAMPA/.test(x)), 'tabela: o histórico (abril) não é mais listado');
+  checa(tx.some(x => /Em andamento e concluídas em AGOSTO 2026/.test(x)), 'subtítulo com o mês de referência');
+  checa(tem('CONCLUÍDAS NO MÊS') && tem('ANDAMENTO'), 'rodapé: cartões CONCLUÍDAS NO MÊS e ANDAMENTO');
+  ['CONCLUÍDAS POR MÊS DE ENTREGA', 'POR EMPREENDIMENTO (ANO)', 'POR AVALIADOR', 'PRINCIPAIS LOCATÁRIOS'].forEach(p =>
+    checa(tem(p), 'indicadores: painel "' + p + '"'));
+  checa(tem('PRAZO MÉDIO NO MÊS') && tem('COM MEMORIAL BASE'), 'indicadores: cartões de prazo e de memorial');
+  checa(tem('Mega Curitiba') && tem('SHOPEE'), 'indicadores: empreendimento em Title Case e locatário como na planilha');
+  checa(!tx.some(x => /INDICADORES DE ANÁLISE DE PROJETOS — NÃO FOI GERADO/.test(x)), 'indicadores: sem aviso de falha');
 }
 
 console.log('\n' + (falhou ? '✗ ' + falhou + ' falha(s), ' : '✓ ') + ok + '/' + (ok + falhou) + ' passaram');
