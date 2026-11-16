@@ -340,8 +340,26 @@ console.log('\n== Análise de Projetos ==');
   checa(!tx.some(x => /INSTALAÇÃO DE RAMPA/.test(x)), 'tabela: o histórico (abril) não é mais listado');
   checa(tx.some(x => /Em andamento e concluídas em AGOSTO 2026/.test(x)), 'subtítulo com o mês de referência');
   checa(tem('CONCLUÍDAS NO MÊS') && tem('ANDAMENTO'), 'rodapé: cartões CONCLUÍDAS NO MÊS e ANDAMENTO');
-  ['CONCLUÍDAS POR MÊS DE ENTREGA', 'POR EMPREENDIMENTO (ANO)', 'POR AVALIADOR', 'PRINCIPAIS LOCATÁRIOS'].forEach(p =>
+  ['CONCLUÍDAS POR MÊS DE ENTREGA', 'POR EMPREENDIMENTO (ANO)', 'POR AVALIADOR', 'TOP LOCATÁRIOS'].forEach(p =>
     checa(tem(p), 'indicadores: painel "' + p + '"'));
+  // Encaixe (lição 1): a caixa de texto perde ~7pt de recuo de cada lado. Os rótulos curtos
+  // (mês, nome nas barras) são desenhados com folga e têm que ter largura INTERNA suficiente,
+  // senão "MAR" vira "MA/R" e "MERCADO LIVRE" quebra (visto no Google Slides em 16/11/2026).
+  // Pior caso: deck de DEZEMBRO (12 barras = fatias estreitas). Com agosto (8 barras) o defeito não aparecia.
+  const refDez = { index: 11, nome: 'DEZEMBRO', curto: 'Dez', ano: 2026 };
+  const antesDez = shapes.length;
+  _analiseDesenharIndicadores_(deck, _analiseIndicadores_(FIX['Análise de Projetos'].slice(1), refDez), refDez);
+  const caixas = shapes.slice(antesDez);
+  const interna = s => s.w - 14;
+  const meses = caixas.filter(s => /^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)$/.test(s.txt));
+  checa(meses.length >= 6 && meses.every(s => interna(s) >= _analiseLarg_(s.txt, 7)),
+        'indicadores: rótulos de mês com largura interna para 3 letras (' + meses.length + ' conferidos)');
+  const nomes = _analiseIndicadores_(FIX["Análise de Projetos"].slice(1), refDez).porLoc.slice(0, 3).map(x => x[0]);
+  const rotulos = caixas.filter(s => nomes.indexOf(s.txt) !== -1);
+  checa(rotulos.length >= 3 && rotulos.every(s => interna(s) >= _analiseLarg_(s.txt, 7.5)),
+        'indicadores: nomes das barras cabem inteiros (' + nomes.join(', ') + ')');
+  const valores = caixas.filter(s => /^\d{2}$/.test(s.txt) && s.h === 12);
+  checa(valores.every(s => interna(s) >= 2 * 7.5 * 0.74), 'indicadores: valores de 2 dígitos não quebram');
   checa(tem('PRAZO MÉDIO NO MÊS') && tem('COM MEMORIAL BASE'), 'indicadores: cartões de prazo e de memorial');
   checa(tem('Mega Curitiba') && tem('SHOPEE'), 'indicadores: empreendimento em Title Case e locatário como na planilha');
   checa(!tx.some(x => /INDICADORES DE ANÁLISE DE PROJETOS — NÃO FOI GERADO/.test(x)), 'indicadores: sem aviso de falha');

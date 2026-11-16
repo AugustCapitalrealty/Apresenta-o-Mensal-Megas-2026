@@ -230,6 +230,15 @@ function _analiseDesenharIndicadores_(deck, ind, ref) {
   return 1;
 }
 
+// Toda caixa de texto do Slides tem ~7pt de recuo interno de cada lado (lição 1). Com
+// folga = 7 a caixa é alargada para os dois lados e o texto fica com a largura
+// INTEIRA pedida e começa exatamente em x: sem isso "MAR", "21" e "MERCADO LIVRE"
+// quebravam em duas linhas. Largura de texto em Montserrat: ~0,74 × corpo por letra
+// maiúscula (medido na prévia: 0,66 ainda quebrava "MERCADO LIVRE").
+const ANALISE_FOLGA = 7;
+const ANALISE_LETRA = 0.74;
+const _analiseLarg_ = (txt, fs) => String(txt).length * fs * ANALISE_LETRA;
+
 function _analisePintar_(slide, W, H, ind, ref) {
   const c = CR_DESIGN_SYSTEM.colors;
   const mX = 40;
@@ -252,7 +261,7 @@ function _analisePintar_(slide, W, H, ind, ref) {
 
   // ── Gráfico: concluídas por mês de entrega ──
   const pTop = cTop + cH + 12, pH = H - pTop - 26;
-  const wG = 330;
+  const wG = 300;
   const yIn = criarCardPainel(slide, mX, pTop, wG, pH, 'CONCLUÍDAS POR MÊS DE ENTREGA', c.brandLight);
   const MES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
   const base = pTop + pH - 22, topo = yIn + 16, altMax = base - topo;
@@ -264,8 +273,10 @@ function _analisePintar_(slide, W, H, ind, ref) {
     const h = v > 0 ? Math.max(3, altMax * v / maxV) : 2;
     // O mês do deck em verde; os outros no azul da marca.
     _sRet_(slide, x, base - h, barW, h, i === ref.index ? c.accentGreen : (v > 0 ? c.brandLight : c.lines));
-    _sTxt(slide, x - 4, base - h - 13, barW + 8, 12, String(v), 8, true, c.textMain, 'center');
-    _sTxt(slide, x - 4, base + 3, barW + 8, 12, MES[i], 7, false, c.textMuted, 'center');
+    // Rótulos centrados na FATIA do mês (slot), não na barra: cabem as 3 letras do mês.
+    const xs = mX + 14 + i * slot;
+    _sTxt(slide, xs, base - h - 13, slot, 12, String(v), 8, true, c.textMain, 'center', ANALISE_FOLGA);
+    _sTxt(slide, xs, base + 3, slot, 12, MES[i], 7, false, c.textMuted, 'center', ANALISE_FOLGA);
   });
 
   // ── Recortes do ano ──
@@ -274,7 +285,7 @@ function _analisePintar_(slide, W, H, ind, ref) {
   _analiseBarras_(slide, xR, pTop, wR, hTop, 'POR EMPREENDIMENTO (ANO)', c.brandLight, ind.porEmp, c.brandLight);
   const wB = (wR - 10) / 2;
   _analiseBarras_(slide, xR, pTop + hTop + 10, wB, hBot, 'POR AVALIADOR', c.brandMed, ind.porAval, c.brandMed);
-  _analiseBarras_(slide, xR + wB + 10, pTop + hTop + 10, wB, hBot, 'PRINCIPAIS LOCATÁRIOS', c.accentGreen, ind.porLoc, c.accentGreen);
+  _analiseBarras_(slide, xR + wB + 10, pTop + hTop + 10, wB, hBot, 'TOP LOCATÁRIOS', c.accentGreen, ind.porLoc, c.accentGreen);
 
   const nota = 'Referência: ' + ref.nome + ' ' + ref.ano +
     (ind.semData ? ' · ' + ind.semData + ' concluído(s) sem data de entrega ficam fora de "por mês" e do prazo' : '');
@@ -286,19 +297,24 @@ function _analisePintar_(slide, W, H, ind, ref) {
 function _analiseBarras_(slide, x, y, w, h, titulo, corTema, itens, corBarra) {
   const c = CR_DESIGN_SYSTEM.colors;
   const yIn = criarCardPainel(slide, x, y, w, h, titulo, corTema);
-  if (!itens.length) { _sTxt(slide, x + 14, yIn + 8, w - 28, 14, 'Sem dados.', 8, false, c.textMuted, 'left'); return; }
+  if (!itens.length) { _sTxt(slide, x + 14, yIn + 8, w - 28, 14, 'Sem dados.', 8, false, c.textMuted, 'left', ANALISE_FOLGA); return; }
   const passo = 14;
   const cabem = Math.max(1, Math.floor((y + h - yIn - 4) / passo));
   const mostrar = itens.length > cabem ? cabem - 1 : cabem;
-  const labelW = (w - 28) * 0.46, barMax = (w - 28) - labelW - 24, max = itens[0][1];
-  itens.slice(0, Math.max(1, mostrar)).forEach((it, i) => {
+  const FS = 7.5, valW = 24, area = w - 28;
+  const visiveis = itens.slice(0, Math.max(1, mostrar));
+  // A coluna do nome tem a largura do MAIOR nome visível (no máximo 60% do cartão): as
+  // barras ficam alinhadas e nenhum nome quebra. Só trunca se passar do teto.
+  const labelW = Math.min(area * 0.6, Math.max(36, Math.max.apply(null, visiveis.map(it => _analiseLarg_(it[0], FS)))));
+  const barMax = Math.max(8, area - labelW - valW - 4), max = itens[0][1];
+  visiveis.forEach((it, i) => {
     const yy = yIn + 2 + i * passo;
     const len = Math.max(2, barMax * it[1] / max);
-    _sTxt(slide, x + 14, yy, labelW, 12, _truncar_(it[0], _charsQueCabem_(labelW, 7.5)), 7.5, false, c.textMain, 'left');
+    _sTxt(slide, x + 14, yy, labelW, 12, _truncar_(it[0], Math.max(4, Math.floor(labelW / (FS * ANALISE_LETRA)))), FS, false, c.textMain, 'left', ANALISE_FOLGA);
     _sRet_(slide, x + 14 + labelW, yy + 2, len, 8, corBarra);
-    _sTxt(slide, x + 14 + labelW + len + 3, yy, 22, 12, String(it[1]), 7.5, true, c.textMain, 'left');
+    _sTxt(slide, x + 14 + labelW + len + 3, yy, valW, 12, String(it[1]), FS, true, c.textMain, 'left', ANALISE_FOLGA);
   });
   if (itens.length > mostrar && mostrar >= 1) {
-    _sTxt(slide, x + 14, yIn + 2 + mostrar * passo, w - 28, 12, '+ ' + (itens.length - mostrar) + ' outro(s)', 7, false, c.textMuted, 'left');
+    _sTxt(slide, x + 14, yIn + 2 + mostrar * passo, area, 12, '+ ' + (itens.length - mostrar) + ' outro(s)', 7, false, c.textMuted, 'left', ANALISE_FOLGA);
   }
 }
