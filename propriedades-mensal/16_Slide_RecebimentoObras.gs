@@ -34,9 +34,7 @@ function gerarSlideRecebimentoObras() {
   });
 
   let n = 0;
-  [['esteio', TAG_RECEBIMENTO], ['ctba', TAG_RECEBIMENTO]].forEach(([k, tag]) => {
-    n += _recGerar_(deck, REL_RECEBIMENTO[k], tag);
-  });
+  _recRelatorios_().forEach(r => { n += _recGerar_(deck, r.rel, TAG_RECEBIMENTO, r.linhas); });
   // Análise de Projetos: tag própria, vai para Adequações de Clientes (24_OrdemDeck.gs).
   n += _analiseGerar_(deck);
   Logger.log('  Recebimento de Obras e Análise de Projetos: ' + n + ' slide(s).');
@@ -49,8 +47,41 @@ function gerarSlideRecebimentoObras() {
 // ==========================================
 function _recTagHist_(tag) { return tag.replace('_AUTO】', '_HIST_AUTO】'); }
 
-function _recGerar_(deck, rel, tag) {
-  const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+// As linhas de UM relatório: a aba é uma só (todos os empreendimentos) e a coluna Empreendimento separa.
+function _recLinhas_(rel) {
+  const todas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+  return rel.empreendimento ? todas.filter(r => rel.empreendimento.test(_tabV_(r, 0))) : todas;
+}
+
+// Esteio, Curitiba e QUALQUER outro empreendimento que a planilha trouxer (COMO PREENCHER: "de qualquer
+// empreendimento — o slide separa por Empreendimento"). Sem isso, uma obra de um empreendimento novo
+// ficava na planilha e nunca chegava ao slide, sem erro nenhum. Lê a aba UMA vez.
+// → [{ rel, linhas }]
+function _recRelatorios_() {
+  const base = [REL_RECEBIMENTO.esteio, REL_RECEBIMENTO.ctba];
+  const todas = _tabLerAba_(base[0].aba, base[0].cabecalhoContem).rows;
+  const de = rel => (rel.empreendimento ? todas.filter(r => rel.empreendimento.test(_tabV_(r, 0))) : todas);
+  const lista = base.map(rel => ({ rel: rel, linhas: de(rel) }));
+
+  const vistos = [];
+  todas.forEach(r => {
+    const emp = _tabV_(r, 0).toUpperCase();
+    if (emp && !base.some(b => b.empreendimento.test(emp)) && vistos.indexOf(emp) < 0) vistos.push(emp);
+  });
+  vistos.forEach(emp => {
+    const curto = emp.replace(/^MEGA\s+/, '');
+    const rel = Object.assign({}, base[0], {
+      nome: curto, titulo: 'RECEBIMENTO DE OBRAS · ' + curto, subtitulo: 'Pendências da Obra · ' + emp,
+      empreendimento: new RegExp('^' + emp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+    });
+    lista.push({ rel: rel, linhas: de(rel) });
+    Logger.log('  Recebimento de Obras: empreendimento "' + emp + '" não tinha relatório próprio; gerado automaticamente.');
+  });
+  return lista;
+}
+
+function _recGerar_(deck, rel, tag, linhasDadas) {
+  const linhas = linhasDadas || _recLinhas_(rel);
 
   const SW = deck.getPageWidth();
   const SH = deck.getPageHeight();

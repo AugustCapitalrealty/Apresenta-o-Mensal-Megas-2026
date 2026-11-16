@@ -6,7 +6,7 @@
 //
 // Uso (de dentro de propriedades-mensal/):
 //   node ferramentas/previa_analise.js <pasta de saída> [mês 1-12 do deck]
-// Dados: teste_analise_fixture.json (os 34 registros da planilha de 16/11/2026).
+// Dados: a aba ANÁLISE DE PROJETOS de teste_semanal_fixture.json (43 projetos da planilha "Propriedades — Semanal", 16/11/2026).
 // Saída: slide_0.png … (os de tabela) e o último é o de indicadores.
 //
 // É uma aproximação: a quebra de linha do Slides pode diferir em uma ou outra
@@ -82,9 +82,9 @@ const deck = {
 };
 
 // ── Planilha dublada: cabeçalho + os 34 registros ───────────────────────
-const CAB = ['Empr.', 'Locatário', 'Objetivo', 'Compl.', 'Mem.', 'Recebim.', 'Entrega', 'Avaliador', 'Status', 'Prazo'];
-const VALORES = [CAB].concat(JSON.parse(fs.readFileSync(path.join(DIR, 'teste_analise_fixture.json'), 'utf8')));
-const aba = { getName: () => 'Análise de Projetos', getLastRow: () => VALORES.length, getLastColumn: () => CAB.length,
+const VALORES = JSON.parse(fs.readFileSync(path.join(DIR, 'teste_semanal_fixture.json'), 'utf8'))['ANÁLISE DE PROJETOS'];   // já traz o cabeçalho
+const CAB = VALORES[0];
+const aba = { getName: () => 'ANÁLISE DE PROJETOS', getLastRow: () => VALORES.length, getLastColumn: () => CAB.length,
               getRange: () => ({ getValues: () => VALORES, getDisplayValues: () => VALORES }) };
 global.SpreadsheetApp = { openById: () => ({ getName: () => 'dublê', getSheets: () => [aba], getSheetByName: () => aba }) };
 global.DriveApp = { getFileById: () => ({ getBlob: () => null }) };

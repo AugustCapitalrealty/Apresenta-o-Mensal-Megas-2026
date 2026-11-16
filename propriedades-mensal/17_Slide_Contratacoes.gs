@@ -7,9 +7,10 @@
  * desenho próprio em vez de usar _tabDesenharTabela_.
  *
  * ABERTAS x HISTÓRICO
- * A aba tem uma linha-marcador "Histórico" no meio: acima dela, contratações
- * em andamento; abaixo, as já fechadas. Viram dois blocos de slides, com
- * rodapés diferentes — em aberto interessa TOTAL/EM EDITAL/EM ATRASO, no
+ * Quem decide é a ETAPA (planilha "Propriedades — Semanal", 16/11/2026): Contratado,
+ * Replanejado ou Cancelado = histórico; o resto = em andamento. (A planilha antiga tinha
+ * uma linha-marcador "Histórico" no meio; se existir, também vale.) Viram dois blocos de
+ * slides, com rodapés diferentes — em aberto interessa TOTAL/EM EDITAL/EM ATRASO, no
  * histórico interessa quantas foram contratadas.
  */
 
@@ -60,8 +61,8 @@ function gerarSlideContratacoes() {
 // ==========================================
 function _contLer_() {
   const ss    = _abrirPlanilha_(PROPRIEDADES_SPREADSHEET_ID, 'PROPRIEDADES_SPREADSHEET_ID');
-  const sheet = ss.getSheetByName(ABA_CONTRATACOES);
-  if (!sheet) throw new Error('Aba "' + ABA_CONTRATACOES + '" não encontrada.');
+  const sheet = _tabAba_(ss, ABA_CONTRATACOES);
+  if (!sheet) throw new Error('Aba "' + ABA_CONTRATACOES + '" não encontrada. Abas: ' + ss.getSheets().map(s => s.getName()).join(' | '));
 
   const lastRow = sheet.getLastRow();
   if (lastRow === 0) throw new Error('A aba "' + ABA_CONTRATACOES + '" está vazia.');
@@ -117,8 +118,12 @@ function _contLer_() {
     if (/^hist[oó]rico/i.test(imovel)) { emHistorico = true; continue; }
     if (imovel === '') continue;   // sub-linha de cabeçalho ou linha solta
 
-    (emHistorico ? historico : rows).push([
-      imovel, cel(linha, col.etapa), cel(linha, col.objeto), cel(linha, col.area),
+    // A ETAPA manda (planilha nova, 16/11/2026: lista única, sem linha "Histórico"): Contratado,
+    // Replanejado ou Cancelado vão para o histórico, estejam onde estiverem. A linha-marcador
+    // "Histórico" da planilha antiga continua valendo, se existir.
+    const etapa = cel(linha, col.etapa);
+    ((emHistorico || CONTRAT_ETAPAS_FECHADAS.test(etapa)) ? historico : rows).push([
+      imovel, etapa, cel(linha, col.objeto), cel(linha, col.area),
       cel(linha, col.resp), cel(linha, col.prazo), cel(linha, col.part),
       cel(linha, col.vis), cel(linha, col.prop), cel(linha, col.inicio)
     ]);

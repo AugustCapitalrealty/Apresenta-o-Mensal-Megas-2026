@@ -921,14 +921,14 @@ function _mesRefDaReserva_() {
 function obterRecebimentoObrasResumo_() {
   let total = 0, concluidos = 0, emAnalise = 0;
   try {
-    ['esteio', 'ctba'].forEach(k => {
-      if (typeof REL_RECEBIMENTO !== 'undefined' && REL_RECEBIMENTO[k]) {
-        const rel = REL_RECEBIMENTO[k];
-        const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
-        total += linhas.length;
-        concluidos += linhas.filter(rel.testeConcluido).length;
-      }
-    });
+    // A aba é UMA só (todos os empreendimentos): lê uma vez e conta tudo. Antes eram duas abas
+    // (Esteio e Ctba); ler a mesma aba pelas duas chaves contaria cada linha duas vezes.
+    if (typeof REL_RECEBIMENTO !== 'undefined' && REL_RECEBIMENTO.esteio) {
+      const rel = REL_RECEBIMENTO.esteio;
+      const linhas = _tabLerAba_(rel.aba, rel.cabecalhoContem).rows;
+      total += linhas.length;
+      concluidos += linhas.filter(rel.testeConcluido).length;
+    }
   } catch (e) {
     Logger.log('obterRecebimentoObrasResumo_ (obras): ' + e.message);
   }

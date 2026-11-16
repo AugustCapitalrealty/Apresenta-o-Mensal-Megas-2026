@@ -195,6 +195,8 @@ t(barras.length === 5 && barras.slice(3).every(b => b.cor === C.accentOrange) &&
 t(txt.some(x => x.indexOf('Fonte: VistoriaPro') === 0), 'rodapé com a fonte do dado');
 t(txt.includes('DATA DE CORTE DO HISTÓRICO: 01/08/2026'), 'nota: data de corte vinda do app (01/08/2026)');
 t(!txt.includes('SEM LANÇAMENTOS NO MÊS'), 'com atividade no mês, a nota "sem lançamentos" NÃO aparece');
+t(txt.join(' ').indexOf('O prazo (SLA) das NCs constatadas antes dessa data é contado a partir dela.') >= 0 && !/não entram nos indicadores/.test(txt.join(' ')),
+  'corte: NC de 214 dias com corte há 30 dias → o app ainda usa a regra ANTIGA e a nota diz SLA (não "não entram nos indicadores")');
 {
   // O "+ N imóvel(is) fora da lista" não pode encostar nas notas do pé do cartão.
   const mais = s.find(f => f.texto && /^\+ \d+ imóvel\(is\)/.test(f.texto));
@@ -331,6 +333,13 @@ reiniciar();
   t(!fora3.length && !estouro3.length, 'corte exclui histórico: nada fora da página e nenhuma linha estoura → ' + estouro3.map(f => f.texto).join(' | '));
 }
 resposta = { cod: 200, corpo: FIX };
+
+// ── 5e. Qual regra de corte o app usa? (_pendCorteExclui_) ────────────────────
+t(_pendCorteExclui_({ data_corte: '2026-08-01', posicao_em: '2026-10-31', imoveis: [{ idade_max_dias: 501 }] }) === false, 'corte: NC de 501 dias com corte há 91 → regra antiga (inclui o histórico)');
+t(_pendCorteExclui_({ data_corte: '2026-08-01', posicao_em: '2026-10-31', imoveis: [{ idade_max_dias: 91 }] }) === true, 'corte: NC de 91 dias com corte há 91 → exatamente no limite, regra nova (exclui)');
+t(_pendCorteExclui_({ data_corte: '2026-08-01', posicao_em: '2026-10-31', imoveis: [{ idade_max_dias: 92 }] }) === false, 'corte: 1 dia além do limite já é regra antiga');
+t(_pendCorteExclui_({ data_corte: '2026-08-01', posicao_em: '2026-10-31', imoveis: [] }) === true, 'corte: nada em aberto → regra nova');
+t(_pendCorteExclui_({ data_corte: null, posicao_em: '2026-10-31', imoveis: [{ idade_max_dias: 900 }] }) === true && _pendCorteExclui_(null) === true, 'corte: sem data de corte (ou sem dados) → não estoura, assume regra nova');
 
 // ── 5c. Apelidos dos imóveis (PEND_NOMES_IMOVEL) ────────────────────────────
 t(_pendNomeImovel_('Armazém Frigorificado Colombo') === 'Friozem Colombo', 'apelido: Armazém Frigorificado Colombo → Friozem Colombo');

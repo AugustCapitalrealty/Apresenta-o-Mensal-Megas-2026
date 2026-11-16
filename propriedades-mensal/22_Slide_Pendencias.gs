@@ -250,6 +250,17 @@ function _pendQuebrar_(txt, max) {
   return linhas;
 }
 
+// O app DESCONSIDERA o histórico nos indicadores? O JSON não traz uma marca disso, então detecta pela idade:
+// com o corte excluindo, nenhuma NC em aberto pode ser mais velha que (posição − corte). Se algum imóvel
+// tem NC mais velha que isso, o app ainda está na regra antiga (SLA contado a partir do corte).
+// Sem imóveis (nada em aberto) ou sem data de corte/posição: assume a regra nova.
+function _pendCorteExclui_(v) {
+  if (!v || !v.data_corte || !v.posicao_em) return true;
+  const dias = Math.round((Date.parse(String(v.posicao_em).slice(0, 10)) - Date.parse(String(v.data_corte).slice(0, 10))) / 86400000);
+  if (!isFinite(dias)) return true;
+  return !(v.imoveis || []).some(i => Number(i.idade_max_dias) > dias);
+}
+
 // → [{ titulo, linhas: [..], cor }] — a ordem é a de importância (sem lançamentos primeiro).
 function _pendNotas_(v, maxChars) {
   const c = CR_DESIGN_SYSTEM.colors;
@@ -271,9 +282,12 @@ function _pendNotas_(v, maxChars) {
   if (v && v.data_corte) {
     notas.push({
       titulo: 'DATA DE CORTE DO HISTÓRICO: ' + _pendData_(v.data_corte),
-      // Regra do app desde 16/11/2026: o que é anterior ao corte é histórico e NÃO entra nos indicadores
-      // (antes só o SLA era contado a partir dele). Pedido do Guilherme.
-      linhas: _pendQuebrar_('Vistorias e NCs anteriores a essa data são histórico e não entram nos indicadores.', maxChars),
+      // Regra do app desde 16/11/2026 (migration 20261116200000): o que é anterior ao corte é histórico e NÃO
+      // entra nos indicadores; antes só o SLA era contado a partir dele. O texto segue a regra que o app
+      // está usando de fato (_pendCorteExclui_), para o slide nunca dizer uma coisa e mostrar outra.
+      linhas: _pendQuebrar_(_pendCorteExclui_(v)
+        ? 'Vistorias e NCs anteriores a essa data são histórico e não entram nos indicadores.'
+        : 'O prazo (SLA) das NCs constatadas antes dessa data é contado a partir dela.', maxChars),
       cor: c.brandLight
     });
   }

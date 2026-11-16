@@ -71,12 +71,14 @@ const BD_CORRETIVAS_ID = '1YlNZK_SdS_VTSPWzqOn_cYs1PjM5BO-VWgqSp-YpcVo';
 // as mesmas séries mensais. Mesmo ID de megas-mensal.
 const HISTORICO_VALIDADO_ID = '1o6vNzmZPlvil-DefoFZj92KzHBueqddk8wy26Ev2_DI';
 
-// Planilha própria da área de Propriedades — a mesma que alimenta a
-// apresentação SEMANAL (tabelas/propriedades-semanal). Abas usadas:
-//   Recebimento de Obras - Esteio | Recebimento de Obras - Ctba
-//   Análise de Projetos           | GESTÃO DE CONTRATAÇÕES
-// É de onde saem as tabelas de 03_Tabelas.gs.
-const PROPRIEDADES_SPREADSHEET_ID = '1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF4';
+// Planilha própria da área de Propriedades: "Propriedades — Semanal" (a que o time preenche e que o
+// próprio texto da aba COMO PREENCHER diz alimentar a apresentação). Trocada em 16/11/2026: o
+// gerador lia a planilha ANTIGA ("ANÁLISE DE PROJETOS", 1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF4),
+// que parou de ser atualizada (PORTA PALLETS ainda "em andamento", 9 itens a menos). Abas usadas:
+//   RECEBIMENTO DE OBRAS (UMA aba, todos os empreendimentos — o slide separa por Empreendimento)
+//   ANÁLISE DE PROJETOS  | GESTÃO DE CONTRATAÇÕES (lista única; a Etapa decide o histórico)
+// O nome da aba é comparado sem acento/caixa (_tabAba_). É de onde saem as tabelas de 03_Tabelas.gs.
+const PROPRIEDADES_SPREADSHEET_ID = '1j5MBTBMnBkyYt4uDNifrZyC0DedSKTTJG-v0bnKq8Zc';
 
 // VistoriaPro — o app de vistorias e não conformidades (repo
 // AugustCapitalrealty/vistoriascr-f5eedf86, Lovable + Supabase). A função
@@ -542,6 +544,10 @@ function formatarNumeroBR(valor) {
 
 // ── de 17_Slide_Contratacoes.gs ───────────────────────
 const ABA_CONTRATACOES = 'GESTÃO DE CONTRATAÇÕES';
+const ABA_RECEBIMENTO = 'RECEBIMENTO DE OBRAS';
+// Etapas que mandam a contratação para o HISTÓRICO (COMO PREENCHER: "Contratado, Replanejado ou
+// Cancelado → a linha vai para o histórico. Não precisa mover a linha").
+const CONTRAT_ETAPAS_FECHADAS = /^(contratad|replanejad|cancelad)/i;
 const TAG_CONTRATACOES      = '【CONTRATACOES_AUTO】';
 const TAG_CONTRATACOES_HIST = '【CONTRATACOES_HIST_AUTO】';
 const CONTRAT_MAX_LINHAS = 12;
@@ -572,9 +578,13 @@ const REC_KPIS = [
   { label: 'PENDENTE',  cor: CR_DESIGN_SYSTEM.colors.accentRed,   teste: r => /pendente/i.test(_tabV_(r, 3)) }
 ];
 const REL_RECEBIMENTO = {
+  // Desde 16/11/2026 as pendências de obra ficam numa aba só (ABA_RECEBIMENTO); `empreendimento` separa
+  // cada relatório pela coluna Empreendimento. Empreendimento que não for nenhum destes ganha o seu
+  // próprio relatório automaticamente (_recRelatorios_, 16_Slide_RecebimentoObras.gs).
   esteio: {
     nome:            'Esteio',
-    aba:             'Recebimento de Obras - Esteio',
+    aba:             ABA_RECEBIMENTO,
+    empreendimento:  /esteio/i,
     titulo:          'RECEBIMENTO DE OBRAS · ESTEIO',
     subtitulo:       'Pendências da Obra · MEGA ESTEIO',
     cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
@@ -586,7 +596,8 @@ const REL_RECEBIMENTO = {
 
   ctba: {
     nome:            'Curitiba',
-    aba:             'Recebimento de Obras - Ctba',
+    aba:             ABA_RECEBIMENTO,
+    empreendimento:  /curitiba/i,
     titulo:          'RECEBIMENTO DE OBRAS · CURITIBA',
     subtitulo:       'Pendências da Obra · MEGA CURITIBA',
     cabecalhoContem: ['EMPREENDIMENTO', 'PENDÊNCIA', 'PENDENCIA'],
@@ -598,7 +609,7 @@ const REL_RECEBIMENTO = {
 
   analise: {
     nome:            'Análise de Projetos',
-    aba:             'Análise de Projetos',
+    aba:             'ANÁLISE DE PROJETOS',
     titulo:          'ANÁLISE DE PROJETOS',
     // O subtítulo real ("Em andamento e concluídas em OUTUBRO 2026") é montado em
     // _analiseGerar_ (16_Slide_RecebimentoObras.gs), porque depende do mês.

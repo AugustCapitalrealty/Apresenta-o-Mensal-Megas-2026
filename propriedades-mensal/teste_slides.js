@@ -122,10 +122,11 @@ const deck = {
 
 // ── Dublê da planilha: as fixtures do DRE, e vazio para o resto ─────────
 const FIX = JSON.parse(fs.readFileSync(path.join(DIR, 'teste_dre_fixtures.json'), 'utf8'));
-// Análise de Projetos: os 34 registros reais (planilha de 16/11/2026) no lugar da fixture
-// mínima, para o slide de em andamento/concluídas do mês e o de indicadores desenharem de verdade.
-FIX['Análise de Projetos'] = [FIX['Análise de Projetos'][0]]
-  .concat(JSON.parse(fs.readFileSync(path.join(DIR, 'teste_analise_fixture.json'), 'utf8')));
+// As três abas lidas da planilha "Propriedades — Semanal" (a fonte desde 16/11/2026) vêm da fixture com os
+// dados REAIS dela (teste_semanal_fixture.json); as abas antigas ("Recebimento de Obras - Esteio/Ctba",
+// "Análise de Projetos") saem do dublê, para nenhum teste passar lendo a planilha velha por engano.
+Object.keys(FIX).forEach(k => { if (/^(Recebimento de Obras|Análise de Projetos|GESTÃO DE CONTRATAÇÕES)/i.test(k)) delete FIX[k]; });
+Object.assign(FIX, JSON.parse(fs.readFileSync(path.join(DIR, 'teste_semanal_fixture.json'), 'utf8')));
 function aba(nome) {
   const m = FIX[nome];
   return { getName: () => nome, getLastRow: () => m.length, getLastColumn: () => m[0].length,
@@ -335,7 +336,7 @@ console.log('\n== Análise de Projetos ==');
   // O dublê de referência aqui é AGOSTO/2026: em andamento + as 2 entregues em agosto.
   const tx = (porSlide['Recebimento de Obras'] || []).map(s => s.txt);
   const tem = t => tx.some(x => x === t);
-  checa(tem('PORTA PALLETS'), 'tabela: o projeto em andamento aparece');
+  checa(tem('COMPACTADORA'), 'tabela: o projeto em andamento aparece (COMPACTADORA, Itajaí)');
   checa(tem('ADEQUAÇÕES INTERNAS (PRELIMINARES)'), 'tabela: concluída com entrega no mês de referência (agosto) aparece');
   checa(!tx.some(x => /INSTALAÇÃO DE RAMPA/.test(x)), 'tabela: o histórico (abril) não é mais listado');
   checa(tx.some(x => /Em andamento e concluídas em AGOSTO 2026/.test(x)), 'subtítulo com o mês de referência');
@@ -348,13 +349,13 @@ console.log('\n== Análise de Projetos ==');
   // Pior caso: deck de DEZEMBRO (12 barras = fatias estreitas). Com agosto (8 barras) o defeito não aparecia.
   const refDez = { index: 11, nome: 'DEZEMBRO', curto: 'Dez', ano: 2026 };
   const antesDez = shapes.length;
-  _analiseDesenharIndicadores_(deck, _analiseIndicadores_(FIX['Análise de Projetos'].slice(1), refDez), refDez);
+  _analiseDesenharIndicadores_(deck, _analiseIndicadores_(FIX['ANÁLISE DE PROJETOS'].slice(1), refDez), refDez);
   const caixas = shapes.slice(antesDez);
   const interna = s => s.w - 14;
   const meses = caixas.filter(s => /^(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)$/.test(s.txt));
   checa(meses.length >= 6 && meses.every(s => interna(s) >= _analiseLarg_(s.txt, 7)),
         'indicadores: rótulos de mês com largura interna para 3 letras (' + meses.length + ' conferidos)');
-  const nomes = _analiseIndicadores_(FIX["Análise de Projetos"].slice(1), refDez).porLoc.slice(0, 3).map(x => x[0]);
+  const nomes = _analiseIndicadores_(FIX["ANÁLISE DE PROJETOS"].slice(1), refDez).porLoc.slice(0, 3).map(x => x[0]);
   const rotulos = caixas.filter(s => nomes.indexOf(s.txt) !== -1);
   checa(rotulos.length >= 3 && rotulos.every(s => interna(s) >= _analiseLarg_(s.txt, 7.5)),
         'indicadores: nomes das barras cabem inteiros (' + nomes.join(', ') + ')');

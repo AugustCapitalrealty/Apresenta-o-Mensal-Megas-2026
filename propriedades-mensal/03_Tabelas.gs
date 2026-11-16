@@ -45,10 +45,23 @@ const TAB_TY = CR_DESIGN_SYSTEM.typography;
 // e às vezes um rótulo mesclado antes. Por isso ele é localizado por
 // palavra-chave (`cabecalhoContem`) em vez de posição fixa — assim inserir uma
 // linha de título na planilha não quebra a leitura.
+// Acha a aba pelo nome SEM diferenciar acento e caixa ("Análise de Projetos" = "ANÁLISE DE PROJETOS"):
+// a planilha nova trouxe os nomes em maiúsculas e a antiga em caixa mista, e um nome diferente
+// só pela caixa derrubava a geração com "aba não encontrada".
+function _tabAba_(ss, nome) {
+  const exata = ss.getSheetByName(nome);
+  if (exata) return exata;
+  const alvo = _norm_(nome);
+  const todas = ss.getSheets();
+  for (let i = 0; i < todas.length; i++) if (_norm_(todas[i].getName()) === alvo) return todas[i];
+  return null;
+}
+
 function _tabLerAba_(aba, cabecalhoContem) {
   const ss    = _abrirPlanilha_(PROPRIEDADES_SPREADSHEET_ID, 'PROPRIEDADES_SPREADSHEET_ID');
-  const sheet = ss.getSheetByName(aba);
-  if (!sheet) throw new Error('Aba "' + aba + '" não encontrada na planilha de Propriedades.');
+  const sheet = _tabAba_(ss, aba);
+  if (!sheet) throw new Error('Aba "' + aba + '" não encontrada na planilha de Propriedades. Abas: ' +
+                              ss.getSheets().map(s => s.getName()).join(' | '));
 
   const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
