@@ -280,6 +280,7 @@ function _rodarPassos_(passos) {
     try {
       const antes = _passoFotoDeck_();
       p.fn();
+      _passoGravarDeck_(p.nome);   // grava no Slides ANTES do próximo passo (ver abaixo)
       _passoNoLugar_(antes, p.nome);
       Logger.log('  ✓ ' + p.nome);
     } catch (e) {
@@ -287,8 +288,41 @@ function _rodarPassos_(passos) {
       Logger.log('  ✗ ' + p.nome + ' — ' + e.message);
     }
   });
+  // O último passo pode ter deixado movimentos pendentes (_passoNoLugar_ reabre o deck).
+  try { _passoGravarDeck_('gravação final'); } catch (e) {
+    erros.push('gravação final: ' + e.message);
+    Logger.log('  ✗ gravação final — ' + e.message);
+  }
   if (erros.length) Logger.log('  ' + erros.length + ' slide(s) com erro.');
   return erros;
+}
+
+// GRAVAR O DECK A CADA PASSO (16/11/2026). O Apps Script enfileira as alterações
+// do Slides e só as envia no fim da execução. O deck de outubro tem ~52 slides
+// (só o Backlog de Clientes são 15 páginas): o envio final único estourava com
+// "Service unavailable: Slides" e NADA era gravado — o log mostrava todos os
+// passos ✓ e o deck ficava igual ao de antes. saveAndClose() envia o que o passo
+// montou; o deck é reaberto no próximo getDeckMensal_(), já enxergando os slides
+// novos (o mesmo problema da troca no lugar, ver _deckAbertos_ em 01_Config.gs).
+// Tenta 3 vezes: "Service unavailable" costuma ser passageiro.
+function _passoGravarDeck_(nome) {
+  const id = _deckAlvoId_ || DECK_PROPRIEDADES_ID;
+  const deck = _deckAbertos_[id];
+  if (!deck || typeof deck.saveAndClose !== 'function') return;
+  let ultimo = null;
+  for (let t = 1; t <= 3; t++) {
+    try {
+      deck.saveAndClose();
+      delete _deckAbertos_[id];
+      return;
+    } catch (e) {
+      ultimo = e;
+      Logger.log('    ↻ ' + nome + ': o Slides não gravou (' + e.message + '), tentativa ' + t + '/3.');
+      if (typeof Utilities !== 'undefined' && Utilities.sleep) Utilities.sleep(4000 * t);
+    }
+  }
+  throw new Error('o Slides não gravou este passo depois de 3 tentativas (' + ultimo.message +
+                  '). Rode de novo só este slide (menu ⚡ Slide Avulso).');
 }
 
 // TROCA NO MESMO LUGAR. Cada gerador apaga os slides da rodada anterior pela

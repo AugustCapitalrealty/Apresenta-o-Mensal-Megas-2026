@@ -172,5 +172,60 @@ console.log('\n== Ordenar o deck pela estrutura (o deck embaralhado de 10/11/202
   checa(lista.map(s => s.nome).join(' | ') === ord, 'ordenar de novo não muda nada');
 }
 
+console.log('\n== Gravar o deck a cada passo (Service unavailable: Slides) ==');
+{
+  // Deck dublado que conta saveAndClose e pode falhar N vezes.
+  const logs = [];
+  global.Logger = { log: m => logs.push(m) };
+  global.Utilities = { sleep: () => {} };
+  const ID = DECK_PROPRIEDADES_ID;
+  let gravacoes = 0, falhasPendentes = 0, aberturas = 0;
+  const mk = () => {
+    aberturas++;
+    return {
+      getSlides: () => [],
+      saveAndClose() {
+        if (falhasPendentes > 0) { falhasPendentes--; throw new Error('Service unavailable: Slides'); }
+        gravacoes++;
+      }
+    };
+  };
+  const limpa = () => { for (const k in _deckAbertos_) delete _deckAbertos_[k]; };
+  const salvoGet = global.getDeckMensal_;
+  global.getDeckMensal_ = () => { if (!_deckAbertos_[ID]) _deckAbertos_[ID] = mk(); return _deckAbertos_[ID]; };
+
+  // 1) grava depois de CADA passo e reabre o deck no seguinte
+  gravacoes = 0; aberturas = 0; limpa();
+  const erros1 = _rodarPassos_([
+    { nome: 'A', fn: () => getDeckMensal_() },
+    { nome: 'B', fn: () => getDeckMensal_() },
+    { nome: 'C', fn: () => getDeckMensal_() }]);
+  checa(erros1.length === 0 && gravacoes === 4, '3 passos → 3 gravações + 1 final (e não uma só no fim)');
+  checa(aberturas >= 3, 'o deck é reaberto depois de gravar');
+
+  // 2) falha passageira: repete e conclui
+  gravacoes = 0; limpa(); falhasPendentes = 2; logs.length = 0;
+  const erros2 = _rodarPassos_([{ nome: 'A', fn: () => getDeckMensal_() }]);
+  checa(erros2.length === 0 && gravacoes === 2, 'Service unavailable 2x → na 3ª tentativa grava (+ final)');
+  checa(logs.filter(l => l.indexOf('tentativa') >= 0).length === 2, 'as tentativas ficam no log');
+
+  // 3) falha permanente: o passo vira erro, os seguintes continuam
+  gravacoes = 0; limpa(); falhasPendentes = 3;
+  const erros3 = _rodarPassos_([
+    { nome: 'A', fn: () => getDeckMensal_() },
+    { nome: 'B', fn: () => getDeckMensal_() }]);
+  checa(erros3.length === 1 && erros3[0].indexOf('A:') === 0 && gravacoes === 2,
+        '3 falhas → o passo A acusa erro e o B ainda grava');
+
+  // 4) dublê sem saveAndClose (como nos outros testes): não faz nada
+  limpa(); _deckAbertos_[ID] = { getSlides: () => [] };
+  let ok = true; try { _passoGravarDeck_('X'); } catch (e) { ok = false; }
+  checa(ok, 'deck sem saveAndClose é ignorado');
+
+  limpa();
+  global.getDeckMensal_ = salvoGet;
+  global.Logger = { log: () => {} };
+}
+
 console.log(falhas ? '\n✗ ' + falhas + ' de ' + total + ' falharam' : '\n✓ ' + total + '/' + total + ' passaram');
 process.exitCode = falhas ? 1 : 0;
