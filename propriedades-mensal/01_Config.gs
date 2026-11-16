@@ -87,6 +87,17 @@ const PROPRIEDADES_SPREADSHEET_ID = '1in5xwPsPBAQCRyuCZNdEmT_u4jOYADdGs0ABKeeovF
 // código nem no git. Ver README, "Indicadores do VistoriaPro".
 const VISTORIAS_API_URL = 'https://klaaeqoaqfuhepjoznad.supabase.co/functions/v1/indicators-export';
 
+// NOME DE EXIBIÇÃO dos imóveis no slide Monitoramento de Pendências (22_Slide_Pendencias.gs).
+// O cadastro do VistoriaPro usa o nome do tipo do imóvel ("Armazém Frigorificado Colombo"); a
+// apresentação usa o nome do LOCAL/locatário que o time conhece. Chave = nome do app sem acento,
+// em minúsculas e sem pontuação (_pendChave_); valor = como aparece no slide (vira CAIXA ALTA).
+// Imóvel que não está aqui aparece com o nome do app. Para acrescentar um, rode
+// diagnosticarVistorias(): ele lista os nomes do app, um por linha. (Pedido do Guilherme, 16/11/2026.)
+const PEND_NOMES_IMOVEL = {
+  'armazem frigorificado colombo': 'Friozem Colombo',
+  'armazem monousuario itajai': 'Emergent Cold (Aurora)'
+};
+
 
 // ==========================================
 // DECK DE DESTINO

@@ -257,7 +257,8 @@ reiniciar();
     atual: ZERO, anterior: Object.assign({}, ZERO, { mes: '2026-07' }),
     idade: { '0-30': 0, '31-60': 0, '61-90': 0, '91-180': 0, '>180': 320 },
     imoveis: [
-      { imovel: 'ARMAZÉM FRIGORIFICADO BRADO CUBATÃO', em_aberto: 90, vencidas: 90, alta_vencidas: 0, idade_max_dias: 501, indice_saude: 0 },
+      // Nomes como estão no cadastro do app (16/11/2026); o slide mostra os apelidos de PEND_NOMES_IMOVEL.
+      { imovel: 'Armazém Frigorificado Colombo', em_aberto: 90, vencidas: 90, alta_vencidas: 0, idade_max_dias: 501, indice_saude: 0 },
       { imovel: 'Armazém Monousuário Itajaí', em_aberto: 50, vencidas: 50, alta_vencidas: 0, idade_max_dias: 479, indice_saude: 0 },
       { imovel: 'POSTO CURITIBA', em_aberto: 94, vencidas: 94, alta_vencidas: 0, idade_max_dias: 425, indice_saude: 0 },
       { imovel: 'GALERIA LOJAS GAROTO', em_aberto: 86, vencidas: 86, alta_vencidas: 0, idade_max_dias: 408, indice_saude: 0 }],
@@ -283,8 +284,11 @@ reiniciar();
   const fimTabela = Math.max.apply(null, sz.filter(f => f.texto === 'GALERIA LOJAS GAROTO').map(f => f.y + f.h));   // a última linha da tabela
   // O nome do local sai inteiro e em caixa alta, mesmo que o app mande em minúsculas/mistas.
   const nomesZ = sz.filter(f => f.texto && f.x < 120 && f.y > 200 && f.y < topoNota - 1 && f.tipo === 'TEXT_BOX').map(f => f.texto);   // abaixo do cabeçalho "Imóvel"
-  t(nomesZ.includes('ARMAZÉM FRIGORIFICADO') && nomesZ.includes('BRADO CUBATÃO'), 'sem lançamentos: "ARMAZÉM FRIGORIFICADO BRADO CUBATÃO" inteiro, em 2 linhas → ' + nomesZ.join(' | '));
-  t(nomesZ.includes('ARMAZÉM MONOUSUÁRIO') && nomesZ.includes('ITAJAÍ'), 'sem lançamentos: "Armazém Monousuário Itajaí" (mista no app) sai em CAIXA ALTA, inteiro');
+  t(nomesZ.includes('FRIOZEM COLOMBO') && !nomesZ.some(x => /FRIGORIFICADO|COLOMBO$/.test(x) && x !== 'FRIOZEM COLOMBO'),
+    '"Armazém Frigorificado Colombo" aparece como FRIOZEM COLOMBO → ' + nomesZ.join(' | '));
+  t(nomesZ.includes('EMERGENT COLD (AURORA)') && !nomesZ.some(x => /MONOUSU/.test(x)),
+    '"Armazém Monousuário Itajaí" aparece como EMERGENT COLD (AURORA), em uma linha');
+  t(nomesZ.includes('POSTO CURITIBA') && nomesZ.includes('GALERIA LOJAS GAROTO'), 'imóvel sem apelido mantém o nome do app (em caixa alta)');
   t(nomesZ.every(x => x === x.toUpperCase()) && !nomesZ.some(x => /…/.test(x)), 'sem lançamentos: coluna Imóvel toda em caixa alta e sem "…"');
   t(fimTabela <= topoNota + 0.5, 'sem lançamentos: a nota começa depois da última linha da tabela (' + fimTabela.toFixed(1) + ' ≤ ' + topoNota.toFixed(1) + ')');
   const notaBaixo = Math.max.apply(null, sz.filter(f => f.texto && f.x > 40 && f.x < 60 + 380 && f.y > topoNota - 1 && f.texto !== 'Fonte').map(f => f.y + f.h));
@@ -295,6 +299,16 @@ reiniciar();
   const sn = rodarSlide('Pendências — sem corte, com atividade').filter(f => f.texto).map(f => f.texto);
   t(!sn.some(x => /DATA DE CORTE|SEM LANÇAMENTOS/.test(x)), 'sem data de corte e com atividade: nenhuma nota aparece');
 }
+resposta = { cod: 200, corpo: FIX };
+
+// ── 5c. Apelidos dos imóveis (PEND_NOMES_IMOVEL) ────────────────────────────
+t(_pendNomeImovel_('Armazém Frigorificado Colombo') === 'Friozem Colombo', 'apelido: Armazém Frigorificado Colombo → Friozem Colombo');
+t(_pendNomeImovel_('ARMAZÉM MONOUSUÁRIO ITAJAÍ') === 'Emergent Cold (Aurora)', 'apelido: casa em caixa alta e com acento');
+t(_pendNomeImovel_('  armazem-monousuario   itajai ') === 'Emergent Cold (Aurora)', 'apelido: ignora acento, hífen, espaços repetidos e espaços nas pontas');
+t(_pendNomeImovel_('Posto Curitiba') === 'Posto Curitiba', 'sem apelido: devolve o nome do app como veio');
+t(_pendNomeImovel_(null) === '' && _pendNomeImovel_(undefined) === '', 'nome ausente: texto vazio, sem estourar');
+t(_pendNomeImovel_('Armazém Monousuário Itajaí II') === 'Armazém Monousuário Itajaí II', 'nome parecido mas diferente NÃO leva o apelido (casamento é exato)');
+reiniciar();
 resposta = { cod: 200, corpo: FIX };
 
 // ── 6. diagnosticarVistorias ────────────────────────────────────────────────

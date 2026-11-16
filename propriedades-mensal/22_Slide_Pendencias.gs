@@ -96,7 +96,7 @@ function _pendDesenhar_(slide, W, H, v) {
   // Caixa alta em fonte 7: ~0,74 × corpo por letra; a caixa perde 14,4 pt de recuo interno.
   const maxCh = Math.max(8, Math.floor((colNome - 14.4) / (7 * 0.74)));
   const nomeLinhas = im => {
-    const ls = _pendQuebrar_(String(im.imovel == null ? '' : im.imovel).toUpperCase(), maxCh).map(l => _truncar_(l, maxCh));
+    const ls = _pendQuebrar_(_pendNomeImovel_(im.imovel).toUpperCase(), maxCh).map(l => _truncar_(l, maxCh));
     if (ls.length <= 2) return ls.length ? ls : [''];
     return [ls[0], _truncar_(ls.slice(1).join(' '), maxCh)];   // passou de 2 linhas: a 2ª leva o "…"
   };
@@ -221,6 +221,17 @@ function _pendCartao_(slide, x, y, w, h, k) {
 // Cada linha é uma caixa de texto própria (uma linha só): o teste mede se cabe.
 const _PEND_NOTA_FS = 7;
 
+// Nome do imóvel como aparece no slide: o apelido de PEND_NOMES_IMOVEL (01_Config.gs) ou, não
+// havendo, o nome do app. A chave ignora acento, caixa, pontuação e espaços repetidos.
+function _pendChave_(s) {
+  return _norm_(s).replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function _pendNomeImovel_(nome) {
+  const original = String(nome == null ? '' : nome).trim();
+  const apelido = PEND_NOMES_IMOVEL[_pendChave_(original)];
+  return apelido || original;
+}
+
 // Quebra em linhas de no máximo `max` caracteres, cortando em espaço.
 function _pendQuebrar_(txt, max) {
   const linhas = [];
@@ -339,5 +350,10 @@ function diagnosticarVistorias() {
   Logger.log('    NCs: ' + a.ncs_em_aberto + ' em aberto, ' + a.ncs_vencidas + ' vencida(s), ' + a.ncs_abertas_no_mes +
              ' nova(s), ' + a.ncs_resolvidas_no_mes + ' resolvida(s), tempo médio ' + (a.mttr_dias == null ? '—' : a.mttr_dias + 'd'));
   Logger.log('    ' + (v.imoveis || []).length + ' imóvel(is) com pendência; ' + (v.disciplinas || []).length + ' disciplina(s).');
-  (v.imoveis || []).forEach(i => Logger.log('      · ' + i.imovel + ' — ' + i.em_aberto + ' em aberto, ' + i.vencidas + ' vencida(s), mais antiga ' + i.idade_max_dias + 'd'));
+  // Um imóvel por linha, com o nome do app e, se houver apelido (PEND_NOMES_IMOVEL), como sai no slide.
+  (v.imoveis || []).forEach(i => {
+    const exibido = _pendNomeImovel_(i.imovel);
+    Logger.log('      · ' + i.imovel + (exibido !== String(i.imovel) ? '  →  ' + exibido.toUpperCase() : '') + ' — ' + i.em_aberto +
+               ' em aberto, ' + i.vencidas + ' vencida(s), mais antiga ' + i.idade_max_dias + 'd');
+  });
 }
