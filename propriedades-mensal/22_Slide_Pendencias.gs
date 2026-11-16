@@ -78,13 +78,21 @@ function _pendDesenhar_(slide, W, H, v) {
   const pTop = cTop + cH + 12, pH = H - pTop - 26;
   const wImov = 380;
   const yImov = criarCardPainel(slide, mX, pTop, wImov, pH, 'IMÓVEIS COM MAIS PENDÊNCIAS', c.brandLight);
+  // Notas no pé do cartão: data de corte e, se for o caso, "sem lançamentos no mês".
+  const notas = _pendNotas_(v, Math.floor((wImov - 24 - 10) / (_PEND_NOTA_FS * 0.58)));
+  const notaH = _pendNotasAltura_(notas);
   // Larguras medidas para o cabeçalho em 6,5 pt caber sem quebrar (lição 1).
   const cols = [
     { t: 'Imóvel', w: 0.34, a: 'left' }, { t: 'Em aberto', w: 0.14, a: 'center' }, { t: 'Vencidas', w: 0.13, a: 'center' },
     { t: 'Alta venc.', w: 0.13, a: 'center' }, { t: 'Mais antiga', w: 0.15, a: 'center' }, { t: 'Saúde', w: 0.11, a: 'center' }
   ];
   const imoveis = (v.imoveis || []).filter(i => i.em_aberto > 0);
-  const linhaH = 17, maxLinhas = Math.max(1, Math.floor((pTop + pH - yImov - 24) / linhaH));
+  const linhaH = 17;
+  // Área da tabela: do cabeçalho até as notas. Não cabendo todos os imóveis, reserva 14 pt
+  // para a linha "+ N imóvel(is) fora da lista" (que antes ficava por cima da última linha).
+  const areaTab = pTop + pH - yImov - 24 - notaH;
+  let maxLinhas = Math.max(1, Math.floor(areaTab / linhaH));
+  if (imoveis.length > maxLinhas) maxLinhas = Math.max(1, Math.floor((areaTab - 14) / linhaH));
   const tabX = mX + 12, tabW = wImov - 24;
   let x0 = tabX;
   cols.forEach(col => {
@@ -113,9 +121,10 @@ function _pendDesenhar_(slide, W, H, v) {
   if (!imoveis.length) {
     _sTxt(slide, tabX, yImov + 30, tabW, 20, 'Nenhuma NC em aberto no fim do mês.', 9, true, c.accentGreen, 'center');
   } else if (imoveis.length > maxLinhas) {
-    _sTxt(slide, tabX, pTop + pH - 20, tabW, 14, '+ ' + (imoveis.length - maxLinhas) + ' imóvel(is) com pendência fora da lista',
+    _sTxt(slide, tabX, yImov + 16 + maxLinhas * linhaH + 1, tabW, 12, '+ ' + (imoveis.length - maxLinhas) + ' imóvel(is) com pendência fora da lista',
       7, false, c.textMuted, 'left');
   }
+  _pendDesenharNotas_(slide, tabX, pTop + pH - notaH - 6, tabW, notas);
 
   // ── Por disciplina + idade das pendências ──
   const xDir = mX + wImov + 12, wDir = W - mX - xDir;
@@ -179,6 +188,77 @@ function _pendCartao_(slide, x, y, w, h, k) {
   _sTxt(slide, x + 6, y + 18, w - 12, 24, String(k.v == null ? '—' : k.v), 17, true, k.alerta ? c.accentRed : c.brandDark, 'left');
   if (k.var) _sTxt(slide, x + 6, y + 18, w - 12, 24, k.var.txt, 8, true, k.var.cor, 'right');
   if (k.sub) _sTxt(slide, x + 6, y + h - 20, w - 12, 14, _truncar_(k.sub, _charsQueCabem_(w - 12, 7)), 7, false, c.textBody, 'left');
+}
+
+// ── Notas do slide (16/11/2026) ──
+// 1) DATA DE CORTE do histórico (vem do app: v.data_corte). NCs constatadas antes
+//    dela têm o prazo (SLA) contado a partir dela; sem esta nota, "320 vencidas" não
+//    se explica sozinho. Pedido do Guilherme: mostrar o corte de 01/08.
+// 2) SEM LANÇAMENTOS no mês: nenhuma vistoria, visita ou NC (nova ou resolvida) no
+//    VistoriaPro. Decisão do Guilherme: mostrar em branco mesmo, e dizer que é falta
+//    de lançamento — não esconder os zeros. Só liga quando TODOS são zero; com
+//    qualquer atividade, a nota não aparece.
+// Cada linha é uma caixa de texto própria (uma linha só): o teste mede se cabe.
+const _PEND_NOTA_FS = 7;
+
+// Quebra em linhas de no máximo `max` caracteres, cortando em espaço.
+function _pendQuebrar_(txt, max) {
+  const linhas = [];
+  let atual = '';
+  String(txt).split(/\s+/).filter(p => p).forEach(p => {
+    if (atual && (atual + ' ' + p).length > max) { linhas.push(atual); atual = p; }
+    else atual = atual ? atual + ' ' + p : p;
+  });
+  if (atual) linhas.push(atual);
+  return linhas;
+}
+
+// → [{ titulo, linhas: [..], cor }] — a ordem é a de importância (sem lançamentos primeiro).
+function _pendNotas_(v, maxChars) {
+  const c = CR_DESIGN_SYSTEM.colors;
+  const a = (v && v.atual) || {};
+  const notas = [];
+  const semLancamento = [a.vistorias_periodicas, a.visitas_mensais, a.ncs_abertas_no_mes, a.ncs_resolvidas_no_mes]
+    .every(n => n != null && Number(n) === 0);
+  if (semLancamento) {
+    const mes = (typeof obterMesReferencia_ === 'function' && obterMesReferencia_().label) || String(v.mes || '');
+    notas.push({
+      titulo: 'SEM LANÇAMENTOS NO MÊS',
+      linhas: _pendQuebrar_('Nenhuma vistoria, visita mensal ou NC (nova ou resolvida) foi registrada no VistoriaPro em ' + mes +
+                            '. As ' + a.ncs_em_aberto + ' NCs em aberto são o estoque já cadastrado.', maxChars),
+      cor: c.accentOrange
+    });
+  }
+  if (v && v.data_corte) {
+    notas.push({
+      titulo: 'DATA DE CORTE DO HISTÓRICO: ' + _pendData_(v.data_corte),
+      linhas: _pendQuebrar_('O prazo (SLA) das NCs constatadas antes dessa data é contado a partir dela.', maxChars),
+      cor: c.brandLight
+    });
+  }
+  return notas;
+}
+
+const _PEND_NOTA_TITULO_H = 10, _PEND_NOTA_LINHA_H = 9, _PEND_NOTA_GAP = 5;
+function _pendNotasAltura_(notas) {
+  if (!notas.length) return 0;
+  return notas.reduce((s, n) => s + _PEND_NOTA_TITULO_H + n.linhas.length * _PEND_NOTA_LINHA_H + _PEND_NOTA_GAP, 0) + 2;
+}
+
+function _pendDesenharNotas_(slide, x, y, w, notas) {
+  if (!notas.length) return;
+  const c = CR_DESIGN_SYSTEM.colors;
+  let yy = y + 2;
+  notas.forEach(n => {
+    const h = _PEND_NOTA_TITULO_H + n.linhas.length * _PEND_NOTA_LINHA_H;
+    _sRet_(slide, x, yy, 2.5, h, n.cor);   // filete na cor da nota
+    _sTxt(slide, x + 8, yy, w - 10, _PEND_NOTA_TITULO_H, n.titulo, _PEND_NOTA_FS, true, n.cor, 'left', 7);
+    n.linhas.forEach((ln, i) => {
+      _sTxt(slide, x + 8, yy + _PEND_NOTA_TITULO_H + i * _PEND_NOTA_LINHA_H, w - 10, _PEND_NOTA_LINHA_H, ln,
+            _PEND_NOTA_FS, false, c.textBody, 'left', 7);
+    });
+    yy += h + _PEND_NOTA_GAP;
+  });
 }
 
 // "▲ 3" / "▼ 2" contra o mês anterior. maiorRuim: subir é ruim (estoque, vencidas, tempo).

@@ -189,6 +189,15 @@ const barras = s.filter(f => f.tipo === 'RECTANGLE' && f.h === 9);
 t(barras.length === 5 && barras.slice(3).every(b => b.cor === C.accentOrange) && barras.slice(0, 3).every(b => b.cor === C.brandLight),
   'idade: 5 barras, as de mais de 90 dias em laranja');
 t(txt.some(x => x.indexOf('Fonte: VistoriaPro') === 0), 'rodapé com a fonte do dado');
+t(txt.includes('DATA DE CORTE DO HISTÓRICO: 01/08/2026'), 'nota: data de corte vinda do app (01/08/2026)');
+t(!txt.includes('SEM LANÇAMENTOS NO MÊS'), 'com atividade no mês, a nota "sem lançamentos" NÃO aparece');
+{
+  // O "+ N imóvel(is) fora da lista" não pode encostar nas notas do pé do cartão.
+  const mais = s.find(f => f.texto && /^\+ \d+ imóvel\(is\)/.test(f.texto));
+  const nota = s.find(f => f.texto === 'DATA DE CORTE DO HISTÓRICO: 01/08/2026');
+  t(mais && nota && mais.y + mais.h <= nota.y + 0.5, 'nota de corte não fica em cima do "+ N imóvel(is) fora da lista" (' +
+    (mais && nota ? (mais.y + mais.h).toFixed(1) + ' ≤ ' + nota.y.toFixed(1) : 'não achei') + ')');
+}
 t(movidoPara === 7, 'vai para logo depois da capa da seção 4 (índice 7) → ' + movidoPara);
 
 // Geometria: nada fora da página e texto de uma linha que cabe na caixa.
@@ -227,6 +236,56 @@ resposta = { cod: 200, corpo: Object.assign({}, FIX, {
 const z = rodarSlide('Pendências — mês limpo');
 t(z.some(f => f.texto === 'Nenhuma NC em aberto no fim do mês.') && z.some(f => f.texto === '—') && z.some(f => f.texto === 'nenhuma no mês'),
   'mês sem pendência: mensagem, tempo médio "—" e "nenhuma no mês"');
+resposta = { cod: 200, corpo: FIX };
+
+// ── 5b. Mês SEM LANÇAMENTOS (o caso real de outubro/2026) ───────────────────
+// O app respondeu, mas ninguém lançou nada no mês: 0 vistorias, 0 visitas, 0 NCs
+// novas e resolvidas; o estoque de 320 NCs vem do histórico. Decisão do Guilherme
+// (16/11): mostrar em branco mesmo e dizer que é falta de lançamento.
+reiniciar();
+{
+  const ZERO = { mes: '2026-08', vistorias_periodicas: 0, visitas_mensais: 0, visitas_programadas: 0, imoveis_visitados: 0, imoveis_ativos: 6,
+                 ncs_abertas_no_mes: 0, ncs_resolvidas_no_mes: 0, ncs_em_aberto: 320, ncs_vencidas: 320, ncs_alta_vencidas: 0,
+                 mttr_dias: null, pct_resolvidas_no_prazo: null };
+  const disc = [['Piso', 46], ['Forro', 38], ['Pintura', 37], ['Cobertura', 25]];
+  for (let i = 1; i <= 18; i++) disc.push(['Disciplina ' + i, 9]);
+  resposta = { cod: 200, corpo: Object.assign({}, FIX, {
+    atual: ZERO, anterior: Object.assign({}, ZERO, { mes: '2026-07' }),
+    idade: { '0-30': 0, '31-60': 0, '61-90': 0, '91-180': 0, '>180': 320 },
+    imoveis: [
+      { imovel: 'ARMAZÉM FRIGORIFICADO (nome longo de teste)', em_aberto: 90, vencidas: 90, alta_vencidas: 0, idade_max_dias: 501, indice_saude: 0 },
+      { imovel: 'Armazém Monousuário (nome longo de teste)', em_aberto: 50, vencidas: 50, alta_vencidas: 0, idade_max_dias: 479, indice_saude: 0 },
+      { imovel: 'POSTO CURITIBA', em_aberto: 94, vencidas: 94, alta_vencidas: 0, idade_max_dias: 425, indice_saude: 0 },
+      { imovel: 'GALERIA LOJAS GAROTO', em_aberto: 86, vencidas: 86, alta_vencidas: 0, idade_max_dias: 408, indice_saude: 0 }],
+    disciplinas: disc.map(d => ({ disciplina: d[0], em_aberto: d[1], vencidas: d[1], resolvidas_no_mes: 0 })) }) };
+  const sz = rodarSlide('Pendências — sem lançamentos (outubro/26)');
+  const tz = sz.filter(f => f.texto).map(f => f.texto);
+  t(!tz.some(x => /NÃO FOI GERADO/.test(x)), 'sem lançamentos: slide sai normalmente, sem aviso de falha');
+  t(tz.includes('SEM LANÇAMENTOS NO MÊS'), 'sem lançamentos: nota "SEM LANÇAMENTOS NO MÊS"');
+  t(tz.includes('DATA DE CORTE DO HISTÓRICO: 01/08/2026'), 'sem lançamentos: nota de corte 01/08/2026 também aparece');
+  const corpo = tz.join(' ');
+  t(/Nenhuma vistoria, visita mensal ou NC \(nova ou resolvida\)/.test(corpo) && /foi registrada no VistoriaPro em AGOSTO 2026/.test(corpo) &&
+    /As 320 NCs em aberto são o estoque já cadastrado/.test(corpo), 'sem lançamentos: texto da nota diz o que falta e quantas NCs são estoque');
+  t(tz.includes('0 de 0') && tz.includes('0 de 6 imóveis'), 'sem lançamentos: os zeros continuam à vista (visitas 0 de 0, 0 de 6 imóveis) — nada escondido');
+  t(sz.filter(f => f.texto === '320').length >= 2, 'sem lançamentos: 320 em aberto e 320 vencidas continuam nos cartões');
+  const fora2 = sz.filter(f => f.tipo !== 'ELLIPSE' && (f.x < -0.5 || f.y < -0.5 || f.x + f.w > 720.5 || f.y + f.h > 405.5));
+  t(!fora2.length, 'sem lançamentos: nada fora da página → ' + JSON.stringify(fora2[0]));
+  const estouro2 = sz.filter(f => f.texto && f.fs && f.texto.indexOf('\n') < 0 &&
+    _tvLargura_(f.texto, f.fs, f.fonte, f.negrito) > f.w - RECUO + 0.5);
+  t(!estouro2.length, 'sem lançamentos: nenhuma linha (inclusive as das notas) estoura a caixa → ' +
+    estouro2.map(f => `"${f.texto}"@${f.fs} (${_tvLargura_(f.texto, f.fs, f.fonte, f.negrito).toFixed(0)} > ${(f.w - RECUO).toFixed(0)})`).join(' | '));
+  // As notas ficam abaixo da última linha da tabela e dentro do cartão da esquerda.
+  const topoNota = Math.min.apply(null, sz.filter(f => f.texto === 'SEM LANÇAMENTOS NO MÊS').map(f => f.y));
+  const fimTabela = Math.max.apply(null, sz.filter(f => f.texto && f.x < 300 && /^(ARMAZÉM|Armazém|POSTO|GALERIA)/.test(f.texto)).map(f => f.y + f.h));
+  t(fimTabela <= topoNota + 0.5, 'sem lançamentos: a nota começa depois da última linha da tabela (' + fimTabela.toFixed(1) + ' ≤ ' + topoNota.toFixed(1) + ')');
+  const notaBaixo = Math.max.apply(null, sz.filter(f => f.texto && f.x > 40 && f.x < 60 + 380 && f.y > topoNota - 1 && f.texto !== 'Fonte').map(f => f.y + f.h));
+  t(notaBaixo <= 154 + (405 - 154 - 26) + 0.5, 'sem lançamentos: as notas terminam dentro do cartão (' + notaBaixo.toFixed(1) + ')');
+  // Sem nenhuma data de corte e com atividade: nenhuma nota (o slide fica como antes).
+  reiniciar();
+  resposta = { cod: 200, corpo: Object.assign({}, FIX, { data_corte: null }) };
+  const sn = rodarSlide('Pendências — sem corte, com atividade').filter(f => f.texto).map(f => f.texto);
+  t(!sn.some(x => /DATA DE CORTE|SEM LANÇAMENTOS/.test(x)), 'sem data de corte e com atividade: nenhuma nota aparece');
+}
 resposta = { cod: 200, corpo: FIX };
 
 // ── 6. diagnosticarVistorias ────────────────────────────────────────────────
