@@ -177,10 +177,14 @@ t(txt.includes('83,3% no prazo'), 'resolvidas: % no prazo');
 t(txt.includes('23,5d') && comCor('▼ 7,5', C.accentGreen), 'tempo médio 23,5d, ▼ 7,5 em verde');
 t(txt.includes('9 de 11') && txt.includes('9 de 12 imóveis'), 'visitas mensais 9 de 11 e imóveis visitados');
 t(comCor('41', C.accentRed), 'saúde 41 do Mega Curitiba em vermelho');
-const linhasImov = s.filter(f => f.texto && f.x < 300 && f.y > 160 && /^(Mega|Brado|AR|Garoto|Posto|Galpão|Loja)/.test(f.texto));
-t(linhasImov.length >= 6 && linhasImov[0].texto === 'Mega Curitiba', 'imóveis na ordem do app, o mais crítico primeiro (' + linhasImov.length + ' linhas)');
-const longo = s.find(f => f.texto && f.texto.indexOf('Brado Cubatão') === 0);
-t(longo && longo.texto !== FIX.imoveis[2].imovel, 'nome longo de imóvel é cortado → ' + (longo && longo.texto));
+// Nomes em CAIXA ALTA e por inteiro (16/11/2026): a coluna Imóvel é a da esquerda, abaixo do cabeçalho.
+const colunaNome = s.filter(f => f.texto && f.x < 120 && f.y > 160 && f.y < 330 && f.tipo === 'TEXT_BOX');
+const linhasImov = colunaNome.filter(f => /^(MEGA|BRADO|FRIGORIFICADO|AR 3000|GAROTO|POSTO|GALPÃO|LOJA)/.test(f.texto));
+t(linhasImov.length >= 6 && linhasImov[0].texto === 'MEGA CURITIBA', 'imóveis na ordem do app, o mais crítico primeiro, em caixa alta (' + linhasImov.length + ' linhas)');
+t(linhasImov.every(f => f.texto === f.texto.toUpperCase()), 'nomes dos imóveis todos em CAIXA ALTA');
+const nomeBrado = linhasImov.filter(f => /^(BRADO CUBATÃO|FRIGORIFICADO PRINCIPAL)/.test(f.texto)).sort((a, b) => a.y - b.y).map(f => f.texto).join(' ');
+t(nomeBrado === FIX.imoveis[2].imovel.toUpperCase() && !colunaNome.some(f => /…/.test(f.texto)),
+  'nome longo sai INTEIRO (2 linhas), sem "…" → ' + nomeBrado);
 const discMostradas = FIX.disciplinas.filter(d => txt.includes(d.disciplina) || txt.some(x => x.indexOf(d.disciplina.slice(0, 12)) === 0));
 const avisoDisc = txt.find(x => /^\+ \d+ disciplina\(s\) fora da lista$/.test(x));
 t(avisoDisc && discMostradas.length + Number(avisoDisc.match(/\d+/)[0]) === FIX.disciplinas.length,
@@ -253,8 +257,8 @@ reiniciar();
     atual: ZERO, anterior: Object.assign({}, ZERO, { mes: '2026-07' }),
     idade: { '0-30': 0, '31-60': 0, '61-90': 0, '91-180': 0, '>180': 320 },
     imoveis: [
-      { imovel: 'ARMAZÉM FRIGORIFICADO (nome longo de teste)', em_aberto: 90, vencidas: 90, alta_vencidas: 0, idade_max_dias: 501, indice_saude: 0 },
-      { imovel: 'Armazém Monousuário (nome longo de teste)', em_aberto: 50, vencidas: 50, alta_vencidas: 0, idade_max_dias: 479, indice_saude: 0 },
+      { imovel: 'ARMAZÉM FRIGORIFICADO BRADO CUBATÃO', em_aberto: 90, vencidas: 90, alta_vencidas: 0, idade_max_dias: 501, indice_saude: 0 },
+      { imovel: 'Armazém Monousuário Itajaí', em_aberto: 50, vencidas: 50, alta_vencidas: 0, idade_max_dias: 479, indice_saude: 0 },
       { imovel: 'POSTO CURITIBA', em_aberto: 94, vencidas: 94, alta_vencidas: 0, idade_max_dias: 425, indice_saude: 0 },
       { imovel: 'GALERIA LOJAS GAROTO', em_aberto: 86, vencidas: 86, alta_vencidas: 0, idade_max_dias: 408, indice_saude: 0 }],
     disciplinas: disc.map(d => ({ disciplina: d[0], em_aberto: d[1], vencidas: d[1], resolvidas_no_mes: 0 })) }) };
@@ -276,7 +280,12 @@ reiniciar();
     estouro2.map(f => `"${f.texto}"@${f.fs} (${_tvLargura_(f.texto, f.fs, f.fonte, f.negrito).toFixed(0)} > ${(f.w - RECUO).toFixed(0)})`).join(' | '));
   // As notas ficam abaixo da última linha da tabela e dentro do cartão da esquerda.
   const topoNota = Math.min.apply(null, sz.filter(f => f.texto === 'SEM LANÇAMENTOS NO MÊS').map(f => f.y));
-  const fimTabela = Math.max.apply(null, sz.filter(f => f.texto && f.x < 300 && /^(ARMAZÉM|Armazém|POSTO|GALERIA)/.test(f.texto)).map(f => f.y + f.h));
+  const fimTabela = Math.max.apply(null, sz.filter(f => f.texto === 'GALERIA LOJAS GAROTO').map(f => f.y + f.h));   // a última linha da tabela
+  // O nome do local sai inteiro e em caixa alta, mesmo que o app mande em minúsculas/mistas.
+  const nomesZ = sz.filter(f => f.texto && f.x < 120 && f.y > 200 && f.y < topoNota - 1 && f.tipo === 'TEXT_BOX').map(f => f.texto);   // abaixo do cabeçalho "Imóvel"
+  t(nomesZ.includes('ARMAZÉM FRIGORIFICADO') && nomesZ.includes('BRADO CUBATÃO'), 'sem lançamentos: "ARMAZÉM FRIGORIFICADO BRADO CUBATÃO" inteiro, em 2 linhas → ' + nomesZ.join(' | '));
+  t(nomesZ.includes('ARMAZÉM MONOUSUÁRIO') && nomesZ.includes('ITAJAÍ'), 'sem lançamentos: "Armazém Monousuário Itajaí" (mista no app) sai em CAIXA ALTA, inteiro');
+  t(nomesZ.every(x => x === x.toUpperCase()) && !nomesZ.some(x => /…/.test(x)), 'sem lançamentos: coluna Imóvel toda em caixa alta e sem "…"');
   t(fimTabela <= topoNota + 0.5, 'sem lançamentos: a nota começa depois da última linha da tabela (' + fimTabela.toFixed(1) + ' ≤ ' + topoNota.toFixed(1) + ')');
   const notaBaixo = Math.max.apply(null, sz.filter(f => f.texto && f.x > 40 && f.x < 60 + 380 && f.y > topoNota - 1 && f.texto !== 'Fonte').map(f => f.y + f.h));
   t(notaBaixo <= 154 + (405 - 154 - 26) + 0.5, 'sem lançamentos: as notas terminam dentro do cartão (' + notaBaixo.toFixed(1) + ')');

@@ -81,47 +81,67 @@ function _pendDesenhar_(slide, W, H, v) {
   // Notas no pé do cartão: data de corte e, se for o caso, "sem lançamentos no mês".
   const notas = _pendNotas_(v, Math.floor((wImov - 24 - 10) / (_PEND_NOTA_FS * 0.58)));
   const notaH = _pendNotasAltura_(notas);
-  // Larguras medidas para o cabeçalho em 6,5 pt caber sem quebrar (lição 1).
+  // Larguras medidas para o cabeçalho em 6,5 pt caber sem quebrar (lição 1). A coluna Imóvel
+  // ganhou espaço (16/11/2026): o nome sai POR INTEIRO, em CAIXA ALTA, em até 2 linhas. Antes era
+  // cortado com "…" e dois armazéns diferentes viravam "ARMAZÉM FRIGORIFICADO…" / "Armazém Monousuário…",
+  // escondendo qual é o local. As colunas centralizadas usam folga 7 (lição 1) para o cabeçalho caber.
   const cols = [
-    { t: 'Imóvel', w: 0.34, a: 'left' }, { t: 'Em aberto', w: 0.14, a: 'center' }, { t: 'Vencidas', w: 0.13, a: 'center' },
-    { t: 'Alta venc.', w: 0.13, a: 'center' }, { t: 'Mais antiga', w: 0.15, a: 'center' }, { t: 'Saúde', w: 0.11, a: 'center' }
+    { t: 'Imóvel', w: 0.40, a: 'left' }, { t: 'Em aberto', w: 0.13, a: 'center' }, { t: 'Vencidas', w: 0.12, a: 'center' },
+    { t: 'Alta venc.', w: 0.12, a: 'center' }, { t: 'Mais antiga', w: 0.14, a: 'center' }, { t: 'Saúde', w: 0.09, a: 'center' }
   ];
   const imoveis = (v.imoveis || []).filter(i => i.em_aberto > 0);
-  const linhaH = 17;
-  // Área da tabela: do cabeçalho até as notas. Não cabendo todos os imóveis, reserva 14 pt
+  const linhaH = 17, linhaH2 = 24;   // linha de 1 e de 2 linhas de nome
+  const tabX = mX + 12, tabW = wImov - 24;
+  const colNome = tabW * cols[0].w;
+  // Caixa alta em fonte 7: ~0,74 × corpo por letra; a caixa perde 14,4 pt de recuo interno.
+  const maxCh = Math.max(8, Math.floor((colNome - 14.4) / (7 * 0.74)));
+  const nomeLinhas = im => {
+    const ls = _pendQuebrar_(String(im.imovel == null ? '' : im.imovel).toUpperCase(), maxCh).map(l => _truncar_(l, maxCh));
+    if (ls.length <= 2) return ls.length ? ls : [''];
+    return [ls[0], _truncar_(ls.slice(1).join(' '), maxCh)];   // passou de 2 linhas: a 2ª leva o "…"
+  };
+  const linhasNome = imoveis.map(nomeLinhas);
+  const alturas = linhasNome.map(ls => (ls.length > 1 ? linhaH2 : linhaH));
+  // Quantos imóveis cabem na área da tabela (do cabeçalho até as notas). Não cabendo todos, reserva 14 pt
   // para a linha "+ N imóvel(is) fora da lista" (que antes ficava por cima da última linha).
   const areaTab = pTop + pH - yImov - 24 - notaH;
-  let maxLinhas = Math.max(1, Math.floor(areaTab / linhaH));
-  if (imoveis.length > maxLinhas) maxLinhas = Math.max(1, Math.floor((areaTab - 14) / linhaH));
-  const tabX = mX + 12, tabW = wImov - 24;
+  const quantos = area => { let acc = 0, n = 0; while (n < alturas.length && acc + alturas[n] <= area) { acc += alturas[n]; n++; } return n; };
+  let mostrar = quantos(areaTab);
+  if (mostrar < imoveis.length) mostrar = quantos(areaTab - 14);
+  if (imoveis.length) mostrar = Math.max(1, mostrar);
   let x0 = tabX;
   cols.forEach(col => {
-    _sTxt(slide, x0, yImov, tabW * col.w, 14, col.t, 6.5, true, c.textMuted, col.a);
+    _sTxt(slide, x0, yImov, tabW * col.w, 14, col.t, 6.5, true, c.textMuted, col.a, col.a === 'center' ? 7 : 0);
     x0 += tabW * col.w;
   });
-  imoveis.slice(0, maxLinhas).forEach((im, r) => {
-    const y = yImov + 16 + r * linhaH;
-    if (r % 2 === 0) _sRet_(slide, tabX, y, tabW, linhaH, '#F8FAFC');
+  let yAcc = 0;
+  imoveis.slice(0, mostrar).forEach((im, r) => {
+    const h = alturas[r], ls = linhasNome[r], y = yImov + 16 + yAcc;
+    if (r % 2 === 0) _sRet_(slide, tabX, y, tabW, h, '#F8FAFC');
     const saude = Number(im.indice_saude);
     const corSaude = saude >= 80 ? c.accentGreen : (saude >= 60 ? '#F59E0B' : c.accentRed);
+    // Nome: uma caixa por linha (cada uma de uma linha só, para o teste medir se cabe).
+    if (ls.length > 1) ls.forEach((ln, k) => _sTxt(slide, tabX, y + 2 + k * 10, colNome, 10, ln, 7, false, c.textMain, 'left'));
+    else _sTxt(slide, tabX, y, colNome, h, ls[0], 7, false, c.textMain, 'left');
     const celulas = [
-      [_truncar_(im.imovel, _charsQueCabem_(tabW * cols[0].w, 7.5)), c.textMain, false],
       [String(im.em_aberto), c.textMain, true],
       [String(im.vencidas), im.vencidas > 0 ? c.accentRed : c.textMuted, im.vencidas > 0],
       [String(im.alta_vencidas), im.alta_vencidas > 0 ? c.accentRed : c.textMuted, im.alta_vencidas > 0],
       [im.idade_max_dias + 'd', c.textBody, false],
       [String(saude), corSaude, true]
     ];
-    let x = tabX;
+    let x = tabX + colNome;
     celulas.forEach((cel, i) => {
-      _sTxt(slide, x, y, tabW * cols[i].w, linhaH, cel[0], 7.5, cel[2], cel[1], cols[i].a);
-      x += tabW * cols[i].w;
+      const w = tabW * cols[i + 1].w;
+      _sTxt(slide, x, y, w, h, cel[0], 7.5, cel[2], cel[1], 'center', 7);
+      x += w;
     });
+    yAcc += h;
   });
   if (!imoveis.length) {
     _sTxt(slide, tabX, yImov + 30, tabW, 20, 'Nenhuma NC em aberto no fim do mês.', 9, true, c.accentGreen, 'center');
-  } else if (imoveis.length > maxLinhas) {
-    _sTxt(slide, tabX, yImov + 16 + maxLinhas * linhaH + 1, tabW, 12, '+ ' + (imoveis.length - maxLinhas) + ' imóvel(is) com pendência fora da lista',
+  } else if (imoveis.length > mostrar) {
+    _sTxt(slide, tabX, yImov + 16 + yAcc + 1, tabW, 12, '+ ' + (imoveis.length - mostrar) + ' imóvel(is) com pendência fora da lista',
       7, false, c.textMuted, 'left');
   }
   _pendDesenharNotas_(slide, tabX, pTop + pH - notaH - 6, tabW, notas);
@@ -319,4 +339,5 @@ function diagnosticarVistorias() {
   Logger.log('    NCs: ' + a.ncs_em_aberto + ' em aberto, ' + a.ncs_vencidas + ' vencida(s), ' + a.ncs_abertas_no_mes +
              ' nova(s), ' + a.ncs_resolvidas_no_mes + ' resolvida(s), tempo médio ' + (a.mttr_dias == null ? '—' : a.mttr_dias + 'd'));
   Logger.log('    ' + (v.imoveis || []).length + ' imóvel(is) com pendência; ' + (v.disciplinas || []).length + ' disciplina(s).');
+  (v.imoveis || []).forEach(i => Logger.log('      · ' + i.imovel + ' — ' + i.em_aberto + ' em aberto, ' + i.vencidas + ' vencida(s), mais antiga ' + i.idade_max_dias + 'd'));
 }
