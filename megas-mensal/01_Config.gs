@@ -132,7 +132,11 @@ const GESTAO_TV_METAS_SPREADSHEET_ID = '1XrgKQENISyM_cO7xslUQZrmCiZpRJ0UU512FQF1
 //   Mês (MM/AAAA) | Empreendimento | Fluxo Total | ...
 // (mantida todo mês para o relatório dedicado de acessos). Usada para desenhar
 // a Evolução dos Acessos. Se indisponível, cai no HISTORICO_VALIDADO_ID.
-const ACESSOS_SPREADSHEET_ID = '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50';
+// Desde 24/11/2026 (pedido do Guilherme): a MESMA base do relatório de
+// Controle de Acesso, a "BASE CORRIGIDA 2025-2026" (horário de Brasília, sem
+// duplicatas, gerada dos dados crus; cabeçalho na linha 2). A antiga
+// "DADOS APRESENTAÇÃO" era '1tl-7wR_vpIbybUh5Jvit0vO52Qg6ocoPv-K-pY_KI50'.
+const ACESSOS_SPREADSHEET_ID = '1Vu3I3USDlAJDlTFK60EMtlDBSGB6F0SA7bIYlSEESAY';
 
 // capaFotoId (opcional): ID de uma imagem no Drive usada como fundo das
 // capas de seção da cidade. Sem ele, as capas usam o fundo escuro padrão.
