@@ -267,39 +267,27 @@ function obterDashboardPropriedades_() {
   map.set('Chamados fechados',           linha3(null, null, null));
   map.set('Tempo médio de atendimento',  linha3(null, null, null));
 
-  // Quadrante 2: Gestão Financeira · Orçamento (Torre de Manutenção)
-  let dadosTorre = null;
+  // Quadrante 2: Gestão Financeira · Orçamento — MESMA FONTE do DRE e do
+  // Bridge (obterDREPropriedades_), como o "Orçamento e Documentação" dos
+  // Megas. Até 24/11/2026 vinha da Torre de Manutenção (Orçamento 2026 ×
+  // Ritmo 2025, "Economia Projetada"): só manutenção, outro orçado (604 mil
+  // contra 592 mil do Bridge) e rótulo de 2025. Pedido do Guilherme: tirar o
+  // 2025 e a economia projetada e deixar igual aos Megas.
+  let dre = null;
   try {
-    dadosTorre = obterDadosTorreManutencao_();
+    dre = obterDREPropriedades_();
   } catch (e) {
-    Logger.log('Aviso (Dashboard): Torre de Manutenção indisponível: ' + e.message);
+    Logger.log('Aviso (Dashboard): DRE de Propriedades indisponível: ' + e.message);
   }
-
   const fmtK = v => (v == null || isNaN(v)) ? '—' : 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
-  const fmtVar = (nom, pct) => {
-    if (nom == null || isNaN(nom)) return '—';
-    const sinal = nom >= 0 ? '+' : '−';
-    // % sem sinal: o sinal do valor já diz se é economia (+) ou gasto acima do ritmo (−).
-    const pctStr = (pct != null && !isNaN(pct)) ? ' (' + Math.abs(pct * 100).toFixed(1).replace('.', ',') + '%)' : '';
-    return sinal + fmtK(Math.abs(nom)) + pctStr;
-  };
-
-  const orcCR = dadosTorre ? dadosTorre.cr.total.orc26 : 421028;
-  const orcDem = dadosTorre ? dadosTorre.demercado.total.orc26 : 183515;
-  const ritmoCR = dadosTorre ? dadosTorre.cr.total.ritmo25 : 455412;
-  const ritmoDem = dadosTorre ? dadosTorre.demercado.total.ritmo25 : 161957.30;
-  
-  const orcAbs = Math.abs(orcCR) + Math.abs(orcDem);
-  const ritmoAbs = Math.abs(ritmoCR) + Math.abs(ritmoDem);
-  const econNom = ritmoAbs - orcAbs; // >0 = economia (gasta menos que o ritmo)
-  const varPct = ritmoAbs !== 0 ? (orcAbs - ritmoAbs) / ritmoAbs : 0; // <0 = redução percentual de custo
-
-  map.set('Orçamento 2026 (Total)',     linha3(fmtK(orcAbs), null, null));
-  map.set('Ritmo 2025 (Base)',          linha3(fmtK(ritmoAbs), null, null));
-  map.set('Orçamento Capital Realty',   linha3(fmtK(Math.abs(orcCR)), null, null));
-  map.set('Orçamento Demercado',        linha3(fmtK(Math.abs(orcDem)), null, null));
-  map.set('Economia Projetada (26/25)', linha3(fmtVar(econNom, varPct), null, null));
-  map.set('CAPEX',                      linha3('—', null, null));
+  const fmtPct = (num, den) => (num == null || !den) ? '—' : (num / den * 100).toFixed(1).replace('.', ',') + '%';
+  const t = dre ? dre.total : null;
+  map.set('Orçamento do ano',        linha3(t ? fmtK(t.ano.plan) : '—', null, null));
+  map.set('Realizado acumulado',     linha3(t ? fmtK(t.acum.real) : '—', null, null));
+  map.set('Orçado consumido — mês',  linha3(t ? fmtPct(t.mes.real, t.mes.plan) : '—', null, null));
+  map.set('Orçado consumido — ano',  linha3(t ? fmtPct(t.acum.real, t.acum.plan) : '—', null, null));
+  map.set('Projeção do ano',         linha3(t ? fmtK(t.ano.proj) : '—', null, null));
+  map.set('CAPEX',                   linha3('—', null, null));
 
   // Quadrante 3: Vistorias & Análises de Projetos (subgrupos)
   // VISTORIAS vem do VistoriaPro, no mês da apresentação. Entrada/saída,
@@ -1110,6 +1098,48 @@ function obterDREPropriedades_() {
     c.itens.forEach(i => linhas.push(i));
   });
 
+  // SÉRIE MENSAL DO TOTAL DO DRE — eixo do Bridge (Guilherme, 24/11/2026:
+  // "tem que ser igual dos Megas, ele acaba confundindo a gente"). Antes o
+  // Bridge saía só da Manutenção (obterDREManutencao_) e o DRE do total:
+  // orçado do ano 592 mil num slide e 1,1 milhão no outro. Agora os dois
+  // saem DESTA leitura, com as mesmas linhas do DRE: rubricas da aba de
+  // Propriedades + a manutenção centro a centro (dadosManut.meses).
+  const NOMES_MES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const mensalProp = cod => {
+    const p = buscarLinha(planMapa, cod), r = buscarLinha(ritmoMapa, cod);
+    return m => ({
+      plan: p ? abs(p[2 * m + 1]) : null,
+      real: r ? abs(_dreMesOcorrido_(m, refIndex) ? r[2 * m + 1] : r[2 * m]) : null
+    });
+  };
+  const fontesMes = [];
+  categorias.forEach(cat => {
+    const ehManut = cat.itens.some(i => dadosManut && dadosManut.empresas.some(e => e.centros.some(c => c.codigo === i.codigo)));
+    if (ehManut) { fontesMes.push(m => dadosManut.meses[m]); return; }
+    cat.itens.forEach(i => fontesMes.push(mensalProp(i.codigo)));
+  });
+  const meses = [];
+  for (let m = 0; m < 12; m++) {
+    const vals = fontesMes.map(f => f(m) || {});
+    const plan = _dreSoma_(vals.map(v => v.plan)), real = _dreSoma_(vals.map(v => v.real));
+    meses.push({
+      index: m, label: NOMES_MES[m],
+      tipo: _dreMesOcorrido_(m, refIndex) ? 'REAL' : 'RITMO',
+      plan: plan, real: real,
+      variacao: (plan == null || real == null) ? null : plan - real   // >0 = abaixo do orçado
+    });
+  }
+  // Conferência de graça (lição 4): a série tem que fechar com os totais do DRE.
+  const somaSerie = (campo, ate) => meses.filter(x => x.index <= ate).reduce((s, x) => s + (x[campo] || 0), 0);
+  [['orçado acumulado', somaSerie('plan', refIndex), recRaiz.acum.plan],
+   ['realizado acumulado', somaSerie('real', refIndex), recRaiz.acum.real],
+   ['orçado do ano', somaSerie('plan', 11), recRaiz.ano.plan],
+   ['projeção do ano', somaSerie('real', 11), recRaiz.ano.proj]].forEach(c => {
+    if (c[2] != null && Math.abs(c[1] - c[2]) > 1) {
+      avisos.push('Bridge × DRE: ' + c[0] + ' da série mensal ' + c[1].toFixed(0) + ' ≠ DRE ' + c[2].toFixed(0) + '.');
+    }
+  });
+
   Logger.log('DRE Propriedades: ref ' + ref.nome + '/' + ref.ano +
              ' · plano ano ' + (recRaiz.ano.plan == null ? '—' : recRaiz.ano.plan.toFixed(0)) +
              ' · projeção ano ' + (recRaiz.ano.proj == null ? '—' : recRaiz.ano.proj.toFixed(0)) +
@@ -1121,6 +1151,7 @@ function obterDREPropriedades_() {
     refIndex: refIndex,
     total: recRaiz,
     linhas: linhas,
+    meses: meses,
     avisos: avisos
   };
 }

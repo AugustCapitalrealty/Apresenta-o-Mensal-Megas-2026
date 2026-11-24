@@ -46,11 +46,12 @@ function gerarSlideIndicadoresGerais() {
       { label: '% Conclusão histórico',       lookup: 'Percentual de conclusão histórico', sentido: 'maior', sla: true }
     ] },
     { title: 'GESTÃO FINANCEIRA · ORÇAMENTO', color: DS.colors.themeCorr, semComparativo: true, headerTexto: 'ORÇAMENTO 2026', rows: [
-      { label: 'Orçamento Total 2026',        lookup: 'Orçamento 2026 (Total)' },
-      { label: 'Ritmo 2025 (Base)',           lookup: 'Ritmo 2025 (Base)' },
-      { label: 'Capital Realty (CR)',         lookup: 'Orçamento Capital Realty' },
-      { label: 'Demercado',                   lookup: 'Orçamento Demercado' },
-      { label: 'Economia Projetada (26/25)',  lookup: 'Economia Projetada (26/25)',        regua: 'economia' },
+      // Mesma fonte do DRE/Bridge (obterDREPropriedades_), formato dos Megas.
+      { label: 'Orçamento do ano',            lookup: 'Orçamento do ano' },
+      { label: 'Realizado acumulado',         lookup: 'Realizado acumulado' },
+      { label: 'Orçado consumido — mês (%)',  lookup: 'Orçado consumido — mês', regua: 'orcamento' },
+      { label: 'Orçado consumido — ano (%)',  lookup: 'Orçado consumido — ano', regua: 'orcamento' },
+      { label: 'Projeção do ano (real + ritmo)', lookup: 'Projeção do ano' },
       { label: 'CAPEX',                       lookup: 'CAPEX' }
     ] },
     { title: 'VISTORIAS & ANÁLISES DE PROJETOS', color: DS.colors.themeAtivos, semComparativo: true, headerTexto: 'TOTAL', colNameW: 0.72, rows: [

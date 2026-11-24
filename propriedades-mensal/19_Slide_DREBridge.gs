@@ -3,11 +3,13 @@
  * SLIDES — SEÇÃO FINANCEIRO: DRE e BRIDGE de Manutenção
  *
  *   gerarSlideDREManutencao()            tabela 2025 | Meta | Real | Δ% Meta | Δ% 2025
- *   gerarSlideBridgeManutencao()         orçado × real/ritmo, mês a mês
+ *   gerarSlideBridgeManutencao()         orçado × real/ritmo, mês a mês — TOTAL do DRE de Propriedades
  *   gerarSlideBridgeManutencaoGrafico()  o mesmo em cascata
+ *   (os nomes ficaram "Manutencao" por compatibilidade com tags e menus; desde
+ *   24/11/2026 o Bridge é o do DRE inteiro, igual aos Megas: obterDREPropriedades_().meses)
  *
- * POR QUE OS TRÊS NO MESMO ARQUIVO: saem TODOS de obterDREManutencao_()
- * (05_DadosSlides.gs) — uma leitura só, um contrato só. O Bridge é o DRE
+ * POR QUE NO MESMO ARQUIVO: DRE e Bridge saem da MESMA leitura
+ * (obterDREPropriedades_, que inclui obterDREManutencao_) — um contrato só. O Bridge é o DRE
  * aberto por mês; mudar o recorte de um sem o outro é justamente o jeito de
  * a apresentação sair com dois números diferentes para a mesma coisa.
  *
@@ -480,7 +482,10 @@ function _dreTituloDoSlide_(slide) {
 
 
 function gerarSlideBridgeManutencao() {
-  const dados = obterDREManutencao_();
+  // Total do DRE de Propriedades (gerência + manutenção dos imóveis), igual aos
+  // Megas: o Bridge é o DRE aberto por mês (Guilherme, 24/11/2026). Antes era
+  // só a Manutenção, e o orçado não batia com o do DRE.
+  const dados = obterDREPropriedades_();
   const deck  = getDeckMensal_();
   const DS    = CR_DESIGN_SYSTEM;
 
@@ -493,13 +498,13 @@ function gerarSlideBridgeManutencao() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE', 3);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO', 'Orçado vs Realizado · Equipe de Manutenção (Manutenção Imóveis)');
-    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
+    criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)', 'Orçado vs Realizado — Propriedades');
+    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de Propriedades.'));
     return;
   }
 
-  criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE) — MANUTENÇÃO',
-    'Orçado vs Realizado · Equipe de Manutenção (Manutenção Imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
+  criarHeaderPadrao(slide, 'ANÁLISE DE VARIAÇÃO (BRIDGE)',
+    'Orçado vs Realizado — Propriedades (gerência + manutenção dos imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   const marginX = 20, topY = 85, gap = 14;
   const contH = H - topY - 15;
@@ -510,7 +515,7 @@ function gerarSlideBridgeManutencao() {
     _brgTabela_(slide, rightX, topY, rightW, contH, dados);
   } catch (e) {
     _dreFalha_(slide, marginX, topY, W - 2 * marginX, contH, e);
-    Logger.log('Bridge Manutenção: falhou ao desenhar — ' + e.message);
+    Logger.log('Bridge: falhou ao desenhar — ' + e.message);
   }
 }
 
@@ -563,7 +568,7 @@ function _brgResumo_(slide, x, y, w, h, d) {
   const sinalAnual     = abaixoAnual ? '▼ ' : '▲ ';
 
   let cy = y + 10;
-  _txt('RESUMO — MANUTENÇÃO', x + 12, cy, w - 20, 16, 7.5, true, '#64748B');
+  _txt('RESUMO DO PERÍODO', x + 12, cy, w - 20, 16, 7.5, true, '#64748B');
   cy += 20;
 
   // ORÇADO
@@ -748,7 +753,7 @@ function _brgTabela_(slide, x, y, w, h, d) {
  * - Dois chips de resumo no topo: REALIZADO ATÉ AGORA e PROJEÇÃO ANUAL.
  */
 function gerarSlideBridgeManutencaoGrafico() {
-  const dados = obterDREManutencao_();
+  const dados = obterDREPropriedades_();   // mesma leitura do DRE e da tabela do Bridge
   const deck  = getDeckMensal_();
 
   _slideLimpar_(deck, TAG_BRIDGE_GRAFICO);
@@ -759,13 +764,13 @@ function gerarSlideBridgeManutencaoGrafico() {
   _drePosicionarNaSecao_(deck, slide, 'BRIDGE GRÁFICO', 4);
 
   if (!dados) {
-    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO', 'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (Manutenção Imóveis)');
-    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de manutenção.'));
+    criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO', 'Do Orçado ao Realizado/Projetado — Propriedades');
+    _dreFalha_(slide, 20, 76, W - 40, 120, new Error('Não foi possível ler as abas do DRE de Propriedades.'));
     return;
   }
 
-  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO — MANUTENÇÃO',
-    'Do Orçado ao Realizado/Projetado · Equipe de Manutenção (Manutenção Imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
+  criarHeaderPadrao(slide, 'BRIDGE DE VARIAÇÃO',
+    'Do Orçado ao Realizado/Projetado — Propriedades (gerência + manutenção dos imóveis) · ' + dados.ref.nome + ' ' + dados.ref.ano);
 
   try {
     _brgGrafico_(slide, 20, 78, W - 40, H - 78 - 15, dados);

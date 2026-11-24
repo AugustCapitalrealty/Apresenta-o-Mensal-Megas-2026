@@ -281,9 +281,11 @@ motivo** — separá-los nesse caso é cerimônia: você abre os dois toda vez.
 
 - `14_Slide_Backlog.gs` — os três são o MESMO estoque visto por onde, por quem
   e por quê. Mexer na definição de "em aberto" mexe nos três de uma vez.
-- `19_Slide_DREBridge.gs` — os três saem de `obterDREManutencao_()`. O Bridge
-  é o DRE aberto por mês; mudar o recorte de um sem o outro é o jeito de a
-  apresentação sair com dois números para a mesma coisa.
+- `19_Slide_DREBridge.gs` — DRE e Bridge (tabela e cascata) saem de `obterDREPropriedades_()`
+  (total: gerência + manutenção dos imóveis; a manutenção vem de `obterDREManutencao_()`).
+  O Bridge é o DRE aberto por mês (`meses`), igual aos Megas, desde 24/11/2026; antes era só a
+  Manutenção e o orçado não batia com o do DRE. O card financeiro do Dashboard também lê daqui.
+  Mudar o recorte de um sem o outro é o jeito de a apresentação sair com dois números para a mesma coisa.
 
 O que **não** se junta: `02_Dados.gs` com `05_DadosSlides.gs`. Seriam 1.600
 linhas, e os dois mudam por motivos diferentes — a base muda quando a operação

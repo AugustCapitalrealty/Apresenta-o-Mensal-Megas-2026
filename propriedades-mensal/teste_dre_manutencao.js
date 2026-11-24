@@ -255,5 +255,24 @@ const agoDeNovo = obterDREManutencao_();
 ok('com a referência em AGO nada é lido das REAL-*', !agoDeNovo.avisos.some(a => /REAL-\*/.test(a)) &&
    perto(agoDeNovo.total.acum.real, 272958, 3));
 
+// ─────────────────────────────────────────────────────────────────────────
+// Bridge = DRE de Propriedades inteiro (Guilherme, 24/11/2026: "tem que ser
+// igual dos Megas, ele acaba confundindo a gente"). O Bridge saía só da
+// Manutenção e o orçado do ano não batia com o do DRE.
+console.log('\n== Bridge sai do total do DRE de Propriedades ==');
+const prop = obterDREPropriedades_();
+const somaM = (campo, ate) => prop.meses.filter(x => x.index <= ate).reduce((s, x) => s + (x[campo] || 0), 0);
+ok('DRE de Propriedades devolve a série mensal (12 meses)', prop.meses && prop.meses.length === 12);
+ok('orçado acumulado da série = DRE', perto(somaM('plan', prop.refIndex), prop.total.acum.plan), somaM('plan', prop.refIndex) + ' × ' + prop.total.acum.plan);
+ok('realizado acumulado da série = DRE', perto(somaM('real', prop.refIndex), prop.total.acum.real), somaM('real', prop.refIndex) + ' × ' + prop.total.acum.real);
+ok('orçado do ano da série = DRE', perto(somaM('plan', 11), prop.total.ano.plan), somaM('plan', 11) + ' × ' + prop.total.ano.plan);
+ok('projeção do ano da série = DRE', perto(somaM('real', 11), prop.total.ano.proj), somaM('real', 11) + ' × ' + prop.total.ano.proj);
+ok('sem aviso "Bridge × DRE"', !prop.avisos.some(a => /Bridge × DRE/.test(a)), prop.avisos.join(' | '));
+const soManut = obterDREManutencao_();
+ok('é MAIS que a manutenção (inclui a gerência)', prop.total.ano.plan > soManut.total.ano.plan,
+   prop.total.ano.plan + ' × ' + soManut.total.ano.plan);
+ok('mês da referência é REAL e o seguinte é RITMO',
+   prop.meses[prop.refIndex].tipo === 'REAL' && (prop.refIndex === 11 || prop.meses[prop.refIndex + 1].tipo === 'RITMO'));
+
 console.log('\n' + (falhas ? '✗ ' + falhas + ' de ' + testes + ' falharam' : '✓ ' + testes + '/' + testes + ' passaram') + '\n');
 process.exit(falhas ? 1 : 0);
